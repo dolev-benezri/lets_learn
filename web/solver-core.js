@@ -22,13 +22,20 @@ export function meetingsMask(meetings) {
 export const overlaps = (a, b) => a.some((v, d) => (v & b[d]) !== 0);
 export const merge = (a, b) => a.map((v, d) => v | b[d]);
 
+// Slots strictly after time t. Not meetingsMask(t..23:00): that floors the start, so a lesson ending exactly at t
+// (Afeka lessons end at :50) would share t's slot and count as late.
+export const lateMask = (t) => {
+  const a = Math.max(0, Math.ceil((toMin(t) - SLOT_START) / SLOT));
+  return a > 31 ? 0 : ~0 << a;
+};
+
 export function forbiddenMask(c = {}) {
   const m = new Array(DAYS).fill(0);
   const span = (d, from, to) => meetingsMask([{ day: d, start: from, end: to }])[d];
   for (let d = 1; d <= 6; d++) {
     if (c.dayOffHard && c.dayOff?.includes(d)) m[d] = ~0;
     if (c.windowHard && c.notBefore) m[d] |= span(d, '07:00', c.notBefore);
-    if (c.windowHard && c.notAfter) m[d] |= span(d, c.notAfter, '23:00');
+    if (c.windowHard && c.notAfter) m[d] |= lateMask(c.notAfter);
   }
   return m;
 }
@@ -237,7 +244,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     let mask = 0;
     if (c.dayOff?.includes(d)) mask = ~0;
     if (c.notBefore) mask |= meetingsMask([{ day: d, start: '07:00', end: c.notBefore }])[d];
-    if (c.notAfter) mask |= meetingsMask([{ day: d, start: c.notAfter, end: '23:00' }])[d];
+    if (c.notAfter) mask |= lateMask(c.notAfter);
     prefMask[d] = mask;
   }
 

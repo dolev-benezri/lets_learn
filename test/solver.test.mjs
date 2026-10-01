@@ -51,6 +51,15 @@ test('forbidden mask removes options (hard day off / window)', () => {
   assert.deepEqual(buildOptions(A, { forbidden: w }).map((o) => o.groups), [['A2']]);
 });
 
+test('hard time window edges: lessons end at :50, "not after 17:50" allows one ending 17:50; "not before 08:00" allows a start at 08:00', () => {
+  const hit = (c, start, end) => overlaps(forbiddenMask({ ...c, windowHard: true }), meetingsMask([{ day: 2, start, end }]));
+  assert.equal(hit({ notAfter: '17:50' }, '16:00', '17:50'), false);
+  assert.equal(hit({ notAfter: '17:50' }, '18:00', '19:50'), true);
+  assert.equal(hit({ notAfter: '17:30' }, '16:00', '17:50'), true);
+  assert.equal(hit({ notBefore: '08:00' }, '08:00', '09:50'), false);
+  assert.equal(hit({ notBefore: '08:00' }, '07:30', '08:50'), true);
+});
+
 test('unlockCounts is transitive', () => {
   const u = unlockCounts(mini());
   assert.equal(u.A, 2); // B, C
