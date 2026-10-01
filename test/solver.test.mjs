@@ -93,6 +93,14 @@ test('search: weights default to none, topK <= 0 returns nothing without throwin
   for (const topK of [0, -1]) assert.deepEqual(search({ ...base, weights: W0, topK }), { results: [], partial: false, diagnosis: [] });
 });
 
+test('search: a retaken course still needs its corequisite planned together', () => {
+  const data = mini();
+  const statuses = classify(data, { passed: ['Q0'], failed: { P: 1 } }).statuses;
+  const args = { data, statuses, weights: W0, friends: [], constraints: {} };
+  assert.equal(search({ ...args, courses: [{ id: 'P', mode: 'must' }] }).results.length, 0);
+  assert.deepEqual(search({ ...args, courses: [{ id: 'P', mode: 'must' }, { id: 'Q', mode: 'optional' }] }).results[0].courses.sort(), ['P', 'Q']);
+});
+
 // Independent brute force: enumerate option products, reject overlaps by interval comparison.
 function brute(data, courses) {
   const toM = (t) => +t.slice(0, 2) * 60 + +t.slice(3);

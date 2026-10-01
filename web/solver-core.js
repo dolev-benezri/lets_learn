@@ -251,7 +251,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
 
   const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished, prefMask };
   const noExamClash = data.examsPublished && constraints.examsSameDay !== 'allow';
-  const conditional = courses.filter(({ id }) => statuses[id]?.status === 'conditional').map(({ id }) => ({ id, needs: statuses[id].missingParallel }));
+  const conditional = courses.filter(({ id }) => statuses[id]?.missingParallel).map(({ id }) => ({ id, needs: statuses[id].missingParallel }));
   const top = [];
   const sel = [];
 

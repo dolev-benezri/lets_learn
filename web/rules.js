@@ -22,23 +22,30 @@ export function classify(data, state) {
   const outsideNotes = (c) => c.prereqs.filter((p) => p.anyOf.every((a) => a.id === null))
     .flatMap((p) => p.anyOf)
     .map((a) => `קדם מחוץ לתוכנית (${a.name}): מניחים שעברת`);
+  const unmetParallel = (c) => c.prereqs.filter((p) => p.kind === 'מקביל' && !satisfied(p));
+  const parallelNote = (par) => `רק יחד עם ${par.map((p) => p.anyOf.map((a) => a.name).join(' או ')).join(', ')} (קורס מקביל, תקנון 6.2.3)`;
+  const parallelIds = (par) => par.map((p) => p.anyOf.map((a) => a.id).filter(Boolean));
 
   for (const [id, c] of Object.entries(data.courses)) {
     if (passed.has(id)) { statuses[id] = { status: 'done', reasons: [] }; continue; }
     if (exempt.has(id)) { statuses[id] = { status: 'exempt', reasons: ['פטור (ציון אמירנט)'] }; continue; }
     if (!c.offered) { statuses[id] = { status: 'notOffered', reasons: [`לא נלמד ${when}`] }; continue; }
-    if (failed[id]) { statuses[id] = { status: 'retake', reasons: [`נכשלת, מוצע ${when} (תקנון 11.6.1)`] }; continue; }
+    if (failed[id]) { // prerequisites were met on the first attempt; a corequisite must still hold with the retake
+      const par = unmetParallel(c);
+      statuses[id] = { status: 'retake', reasons: [`נכשלת, מוצע ${when} (תקנון 11.6.1)`, ...(par.length ? [parallelNote(par)] : [])], ...(par.length && { missingParallel: parallelIds(par) }) };
+      continue;
+    }
     const hard = c.prereqs.filter((p) => p.kind === 'קדם' && !satisfied(p));
     if (hard.length) {
       statuses[id] = { status: 'blocked', reasons: [], blockedBy: hard.map((p) => p.anyOf.find((a) => a.id)?.id ?? null) };
       continue;
     }
-    const par = c.prereqs.filter((p) => p.kind === 'מקביל' && !satisfied(p));
+    const par = unmetParallel(c);
     if (par.length) {
       statuses[id] = {
         status: 'conditional',
-        reasons: [`רק יחד עם ${par.map((p) => p.anyOf.map((a) => a.name).join(' או ')).join(', ')} (קורס מקביל, תקנון 6.2.3)`, ...outsideNotes(c)],
-        missingParallel: par.map((p) => p.anyOf.map((a) => a.id).filter(Boolean)),
+        reasons: [parallelNote(par), ...outsideNotes(c)],
+        missingParallel: parallelIds(par),
       };
       continue;
     }
