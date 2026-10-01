@@ -312,7 +312,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 /* sticky top bar: one row, --bar-h tall, at every width */
 .top { position:sticky; top:0; z-index:5; height:var(--bar-h); padding:0 24px; align-content:center; row-gap:0;
   grid-template-columns:minmax(0, 1fr) auto auto; grid-template-areas:"title switch actions" "meta switch actions"; }
-.top h1 { font-size:18px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.top h1 { font-size:18px; line-height:1.25; white-space:normal; overflow-wrap:anywhere; }
 .meta { min-width:0; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .switcher { padding:2px; }
 .disclaimer { padding:6px 24px 0; }
@@ -468,7 +468,7 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
 .toast[popover] { top:auto; border:0; overflow:visible; }
 /* phone: keep the grid in view (final check: grid was at y=777 of 812 at 375px) */
 @media (max-width:599px) {
-  .board-ctl .ctl:has(input[name="bscope"]):not(:only-child) { display:none; } /* scope stays in the preferences drawer */
+  .board-ctl .ctl:has(input[name="bscope"]) { display:none; } /* scope stays in the preferences drawer */
   .board-ctl { margin-bottom:4px; }
   #semnote .notice { padding:6px 10px; font-size:13px; line-height:1.4; margin-bottom:6px; }
 }

@@ -383,7 +383,7 @@ function friendsPanel() {
             aria-describedby="friendHow${friendMsg ? ' friendErr' : ''}"${friendMsg ? ' aria-invalid="true"' : ''}>
           <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
         ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}
-        <button type="button" class="btn" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
+        <button type="button" class="btn" id="openManualFriend" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
       ${mfEditName !== null ? `<section class="dr-sec"><h3>${editingFriend ? 'עריכת חבר' : 'הוסף חבר ידנית'}</h3>
         <label class="field"><span>שם החבר</span><input id="mfName" type="text" maxlength="60" data-k="mfName" data-chg="mfName" value="${esc(mfName)}" placeholder="שם החבר"></label>
         <div class="row">
@@ -413,7 +413,7 @@ function friendsPanel() {
           aria-describedby="friendHow${friendMsg ? ' friendErr' : ''}"${friendMsg ? ' aria-invalid="true"' : ''}>
         <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
       ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}
-      <button type="button" class="btn" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
+      <button type="button" class="btn" id="openManualFriend" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
     <section class="dr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || '<p class="hint">עוד אין חברים.</p>'}</section>
     <section class="dr-sec"><h3>הקישור שלי</h3>
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>

@@ -14,7 +14,6 @@ export const encode = async (obj) => toB64url(await pipe(new TextEncoder().encod
 
 export const decode = async (s) => {
   const compressed = fromB64url(s);
-  const reader = new DecompressionStream('deflate').readable.getReader();
   const decompressor = new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate'))).body.getReader();
   let totalBytes = 0;
   const chunks = [];
