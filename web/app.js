@@ -68,6 +68,16 @@ export function upsertFriend(friends, p, editing = null) {
   return { friends: friends.map((f, i) => (i === ti ? next : f)).filter((f, i) => i === ti || f.name !== p.name), replaced: true };
 }
 
+// Split a friend's group ids into editor slots (cid|type -> gid) and ids the editor cannot show (unknown, or a second group of one slot).
+export function splitFriendGroups(groups, index) {
+  const slots = {}, keep = [];
+  for (const gid of groups) {
+    const info = index.get(gid), k = info && `${info.cid}|${info.g.type}`;
+    if (info && !(k in slots)) slots[k] = gid; else keep.push(gid);
+  }
+  return { slots, keep };
+}
+
 export const app = { state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, friendLanding: null, hashError: null };
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).

@@ -132,3 +132,9 @@ test('upsertFriend refuses a 21st friend', () => {
   const r = upsertFriend(many, { name: 'new', groups: ['1'] });
   assert.equal(r.friends.length, 20); assert.match(r.error, /עד 20/);
 });
+
+import { splitFriendGroups } from '../web/app.js';
+test('splitFriendGroups keeps unknown ids and second same-type groups instead of dropping them', () => {
+  const idx = new Map([['L1', { cid: 'c', g: { type: 'הרצאה' } }], ['L2', { cid: 'c', g: { type: 'הרצאה' } }], ['T1', { cid: 'c', g: { type: 'תרגיל' } }]]);
+  assert.deepEqual(splitFriendGroups(['L1', 'T1', 'L2', 'X9'], idx), { slots: { 'c|הרצאה': 'L1', 'c|תרגיל': 'T1' }, keep: ['L2', 'X9'] });
+});
