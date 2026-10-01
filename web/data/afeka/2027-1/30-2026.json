@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-09-30T16:08:38.362Z",
+ "fetchedAt": "2026-10-01T19:32:20.041Z",
  "year": 2027,
  "startYear": 2026,
  "program": 30,
@@ -1285,7 +1285,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גת שרון",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "273011201/1"
@@ -1325,7 +1325,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר יבור ינון",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "273011203/1"
@@ -1365,7 +1365,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר גת שרון",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1401,7 +1401,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר יבור ינון",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -3590,7 +3590,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "ד\"ר אלון טל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "273032102/1"
@@ -3650,7 +3650,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "ד\"ר אלון טל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5725,7 +5725,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שפירא יובל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5957,7 +5957,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090410/1",
@@ -6183,7 +6183,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אבישר עמיחי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [

@@ -1,0 +1,14 @@
+{
+ "checkedAt": "2026-10-01T19:32:20.041Z",
+ "ok": true,
+ "semesters": {
+  "2027-1": {
+   "hash": "ff159e28b9cc525f22a4c2dc8ac630a3fb5160a243f3dc05fbb430e78c55f82d",
+   "changedAt": "2026-10-01T19:32:20.041Z"
+  },
+  "2027-2": {
+   "hash": "fb8442edd7f717bcc77cbc03f1c2ba0a51cecc7e75e7706ad97b2792fe2f3105",
+   "changedAt": "2026-10-01T19:32:20.041Z"
+  }
+ }
+}
