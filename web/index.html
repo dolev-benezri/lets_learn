@@ -95,6 +95,7 @@ a { color:var(--primary); }
    which in RTL is the right one. DOM order is main, then aside, so keyboard users reach the grid before 38 sidebar controls. */
 .layout { display:grid; grid-template-columns:minmax(0, 1fr); grid-template-areas:"main" "side"; gap:16px; padding:12px 16px 24px; align-items:start; }
 main { grid-area:main; min-width:0; }
+.layout[hidden], .me[hidden] { display:none; } /* one view at a time, by the hash (ui-plan.js renderRoute) */
 aside { grid-area:side; min-width:0; padding:2px; }
 @media (min-width:1100px) {
   .layout { grid-template-columns:300px minmax(0, 1fr); grid-template-areas:"side main"; gap:20px; padding:12px 24px 32px; }
@@ -497,12 +498,12 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
     <button type="button" class="btn primary" data-act="share" data-icon="share"><span class="lbl">שתף</span></button>
   </div>
 </header>
-<div class="layout">
+<div id="layout" class="layout">
   <main>
     <div id="banner"></div>
     <section id="welcome" class="welcome" aria-labelledby="welTitle" hidden></section>
     <section id="board" class="board" aria-labelledby="weekTitle">
-      <h2 id="weekTitle" class="sr">מערכת השעות</h2>
+      <h2 id="weekTitle" class="sr" tabindex="-1">מערכת השעות</h2>
       <div id="semtabs" class="semtabs"></div>
       <div id="semnote"></div>
       <div class="board-top"><div id="pills" class="pills"></div><span id="busy" class="busy" hidden>מחשב…</span></div>
@@ -513,6 +514,7 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
   </main>
   <aside id="side" aria-label="הקורסים שלי"></aside>
 </div>
+<main id="me" class="me" aria-labelledby="meTitle" hidden></main>
 <div class="scrim" data-act="closeDrawer" aria-hidden="true"></div>
 <footer class="site-foot">
   <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.</p>

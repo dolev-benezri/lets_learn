@@ -146,3 +146,13 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
   assert.match(foot, /TERMS\.md/);
   assert.equal(html.split('כלי עזר לא רשמי').length, 2);
 });
+
+import { routeOf } from '../web/app.js';
+test('routeOf: #me is the status page, everything else is the builder', () => {
+  assert.equal(routeOf('#me'), 'me');
+  for (const h of ['', '#', '#f=abc', '#b=abc', '#mex']) assert.equal(routeOf(h), 'plan');
+});
+
+test('routeOf: a pasted friend link lands on the builder', () => {
+  assert.equal(routeOf('#f=x'), 'plan');
+});

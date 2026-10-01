@@ -127,6 +127,9 @@ export function refresh() {
   keepFocus(() => renderers.forEach((r) => r()));
 }
 
+// Two views in one page: #me is the status page, any other hash (friend and backup links too) is the builder.
+export const routeOf = (h) => (h === '#me' ? 'me' : 'plan');
+
 const SKELETON = `<div class="skel" role="status"><span class="sr">טוען את מערכת השעות…</span><div class="skel-grid" aria-hidden="true">${'<div><i></i><i></i><i></i></div>'.repeat(5)}</div></div>`;
 
 async function init() {
@@ -148,8 +151,13 @@ async function init() {
   app.semNotice = app.sem['ב'] ? null : 'נתוני סמסטר ב׳ לא נטענו, מתכננים סמסטר אחד.';
   groupSem = null;
   pickData();
+  await applyHash();
+}
+
+// Friend (#f=) and backup (#b=) links: read at load, and again when one is pasted into an open tab (hashchange in ui-plan.js).
+export async function applyHash() {
   const h = await readHash(location.hash, app.state);
-  if (h?.error) app.hashError = h.error;
+  if (h) app.hashError = h.error ?? null; // a good link pasted after a bad one clears the old error
   if (h?.type === 'backup') {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }

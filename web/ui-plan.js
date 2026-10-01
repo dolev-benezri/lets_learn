@@ -1,6 +1,6 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status panel, courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, esc, upsertFriend, splitFriendGroups, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT } from './app.js';
+import { app, esc, upsertFriend, splitFriendGroups, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
 import { progress, setStatus, studyYear, cleanProfile } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
@@ -617,8 +617,25 @@ const CHG = {
   mfName: (el) => { mfName = el.value; return 'quiet'; },
 };
 
+// The view follows the hash: #me shows the status page, anything else the builder (index.html #me / #layout).
+function renderRoute() {
+  const me = routeOf(location.hash) === 'me';
+  $('me').hidden = !me;
+  $('layout').hidden = me;
+}
+const focusView = () => $($('me').hidden ? 'weekTitle' : 'meTitle')?.focus({ preventScroll: true });
+// Back/forward and the nav links switch views without a new search (a search would reset the shown alternative).
+// A friend or backup link pasted into the open tab is applied like at load, then lands on the builder.
+function onHash() {
+  if (/^#[fb]=/.test(location.hash)) { applyHash().then(focusView); return; }
+  renderRoute();
+  scrollTo(0, 0);
+  focusView();
+}
+
 function renderAll() {
   if (statusOpen === null) statusOpen = !onboarded();
+  renderRoute();
   renderTop();
   renderBanner();
   renderWelcome();
@@ -683,6 +700,7 @@ addEventListener('scroll', () => {
   const b = document.querySelector(`[data-k="${CSS.escape(p.dataset.src ?? '')}"]`);
   if (popStale(Number(p.dataset.top), b ? b.getBoundingClientRect().top : null, innerHeight)) p.hidePopover();
 }, { passive: true });
+addEventListener('hashchange', onHash);
 $('banner').setAttribute('aria-live', 'polite'); // static container, so the friend-landing banner inserted later is announced
 
 setRenderers(renderAll);
