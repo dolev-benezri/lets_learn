@@ -32,6 +32,7 @@ const colors = new Map(); // sticky: a course keeps its colour unless it clashes
 let dashed = new Set(); // courses of the shown alternative that repeat a colour (more than 8 courses)
 const ONBOARDED = 'afeka-sched-v1-onboarded';
 const onboarded = () => { try { return localStorage.getItem(ONBOARDED) === '1'; } catch { return false; } };
+const markOnboarded = () => { try { localStorage.setItem(ONBOARDED, '1'); } catch { /* storage unavailable */ } };
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 let firstVisit = !onboarded() && !location.hash;
 
@@ -500,7 +501,7 @@ const focusWeek = () => $('week').focus({ preventScroll: false });
 
 const ACT = {
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
-  statusDone(el, e) { e.preventDefault(); try { localStorage.setItem(ONBOARDED, '1'); } catch { /* storage unavailable */ } location.hash = ''; },
+  statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = ''; },
   openStatus() { location.hash = '#me'; },
   skip(el, e) { e.preventDefault(); ($('me').hidden ? $('week') : $('meTitle'))?.focus(); }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
@@ -613,8 +614,9 @@ const CHG = {
     const v = el.value === '' ? NaN : Number(el.value);
     if (Number.isInteger(v) && v >= 0 && v <= 100) app.state.grades[el.dataset.cid] = v; else delete app.state.grades[el.dataset.cid];
     el.value = app.state.grades[el.dataset.cid] ?? ''; // snap an invalid entry back
-    $('gradeAvg').innerHTML = avgLine(); // just this line: re-rendering the page would drop the caret
-    return 'quiet';
+    const avg = $('gradeAvg');
+    if (avg) avg.innerHTML = avgLine(); // just this line: re-rendering the page would drop the caret
+    return 'save'; // grades do not touch the solver: no new search
   },
   status: (el) => setStatus(app.state, el.dataset.id, el.value),
   failCount: (el) => { app.state.failed[el.dataset.id] = Number(el.value); },
@@ -640,6 +642,7 @@ function renderRoute() {
   $('me').hidden = !me;
   $('layout').hidden = me;
   document.body.dataset.view = view;
+  if (!me) markOnboarded(); // reaching the builder any way (tab, link, "סיימתי") ends the first-visit redirect
   for (const a of document.querySelectorAll('.views a')) if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   renderMe();
 }
@@ -647,6 +650,7 @@ const focusView = () => $($('me').hidden ? 'weekTitle' : 'meTitle')?.focus({ pre
 // Back/forward and the nav links switch views without a new search (a search would reset the shown alternative).
 // A friend or backup link pasted into the open tab is applied like at load, then lands on the builder.
 function onHash() {
+  document.activeElement?.blur(); // commit a typed grade or Amirnet value (fires change) before #me is emptied
   if (!app.cls) return; // still loading: init() reads the hash when the data arrives
   if (/^#[fb]=/.test(location.hash)) { applyHash().then(focusView); return; }
   renderRoute();
@@ -678,6 +682,7 @@ document.addEventListener('change', (e) => {
   const idx = visibleCards().indexOf(e.target.closest('.course'));
   const how = f(e.target);
   if (how === 'view') keepFocus(renderView);
+  else if (how === 'save') save();
   else if (how === 'quiet') { save(); scheduleRun(); } else refresh();
   // A card that moved into a collapsed section takes focus with it; land on the card now in its place instead.
   if (idx >= 0 && (document.activeElement === document.body || !shown(document.activeElement))) {

@@ -95,7 +95,7 @@ a { color:var(--primary); }
    which in RTL is the right one. DOM order is main, then aside, so keyboard users reach the grid before 38 sidebar controls. */
 .layout { display:grid; grid-template-columns:minmax(0, 1fr); grid-template-areas:"main" "side"; gap:16px; padding:12px 16px 24px; align-items:start; }
 main { grid-area:main; min-width:0; }
-.layout[hidden], .me[hidden] { display:none; } /* one view at a time, by the hash (ui-plan.js renderRoute) */
+.layout[hidden], #me[hidden] { display:none; } /* one view at a time, by the hash (ui-plan.js renderRoute) */
 aside { grid-area:side; min-width:0; padding:2px; }
 @media (min-width:1100px) {
   .layout { grid-template-columns:300px minmax(0, 1fr); grid-template-areas:"side main"; gap:20px; padding:12px 24px 32px; }
@@ -420,8 +420,8 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 /* on #me the bar keeps the title only: the alternatives and the plan actions belong to the builder */
 [data-view="me"] .switcher, [data-view="me"] .actions { display:none; }
 /* status page (#me): profile and progress on the right (sticky) and the course lists beside them from 900px; one column below */
-.me { --gut:16px; max-width:1200px; margin:0 auto; padding:16px var(--gut) 0; }
-.me { scroll-margin-top:100vh; } /* loading or following #me must not scroll the page past the nav strip: the fragment scroll clamps to 0 */
+#me { --gut:16px; max-width:1200px; margin:0 auto; padding:16px var(--gut) 0; }
+#me { scroll-margin-top:100vh; } /* loading or following #me must not scroll the page past the nav strip: the fragment scroll clamps to 0 */
 .me-head { margin-bottom:16px; }
 .me-head h1 { font-size:22px; font-weight:600; }
 .me-head h1:focus { outline:none; }
@@ -430,17 +430,17 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .me-grid { display:grid; grid-template-columns:minmax(0, 1fr); gap:16px; }
 .me-side { display:grid; gap:16px; align-content:start; }
 .me-card, .me-main { min-width:0; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); }
-.me h2 { font-size:17px; font-weight:600; }
-.me .field { flex-wrap:wrap; margin-top:12px; }
+#me h2 { font-size:17px; font-weight:600; }
+#me .field { flex-wrap:wrap; margin-top:12px; }
 .me-card .progress { margin:12px 0; }
 .me-main > .hint { margin-top:8px; }
-.me details { margin-top:16px; border-top:1px solid var(--border); padding-top:4px; }
+#me details { margin-top:16px; border-top:1px solid var(--border); padding-top:4px; }
 .year-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin:20px 0 8px; }
 .year-head h3 { margin:0; }
 .me-foot { position:sticky; bottom:0; z-index:4; display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px 16px;
   margin:16px calc(-1 * var(--gut)) 0; padding:12px var(--gut); background:var(--surface); border-top:1px solid var(--border); box-shadow:0 -4px 12px rgba(16,24,40,.06); }
 @media (min-width:900px) {
-  .me { --gut:24px; padding-top:24px; }
+  #me { --gut:24px; padding-top:24px; }
   .me-grid { grid-template-columns:300px minmax(0, 1fr); gap:20px; align-items:start; }
   .me-side { position:sticky; top:calc(var(--bar-h) + 16px); }
 }

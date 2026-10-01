@@ -161,3 +161,8 @@ test('normalize keeps integer grades 0-100 and drops the rest', () => {
   const s = normalize({ v: 1, grades: { a: 90, b: 101, c: '80', d: -1, e: 55.5 } });
   assert.deepEqual(s.grades, { a: 90 });
 });
+
+test('status page CSS is scoped to #me: the map lane div.ml.me must not inherit it', () => {
+  const css = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  assert.deepEqual(css.match(/(^|[\s,}])\.me(?![\w-])/gm), null);
+});
