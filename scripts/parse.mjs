@@ -44,8 +44,12 @@ export function parseGroups(html) {
     .map((chunk) => {
       const root = parse(chunk);
       const text = clean(root.text);
-      const type = text.match(/קורס מסוג\s*(\S+)/)[1];
-      const g = text.match(/קבוצה\s*:\s*(\d+)(?:\s*\/\s*(\d+))?/);
+      const need = (m, field) => {
+        if (!m) throw new Error(`parseGroups: field "${field}" not found, yedion layout changed? Near: "${text.slice(0, 120)}"`);
+        return m;
+      };
+      const type = need(text.match(/קורס מסוג\s*(\S+)/), 'קורס מסוג')[1];
+      const g = need(text.match(/קבוצה\s*:\s*(\d+)(?:\s*\/\s*(\d+))?/), 'קבוצה');
       const linkedText = text.match(/קבוצות הקשורות לקורס זה\s*:\s*([^)]*)\)/)?.[1] ?? '';
       return {
         id: g[2] ? `${g[1]}/${g[2]}` : g[1],
