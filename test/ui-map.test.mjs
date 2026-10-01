@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, makeKeep, chainOf, SIZE } from '../web/ui-map.js';
+import { layoutMap, makeKeep, chainOf, SIZE, nodeRadius, edgePath } from '../web/ui-map.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
 
@@ -89,4 +89,13 @@ test('chainOf: all upstream and downstream, nothing from siblings', () => {
   const r = chainOf(paths, 'c');
   assert.deepEqual([...r.nodes].sort(), ['a', 'b', 'c', 'd', 'x']);
   assert.deepEqual([...r.paths].sort(), [0, 1, 2, 3]);
+});
+
+test('nodeRadius grows with credits and is clamped', () => {
+  assert.equal(nodeRadius(0), 14); assert.equal(nodeRadius(100), 30);
+  assert.ok(nodeRadius(5) > nodeRadius(2));
+});
+
+test('edgePath is a horizontal-tangent cubic between two points', () => {
+  assert.equal(edgePath({ x: 300, y: 50 }, { x: 100, y: 150 }), 'M300,50 C200,50 200,150 100,150');
 });

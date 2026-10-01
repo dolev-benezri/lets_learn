@@ -21,6 +21,10 @@ export function makeKeep(mode, data, statuses, year) {
   return () => true;
 }
 
+// Geometry helpers for the progress-map renderer
+export const nodeRadius = (credits) => Math.max(14, Math.min(30, 12 + 3 * (credits ?? 0)));
+export const edgePath = (a, b) => { const mx = (a.x + b.x) / 2; return `M${a.x},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x},${b.y}`; };
+
 // Layers run left to right by prerequisite depth: a `קדם` edge always goes to a strictly higher layer, a `מקביל` edge to the
 // same or a higher one. The drawing is mirrored for RTL (layer 0 on the right). Lanes are the course lists (study years first).
 // An `anyOf` with more than one distinct option goes through an "או" diamond; options outside the program become `ext` pills.
