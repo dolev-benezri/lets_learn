@@ -56,6 +56,18 @@ function load() {
   try { saved = JSON.parse(localStorage.getItem(KEY)); } catch { /* storage unavailable */ }
   return normalize(saved);
 }
+// One add/replace/rename path for friends. `editing` is the NAME of the friend being edited (names, not indexes, survive deletes mid-edit).
+export function upsertFriend(friends, p, editing = null) {
+  const at = (n) => friends.findIndex((f) => f.name === n);
+  let ti = editing == null ? -1 : at(editing);
+  if (ti < 0) ti = at(p.name);
+  if (ti < 0 && friends.length >= 20) return { friends, replaced: false, error: 'אפשר עד 20 חברים. הסירו חבר כדי להוסיף.' };
+  const prev = friends[ti];
+  const next = { name: p.name, groups: p.groups, weight: prev?.weight ?? 1, active: prev?.active ?? true, ...(p.manual === true ? { manual: true } : {}) };
+  if (ti < 0) return { friends: [...friends, next], replaced: false };
+  return { friends: friends.map((f, i) => (i === ti ? next : f)).filter((f, i) => i === ti || f.name !== p.name), replaced: true };
+}
+
 export const app = { state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, friendLanding: null, hashError: null };
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
