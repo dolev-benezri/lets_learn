@@ -1,0 +1,35 @@
+# Deploy web/ to GitHub Pages. The data itself is refreshed by scripts/refresh.ps1 on the maintainer's PC,
+# which pushes web/data to main (an owner push triggers this workflow).
+name: deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['web/**']
+
+permissions:
+  contents: read
+
+# One deploy at a time. A queued run waits; a running deploy is never cancelled halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v5
