@@ -350,6 +350,7 @@ function select(key) {
   M.els?.nodes.forEach((el, k) => { if (el.matches('.nd')) { el.classList.toggle('sel', k === key); el.setAttribute('aria-pressed', String(k === key)); } });
   card.hidden = !key;
   card.innerHTML = key ? cardHtml(M.c, key) : '';
+  if (key && M.els) ensureVisible(M.els.nodes.get(key));
   light();
 }
 
@@ -419,9 +420,10 @@ async function mount() {
 
 function ensureVisible(el) {
   if (!M.pz) return;
-  const a = el.getBoundingClientRect(), b = q('.pm-svg').getBoundingClientRect(), m = 24, s = M.pz.getScale();
+  const card = q('.pm-card'), cover = !card.hidden && getComputedStyle(card).position === 'absolute' ? card.offsetHeight : 0; // the phone sheet overlays the map
+  const a = el.getBoundingClientRect(), b = q('.pm-svg').getBoundingClientRect(), m = 24, s = M.pz.getScale(), bottom = b.bottom - cover;
   const dx = a.left < b.left + m ? b.left + m - a.left : a.right > b.right - m ? b.right - m - a.right : 0;
-  const dy = a.top < b.top + m ? b.top + m - a.top : a.bottom > b.bottom - m ? b.bottom - m - a.bottom : 0;
+  const dy = a.top < b.top + m ? b.top + m - a.top : a.bottom + 18 > bottom - m ? bottom - m - a.bottom - 18 : 0; // 18 = the name under the circle
   if (dx || dy) M.pz.pan(dx / s, dy / s, { relative: true, animate: false });
 }
 
