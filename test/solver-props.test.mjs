@@ -56,7 +56,7 @@ export function fixture(seed) {
             const end = Math.min(18 * 60, start + 30 * int(2, 6));
             meetings.push({ day: int(1, 5), start: hhmm(start), end: hhmm(end), room: 'r' });
           }
-          groups.push(grp(`${id}${sem}${k}`, meetings));
+          groups.push({ ...grp(`${id}${sem}${k}`, meetings), full: r() < 0.25 }); // real data: about 25% of groups are full
         }
       }
       courses[sem][id] = yc(id, credits[id], groups, prereqs[id]);
@@ -71,6 +71,7 @@ export function fixture(seed) {
   for (const id of ids) if (r() < 0.12) semesterOf[id] = pick(['א', 'ב']);
   const state = { passed, failed: {}, choices, semesterOf, load: pick(['even', 'א', 'ב']) };
   const constraints = r() < 0.5 ? { maxCredits: int(3, 12) } : {};
+  if (r() < 0.25) constraints.includeFull = true;
 
   // A pin goes on a group the student can actually take there: course not passed, offered that semester, all of its
   // prerequisites (קדם and מקביל) already passed.
@@ -136,6 +137,13 @@ function check(seed) {
     for (const g of gB) assert.ok(g in gmB, `ב group ${g} unknown`);
     for (const g of gA) assert.ok(A.includes(courseOfGroup(dataA, g)), `group ${g} not of a chosen א course`);
     for (const g of gB) assert.ok(B.includes(courseOfGroup(dataB, g)), `group ${g} not of a chosen ב course`);
+    // 10. a full group only with includeFull, or when it is the pinned group itself
+    for (const [gs, data] of [[gA, dataA], [gB, dataB]]) {
+      for (const g of gs) {
+        const full = Object.values(data.courses).some((c) => c.groups.some((x) => x.id === g && x.full));
+        assert.ok(!full || constraints.includeFull || pins.includes(g), `full group ${g} placed`);
+      }
+    }
     // 6. pins land in their semester; semesterOf is respected (a pin wins over it). An א׳ pin is in every plan; a ב׳ pin
     // the ב׳ search cannot honour is reported: its course is in missing (ruling, final review I1).
     for (const g of pins) {
