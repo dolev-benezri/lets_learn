@@ -234,12 +234,13 @@ function importText(text) {
 async function pdfText(file) {
   const pdfjs = await import(`${PDFJS}pdf.min.mjs`);
   pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS}pdf.worker.min.mjs`;
-  const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+  const task = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
   try {
+    const doc = await task.promise;
     const pages = [];
     for (let i = 1; i <= Math.min(doc.numPages, 30); i++) pages.push((await (await doc.getPage(i)).getTextContent()).items.map((x) => x.str).join(' '));
     return pages.join(' ');
-  } finally { doc.destroy(); }
+  } finally { task.destroy(); } // pdf.js 6: destroy lives on the loading task, not the document
 }
 async function imageText(file, me) {
   const { createWorker } = (await import(TESSERACT)).default;
@@ -251,7 +252,7 @@ async function imageText(file, me) {
 }
 async function importFile(file) {
   const me = ed, input = $('feFile'), refocus = document.activeElement === input;
-  const busy = (on) => { me.busy = on; input.disabled = on; $('feFind').disabled = on; $('feImpStatus').setAttribute('aria-busy', String(on)); };
+  const busy = (on) => { me.busy = on; input.disabled = on; $('feFind').disabled = on; };
   busy(true);
   if (refocus) $('feImpStatus').focus({ preventScroll: true }); // a disabled input would drop focus to <body>
   status(`<p>${file.type.startsWith('image/') ? 'מזהה טקסט…' : 'קורא את הקובץ…'}</p>`);
@@ -280,13 +281,13 @@ async function save() {
   if (name !== ed.friend?.name && app.state.friends.some((f) => f.name === name) && !await askConfirm(`החבר ${name} כבר קיים. להחליף?`, { ok: 'החלף', cancel: 'ביטול' })) return;
   const err = ed.onSave({ name, groups: ed.draft.slice(), manual: true }, ed.friend?.name ?? null);
   if (err) { setErr('feErr', err); return; }
-  dlg.close();
+  closeEditor();
 }
 
 const ACT = {
   async cancel() {
     const dirty = $('feName').value.trim() !== (ed.friend?.name ?? '') || ed.draft.join() !== ed.start;
-    if (!dirty || await askConfirm('לסגור בלי לשמור?', { ok: 'סגור', cancel: 'המשך לערוך' })) dlg.close();
+    if (!dirty || await askConfirm('לסגור בלי לשמור?', { ok: 'סגור', cancel: 'המשך לערוך' })) closeEditor();
   },
   save,
   sheet(b) { const p = $('fePick'), open = p.dataset.open !== 'true'; p.dataset.open = String(open); b.setAttribute('aria-expanded', String(open)); },
@@ -330,10 +331,14 @@ dlg.addEventListener('keydown', (e) => {
   if (ed && blk && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); removeGroup(blk.dataset.gid); }
 });
 // Escape: ask first when something would be lost (a stray Escape while using the datalist is easy).
-dlg.addEventListener('cancel', (e) => { e.preventDefault(); if (ed) ACT.cancel(); });
-dlg.addEventListener('close', () => {
+// A file chooser's own cancel bubbles here: ignore it. Chrome lets a page stop Escape once per user activation; past that, let it close.
+dlg.addEventListener('cancel', (e) => { if (e.target !== dlg || !e.cancelable) return; e.preventDefault(); if (ed) ACT.cancel(); });
+// Cleanup runs right after close() (the close event is queued, and an Escape the page could not stop closes natively).
+function closeEditor() {
+  if (dlg.open) dlg.close();
   const id = ed?.returnFocusId;
   ed = null;
   dlg.innerHTML = '';
   (document.getElementById(id) ?? document.getElementById('week'))?.focus({ preventScroll: true });
-});
+}
+dlg.addEventListener('close', () => { if (ed) closeEditor(); });

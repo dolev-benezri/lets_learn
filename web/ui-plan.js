@@ -623,7 +623,8 @@ document.addEventListener('toggle', (e) => {
   if (k) e.target.open ? openDetails.add(k) : openDetails.delete(k);
 }, true);
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && $('drawer').open && !$('pop').matches(':popover-open') && !document.querySelector('dialog.dlg[open]')) { $('drawer').close(); return; }
+  if (document.querySelector('dialog:modal:not(#drawer)')) return; // a confirm or the friend editor is on top (focus may sit on <body>)
+  if (e.key === 'Escape' && $('drawer').open && !$('pop').matches(':popover-open')) { $('drawer').close(); return; }
   if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || !$('me').hidden || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   if (e.target.closest?.('input, textarea, select, [contenteditable]') || $('drawer').contains(e.target) || $('pop').matches(':popover-open')) return;
   e.preventDefault();
