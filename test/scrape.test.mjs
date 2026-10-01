@@ -86,6 +86,11 @@ test('semestersIn lists the semesters that have meetings, in site order', () => 
   assert.deepEqual(semestersIn(raw), ['א', 'ב']);
 });
 
+test('semestersIn leaves out summer: the app plans only א and ב, and a thin summer must not abort the run', () => {
+  const raw = { 1: { groups: [{ meetings: [{ semester: 'א' }, { semester: 'קיץ' }] }] } };
+  assert.deepEqual(semestersIn(raw), ['א']);
+});
+
 // ---- writing ----
 const ds = (n, full = false) => ({ fetchedAt: 'T', year: 2027, courses: { c: { groups: Array.from({ length: n }, (_, i) => ({ id: `g${i}`, full })) } } });
 const dirs = () => { const root = mkdtempSync(join(tmpdir(), 'afeka-')); return { status: join(root, 'status.json'), file: (k) => join(root, `${k}.json`) }; };

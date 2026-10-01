@@ -91,10 +91,11 @@ export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r)
   };
 }
 
-// Semesters that have at least one meeting in the scraped groups, in site order.
+// Semesters that have at least one meeting in the scraped groups, in site order. Summer is left out: the app plans
+// only א and ב, and a thin summer semester failing its checks would abort the whole all-or-nothing run.
 export function semestersIn(raw) {
   const seen = new Set(Object.values(raw).flatMap((r) => r.groups).flatMap((g) => g.meetings).map((m) => m.semester));
-  return Object.keys(SEMESTER_CODE).filter((s) => seen.has(s));
+  return ['א', 'ב'].filter((s) => seen.has(s));
 }
 
 const readJson = async (file) => { try { return JSON.parse(await readFile(file, 'utf8')); } catch { return null; } };
