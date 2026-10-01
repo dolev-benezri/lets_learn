@@ -165,3 +165,14 @@ test('hashOf: the inverse of routeOf, so a cancelled backup keeps the current pa
   for (const v of ['me', 'plan']) assert.equal(routeOf(hashOf(v)), v);
   assert.equal(hashOf(undefined), '');
 });
+
+test('normalize: blocks keep valid items, drop invalid ones individually, cap at 12', () => {
+  const ok = { day: 2, start: '18:00', end: '20:00', label: 'עבודה' };
+  const bad = [null, 'x', { ...ok, day: 0 }, { ...ok, day: 7 }, { ...ok, day: 1.5 }, { ...ok, start: '20:00' }, { ...ok, start: '06:30' }, { ...ok, end: '23:30' },
+    { ...ok, end: '9am' }, { ...ok, start: '25:00', end: '26:00' }, { ...ok, label: 'x'.repeat(31) }, { ...ok, label: 5 }, { ...ok, label: undefined }];
+  assert.deepEqual(normalize({ v: 1, constraints: { blocks: [...bad, ok, { ...ok, day: 6, label: '', extra: 1 }] } }).constraints.blocks, [ok, { ...ok, day: 6, label: '' }]);
+  assert.equal(normalize({ v: 1, constraints: { blocks: Array(15).fill(ok) } }).constraints.blocks.length, 12);
+  assert.deepEqual(normalize({ v: 1, constraints: { blocks: 'x' } }).constraints.blocks, []);
+  assert.deepEqual(normalize({ v: 1 }).constraints.blocks, []);
+  assert.equal(normalize({ v: 1, constraints: { blocks: [{ ...ok, start: '07:00', end: '23:00' }] } }).constraints.blocks.length, 1);
+});

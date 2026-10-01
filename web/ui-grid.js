@@ -166,11 +166,19 @@ function block({ cid, c, g }, m, from, cls, pinned, fr) {
     <span class="sr"> (${esc(cid)})</span></button>`;
 }
 
-// ctx: { data, res (or null), range, colors: Map cid->index, dashed: Set of repeat-colour cids, pins, friends (active), day (mobile) }
+// Personal busy time: a plain div (not a button), drawn first so lessons paint over it. The visible label is hidden from screen readers, which get the full phrase.
+function busyBlock(b, from) {
+  const label = b.label || 'זמן תפוס';
+  return `<div class="off" style="--s:${toMin(b.start) - from * 60};--d:${toMin(b.end) - toMin(b.start)}"><span class="off-l" aria-hidden="true">${esc(label)}</span>
+    <span class="sr">זמן תפוס: ${b.label ? `${esc(b.label)} ` : ''}${esc(b.start)}–${esc(b.end)}</span></div>`;
+}
+
+// ctx: { data, res (or null), range, colors: Map cid->index, dashed: Set of repeat-colour cids, pins, friends (active), day (mobile), blocks (busy time, optional) }
 export function renderWeek(ctx) {
-  const { data, res, range, colors, dashed, pins, friends, day } = ctx;
+  const { data, res, range, colors, dashed, pins, friends, day, blocks = [] } = ctx;
   const byId = groupIndex(data);
   const cols = Array.from({ length: range.days + 1 }, () => []);
+  for (const b of blocks) if (b.day >= 1 && b.day <= range.days) cols[b.day].push(busyBlock(b, range.from));
   for (const gid of res?.groups ?? []) {
     const x = byId.get(gid);
     if (!x) continue;

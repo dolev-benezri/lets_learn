@@ -1,6 +1,6 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, esc, upsertFriend, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
+import { app, esc, cleanBlocks, upsertFriend, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
 import { progress, setStatus, studyYear, cleanProfile, gradeAverage } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
@@ -257,7 +257,7 @@ function renderView() {
   const friends = state.friends.filter((f) => f.active);
   assignColors(colors, res?.courses ?? [], colorOrder());
   dashed = repeatIds(colors, res?.courses ?? []);
-  const range = hourRange(results.flatMap((r) => resGroups(r).flatMap((g) => groupIndex(app.data).get(g)?.g.meetings ?? []))); // both semesters, so the hours don't jump between tabs
+  const range = hourRange([...results.flatMap((r) => resGroups(r).flatMap((g) => groupIndex(app.data).get(g)?.g.meetings ?? [])), ...state.constraints.blocks]); // both semesters, so the hours don't jump between tabs; busy blocks always show
   if (mobileDay > range.days) mobileDay = 1;
   // Board header: scope and semester controls first, then the notices that hold for the whole plan (shown once, whichever tab is open).
   const note = (ic, t) => `<p class="notice">${icon(ic)}<span>${esc(t)}</span></p>`;
@@ -311,7 +311,7 @@ function renderView() {
     live = [`חלופה ${cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, last.partial && PARTIAL_TEXT].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
 
-  $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed, pins: state.pins, friends, day: mobileDay });
+  $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed, pins: state.pins, friends, day: mobileDay, blocks: state.constraints.blocks });
   $('daysel').innerHTML = renderDaySelector(range, res, data, mobileDay);
   if (live && live !== liveText) $('live').textContent = liveText = live;
   renderSide(raw);
@@ -342,6 +342,17 @@ function go(d) {
 }
 
 // ---------- drawer panels ----------
+const MAX_BLOCKS = 12;
+const blockRow = (b, i) => {
+  const when = `יום ${DAY_FULL[b.day]} ${b.start}–${b.end}`;
+  return `<div class="brow">
+    <label class="field">יום <select data-chg="blkDay" data-i="${i}" data-k="blk-${i}-day">${[1, 2, 3, 4, 5, 6].map((d) => `<option value="${d}"${d === b.day ? ' selected' : ''}>${DAYS[d]}׳</option>`).join('')}</select></label>
+    <label class="field">מ-<input type="time" data-chg="blkStart" data-i="${i}" data-k="blk-${i}-start" value="${b.start}"></label>
+    <label class="field">עד<input type="time" data-chg="blkEnd" data-i="${i}" data-k="blk-${i}-end" value="${b.end}"></label>
+    <label class="field col grow">תיאור (לא חובה)<input type="text" maxlength="30" data-chg="blkLabel" data-i="${i}" data-k="blk-${i}-label" value="${esc(b.label)}"></label>
+    <button type="button" class="btn" data-act="blkRemove" data-i="${i}" data-k="blk-rm-${i}" aria-label="הסר זמן תפוס: ${when}">הסר</button></div>`;
+};
+
 function prefsPanel() {
   const { state, data } = app, c = state.constraints, notes = defaultNotes(DEFAULT.constraints);
   const pinName = (p) => { const x = groupIndex(data).get(p); return x ? `${esc(x.c.name)} · ${esc(groupLabel(x.g))}` : esc(p); };
@@ -362,6 +373,10 @@ function prefsPanel() {
       <p class="hint">${esc(notes.hours)}</p>
       ${seg('winHard', 'עד כמה זה מחייב?', HARD, c.windowHard ? 'hard' : 'soft', 'data-chg="winHard"', true)}
       <p class="hint">${strictnessHint(c.windowHard)}</p></section>
+    <section class="dr-sec"><h3 id="busyH">זמן תפוס</h3>
+      <p class="hint">עבודה, אימון: החיפוש לא ישבץ שיעורים בזמנים האלה.</p>
+      <div role="group" aria-labelledby="busyH">${c.blocks.map(blockRow).join('')}</div>
+      ${c.blocks.length < MAX_BLOCKS ? `<button type="button" class="btn" data-act="blkAdd" data-k="blkAdd">+ הוסף זמן תפוס</button>` : ''}</section>
     <section class="dr-sec"><h3>עוד אפשרויות</h3>
       <label class="field">תקרת נ״ז <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="ללא" data-chg="maxCredits" data-k="maxCredits" value="${c.maxCredits ?? ''}"></label>
       <label class="check"><input type="checkbox" data-chg="examsAllow" data-k="examsAllow"${c.examsSameDay === 'allow' ? ' checked' : ''}> לאפשר 2 בחינות באותו יום</label>
@@ -369,7 +384,7 @@ function prefsPanel() {
     ${state.pins.length ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length} קבוצות נעוצות:</p><ul class="plain">${state.pins.map((p) => `<li>${pinName(p)}</li>`).join('')}</ul>
       <button type="button" class="btn" data-act="clearPins" data-k="clearPins">${icon('pin')} נקה נעיצות</button></section>` : ''}
     <section class="dr-sec"><button type="button" class="btn" data-act="resetPrefs" data-k="resetPrefs">איפוס העדפות</button>
-      <p class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות, תקרת הנ״ז, בחינות באותו יום וקבוצות מלאות לברירת המחדל. המצב האישי, הקורסים, הנעיצות והחברים לא משתנים.</p></section>
+      <p class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות, תקרת הנ״ז, בחינות באותו יום וקבוצות מלאות לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.</p></section>
     <footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
       <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`];
 }
@@ -519,11 +534,24 @@ const ACT = {
     c.dayOff = c.dayOff.includes(d) ? c.dayOff.filter((x) => x !== d) : [...c.dayOff, d];
     refresh();
   },
+  blkAdd() {
+    const bl = app.state.constraints.blocks;
+    if (bl.length >= MAX_BLOCKS) return;
+    bl.push({ day: 1, start: '18:00', end: '20:00', label: '' });
+    refresh();
+    $('drawer').querySelector(`[data-k="blk-${bl.length - 1}-day"]`)?.focus();
+  },
+  blkRemove(el) {
+    const bl = app.state.constraints.blocks, i = Number(el.dataset.i);
+    bl.splice(i, 1);
+    refresh();
+    ($('drawer').querySelector(`[data-k="blk-rm-${Math.min(i, bl.length - 1)}"]`) ?? $('drawer').querySelector('[data-k="blkAdd"]'))?.focus();
+  },
   clearPins() { app.state.pins = []; refresh(); },
   async resetPrefs() {
     if (!await askConfirm('לאפס את ההעדפות לברירת המחדל?', { ok: 'אפס', cancel: 'ביטול' })) return;
     app.state.weights = structuredClone(DEFAULT.weights);
-    app.state.constraints = structuredClone(DEFAULT.constraints);
+    app.state.constraints = { ...structuredClone(DEFAULT.constraints), blocks: app.state.constraints.blocks }; // busy time is a fact about the week, like pins and friends
     app.state.scope = DEFAULT.scope;
     app.state.load = DEFAULT.load;
     refresh();
@@ -533,6 +561,11 @@ const ACT = {
 
 // Text-like inputs only save + re-run (re-rendering them mid-typing would reset the caret).
 const time = (v) => (/^\d{2}:\d{2}$/.test(v) ? v : '');
+// An invalid edit (end not after start, empty time) is not stored; the re-render puts the old value back.
+const blockEdit = (el, k, v) => {
+  const b = app.state.constraints.blocks[el.dataset.i];
+  if (cleanBlocks([{ ...b, [k]: v }]).length) b[k] = v;
+};
 const CHG = {
   mode: (el) => {
     const id = el.dataset.id;
@@ -568,6 +601,10 @@ const CHG = {
   notBefore: (el) => { app.state.constraints.notBefore = time(el.value); return 'quiet'; },
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
   maxCredits: (el) => { const n = parseFloat(el.value); app.state.constraints.maxCredits = Number.isFinite(n) && n >= 0 ? n : null; return 'quiet'; },
+  blkDay: (el) => blockEdit(el, 'day', Number(el.value)),
+  blkStart: (el) => blockEdit(el, 'start', el.value),
+  blkEnd: (el) => blockEdit(el, 'end', el.value),
+  blkLabel: (el) => { app.state.constraints.blocks[el.dataset.i].label = el.value.slice(0, 30); save(); return 'view'; }, // the label never changes the search
   myName: (el) => { app.state.name = el.value.trim().slice(0, 60); return 'quiet'; },
 };
 

@@ -134,3 +134,15 @@ test('a backup link carries grades', async () => {
   const r = await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' });
   assert.deepEqual(r.payload.grades, { a: 90 });
 });
+
+test('backup keeps blocks through normalize; friend link never carries them', async () => {
+  const { normalize } = await import('../web/app.js');
+  const at = { year: 2027, semester: 'א' };
+  const blocks = [{ day: 1, start: '18:00', end: '20:00', label: 'עבודה' }];
+  const s = { ...state, constraints: { blocks } };
+  const b = await backupLink('https://x.test/', s);
+  assert.deepEqual(normalize((await readHash(b.slice(b.indexOf('#')), at)).payload).constraints.blocks, blocks);
+  assert.ok(!JSON.stringify(friendPayload(s, ['G1'])).includes('blocks'));
+  const f = await friendLink('https://x.test/', s, ['G1']);
+  assert.ok(!JSON.stringify((await readHash(f.slice(f.indexOf('#')), at)).payload).includes('blocks'));
+});
