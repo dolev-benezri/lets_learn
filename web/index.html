@@ -87,7 +87,9 @@ a { color:var(--primary); }
 .stack .av + .av { margin-inline-start:-6px; }
 .stack .av.plus { background:var(--primary-soft); color:var(--primary); box-shadow:none; }
 .stack .av.plus .icon { width:14px; height:14px; }
-.disclaimer { padding:6px 24px 0; font-size:13px; color:var(--text-3); }
+.site-foot { margin: 32px auto 0; padding: 16px; max-width: 72ch; text-align: center; font-size: var(--fs-sm); color: var(--text-2); border-top: 1px solid var(--border); }
+.site-foot a { display: inline-block; padding: 12px 4px; color: var(--primary); }
+@media (max-width:599px) { .site-foot { padding-bottom: calc(var(--bar-h) + 16px); } }
 
 /* layout: one column (grid first, then the sidebar) up to 1099px; from 1100px the sidebar is the first column,
    which in RTL is the right one. DOM order is main, then aside, so keyboard users reach the grid before 38 sidebar controls. */
@@ -304,7 +306,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .course .seg span { min-height:38px; font-size:var(--fs-sm); } /* 44px with the label padding, also on desktop */
 .seg label { min-width:var(--tap); }
 .course h3, .locked li { font-size:var(--fs); }
-.hint, aside > .hint, .reason, .locked p, .pill-info, .pill, .busy, .year h3 span, .disclaimer, .meta { font-size:var(--fs-sm); }
+.hint, aside > .hint, .reason, .locked p, .pill-info, .pill, .busy, .year h3 span, .meta { font-size:var(--fs-sm); }
 .cr, .tag { font-size:13px; }
 .warnbox, .notice { border-radius:var(--radius); }
 .skip { border-radius:var(--radius); }
@@ -315,7 +317,6 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .top h1 { font-size:18px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .meta { min-width:0; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .switcher { padding:2px; }
-.disclaimer { padding:6px 24px 0; }
 
 /* tablet and below: icon-only actions */
 @media (max-width:1079px) {
@@ -323,7 +324,6 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .actions { gap:4px; }
   .actions .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   .actions .btn:not(.avatars) { width:var(--tap); padding:0; }
-  .disclaimer { padding:6px 16px 0; }
 }
 /* the docked drawer takes up to 440px: below 1500 the bar is tablet-narrow, so actions go icon-only and the title keeps room */
 @media (min-width:1080px) and (max-width:1499px) {
@@ -430,10 +430,8 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .wel-foot .progress-top { flex:none; margin:0; gap:12px; font-size:14px; }
 .wel-foot .bar { flex:1; min-width:60px; }
 .year:first-of-type h3 { margin-top:12px; }
-/* header: one data line, smaller disclaimer */
+/* header: one data line */
 .meta { font-size:12px; }
-.disclaimer { padding:3px 24px 0; font-size:12px; line-height:1.4; }
-@media (max-width:899px) { .disclaimer { padding:3px 16px 0; } }
 @media (max-width:599px) {
   .welcome { max-height:clamp(230px, 34vh, 300px); }
   @supports (height:1dvh) { .welcome { max-height:clamp(230px, 34dvh, 300px); } }
@@ -499,7 +497,6 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
     <button type="button" class="btn primary" data-act="share" data-icon="share"><span class="lbl">שתף</span></button>
   </div>
 </header>
-<p class="disclaimer">כלי עזר לא רשמי, בלי שום אחריות. הנתונים עלולים להיות שגויים, וההרשמה באפקה-נט היא הקובעת. <a href="https://github.com/dolhack/lets_learn/blob/main/TERMS.md" target="_blank" rel="noopener">תנאי שימוש</a></p>
 <div class="layout">
   <main>
     <div id="banner"></div>
@@ -517,6 +514,10 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
   <aside id="side" aria-label="הקורסים שלי"></aside>
 </div>
 <div class="scrim" data-act="closeDrawer" aria-hidden="true"></div>
+<footer class="site-foot">
+  <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.</p>
+  <p><a href="https://github.com/dolhack/lets_learn/blob/main/TERMS.md" target="_blank" rel="noopener">תנאי שימוש ופרטיות</a> · <a href="https://github.com/dolhack/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a></p>
+</footer>
 <dialog id="drawer" class="drawer" aria-labelledby="drawerTitle"></dialog>
 <div id="pop" class="pop" popover role="dialog"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
