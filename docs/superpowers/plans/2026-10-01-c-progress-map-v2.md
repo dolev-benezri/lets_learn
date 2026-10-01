@@ -14,7 +14,7 @@
 - one SVG with pan/zoom through `viewBox`;
 - a side card.
 
-No physics engine and no dependency. A deterministic layout keeps positions stable between visits.
+No physics engine. A deterministic layout keeps positions stable between visits. **Owner rule (2026-10-01): don't reinvent.** Pan, zoom and pinch come from an existing library loaded from cdnjs/jsdelivr (`@panzoom/panzoom` or anvaka `panzoom`: pick the one that handles SVG + two-finger pinch + an ESM build). Don't hand-write pointer/pinch code. The layout stays our tested `layoutMap`.
 
 **Tech Stack:** SVG + plain ES modules, `node --test`.
 
