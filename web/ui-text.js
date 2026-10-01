@@ -18,6 +18,15 @@ export function gradeInput(raw, prev) {
   return Number.isInteger(v) && v >= 0 && v <= 100 ? v : prev;
 }
 
+// "X מתוך Y נ״ז הנדרשים עד סוף שנה Z׳": the credits owed from the years before the study year (rules.js progress).
+export const creditsGoal = (earned, required, year) => (year > 1 ? `${earned} מתוך ${required} נ״ז הנדרשים עד סוף שנה ${D[year - 1]}׳` : 'בשנה א׳ אין עדיין יעד נ״ז');
+
+// Why a wanted course is missing from a found plan: the diagnosis lines that name it, else the general ones (naming no course at all).
+export function notFitReason(name, diagnosis, names) {
+  const own = diagnosis.filter((l) => l.includes(name));
+  return (own.length ? own : diagnosis.filter((l) => !names.some((n) => l.includes(n)))).join('; ');
+}
+
 export const friendToast = (name, updated) => `${updated ? 'החבר עודכן' : 'החבר נוסף'}: ${name}`;
 
 export const strictnessHint = (hard) => (hard ? 'מערכת שמפרה את זה לא תוצג.' : 'המערכת תעדיף את זה, אבל לא תפסול בגללו.');

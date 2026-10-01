@@ -3,7 +3,10 @@ const YEAR_LETTERS = { 'א': 1, 'ב': 2, 'ג': 3, 'ד': 4 };
 
 // Afeka english clearance (checked 2026-10-01): Amirnet 85/100/120/134 exempts the first 1/2/3/4 courses; exemption gives no credits.
 const ENGLISH = ['6000', '6001', '6002', '6003'];
-export const amirnetExempt = (score) => (Number.isFinite(score) ? ENGLISH.slice(0, [85, 100, 120, 134].filter((t) => score >= t).length) : []);
+const AMIRNET = [85, 100, 120, 134];
+export const amirnetExempt = (score) => (Number.isFinite(score) ? ENGLISH.slice(0, AMIRNET.filter((t) => score >= t).length) : []);
+// The English levels in the data, each with the Amirnet score that exempts it (and the levels below it).
+export const englishOptions = (data, score) => ENGLISH.map((id, i) => ({ id, name: data.courses[id]?.name, min: AMIRNET[i], exempt: amirnetExempt(score).includes(id) })).filter((e) => e.name);
 
 // Personal profile: integers in range, else null (state, backup links and the form share this).
 const int = (x, lo, hi) => (Number.isInteger(x) && x >= lo && x <= hi ? x : null);

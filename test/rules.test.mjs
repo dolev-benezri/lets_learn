@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor, gradeAverage } from '../web/rules.js';
+import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor, gradeAverage, englishOptions } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
@@ -191,4 +191,10 @@ test('gradeAverage weights by credits and ignores ungraded or not-passed courses
   const r = gradeAverage(data, { passed: ['a', 'b'], grades: { a: 90, b: 60, c: 100 } });
   assert.equal(r.avg, 80); assert.equal(r.credits, 6);
   assert.equal(gradeAverage(data, { passed: [], grades: {} }).avg, null);
+});
+
+test('englishOptions: levels in the data with their exempting score, exempt flag from the Amirnet score', () => {
+  const data = { courses: { 6000: { name: 'א' }, 6001: { name: 'ב' }, 6003: { name: 'ד' } } }; // levels missing from the data are skipped
+  assert.deepEqual(englishOptions(data, 100), [{ id: '6000', name: 'א', min: 85, exempt: true }, { id: '6001', name: 'ב', min: 100, exempt: true }, { id: '6003', name: 'ד', min: 134, exempt: false }]);
+  assert.deepEqual(englishOptions(data, null).map((e) => e.exempt), [false, false, false]);
 });

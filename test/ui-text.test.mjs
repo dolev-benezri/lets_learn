@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -77,4 +77,17 @@ test('gradeInput: valid kept, empty clears, invalid keeps the previous grade', (
   assert.equal(gradeInput('', 90), undefined);
   for (const bad of ['900', '-1', '8.5', 'x']) assert.equal(gradeInput(bad, 90), 90);
   assert.equal(gradeInput('900', undefined), undefined);
+});
+
+test('creditsGoal: credits owed by the end of the previous year; year א׳ has no goal', () => {
+  assert.equal(creditsGoal(41, 41, 2), '41 מתוך 41 נ״ז הנדרשים עד סוף שנה א׳');
+  assert.equal(creditsGoal(30, 83, 3), '30 מתוך 83 נ״ז הנדרשים עד סוף שנה ב׳');
+  assert.equal(creditsGoal(0, 0, 1), 'בשנה א׳ אין עדיין יעד נ״ז');
+});
+
+test('notFitReason: lines naming the course, else the general ones, else nothing', () => {
+  const names = ['פיזיקה', 'לינארית'];
+  assert.equal(notFitReason('פיזיקה', ['פיזיקה: אין קבוצה', 'לינארית: אין קבוצה'], names), 'פיזיקה: אין קבוצה');
+  assert.equal(notFitReason('לינארית', ['אין מערכת שעומדת בכל האילוצים'], names), 'אין מערכת שעומדת בכל האילוצים');
+  assert.equal(notFitReason('לינארית', ['פיזיקה: אין קבוצה'], names), '');
 });
