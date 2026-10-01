@@ -120,24 +120,28 @@ test('sameLayerPath: a bowed cubic between two nodes of one column (edgePath wou
   assert.equal(d, `M220,10 C${220 + G.bulge},10 ${214 + G.bulge},110 214,110`);
 });
 
-test('fitScale: whole width on a desktop (never above 1), a readable 0.7 on a phone', () => {
-  assert.equal(fitScale(1440, 976), 1); assert.ok(Math.abs(fitScale(800, 1000) - 0.8) < 1e-9); assert.equal(fitScale(375, 976), 0.7);
+test('fitScale: the whole graph on a desktop (never above 1), by height on a phone (floor 0.3)', () => {
+  assert.equal(fitScale(1440, 900, 976, 1000), 0.9); assert.equal(fitScale(1440, 2000, 976, 1000), 1);
+  assert.ok(Math.abs(fitScale(800, 900, 1000, 1000) - 0.8) < 1e-9); assert.equal(fitScale(700, 100, 1000, 1000), 0.2);
+  assert.ok(Math.abs(fitScale(375, 500, 976, 1100) - 500 / 1100) < 1e-9); assert.equal(fitScale(375, 200, 976, 1100), 0.3);
 });
 
-test('geometry: finite coordinates, layer 0 on the right, nodes inside their lane and the canvas, no two circles overlap', () => {
+test('geometry: one evenly spread column per layer, same height for all, layer 0 on the right, no overlaps, Tab order by layer', () => {
   const { L, g } = geo();
   const ok = (v) => Number.isFinite(v);
   assert.ok(g.nodes.every((n) => [n.x, n.y, n.r, n.hw].every(ok)) && g.ors.every((o) => [o.x, o.y].every(ok)));
   assert.ok(g.edges.length === L.paths.length && g.edges.every((e) => /^M[-\d.]+,[-\d.]+ C/.test(e.d) && !/NaN|undefined/.test(e.d)));
-  for (const n of g.nodes) {
-    const l = g.lanes.find((x) => x.i === n.lane);
-    assert.ok(n.x - n.hw >= 0 && n.x + n.hw <= g.W && n.y - n.r >= l.y && n.y + n.r + 22 <= l.y + l.h, n.key); // 22 = the name under the circle
-  }
+  assert.ok(g.H < 1500 && g.nodes.every((n) => n.x - n.hw >= 0 && n.x + n.hw <= g.W && n.y - n.r >= 0 && n.y + n.r + 22 <= g.H), `H=${g.H}`); // 22 = the name under the circle
   const at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
-  for (const e of L.edges) if (at[e.from] && at[e.to] && at[e.from].layer < at[e.to].layer) assert.ok(at[e.from].x > at[e.to].x);
+  for (const e of L.edges) assert.ok(e.kind === 'קדם' ? at[e.from].x > at[e.to].x : at[e.from].x >= at[e.to].x, `${e.from} -> ${e.to}`); // balancing keeps every edge flowing leftwards
+  const per = Object.values(Object.groupBy(g.nodes, (n) => n.layer)).map((a) => a.length);
+  assert.ok(Math.max(...per) - Math.min(...per) <= 2, `columns ${per}`);
+  assert.equal(Math.max(...g.nodes.map((n) => n.x)), g.W - G.padX); // layer 0 is the rightmost column
   const all = [...g.nodes, ...g.ors];
   for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r, `${all[i].key} / ${all[j].key}`);
-  assert.deepEqual(g.nodes.map((n) => n.layer), [...g.nodes.map((n) => n.layer)].sort((a, b) => a - b)); // DOM and Tab order: layers first
+  assert.deepEqual(g.nodes.map((n) => n.layer), [...g.nodes.map((n) => n.layer)].sort((a, b) => a - b));
+  const tall = new Map(); g.nodes.forEach((n) => tall.set(n.layer, [...(tall.get(n.layer) ?? []), n.y]));
+  for (const ys of tall.values()) for (let i = 1; i < ys.length; i++) assert.ok(ys[i] - ys[i - 1] >= G.row - 1e-6); // evenly spread, never closer than a row
 });
 
 test('geometry: a same-layer מקביל edge is bowed, not a straight line through the column', () => {
@@ -157,7 +161,7 @@ test('mapSvg: one button per course in Tab order, labelled and titled; ext pills
   assert.equal((html.match(/<title>/g) ?? []).length, g.nodes.length);
   assert.ok(!html.includes('<img') && html.includes('&lt;img'));
   assert.ok(!/NaN|undefined/.test(html));
-  assert.ok(html.includes('class="ml mine"') && !html.includes('class="ml me"'));
+  assert.ok(!html.includes('class="ml') && html.includes('mine-halo') && html.includes(' mine"'));
   assert.ok(html.includes('class="ext"') && html.includes('class="or"'));
   assert.ok([...html.matchAll(/<g class="(?:ext|or)"[^>]*>/g)].every(([m]) => m.includes('aria-hidden="true"') && !m.includes('role=')));
   for (const s of ['done', 'retake', 'blocked']) if (Object.values(st).some((x) => x.status === s)) assert.ok(html.includes(`st-${s}`));

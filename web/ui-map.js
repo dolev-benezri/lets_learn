@@ -177,23 +177,43 @@ export function chainOf(paths, key) {
 
 
 // ---------- neural-style geometry (pure) ----------
-// The renderer keeps layoutMap's layers, lanes and rows but re-spaces them for round nodes with a label underneath.
-export const G = { pitch: 164, row: 96, head: 32, padX: 78, padY: 16, laneGap: 6, orR: 11, orDx: 76, extHW: 66, extR: 11, cy: 40, bulge: 44 };
+// One evenly spread layer per column: layoutMap's layers and its (lane, row) order (crossing reduction, years grouped), but no lane stacking.
+export const G = { pitch: 164, row: 72, padX: 78, padY: 20, orR: 11, orDx: 76, extHW: 66, extR: 11, bulge: 44 };
 export const truncate = (s, n = 18) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 // Edge leaves the near side of one circle and enters the near side of the next (flow runs right to left in RTL).
 export const edgeEnds = (a, b) => { const d = b.x < a.x ? -1 : 1; return [{ x: a.x + d * a.hw, y: a.y }, { x: b.x - d * b.hw, y: b.y }]; };
 // Two nodes in one column (a same-layer `מקביל`): edgePath would be a straight line through the column, so bow out to the right.
 export const sameLayerPath = (a, b) => { const x1 = a.x + a.hw, x2 = b.x + b.hw; return `M${x1},${a.y} C${x1 + G.bulge},${a.y} ${x2 + G.bulge},${b.y} ${x2},${b.y}`; };
 
-export function geometry(L, creditsOf = () => 0) {
-  const W = G.padX * 2 + (L.cols - 1) * G.pitch, lanes = [], top = new Map();
-  let y = G.padY;
-  for (const l of L.lanes) { const h = G.head + l.rows * G.row + 10; lanes.push({ ...l, y, h }); top.set(l.i, y + G.head); y += h + G.laneGap; }
-  const H = y - G.laneGap + G.padY, pos = new Map();
-  for (const n of L.nodes) {
-    const ext = n.type === 'ext', r = ext ? G.extR : nodeRadius(creditsOf(n.id));
-    pos.set(n.key, { ...n, x: W - G.padX - n.layer * G.pitch, y: top.get(n.lane) + n.row * G.row + G.cy, r, hw: ext ? G.extHW : r });
+// Columns are levelled: a node with slack (no edges, or only leaves) moves to a shorter neighbouring column as long as every
+// `קדם` edge still goes to a strictly higher layer and every `מקביל` to the same or a higher one. Pure, terminates (sum of squares falls).
+export function balance(L) {
+  const layer = new Map(L.nodes.map((n) => [n.key, n.layer])), top = L.cols - 1, w = (e) => (e.kind === 'קדם' ? 1 : 0);
+  const order = [...L.nodes].sort((a, b) => a.lane - b.lane || a.row - b.row).map((n) => n.key);
+  const range = (k) => { let lo = 0, hi = top; for (const e of L.edges) { if (e.to === k) lo = Math.max(lo, layer.get(e.from) + w(e)); if (e.from === k) hi = Math.min(hi, layer.get(e.to) - w(e)); } return [lo, hi]; };
+  for (let guard = 0; guard < 1000; guard++) {
+    const cnt = Array.from({ length: top + 1 }, () => 0);
+    layer.forEach((l) => cnt[l]++);
+    const tall = cnt.indexOf(Math.max(...cnt));
+    let moved = false;
+    for (const k of [...order].reverse().filter((x) => layer.get(x) === tall)) {
+      const [lo, hi] = range(k);
+      const to = cnt.map((c, i) => [c, Math.abs(i - tall), i]).filter(([c, , i]) => i >= lo && i <= hi && c <= cnt[tall] - 2).sort((a, b) => a[1] - b[1] || a[0] - b[0])[0];
+      if (to) { layer.set(k, to[2]); moved = true; break; }
+    }
+    if (!moved) break;
   }
+  return layer;
+}
+
+export function geometry(L, creditsOf = () => 0) {
+  const cols = new Map(), lay = balance(L);
+  for (const n of [...L.nodes].sort((a, b) => a.lane - b.lane || a.row - b.row)) (cols.get(lay.get(n.key)) ?? cols.set(lay.get(n.key), []).get(lay.get(n.key))).push(n);
+  const W = G.padX * 2 + (L.cols - 1) * G.pitch, H = Math.max(1, ...[...cols.values()].map((c) => c.length)) * G.row + 2 * G.padY, pos = new Map();
+  for (const col of cols.values()) col.forEach((n, i) => {
+    const ext = n.type === 'ext', r = ext ? G.extR : nodeRadius(creditsOf(n.id));
+    pos.set(n.key, { ...n, layer: lay.get(n.key), x: W - G.padX - lay.get(n.key) * G.pitch, y: G.padY + (i + 0.5) * ((H - 2 * G.padY) / col.length), r, hw: ext ? G.extHW : r });
+  });
   const seen = new Map(), ors = L.diamonds.map((d) => {
     const t = pos.get(d.target), n = L.diamonds.filter((x) => x.target === d.target).length, j = seen.get(d.target) ?? 0;
     seen.set(d.target, j + 1);
@@ -205,8 +225,8 @@ export function geometry(L, creditsOf = () => 0) {
     const [s, e] = edgeEnds(a, b);
     return { id: p.id, from: p.from, to: p.to, kind: p.kind, d: a.layer !== undefined && a.layer === b.layer ? sameLayerPath(a, b) : edgePath(s, e) };
   });
-  const nodes = [...pos.values()].filter((n) => n.type !== 'or').sort((a, b) => a.layer - b.layer || a.lane - b.lane || a.row - b.row); // Tab order: layers right to left, then lane and row
-  return { W, H, lanes, nodes, ors, edges };
+  const nodes = [...pos.values()].filter((n) => n.type !== 'or').sort((a, b) => a.layer - b.layer || a.y - b.y); // Tab order: layers right to left, then top to bottom
+  return { W, H, nodes, ors, edges };
 }
 
 // ---------- text helpers ----------
@@ -253,20 +273,20 @@ function nodeSvg(c, n) {
     return `<g class="ext" data-key="${esc(n.key)}" aria-hidden="true"><title>${esc(t)}</title><rect x="${x - n.hw}" y="${y - n.r}" width="${2 * n.hw}" height="${2 * n.r}" rx="${n.r}"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central">${esc(truncate(n.name, 20))}</text></g>`;
   }
   const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, lbl = nodeLabel(c, n.id), bw = o > 9 ? 52 : 46;
-  return `<g class="nd st-${s}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}" aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
-    <circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring" cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
+  const mine = c.year && c.L.lanes.find((l) => l.i === n.lane)?.year === c.year; // the student's study year: soft halo, also named in the card
+  return `<g class="nd st-${s}${mine ? ' mine' : ''}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}" aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
+    ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}<circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring" cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
     <text class="nm" x="${x}" y="${num(y + n.r + 16)}" text-anchor="middle">${esc(truncate(co.name))}</text>${o ? `<g class="opens" aria-hidden="true"><rect x="${num(x - n.r * 0.8 - bw / 2)}" y="${num(y - n.r * 0.85 - 8)}" width="${bw}" height="16" rx="8"/><text x="${num(x - n.r * 0.8)}" y="${num(y - n.r * 0.85)}" text-anchor="middle" dominant-baseline="central">פותח ${o}</text></g>` : ''}</g>`;
 }
 
 export function mapSvg(c) {
   const g = c.g;
-  const lanes = g.lanes.map((l) => `<g class="ml${l.year === c.year ? ' mine' : ''}"><rect x="0" y="${l.y}" width="${g.W}" height="${l.h}"/><text x="${g.W - 14}" y="${l.y + 21}" text-anchor="start">${esc(l.name)}${l.year === c.year ? ' · השנה שלך' : ''}</text></g>`).join('');
   const edges = g.edges.map((p) => `<path class="e ${p.kind === 'מקביל' ? 'p' : 'k'}" data-p="${p.id}" d="${p.d}"/>`).join('');
   const ors = g.ors.map((o) => `<g class="or" data-key="${esc(o.key)}" aria-hidden="true"><circle cx="${num(o.x)}" cy="${num(o.y)}" r="${o.r}"/><text x="${num(o.x)}" y="${num(o.y)}" text-anchor="middle" dominant-baseline="central">או</text></g>`).join('');
   return `<svg class="pm-svg" width="100%" height="100%" role="group" aria-label="מפת הקורסים"><defs>
     <marker id="pmArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar"/></marker>
     <marker id="pmArrL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar lit"/></marker></defs>
-    <g class="pz"><g class="lanes" aria-hidden="true">${lanes}</g><g class="edges" aria-hidden="true">${edges}</g><g class="ors">${ors}</g><g class="nodes">${g.nodes.map((n) => nodeSvg(c, n)).join('')}</g></g></svg>`;
+    <g class="pz"><g class="edges" aria-hidden="true">${edges}</g><g class="ors">${ors}</g><g class="nodes">${g.nodes.map((n) => nodeSvg(c, n)).join('')}</g></g></svg>`;
 }
 
 const legendSw = (s) => `<svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="nd st-${s}"><circle class="ring" cx="13" cy="13" r="10"/>${glyph(s, 13, 13, 10)}</g></svg>`;
@@ -285,8 +305,9 @@ function listHtml(c) {
 
 function cardHtml(c, id) {
   const co = c.data.courses[id], s = statusOf(c, id), req = requires(c.data, id), opens = opensDirect(c.data, id), r = c.st[id]?.reasons ?? [];
+  const yr = c.L.lanes.find((l) => l.i === c.L.nodes.find((n) => n.key === id)?.lane)?.year;
   return `<div class="card-top"><span class="chip st-${s}">${LABEL[s]}</span><button type="button" class="pm-ibtn" data-pm="clear" data-k="pm-clear" aria-label="סגור את כרטיס הקורס">${icon('x')}</button></div>
-    <h3>${esc(co.name)}</h3><p class="card-meta"><bdi>${esc(id)}</bdi> · <bdi>${co.credits}</bdi> נ״ז</p>
+    <h3>${esc(co.name)}</h3><p class="card-meta"><bdi>${esc(id)}</bdi> · <bdi>${co.credits}</bdi> נ״ז${yr ? ` · שנה ${YEAR_LETTERS[yr - 1]}׳` : ''}</p>
     ${r.length ? `<p class="card-why">${r.map(esc).join('<br>')}</p>` : ''}
     ${req.length ? `<h4>דורש</h4><ul>${req.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p class="card-meta">אין קדם.</p>'}
     ${opens.length ? `<h4>פותח${c.unlocks[id] > opens.length ? ` (בסך הכל ${c.unlocks[id]})` : ''}</h4><ul>${opens.slice(0, 8).map((k) => `<li>${esc(c.data.courses[k].name)}</li>`).join('')}${opens.length > 8 ? `<li>ועוד ${opens.length - 8}</li>` : ''}</ul>` : ''}
@@ -303,9 +324,8 @@ let pzLib = null;
 // Lazy so node tests (which import this file) never touch the network; a failed or slow load falls back to the list view.
 const loadPanzoom = () => (pzLib ??= Promise.race([import(PZ_URL).then((m) => m.default), new Promise((_, no) => setTimeout(no, 8000, new Error('timeout')))]).catch((e) => { pzLib = null; throw e; }));
 
-// Opening scale: the whole width on a desktop; on a phone a readable scale (about three columns) pinned to layer 0 on the right.
-// ponytail: the full graph is ~4000px tall, so "whole graph on screen" would be ~0.2x and unreadable; the fit button returns to this view.
-export const fitScale = (vw, W) => (vw >= 600 ? Math.min(1, vw / W) : 0.7);
+// Opening scale: the whole graph on a desktop; on a phone fit by height (floor 0.3), pinned to layer 0 on the right, one finger pans.
+export const fitScale = (vw, vh, W, H) => (vw >= 600 ? Math.max(0.2, Math.min(1, vw / W, vh / H)) : Math.max(0.3, Math.min(1, vh / H)));
 
 function ctxOf(mode) {
   const { data, state, cls } = app, st = cls.statuses;
@@ -347,7 +367,7 @@ function render() {
       <div class="pm-tools"><button type="button" class="pm-btn" data-pm="view" data-k="pm-view">${map ? ICONS.list : ICONS.map} ${map ? 'תצוגת רשימה' : 'תצוגת מפה'}</button>
       ${map ? `<div class="pm-zoom" role="group" aria-label="זום">${zbtn('zin', 'הגדל', icon('plus'))}${zbtn('zout', 'הקטן', ICONS.minus)}${zbtn('fit', 'התאם את המפה למסך', ICONS.fit)}</div>` : ''}</div></div>
     ${map ? `<details class="pm-legend"${matchMedia('(max-width: 700px), (max-height: 1000px)').matches ? '' : ' open'}><summary>מקרא</summary><div class="lg">${LEGEND.map(([k, t]) => `<span class="lg-i">${legendSw(k)}${t}</span>`).join('')}
-      <span class="lg-i">${legendEdge('k')}קדם</span><span class="lg-i">${legendEdge('p')}מקביל (יחד עם)</span>
+      <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="nd st-available mine"><circle class="mine-halo" cx="13" cy="13" r="12"/><circle class="ring" cx="13" cy="13" r="8"/></g></svg>השנה שלך</span><span class="lg-i">${legendEdge('k')}קדם</span><span class="lg-i">${legendEdge('p')}מקביל (יחד עם)</span>
       <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="or"><circle cx="13" cy="13" r="10"/><text x="13" y="13" text-anchor="middle" dominant-baseline="central">או</text></g></svg>אחד מהם מספיק</span>
       <span class="lg-i"><svg width="44" height="22" viewBox="0 0 44 22" aria-hidden="true"><g class="ext"><rect x="1" y="2" width="42" height="18" rx="9"/></g></svg>מחוץ לתוכנית</span>
       <span class="lg-i"><svg width="52" height="20" viewBox="0 0 52 20" aria-hidden="true"><g class="opens"><rect x="2" y="2" width="48" height="16" rx="8"/><text x="26" y="10" text-anchor="middle" dominant-baseline="central">פותח 3</text></g></svg>כמה קורסים הוא פותח</span></div></details>` : ''}
@@ -377,9 +397,9 @@ async function mount() {
     return;
   }
   if (tok !== M.tok || !dlg.open) return;
-  const root = q('.pm-svg'), g = q('.pz'), { W } = M.c.g;
+  const root = q('.pm-svg'), g = q('.pz'), { W, H } = M.c.g;
   // no preventDefault on pointerdown (the default handler does it): node clicks and focus must still work
-  const pz = M.pz = Panzoom(g, { canvas: true, origin: '0 0', cursor: 'grab', minScale: 0.15, maxScale: 2.5, handleStartEvent: () => {} });
+  const pz = M.pz = Panzoom(g, { canvas: true, origin: '0 0', cursor: 'grab', minScale: 0.2, maxScale: 2.5, handleStartEvent: () => {} });
   const ends = () => { const s = pz.getScale(), o = pz.getOptions(); q('[data-pm="zin"]').disabled = s >= o.maxScale - 0.01; q('[data-pm="zout"]').disabled = s <= o.minScale + 0.01; };
   g.addEventListener('panzoomchange', ends);
   root.addEventListener('wheel', (e) => {
@@ -389,9 +409,9 @@ async function mount() {
   }, { passive: false });
   root.addEventListener('pointerdown', (e) => { M.down = { x: e.clientX, y: e.clientY }; });
   M.fit = () => {
-    const r = root.getBoundingClientRect(), s = fitScale(r.width, W), w = W * s;
+    const r = root.getBoundingClientRect(), s = fitScale(r.width, r.height, W, H), w = W * s, h = H * s;
     pz.zoom(s, { animate: false, force: true });
-    pz.pan((w <= r.width ? (r.width - w) / 2 : r.width - w) / s, 0, { animate: false, force: true }); // narrow: layer 0 (right) in view
+    pz.pan((w <= r.width ? (r.width - w) / 2 : r.width - w) / s, (h <= r.height ? (r.height - h) / 2 : 0) / s, { animate: false, force: true }); // too wide: layer 0 (right) in view
     ends();
   };
   setTimeout(() => { if (tok === M.tok) { M.fit(); root.classList.add('ready'); } }); // after Panzoom's own start-position timeout
