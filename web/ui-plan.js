@@ -563,6 +563,7 @@ const ACT = {
     refresh();
     toast(friendToast(name, r.replaced || !!was));
     keepFocus(renderDrawer);
+    $('openManualFriend')?.focus();
   },
   mfCancel() { mfName = ''; mfCourses = []; mfGroups = {}; mfKeep = []; mfEditName = null; mfCourseErr = ''; keepFocus(renderDrawer); $('openManualFriend')?.focus(); },
   dayOff(el) {

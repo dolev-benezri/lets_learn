@@ -312,7 +312,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 /* sticky top bar: one row, --bar-h tall, at every width */
 .top { position:sticky; top:0; z-index:5; height:var(--bar-h); padding:0 24px; align-content:center; row-gap:0;
   grid-template-columns:minmax(0, 1fr) auto auto; grid-template-areas:"title switch actions" "meta switch actions"; }
-.top h1 { font-size:18px; line-height:1.25; white-space:normal; overflow-wrap:anywhere; }
+.top h1 { font-size:18px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .meta { min-width:0; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .switcher { padding:2px; }
 .disclaimer { padding:6px 24px 0; }
@@ -324,6 +324,14 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .actions .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   .actions .btn:not(.avatars) { width:var(--tap); padding:0; }
   .disclaimer { padding:6px 16px 0; }
+}
+/* docked drawer takes 440px: below 1500 the bar is tablet-narrow, so actions go icon-only and the title keeps room */
+@media (min-width:900px) and (max-width:1499px) {
+  body.drawer-open .actions .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  body.drawer-open .actions .btn:not(.avatars) { width:var(--tap); padding:0; }
+  body.drawer-open .top .meta { display:none; }
+  body.drawer-open .top h1 { grid-row:1 / 3; white-space:normal; }
+  body.drawer-open .top h1 small { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 }
 /* below 760px a 5-day week gets too narrow to read: one day at a time with a day selector */
 @media (max-width:759px) {
