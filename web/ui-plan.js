@@ -6,6 +6,8 @@ import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
+import { askConfirm, showText, trapTab } from './ui-dialog.js';
+import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale } from './ui-text.js';
 
 const $ = (id) => document.getElementById(id);
 const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -17,7 +19,10 @@ const FSCALE = [[0, 'לא חשוב'], [1, 'קצת'], [2, 'חשוב'], [3, 'מא�
 const SEMS = [['א', 'סמסטר א׳'], ['ב', 'סמסטר ב׳']];
 const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
 const LOAD = [['א', 'יותר בא׳'], ['even', 'מאוזן'], ['ב', 'יותר בב׳']];
-const SEM_PICK = [['', 'הכי טוב'], ['א', 'א׳'], ['ב', 'ב׳']];
+const SEM_PICK = [['', 'אוטומטי'], ['א', 'א׳'], ['ב', 'ב׳']];
+const HARD = [['hard', 'חובה לגמרי'], ['soft', 'רק העדפה']]; // the constraint toggles; the course mode keeps "חובה/אולי/לא"
+const SHEET = '(max-width: 899px)'; // below: the drawer is a modal sheet; from here up it is docked and the page reserves its width (index.html)
+const PHONE = '(max-width: 599px)'; // the popover is a bottom sheet
 
 let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, moreMul = 1, sem = 'א'; // sem: the shown semester of a year result
 let panel = null, opener = null, statusOpen = null, mobileDay = 1, friendMsg = '', friendUrl = '', liveText = '';
@@ -41,16 +46,19 @@ const seg = (name, legend, opts, cur, attrs, visible = false) => `<fieldset clas
   opts.map(([v, t]) => `<label><input type="radio" name="${esc(name)}" value="${v}"${String(v) === String(cur) ? ' checked' : ''} data-k="${esc(name)}-${v}" ${attrs}><span>${t}</span></label>`).join('')}</div></fieldset>`;
 const details = (key, summaryHtml, body, n) => n ? `<details data-key="${key}"${openDetails.has(key) ? ' open' : ''}><summary data-k="sum-${key}">${summaryHtml}</summary>${body}</details>` : '';
 
-let toastTimer;
+let toastTimer, toastHide;
 function toast(text) {
   const t = $('toast');
   t.textContent = text;
-  t.classList.add('show');
+  t.setAttribute('popover', 'manual'); // top layer: stays visible above a modal drawer or dialog
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  clearTimeout(toastHide);
+  if (t.showPopover && !t.matches(':popover-open')) t.showPopover();
+  t.classList.add('show');
+  toastTimer = setTimeout(() => { t.classList.remove('show'); toastHide = setTimeout(() => t.matches(':popover-open') && t.hidePopover(), 250); }, 2500);
 }
 async function copy(text, ok) {
-  try { await navigator.clipboard.writeText(text); toast(ok); } catch { window.prompt('ההעתקה האוטומטית נכשלה. העתיקו מכאן:', text); }
+  try { await navigator.clipboard.writeText(text); toast(ok); } catch { showText('ההעתקה האוטומטית נכשלה. העתיקו מכאן:', text); }
 }
 
 // ---------- search ----------
@@ -191,8 +199,9 @@ function card(id, res, unlocks) {
     out ? `<span class="tag">לא נכנס${why ? `: ${esc(why)}` : ''}</span>` : '',
   ].join('');
   return `<article class="course c${colors.get(id) ?? 7}${dashed.has(id) ? ' rep' : ''}${inAlt ? ' in' : ''}${out ? ' out' : ''}">
-    <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${esc(c.name)}</h3><span class="cr">${c.credits} נ״ז</span>${seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`)}</div>
-    ${yearPick ? seg(`sem-${id}`, `באיזה סמסטר ללמוד את ${c.name}`, SEM_PICK, app.state.semesterOf[id] ?? '', `data-chg="semOf" data-id="${esc(id)}"`) : ''}
+    <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${esc(c.name)}</h3><span class="cr">${c.credits} נ״ז</span></div>
+    ${seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`)}
+    ${yearPick ? `<div class="sem-row"><span class="sem-lbl" aria-hidden="true">סמסטר:</span>${seg(`sem-${id}`, `באיזה סמסטר ללמוד את ${c.name}`, SEM_PICK, app.state.semesterOf[id] ?? '', `data-chg="semOf" data-id="${esc(id)}"`)}</div>` : ''}
     ${tags ? `<div class="tags">${tags}</div>` : ''}
     ${s.reasons.length ? `<p class="reason">${s.reasons.map(esc).join('<br>')}</p>` : ''}
   </article>`;
@@ -207,7 +216,7 @@ function renderSide(res) {
   const locked = (st) => ids.filter((id) => status(id) === st);
   const rows = (list) => `<ul class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${esc(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
   $('side').innerHTML = `<div class="side-head"><h2>הקורסים שלי</h2><button type="button" class="link-btn" data-act="openStatus" data-k="openStatus">עדכן מצב</button></div>
-    <p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב.</p>
+    <p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
     ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks)).join('') || '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'}</div>`, 1)}
     ${app.data.lists.map((l, i) => {
     const ids = l.courses.filter((id) => rest.includes(id) && !taken.has(id) && taken.add(id));
@@ -307,7 +316,8 @@ function go(d) {
 
 // ---------- drawer panels ----------
 function prefsPanel() {
-  const { state, data } = app, c = state.constraints;
+  const { state, data } = app, c = state.constraints, notes = defaultNotes(DEFAULT.constraints);
+  const pinName = (p) => { const x = groupIndex(data).get(p); return x ? `${esc(x.c.name)} · ${esc(groupLabel(x.g))}` : esc(p); };
   return ['העדפות', `
     ${app.sem['ב'] ? `<section class="dr-sec"><h3>תכנון</h3>
       ${seg('scope', 'לתכנן', SCOPE, state.scope, 'data-chg="scope"', true)}
@@ -316,19 +326,23 @@ function prefsPanel() {
       ${WEIGHTS.filter(([k]) => k !== 'examSpread' || data.examsPublished).map(([k, t]) => seg(`w-${k}`, t, SCALE, nearestStep(state.weights[k], [0, 1, 3, 5]), `data-chg="w" data-w="${k}"`, true)).join('')}</section>
     <section class="dr-sec"><h3>ימים שאני רוצה פנויים</h3>
       <div class="daypills" role="group" aria-label="ימים פנויים">${[1, 2, 3, 4, 5, 6].map((d) => `<button type="button" class="daypill" data-act="dayOff" data-day="${d}" data-k="doff-${d}" aria-pressed="${c.dayOff.includes(d)}">${DAYS[d]}׳<span class="sr"> ${DAY_FULL[d]}</span></button>`).join('')}</div>
-      ${seg('dayHard', 'כמה זה מחייב?', [['hard', 'חובה'], ['soft', 'רק העדפה']], c.dayOffHard ? 'hard' : 'soft', 'data-chg="dayHard"', true)}</section>
+      <p class="hint">${esc(notes.days)}</p>
+      ${seg('dayHard', 'עד כמה זה מחייב?', HARD, c.dayOffHard ? 'hard' : 'soft', 'data-chg="dayHard"', true)}
+      <p class="hint">${strictnessHint(c.dayOffHard)}</p></section>
     <section class="dr-sec"><h3>שעות</h3>
       <div class="times"><label class="field">לא לפני <input type="time" data-chg="notBefore" data-k="notBefore" value="${esc(c.notBefore)}"></label>
       <label class="field">לא אחרי <input type="time" data-chg="notAfter" data-k="notAfter" value="${esc(c.notAfter)}"></label></div>
-      ${seg('winHard', 'כמה זה מחייב?', [['hard', 'חובה'], ['soft', 'רק העדפה']], c.windowHard ? 'hard' : 'soft', 'data-chg="winHard"', true)}</section>
+      <p class="hint">${esc(notes.hours)}</p>
+      ${seg('winHard', 'עד כמה זה מחייב?', HARD, c.windowHard ? 'hard' : 'soft', 'data-chg="winHard"', true)}
+      <p class="hint">${strictnessHint(c.windowHard)}</p></section>
     <section class="dr-sec"><h3>עוד אפשרויות</h3>
       <label class="field">תקרת נ״ז <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="ללא" data-chg="maxCredits" data-k="maxCredits" value="${c.maxCredits ?? ''}"></label>
       <label class="check"><input type="checkbox" data-chg="examsAllow" data-k="examsAllow"${c.examsSameDay === 'allow' ? ' checked' : ''}> לאפשר 2 בחינות באותו יום</label>
       <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label></section>
-    ${state.pins.length ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length} קבוצות נעוצות: <bdi dir="ltr">${state.pins.map(esc).join(', ')}</bdi></p>
+    ${state.pins.length ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length} קבוצות נעוצות:</p><ul class="plain">${state.pins.map((p) => `<li>${pinName(p)}</li>`).join('')}</ul>
       <button type="button" class="btn" data-act="clearPins" data-k="clearPins">${icon('pin')} נקה נעיצות</button></section>` : ''}
     <section class="dr-sec"><button type="button" class="btn" data-act="resetPrefs" data-k="resetPrefs">איפוס העדפות</button>
-      <p class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות, תקרת הנ"ז, בחינות באותו יום וקבוצות מלאות לברירת המחדל. המצב האישי, הקורסים, הנעיצות והחברים לא משתנים.</p></section>
+      <p class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות, תקרת הנ״ז, בחינות באותו יום וקבוצות מלאות לברירת המחדל. המצב האישי, הקורסים, הנעיצות והחברים לא משתנים.</p></section>
     <footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
       <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`];
 }
@@ -345,11 +359,13 @@ function friendsPanel() {
   };
   return ['חברים', `
     <section class="dr-sec"><h3>הוספת חבר</h3>
+      <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
       <form id="addFriendForm" class="row"><label for="friendUrl" class="sr">קישור שחבר שלח</label>
-        <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו כאן קישור שחבר שלח" value="${esc(friendUrl)}">
+        <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו כאן קישור שחבר שלח" value="${esc(friendUrl)}"
+          aria-describedby="friendHow${friendMsg ? ' friendErr' : ''}"${friendMsg ? ' aria-invalid="true"' : ''}>
         <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
-      <p class="err-text" role="status">${friendMsg ? `${icon('alert')} ${esc(friendMsg)}` : ''}</p></section>
-    <section class="dr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || '<p class="hint">עוד אין חברים. בקשו מחבר ללחוץ "שתף" ולשלוח לכם את הקישור.</p>'}</section>
+      ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}</section>
+    <section class="dr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || '<p class="hint">עוד אין חברים.</p>'}</section>
     <section class="dr-sec"><h3>הקישור שלי</h3>
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
       <button type="button" class="btn" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
@@ -380,25 +396,31 @@ function regPanel() {
   const exams = parts.flatMap((p) => p.res.exams).filter((e) => e.kind === 'בחינה').sort((a, b) => a.date.localeCompare(b.date));
   return ['רשימה להרשמה', `<p class="hint">חלופה ${cur + 1} מתוך ${last.results.length}. ההרשמה עצמה נעשית באפקה-נט.</p>
     ${parts.map((p) => `${p.title ? `<h3 class="reg-sem">${p.title}</h3>` : ''}${p.res.courses.length ? `<ul class="reglist">${rowsOf(p.res, p.data)}</ul>` : '<p class="hint">אין קורסים בסמסטר הזה.</p>'}`).join('')}
-    <button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>
     <section class="dr-sec"><h3>בחינות</h3>${data.examsPublished
       ? `<ul class="plain">${exams.map((e) => `<li>${esc(data.courses[e.course].name)} · מועד ${esc(e.moed)} · <bdi dir="ltr">${esc(e.date)} ${esc(e.time ?? '')}</bdi></li>`).join('')}</ul>`
-      : '<p class="hint">לוח הבחינות של תשפ״ז טרם פורסם.</p>'}</section>`];
+      : '<p class="hint">לוח הבחינות של תשפ״ז טרם פורסם.</p>'}</section>`,
+  `<button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>`];
 }
 
 const PANELS = { prefs: prefsPanel, friends: friendsPanel, reg: regPanel };
 function renderDrawer() {
   if (!panel) return;
-  const [title, body] = PANELS[panel]();
-  $('drawer').innerHTML = `<div class="dr-head"><h2 id="drawerTitle">${title}</h2>
-    <button type="button" class="btn icon-btn ghost" data-act="closeDrawer" data-k="closeDrawer" aria-label="סגור">${icon('x')}</button></div><div class="dr-body">${body}</div>`;
+  const [title, body, actions = ''] = PANELS[panel](); // actions: a row that stays under the header while the body scrolls
+  $('drawer').innerHTML = `<div class="dr-top"><div class="dr-head"><h2 id="drawerTitle">${title}</h2>
+    <button type="button" class="btn icon-btn ghost" data-act="closeDrawer" data-k="closeDrawer" aria-label="סגור">${icon('x')}</button></div>${actions ? `<div class="dr-actions">${actions}</div>` : ''}</div><div class="dr-body">${body}</div>`;
 }
+// ponytail: the modal/docked mode is picked when the drawer opens; resizing across the boundary while it is open keeps the old mode.
 function openPanel(name, from) {
   panel = name;
   opener = from;
   friendMsg = '';
   renderDrawer();
-  if (!$('drawer').open) $('drawer').show();
+  const d = $('drawer');
+  if (!d.open) {
+    const modal = matchMedia(SHEET).matches; // modal: native focus trap, inert page, Escape, scrim (::backdrop)
+    d.classList.toggle('modal', modal);
+    modal ? d.showModal() : d.show();
+  }
   document.body.classList.add('drawer-open');
 }
 
@@ -411,7 +433,7 @@ function addFriend(p) {
   else app.state.friends.push({ name, groups: p.groups, weight: 1, active: true });
   app.friendLanding = null;
   refresh();
-  toast(old ? 'עודכן' : 'נוסף');
+  toast(friendToast(name, !!old));
 }
 async function share() {
   const res = current();
@@ -457,8 +479,8 @@ const ACT = {
     refresh();
   },
   clearPins() { app.state.pins = []; refresh(); },
-  resetPrefs() {
-    if (typeof confirm === 'function' && !confirm('לאפס את ההעדפות לברירת המחדל?')) return;
+  async resetPrefs() {
+    if (!await askConfirm('לאפס את ההעדפות לברירת המחדל?', { ok: 'אפס', cancel: 'ביטול' })) return;
     app.state.weights = structuredClone(DEFAULT.weights);
     app.state.constraints = structuredClone(DEFAULT.constraints);
     app.state.scope = DEFAULT.scope;
@@ -545,7 +567,7 @@ document.addEventListener('toggle', (e) => {
   if (k) e.target.open ? openDetails.add(k) : openDetails.delete(k);
 }, true);
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && $('drawer').open && !$('pop').matches(':popover-open')) { $('drawer').close(); return; }
+  if (e.key === 'Escape' && $('drawer').open && !$('pop').matches(':popover-open') && !document.querySelector('dialog.dlg[open]')) { $('drawer').close(); return; }
   if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   if (e.target.closest?.('input, textarea, select, [contenteditable]') || $('drawer').contains(e.target) || $('pop').matches(':popover-open')) return;
   e.preventDefault();
@@ -553,13 +575,20 @@ document.addEventListener('keydown', (e) => {
 });
 $('drawer').addEventListener('close', () => { panel = null; document.body.classList.remove('drawer-open'); (opener?.isConnected ? opener : $('week')).focus({ preventScroll: true }); });
 $('pop').addEventListener('toggle', (e) => {
+  document.body.classList.toggle('pop-open', e.newState === 'open' && matchMedia(PHONE).matches);
   if (e.newState !== 'closed') return;
   const a = document.activeElement;
   if (!a || a === document.body || $('pop').contains(a)) document.querySelector(`[data-k="${CSS.escape($('pop').dataset.src ?? '')}"]`)?.focus({ preventScroll: true });
 });
+$('pop').addEventListener('keydown', (e) => { if (matchMedia(PHONE).matches) trapTab(e, $('pop')); }); // the phone sheet is not a modal dialog
+// A popover survives small scrolls (reading it, nudging the page); it closes when its block has moved far or left the screen.
 addEventListener('scroll', () => {
-  if ($('pop').matches(':popover-open') && !matchMedia('(max-width: 599px)').matches) $('pop').hidePopover();
+  const p = $('pop');
+  if (!p.matches(':popover-open') || matchMedia(PHONE).matches) return;
+  const b = document.querySelector(`[data-k="${CSS.escape(p.dataset.src ?? '')}"]`);
+  if (popStale(Number(p.dataset.top), b ? b.getBoundingClientRect().top : null, innerHeight)) p.hidePopover();
 }, { passive: true });
+$('banner').setAttribute('aria-live', 'polite'); // static container, so the friend-landing banner inserted later is announced
 
 setRenderers(renderAll);
 if (app.data) refresh();

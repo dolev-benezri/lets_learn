@@ -1,5 +1,6 @@
 import { classify, withAfterA, cleanProfile, studyYear, modeFor } from './rules.js';
 import { readHash } from './share.js';
+import { askConfirm } from './ui-dialog.js';
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -130,7 +131,7 @@ async function init() {
   if (h?.type === 'backup') {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
-    if (!hadSaved || typeof confirm !== 'function' || confirm('לשחזר גיבוי? המצב הנוכחי יוחלף.')) app.state = normalize(h.payload);
+    if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) app.state = normalize(h.payload);
   }
   if (!app.state.passed) app.state.passed = [...(yearOneList()?.courses ?? [])];
   if (h?.type === 'friend') app.friendLanding = h.payload;
