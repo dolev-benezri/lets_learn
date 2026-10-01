@@ -1,15 +1,15 @@
-// Interactive progress map ("הראה התקדמות"): every course and its prerequisites as a neural-network style graph (round nodes in layers, curved edges),
-// coloured by the student's real status (app.cls.statuses, from rules.js). Layout and geometry are pure functions so they can be unit-tested.
+// Interactive progress map ("הראה התקדמות"): every course and its prerequisites as a neural-network style graph (round nodes, curved edges),
+// arranged by study year (one band per year, right to left, two semester columns each, electives last) and coloured by the student's real status
+// (app.cls.statuses, from rules.js). Layout and geometry are pure functions so they can be unit-tested.
 import { app, esc, keepFocus } from './app.js';
 import { icon, yedion } from './ui-grid.js';
 import { unlockCounts } from './solver-core.js';
 import { studyYear } from './rules.js';
 
 // ---------- layout (pure) ----------
-export const SIZE = { nodeW: 188, nodeH: 60, extH: 44, gap: 88, pitch: 78, laneHead: 40, lanePad: 12, pad: 24, dia: 32 };
 const YEAR_LETTERS = 'אבגד';
 const yearOf = (l) => l.name.match(/חובה שנה (\S)'/)?.[1];
-const laneTitle = (l) => (yearOf(l) ? `שנה ${yearOf(l)}׳` : l.name);
+const bandName = (y) => (y ? `שנה ${YEAR_LETTERS[y - 1]}׳` : 'קורסי בחירה');
 
 // Which courses to draw: "remaining" hides done + exempt; "year" keeps only the student's study-year list.
 export function makeKeep(mode, data, statuses, year) {
@@ -21,31 +21,38 @@ export function makeKeep(mode, data, statuses, year) {
   return () => true;
 }
 
+// Study year (1-4) of every course in a "חובה שנה X'" list (the first one that holds it); anything else is an elective.
+export function courseYears(data) {
+  const m = new Map();
+  for (const l of data.lists) { const y = YEAR_LETTERS.indexOf(yearOf(l) ?? '?'); if (y >= 0) l.courses.forEach((id) => { if (data.courses[id] && !m.has(id)) m.set(id, y + 1); }); }
+  return m;
+}
+// Electives the student has no stake in stay off the map: not chosen "חובה"/"אולי" and not passed or being retaken.
+export const asideIds = (data, statuses, choices = {}) => {
+  const yr = courseYears(data);
+  return Object.keys(data.courses).filter((id) => !yr.has(id) && !['must', 'optional'].includes(choices[id]) && !['done', 'exempt', 'retake'].includes(statuses[id]?.status));
+};
+
 // Geometry helpers for the progress-map renderer
 export const nodeRadius = (credits) => Math.max(14, Math.min(30, 12 + 3 * (Number(credits) || 0)));
 export const edgePath = (a, b) => { const mx = (a.x + b.x) / 2; return `M${a.x},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x},${b.y}`; };
 
-// Layers run left to right by prerequisite depth: a `קדם` edge always goes to a strictly higher layer, a `מקביל` edge to the
-// same or a higher one. The drawing is mirrored for RTL (layer 0 on the right). Lanes are the course lists (study years first).
-// An `anyOf` with more than one distinct option goes through an "או" diamond; options outside the program become `ext` pills.
+// Structure only, no pixels: a band per study year (א׳ first = rightmost) and an electives band last (leftmost); a band has one column per semester
+// (א first) and a column lists its courses by prerequisite depth, so arrows mostly flow right to left, top to bottom. `קדם` weighs 1 in the depth, `מקביל` 0.
+// An `anyOf` with more than one distinct option goes through an "או" diamond; options outside the program become `ext` pills in their target's column.
 export function layoutMap(data, keep = () => true) {
-  const S = SIZE, C = data.courses;
-  const laneOf = new Map();
-  data.lists.forEach((l, i) => l.courses.forEach((id) => { if (C[id] && !laneOf.has(id)) laneOf.set(id, i); }));
-  const rest = Object.keys(C).filter((id) => !laneOf.has(id));
-  const laneDefs = data.lists.map((l, i) => ({ i, name: laneTitle(l), year: yearOf(l) ? YEAR_LETTERS.indexOf(yearOf(l)) + 1 : null }));
-  if (rest.length) { rest.forEach((id) => laneOf.set(id, laneDefs.length)); laneDefs.push({ i: laneDefs.length, name: 'אחר', year: null }); }
-  const order = [...laneOf.keys()].filter((id) => keep(id)); // list order, lane by lane
-  order.sort((a, b) => laneOf.get(a) - laneOf.get(b));
+  const C = data.courses, yr = courseYears(data);
+  const bandOf = (id) => (yr.get(id) ?? 5) - 1; // electives: 4
+  const order = Object.keys(C).filter((id) => keep(id));
   const K = new Set(order);
 
-  // Requirements that survive the filter. ext options are keyed per lane and name.
+  // Requirements that survive the filter. ext options are keyed per band and name.
   const entries = [];
   for (const id of order) C[id].prereqs.forEach((p, pi) => {
     const seen = new Set(), opts = [];
     for (const a of p.anyOf) {
       const isCourse = a.id && C[a.id];
-      const k = isCourse ? a.id : `x:${laneOf.get(id)}:${a.name}`;
+      const k = isCourse ? a.id : `x:${bandOf(id)}:${a.name}`;
       if (seen.has(k) || a.id === id || (isCourse && !K.has(a.id))) continue;
       seen.add(k);
       opts.push(isCourse ? { key: k, id: a.id } : { key: k, ext: true, name: a.name });
@@ -53,113 +60,65 @@ export function layoutMap(data, keep = () => true) {
     if (opts.length) entries.push({ to: id, kind: p.kind, opts, pi });
   });
 
-  // Longest path; `מקביל` weighs 0. A cycle (bad data) just stops the recursion.
+  // Longest path. A cycle (bad data) just stops the recursion.
   const incoming = new Map();
   for (const e of entries) for (const o of e.opts) if (!o.ext) (incoming.get(e.to) ?? incoming.set(e.to, []).get(e.to)).push([o.id, e.kind === 'קדם' ? 1 : 0]);
   const memo = new Map(), stack = new Set();
-  const layerOf = (id) => {
+  const depthOf = (id) => {
     if (memo.has(id)) return memo.get(id);
     if (stack.has(id)) return 0;
     stack.add(id);
-    const v = Math.max(0, ...(incoming.get(id) ?? []).map(([s, w]) => layerOf(s) + w));
+    const v = Math.max(0, ...(incoming.get(id) ?? []).map(([s, w]) => depthOf(s) + w));
     stack.delete(id);
     memo.set(id, v);
     return v;
   };
-  const nodes = new Map();
-  for (const id of order) nodes.set(id, { key: id, type: 'course', id, lane: laneOf.get(id), layer: layerOf(id), w: S.nodeW, h: S.nodeH });
-  const ext = new Map();
-  for (const e of entries) for (const o of e.opts) if (o.ext) {
-    const lane = laneOf.get(e.to), l = nodes.get(e.to).layer - 1;
-    const n = ext.get(o.key) ?? ext.set(o.key, { key: o.key, type: 'ext', name: o.name, lane, layer: l, w: S.nodeW, h: S.extH }).get(o.key);
-    n.layer = Math.min(n.layer, l);
-  }
-  const shift = Math.max(0, -Math.min(0, ...[...ext.values()].map((n) => n.layer)));
-  for (const n of [...nodes.values(), ...ext.values()]) n.layer += shift;
-  ext.forEach((n, k) => nodes.set(k, n));
-
-  // Courses with no edge at all: one column, or spread over several when a lane has many (the elective list).
-  const touched = new Set(entries.flatMap((e) => [e.to, ...e.opts.map((o) => o.key)]));
-  const maxLayer = Math.max(shift, ...[...nodes.values()].map((n) => n.layer));
-  for (const lane of laneDefs) {
-    const iso = order.filter((id) => laneOf.get(id) === lane.i && !touched.has(id));
-    const cols = iso.length > 4 ? Math.min(maxLayer + 1 - shift, Math.ceil(iso.length / 4)) : 1;
-    iso.forEach((id, i) => { nodes.get(id).layer = shift + (i % cols); });
-  }
-  const cols = Math.max(1, ...[...nodes.values()].map((n) => n.layer + 1));
-  const width = S.pad * 2 + cols * S.nodeW + (cols - 1) * S.gap;
-
-  // Rows: each (lane, layer) cell stacks its nodes; the lane is as tall as its fullest cell.
-  const list = [...nodes.values()];
-  const cell = (n) => `${n.lane}|${n.layer}`;
-  const cells = new Map();
-  for (const n of list) (cells.get(cell(n)) ?? cells.set(cell(n), []).get(cell(n))).push(n);
-  const lanes = [];
-  let y = S.pad;
-  for (const d of laneDefs) {
-    const rows = Math.max(0, ...[...cells].filter(([k]) => k.startsWith(`${d.i}|`)).map(([, v]) => v.length));
-    if (!rows) continue;
-    const h = S.laneHead + rows * S.pitch + S.lanePad;
-    lanes.push({ ...d, y, h, rows, top: y + S.laneHead });
-    y += h + 8;
-  }
-  const height = y + S.pad - 8;
-  const laneTop = new Map(lanes.map((l) => [l.i, l.top]));
-  const place = () => { for (const arr of cells.values()) arr.forEach((n, r) => { n.row = r; n.cy = laneTop.get(n.lane) + r * S.pitch + S.pitch / 2; }); };
-  place();
-  const nb = new Map(list.map((n) => [n.key, { pred: [], succ: [] }]));
-  for (const e of entries) for (const o of e.opts) { nb.get(e.to).pred.push(nodes.get(o.key)); nb.get(o.key)?.succ.push(nodes.get(e.to)); }
-  const sweep = (dir, layers) => {
-    for (const L of layers) for (const [k, arr] of cells) {
-      if (!k.endsWith(`|${L}`)) continue;
-      const bary = (n) => { const m = nb.get(n.key)[dir]; return m.length ? m.reduce((a, x) => a + x.cy, 0) / m.length : n.cy; };
-      const keyed = arr.map((n) => [bary(n), n.row, n]);
-      keyed.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-      keyed.forEach(([, , n], i) => { arr[i] = n; });
+  const nodes = new Map(order.map((id) => [id, { key: id, type: 'course', id, band: bandOf(id), sem: null, depth: depthOf(id), year: yr.get(id) ?? null }]));
+  // Semester column. A course offered in one semester only sits there. One offered in both (or neither) has no fixed place in the data, so it
+  // goes after its in-band prerequisites, then the surplus of the first column moves to the second: a suggestion, not the curriculum.
+  const band = (id) => nodes.get(id).band, preds = (id) => (incoming.get(id) ?? []).filter(([q, w]) => w && nodes.get(q)?.band === band(id)).map(([q]) => q);
+  for (const b of new Set([...nodes.values()].map((n) => n.band))) {
+    const ids = order.filter((id) => band(id) === b).sort((x, y) => nodes.get(x).depth - nodes.get(y).depth), free = [], after = new Set(ids.flatMap(preds));
+    for (const id of ids) {
+      const ss = C[id].semesters ?? [data.semester], n = nodes.get(id);
+      if (ss.length === 1) n.sem = ss[0] === 'ב' ? 1 : 0;
+      else { n.sem = preds(id).some((q) => nodes.get(q).sem === 0) ? 1 : 0; free.push(id); }
     }
-    place();
-  };
-  const up = Array.from({ length: cols }, (_, i) => i);
-  for (let i = 0; i < 3; i++) { sweep('pred', up.slice(1)); sweep('succ', [...up].reverse().slice(1)); }
-  for (const n of list) { n.x = width - S.pad - (n.layer + 1) * S.nodeW - n.layer * S.gap; n.y = n.cy - n.h / 2; }
-
-  // "או" diamonds sit in the gutter before their target, stacked when a course has several.
-  const diamonds = [], count = new Map(), seenCount = new Map();
-  for (const e of entries) if (e.opts.length > 1) count.set(e.to, (count.get(e.to) ?? 0) + 1);
-  for (const e of entries) if (e.opts.length > 1) {
-    const t = nodes.get(e.to), j = seenCount.get(e.to) ?? 0, n = count.get(e.to);
-    seenCount.set(e.to, j + 1);
-    e.via = { key: `or:${e.to}:${e.pi}`, type: 'or', target: e.to, w: S.dia, h: S.dia, cx: t.x + S.nodeW + S.gap / 2, cy: t.cy + (j - (n - 1) / 2) * (S.dia + 2) };
-    e.via.x = e.via.cx - S.dia / 2; e.via.y = e.via.cy - S.dia / 2;
-    diamonds.push(e.via);
+    const cnt = (v) => ids.filter((id) => nodes.get(id).sem === v).length;
+    for (const id of free.reverse()) if (cnt(0) - cnt(1) > 1 && nodes.get(id).sem === 0 && !after.has(id)) nodes.get(id).sem = 1;
+  }
+  for (const e of entries) for (const o of e.opts) if (o.ext) { // one pill per band and name, in the earliest column of its targets, just above the shallowest one
+    const t = nodes.get(e.to), n = nodes.get(o.key) ?? nodes.set(o.key, { key: o.key, type: 'ext', name: o.name, band: t.band, sem: t.sem, depth: t.depth - 1, year: t.year }).get(o.key);
+    n.sem = Math.min(n.sem, t.sem); n.depth = Math.min(n.depth, t.depth - 1);
   }
 
-  // Orthogonal routes, right to left. Sources share the target's channel, so converging edges read as one bus.
-  const paths = [], edges = [];
-  const route = (a, b, kind, from, to) => {
-    const x1 = a.type === 'or' ? a.cx - S.dia / 2 : a.x, y1 = a.type === 'or' ? a.cy : a.cy;
-    const x2 = b.type === 'or' ? b.cx + S.dia / 2 : b.x + b.w, y2 = b.cy;
-    let d, label = null;
-    if (a.type !== 'or' && b.type !== 'or' && a.layer === b.layer) {
-      const mx = a.x + a.w + 14;
-      d = `M${a.x + a.w} ${y1}H${mx}V${y2}H${x2}`;
-      label = { x: mx + 20, y: (y1 + y2) / 2 };
-    } else {
-      const mx = b.type === 'or' ? x2 + 12 : x2 + 18;
-      d = y1 === y2 ? `M${x1} ${y1}H${x2}` : `M${x1} ${y1}H${mx}V${y2}H${x2}`;
-      label = y1 === y2 ? { x: (x1 + x2) / 2, y: y1 - 6 } : { x: mx, y: (y1 + y2) / 2 + 4 };
+  // Columns in flow order (band, semester), an empty one skipped. Rows: depth, then list order (the sort is stable; ext pills come last).
+  const list = [...nodes.values()], cols = [], bands = [];
+  for (const b of [...new Set(list.map((n) => n.band))].sort((x, y) => x - y)) {
+    const band = { year: b < 4 ? b + 1 : null, name: bandName(b < 4 ? b + 1 : null), first: cols.length, n: 0 };
+    for (const s of [0, 1]) {
+      const col = list.filter((n) => n.band === b && n.sem === s).sort((x, y) => x.depth - y.depth);
+      if (!col.length) continue;
+      col.forEach((n, row) => { n.col = cols.length; n.row = row; });
+      cols.push({ sem: s });
+      band.n++;
     }
-    paths.push({ id: paths.length, from, to, kind, d, label: kind === 'מקביל' ? label : null });
-  };
+    bands.push(band);
+  }
+  list.sort((x, y) => x.col - y.col || x.row - y.row);
+
+  // "או" diamonds, and the routes: a path per hop (option -> diamond -> target, or option -> target).
+  const diamonds = [], paths = [];
+  const hop = (from, to, kind) => paths.push({ id: paths.length, from, to, kind });
   for (const e of entries) {
-    const tgt = nodes.get(e.to);
-    if (e.via) {
-      for (const o of e.opts) route(nodes.get(o.key), e.via, e.kind, o.key, e.via.key);
-      route(e.via, tgt, e.kind, e.via.key, e.to);
-    } else route(nodes.get(e.opts[0].key), tgt, e.kind, e.opts[0].key, e.to);
-    for (const o of e.opts) edges.push({ from: o.key, to: e.to, kind: e.kind, via: e.via?.key ?? null });
+    if (e.opts.length > 1) {
+      const via = `or:${e.to}:${e.pi}`;
+      diamonds.push({ key: via, type: 'or', target: e.to });
+      for (const o of e.opts) hop(o.key, via, e.kind);
+      hop(via, e.to, e.kind);
+    } else hop(e.opts[0].key, e.to, e.kind);
   }
-  return { nodes: list, diamonds, paths, edges, lanes, width, height, cols };
+  return { nodes: list, diamonds, paths, bands, cols };
 }
 
 // Everything upstream (what it needs) and downstream (what it opens) of one node, as keys and path ids.
@@ -177,49 +136,30 @@ export function chainOf(paths, key) {
 
 
 // ---------- neural-style geometry (pure) ----------
-// One evenly spread layer per column: layoutMap's layers and its (lane, row) order (crossing reduction, years grouped), but no lane stacking.
-export const G = { pitch: 164, row: 72, padX: 78, padY: 20, orR: 11, orDx: 76, extHW: 66, extR: 11, bulge: 44 };
+export const G = { pitch: 164, row: 72, padX: 28, padY: 20, head: 58, bandGap: 32, orR: 11, orDx: 76, extHW: 66, extR: 11, bulge: 56 };
 export const truncate = (s, n = 18) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 // Edge leaves the near side of one circle and enters the near side of the next (flow runs right to left in RTL).
 export const edgeEnds = (a, b) => { const d = b.x < a.x ? -1 : 1; return [{ x: a.x + d * a.hw, y: a.y }, { x: b.x - d * b.hw, y: b.y }]; };
-// Two nodes in one column (a same-layer `מקביל`): edgePath would be a straight line through the column, so bow out to the right.
-export const sameLayerPath = (a, b) => { const x1 = a.x + a.hw, x2 = b.x + b.hw; return `M${x1},${a.y} C${x1 + G.bulge},${a.y} ${x2 + G.bulge},${b.y} ${x2},${b.y}`; };
+// Two nodes in one column: edgePath would be a straight line through the column, so bow out to the right (further for a longer hop, clear of the names between).
+export const sameColPath = (a, b) => { const x1 = a.x + a.hw, x2 = b.x + b.hw, k = G.bulge + Math.min(40, Math.abs(b.y - a.y) / 6); return `M${x1},${a.y} C${x1 + k},${a.y} ${x2 + k},${b.y} ${x2},${b.y}`; };
 
-// Columns are levelled: a node with slack (no edges, or only leaves) moves to a shorter neighbouring column as long as every
-// `קדם` edge still goes to a strictly higher layer and every `מקביל` to the same or a higher one. Pure, terminates (sum of squares falls).
-export function balance(L, minCols = 0) {
-  const layer = new Map(L.nodes.map((n) => [n.key, n.layer])), top = Math.max(L.cols, minCols) - 1, w = (e) => (e.kind === 'קדם' ? 1 : 0);
-  const order = [...L.nodes].sort((a, b) => a.lane - b.lane || a.row - b.row).map((n) => n.key);
-  const range = (k) => { let lo = 0, hi = top; for (const e of L.edges) { if (e.to === k) lo = Math.max(lo, layer.get(e.from) + w(e)); if (e.from === k) hi = Math.min(hi, layer.get(e.to) - w(e)); } return [lo, hi]; };
-  for (let guard = 0; guard < 2000; guard++) {
-    const cnt = Array.from({ length: top + 1 }, () => 0);
-    layer.forEach((l) => cnt[l]++);
-    let moved = false;
-    // the tallest column first, but when none of its nodes can move, the next tallest, and so on
-    for (const from of cnt.map((c, i) => [c, i]).sort((x, y) => y[0] - x[0]).map(([, i]) => i)) {
-      for (const k of [...order].reverse().filter((x) => layer.get(x) === from)) {
-        const [lo, hi] = range(k);
-        const to = cnt.map((c, i) => [c, Math.abs(i - from), i]).filter(([c, , i]) => i >= lo && i <= hi && c <= cnt[from] - 2).sort((x, y) => x[1] - y[1] || x[0] - y[0])[0];
-        if (to) { layer.set(k, to[2]); moved = true; break; }
-      }
-      if (moved) break;
-    }
-    if (!moved) break;
-  }
-  return layer;
-}
-
-export function geometry(L, creditsOf = () => 0, minCols = 0) {
-  const cols = new Map(), lay = balance(L, minCols), used = Math.max(0, ...lay.values()) + 1;
+export function geometry(L, creditsOf = () => 0) {
   const radius = (n) => (n.type === 'ext' ? G.extR : nodeRadius(creditsOf(n.id)));
-  for (const n of [...L.nodes].sort((a, b) => a.lane - b.lane || a.row - b.row)) (cols.get(lay.get(n.key)) ?? cols.set(lay.get(n.key), []).get(lay.get(n.key))).push(n);
+  const W = G.padX * 2 + L.cols.length * G.pitch + Math.max(0, L.bands.length - 1) * G.bandGap, top = G.head + G.padY;
+  // x of each column and each band's box, band by band from the right edge
+  const colX = [], bands = [];
+  let xr = W - G.padX;
+  for (const b of L.bands) {
+    const cols = [];
+    for (let j = 0; j < b.n; j++) { colX[b.first + j] = xr - (j + 0.5) * G.pitch; cols.push({ x: colX[b.first + j], label: L.cols[b.first + j].sem ? 'סמסטר ב׳ (מוצע)' : 'סמסטר א׳ (מוצע)' }); }
+    bands.push({ year: b.year, name: b.name, x: xr - b.n * G.pitch, w: b.n * G.pitch, cols });
+    xr -= b.n * G.pitch + G.bandGap;
+  }
   // A column's step is at least a row, and enough for the two circles and the name between any pair that follow each other.
-  const step = new Map([...cols].map(([l, col]) => [l, Math.max(G.row, ...col.slice(1).map((n, i) => radius(n) + radius(col[i]) + 22))]));
-  const W = G.padX * 2 + (used - 1) * G.pitch, H = Math.max(1, ...[...cols].map(([l, c]) => c.length * step.get(l))) + 2 * G.padY, pos = new Map();
-  for (const col of cols.values()) col.forEach((n, i) => {
-    const r = radius(n);
-    pos.set(n.key, { ...n, layer: lay.get(n.key), x: W - G.padX - lay.get(n.key) * G.pitch, y: G.padY + (i + 0.5) * ((H - 2 * G.padY) / col.length), r, hw: n.type === 'ext' ? G.extHW : r });
-  });
+  const byCol = Object.groupBy(L.nodes, (n) => n.col), step = {};
+  for (const [c, col] of Object.entries(byCol)) step[c] = Math.max(G.row, ...col.slice(1).map((n, i) => radius(n) + radius(col[i]) + 22));
+  const H = top + G.padY + Math.max(0, ...Object.entries(byCol).map(([c, col]) => col.length * step[c])), pos = new Map();
+  for (const n of L.nodes) { const r = radius(n); pos.set(n.key, { ...n, x: colX[n.col], y: top + (n.row + 0.5) * step[n.col], r, hw: n.type === 'ext' ? G.extHW : r }); }
   const seen = new Map(), ors = L.diamonds.map((d) => {
     const t = pos.get(d.target), n = L.diamonds.filter((x) => x.target === d.target).length, j = seen.get(d.target) ?? 0;
     seen.set(d.target, j + 1);
@@ -227,22 +167,11 @@ export function geometry(L, creditsOf = () => 0, minCols = 0) {
   });
   ors.forEach((o) => pos.set(o.key, o));
   const edges = L.paths.map((p) => {
-    const a = pos.get(p.from), b = pos.get(p.to);
-    const [s, e] = edgeEnds(a, b);
-    return { id: p.id, from: p.from, to: p.to, kind: p.kind, d: a.layer !== undefined && a.layer === b.layer ? sameLayerPath(a, b) : edgePath(s, e) };
+    const a = pos.get(p.from), b = pos.get(p.to), [s, e] = edgeEnds(a, b);
+    return { id: p.id, from: p.from, to: p.to, kind: p.kind, d: a.col !== undefined && a.col === b.col ? sameColPath(a, b) : edgePath(s, e) };
   });
-  const nodes = [...pos.values()].filter((n) => n.type !== 'or').sort((a, b) => a.layer - b.layer || a.y - b.y); // Tab order: layers right to left, then top to bottom
-  return { W, H, cols: used, nodes, ors, edges };
-}
-
-// How many columns make the whole graph fit a vw x vh area at the biggest scale (never fewer than the layers it already has).
-export function pickCols(n, vw, vh, minC, maxC = 12) {
-  let best = Math.max(1, minC), bestS = -1;
-  for (let c = best; c <= Math.max(best, maxC); c++) {
-    const sc = Math.min(1, vw / (G.padX * 2 + (c - 1) * G.pitch), vh / (Math.ceil(n / c) * G.row + 2 * G.padY));
-    if (sc > bestS + 1e-9) { best = c; bestS = sc; }
-  }
-  return best;
+  const nodes = [...pos.values()].filter((n) => n.type !== 'or'); // L.nodes' order is the Tab order: columns right to left, then top to bottom
+  return { W, H, head: G.head, bands, nodes, ors, edges };
 }
 
 // ---------- text helpers ----------
@@ -289,7 +218,7 @@ function nodeSvg(c, n) {
     const t = `מחוץ לתוכנית: ${n.name}`;
     return `<g class="ext" data-key="${esc(n.key)}" aria-hidden="true"><title>${esc(t)}</title><rect x="${x - n.hw}" y="${y - n.r}" width="${2 * n.hw}" height="${2 * n.r}" rx="${n.r}"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central">${esc(truncate(n.name, 20))}</text></g>`;
   }
-  const yr = c.L.lanes.find((l) => l.i === n.lane)?.year, mine = c.year && yr === c.year; // the student's study year: dotted halo, also named in the label and the card
+  const yr = n.year, mine = c.year && yr === c.year; // the student's study year: dotted halo, also named in the label and the card
   const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, lbl = nodeLabel(c, n.id, yr), bw = o > 9 ? 52 : 46;
   return `<g class="nd st-${s}${mine ? ' mine' : ''}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}" aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
     ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}<circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring" cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
@@ -298,31 +227,34 @@ function nodeSvg(c, n) {
 
 export function mapSvg(c) {
   const g = c.g;
+  const bands = g.bands.map((b) => `<g class="band${c.year && b.year === c.year ? ' mine' : ''}" aria-hidden="true"><rect x="${num(b.x)}" y="8" width="${b.w}" height="${num(g.H - 16)}" rx="12"/><text class="bt" x="${num(b.x + b.w / 2)}" y="30" text-anchor="middle">${esc(b.name)}</text>${b.cols.map((k) => `<text class="bs" x="${num(k.x)}" y="${g.head - 8}" text-anchor="middle">${k.label}</text>`).join('')}</g>`).join('');
   const edges = g.edges.map((p) => `<path class="e ${p.kind === 'מקביל' ? 'p' : 'k'}" data-p="${p.id}" d="${p.d}"/>`).join('');
   const ors = g.ors.map((o) => `<g class="or" data-key="${esc(o.key)}" aria-hidden="true"><circle cx="${num(o.x)}" cy="${num(o.y)}" r="${o.r}"/><text x="${num(o.x)}" y="${num(o.y)}" text-anchor="middle" dominant-baseline="central">או</text></g>`).join('');
   return `<svg class="pm-svg" width="100%" height="100%" role="group" aria-label="מפת הקורסים"><defs>
     <marker id="pmArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar"/></marker>
     <marker id="pmArrL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar lit"/></marker></defs>
-    <g class="pz"><g class="edges" aria-hidden="true">${edges}</g><g class="ors">${ors}</g><g class="nodes">${g.nodes.map((n) => nodeSvg(c, n)).join('')}</g></g></svg>`;
+    <g class="pz"><g class="bands">${bands}</g><g class="edges" aria-hidden="true">${edges}</g><g class="ors">${ors}</g><g class="nodes">${g.nodes.map((n) => nodeSvg(c, n)).join('')}</g></g></svg>`;
 }
 
 const legendSw = (s) => `<svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-${s}"><circle class="ring" cx="13" cy="13" r="10"/>${glyph(s, 13, 13, 10)}</g></svg>`;
 const legendEdge = (cls) => `<svg width="34" height="10" aria-hidden="true"><path class="lg-e ${cls}" d="M2 5H32"/></svg>`;
 
 function listHtml(c) {
-  const byLane = new Map(c.L.lanes.map((l) => [l.i, []]));
-  c.L.nodes.filter((n) => n.type === 'course').forEach((n) => byLane.get(n.lane).push(n.id));
-  return `<div class="pm-list">${c.L.lanes.map((l) => `<section><h3>${esc(l.name)}</h3><ul>${byLane.get(l.i).map((id) => {
+  const byBand = c.L.bands.map((b) => c.L.nodes.filter((n) => n.type === 'course' && n.col >= b.first && n.col < b.first + b.n).map((n) => n.id));
+  return `<div class="pm-list">${c.L.bands.map((b, i) => `<section><h3>${esc(b.name)}</h3><ul>${byBand[i].map((id) => {
     const co = c.data.courses[id], s = statusOf(c, id), req = requires(c.data, id), o = c.unlocks[id] ?? 0;
     return `<li class="st-${s}"><div class="li-top"><b>${esc(co.name)}</b><span class="li-st">${LABEL[s]}</span><span class="li-cr"><bdi>${esc(co.credits)}</bdi> נ״ז</span>
       <a class="li-link" href="${yedion(id)}" target="_blank" rel="noopener" aria-label="${esc(co.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></div>
       ${req.length ? `<p>דורש: ${req.map(esc).join('; ')}</p>` : ''}${o ? `<p>פותח: ${plural(o, 'קורס אחד', 'קורסים')}</p>` : ''}${c.st[id]?.reasons.length ? `<p class="li-why">${c.st[id].reasons.map(esc).join('<br>')}</p>` : ''}</li>`;
-  }).join('')}</ul></section>`).join('') || '<p>אין קורסים להצגה.</p>'}</div>`;
+  }).join('')}</ul></section>`).join('') || '<p>אין קורסים להצגה.</p>'}${asideHtml(c)}</div>`;
 }
+
+// Electives the student did not choose: listed, not drawn.
+const asideHtml = (c) => (c.aside.length ? `<details class="pm-aside"><summary>לא רלוונטי (<bdi>${c.aside.length}</bdi>)</summary><p>קורסי בחירה שלא סימנתם ״חובה״ או ״אולי״.</p><ul>${c.aside.map((id) => `<li>${esc(c.data.courses[id].name)} <bdi>${esc(id)}</bdi></li>`).join('')}</ul></details>` : '');
 
 function cardHtml(c, id) {
   const co = c.data.courses[id], s = statusOf(c, id), req = requires(c.data, id), opens = opensDirect(c.data, id), r = c.st[id]?.reasons ?? [];
-  const yr = c.L.lanes.find((l) => l.i === c.L.nodes.find((n) => n.key === id)?.lane)?.year;
+  const yr = c.L.nodes.find((n) => n.key === id)?.year;
   return `<div class="card-top"><span class="chip st-${s}">${LABEL[s]}</span><button type="button" class="pm-ibtn" data-pm="clear" data-k="pm-clear" aria-label="סגור את כרטיס הקורס">${icon('x')}</button></div>
     <h3>${esc(co.name)}</h3><p class="card-meta"><bdi>${esc(id)}</bdi> · <bdi>${esc(co.credits)}</bdi> נ״ז${yr ? ` · ${yearTag(yr)}` : ''}</p>
     ${r.length ? `<p class="card-why">${r.map(esc).join('<br>')}</p>` : ''}
@@ -333,7 +265,7 @@ function cardHtml(c, id) {
 }
 
 // ---------- dialog ----------
-const M = { vw: 0, vh: 0, mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null };
+const M = { mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null };
 let dlg = null;
 const q = (s) => dlg.querySelector(s);
 const PZ_URL = 'https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.6.0/dist/panzoom.es.js';
@@ -341,16 +273,16 @@ let pzLib = null;
 // Lazy so node tests (which import this file) never touch the network; a failed or slow load falls back to the list view.
 const loadPanzoom = () => (pzLib ??= Promise.race([import(PZ_URL).then((m) => m.default), new Promise((_, no) => setTimeout(no, 8000, new Error('timeout')))]).catch((e) => { pzLib = null; throw e; }));
 
-// Opening scale: the whole graph on a desktop; on a phone fit by height (floor 0.3), pinned to layer 0 on the right, one finger pans.
+// Opening scale: the whole graph on a desktop; on a phone fit by height (floor 0.3), pinned to year א׳ on the right, one finger pans.
 export const fitScale = (vw, vh, W, H) => (vw >= 600 ? Math.max(0.2, Math.min(1, vw / W, vh / H)) : Math.max(0.3, Math.min(1, vh / H)));
 
 function ctxOf(mode) {
   const { data, state, cls } = app, st = cls.statuses;
-  const year = studyYear(data, state);
-  const L = layoutMap(data, makeKeep(mode, data, st, year));
+  const year = studyYear(data, state), base = makeKeep(mode, data, st, year);
+  const aside = asideIds(data, st, state.choices).filter((id) => base(id)), off = new Set(aside);
+  const L = layoutMap(data, (id) => base(id) && !off.has(id));
   const doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
-  const wide = M.vw >= 600 && L.nodes.length > 0; // phones keep the layers as they are; a wide screen gets as many columns as make the whole graph fit
-  return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits, wide ? pickCols(L.nodes.length, M.vw, M.vh, L.cols) : 0), year, unlocks: unlockCounts(data, doneIds), mode };
+  return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits), year, unlocks: unlockCounts(data, doneIds), mode, aside };
 }
 
 function light() {
@@ -395,7 +327,7 @@ function render() {
       <span class="lg-i"><svg width="44" height="22" viewBox="0 0 44 22" aria-hidden="true"><g class="ext"><rect x="1" y="2" width="42" height="18" rx="9"/></g></svg>מחוץ לתוכנית</span>
       <span class="lg-i"><svg width="52" height="20" viewBox="0 0 52 20" aria-hidden="true"><g class="opens"><rect x="2" y="2" width="48" height="16" rx="8"/><text x="26" y="10" text-anchor="middle" dominant-baseline="central">פותח 3</text></g></svg>כמה קורסים הוא פותח</span></div></details>` : ''}
     <div class="pm-body">${map
-    ? `<div class="pm-view" role="region" aria-label="מפת הקורסים. אפשר לגרור, לצבוט ולהתקרב, ולהשתמש בכפתורי הזום">${empty ? `<p class="pm-empty">${emptyMsg}</p>` : `${mapSvg(c)}<p class="pm-loading" role="status">טוען מפה…</p>`}</div>`
+    ? `<div class="pm-view" role="region" aria-label="מפת הקורסים לפי שנות לימוד. אפשר לגרור, לגלגל או לצבוט כדי להתקרב, ולהשתמש בכפתורי הזום">${empty ? `<p class="pm-empty">${emptyMsg}</p>` : `${mapSvg(c)}<p class="pm-loading" role="status">טוען מפה…</p>`}${asideHtml(c)}</div>`
     : `<div class="pm-view pm-listview" tabindex="0" role="region" aria-label="רשימת הקורסים">${listHtml(c)}</div>`}
       <aside class="pm-card" aria-label="פרטי הקורס" aria-live="polite" hidden></aside></div>`;
   M.hover = M.focus = null;
@@ -422,19 +354,17 @@ async function mount() {
   if (tok !== M.tok || !dlg.open) return;
   const root = q('.pm-svg'), g = q('.pz'), { W, H } = M.c.g;
   // no preventDefault on pointerdown (the default handler does it): node clicks and focus must still work
-  const pz = M.pz = Panzoom(g, { canvas: true, origin: '0 0', cursor: 'grab', minScale: 0.2, maxScale: 2.5, handleStartEvent: () => {} });
+  const pz = M.pz = Panzoom(g, { canvas: true, origin: '0 0', cursor: 'grab', minScale: 0.2, maxScale: 3, handleStartEvent: () => {} });
   const ends = () => { const s = pz.getScale(), o = pz.getOptions(); q('[data-pm="zin"]').disabled = s >= o.maxScale - 0.01; q('[data-pm="zout"]').disabled = s <= o.minScale + 0.01; };
   g.addEventListener('panzoomchange', ends);
-  root.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    if (e.ctrlKey || e.metaKey) pz.zoomToPoint(pz.getScale() * Math.exp(-Math.max(-30, Math.min(30, e.deltaY)) * 0.01), e); // trackpad pinch arrives as ctrl+wheel
-    else { const k = (e.deltaMode === 1 ? 16 : 1) / pz.getScale(); pz.pan(-e.deltaX * k, -e.deltaY * k, { relative: true, animate: false }); }
-  }, { passive: false });
+  // The wheel zooms toward the pointer (panzoom's zoomWithWheel; trackpad pinch arrives as ctrl+wheel). The lib takes one fixed step per event,
+  // so the step follows the event's size: a mouse notch is about 16%, a trackpad's many small events stay gentle.
+  root.addEventListener('wheel', (e) => pz.zoomWithWheel(e, { step: Math.max(0.03, Math.min(0.9, (Math.abs(e.deltaY || e.deltaX) * (e.deltaMode ? 33 : 1) / 100) * 0.45)) }), { passive: false });
   root.addEventListener('pointerdown', (e) => { M.down = { x: e.clientX, y: e.clientY }; });
   M.fit = () => {
     const r = root.getBoundingClientRect(), s = fitScale(r.width, r.height, W, H), w = W * s, h = H * s;
     pz.zoom(s, { animate: false, force: true });
-    pz.pan((w <= r.width ? (r.width - w) / 2 : r.width - w) / s, (h <= r.height ? (r.height - h) / 2 : 0) / s, { animate: false, force: true }); // too wide: layer 0 (right) in view
+    pz.pan((w <= r.width ? (r.width - w) / 2 : r.width - w) / s, (h <= r.height ? (r.height - h) / 2 : 0) / s, { animate: false, force: true }); // too wide: year א׳ (right) in view
     ends();
   };
   setTimeout(() => {
@@ -460,14 +390,6 @@ function hoverTo(key, kind) {
   light();
 }
 
-// The map area's size decides the column count; before the dialog is open it is estimated from the window.
-function measure() {
-  const v = dlg.open && dlg.querySelector('.pm-view');
-  const w = v ? v.clientWidth : innerWidth, h = v ? v.clientHeight : innerHeight - 190, moved = Math.abs(w - M.vw) > 8 || Math.abs(h - M.vh) > 8;
-  M.vw = w; M.vh = h;
-  return moved;
-}
-
 function openMap(from) {
   if (!app.data || !app.cls) return;
   if (!dlg) {
@@ -483,10 +405,8 @@ function openMap(from) {
   dlg.setAttribute('aria-labelledby', 'pmTitle');
   dlg.setAttribute('dir', 'rtl');
   M.opener = from; M.sel = null; M.mode = 'all'; M.view = 'map'; M.notice = '';
-  measure();
   render();
   dlg.showModal();
-  if (measure()) render(); // the real map area differs from the estimate: more or fewer columns
   mount();
   q('[data-pm="close"]').focus({ preventScroll: true });
 }
@@ -524,10 +444,7 @@ function setup() {
   const onResize = () => {
     clearTimeout(rz);
     rz = setTimeout(() => {
-      if (!dlg?.open || M.view !== 'map') return;
-      measure();
-      const g = ctxOf(M.mode).g, o = M.c.g;
-      if (g.cols !== o.cols || g.H !== o.H || g.W !== o.W) redraw(); else M.fit?.(); // wide or narrow class changed: new geometry; otherwise just re-fit
+      if (dlg?.open && M.view === 'map') M.fit?.();
     }, 150);
   };
   addEventListener('resize', onResize);

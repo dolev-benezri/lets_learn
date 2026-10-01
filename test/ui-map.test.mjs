@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, makeKeep, chainOf, SIZE, nodeRadius, edgePath, G, truncate, edgeEnds, sameLayerPath, geometry, balance, pickCols, fitScale, mapSvg } from '../web/ui-map.js';
+import { layoutMap, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, mapSvg, courseYears, asideIds } from '../web/ui-map.js';
 import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
@@ -11,52 +11,51 @@ const A = read(1), B = read(2);
 const data = { ...yearView(A, B), fetchedAt: A.fetchedAt };
 const state = { passed: data.lists[0].courses, failed: { [data.lists[1].courses[0]]: 1 }, profile: { year: 2, amirnet: 110 } };
 const statuses = withAfterA(data, state, classify(data, state)).statuses;
+const geo = (keep) => { const L = layoutMap(data, keep), g = geometry(L, (id) => data.courses[id]?.credits); return { L, g }; };
+const mini = (courses) => ({ lists: [{ name: "קורסי חובה שנה א'", courses: Object.keys(courses), minCredits: 0 }], courses });
+const mc = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
 
-test('layout: every קדם edge goes to a strictly higher layer, מקביל to the same or a higher one', () => {
-  const L = layoutMap(data), at = Object.fromEntries(L.nodes.map((n) => [n.key, n.layer]));
-  assert.ok(L.edges.length > 40);
-  for (const e of L.edges) {
-    assert.ok(e.kind === 'קדם' ? at[e.from] < at[e.to] : at[e.from] <= at[e.to], `${e.from} -> ${e.to} (${e.kind})`);
-  }
+test('layout: a קדם edge from an earlier study year always flows leftwards, almost every other edge does too', () => {
+  const { L, g } = geo(), at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
+  assert.ok(L.paths.length > 40);
+  const real = L.paths.filter((e) => at[e.from] && at[e.to]);
+  for (const e of real) if (at[e.from].year && at[e.to].year && at[e.from].year < at[e.to].year) assert.ok(at[e.from].x > at[e.to].x, `${e.from} -> ${e.to}`);
+  assert.ok(real.filter((e) => at[e.from].x < at[e.to].x).length <= real.length * 0.05);
 });
 
 test('layout: "או" diamonds only for requirements with more than one distinct option', () => {
   const L = layoutMap(data);
   const multi = Object.values(data.courses).flatMap((c) => c.prereqs).filter((p) => new Set(p.anyOf.map((a) => a.id ?? a.name)).size > 1).length;
   assert.equal(L.diamonds.length, multi);
-  for (const d of L.diamonds) assert.ok(L.edges.filter((e) => e.via === d.key).length >= 2, d.key);
+  for (const d of L.diamonds) assert.ok(L.paths.filter((e) => e.to === d.key || e.from === d.key).length >= 3, d.key); // two options in, one out
   // 30163 lists the same parallel option twice: no diamond for it
   assert.ok(!L.diamonds.some((d) => d.key.startsWith('or:30163:2')));
 });
 
-test('layout: outside-the-program prerequisites become ext nodes, one per lane and name', () => {
+test('layout: outside-the-program prerequisites become ext nodes, one per band and name', () => {
   const L = layoutMap(data);
   const ext = L.nodes.filter((n) => n.type === 'ext');
   assert.ok(ext.length > 0);
   assert.equal(new Set(ext.map((n) => n.key)).size, ext.length);
-  assert.ok(ext.every((n) => n.name && L.edges.some((e) => e.from === n.key)));
+  assert.ok(ext.every((n) => n.name && L.paths.some((e) => e.from === n.key)));
   assert.ok(ext.some((n) => n.name.includes('מכינה')));
 });
 
-test('layout: nothing overlaps, everything sits inside the canvas, nodes stay in their lane', () => {
-  const L = layoutMap(data), S = SIZE;
-  const boxes = [...L.nodes, ...L.diamonds];
-  for (const b of boxes) assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.w <= L.width && b.y + b.h <= L.height, b.key);
-  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
-    const a = boxes[i], b = boxes[j];
-    assert.ok(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y, `${a.key} overlaps ${b.key}`);
+test('layout: one band per study year, א׳ rightmost; the electives band comes last (leftmost); semester א right of ב; columns run by depth', () => {
+  const { L, g } = geo();
+  assert.deepEqual(L.bands.map((b) => b.year), [1, 2, 3, 4, null]);
+  assert.deepEqual(L.bands.map((b) => b.name), ['שנה א׳', 'שנה ב׳', 'שנה ג׳', 'שנה ד׳', 'קורסי בחירה']);
+  assert.deepEqual(g.bands.map((b) => b.x), [...g.bands.map((b) => b.x)].sort((a, b) => b - a)); // later bands further left
+  assert.ok(g.bands.every((b, i) => i === 0 || b.x + b.w < g.bands[i - 1].x)); // a gap between bands
+  const yr = courseYears(data);
+  for (const n of g.nodes.filter((n) => n.type === 'course')) {
+    const b = g.bands[L.bands.findIndex((x) => n.col >= x.first && n.col < x.first + x.n)];
+    assert.equal(b.year, yr.get(n.id) ?? null, n.id);
+    assert.ok(n.x > b.x && n.x < b.x + b.w);
   }
-  for (const n of L.nodes) { const l = L.lanes.find((x) => x.i === n.lane); assert.ok(n.y >= l.top && n.y + n.h <= l.y + l.h - S.lanePad + 1, n.key); }
+  g.bands.forEach((b) => { if (b.cols.length === 2) assert.ok(b.cols[0].x > b.cols[1].x && b.cols[0].label.includes('א') && b.cols[1].label.includes('ב')); });
+  for (let c = 0; c < L.cols.length; c++) { const d = L.nodes.filter((n) => n.col === c).map((n) => n.depth); assert.deepEqual(d, [...d].sort((a, b) => a - b)); }
   assert.equal(L.nodes.filter((n) => n.type === 'course').length, Object.keys(data.courses).length);
-  assert.ok(L.nodes.every((n) => Number.isFinite(n.x) && Number.isFinite(n.y)));
-});
-
-test('layout: RTL, roots on the right and the flow runs leftwards', () => {
-  const L = layoutMap(data);
-  for (const p of L.edges) {
-    const a = L.nodes.find((n) => n.key === p.from), b = L.nodes.find((n) => n.key === p.to);
-    if (a.layer < b.layer) assert.ok(a.x > b.x);
-  }
 });
 
 test('filter "מה שנשאר לי" drops done and exempt courses (and their edges); "year" keeps one list', () => {
@@ -65,24 +64,23 @@ test('filter "מה שנשאר לי" drops done and exempt courses (and their edg
   const ids = new Set(L.nodes.filter((n) => n.type === 'course').map((n) => n.id));
   for (const [id, s] of Object.entries(statuses)) assert.equal(ids.has(id), !['done', 'exempt'].includes(s.status), id);
   assert.ok(ids.size < Object.keys(data.courses).length);
-  assert.ok(L.edges.every((e) => ids.has(e.to) && (L.nodes.find((n) => n.key === e.from).type === 'ext' || ids.has(e.from))));
+  assert.ok(L.paths.every((e) => (ids.has(e.to) || e.to.startsWith('or:')) && (ids.has(e.from) || e.from.startsWith('or:') || L.nodes.find((n) => n.key === e.from)?.type === 'ext')));
   const Y = layoutMap(data, makeKeep('year', data, statuses, 2));
   assert.deepEqual(new Set(Y.nodes.filter((n) => n.type === 'course').map((n) => n.id)), new Set(data.lists[1].courses));
-  assert.equal(Y.lanes.length, 1);
+  assert.equal(Y.bands.length, 1);
 });
 
 test('layout: a tiny graph with an alternative, a parallel course and a cycle still terminates', () => {
-  const c = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
   const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b', 'c', 'd', 'e'], minCredits: 0 }], courses: {
-    a: c('A'), b: c('B'), c: c('C', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] }]),
-    d: c('D', [{ kind: 'מקביל', anyOf: [{ id: 'c', name: 'C' }] }, { kind: 'קדם', anyOf: [{ id: null, name: 'חוץ' }] }]),
-    e: c('E', [{ kind: 'מקביל', anyOf: [{ id: 'd', name: 'D' }] }]),
+    a: mc('A'), b: mc('B'), c: mc('C', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] }]),
+    d: mc('D', [{ kind: 'מקביל', anyOf: [{ id: 'c', name: 'C' }] }, { kind: 'קדם', anyOf: [{ id: null, name: 'חוץ' }] }]),
+    e: mc('E', [{ kind: 'מקביל', anyOf: [{ id: 'd', name: 'D' }] }]),
   } };
   d.courses.a.prereqs = [{ kind: 'מקביל', anyOf: [{ id: 'e', name: 'E' }] }]; // a -> e -> d -> c -> a cycle through parallels
   const L = layoutMap(d);
   assert.equal(L.diamonds.length, 1);
   assert.equal(L.nodes.filter((n) => n.type === 'ext').length, 1);
-  assert.ok(L.paths.every((p) => /^M/.test(p.d)));
+  assert.ok(L.paths.every((p) => p.from && p.to) && geometry(L, () => 3).edges.every((e) => /^M/.test(e.d)));
 });
 
 test('chainOf: all upstream and downstream, nothing from siblings', () => {
@@ -101,8 +99,6 @@ test('edgePath is a horizontal-tangent cubic between two points', () => {
   assert.equal(edgePath({ x: 300, y: 50 }, { x: 100, y: 150 }), 'M300,50 C200,50 200,150 100,150');
 });
 
-const geo = (keep) => { const L = layoutMap(data, keep), g = geometry(L, (id) => data.courses[id]?.credits); return { L, g }; };
-
 test('truncate: 18 characters including the ellipsis, short names untouched', () => {
   assert.equal(truncate('קצר'), 'קצר');
   assert.equal(truncate('א'.repeat(18)), 'א'.repeat(18));
@@ -115,9 +111,10 @@ test('edgeEnds: leaves the near edge of one circle and enters the near edge of t
   assert.deepEqual(edgeEnds(b, a), [{ x: 114, y: 50 }, { x: 280, y: 10 }]);
 });
 
-test('sameLayerPath: a bowed cubic between two nodes of one column (edgePath would be a straight line)', () => {
-  const d = sameLayerPath({ x: 200, y: 10, hw: 20 }, { x: 200, y: 110, hw: 14 });
-  assert.equal(d, `M220,10 C${220 + G.bulge},10 ${214 + G.bulge},110 214,110`);
+test('sameColPath: a bowed cubic between two nodes of one column (edgePath would be a straight line), further out for a longer hop', () => {
+  const k = G.bulge + 100 / 6, d = sameColPath({ x: 200, y: 10, hw: 20 }, { x: 200, y: 110, hw: 14 });
+  assert.equal(d, `M220,10 C${220 + k},10 ${214 + k},110 214,110`);
+  assert.ok(sameColPath({ x: 0, y: 0, hw: 10 }, { x: 0, y: 600, hw: 10 }).includes(`C${10 + G.bulge + 40},`)); // capped
 });
 
 test('fitScale: the whole graph on a desktop (never above 1), by height on a phone (floor 0.3)', () => {
@@ -126,30 +123,29 @@ test('fitScale: the whole graph on a desktop (never above 1), by height on a pho
   assert.ok(Math.abs(fitScale(375, 500, 976, 1100) - 500 / 1100) < 1e-9); assert.equal(fitScale(375, 200, 976, 1100), 0.3);
 });
 
-test('geometry: one evenly spread column per layer, same height for all, layer 0 on the right, no overlaps, Tab order by layer', () => {
-  const { L, g } = geo();
-  const ok = (v) => Number.isFinite(v);
+test('geometry: columns right to left by band, finite, inside the canvas, no overlaps, Tab order by column then top to bottom', () => {
+  const { L, g } = geo(), ok = (v) => Number.isFinite(v);
   assert.ok(g.nodes.every((n) => [n.x, n.y, n.r, n.hw].every(ok)) && g.ors.every((o) => [o.x, o.y].every(ok)));
   assert.ok(g.edges.length === L.paths.length && g.edges.every((e) => /^M[-\d.]+,[-\d.]+ C/.test(e.d) && !/NaN|undefined/.test(e.d)));
-  assert.ok(g.H < 1500 && g.nodes.every((n) => n.x - n.hw >= 0 && n.x + n.hw <= g.W && n.y - n.r >= 0 && n.y + n.r + 22 <= g.H), `H=${g.H}`); // 22 = the name under the circle
-  const at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
-  for (const e of L.edges) assert.ok(e.kind === 'קדם' ? at[e.from].x > at[e.to].x : at[e.from].x >= at[e.to].x, `${e.from} -> ${e.to}`); // balancing keeps every edge flowing leftwards
-  const per = Object.values(Object.groupBy(g.nodes, (n) => n.layer)).map((a) => a.length);
-  assert.ok(Math.max(...per) - Math.min(...per) <= 2, `columns ${per}`);
-  assert.equal(Math.max(...g.nodes.map((n) => n.x)), g.W - G.padX); // layer 0 is the rightmost column
+  assert.ok(g.nodes.every((n) => n.x - n.hw >= 0 && n.x + n.hw <= g.W && n.y - n.r >= g.head && n.y + n.r + 22 <= g.H)); // 22 = the name under the circle; the band headers sit above g.head
+  assert.ok(g.bands.every((b) => b.x >= 0 && b.x + b.w <= g.W));
   const all = [...g.nodes, ...g.ors];
   for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r, `${all[i].key} / ${all[j].key}`);
-  assert.deepEqual(g.nodes.map((n) => n.layer), [...g.nodes.map((n) => n.layer)].sort((a, b) => a - b));
-  for (const col of Object.values(Object.groupBy(g.nodes, (n) => n.layer))) for (let i = 1; i < col.length; i++) assert.ok(col[i].y - col[i - 1].y >= col[i].r + col[i - 1].r + 22 - 1e-6, `${col[i - 1].key} / ${col[i].key}`); // both circles and the name between them
+  assert.deepEqual(g.nodes.map((n) => n.col), [...g.nodes.map((n) => n.col)].sort((a, b) => a - b));
+  for (const col of Object.values(Object.groupBy(g.nodes, (n) => n.col))) for (let i = 1; i < col.length; i++) assert.ok(col[i].y - col[i - 1].y >= col[i].r + col[i - 1].r + 22 - 1e-6, `${col[i - 1].key} / ${col[i].key}`); // both circles and the name between them
 });
 
-test('geometry: a same-layer מקביל edge is bowed, not a straight line through the column', () => {
-  const c = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
-  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 0 }], courses: { a: c('A'), b: c('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) } };
+test('geometry: the whole map (electives not chosen stay aside) fits a laptop screen at a readable scale', () => {
+  const aside = new Set(asideIds(data, statuses, {})), { g } = geo((id) => !aside.has(id));
+  assert.ok(fitScale(1440, 760, g.W, g.H) >= 0.6, `scale ${fitScale(1440, 760, g.W, g.H)} (${g.W}x${g.H})`);
+});
+
+test('geometry: a same-column מקביל edge is bowed, not a straight line through the column', () => {
+  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 0 }], courses: { a: mc('A'), b: mc('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) } };
   const L = layoutMap(d), g = geometry(L, () => 3);
-  assert.equal(L.nodes[0].layer, L.nodes[1].layer);
+  assert.equal(L.nodes[0].col, L.nodes[1].col);
   assert.match(g.edges[0].d, /^M[\d.]+,[\d.]+ C/);
-  assert.ok(g.edges[0].d.includes(`${g.nodes[0].x + g.nodes[0].hw + G.bulge}`));
+  assert.ok(g.edges[0].d.includes(`C${g.nodes[0].x + g.nodes[0].hw + G.bulge + 12},`));
 });
 
 test('mapSvg: one button per course in Tab order, labelled and titled; ext pills and "או" circles are not buttons; all text escaped', () => {
@@ -166,37 +162,17 @@ test('mapSvg: one button per course in Tab order, labelled and titled; ext pills
   for (const s of ['done', 'retake', 'blocked']) if (Object.values(st).some((x) => x.status === s)) assert.ok(html.includes(`st-${s}`));
 });
 
-test('pickCols: never fewer columns than layers, at most 12, and more columns for a wider screen', () => {
-  assert.equal(pickCols(97, 375, 600, 6), 6);
-  assert.ok(pickCols(97, 1440, 760, 6) > 6 && pickCols(97, 2400, 700, 6) <= 12);
-  assert.ok(pickCols(97, 2400, 700, 6) >= pickCols(97, 1440, 760, 6));
-  assert.equal(pickCols(0, 1440, 760, 1), 1);
-});
-
-test('wide layout: 1440x760 fits at 0.8 or more, every edge still flows leftwards, columns are level, nothing overlaps', () => {
-  const L = layoutMap(data), mc = pickCols(L.nodes.length, 1440, 760, L.cols), g = geometry(L, (id) => data.courses[id]?.credits, mc);
-  assert.ok(mc > L.cols && g.cols > L.cols);
-  assert.ok(fitScale(1440, 760, g.W, g.H) >= 0.8, `scale ${fitScale(1440, 760, g.W, g.H)} (${g.W}x${g.H})`);
-  const at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
-  for (const e of L.edges) assert.ok(e.kind === 'קדם' ? at[e.from].x > at[e.to].x : at[e.from].x >= at[e.to].x, `${e.from} -> ${e.to}`);
-  const per = Object.values(Object.groupBy(g.nodes, (n) => n.layer)).map((a) => a.length);
-  assert.ok(Math.max(...per) - Math.min(...per) <= 3, `columns ${per}`);
-  const all = [...g.nodes, ...g.ors];
-  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r, `${all[i].key} / ${all[j].key}`);
-  assert.ok(g.nodes.every((n) => [n.x, n.y].every(Number.isFinite)) && g.W > 0 && g.H > 0);
-});
-
-const mini = (courses) => ({ lists: [{ name: "קורסי חובה שנה א'", courses: Object.keys(courses), minCredits: 0 }], courses });
-const mc = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
-
-test('balance: a chain a -> b -> c is never squeezed into one column, even with spare columns', () => {
-  const L = layoutMap(mini({ a: mc('A'), b: mc('B', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }] }]), c: mc('C', [{ kind: 'קדם', anyOf: [{ id: 'b', name: 'B' }] }]) }));
-  for (const cols of [0, 3, 8]) { const l = balance(L, cols); assert.ok(l.get('a') < l.get('b') && l.get('b') < l.get('c'), `minCols ${cols}`); }
+test('mapSvg: a header per band (the student\'s year marked), decorative only', () => {
+  const { L, g } = geo(), html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all' });
+  for (const b of L.bands) assert.ok(html.includes(`>${b.name}</text>`), b.name);
+  assert.equal((html.match(/class="band mine"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="band( mine)?" aria-hidden="true"/g) ?? []).length, g.bands.length);
+  assert.ok(!/NaN|undefined/.test(html));
 });
 
 test('geometry: the cycle graph and an empty filter both give finite geometry', () => {
   const cyc = mini({ a: mc('A', [{ kind: 'מקביל', anyOf: [{ id: 'b', name: 'B' }] }]), b: mc('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) });
-  const g = geometry(layoutMap(cyc), () => 3, 4);
+  const g = geometry(layoutMap(cyc), () => 3);
   assert.ok(g.nodes.length === 2 && [g.W, g.H, ...g.nodes.flatMap((n) => [n.x, n.y])].every(Number.isFinite));
   const none = geometry(layoutMap(data, () => false), () => 3);
   assert.equal(none.nodes.length, 0); assert.ok(Number.isFinite(none.W) && Number.isFinite(none.H) && none.W > 0 && none.H > 0);
@@ -211,4 +187,38 @@ test('mapSvg: an outside-the-program name with markup and a quote is escaped', (
   const d = mini({ a: mc('A', [{ kind: 'קדם', anyOf: [{ id: null, name: "<b x=\"1\">'" }] }]) });
   const L = layoutMap(d), html = mapSvg({ data: d, st: {}, L, g: geometry(L, () => 3), year: 1, unlocks: {}, mode: 'all' });
   assert.ok(html.includes('class="ext"') && !html.includes('<b x=') && html.includes('&lt;b x=&quot;1&quot;&gt;&#39;'));
+});
+
+test('courseYears: only "חובה שנה X\'" lists give a year; the first list wins', () => {
+  const d = { lists: [{ name: "קורסי חובה שנה ב'", courses: ['a', 'b'] }, { name: "קורסי חובה שנה א'", courses: ['b', 'c'] }, { name: 'קורסי יחידה ללימודי חברה ורוח', courses: ['d', 'zz'] }], courses: { a: mc('A'), b: mc('B'), c: mc('C'), d: mc('D') } };
+  assert.deepEqual([...courseYears(d)], [['a', 2], ['b', 2], ['c', 1]]);
+  assert.equal(courseYears(data).size, new Set(data.lists.filter((l) => /חובה שנה \S'/.test(l.name)).flatMap((l) => l.courses)).size);
+});
+
+test('asideIds: an elective is aside unless chosen חובה/אולי, passed, exempt or being retaken; year courses never are', () => {
+  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['y'] }, { name: 'בחירה', courses: ['a', 'b', 'c', 'e', 'f', 'g'] }], courses: Object.fromEntries(['y', 'a', 'b', 'c', 'e', 'f', 'g', 'h'].map((k) => [k, mc(k)])) };
+  const st = { e: { status: 'done' }, f: { status: 'retake' }, g: { status: 'blocked' } };
+  // h is in no list at all: an elective too
+  assert.deepEqual(asideIds(d, st, { a: 'must', b: 'optional', c: 'no' }).sort(), ['c', 'g', 'h']);
+  assert.deepEqual(asideIds(d, {}).sort(), ['a', 'b', 'c', 'e', 'f', 'g', 'h']);
+});
+
+test('layout: aside electives are not drawn; a chosen one gets the electives band, last', () => {
+  const aside = new Set(asideIds(data, {}, {}));
+  assert.ok(aside.size > 20);
+  const L0 = layoutMap(data, (id) => !aside.has(id));
+  assert.deepEqual(L0.bands.map((b) => b.year), [1, 2, 3, 4]); // nothing chosen: no electives band
+  assert.ok(L0.nodes.every((n) => n.type === 'ext' || !aside.has(n.id)));
+  const pick = [...aside][0], off = new Set(asideIds(data, {}, { [pick]: 'optional' })), L1 = layoutMap(data, (id) => !off.has(id));
+  assert.equal(L1.bands.at(-1).year, null);
+  assert.equal(L1.nodes.find((n) => n.id === pick).year, null);
+});
+
+test('layout: a course offered in one semester sits in that column; others follow their in-band prerequisite; the surplus moves to ב', () => {
+  const sc = (name, semesters, prereqs = []) => ({ ...mc(name, prereqs), semesters });
+  const d = mini({ a: sc('A', ['א']), b: sc('B', ['ב']), c: sc('C', ['א', 'ב'], [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }] }]), d: sc('D', ['א', 'ב']), e: sc('E', ['א', 'ב']), f: sc('F', []) });
+  const L = layoutMap(d), sem = Object.fromEntries(L.nodes.map((n) => [n.id, n.sem])), cnt = (v) => L.nodes.filter((n) => n.sem === v).length;
+  assert.equal(sem.a, 0); assert.equal(sem.b, 1); assert.equal(sem.c, 1); // c needs a, so it cannot share a's semester
+  assert.ok(Math.abs(cnt(0) - cnt(1)) <= 1);
+  assert.equal(layoutMap(mini({ a: mc('A'), b: mc('B') })).cols.length, 1); // single-semester data: one column
 });
