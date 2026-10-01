@@ -60,6 +60,29 @@ test('hard time window edges: lessons end at :50, "not after 17:50" allows one e
   assert.equal(hit({ notBefore: '08:00' }, '07:30', '08:50'), true);
 });
 
+test('busy blocks: always hard, edges floor/ceil the safe way (18:00 block vs lesson ending 17:50, 07:00-08:00 block vs lesson starting 08:00)', () => {
+  const hit = (b, start, end, c = {}) => overlaps(forbiddenMask({ ...c, blocks: [{ day: 2, label: '', ...b }] }), meetingsMask([{ day: 2, start, end }]));
+  assert.equal(hit({ start: '18:00', end: '20:00' }, '16:00', '17:50'), false);
+  assert.equal(hit({ start: '18:00', end: '20:00' }, '19:00', '20:50'), true);
+  assert.equal(hit({ start: '18:00', end: '20:00' }, '20:00', '21:50'), false);
+  assert.equal(hit({ start: '07:00', end: '08:00' }, '08:00', '09:50'), false);
+  assert.equal(hit({ start: '07:00', end: '08:00' }, '07:00', '08:50'), true);
+  assert.equal(hit({ start: '17:45', end: '19:00' }, '16:00', '17:50'), true); // starts inside the lesson's last slot: conservative
+  assert.equal(hit({ start: '18:00', end: '20:00' }, '18:00', '18:50', { dayOffHard: false, windowHard: false }), true); // independent of the hardness flags
+  assert.equal(overlaps(forbiddenMask({ blocks: [{ day: 3, start: '18:00', end: '20:00', label: '' }] }), meetingsMask([{ day: 2, start: '18:00', end: '19:50' }])), false); // other day
+});
+
+test('search: a busy block excludes the only option that overlaps it; diagnosis names the block when it empties a course', () => {
+  const A = { courses: [{ id: 'A', mode: 'must' }] };
+  const blocks = [{ day: 1, start: '12:00', end: '14:00', label: 'עבודה' }]; // A2 is Sunday 12:00-13:50
+  assert.deepEqual(run({ ...A }).results.map((r) => r.groups[0]).sort(), ['A1', 'A1', 'A2']);
+  assert.deepEqual(run({ ...A, constraints: { blocks } }).results.map((r) => r.groups[0]).sort(), ['A1', 'A1']);
+  const r = run({ courses: [{ id: 'B', mode: 'must' }], constraints: { blocks: [{ day: 2, start: '10:00', end: '12:00', label: '' }] } });
+  assert.equal(r.results.length, 0);
+  assert.match(r.diagnosis[0], /דינמיקה.*זמן תפוס/);
+  assert.doesNotMatch(run({ courses: [{ id: 'B', mode: 'must' }], constraints: { dayOff: [2], dayOffHard: true } }).diagnosis[0], /זמן תפוס/);
+});
+
 test('unlockCounts is transitive', () => {
   const u = unlockCounts(mini());
   assert.equal(u.A, 2); // B, C
@@ -503,6 +526,14 @@ test('searchYear: a hard constraint that excludes everything gives no results (n
   const r = searchYear({ dataA, dataB, state: yState({ choices }), yearList: new Set(), weights: W, constraints: { dayOff: [1, 2, 3, 4, 5, 6], dayOffHard: true } });
   assert.equal(r.results.length, 0);
   assert.ok(r.diagnosis.length > 0);
+});
+
+test('searchYear: busy blocks apply to both semesters', () => {
+  const { dataA, dataB } = yearFixture();
+  const choices = { M: 'optional', P: 'optional', N: 'optional', OB: 'optional' };
+  const blocks = [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '07:00', end: '23:00', label: '' }));
+  const r = searchYear({ dataA, dataB, state: yState({ choices }), yearList: new Set(), weights: W, constraints: { blocks } });
+  assert.equal(r.results.length, 0);
 });
 
 test('searchYear: a pinned optional course is in every plan (no "take nothing in א׳" fallback)', () => {

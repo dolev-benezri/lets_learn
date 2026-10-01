@@ -32,7 +32,9 @@ export const lateMask = (t) => {
 export function forbiddenMask(c = {}) {
   const m = new Array(DAYS).fill(0);
   const span = (d, from, to) => meetingsMask([{ day: d, start: from, end: to }])[d];
+  const busy = meetingsMask(c.blocks ?? []); // always hard; floor/ceil in meetingsMask is the safe side for busy time
   for (let d = 1; d <= 6; d++) {
+    m[d] |= busy[d];
     if (c.dayOffHard && c.dayOff?.includes(d)) m[d] = ~0;
     if (c.windowHard && c.notBefore) m[d] |= span(d, '07:00', c.notBefore);
     if (c.windowHard && c.notAfter) m[d] |= lateMask(c.notAfter);
@@ -207,10 +209,11 @@ function explain(info, unlocks) {
   return parts.join(' · ');
 }
 
-function diagnose(items, data) {
+// freedByBlocks(id): the course would have options if the busy blocks were ignored.
+function diagnose(items, data, freedByBlocks) {
   const name = (id) => data.courses[id].name;
   const out = [];
-  for (const it of items) if (it.mode === 'must' && !it.options.length) out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (חסימות אישיות, קבוצות מלאות או נעיצה)`);
+  for (const it of items) if (it.mode === 'must' && !it.options.length) out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id) ? 'זמן תפוס, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
   const must = items.filter((x) => x.mode === 'must' && x.options.length);
   for (let i = 0; i < must.length; i++) for (let j = i + 1; j < must.length; j++) {
     if (must[i].options.every((a) => must[j].options.every((b) => overlaps(a.mask, b.mask)))) {
@@ -337,7 +340,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
 
   dfs(0, new Array(DAYS).fill(0), 0, new Set(), 0);
   const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
-  return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data) };
+  return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins, includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups }).length > 0) };
 }
 
 const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };
