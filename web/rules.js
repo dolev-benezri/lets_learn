@@ -52,7 +52,7 @@ export function classify(data, state) {
     const s = statuses[id];
     if (s?.status === 'blocked' && !seen.has(id)) {
       seen.add(id);
-      return `${c.name} ← ${chain(s.blockedBy[0], seen)}`;
+      return `${c.name} ← ${s.blockedBy.map((b) => chain(b, seen)).filter(Boolean).join(' + ')}`;
     }
     return c.name;
   };
