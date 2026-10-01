@@ -146,3 +146,23 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
   assert.match(foot, /TERMS\.md/);
   assert.equal(html.split('כלי עזר לא רשמי').length, 2);
 });
+
+import { routeOf } from '../web/app.js';
+test('routeOf: #me is the status page, everything else is the builder', () => {
+  assert.equal(routeOf('#me'), 'me');
+  for (const h of ['', '#', '#f=abc', '#b=abc', '#mex']) assert.equal(routeOf(h), 'plan');
+});
+
+test('routeOf: a pasted friend link lands on the builder', () => {
+  assert.equal(routeOf('#f=x'), 'plan');
+});
+
+test('normalize keeps integer grades 0-100 and drops the rest', () => {
+  const s = normalize({ v: 1, grades: { a: 90, b: 101, c: '80', d: -1, e: 55.5 } });
+  assert.deepEqual(s.grades, { a: 90 });
+});
+
+test('status page CSS is scoped to #me: the map lane div.ml.me must not inherit it', () => {
+  const css = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  assert.deepEqual(css.match(/(^|[\s,}])\.me(?![\w-])/gm), null);
+});

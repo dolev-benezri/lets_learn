@@ -12,7 +12,7 @@
 Import:
 1. **Paste text.** Zero dependencies. A pure `groupsFromText(text, data)` finds 9-digit group ids, for example copied from Afeka-net "המערכת שלי".
 2. **PDF.** pdf.js loaded lazily from cdnjs only when the user picks a file. Its text goes through the same `groupsFromText`.
-3. **Image (OCR).** Not in this plan. Tesseract.js is about 2 MB and weak on Hebrew. Digits may be fine, so it is a possible follow-up, and the user decides.
+3. **Image (OCR).** In scope (owner rule 2026-10-01: integrate existing tools). Tesseract.js is loaded lazily from jsdelivr only when an image is chosen, with the `eng` model and a digits-only whitelist (`tessedit_char_whitelist: '0123456789'`). Its text goes through the same `groupsFromText`, so a misread digit can only produce an "לא נמצאו" id, never a wrong silent add. It shows progress, and any error becomes the same "לא נמצא טקסט…" message.
 
 **Tech Stack:** plain ES modules, `node --test`; `pdfjs-dist` from `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/` (an ES module build, lazy `import()`).
 

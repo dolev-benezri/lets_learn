@@ -60,7 +60,10 @@ export function buildDataset({ year, startYear, program, semester, department, l
   };
 }
 
-export function validate(d) {
+const prereqCount = (d) => Object.values(d.courses).reduce((a, c) => a + c.prereqs.length, 0);
+
+// `prev` (the existing file for this semester, if any) enables the checks that compare against it.
+export function validate(d, prev = null) {
   const errors = [], warnings = [];
   const n = Object.keys(d.courses).length;
   if (n < 40) errors.push(`only ${n} courses, expected at least 40`);
@@ -76,7 +79,30 @@ export function validate(d) {
       warnings.push(`${id}: mandatory course without a moed-1 exam`);
     }
   }
+  fieldHealth(d, prev, errors);
   return { errors, warnings };
+}
+
+// A parser that silently stops filling a field must not reach the site: each check guards one field.
+function fieldHealth(d, prev, errors) {
+  const courses = Object.values(d.courses);
+  const meetings = courses.flatMap((c) => c.groups).flatMap((g) => g.meetings);
+  const noDay = meetings.filter((m) => m.day === null).length;
+  if (noDay) errors.push(`${noDay} meeting(s) without a day (check parseDay)`);
+
+  const offered = courses.filter((c) => c.offered);
+  const withCredits = offered.filter((c) => c.credits > 0).length;
+  if (offered.length && withCredits / offered.length <= 0.9) errors.push(`only ${withCredits} of ${offered.length} offered courses have credits (check parseDetails)`);
+
+  if (prev && prereqCount(prev)) {
+    const a = prereqCount(prev), b = prereqCount(d), change = (b - a) / a;
+    if (Math.abs(change) > 0.2) errors.push(`prerequisite count changed by ${(change * 100).toFixed(1)}% (was ${a}, now ${b})`);
+  }
+
+  // The academic year `year` runs from the autumn before it to the September after the spring.
+  const lo = `${d.year - 1}-09-01`, hi = `${d.year}-09-30`;
+  const badExams = courses.flatMap((c) => c.groups).flatMap((g) => g.exams).filter((e) => e.date < lo || e.date > hi).length;
+  if (badExams) errors.push(`${badExams} exam date(s) outside ${lo}..${hi} (check toIsoDate)`);
 }
 
 // Refuse a scrape that shrank sharply against the existing file (a partly blocked run must not overwrite good data).
