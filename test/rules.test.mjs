@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor } from '../web/rules.js';
+import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor, gradeAverage } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
@@ -167,4 +167,11 @@ test('withAfterA is pure, and modeFor treats afterA like available', () => {
   assert.equal(modeFor('afterA', undefined, true), 'optional');
   assert.equal(modeFor('afterA', undefined, false), 'no');
   assert.equal(modeFor('afterA', 'must', false), 'must');
+});
+
+test('gradeAverage weights by credits and ignores ungraded or not-passed courses', () => {
+  const data = { courses: { a: { credits: 4 }, b: { credits: 2 }, c: { credits: 3 } } };
+  const r = gradeAverage(data, { passed: ['a', 'b'], grades: { a: 90, b: 60, c: 100 } });
+  assert.equal(r.avg, 80); assert.equal(r.credits, 6);
+  assert.equal(gradeAverage(data, { passed: [], grades: {} }).avg, null);
 });

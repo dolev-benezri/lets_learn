@@ -8,7 +8,7 @@ const KEY = 'afeka-sched-v1';
 const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 export const DEFAULT = {
   v: 1, year: 2027, semester: 'א', program: 30, startYear: 2026, name: '',
-  passed: null, failed: {}, choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null },
+  passed: null, failed: {}, grades: {}, choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null },
   scope: 'year', load: 'even', semesterOf: {},
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
   constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, examsSameDay: 'forbid', includeFull: false },
@@ -36,6 +36,7 @@ export function normalize(raw) {
   const passed = strs(raw.passed, 200, 20);
   if (passed) out.passed = passed;
   if (isObj(raw.failed)) out.failed = Object.fromEntries(Object.entries(raw.failed).filter(([, v]) => Number.isInteger(v) && v >= 1 && v <= 3));
+  if (isObj(raw.grades)) out.grades = Object.fromEntries(Object.entries(raw.grades).filter(([k, v]) => k.length <= 20 && Number.isInteger(v) && v >= 0 && v <= 100).slice(0, 200));
   if (isObj(raw.choices)) out.choices = Object.fromEntries(Object.entries(raw.choices).filter(([, v]) => ['must', 'optional', 'no'].includes(v)));
   if (Array.isArray(raw.friends)) {
     out.friends = raw.friends.filter((f) => isObj(f) && typeof f.name === 'string' && f.name.length <= 60 && Array.isArray(f.groups)).slice(0, 20)

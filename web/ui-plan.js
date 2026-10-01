@@ -1,7 +1,7 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
 import { app, esc, upsertFriend, splitFriendGroups, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
-import { progress, setStatus, studyYear, cleanProfile } from './rules.js';
+import { progress, setStatus, studyYear, cleanProfile, gradeAverage } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
@@ -132,11 +132,14 @@ function chip(id, li) {
   if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${esc(nm)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
   return `<div class="crs" data-st="${st}">${seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
-    }${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
+    }${st === 'passed' ? `<input class="grade" type="number" min="0" max="100" inputmode="numeric" placeholder="ציון" aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}">` : ''}${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
 }
 
 // Hebrew punctuation for names from the data (ASCII ' and " between letters become geresh and gershayim).
 const heb = (t) => String(t).replace(/(?<=[א-ת])'/g, '׳').replace(/(?<=[א-ת])"(?=[א-ת])/g, '״');
+
+// The weighted-average line; its container is always rendered so a grade change can refresh just this line.
+const avgLine = () => { const { avg, credits } = gradeAverage(app.data, app.state); return avg === null ? '' : `ממוצע: <b>${esc(Math.round(avg * 10) / 10)}</b> (על ${esc(credits)} נ״ז)`; };
 
 // The status page (#me): profile and progress beside the course lists on wide screens, one column on phones.
 // Rendered only while shown; every change saves at once, so leaving the page loses nothing.
@@ -166,6 +169,7 @@ function renderMe() {
         <section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
           <div class="progress"><div class="progress-top"><span><b><bdi dir="ltr">${esc(pr.earned)}/${esc(pr.required)}</bdi> נ״ז</b> · ${pct}%</span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
           <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
+          <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
           <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button></section>
       </div>
       <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses">קורסים לפי שנה</h2>
@@ -605,6 +609,13 @@ const CHG = {
   semOf: (el) => { if (el.value) app.state.semesterOf[el.dataset.id] = el.value; else delete app.state.semesterOf[el.dataset.id]; }, // a pin still wins in the solver
   pyear: (el) => { app.state.profile.year = cleanProfile({ year: Number(el.value) }).year; },
   amirnet: (el) => { app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet; },
+  grade: (el) => {
+    const v = el.value === '' ? NaN : Number(el.value);
+    if (Number.isInteger(v) && v >= 0 && v <= 100) app.state.grades[el.dataset.cid] = v; else delete app.state.grades[el.dataset.cid];
+    el.value = app.state.grades[el.dataset.cid] ?? ''; // snap an invalid entry back
+    $('gradeAvg').innerHTML = avgLine(); // just this line: re-rendering the page would drop the caret
+    return 'quiet';
+  },
   status: (el) => setStatus(app.state, el.dataset.id, el.value),
   failCount: (el) => { app.state.failed[el.dataset.id] = Number(el.value); },
   w: (el) => { app.state.weights[el.dataset.w] = Number(el.value); },

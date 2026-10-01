@@ -156,3 +156,8 @@ test('routeOf: #me is the status page, everything else is the builder', () => {
 test('routeOf: a pasted friend link lands on the builder', () => {
   assert.equal(routeOf('#f=x'), 'plan');
 });
+
+test('normalize keeps integer grades 0-100 and drops the rest', () => {
+  const s = normalize({ v: 1, grades: { a: 90, b: 101, c: '80', d: -1, e: 55.5 } });
+  assert.deepEqual(s.grades, { a: 90 });
+});
