@@ -241,8 +241,8 @@ function renderView() {
   const ctl = (app.sem['ב'] ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', SCOPE, state.scope, 'data-chg="scope"')}</div>` : '')
     + (pair ? `<div class="ctl">${seg('sem', 'סמסטר מוצג', SEMS, sem, 'data-chg="sem"')}</div>` : '');
   const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
-  $('semnote').innerHTML = (ctl ? `<div class="board-ctl">${ctl}</div>` : '')
-    + (app.semNotice ? note('info', app.semNotice) : '')
+  $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
+  $('semnote').innerHTML = (app.semNotice ? note('info', app.semNotice) : '')
     + (pair ? raw.warnings.map((w) => note('info', w)).join('') : '')
     + (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
