@@ -361,6 +361,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   const ra = search({ data: dataA, courses: coursesA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, topK: A_TOP, timeLimitMs: timeLimitMs * A_SHARE, bias });
   const credits = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
   const name = (id) => dataA.courses[id]?.name ?? id;
+  const settled = (x) => (state.passed ?? []).includes(x.id) || stA[x.id]?.status === 'exempt';
   const pairs = [];
   let partial = ra.partial;
   // search() never returns an empty selection; when nothing is must in א׳, "take nothing in א׳" is a valid year plan.
@@ -385,8 +386,9 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     const missing = [...must].filter((id) => !all.has(id));
     const ca = credits(dataA, a.courses), cb = credits(dataB, b?.courses ?? []), total = ca + cb;
     const loadScore = total ? 1 - Math.min(Math.abs(ca - SHARE[state.load ?? 'even'] * total) / (total / 2), 1) : 1;
-    const needs = [...new Set((b?.courses ?? []).flatMap((id) => dataB.courses[id].prereqs.filter((p) => p.kind === 'קדם')
-      .flatMap((p) => p.anyOf.map((x) => x.id)).filter((x) => takenA.has(x) && !(state.passed ?? []).includes(x))))];
+    // Only prerequisites still open before א׳: an anyOf already met by a passed (or exempt) option needs nothing from א׳.
+    const needs = [...new Set((b?.courses ?? []).flatMap((id) => dataB.courses[id].prereqs.filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled))
+      .flatMap((p) => p.anyOf.map((x) => x.id)).filter((x) => takenA.has(x))))];
     pairs.push({
       score: a.score + (b?.score ?? 0) + LOAD_W * loadScore - MISSING_W * missing.length,
       a, b, credits: { a: ca, b: cb }, missing,

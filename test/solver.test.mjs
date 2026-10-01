@@ -488,3 +488,15 @@ test('searchYear: a pinned optional course is in every plan (no "take nothing in
   assert.ok(r.results.length > 0);
   assert.ok(r.results.every((p) => inA(p, 'P')));
 });
+
+// ---- solver audit, task 2 (suspects S1-S7) ----
+const anyOf = (...ids) => [{ kind: 'קדם', anyOf: ids.map((id) => ({ id, name: id })) }];
+const opt = (...ids) => Object.fromEntries(ids.map((id) => [id, 'optional']));
+
+test('S3 no "assumes you pass X" warning when another option of the same anyOf is already passed', () => {
+  const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), P2: yc('P2', 3, []), N: yc('N', 3, [], anyOf('P', 'P2')) });
+  const dataB = semData('ב', { P: yc('P', 3, []), P2: yc('P2', 3, []), N: yc('N', 3, [grp('NB', 3)], anyOf('P', 'P2')) });
+  const r = searchYear({ dataA, dataB, state: yState({ passed: ['P2'], choices: { P: 'must', N: 'optional' } }), yearList: new Set(), weights: W });
+  assert.ok(inA(best(r), 'P') && inB(best(r), 'N'));
+  for (const p of r.results) assert.deepEqual(p.warnings, []);
+});
