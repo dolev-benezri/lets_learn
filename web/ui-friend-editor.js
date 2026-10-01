@@ -94,10 +94,10 @@ function setTab(tab) {
 }
 
 // ---------- rendering (each region on its own: inputs, the textarea and the focus are never re-rendered) ----------
-function renderTabs() { // the semester switch shows in both panes (the picker's copy only on a phone): radios of one name stay in sync as one group
-  const html = app.sem['ב'] ? `<fieldset class="seg"><legend class="sr">סמסטר</legend><div class="seg-opts">${['א', 'ב'].map((s) =>
-    `<label><input type="radio" name="feSem" value="${s}"${s === ed.sem ? ' checked' : ''}><span data-s="${s}"></span></label>`).join('')}</div></fieldset>` : '';
-  $('feTabs').innerHTML = $('fePickSem').innerHTML = html;
+function renderTabs() { // the semester switch shows in both panes (the picker's copy only on a phone); setSem keeps both checked
+  const html = (name) => app.sem['ב'] ? `<fieldset class="seg"><legend class="sr">סמסטר</legend><div class="seg-opts">${['א', 'ב'].map((s) =>
+    `<label><input type="radio" name="${name}" value="${s}"${s === ed.sem ? ' checked' : ''}><span data-s="${s}"></span></label>`).join('')}</div></fieldset>` : '';
+  $('feTabs').innerHTML = html('feSem'); $('fePickSem').innerHTML = html('feSemP'); // two names: one radio group would leave only one copy checked
   refreshTabs();
 }
 function refreshTabs() {
@@ -202,8 +202,7 @@ function selectBlock(gid) {
 }
 function setSem(sem) {
   ed.sem = sem;
-  const r = dlg.querySelector(`input[name="feSem"][value="${sem}"]`);
-  if (r) r.checked = true;
+  for (const r of dlg.querySelectorAll(`input[name^="feSem"][value="${sem}"]`)) r.checked = true;
   if (ed.cid && !offered(sem)[ed.cid]) ed.cid = null;
   ed.sel = null;
   ed.day = firstDay();
@@ -336,7 +335,7 @@ dlg.addEventListener('click', (e) => {
 dlg.addEventListener('change', (e) => {
   e.stopPropagation();
   if (!ed) return;
-  if (e.target.name === 'feSem') setSem(e.target.value);
+  if (e.target.name?.startsWith('feSem')) setSem(e.target.value);
   else if (e.target.id === 'feFile' && e.target.files[0] && !ed.busy) importFile(e.target.files[0]);
 });
 dlg.addEventListener('submit', (e) => {
