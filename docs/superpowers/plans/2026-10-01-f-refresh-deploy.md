@@ -130,9 +130,7 @@ test('stableJson drops fetchedAt and is deterministic', () => {
   - Test with fixed dates.
   - `renderTop` uses it in place of the 3-day `fetchedAt` check.
 - [ ] **Step 2: Fetch.** `init` fetches `status.json` with `{ cache: 'no-cache' }` in parallel with the data, then refetches the data with `?v=<hash>` only if the hash differs from the hash of the loaded data.
-- [ ] **Step 3: `hashchange` (ISSUES §17b).**
-  - Extract the hash handling from `init()` into `applyHash()` and call it from a `hashchange` listener.
-  - It must coexist with the `#me` route from plan B: `routeOf` first, then `readHash` for `#f=` / `#b=`.
+- [ ] **Step 3: `hashchange`:** done in plan B Task 1 (`applyHash`). Here, only check that it still works after the `?v=` refetch.
 - [ ] **Step 4: Vanished groups.**
   - Add the pure `staleRefs(state, data): { pins: string[], friends: {name, ids}[] }` with a test.
   - The banner reads "הקבוצה X בקורס Y כבר לא קיימת בנתונים", with a link to pick another group.

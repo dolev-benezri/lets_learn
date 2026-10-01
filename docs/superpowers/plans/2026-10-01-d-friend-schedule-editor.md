@@ -25,6 +25,14 @@ Import:
 - Hebrew, RTL, 44px targets, keyboard: every grid block and picker row is reachable, and Delete removes the focused block.
 - Use only one browser agent at a time for checks.
 
+## Must not repeat the old form's bugs (debug report 2026-10-01)
+- Save goes through `upsertFriend` from plan 0 (one path, friend identified by **name**, never by index).
+- Editing builds its index from **both** semesters and keeps unrepresentable groups (`splitFriendGroups` from plan 0).
+- The course picker lists only courses with `groups.length > 0` in the shown semester. It accepts the exact datalist text, a course id, or a unique name substring, and Enter adds the course (`<form>` submit).
+- Draft state lives only in the editor until Save. No `save()` / `scheduleRun()` on every pick (the old `'quiet'` CHG handlers did this).
+- Every `<select>` and input has an accessible label (`<label for>` or `aria-label`). Focus returns to the opener (the button has a stable id) after Save and after Cancel.
+- The editor is self-contained. Delete the old `mf*` branch in `friendsPanel()` and the `mf*` ACT/CHG entries. No second copy of the friends panel.
+
 ## Review Focus
 - Pasted text with ids from both semesters: all are placed, and the grid shows a semester switch (tabs as on the board).
 - Pasted text with unknown ids, or numbers that only look like ids (phone numbers, years): reported as "לא נמצאו: …", never silently added.

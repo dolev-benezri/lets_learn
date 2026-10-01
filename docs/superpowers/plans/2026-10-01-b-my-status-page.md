@@ -52,7 +52,8 @@ test('readHash ignores the #me route', async () => {
 - [ ] **Step 2: Run** `npm test`. Expect FAIL: `routeOf` is not exported. The readHash test should already PASS. That is fine: it pins existing behaviour.
 - [ ] **Step 3: Implement** in `web/app.js`: `export const routeOf = (h) => (h === '#me' ? 'me' : 'plan');`. In `init()`, the line `if (h) history.replaceState(...)` stays as it is (`h` is null for `#me`).
 - [ ] **Step 4:** in `web/ui-plan.js`:
-  - add `addEventListener('hashchange', () => { renderAll(); focusView(); });`;
+  - add `addEventListener('hashchange', onHash)`, where `onHash` runs `renderAll(); focusView();` for the route;
+  - also fix debug report item 4 / ISSUES §17b here: extract the `readHash` block from `init()` in `web/app.js` into `export async function applyHash()`, which handles `#f=` (friend landing) and `#b=` (backup confirm), then calls `refresh()`. `init()` calls it, and so does `onHash` when `location.hash` starts with `#f=` or `#b=`. Add a test in `test/app.test.mjs` that `routeOf('#f=x')` is `'plan'`, so a pasted friend link lands on the builder;
   - in `renderAll` set `$('me').hidden = routeOf(location.hash) !== 'me'` and `$('layout').hidden = !$('me').hidden`, where `layout` is the id given to the existing builder wrapper in Task 2;
   - `focusView` focuses `#meTitle` or `#weekTitle`.
 - [ ] **Step 5:** `npm test` → PASS. Commit `feat(nav): #me route for the status page`.

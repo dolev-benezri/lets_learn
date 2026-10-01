@@ -11,6 +11,8 @@
 
 **Tech Stack:** `node --test`. Fixtures follow the existing helpers in `test/solver.test.mjs` (`grp`, `yc`, `pre`, `semData`, `yearFixture`, `yState`, `W`, `W0`, `brute`).
 
+**Note:** the 2026-10-01 debug session read `solver-core.js` and `rules.js` in full and found no crash or correctness bug. The suspects below are ranking and design issues (what is ranked first), so each needs a failing test before it counts.
+
 **Spec:** `docs/superpowers/specs/2026-10-01-full-year-design.md` (year planning) + `docs/superpowers/specs/2026-09-30-afeka-scheduler-design.md` (solver). Regulations engine: `web/rules.js` (תקנון 5.2.2026).
 
 ## Global Constraints
