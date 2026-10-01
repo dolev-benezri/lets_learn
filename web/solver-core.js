@@ -126,6 +126,11 @@ export function chainDepth(data) {
 // unlocks others still counts. BONUS 1: a 0-credit course unlocking 3 (value >= 3) beats a 2-credit elective.
 // DEPTH_BONUS 2: one more semester of chain (the critical path) is worth about two unlocked courses.
 const BONUS = 1, DEPTH_BONUS = 2;
+// id -> value (no bias). Shared by search (per semester) and searchYear (year progress) so the formula lives once.
+export function courseValue(data, down = downstream(data)) {
+  const depth = chainDepth(data);
+  return Object.fromEntries(Object.entries(data.courses).map(([id, c]) => [id, c.credits + BONUS * down[id].size + DEPTH_BONUS * depth[id]]));
+}
 
 const DAY_NAMES = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
 const dur = (m) => toMin(m.end) - toMin(m.start);
@@ -212,7 +217,7 @@ function diagnose(items, data) {
 const KNOWN = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'];
 export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {} }) {
   const forbidden = forbiddenMask(constraints);
-  const down = downstream(data), depth = chainDepth(data);
+  const down = downstream(data), base = courseValue(data, down);
   const value = {};
   let maxValue = 0;
   const activeFriends = friends.filter((f) => f.active !== false);
@@ -220,7 +225,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   const items = courses.map(({ id, mode: m }) => {
     const c = data.courses[id];
     const mode = pins.some((p) => c.groups.some((g) => g.id === p)) ? 'must' : m; // a pinned group forces its course in
-    value[id] = c.credits + BONUS * down[id].size + DEPTH_BONUS * depth[id] + (bias[id] ?? 0);
+    value[id] = base[id] + (bias[id] ?? 0);
     maxValue += Math.max(0, value[id]);
     const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups }).map((o) => ({ ...o, course: id }));
     return { id, mode, credits: c.credits, options };
@@ -338,6 +343,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   const deadline = Date.now() + timeLimitMs;
   const offered = (d, id) => !!d.courses[id]?.offered;
   const pinnedIn = (d, id) => pins.some((p) => d.courses[id]?.groups.some((g) => g.id === p));
+  const pinnedB = (id) => !pinnedIn(dataA, id) && pinnedIn(dataB, id); // an א׳ pin wins (see forced)
   const pinsOf = (d) => pins.filter((p) => Object.values(d.courses).some((c) => c.groups.some((g) => g.id === p)));
   // Where a course must go: a pin wins, then the student's choice, then the only semester that offers it.
   const forced = (id) => (pinnedIn(dataA, id) ? 'א' : pinnedIn(dataB, id) ? 'ב' : state.semesterOf?.[id]
@@ -350,22 +356,48 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     if (mode === 'must') must.add(id);
     if ((mode !== 'must' && mode !== 'optional') || forced(id) === 'ב') continue;
     const flexible = !forced(id);
-    coursesA.push({ id, mode: flexible ? 'optional' : mode });
+    coursesA.push({ id, mode: pinnedIn(dataA, id) ? 'must' : flexible ? 'optional' : mode }); // a pin forces its course in, so "take nothing in א׳" below is not a plan
     if (flexible && state.load && state.load !== 'even') bias[id] = (state.load === 'א' ? 1 : -1) * dataA.courses[id].credits;
   }
   // Must courses not offered in א׳ (or not yet available there) still count as must for the year.
   // א׳ candidates count as passed here, so a must course that only opens after one of them (status afterA) is still owed.
   const stY = classify(dataB, { ...state, passed: [...(state.passed ?? []), ...coursesA.map((c) => c.id)] }).statuses;
-  for (const id of Object.keys(dataB.courses)) if (modeFor(stY[id]?.status, choices[id], yearList.has(id)) === 'must') must.add(id);
+  // Year progress has one denominator for every pair: the value of every course that could enter this year (א׳ candidates,
+  // plus ב׳ courses open once all of them are passed). Each search normalises by its own candidates, and the ב׳ candidates
+  // depend on the א׳ alternative, so adding the two halves' progress compared numbers on different scales.
+  const vA = courseValue(dataA), vB = courseValue(dataB), inA = new Set(coursesA.map((c) => c.id));
+  let yearMax = coursesA.reduce((s, c) => s + Math.max(0, vA[c.id]), 0);
+  for (const id of Object.keys(dataB.courses)) {
+    const mode = modeFor(stY[id]?.status, choices[id], yearList.has(id));
+    // A ב׳ pin makes its course must for the year (as in א׳): if ב׳ cannot honour it, the pair lists it as missing.
+    if (mode === 'must' || (mode === 'optional' && pinnedB(id))) must.add(id);
+    if ((mode === 'must' || mode === 'optional') && !inA.has(id) && forced(id) !== 'א') yearMax += Math.max(0, vB[id]);
+  }
+  const sumV = (v, ids) => ids.reduce((s, id) => s + Math.max(0, v[id] ?? 0), 0);
+  const Wp = weights.progress ?? 0;
 
-  const ra = search({ data: dataA, courses: coursesA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, topK: A_TOP, timeLimitMs: timeLimitMs * A_SHARE, bias });
+  const argsA = { data: dataA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, bias };
+  const ra = search({ ...argsA, courses: coursesA, topK: A_TOP, timeLimitMs: timeLimitMs * A_SHARE });
   const credits = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
   const name = (id) => dataA.courses[id]?.name ?? id;
+  const settled = (x) => (state.passed ?? []).includes(x.id) || stA[x.id]?.status === 'exempt';
   const pairs = [];
   let partial = ra.partial;
+  // The top-A_TOP cut ranks א׳ alone, so it can drop the only א׳ plans that open a ב׳ must course. Seed one per such
+  // course: the best א׳ plan that takes its open prerequisites (the first א׳ candidate of each open anyOf).
+  const key = (a) => [...a.courses].sort().join();
+  const seen = new Set(ra.results.map(key)), seeds = [];
+  for (const m of must) {
+    const need = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled)).map((p) => p.anyOf.find((x) => inA.has(x.id))?.id);
+    if (!need.length || need.includes(undefined)) continue;
+    const r = search({ ...argsA, courses: coursesA.map((c) => (need.includes(c.id) ? { ...c, mode: 'must' } : c)), topK: 1, timeLimitMs: Math.max(B_FLOOR, (deadline - Date.now()) / (must.size + 1)) });
+    partial ||= r.partial;
+    const s = r.results[0];
+    if (s && !seen.has(key(s))) { seen.add(key(s)); seeds.push(s); }
+  }
   // search() never returns an empty selection; when nothing is must in א׳, "take nothing in א׳" is a valid year plan.
-  const aList = coursesA.some((c) => c.mode === 'must') ? ra.results
-    : [...ra.results, { score: 0, breakdown: {}, groups: [], courses: [], unlocks: 0, explanation: '', alts: {}, exams: [] }];
+  const aList = [...seeds, ...ra.results];
+  if (!coursesA.some((c) => c.mode === 'must')) aList.push({ score: 0, breakdown: {}, groups: [], courses: [], unlocks: 0, explanation: '', alts: {}, exams: [] });
   for (const [i, a] of aList.entries()) {
     if (Date.now() > deadline + timeLimitMs / 2) { partial = true; break; }
     const takenA = new Set(a.courses);
@@ -373,22 +405,51 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     const stB = classify(dataB, stateB).statuses;
     const coursesB = Object.keys(dataB.courses).filter((id) => !takenA.has(id) && forced(id) !== 'א')
       .map((id) => ({ id, mode: modeFor(stB[id]?.status, choices[id], yearList.has(id)) }))
-      .filter((c) => c.mode === 'must' || c.mode === 'optional');
+      .filter((c) => c.mode === 'must' || c.mode === 'optional')
+      .map((c) => (pinnedB(c.id) ? { ...c, mode: 'must' } : c));
     const left = Math.max(B_FLOOR, (deadline - Date.now()) / (aList.length - i));
     const args = { data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends, topK: 1, timeLimitMs: left };
     let rb = search({ ...args, courses: coursesB });
-    if (!rb.results.length) rb = search({ ...args, courses: coursesB.map((c) => ({ ...c, mode: 'optional' })) }); // keep the pair, report what is missing
     partial ||= rb.partial;
+    if (!rb.results.length) {
+      // Keep the pair and report what is missing, but give up as few must courses as possible: first relax one at a
+      // time (the best scoring success wins), and only when no single one is enough fall back to all optional
+      // (keeping the pins if that works). Relaxing a pinned course also lifts its pin, since search() forces pins.
+      // ponytail: two or more impossible musts fall straight to all optional; relax pairs if that shows up in real data.
+      const mustB = coursesB.filter((c) => c.mode === 'must');
+      const relax = (keep) => {
+        const lifted = new Set(coursesB.filter((c) => !keep(c)).map((c) => c.id));
+        return search({ ...args, timeLimitMs: left / (mustB.length + 2), pins: args.pins.filter((p) => ![...lifted].some((id) => pinnedIn(dataB, id) && dataB.courses[id].groups.some((g) => g.id === p))),
+          courses: coursesB.map((c) => (keep(c) ? c : { ...c, mode: 'optional' })) });
+      };
+      // A pin names the exact group, so it is a stronger wish than a must choice: pins are only lifted when no
+      // unpinned must is enough.
+      const round = (ms) => {
+        const tries = ms.map((m) => relax((c) => c !== m));
+        partial ||= tries.some((r) => r.partial);
+        return tries.filter((r) => r.results.length).sort((x, y) => y.results[0].score - x.results[0].score)[0];
+      };
+      const pinnedMust = mustB.filter((c) => pinnedB(c.id));
+      rb = round(mustB.filter((c) => !pinnedB(c.id))) ?? round(pinnedMust);
+      if (!rb && pinnedMust.length) { rb = relax((c) => pinnedB(c.id)); if (!rb.results.length) rb = null; }
+      rb ??= relax(() => false);
+      partial ||= rb.partial;
+    }
     const b = rb.results[0] ?? null;
     if (!a.courses.length && !b?.courses.length) continue; // an empty plan is not an answer: let the UI say why nothing fits
     const all = new Set([...a.courses, ...(b?.courses ?? [])]);
     const missing = [...must].filter((id) => !all.has(id));
     const ca = credits(dataA, a.courses), cb = credits(dataB, b?.courses ?? []), total = ca + cb;
     const loadScore = total ? 1 - Math.min(Math.abs(ca - SHARE[state.load ?? 'even'] * total) / (total / 2), 1) : 1;
-    const needs = [...new Set((b?.courses ?? []).flatMap((id) => dataB.courses[id].prereqs.filter((p) => p.kind === 'קדם')
-      .flatMap((p) => p.anyOf.map((x) => x.id)).filter((x) => takenA.has(x) && !(state.passed ?? []).includes(x))))];
+    // Only prerequisites still open before א׳: an anyOf already met by a passed (or exempt) option needs nothing from א׳.
+    const needs = [...new Set((b?.courses ?? []).flatMap((id) => dataB.courses[id].prereqs.filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled))
+      .flatMap((p) => p.anyOf.map((x) => x.id)).filter((x) => takenA.has(x))))];
+    // Swap the two per-semester progress terms for the year one. Times 2: each half scored progress in [0, 1], so the
+    // year term keeps the old scale against LOAD_W and MISSING_W.
+    const yearProgress = (sumV(vA, a.courses) + sumV(vB, b?.courses ?? [])) / (yearMax || 1);
+    const progressFix = Wp * (2 * yearProgress - (a.breakdown.progress ?? 0) - (b?.breakdown.progress ?? 0));
     pairs.push({
-      score: a.score + (b?.score ?? 0) + LOAD_W * loadScore - MISSING_W * missing.length,
+      score: a.score + (b?.score ?? 0) + progressFix + LOAD_W * loadScore - MISSING_W * missing.length,
       a, b, credits: { a: ca, b: cb }, missing,
       warnings: needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : [],
     });

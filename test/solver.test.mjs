@@ -480,3 +480,128 @@ test('searchYear: a hard constraint that excludes everything gives no results (n
   assert.equal(r.results.length, 0);
   assert.ok(r.diagnosis.length > 0);
 });
+
+test('searchYear: a pinned optional course is in every plan (no "take nothing in א׳" fallback)', () => {
+  const { dataA, dataB } = yearFixture();
+  const choices = { M: 'optional', P: 'optional', N: 'optional', OB: 'optional' };
+  const r = searchYear({ dataA, dataB, state: yState({ choices }), pins: ['PA'], yearList: new Set(), weights: W });
+  assert.ok(r.results.length > 0);
+  assert.ok(r.results.every((p) => inA(p, 'P')));
+});
+
+// ---- solver audit, task 2 (suspects S1-S7) ----
+const anyOf = (...ids) => [{ kind: 'קדם', anyOf: ids.map((id) => ({ id, name: id })) }];
+const opt = (...ids) => Object.fromEntries(ids.map((id) => [id, 'optional']));
+
+test('S1 year score: the א׳ choice that unlocks a heavier ב׳ course wins (no per-ב׳ denominator)', () => {
+  // P and Q clash in א׳ (3 credits each). P unlocks N (4 credits) in ב׳; N clashes with E (3 credits).
+  // P + N = 7 credits beats Q + E = 6, but a per-search ב׳ denominator made Q's lonely E look "complete" (progress 1).
+  const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), Q: yc('Q', 3, [grp('QA', 1)]), N: yc('N', 4, [], pre('P')), E: yc('E', 3, []) });
+  const dataB = semData('ב', { P: yc('P', 3, []), Q: yc('Q', 3, []), N: yc('N', 4, [grp('NB', 3)], pre('P')), E: yc('E', 3, [grp('EB', 3)]) });
+  const p = best(searchYear({ dataA, dataB, state: yState({ choices: opt('P', 'Q', 'N', 'E') }), yearList: new Set(), weights: W }));
+  assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses]));
+});
+
+test('S2 ב׳ fallback: an impossible must course does not drop a feasible must for a richer elective', () => {
+  // Y clashes with the pinned Z, so the musts-first ב׳ search fails. X is still feasible; E is worth more but clashes with X.
+  const none = { X: yc('X', 3, []), Y: yc('Y', 3, []), Z: yc('Z', 2, []), E: yc('E', 4, []) };
+  const dataA = semData('א', none);
+  const dataB = semData('ב', { X: yc('X', 3, [grp('XB', 1)]), Y: yc('Y', 3, [grp('YB', 2)]), Z: yc('Z', 2, [grp('ZB', 2, '09:00', '11:00')]), E: yc('E', 4, [grp('EB', 1, '09:00', '11:00')]) });
+  const p = best(searchYear({ dataA, dataB, state: yState({ choices: { X: 'must', Y: 'must', Z: 'optional', E: 'optional' } }), pins: ['ZB'], yearList: new Set(), weights: W }));
+  assert.ok(inB(p, 'X') && inB(p, 'Z'), JSON.stringify(p.b?.courses));
+  assert.deepEqual(p.missing, ['Y']);
+});
+
+test('S3 no "assumes you pass X" warning when another option of the same anyOf is already passed', () => {
+  const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), P2: yc('P2', 3, []), N: yc('N', 3, [], anyOf('P', 'P2')) });
+  const dataB = semData('ב', { P: yc('P', 3, []), P2: yc('P2', 3, []), N: yc('N', 3, [grp('NB', 3)], anyOf('P', 'P2')) });
+  const r = searchYear({ dataA, dataB, state: yState({ passed: ['P2'], choices: { P: 'must', N: 'optional' } }), yearList: new Set(), weights: W });
+  assert.ok(inA(best(r), 'P') && inB(best(r), 'N'));
+  for (const p of r.results) assert.deepEqual(p.warnings, []);
+});
+
+test('S4 a must course offered in neither semester is never placed and nothing throws', () => {
+  const { dataA, dataB } = yearFixture();
+  dataA.courses.G = yc('G', 3, []);
+  dataB.courses.G = yc('G', 3, []);
+  const r = searchYear({ dataA, dataB, state: yState({ choices: { ...yState().choices, G: 'must' } }), yearList: new Set(), weights: W });
+  assert.ok(r.results.length > 0);
+  // Policy (same as a course blocked all year): not a candidate, so not must for the year; the sidebar lists it under "לא נלמד".
+  for (const p of r.results) assert.ok(!inA(p, 'G') && !inB(p, 'G') && !p.missing.includes('G'));
+});
+
+test('S5 a low-ranked א׳ alternative that alone unlocks a ב׳ must course is still found (top-50 cut)', () => {
+  // Seven 3-credit electives outrank {P} in א׳ alone (2^7 subsets, {P} ~121st), but only P unlocks the must N in ב׳.
+  const A = {}, B = {};
+  for (let i = 0; i < 7; i++) {
+    const g = grp(`E${i}A`, (i % 6) + 1, i < 6 ? '08:00' : '12:00', i < 6 ? '10:00' : '14:00');
+    A[`E${i}`] = yc(`E${i}`, 3, [g]);
+    B[`E${i}`] = yc(`E${i}`, 3, []);
+  }
+  const allDay = { ...grp('PA', 1), meetings: [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '08:00', end: '20:00' })) };
+  A.P = yc('P', 1, [allDay]); B.P = yc('P', 1, []);
+  A.N = yc('N', 4, [], pre('P')); B.N = yc('N', 4, [grp('NB', 1)], pre('P'));
+  const choices = { ...opt('P', ...Object.keys(A).filter((id) => id[0] === 'E')), N: 'must' };
+  const p = best(searchYear({ dataA: semData('א', A), dataB: semData('ב', B), state: yState({ choices }), yearList: new Set(), weights: W }));
+  assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses, p.missing]));
+  assert.deepEqual(p.missing, []);
+});
+
+test('S6 a friend only in ב׳ is neutral for every א׳ alternative and decides the ב׳ group', () => {
+  const { dataA, dataB } = yearFixture();
+  dataB.courses.OB.groups.push(grp('OBB2', 5));
+  const friends = [{ name: 'f', weight: 1, active: true, groups: ['OBB2'] }];
+  const r = searchYear({ dataA, dataB, state: yState(), yearList: new Set(), weights: { ...W, friends: 3 }, friends });
+  const fa = r.results.filter((p) => p.a.courses.length).map((p) => p.a.breakdown.friends);
+  assert.ok(fa.length > 1 && fa.every((x) => x === 0), JSON.stringify(fa));
+  assert.ok(best(r).b.groups.includes('OBB2'));
+});
+
+test('S7 a retake offered in both semesters is placed exactly once in every plan', () => {
+  const { dataA, dataB } = yearFixture();
+  const r = searchYear({ dataA, dataB, state: yState({ failed: { M: 1 }, choices: opt('P', 'N', 'OB') }), yearList: new Set(), weights: W });
+  assert.ok(r.results.length > 0);
+  for (const p of r.results) {
+    assert.equal(inA(p, 'M') + inB(p, 'M'), 1);
+    assert.ok(!p.missing.includes('M'));
+  }
+});
+
+test('searchYear: 20 random real-data states each finish within 3.5 s, at most 2 partial', { skip: !existsSync(REAL2) }, () => {
+  const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+  const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
+  const list = (n) => dataA.lists.find((l) => l.name.includes(n)).courses;
+  const y1 = list("שנה א'"), y2 = list("שנה ב'"), y3 = list("שנה ג'");
+  const yearList = new Set(y2);
+  const groupIds = Object.values({ ...dataA.courses, ...dataB.courses }).flatMap((c) => c.groups.map((g) => g.id));
+  let s = Math.imul(1 + 1, 2654435761) >>> 1; // seeded LCG (same style as solver-props), so a failing run reproduces
+  const rnd = () => ((s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff) / 2 ** 31);
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  const weights = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 };
+  const constraints = { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' };
+  let partial = 0, worst = 0;
+  for (let i = 0; i < 20; i++) {
+    const passed = [...y1.filter(() => rnd() < 0.9), ...y2.filter(() => rnd() < 0.3)];
+    const choices = {};
+    for (const id of [...y2, ...y3].filter(() => rnd() < 0.15)) choices[id] = pick(['must', 'optional']);
+    const friends = Array.from({ length: Math.floor(rnd() * 3) }, (_, k) => ({ name: `f${k}`, weight: 1, active: true, groups: groupIds.filter(() => rnd() < 0.2) }));
+    const t = Date.now();
+    const r = searchYear({ dataA, dataB, state: { passed, failed: {}, choices, semesterOf: {}, load: 'even' }, yearList, friends, weights, constraints });
+    const ms = Date.now() - t;
+    worst = Math.max(worst, ms);
+    if (r.partial) partial++;
+    assert.ok(ms <= 3500, `state ${i}: took ${ms}ms (passed ${passed.length}, choices ${JSON.stringify(choices)}, friends ${friends.length})`);
+  }
+  console.log(`random states: worst ${worst}ms, partial ${partial}/20`);
+  assert.ok(partial <= 2, `${partial} of 20 partial`);
+});
+
+test('a ב׳ pin the ב׳ search cannot honour is a missing must, and the rest of ב׳ is still planned', () => {
+  // Shape of property seeds 545/1331: a pin on a 4-credit ב׳ course with maxCredits 3. It used to vanish (b null, no missing).
+  const dataA = semData('א', { Q: yc('Q', 2, [grp('QA', 2)]), R: yc('R', 4, []), E: yc('E', 2, []) });
+  const dataB = semData('ב', { Q: yc('Q', 2, []), R: yc('R', 4, [grp('RB', 1)]), E: yc('E', 2, [grp('EB', 3)]) });
+  const r = searchYear({ dataA, dataB, state: yState({ choices: opt('Q', 'R', 'E') }), pins: ['RB'], yearList: new Set(), weights: W, constraints: { maxCredits: 3 } });
+  assert.ok(r.results.length > 0);
+  for (const p of r.results) assert.ok(!inB(p, 'R') && p.missing.includes('R'), JSON.stringify([p.b?.courses, p.missing]));
+  assert.ok(inA(best(r), 'Q') && inB(best(r), 'E'), JSON.stringify([best(r).a.courses, best(r).b?.courses]));
+});
