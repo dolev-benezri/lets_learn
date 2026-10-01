@@ -1,0 +1,102 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { esc } from '../web/app.js';
+
+test('esc neutralises HTML from untrusted friend links', () => {
+  assert.equal(esc('<img src=x onerror=alert(1)>"\''), '&lt;img src=x onerror=alert(1)&gt;&quot;&#39;');
+  assert.equal(esc(5), '5');
+});
+
+import { normalize } from '../web/app.js';
+const D = normalize(null);
+
+test('normalize: non-object or v!=1 gives DEFAULT', () => {
+  for (const bad of [null, 5, 'x', [], { v: 2, name: 'a' }, {}]) assert.deepEqual(normalize(bad), D);
+  assert.equal(D.program, 30);
+});
+
+test('normalize: foreign program/startYear/year/semester are ignored', () => {
+  const s = normalize({ v: 1, program: 99, startYear: 1999, year: 2000, semester: 'ב', name: 'דנה' });
+  assert.deepEqual([s.program, s.startYear, s.year, s.semester, s.name], [D.program, D.startYear, D.year, D.semester, 'דנה']);
+});
+
+test('normalize: bad weights/constraints dropped, DEFAULT keys kept', () => {
+  const s = normalize({ v: 1, weights: { friends: 'x', progress: 99, bogus: 1, freeDays: 2 },
+    constraints: { dayOff: [0, 3, 7, 'a'], dayOffHard: 'yes', notBefore: '9am', notAfter: '17:30', maxCredits: -1, examsSameDay: 'maybe', includeFull: true } });
+  assert.equal(s.weights.friends, D.weights.friends);
+  assert.equal(s.weights.progress, 5);
+  assert.equal(s.weights.freeDays, 3); // 2 is between steps: snaps up like the UI's nearestStep
+  assert.equal(normalize({ v: 1, weights: { compact: 0.4, timeWindow: 4 } }).weights.timeWindow, 5);
+  assert.ok(!('bogus' in s.weights));
+  assert.deepEqual(s.constraints, { ...D.constraints, notAfter: '17:30', includeFull: true });
+});
+
+test('normalize: bad friends, failed and choices dropped', () => {
+  const s = normalize({ v: 1, failed: { a: 7, b: 2, c: 1.5 }, choices: { a: 'must', b: 'hack' },
+    friends: [{ name: { x: 1 }, groups: [] }, { name: 'ok', groups: ['g1', 5], weight: 9 }, 'str'] });
+  assert.deepEqual(s.failed, { b: 2 });
+  assert.deepEqual(s.choices, { a: 'must' });
+  assert.deepEqual(s.friends, [{ name: 'ok', groups: ['g1'], weight: 3, active: true }]);
+});
+
+test('normalize: valid constraints and friends round-trip', () => {
+  const s = normalize({ v: 1, constraints: { dayOff: [2, 5], notBefore: '09:00', maxCredits: 20, examsSameDay: 'allow' },
+    friends: [{ name: 'x', groups: ['a'], weight: 0.5, active: false }], passed: ['1', '2'], pins: ['p'] });
+  assert.deepEqual([s.constraints.dayOff, s.constraints.notBefore, s.constraints.maxCredits, s.constraints.examsSameDay], [[2, 5], '09:00', 20, 'allow']);
+  assert.deepEqual(s.friends, [{ name: 'x', groups: ['a'], weight: 0.5, active: false }]);
+  assert.deepEqual([s.passed, s.pins], [['1', '2'], ['p']]);
+});
+
+test('DEFAULT weights sit on the 0/1/3/5 scale the preferences panel shows', async () => {
+  const { DEFAULT } = await import('../web/app.js');
+  for (const [k, v] of Object.entries(DEFAULT.weights)) assert.ok([0, 1, 3, 5].includes(v), `${k}=${v}`);
+});
+
+test('normalize: out-of-range profile dropped, valid kept', () => {
+  assert.deepEqual(normalize({ v: 1, profile: { year: 9, amirnet: 49 } }).profile, { year: null, amirnet: null });
+  assert.deepEqual(normalize({ v: 1, profile: { year: 2, amirnet: 110 } }).profile, { year: 2, amirnet: 110 });
+  assert.deepEqual(normalize({ v: 1, profile: 'x' }).profile, { year: null, amirnet: null });
+});
+
+import { yearView } from '../web/app.js';
+test('normalize: scope/load/semesterOf default, validate, and survive', () => {
+  const d = normalize({});
+  assert.equal(d.scope, 'year'); assert.equal(d.load, 'even'); assert.deepEqual(d.semesterOf, {});
+  const old = normalize({ v: 1, name: 'x' }); // old saved state without the new fields
+  assert.equal(old.scope, 'year'); assert.equal(old.load, 'even'); assert.deepEqual(old.semesterOf, {});
+  const n = normalize({ v: 1, scope: 'ב', load: 'א', semesterOf: { 90901: 'ב', bad: 'x', 90902: 'א' } });
+  assert.equal(n.scope, 'ב'); assert.equal(n.load, 'א'); assert.deepEqual(n.semesterOf, { 90901: 'ב', 90902: 'א' });
+  const bad = normalize({ v: 1, scope: 'קיץ', load: 2 });
+  assert.equal(bad.scope, 'year'); assert.equal(bad.load, 'even');
+});
+test('normalize: semesterOf caps entries and key length', () => {
+  const big = Object.fromEntries(Array.from({ length: 300 }, (_, i) => [`c${i}`, 'א']));
+  assert.equal(Object.keys(normalize({ v: 1, semesterOf: big }).semesterOf).length, 200);
+  assert.deepEqual(normalize({ v: 1, semesterOf: { ['k'.repeat(21)]: 'א' } }).semesterOf, {});
+});
+test('yearView: offered in either semester, groups merged, semesters listed', () => {
+  const A = { year: 2027, startYear: 2026, semester: 'א', lists: [], courses: { X: { name: 'X', credits: 1, offered: true, prereqs: [], groups: [{ id: 'xa' }] }, Y: { name: 'Y', credits: 1, offered: false, prereqs: [], groups: [] } } };
+  const B = { ...A, semester: 'ב', courses: { X: { ...A.courses.X, groups: [{ id: 'xb' }] }, Y: { ...A.courses.Y, offered: true, groups: [{ id: 'yb' }] } } };
+  const v = yearView(A, B);
+  assert.deepEqual(v.courses.X.groups.map((g) => g.id), ['xa', 'xb']);
+  assert.deepEqual(v.courses.X.semesters, ['א', 'ב']);
+  assert.equal(v.courses.Y.offered, true); assert.deepEqual(v.courses.Y.semesters, ['ב']);
+  assert.equal(v.semester, 'שנה');
+});
+
+import { app, pickData, semOfGroup } from '../web/app.js';
+import { readFileSync } from 'node:fs';
+const real = (n) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${n}/30-2026.json`, import.meta.url)));
+test('pickData: year view, single-semester scopes, and fallback when ב is missing', () => {
+  const A = real(1), B = real(2);
+  app.state = normalize({});
+  app.sem = { 'א': A, 'ב': B };
+  pickData();
+  assert.equal(app.data.semester, 'שנה'); assert.equal(app.data.fetchedAt, A.fetchedAt); assert.equal(app.data.examsPublished, A.examsPublished);
+  const gA = Object.values(A.courses).flatMap((c) => c.groups)[0].id, gB = Object.values(B.courses).flatMap((c) => c.groups)[0].id;
+  assert.equal(semOfGroup(gA), 'א'); assert.equal(semOfGroup(gB), 'ב'); assert.equal(semOfGroup('nope'), null);
+  app.state.scope = 'ב'; pickData(); assert.equal(app.data, B);
+  app.state.scope = 'א'; pickData(); assert.equal(app.data, A);
+  app.sem = { 'א': A, 'ב': null }; // ב failed to load
+  for (const scope of ['year', 'ב']) { app.state.scope = scope; pickData(); assert.equal(app.data, A); }
+});

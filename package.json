@@ -1,0 +1,13 @@
+{
+  "name": "afeka-scheduler",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test",
+    "scrape": "node scripts/scrape.mjs"
+  },
+  "dependencies": {
+    "node-html-parser": "^6.1.13"
+  }
+}

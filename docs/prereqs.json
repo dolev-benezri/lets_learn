@@ -1,0 +1,2169 @@
+{
+ "source": "web/data/afeka/2027-1/30-2026.json",
+ "fetchedAt": "2026-09-30T16:08:38.362Z",
+ "lists": [
+  "קורסי חובה שנה א'",
+  "קורסי חובה שנה ב'",
+  "קורסי חובה שנה ג'",
+  "קורסי חובה שנה ד'",
+  "פרויקט גמר",
+  "נושא חובה נוסף",
+  "חטיבת יזמות",
+  "קורסי יחידה ללימודי חברה ורוח",
+  "קורסי חובה לימודי אנגלית"
+ ],
+ "courses": [
+  {
+   "id": "6000",
+   "name": "אנגלית טרום בסיסי (מכינה)",
+   "credits": 0,
+   "offered": false,
+   "list": "קורסי חובה לימודי אנגלית",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [
+    "6001"
+   ],
+   "unlocksTotal": 4,
+   "depth": 3
+  },
+  {
+   "id": "6001",
+   "name": "אנגלית בסיסי (מתחילים)",
+   "credits": 0,
+   "offered": true,
+   "list": "קורסי חובה לימודי אנגלית",
+   "requires": [
+    [
+     "6000",
+     "(אנגלית - מכינה בדרך לאפקה)"
+    ],
+    [
+     "6000",
+     "(אנגלית1 - מכינה בדרך לאפקה)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "6002"
+   ],
+   "unlocksTotal": 3,
+   "depth": 2
+  },
+  {
+   "id": "6002",
+   "name": "אנגלית מתקדמים א' (בינוניים)",
+   "credits": 0,
+   "offered": true,
+   "list": "קורסי חובה לימודי אנגלית",
+   "requires": [
+    [
+     "6001"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "6003",
+    "80940"
+   ],
+   "unlocksTotal": 2,
+   "depth": 1
+  },
+  {
+   "id": "6003",
+   "name": "אנגלית מתקדמים ב' (מתקדמים)",
+   "credits": 0,
+   "offered": true,
+   "list": "קורסי חובה לימודי אנגלית",
+   "requires": [
+    [
+     "6002"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "8080",
+   "name": "לומדה למניעת הטרדה מינית-און ליין",
+   "credits": 0,
+   "offered": false,
+   "list": "נושא חובה נוסף",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "10016",
+   "name": "מבוא למדעי המחשב",
+   "credits": 4.5,
+   "offered": true,
+   "list": "קורסי חובה שנה א'",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [
+    "30321"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "10336",
+   "name": "יישומי מחשב בהנדסה MATLAB",
+   "credits": 0.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90905"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30116"
+   ],
+   "unlocksTotal": 2,
+   "depth": 2
+  },
+  {
+   "id": "20816",
+   "name": "מבוא להנדסת חשמל ואלקטרוניקה",
+   "credits": 3,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90903"
+    ]
+   ],
+   "parallel": [
+    [
+     "90904"
+    ]
+   ],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30003",
+   "name": "מבוא לכימיה",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה א'",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30110",
+   "name": "חוזק חומרים 2",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "30127"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30112",
+   "name": "תרמודינמיקה 1",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90901"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30113",
+    "30120",
+    "30160",
+    "30161",
+    "30411"
+   ],
+   "unlocksTotal": 5,
+   "depth": 2
+  },
+  {
+   "id": "30113",
+   "name": "תרמודינמיקה 2",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "30112",
+     "(תרמודינמיקה)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30116",
+   "name": "מערכות ליניאריות",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "10336"
+    ],
+    [
+     "90916"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30302"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "30117",
+   "name": "תורת הזרימה 1",
+   "credits": 3,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "30135",
+     "(מכניקת המוצקים1)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30118",
+    "30411"
+   ],
+   "unlocksTotal": 3,
+   "depth": 2
+  },
+  {
+   "id": "30118",
+   "name": "תורת הזרימה 2",
+   "credits": 3,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30117",
+     "(מכניקת הזורמים)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30161"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "30120",
+   "name": "מעבר חום",
+   "credits": 3.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30112",
+     "(תרמודינמיקה)"
+    ]
+   ],
+   "parallel": [
+    [
+     "90915"
+    ]
+   ],
+   "unlocksDirect": [
+    "30161"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "30127",
+   "name": "חוזק חומרים 1",
+   "credits": 3.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "30135"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30110",
+    "30128",
+    "30221",
+    "30411"
+   ],
+   "unlocksTotal": 4,
+   "depth": 1
+  },
+  {
+   "id": "30128",
+   "name": "מעבדת חוזק חומרים ותכונות החומר",
+   "credits": 1.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30127"
+    ],
+    [
+     "30137"
+    ]
+   ],
+   "parallel": [
+    [
+     "30110"
+    ]
+   ],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30130",
+   "name": "גרפיקה הנדסית 1",
+   "credits": 3,
+   "offered": false,
+   "list": "קורסי חובה שנה א'",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [
+    "30131",
+    "30163",
+    "30164"
+   ],
+   "unlocksTotal": 5,
+   "depth": 2
+  },
+  {
+   "id": "30131",
+   "name": "גרפיקה הנדסית 2",
+   "credits": 3,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "30130",
+     "(גרפיקה הנדסית להנדסה רפואית)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30333",
+    "30411"
+   ],
+   "unlocksTotal": 2,
+   "depth": 1
+  },
+  {
+   "id": "30133",
+   "name": "הנדסה למעשה",
+   "credits": 1.5,
+   "offered": true,
+   "list": "קורסי חובה שנה א'",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30134",
+   "name": "כלכלה הנדסית להנדסה מכנית",
+   "credits": 1.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ד'",
+   "requires": [
+    [
+     "(כלכלה הנדסית)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30135",
+   "name": "סטטיקה של גוף קשיח",
+   "credits": 3.5,
+   "offered": false,
+   "list": "קורסי חובה שנה א'",
+   "requires": [
+    [
+     "(קורס הכנה פיזיקה)",
+     "(פיזיקה - מכינה בדרך לאפקה)"
+    ],
+    [
+     "90901"
+    ]
+   ],
+   "parallel": [
+    [
+     "90903"
+    ]
+   ],
+   "unlocksDirect": [
+    "30117",
+    "30127",
+    "30136"
+   ],
+   "unlocksTotal": 10,
+   "depth": 3
+  },
+  {
+   "id": "30136",
+   "name": "דינמיקה של גוף קשיח",
+   "credits": 3.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "30135",
+     "(מכניקת המוצקים1)"
+    ],
+    [
+     "90901"
+    ],
+    [
+     "90903"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30308"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "30137",
+   "name": "תורת החומרים",
+   "credits": 3.5,
+   "offered": true,
+   "list": "קורסי חובה שנה א'",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [
+    "30128",
+    "30163",
+    "30164",
+    "30221"
+   ],
+   "unlocksTotal": 4,
+   "depth": 1
+  },
+  {
+   "id": "30160",
+   "name": "מכשירי מדידה וחיישנים",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30112"
+    ]
+   ],
+   "parallel": [
+    [
+     "90919"
+    ]
+   ],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30161",
+   "name": "מעבדה לזרימה ומדידות",
+   "credits": 1.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30112"
+    ],
+    [
+     "30118"
+    ],
+    [
+     "30120"
+    ]
+   ],
+   "parallel": [
+    [
+     "30113",
+     "(תרמודינמיקה)"
+    ],
+    [
+     "30160"
+    ]
+   ],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30163",
+   "name": "מעבדת תהליכי ייצור",
+   "credits": 1,
+   "offered": false,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30130",
+     "(גרפיקה הנדסית להנדסה רפואית)"
+    ],
+    [
+     "30137"
+    ]
+   ],
+   "parallel": [
+    [
+     "30164",
+     "30164"
+    ]
+   ],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30164",
+   "name": "תהליכי ייצור",
+   "credits": 2.5,
+   "offered": false,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30130",
+     "(גרפיקה הנדסית להנדסה רפואית)"
+    ],
+    [
+     "30137"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30221",
+   "name": "חלקי מכונות 1",
+   "credits": 3.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30127"
+    ],
+    [
+     "30137"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30302",
+   "name": "תורת הבקרה",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30116"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30308",
+   "name": "תורת התנודות",
+   "credits": 3.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ד'",
+   "requires": [
+    [
+     "30136"
+    ],
+    [
+     "90914"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30321",
+   "name": "תכנות למכטרוניקה",
+   "credits": 3,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "10016",
+     "10016"
+    ],
+    [
+     "10016",
+     "(מבוא לתכנות פיתון)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30333",
+   "name": "תיב\"ם",
+   "credits": 3,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "30131"
+    ]
+   ],
+   "parallel": [
+    [
+     "30221"
+    ]
+   ],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30411",
+   "name": "פרויקט גמר חלק א'",
+   "credits": 1,
+   "offered": false,
+   "list": "פרויקט גמר",
+   "requires": [
+    [
+     "30112",
+     "(תרמודינמיקה)"
+    ],
+    [
+     "30117",
+     "(מכניקת הזורמים)"
+    ],
+    [
+     "30127"
+    ],
+    [
+     "30131"
+    ]
+   ],
+   "parallel": [
+    [
+     "30137",
+     "(תורת החומרים 2)"
+    ],
+    [
+     "30333",
+     "30333"
+    ]
+   ],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "30422",
+   "name": "פרויקט גמר חלק ב'",
+   "credits": 1,
+   "offered": false,
+   "list": "פרויקט גמר",
+   "requires": [],
+   "parallel": [
+    [
+     "30411"
+    ]
+   ],
+   "unlocksDirect": [
+    "30423"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "30423",
+   "name": "פרויקט גמר חלק ג'",
+   "credits": 6,
+   "offered": false,
+   "list": "פרויקט גמר",
+   "requires": [
+    [
+     "30422"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80834",
+   "name": "מושגי יסוד בפילוסופיה",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80840",
+   "name": "זהות עצמית בקולנוע ופילוסופיה",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80874",
+   "name": "Engineers Go to Maraket",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80892",
+   "name": "Engineers become Enterpreneurs",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80909",
+   "name": "Professional Writing in AI-Imbued Workpl",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80912",
+   "name": "סוגיות נבחרות באתיקה הנדסית",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80919",
+   "name": "Ethics in Engineering",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [
+    [
+     "(אתיקה בהנדסה)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80926",
+   "name": "Gender Sexuality & Desire in Cyberspace",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80932",
+   "name": "מאמרי דעה - מתיאוריה לפרקטיקה",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80935",
+   "name": "אקזיסטנציאליזם: קריאה מודרכת",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80940",
+   "name": "Wonders of Human Language",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [
+    [
+     "6002"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80941",
+   "name": "מערכת הבריאות בישראל",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80946",
+   "name": "תרבות ותודעה : מי מייצר את האני שלנו?",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80947",
+   "name": "Introduction to Research Methods",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80948",
+   "name": "היסטוריה ו-AI : אמריקה הלטינית במאה ה-20",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80951",
+   "name": "From Atomic Bomb to Green Nuclear Energy",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80961",
+   "name": "האדם הדיגיטלי בין אוטופיה לדיסטופיה",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80963",
+   "name": "קולנוע ופילוסופיה",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80965",
+   "name": "מח טכנולוגיה ובני אדם",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80966",
+   "name": "מי שולט במי",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80967",
+   "name": "ממציאים ומדענים ששינו את העולם",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80970",
+   "name": "פילוסופיה של מושג הקניין -למי שייך העולם",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80971",
+   "name": "סמינר ניהול מוצר בעולמות הבינה המלאכותית",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80972",
+   "name": "מודלי עולם מול LLMs - קו השבר הבא של AI",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80973",
+   "name": "קניין, חירות וחדשנות - למי שייך העתיד?",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80974",
+   "name": "כלכלת הבינה המלאכותית",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80975",
+   "name": "ממשקים אדפטיביים וחוויות מותאמות אישית",
+   "credits": 2,
+   "offered": true,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80976",
+   "name": "הסברתיות ופרשנות של מודלים",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "80977",
+   "name": "אינטליגנציה קולקטיבית: אדם, AI וקבוצות",
+   "credits": 2,
+   "offered": false,
+   "list": "קורסי יחידה ללימודי חברה ורוח",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "88101",
+   "name": "התנעת המיזם הטכנולוגי",
+   "credits": 2,
+   "offered": true,
+   "list": "חטיבת יזמות",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [
+    "88102"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "88102",
+   "name": "מהפיתוח לשוק הגלובלי",
+   "credits": 2,
+   "offered": false,
+   "list": "חטיבת יזמות",
+   "requires": [
+    [
+     "88101"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "90901",
+   "name": "חשבון דיפרנציאלי אינטגרלי1",
+   "credits": 5,
+   "offered": true,
+   "list": "קורסי חובה שנה א'",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [
+    "30112",
+    "30135",
+    "30136",
+    "90902",
+    "90911"
+   ],
+   "unlocksTotal": 22,
+   "depth": 4
+  },
+  {
+   "id": "90902",
+   "name": "חשבון דיפרנציאלי אינטגרלי2",
+   "credits": 5,
+   "offered": false,
+   "list": "קורסי חובה שנה א'",
+   "requires": [
+    [
+     "90901"
+    ],
+    [
+     "90905"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "90916",
+    "90925"
+   ],
+   "unlocksTotal": 5,
+   "depth": 3
+  },
+  {
+   "id": "90903",
+   "name": "פיזיקה-מכניקה",
+   "credits": 5,
+   "offered": true,
+   "list": "קורסי חובה שנה א'",
+   "requires": [
+    [
+     "(קורס הכנה פיזיקה)",
+     "(פיזיקה - מכינה בדרך לאפקה)"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "20816",
+    "30136",
+    "90904",
+    "90918"
+   ],
+   "unlocksTotal": 6,
+   "depth": 2
+  },
+  {
+   "id": "90904",
+   "name": "פיזיקה חשמל ומגנטיות",
+   "credits": 5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90903"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "90919"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "90905",
+   "name": "אלגברה ליניארית",
+   "credits": 5,
+   "offered": true,
+   "list": "קורסי חובה שנה א'",
+   "requires": [],
+   "parallel": [],
+   "unlocksDirect": [
+    "10336",
+    "90902",
+    "90914",
+    "90925"
+   ],
+   "unlocksTotal": 10,
+   "depth": 4
+  },
+  {
+   "id": "90911",
+   "name": "מבוא להסתברות",
+   "credits": 3.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90901"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "90914",
+   "name": "משוואות דיפ' רגילות",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה א'",
+   "requires": [
+    [
+     "90905"
+    ]
+   ],
+   "parallel": [
+    [
+     "90902"
+    ]
+   ],
+   "unlocksDirect": [
+    "30308",
+    "90916",
+    "90917"
+   ],
+   "unlocksTotal": 6,
+   "depth": 3
+  },
+  {
+   "id": "90915",
+   "name": "משוואות דיפ' חלקיות",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90916"
+    ],
+    [
+     "90917"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "90916",
+   "name": "אנליזה הרמונית",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90902"
+    ],
+    [
+     "90914"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "30116",
+    "90915"
+   ],
+   "unlocksTotal": 3,
+   "depth": 2
+  },
+  {
+   "id": "90917",
+   "name": "פונקציות מרוכבות",
+   "credits": 2.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90914"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "90915"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "90918",
+   "name": "מעבדת פיזיקה מכניקה",
+   "credits": 1,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90903"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [
+    "90919"
+   ],
+   "unlocksTotal": 1,
+   "depth": 1
+  },
+  {
+   "id": "90919",
+   "name": "מעבדת פיזיקה חשמל",
+   "credits": 1,
+   "offered": true,
+   "list": "קורסי חובה שנה ב'",
+   "requires": [
+    [
+     "90904"
+    ],
+    [
+     "90918"
+    ]
+   ],
+   "parallel": [],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  },
+  {
+   "id": "90925",
+   "name": "אנליזה נומרית",
+   "credits": 3.5,
+   "offered": true,
+   "list": "קורסי חובה שנה ג'",
+   "requires": [
+    [
+     "90902"
+    ],
+    [
+     "90905"
+    ]
+   ],
+   "parallel": [
+    [
+     "90914"
+    ]
+   ],
+   "unlocksDirect": [],
+   "unlocksTotal": 0,
+   "depth": 0
+  }
+ ],
+ "edges": [
+  {
+   "from": "6000",
+   "fromName": "אנגלית טרום בסיסי (מכינה)",
+   "to": "6001",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "אנגלית - מכינה בדרך לאפקה",
+   "to": "6001",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "6000",
+   "fromName": "אנגלית טרום בסיסי (מכינה)",
+   "to": "6001",
+   "kind": "קדם",
+   "alt": true,
+   "group": 1
+  },
+  {
+   "from": null,
+   "fromName": "אנגלית1 - מכינה בדרך לאפקה",
+   "to": "6001",
+   "kind": "קדם",
+   "alt": true,
+   "group": 1
+  },
+  {
+   "from": "6001",
+   "fromName": "אנגלית בסיסי (מתחילים)",
+   "to": "6002",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "6002",
+   "fromName": "אנגלית מתקדמים א' (בינוניים)",
+   "to": "6003",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90905",
+   "fromName": "אלגברה ליניארית",
+   "to": "10336",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90903",
+   "fromName": "פיזיקה-מכניקה",
+   "to": "20816",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90904",
+   "fromName": "פיזיקה חשמל ומגנטיות",
+   "to": "20816",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30127",
+   "fromName": "חוזק חומרים 1",
+   "to": "30110",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90901",
+   "fromName": "חשבון דיפרנציאלי אינטגרלי1",
+   "to": "30112",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "30112",
+   "fromName": "תרמודינמיקה 1",
+   "to": "30113",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "תרמודינמיקה",
+   "to": "30113",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "10336",
+   "fromName": "יישומי מחשב בהנדסה MATLAB",
+   "to": "30116",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90916",
+   "fromName": "אנליזה הרמונית",
+   "to": "30116",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30135",
+   "fromName": "סטטיקה של גוף קשיח",
+   "to": "30117",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "מכניקת המוצקים1",
+   "to": "30117",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "30117",
+   "fromName": "תורת הזרימה 1",
+   "to": "30118",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "מכניקת הזורמים",
+   "to": "30118",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "30112",
+   "fromName": "תרמודינמיקה 1",
+   "to": "30120",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "תרמודינמיקה",
+   "to": "30120",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "90915",
+   "fromName": "משוואות דיפ' חלקיות",
+   "to": "30120",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30135",
+   "fromName": "סטטיקה של גוף קשיח",
+   "to": "30127",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "30110",
+   "fromName": "חוזק חומרים 2",
+   "to": "30128",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "30127",
+   "fromName": "חוזק חומרים 1",
+   "to": "30128",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30137",
+   "fromName": "תורת החומרים",
+   "to": "30128",
+   "kind": "קדם",
+   "alt": false,
+   "group": 2
+  },
+  {
+   "from": "30130",
+   "fromName": "גרפיקה הנדסית 1",
+   "to": "30131",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "גרפיקה הנדסית להנדסה רפואית",
+   "to": "30131",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "כלכלה הנדסית",
+   "to": "30134",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "קורס הכנה פיזיקה",
+   "to": "30135",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "פיזיקה - מכינה בדרך לאפקה",
+   "to": "30135",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "90901",
+   "fromName": "חשבון דיפרנציאלי אינטגרלי1",
+   "to": "30135",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "90903",
+   "fromName": "פיזיקה-מכניקה",
+   "to": "30135",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 2
+  },
+  {
+   "from": "30135",
+   "fromName": "סטטיקה של גוף קשיח",
+   "to": "30136",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "מכניקת המוצקים1",
+   "to": "30136",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "90901",
+   "fromName": "חשבון דיפרנציאלי אינטגרלי1",
+   "to": "30136",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "90903",
+   "fromName": "פיזיקה-מכניקה",
+   "to": "30136",
+   "kind": "קדם",
+   "alt": false,
+   "group": 2
+  },
+  {
+   "from": "30112",
+   "fromName": "תרמודינמיקה 1",
+   "to": "30160",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90919",
+   "fromName": "מעבדת פיזיקה חשמל",
+   "to": "30160",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30112",
+   "fromName": "תרמודינמיקה 1",
+   "to": "30161",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "30113",
+   "fromName": "תרמודינמיקה 2",
+   "to": "30161",
+   "kind": "מקביל",
+   "alt": true,
+   "group": 1
+  },
+  {
+   "from": null,
+   "fromName": "תרמודינמיקה",
+   "to": "30161",
+   "kind": "מקביל",
+   "alt": true,
+   "group": 1
+  },
+  {
+   "from": "30118",
+   "fromName": "תורת הזרימה 2",
+   "to": "30161",
+   "kind": "קדם",
+   "alt": false,
+   "group": 2
+  },
+  {
+   "from": "30120",
+   "fromName": "מעבר חום",
+   "to": "30161",
+   "kind": "קדם",
+   "alt": false,
+   "group": 3
+  },
+  {
+   "from": "30160",
+   "fromName": "מכשירי מדידה וחיישנים",
+   "to": "30161",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 4
+  },
+  {
+   "from": "30130",
+   "fromName": "גרפיקה הנדסית 1",
+   "to": "30163",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "גרפיקה הנדסית להנדסה רפואית",
+   "to": "30163",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "30137",
+   "fromName": "תורת החומרים",
+   "to": "30163",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30164",
+   "fromName": "תהליכי ייצור",
+   "to": "30163",
+   "kind": "מקביל",
+   "alt": true,
+   "group": 2
+  },
+  {
+   "from": "30164",
+   "fromName": "תהליכי ייצור",
+   "to": "30163",
+   "kind": "מקביל",
+   "alt": true,
+   "group": 2
+  },
+  {
+   "from": "30130",
+   "fromName": "גרפיקה הנדסית 1",
+   "to": "30164",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "גרפיקה הנדסית להנדסה רפואית",
+   "to": "30164",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "30137",
+   "fromName": "תורת החומרים",
+   "to": "30164",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30127",
+   "fromName": "חוזק חומרים 1",
+   "to": "30221",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "30137",
+   "fromName": "תורת החומרים",
+   "to": "30221",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30116",
+   "fromName": "מערכות ליניאריות",
+   "to": "30302",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "30136",
+   "fromName": "דינמיקה של גוף קשיח",
+   "to": "30308",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90914",
+   "fromName": "משוואות דיפ' רגילות",
+   "to": "30308",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "10016",
+   "fromName": "מבוא למדעי המחשב",
+   "to": "30321",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "10016",
+   "fromName": "מבוא למדעי המחשב",
+   "to": "30321",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "10016",
+   "fromName": "מבוא למדעי המחשב",
+   "to": "30321",
+   "kind": "קדם",
+   "alt": true,
+   "group": 1
+  },
+  {
+   "from": null,
+   "fromName": "מבוא לתכנות פיתון",
+   "to": "30321",
+   "kind": "קדם",
+   "alt": true,
+   "group": 1
+  },
+  {
+   "from": "30131",
+   "fromName": "גרפיקה הנדסית 2",
+   "to": "30333",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "30221",
+   "fromName": "חלקי מכונות 1",
+   "to": "30333",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "30112",
+   "fromName": "תרמודינמיקה 1",
+   "to": "30411",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "תרמודינמיקה",
+   "to": "30411",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "30117",
+   "fromName": "תורת הזרימה 1",
+   "to": "30411",
+   "kind": "קדם",
+   "alt": true,
+   "group": 1
+  },
+  {
+   "from": null,
+   "fromName": "מכניקת הזורמים",
+   "to": "30411",
+   "kind": "קדם",
+   "alt": true,
+   "group": 1
+  },
+  {
+   "from": "30127",
+   "fromName": "חוזק חומרים 1",
+   "to": "30411",
+   "kind": "קדם",
+   "alt": false,
+   "group": 2
+  },
+  {
+   "from": "30131",
+   "fromName": "גרפיקה הנדסית 2",
+   "to": "30411",
+   "kind": "קדם",
+   "alt": false,
+   "group": 3
+  },
+  {
+   "from": "30137",
+   "fromName": "תורת החומרים",
+   "to": "30411",
+   "kind": "מקביל",
+   "alt": true,
+   "group": 4
+  },
+  {
+   "from": null,
+   "fromName": "תורת החומרים 2",
+   "to": "30411",
+   "kind": "מקביל",
+   "alt": true,
+   "group": 4
+  },
+  {
+   "from": "30333",
+   "fromName": "תיב\"ם",
+   "to": "30411",
+   "kind": "מקביל",
+   "alt": true,
+   "group": 5
+  },
+  {
+   "from": "30333",
+   "fromName": "תיב\"ם",
+   "to": "30411",
+   "kind": "מקביל",
+   "alt": true,
+   "group": 5
+  },
+  {
+   "from": "30411",
+   "fromName": "פרויקט גמר חלק א'",
+   "to": "30422",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "30422",
+   "fromName": "פרויקט גמר חלק ב'",
+   "to": "30423",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "אתיקה בהנדסה",
+   "to": "80919",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "6002",
+   "fromName": "אנגלית מתקדמים א' (בינוניים)",
+   "to": "80940",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "88101",
+   "fromName": "התנעת המיזם הטכנולוגי",
+   "to": "88102",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90901",
+   "fromName": "חשבון דיפרנציאלי אינטגרלי1",
+   "to": "90902",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90905",
+   "fromName": "אלגברה ליניארית",
+   "to": "90902",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": null,
+   "fromName": "קורס הכנה פיזיקה",
+   "to": "90903",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": null,
+   "fromName": "פיזיקה - מכינה בדרך לאפקה",
+   "to": "90903",
+   "kind": "קדם",
+   "alt": true,
+   "group": 0
+  },
+  {
+   "from": "90903",
+   "fromName": "פיזיקה-מכניקה",
+   "to": "90904",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90901",
+   "fromName": "חשבון דיפרנציאלי אינטגרלי1",
+   "to": "90911",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90902",
+   "fromName": "חשבון דיפרנציאלי אינטגרלי2",
+   "to": "90914",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90905",
+   "fromName": "אלגברה ליניארית",
+   "to": "90914",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "90916",
+   "fromName": "אנליזה הרמונית",
+   "to": "90915",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90917",
+   "fromName": "פונקציות מרוכבות",
+   "to": "90915",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "90902",
+   "fromName": "חשבון דיפרנציאלי אינטגרלי2",
+   "to": "90916",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90914",
+   "fromName": "משוואות דיפ' רגילות",
+   "to": "90916",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "90914",
+   "fromName": "משוואות דיפ' רגילות",
+   "to": "90917",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90903",
+   "fromName": "פיזיקה-מכניקה",
+   "to": "90918",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90904",
+   "fromName": "פיזיקה חשמל ומגנטיות",
+   "to": "90919",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90918",
+   "fromName": "מעבדת פיזיקה מכניקה",
+   "to": "90919",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "90902",
+   "fromName": "חשבון דיפרנציאלי אינטגרלי2",
+   "to": "90925",
+   "kind": "קדם",
+   "alt": false,
+   "group": 0
+  },
+  {
+   "from": "90905",
+   "fromName": "אלגברה ליניארית",
+   "to": "90925",
+   "kind": "קדם",
+   "alt": false,
+   "group": 1
+  },
+  {
+   "from": "90914",
+   "fromName": "משוואות דיפ' רגילות",
+   "to": "90925",
+   "kind": "מקביל",
+   "alt": false,
+   "group": 2
+  }
+ ]
+}
