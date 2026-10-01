@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hourRange, nearestStep, summary, initials, firstName, rankText, assignColors, repeatIds, progressRanks, altGroups, backups, isPair, semResult, resCourses, resGroups, placedIn, yearTotals, groupOptions, typeLabel, renderWeek } from '../web/ui-grid.js';
+import { hourRange, nearestStep, summary, initials, firstName, rankText, assignColors, repeatIds, progressRanks, altGroups, backups, isPair, semResult, resCourses, resGroups, placedIn, yearTotals, renderWeek } from '../web/ui-grid.js';
 
 const m = (day, start, end) => ({ day, start, end });
 
@@ -142,26 +142,6 @@ test('year pairs: shown-semester result, empty halves, totals and placement', ()
   assert.deepEqual(yearTotals(full), { courses: 2, credits: 7.5 });
   assert.deepEqual([placedIn(full, 'A'), placedIn(full, 'B'), placedIn(full, 'C')], ['א', 'ב', null]);
   assert.deepEqual(resCourses(single), ['A']);
-});
-
-test('groupOptions: groups by type with label per option (day time lecturer id)', () => {
-  const g = (id, type, day, start, end, lecturer = 'ד״ר כהן', linked = []) =>
-    ({ id, type, lecturer, linked, primary: !id.includes('/'), full: false, exams: [], meetings: [{ day, start, end }] });
-  const course = { groups: [
-    g('L1', 'סופי-הרצאה', 2, '09:00', '10:50'),
-    g('L1/T1', 'תרגול', 3, '11:00', '12:00'),
-    g('L1/T2', 'תרגול', 4, '13:00', '14:00'),
-  ] };
-  const opts = groupOptions(course);
-  assert.equal(opts.length, 2);
-  assert.equal(opts[0].type, 'סופי-הרצאה');
-  assert.equal(opts[0].options.length, 1);
-  assert.equal(opts[0].options[0].id, 'L1');
-  assert.equal(opts[0].options[0].label, 'הרצאה · ב׳ 09:00–10:50 · ד״ר כהן (L1)');
-  assert.equal(opts[1].type, 'תרגול');
-  assert.equal(opts[1].options.length, 2);
-  assert.equal(opts[1].options[0].label, 'תרגול · ג׳ 11:00–12:00 · ד״ר כהן (L1/T1)');
-  assert.equal(opts[1].options[1].label, 'תרגול · ד׳ 13:00–14:00 · ד״ר כהן (L1/T2)');
 });
 
 test('a block wraps the end time in .blk-end so narrow blocks can drop it', () => {

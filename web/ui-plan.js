@@ -1,12 +1,13 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, esc, upsertFriend, splitFriendGroups, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
+import { app, esc, upsertFriend, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
 import { progress, setStatus, studyYear, cleanProfile, gradeAverage } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
-import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, groupOptions, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
+import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 import { askConfirm, showText, trapTab } from './ui-dialog.js';
+import { openFriendEditor } from './ui-friend-editor.js';
 import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale } from './ui-text.js';
 
 const $ = (id) => document.getElementById(id);
@@ -26,7 +27,6 @@ const PHONE = '(max-width: 599px)'; // the popover is a bottom sheet
 
 let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, moreMul = 1, sem = 'א'; // sem: the shown semester of a year result
 let panel = null, opener = null, mobileDay = 1, friendMsg = '', friendUrl = '', liveText = '';
-let mfName = '', mfCourses = [], mfGroups = {}, mfKeep = [], mfEditName = null, mfCourseErr = ''; // manual friend entry draft: name, course ids, {type: gid}, group ids kept as they are, name of the friend being edited ('' = new, null = form closed), course error
 const openDetails = new Set(['plan']);
 const colors = new Map(); // sticky: a course keeps its colour unless it clashes inside the shown alternative
 let dashed = new Set(); // courses of the shown alternative that repeat a colour (more than 8 courses)
@@ -363,57 +363,11 @@ function friendsPanel() {
     const miss = f.groups.filter((g) => !known.has(g)).length;
     return `<div class="frow"><span class="av lg" aria-hidden="true">${esc(initials(f.name))}</span>
       <div class="grow"><b>${esc(f.name)}</b><p class="hint">${f.groups.length - miss} קבוצות${miss ? ` · <span class="warn-text">${miss} לא נמצאו</span>` : ''}</p></div>
-      ${f.manual ? `<button type="button" class="btn icon-btn ghost" data-act="editFriend" data-i="${i}" aria-label="ערוך את ${esc(f.name)}">${icon('pencil')}</button>` : ''}
+      ${f.manual ? `<button type="button" class="btn icon-btn ghost" id="editFriend-${i}" data-act="editFriend" data-i="${i}" aria-label="ערוך את ${esc(f.name)}">${icon('pencil')}</button>` : ''}
       <button type="button" class="btn icon-btn ghost" data-act="removeFriend" data-i="${i}" aria-label="הסר את ${esc(f.name)}">${icon('x')}</button>
       <div class="frow-full">${seg(`fw-${i}`, `כמה חשוב להיות עם ${f.name}?`, FSCALE, nearestStep(f.weight, [0, 1, 2, 3]), `data-chg="fw" data-i="${i}"`, true)}
       <label class="check"><input type="checkbox" data-chg="factive" data-i="${i}" data-k="fa-${i}"${f.active ? ' checked' : ''}> להציג במערכת</label></div></div>`;
   };
-  if (mfEditName !== null) {
-    const editingFriend = state.friends.find((f) => f.name === mfEditName);
-    const coursesList = Object.entries(app.data.courses).map(([cid, c]) => ({ cid, name: heb(c.name) }));
-    const datalistOptions = coursesList.map((c) => `<option value="${esc(c.name)} (${esc(c.cid)})" label="${esc(c.name)}">`).join('');
-    const courseRows = mfCourses.map((cid, ci) => {
-      const course = app.data.courses[cid];
-      if (!course) return '';
-      const opts = groupOptions(course);
-      const groupSelects = opts.map((opt) => `
-        <label class="sr">${esc(typeLabel(opt.type))}</label>
-        <select data-chg="mfGroup" data-ci="${ci}" data-cid="${esc(cid)}" data-type="${esc(opt.type)}" data-k="mfGroup-${ci}-${esc(opt.type)}">
-          <option value="">לא נבחר</option>
-          ${opt.options.map((o) => `<option value="${esc(o.id)}"${mfGroups[`${cid}|${opt.type}`] === o.id ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}
-        </select>`).join('');
-      return `<div class="field row"><span>${esc(course.name)}</span>${groupSelects}<button type="button" class="btn icon-btn" data-act="mfRemoveCourse" data-ci="${ci}" style="width:44px" aria-label="הסר קורס">${icon('x')}</button></div>`;
-    }).join('');
-    return ['חברים', `
-      <section class="dr-sec"><h3>הוספת חבר</h3>
-        <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
-        <form id="addFriendForm" class="row"><label for="friendUrl" class="sr">קישור שחבר שלח</label>
-          <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו כאן קישור שחבר שלח" value="${esc(friendUrl)}"
-            aria-describedby="friendHow${friendMsg ? ' friendErr' : ''}"${friendMsg ? ' aria-invalid="true"' : ''}>
-          <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
-        ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}
-        <button type="button" class="btn" id="openManualFriend" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
-      ${mfEditName !== null ? `<section class="dr-sec"><h3>${editingFriend ? 'עריכת חבר' : 'הוסף חבר ידנית'}</h3>
-        <label class="field"><span>שם החבר</span><input id="mfName" type="text" maxlength="60" data-k="mfName" data-chg="mfName" value="${esc(mfName)}" placeholder="שם החבר"></label>
-        <div class="row">
-          <label for="mfCourse" class="sr">בחר קורס</label>
-          <input id="mfCourse" type="text" list="mfCourseList" data-k="mfCourse" placeholder="חפש קורס" aria-invalid="${mfCourseErr ? 'true' : 'false'}" aria-describedby="${mfCourseErr ? 'mfCourseErr' : ''}">
-          <datalist id="mfCourseList">${datalistOptions}</datalist>
-          <button type="button" class="btn" data-act="mfAddCourse" data-k="mfAddCourse">הוסף קורס</button>
-        </div>
-        ${mfCourseErr ? `<p class="err-text" id="mfCourseErr" role="alert">${icon('alert')} ${esc(mfCourseErr)}</p>` : ''}
-        ${courseRows}
-        ${mfKeep.length ? `<p class="hint">עוד ${mfKeep.length} קבוצות נשמרות כמו שהן</p>` : ''}
-        <div class="row" style="justify-content: flex-end; gap: 8px;">
-          <button type="button" class="btn" data-act="mfCancel" data-k="mfCancel">ביטול</button>
-          <button type="button" class="btn primary" data-act="mfSave" data-k="mfSave">שמור חבר</button>
-        </div></section>` : ''}
-      <section class="dr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || '<p class="hint">עוד אין חברים.</p>'}</section>
-      <section class="dr-sec"><h3>הקישור שלי</h3>
-        <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
-        <button type="button" class="btn" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
-        <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`, ''];
-  }
   return ['חברים', `
     <section class="dr-sec"><h3>הוספת חבר</h3>
       <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
@@ -422,7 +376,7 @@ function friendsPanel() {
           aria-describedby="friendHow${friendMsg ? ' friendErr' : ''}"${friendMsg ? ' aria-invalid="true"' : ''}>
         <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
       ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}
-      <button type="button" class="btn" id="openManualFriend" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
+      <button type="button" class="btn" id="openFriendEditor" data-act="openFriendEditor" data-k="openFriendEditor">הזנת מערכת של חבר</button></section>
     <section class="dr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || '<p class="hint">עוד אין חברים.</p>'}</section>
     <section class="dr-sec"><h3>הקישור שלי</h3>
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
@@ -492,6 +446,15 @@ function addFriend(p) {
   refresh();
   toast(friendToast(name, r.replaced));
 }
+// The editor's onSave: returns an error string (the editor stays open) or null.
+function saveManualFriend(p, editing) {
+  const r = upsertFriend(app.state.friends, p, editing);
+  if (r.error) return r.error;
+  app.state.friends = r.friends; // a pending friend-link banner stays: it is a different friend
+  refresh();
+  toast(friendToast(p.name, r.replaced));
+  return null;
+}
 async function share() {
   const res = current();
   if (!res) return toast('אין עדיין מערכת לשתף');
@@ -531,51 +494,8 @@ const ACT = {
   landingDrop() { app.friendLanding = null; renderBanner(); focusWeek(); },
   dismissError() { app.hashError = null; renderBanner(); focusWeek(); },
   removeFriend(el) { app.state.friends.splice(Number(el.dataset.i), 1); refresh(); $('drawer').querySelector('[data-k="closeDrawer"]')?.focus(); },
-  openManualFriend() { mfName = ''; mfCourses = []; mfGroups = {}; mfKeep = []; mfEditName = ''; mfCourseErr = ''; keepFocus(renderDrawer); $('mfName')?.focus(); },
-  editFriend(el) {
-    const f = app.state.friends[Number(el.dataset.i)];
-    const idx = new Map([...groupIndex(app.sem['א']), ...(app.sem['ב'] ? groupIndex(app.sem['ב']) : [])]);
-    const { slots, keep } = splitFriendGroups(f.groups, idx);
-    mfName = f.name;
-    mfGroups = slots;
-    mfKeep = keep;
-    mfCourses = [...new Set(Object.keys(slots).map((k) => k.split('|')[0]))];
-    mfEditName = f.name;
-    mfCourseErr = '';
-    keepFocus(renderDrawer);
-    $('mfName')?.focus();
-  },
-  mfAddCourse(el) {
-    const input = $('mfCourse'), text = input.value.trim();
-    mfCourseErr = '';
-    const m = text.match(/^(.+?)\s*\(([^)]{1,20})\)$/);
-    const cid = m?.[2];
-    if (!cid || !app.data.courses[cid]) { mfCourseErr = 'לא מצאתי קורס בשם הזה'; keepFocus(renderDrawer); return; }
-    if (mfCourses.includes(cid)) return; // ignore duplicate
-    const course = app.data.courses[cid];
-    if (!course.groups?.length) { mfCourseErr = 'לקורס זה אין קבוצות'; keepFocus(renderDrawer); return; }
-    mfCourses.push(cid);
-    input.value = ''; keepFocus(renderDrawer); input.focus();
-  },
-  mfRemoveCourse(el) { const [cid] = mfCourses.splice(Number(el.dataset.ci), 1); for (const k of Object.keys(mfGroups)) if (k.startsWith(`${cid}|`)) delete mfGroups[k]; keepFocus(renderDrawer); $('mfCourse')?.focus(); },
-  async mfSave(el) {
-    const name = ($('mfName')?.value ?? mfName).trim().slice(0, 60);
-    if (!name) return toast('יש להזין שם חבר');
-    const groups = [...new Set([...Object.values(mfGroups).filter((g) => g), ...mfKeep])];
-    if (!groups.length) return toast('יש לבחור קבוצה אחת לפחות');
-    if (name !== mfEditName && app.state.friends.some((f) => f.name === name) && !await askConfirm(`החבר ${name} כבר קיים. להחליף?`, { ok: 'החלף', cancel: 'ביטול' })) return;
-    const was = mfEditName;
-    const r = upsertFriend(app.state.friends, { name, groups, manual: true }, was || null);
-    if (r.error) return toast(r.error);
-    app.state.friends = r.friends;
-    mfName = ''; mfCourses = []; mfGroups = {}; mfKeep = []; mfEditName = null; mfCourseErr = '';
-    app.friendLanding = null;
-    refresh();
-    toast(friendToast(name, r.replaced));
-    keepFocus(renderDrawer);
-    $('openManualFriend')?.focus();
-  },
-  mfCancel() { mfName = ''; mfCourses = []; mfGroups = {}; mfKeep = []; mfEditName = null; mfCourseErr = ''; keepFocus(renderDrawer); $('openManualFriend')?.focus(); },
+  openFriendEditor: () => openFriendEditor({ onSave: saveManualFriend, returnFocusId: 'openFriendEditor' }),
+  editFriend: (el) => openFriendEditor({ friend: app.state.friends[Number(el.dataset.i)], onSave: saveManualFriend, returnFocusId: `editFriend-${el.dataset.i}` }),
   dayOff(el) {
     const c = app.state.constraints, d = Number(el.dataset.day);
     c.dayOff = c.dayOff.includes(d) ? c.dayOff.filter((x) => x !== d) : [...c.dayOff, d];
@@ -631,8 +551,6 @@ const CHG = {
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
   maxCredits: (el) => { const n = parseFloat(el.value); app.state.constraints.maxCredits = Number.isFinite(n) && n >= 0 ? n : null; return 'quiet'; },
   myName: (el) => { app.state.name = el.value.trim().slice(0, 60); return 'quiet'; },
-  mfGroup: (el) => { mfGroups[`${el.dataset.cid}|${el.dataset.type}`] = el.value; return 'quiet'; },
-  mfName: (el) => { mfName = el.value; return 'quiet'; },
 };
 
 // The view follows the hash: #me shows the status page, anything else the builder (index.html #me / #layout).
@@ -704,7 +622,8 @@ document.addEventListener('toggle', (e) => {
   if (k) e.target.open ? openDetails.add(k) : openDetails.delete(k);
 }, true);
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && $('drawer').open && !$('pop').matches(':popover-open') && !document.querySelector('dialog.dlg[open]')) { $('drawer').close(); return; }
+  if (document.querySelector('dialog:modal:not(#drawer)')) return; // a confirm or the friend editor is on top (focus may sit on <body>)
+  if (e.key === 'Escape' && $('drawer').open && !$('pop').matches(':popover-open')) { $('drawer').close(); return; }
   if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || !$('me').hidden || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   if (e.target.closest?.('input, textarea, select, [contenteditable]') || $('drawer').contains(e.target) || $('pop').matches(':popover-open')) return;
   e.preventDefault();
