@@ -440,3 +440,43 @@ test('searchYear: a must course that needs an optional א׳ prerequisite the pla
   assert.ok(!inA(p, 'P'));
   assert.deepEqual(p.missing, ['N']);
 });
+
+test('synthetic: pruning with active friends sharing groups keeps results identical', () => {
+  let seed = 23;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  for (let t = 0; t < 60; t++) {
+    const { data, ids } = synth(rnd);
+    const groups = ids.flatMap((id) => data.courses[id].groups.map((g) => g.id));
+    const courses = ids.map((id) => ({ id, mode: rnd() < 0.15 ? 'must' : 'optional' }));
+    const weights = { friends: pick([3, 5]), progress: pick([0, 1, 3]), freeDays: pick([0, 1]), compact: pick([0, 1]), timeWindow: 0, examSpread: 0 };
+    const friends = Array.from({ length: 1 + Math.floor(rnd() * 3) }, (_, i) => ({ name: `f${i}`, weight: pick([1, 2, 3]), active: true, groups: groups.filter(() => rnd() < 0.45) }));
+    const args = { data, courses, statuses: {}, weights, friends, constraints: { examsSameDay: 'allow' }, topK: pick([1, 3, 10]), timeLimitMs: 60000 };
+    const a = search({ ...args, prune: false }), b = search(args);
+    assert.deepEqual(b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), `case ${t}`);
+  }
+});
+
+const REAL2 = 'web/data/afeka/2027-2/30-2026.json';
+test('searchYear: real data with one friend on an actual alternative finishes within 3 s, not partial', { skip: !existsSync(REAL2) }, () => {
+  const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+  const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
+  const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
+  const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
+  const take = (d) => Object.values(d.courses).flatMap((c) => { const p = c.groups.find((g) => g.primary && !g.full); return p ? [p.id, ...p.linked] : []; });
+  const friends = [{ name: 'f', weight: 2, active: true, groups: [...take(dataA), ...take(dataB)] }];
+  const t = Date.now();
+  const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' }, yearList: y2, friends,
+    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' } });
+  assert.ok(Date.now() - t < 3000, `took ${Date.now() - t}ms`);
+  assert.equal(r.partial, false);
+  assert.ok(r.results.length > 0);
+});
+
+test('searchYear: a hard constraint that excludes everything gives no results (no empty plan)', () => {
+  const { dataA, dataB } = yearFixture();
+  const choices = { M: 'optional', P: 'optional', N: 'optional', OB: 'optional' };
+  const r = searchYear({ dataA, dataB, state: yState({ choices }), yearList: new Set(), weights: W, constraints: { dayOff: [1, 2, 3, 4, 5, 6], dayOffHard: true } });
+  assert.equal(r.results.length, 0);
+  assert.ok(r.diagnosis.length > 0);
+});

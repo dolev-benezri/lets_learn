@@ -18,7 +18,7 @@ const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
 const LOAD = [['א', 'יותר בא׳'], ['even', 'מאוזן'], ['ב', 'יותר בב׳']];
 const SEM_PICK = [['', 'הכי טוב'], ['א', 'א׳'], ['ב', 'ב׳']];
 
-let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, sem = 'א'; // sem: the shown semester of a year result
+let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, moreMul = 1, sem = 'א'; // sem: the shown semester of a year result
 let panel = null, opener = null, statusOpen = null, mobileDay = 1, friendMsg = '', friendUrl = '', liveText = '';
 const openDetails = new Set(['plan']);
 const colors = new Map(); // sticky: a course keeps its colour unless it clashes inside the shown alternative
@@ -53,7 +53,9 @@ async function copy(text, ok) {
 }
 
 // ---------- search ----------
-function scheduleRun() {
+const MAX_MS = 12000; // "חפש עוד" doubles the time limit up to this
+function scheduleRun(again = false) {
+  if (!again) moreMul = 1;
   clearTimeout(timer);
   gen++;
   running = true;
@@ -64,7 +66,12 @@ function run() {
   const { state, data, cls } = app;
   const courses = Object.keys(data.courses).map((id) => ({ id, mode: candidateMode(id) })).filter((x) => x.mode === 'must' || x.mode === 'optional');
   const my = gen; // a newer scheduled search keeps the indicator on
-  const done = () => { running = my !== gen; keepFocus(renderView); };
+  const done = () => {
+    running = my !== gen;
+    const hadMore = document.activeElement?.dataset?.k === 'searchMore';
+    keepFocus(renderView);
+    if (hadMore && !document.querySelector('[data-k="searchMore"]')) focusWeek(); // the search finished: the button is gone
+  };
   worker?.terminate();
   runError = null;
   if (!courses.length) { last = null; done(); return; }
@@ -74,8 +81,8 @@ function run() {
   worker.onmessage = (e) => { last = e.data; cur = 0; done(); };
   worker.onerror = (e) => { runError = e.message || 'שגיאה לא ידועה'; done(); };
   const pins = state.pins.filter((p) => courses.some((c) => data.courses[c.id].groups.some((g) => g.id === p))); // stale pins stay in state
-  if (yearSearch()) worker.postMessage({ year: { dataA: app.sem['א'], dataB: app.sem['ב'], state, yearList: new Set(yearCourses()), pins: state.pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: 3000 } });
-  else worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: 1500 });
+  if (yearSearch()) worker.postMessage({ year: { dataA: app.sem['א'], dataB: app.sem['ב'], state, yearList: new Set(yearCourses()), pins: state.pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: Math.min(3000 * moreMul, MAX_MS) } });
+  else worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: Math.min(1500 * moreMul, MAX_MS) });
 }
 function setBusy() {
   $('board').classList.toggle('is-busy', running);
@@ -204,6 +211,7 @@ function colorOrder() {
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
 }
 
+const PARTIAL_TEXT = 'החיפוש לא הספיק לבדוק את כל האפשרויות. התוצאות טובות, אבל ייתכן שיש טובות יותר.';
 function renderView() {
   const { state } = app;
   const results = last?.results ?? [];
@@ -222,13 +230,13 @@ function renderView() {
   $('prev').disabled = $('next').disabled = results.length < 2;
   if (stranded) $('switcher').focus();
 
-  let msg = '', live = '';
+  let msg = last?.partial ? `<p class="notice partial" aria-live="polite">${icon('alert')}<span>${PARTIAL_TEXT}</span><button type="button" class="btn" data-act="more" data-k="searchMore">חפש עוד</button></p>` : '', live = '';
   if (runError) msg = `<div class="msg bad" role="alert">${icon('alert')}<div><b>שגיאה בחיפוש</b><p>${esc(runError)}</p></div></div>`;
   else if (!Object.keys(app.data.courses).some(planned)) {
     msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>סמנו "חובה" או "אולי" ליד קורסים ב"הקורסים שלי", והמערכת תיבנה לבד.</p></div></div>`;
     live = 'לא נבחרו קורסים';
   } else if (last && !results.length) {
-    msg = `<div class="msg bad">${icon('alert')}<div><b>${last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${last.diagnosis.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
+    msg += `<div class="msg bad">${icon('alert')}<div><b>${last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${last.diagnosis.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
       <p class="msg-actions"><button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
       ${state.pins.length ? `<button type="button" class="btn" data-act="clearPins">${icon('pin')} נקה נעיצות</button>` : ''}</p></div></div>`;
     live = last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת';
@@ -257,9 +265,8 @@ function renderView() {
     const infoLine = [blockingText && `סוגרת חוסמים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
 
     $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar', `שנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), pill('check', `התקדמות: דירוג ${myRank} מתוך ${results.length}`), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
-      + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '')
-      + (last.partial ? '<span class="pill quiet">החיפוש חלקי: אלה הטובות שנמצאו בזמן</span>' : '');
-    live = [`חלופה ${cur + 1} מתוך ${results.length}`, pair && `סמסטר ${sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `שנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr].filter(Boolean).join(', ');
+      + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '');
+    live = [`חלופה ${cur + 1} מתוך ${results.length}`, pair && `סמסטר ${sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `שנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, last.partial && PARTIAL_TEXT].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed, pins: state.pins, friends, day: mobileDay });
@@ -402,6 +409,7 @@ const ACT = {
   next: () => go(1),
   day(el) { mobileDay = Number(el.dataset.day); keepFocus(renderView); },
   block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors }),
+  more() { if (running) return; moreMul *= 2; scheduleRun(true); },
   popClose: () => $('pop').hidePopover(),
   pin(el) {
     const gid = el.dataset.gid, was = app.state.pins.includes(gid);
