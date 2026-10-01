@@ -465,6 +465,12 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
 .dlg-actions { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
 /* the toast lives in the top layer (popover="manual") so it shows above a modal drawer */
 .toast[popover] { top:auto; border:0; overflow:visible; }
+/* phone: keep the grid in view (final check: grid was at y=777 of 812 at 375px) */
+@media (max-width:599px) {
+  .board-ctl .ctl:has(input[name="bscope"]):not(:only-child) { display:none; } /* scope stays in the preferences drawer */
+  .board-ctl { margin-bottom:4px; }
+  #semnote .notice { padding:6px 10px; font-size:13px; line-height:1.4; margin-bottom:6px; }
+}
 </style>
 </head>
 <body>
