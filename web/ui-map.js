@@ -22,7 +22,7 @@ export function makeKeep(mode, data, statuses, year) {
 }
 
 // Geometry helpers for the progress-map renderer
-export const nodeRadius = (credits) => Math.max(14, Math.min(30, 12 + 3 * (credits ?? 0)));
+export const nodeRadius = (credits) => Math.max(14, Math.min(30, 12 + 3 * (Number(credits) || 0)));
 export const edgePath = (a, b) => { const mx = (a.x + b.x) / 2; return `M${a.x},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x},${b.y}`; };
 
 // Layers run left to right by prerequisite depth: a `קדם` edge always goes to a strictly higher layer, a `מקביל` edge to the
@@ -253,10 +253,11 @@ const opensDirect = (data, id) => Object.entries(data.courses).filter(([, c]) =>
 const plural = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
 
 const statusOf = (c, id) => c.st[id]?.status ?? 'available';
-const nodeLabel = (c, id) => {
+const yearTag = (y) => (y ? `שנה ${YEAR_LETTERS[y - 1]}׳` : '');
+const nodeLabel = (c, id, yr) => {
   const co = c.data.courses[id], s = statusOf(c, id), n = c.unlocks[id] ?? 0;
   const why = ['blocked', 'notOffered', 'afterA', 'conditional'].includes(s) ? c.st[id].reasons : [];
-  return [co.name, LABEL[s], `${co.credits} נ״ז`, requires(c.data, id).length && `דורש: ${requires(c.data, id).join('; ')}`, n && `פותח: ${plural(n, 'קורס אחד', 'קורסים')}`, ...why].filter(Boolean).join(', ');
+  return [co.name, LABEL[s], `${co.credits} נ״ז`, yearTag(yr), requires(c.data, id).length && `דורש: ${requires(c.data, id).join('; ')}`, n && `פותח: ${plural(n, 'קורס אחד', 'קורסים')}`, ...why].filter(Boolean).join(', ');
 };
 
 
@@ -288,8 +289,8 @@ function nodeSvg(c, n) {
     const t = `מחוץ לתוכנית: ${n.name}`;
     return `<g class="ext" data-key="${esc(n.key)}" aria-hidden="true"><title>${esc(t)}</title><rect x="${x - n.hw}" y="${y - n.r}" width="${2 * n.hw}" height="${2 * n.r}" rx="${n.r}"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central">${esc(truncate(n.name, 20))}</text></g>`;
   }
-  const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, lbl = nodeLabel(c, n.id), bw = o > 9 ? 52 : 46;
-  const mine = c.year && c.L.lanes.find((l) => l.i === n.lane)?.year === c.year; // the student's study year: soft halo, also named in the card
+  const yr = c.L.lanes.find((l) => l.i === n.lane)?.year, mine = c.year && yr === c.year; // the student's study year: dotted halo, also named in the label and the card
+  const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, lbl = nodeLabel(c, n.id, yr), bw = o > 9 ? 52 : 46;
   return `<g class="nd st-${s}${mine ? ' mine' : ''}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}" aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
     ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}<circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring" cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
     <text class="nm" x="${x}" y="${num(y + n.r + 16)}" text-anchor="middle">${esc(truncate(co.name))}</text>${o ? `<g class="opens" aria-hidden="true"><rect x="${num(x - n.r * 0.8 - bw / 2)}" y="${num(y - n.r * 0.85 - 8)}" width="${bw}" height="16" rx="8"/><text x="${num(x - n.r * 0.8)}" y="${num(y - n.r * 0.85)}" text-anchor="middle" dominant-baseline="central">פותח ${o}</text></g>` : ''}</g>`;
@@ -305,7 +306,7 @@ export function mapSvg(c) {
     <g class="pz"><g class="edges" aria-hidden="true">${edges}</g><g class="ors">${ors}</g><g class="nodes">${g.nodes.map((n) => nodeSvg(c, n)).join('')}</g></g></svg>`;
 }
 
-const legendSw = (s) => `<svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="nd st-${s}"><circle class="ring" cx="13" cy="13" r="10"/>${glyph(s, 13, 13, 10)}</g></svg>`;
+const legendSw = (s) => `<svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-${s}"><circle class="ring" cx="13" cy="13" r="10"/>${glyph(s, 13, 13, 10)}</g></svg>`;
 const legendEdge = (cls) => `<svg width="34" height="10" aria-hidden="true"><path class="lg-e ${cls}" d="M2 5H32"/></svg>`;
 
 function listHtml(c) {
@@ -313,7 +314,7 @@ function listHtml(c) {
   c.L.nodes.filter((n) => n.type === 'course').forEach((n) => byLane.get(n.lane).push(n.id));
   return `<div class="pm-list">${c.L.lanes.map((l) => `<section><h3>${esc(l.name)}</h3><ul>${byLane.get(l.i).map((id) => {
     const co = c.data.courses[id], s = statusOf(c, id), req = requires(c.data, id), o = c.unlocks[id] ?? 0;
-    return `<li class="st-${s}"><div class="li-top"><b>${esc(co.name)}</b><span class="li-st">${LABEL[s]}</span><span class="li-cr"><bdi>${co.credits}</bdi> נ״ז</span>
+    return `<li class="st-${s}"><div class="li-top"><b>${esc(co.name)}</b><span class="li-st">${LABEL[s]}</span><span class="li-cr"><bdi>${esc(co.credits)}</bdi> נ״ז</span>
       <a class="li-link" href="${yedion(id)}" target="_blank" rel="noopener" aria-label="${esc(co.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></div>
       ${req.length ? `<p>דורש: ${req.map(esc).join('; ')}</p>` : ''}${o ? `<p>פותח: ${plural(o, 'קורס אחד', 'קורסים')}</p>` : ''}${c.st[id]?.reasons.length ? `<p class="li-why">${c.st[id].reasons.map(esc).join('<br>')}</p>` : ''}</li>`;
   }).join('')}</ul></section>`).join('') || '<p>אין קורסים להצגה.</p>'}</div>`;
@@ -323,7 +324,7 @@ function cardHtml(c, id) {
   const co = c.data.courses[id], s = statusOf(c, id), req = requires(c.data, id), opens = opensDirect(c.data, id), r = c.st[id]?.reasons ?? [];
   const yr = c.L.lanes.find((l) => l.i === c.L.nodes.find((n) => n.key === id)?.lane)?.year;
   return `<div class="card-top"><span class="chip st-${s}">${LABEL[s]}</span><button type="button" class="pm-ibtn" data-pm="clear" data-k="pm-clear" aria-label="סגור את כרטיס הקורס">${icon('x')}</button></div>
-    <h3>${esc(co.name)}</h3><p class="card-meta"><bdi>${esc(id)}</bdi> · <bdi>${co.credits}</bdi> נ״ז${yr ? ` · שנה ${YEAR_LETTERS[yr - 1]}׳` : ''}</p>
+    <h3>${esc(co.name)}</h3><p class="card-meta"><bdi>${esc(id)}</bdi> · <bdi>${esc(co.credits)}</bdi> נ״ז${yr ? ` · ${yearTag(yr)}` : ''}</p>
     ${r.length ? `<p class="card-why">${r.map(esc).join('<br>')}</p>` : ''}
     ${req.length ? `<h4>דורש</h4><ul>${req.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p class="card-meta">אין קדם.</p>'}
     ${opens.length ? `<h4>פותח${c.unlocks[id] > opens.length ? ` (בסך הכל ${c.unlocks[id]})` : ''}</h4><ul>${opens.slice(0, 8).map((k) => `<li>${esc(c.data.courses[k].name)}</li>`).join('')}${opens.length > 8 ? `<li>ועוד ${opens.length - 8}</li>` : ''}</ul>` : ''}
@@ -389,12 +390,12 @@ function render() {
       <div class="pm-tools"><button type="button" class="pm-btn" data-pm="view" data-k="pm-view">${map ? ICONS.list : ICONS.map} ${map ? 'תצוגת רשימה' : 'תצוגת מפה'}</button>
       ${map ? `<div class="pm-zoom" role="group" aria-label="זום">${zbtn('zin', 'הגדל', icon('plus'))}${zbtn('zout', 'הקטן', ICONS.minus)}${zbtn('fit', 'התאם את המפה למסך', ICONS.fit)}</div>` : ''}</div></div>
     ${map ? `<details class="pm-legend"${matchMedia('(max-width: 700px), (max-height: 1000px)').matches ? '' : ' open'}><summary>מקרא</summary><div class="lg">${LEGEND.map(([k, t]) => `<span class="lg-i">${legendSw(k)}${t}</span>`).join('')}
-      <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="nd st-available mine"><circle class="mine-halo" cx="13" cy="13" r="12"/><circle class="ring" cx="13" cy="13" r="8"/></g></svg>השנה שלך</span><span class="lg-i">${legendEdge('k')}קדם</span><span class="lg-i">${legendEdge('p')}מקביל (יחד עם)</span>
+      <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-available"><circle class="mine-halo" cx="13" cy="13" r="12"/><circle class="ring" cx="13" cy="13" r="8"/></g></svg>השנה שלך</span><span class="lg-i">${legendEdge('k')}קדם</span><span class="lg-i">${legendEdge('p')}מקביל (יחד עם)</span>
       <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="or"><circle cx="13" cy="13" r="10"/><text x="13" y="13" text-anchor="middle" dominant-baseline="central">או</text></g></svg>אחד מהם מספיק</span>
       <span class="lg-i"><svg width="44" height="22" viewBox="0 0 44 22" aria-hidden="true"><g class="ext"><rect x="1" y="2" width="42" height="18" rx="9"/></g></svg>מחוץ לתוכנית</span>
       <span class="lg-i"><svg width="52" height="20" viewBox="0 0 52 20" aria-hidden="true"><g class="opens"><rect x="2" y="2" width="48" height="16" rx="8"/><text x="26" y="10" text-anchor="middle" dominant-baseline="central">פותח 3</text></g></svg>כמה קורסים הוא פותח</span></div></details>` : ''}
     <div class="pm-body">${map
-    ? `<div class="pm-view" role="region" aria-label="מפת הקורסים. אפשר לגרור, לצבוט ולהתקרב, ולהשתמש בכפתורי הזום">${empty ? `<p class="pm-empty">${emptyMsg}</p>` : mapSvg(c)}</div>`
+    ? `<div class="pm-view" role="region" aria-label="מפת הקורסים. אפשר לגרור, לצבוט ולהתקרב, ולהשתמש בכפתורי הזום">${empty ? `<p class="pm-empty">${emptyMsg}</p>` : `${mapSvg(c)}<p class="pm-loading" role="status">טוען מפה…</p>`}</div>`
     : `<div class="pm-view pm-listview" tabindex="0" role="region" aria-label="רשימת הקורסים">${listHtml(c)}</div>`}
       <aside class="pm-card" aria-label="פרטי הקורס" aria-live="polite" hidden></aside></div>`;
   M.hover = M.focus = null;
@@ -436,7 +437,12 @@ async function mount() {
     pz.pan((w <= r.width ? (r.width - w) / 2 : r.width - w) / s, (h <= r.height ? (r.height - h) / 2 : 0) / s, { animate: false, force: true }); // too wide: layer 0 (right) in view
     ends();
   };
-  setTimeout(() => { if (tok === M.tok) { M.fit(); root.classList.add('ready'); } }); // after Panzoom's own start-position timeout
+  setTimeout(() => {
+    if (tok !== M.tok) return;
+    M.fit();
+    if (M.sel) requestAnimationFrame(() => tok === M.tok && ensureVisible(M.els.nodes.get(M.sel))); // after Panzoom applied the fit; a card left open across a filter change must not cover its node
+    root.classList.add('ready');
+  }); // after Panzoom's own start-position timeout
 }
 
 function ensureVisible(el, pre = 0) { // pre: a horizontal pan (screen px) already owed, panzoom applies pans a frame late
