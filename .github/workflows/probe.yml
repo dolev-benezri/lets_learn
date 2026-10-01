@@ -22,7 +22,7 @@ jobs:
       - name: One GET to the yedion start page
         run: |
           echo "runner IP: $(curl -fsS https://api.ipify.org)"
-          node --input-type=module <<'JS'
+          node --input-type=module - <<'JS'
           import { BASE, USER_AGENT } from './scripts/scrape.mjs';
           import { pageKind } from './scripts/polite.mjs';
           const res = await fetch(BASE, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(25000) });
