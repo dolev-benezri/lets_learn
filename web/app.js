@@ -1,4 +1,4 @@
-import { classify, cleanProfile, studyYear, modeFor } from './rules.js';
+import { classify, withAfterA, cleanProfile, studyYear, modeFor } from './rules.js';
 import { readHash } from './share.js';
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -99,7 +99,7 @@ export function keepFocus(fn) {
 
 export function refresh() {
   pickData();
-  app.cls = classify(app.data, app.state);
+  app.cls = withAfterA(app.data, app.state, classify(app.data, app.state));
   save();
   keepFocus(() => renderers.forEach((r) => r()));
 }
