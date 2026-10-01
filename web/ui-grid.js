@@ -171,7 +171,7 @@ function block({ cid, c, g }, m, from, cls, pinned, fr) {
   return `<button type="button" class="blk ${cls}${pinned ? ' pinned' : ''}${d < 80 ? ' short' : ''}" data-act="block" data-gid="${esc(g.id)}" data-k="${esc(k)}"
     aria-haspopup="dialog" style="--s:${toMin(m.start) - from * 60};--d:${d}">
     <span class="sr">יום ${DAYS[m.day]}׳, </span><span class="blk-name">${esc(c.name)}</span>
-    <span class="blk-meta"><bdi dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi></span>
+    <span class="blk-meta"><bdi dir="ltr">${esc(m.start)}<span class="blk-end">–${esc(m.end)}</span></bdi></span>
     <span class="blk-room">${esc(typeLabel(g.type))}${m.room ? ` · ${esc(m.room)}` : ''}</span>
     ${pinned ? `<span class="blk-pin">${icon('pin')}<span class="sr">, נעוץ</span></span>` : ''}
     ${fr.length ? `<span class="blk-fr">${friendAvs(fr)}<span class="sr">, עם ${fr.map((f) => esc(f.name)).join(', ')}</span></span>` : ''}

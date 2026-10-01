@@ -222,12 +222,13 @@ aside details .cards { margin:4px 0 8px; }
 .blk > span { overflow:hidden; text-overflow:ellipsis; }
 .blk-name { font-weight:500; color:var(--cfg); display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; white-space:normal; }
 .blk-meta, .blk-room { font-size:13px; color:var(--text-2); }
-.blk-meta { white-space:nowrap; }
+.blk-meta { white-space:nowrap; text-overflow:clip; }
 .blk-room { display:none; }
 /* the block is a size container: the more minutes it spans, the more lines of name and the room it shows */
 @container (min-height:54px) { .blk-name { -webkit-line-clamp:2; } }
 @container (min-height:74px) { .blk-room { display:block; } }
 @container (min-height:96px) { .blk-name { -webkit-line-clamp:3; } }
+@container (max-width:96px) { .blk-end { display:none; } }
 .blk.pinned { outline:2px solid var(--primary); outline-offset:-2px; padding-inline-end:24px; }
 .blk:focus-visible { outline:2px solid var(--primary); outline-offset:2px; z-index:1; }
 .blk-pin { position:absolute; top:4px; inset-inline-end:4px; color:var(--primary); }
