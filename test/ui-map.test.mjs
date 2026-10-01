@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, makeKeep, chainOf, SIZE, nodeRadius, edgePath, G, truncate, edgeEnds, sameLayerPath, geometry, fitScale, mapSvg } from '../web/ui-map.js';
+import { layoutMap, makeKeep, chainOf, SIZE, nodeRadius, edgePath, G, truncate, edgeEnds, sameLayerPath, geometry, balance, pickCols, fitScale, mapSvg } from '../web/ui-map.js';
 import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
@@ -165,4 +165,24 @@ test('mapSvg: one button per course in Tab order, labelled and titled; ext pills
   assert.ok(html.includes('class="ext"') && html.includes('class="or"'));
   assert.ok([...html.matchAll(/<g class="(?:ext|or)"[^>]*>/g)].every(([m]) => m.includes('aria-hidden="true"') && !m.includes('role=')));
   for (const s of ['done', 'retake', 'blocked']) if (Object.values(st).some((x) => x.status === s)) assert.ok(html.includes(`st-${s}`));
+});
+
+test('pickCols: never fewer columns than layers, at most 12, and more columns for a wider screen', () => {
+  assert.equal(pickCols(97, 375, 600, 6), 6);
+  assert.ok(pickCols(97, 1440, 760, 6) > 6 && pickCols(97, 2400, 700, 6) <= 12);
+  assert.ok(pickCols(97, 2400, 700, 6) >= pickCols(97, 1440, 760, 6));
+  assert.equal(pickCols(0, 1440, 760, 1), 1);
+});
+
+test('wide layout: 1440x760 fits at 0.8 or more, every edge still flows leftwards, columns are level, nothing overlaps', () => {
+  const L = layoutMap(data), mc = pickCols(L.nodes.length, 1440, 760, L.cols), g = geometry(L, (id) => data.courses[id]?.credits, mc);
+  assert.ok(mc > L.cols && g.cols > L.cols);
+  assert.ok(fitScale(1440, 760, g.W, g.H) >= 0.8, `scale ${fitScale(1440, 760, g.W, g.H)} (${g.W}x${g.H})`);
+  const at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
+  for (const e of L.edges) assert.ok(e.kind === 'קדם' ? at[e.from].x > at[e.to].x : at[e.from].x >= at[e.to].x, `${e.from} -> ${e.to}`);
+  const per = Object.values(Object.groupBy(g.nodes, (n) => n.layer)).map((a) => a.length);
+  assert.ok(Math.max(...per) - Math.min(...per) <= 3, `columns ${per}`);
+  const all = [...g.nodes, ...g.ors];
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r, `${all[i].key} / ${all[j].key}`);
+  assert.ok(g.nodes.every((n) => [n.x, n.y].every(Number.isFinite)) && g.W > 0 && g.H > 0);
 });

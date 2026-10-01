@@ -187,32 +187,38 @@ export const sameLayerPath = (a, b) => { const x1 = a.x + a.hw, x2 = b.x + b.hw;
 
 // Columns are levelled: a node with slack (no edges, or only leaves) moves to a shorter neighbouring column as long as every
 // `קדם` edge still goes to a strictly higher layer and every `מקביל` to the same or a higher one. Pure, terminates (sum of squares falls).
-export function balance(L) {
-  const layer = new Map(L.nodes.map((n) => [n.key, n.layer])), top = L.cols - 1, w = (e) => (e.kind === 'קדם' ? 1 : 0);
+export function balance(L, minCols = 0) {
+  const layer = new Map(L.nodes.map((n) => [n.key, n.layer])), top = Math.max(L.cols, minCols) - 1, w = (e) => (e.kind === 'קדם' ? 1 : 0);
   const order = [...L.nodes].sort((a, b) => a.lane - b.lane || a.row - b.row).map((n) => n.key);
   const range = (k) => { let lo = 0, hi = top; for (const e of L.edges) { if (e.to === k) lo = Math.max(lo, layer.get(e.from) + w(e)); if (e.from === k) hi = Math.min(hi, layer.get(e.to) - w(e)); } return [lo, hi]; };
-  for (let guard = 0; guard < 1000; guard++) {
+  for (let guard = 0; guard < 2000; guard++) {
     const cnt = Array.from({ length: top + 1 }, () => 0);
     layer.forEach((l) => cnt[l]++);
-    const tall = cnt.indexOf(Math.max(...cnt));
     let moved = false;
-    for (const k of [...order].reverse().filter((x) => layer.get(x) === tall)) {
-      const [lo, hi] = range(k);
-      const to = cnt.map((c, i) => [c, Math.abs(i - tall), i]).filter(([c, , i]) => i >= lo && i <= hi && c <= cnt[tall] - 2).sort((a, b) => a[1] - b[1] || a[0] - b[0])[0];
-      if (to) { layer.set(k, to[2]); moved = true; break; }
+    // the tallest column first, but when none of its nodes can move, the next tallest, and so on
+    for (const from of cnt.map((c, i) => [c, i]).sort((x, y) => y[0] - x[0]).map(([, i]) => i)) {
+      for (const k of [...order].reverse().filter((x) => layer.get(x) === from)) {
+        const [lo, hi] = range(k);
+        const to = cnt.map((c, i) => [c, Math.abs(i - from), i]).filter(([c, , i]) => i >= lo && i <= hi && c <= cnt[from] - 2).sort((x, y) => x[1] - y[1] || x[0] - y[0])[0];
+        if (to) { layer.set(k, to[2]); moved = true; break; }
+      }
+      if (moved) break;
     }
     if (!moved) break;
   }
   return layer;
 }
 
-export function geometry(L, creditsOf = () => 0) {
-  const cols = new Map(), lay = balance(L);
+export function geometry(L, creditsOf = () => 0, minCols = 0) {
+  const cols = new Map(), lay = balance(L, minCols), used = Math.max(0, ...lay.values()) + 1;
+  const radius = (n) => (n.type === 'ext' ? G.extR : nodeRadius(creditsOf(n.id)));
   for (const n of [...L.nodes].sort((a, b) => a.lane - b.lane || a.row - b.row)) (cols.get(lay.get(n.key)) ?? cols.set(lay.get(n.key), []).get(lay.get(n.key))).push(n);
-  const W = G.padX * 2 + (L.cols - 1) * G.pitch, H = Math.max(1, ...[...cols.values()].map((c) => c.length)) * G.row + 2 * G.padY, pos = new Map();
+  // A column's step is at least a row, and enough for the two circles and the name between any pair that follow each other.
+  const step = new Map([...cols].map(([l, col]) => [l, Math.max(G.row, ...col.slice(1).map((n, i) => radius(n) + radius(col[i]) + 22))]));
+  const W = G.padX * 2 + (used - 1) * G.pitch, H = Math.max(1, ...[...cols].map(([l, c]) => c.length * step.get(l))) + 2 * G.padY, pos = new Map();
   for (const col of cols.values()) col.forEach((n, i) => {
-    const ext = n.type === 'ext', r = ext ? G.extR : nodeRadius(creditsOf(n.id));
-    pos.set(n.key, { ...n, layer: lay.get(n.key), x: W - G.padX - lay.get(n.key) * G.pitch, y: G.padY + (i + 0.5) * ((H - 2 * G.padY) / col.length), r, hw: ext ? G.extHW : r });
+    const r = radius(n);
+    pos.set(n.key, { ...n, layer: lay.get(n.key), x: W - G.padX - lay.get(n.key) * G.pitch, y: G.padY + (i + 0.5) * ((H - 2 * G.padY) / col.length), r, hw: n.type === 'ext' ? G.extHW : r });
   });
   const seen = new Map(), ors = L.diamonds.map((d) => {
     const t = pos.get(d.target), n = L.diamonds.filter((x) => x.target === d.target).length, j = seen.get(d.target) ?? 0;
@@ -226,7 +232,17 @@ export function geometry(L, creditsOf = () => 0) {
     return { id: p.id, from: p.from, to: p.to, kind: p.kind, d: a.layer !== undefined && a.layer === b.layer ? sameLayerPath(a, b) : edgePath(s, e) };
   });
   const nodes = [...pos.values()].filter((n) => n.type !== 'or').sort((a, b) => a.layer - b.layer || a.y - b.y); // Tab order: layers right to left, then top to bottom
-  return { W, H, nodes, ors, edges };
+  return { W, H, cols: used, nodes, ors, edges };
+}
+
+// How many columns make the whole graph fit a vw x vh area at the biggest scale (never fewer than the layers it already has).
+export function pickCols(n, vw, vh, minC, maxC = 12) {
+  let best = Math.max(1, minC), bestS = -1;
+  for (let c = best; c <= Math.max(best, maxC); c++) {
+    const sc = Math.min(1, vw / (G.padX * 2 + (c - 1) * G.pitch), vh / (Math.ceil(n / c) * G.row + 2 * G.padY));
+    if (sc > bestS + 1e-9) { best = c; bestS = sc; }
+  }
+  return best;
 }
 
 // ---------- text helpers ----------
@@ -316,7 +332,7 @@ function cardHtml(c, id) {
 }
 
 // ---------- dialog ----------
-const M = { mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null };
+const M = { vw: 0, vh: 0, mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null };
 let dlg = null;
 const q = (s) => dlg.querySelector(s);
 const PZ_URL = 'https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.6.0/dist/panzoom.es.js';
@@ -332,7 +348,8 @@ function ctxOf(mode) {
   const year = studyYear(data, state);
   const L = layoutMap(data, makeKeep(mode, data, st, year));
   const doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
-  return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits), year, unlocks: unlockCounts(data, doneIds), mode };
+  const wide = M.vw >= 600 && L.nodes.length > 0; // phones keep the layers as they are; a wide screen gets as many columns as make the whole graph fit
+  return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits, wide ? pickCols(L.nodes.length, M.vw, M.vh, L.cols) : 0), year, unlocks: unlockCounts(data, doneIds), mode };
 }
 
 function light() {
@@ -346,11 +363,15 @@ function light() {
 
 function select(key) {
   M.sel = key;
-  const card = q('.pm-card');
+  const card = q('.pm-card'), view = M.pz && q('.pm-svg'), w0 = view?.clientWidth;
   M.els?.nodes.forEach((el, k) => { if (el.matches('.nd')) { el.classList.toggle('sel', k === key); el.setAttribute('aria-pressed', String(k === key)); } });
   card.hidden = !key;
   card.innerHTML = key ? cardHtml(M.c, key) : '';
-  if (key && M.els) ensureVisible(M.els.nodes.get(key));
+  // The side card narrows the svg from its left edge and the drawing hangs from that edge (origin 0 0), so it would jump right by the lost
+  // width: pan by the change in width (negative when the card opens) and the node under the cursor stays put.
+  const keep = view ? view.clientWidth - w0 : 0;
+  if (key && M.els) ensureVisible(M.els.nodes.get(key), keep);
+  else if (keep) M.pz.pan(keep / M.pz.getScale(), 0, { relative: true, animate: false });
   light();
 }
 
@@ -418,11 +439,11 @@ async function mount() {
   setTimeout(() => { if (tok === M.tok) { M.fit(); root.classList.add('ready'); } }); // after Panzoom's own start-position timeout
 }
 
-function ensureVisible(el) {
+function ensureVisible(el, pre = 0) { // pre: a horizontal pan (screen px) already owed, panzoom applies pans a frame late
   if (!M.pz) return;
   const card = q('.pm-card'), cover = !card.hidden && getComputedStyle(card).position === 'absolute' ? card.offsetHeight : 0; // the phone sheet overlays the map
-  const a = el.getBoundingClientRect(), b = q('.pm-svg').getBoundingClientRect(), m = 24, s = M.pz.getScale(), bottom = b.bottom - cover;
-  const dx = a.left < b.left + m ? b.left + m - a.left : a.right > b.right - m ? b.right - m - a.right : 0;
+  const r = el.getBoundingClientRect(), a = { left: r.left + pre, right: r.right + pre, top: r.top, bottom: r.bottom }, b = q('.pm-svg').getBoundingClientRect(), m = 24, s = M.pz.getScale(), bottom = b.bottom - cover;
+  const dx = pre + (a.left < b.left + m ? b.left + m - a.left : a.right > b.right - m ? b.right - m - a.right : 0);
   const dy = a.top < b.top + m ? b.top + m - a.top : a.bottom + 18 > bottom - m ? bottom - m - a.bottom - 18 : 0; // 18 = the name under the circle
   if (dx || dy) M.pz.pan(dx / s, dy / s, { relative: true, animate: false });
 }
@@ -431,6 +452,14 @@ function hoverTo(key, kind) {
   if (M[kind] === key) return;
   M[kind] = key;
   light();
+}
+
+// The map area's size decides the column count; before the dialog is open it is estimated from the window.
+function measure() {
+  const v = dlg.open && dlg.querySelector('.pm-view');
+  const w = v ? v.clientWidth : innerWidth, h = v ? v.clientHeight : innerHeight - 190, moved = Math.abs(w - M.vw) > 8 || Math.abs(h - M.vh) > 8;
+  M.vw = w; M.vh = h;
+  return moved;
 }
 
 function openMap(from) {
@@ -448,8 +477,10 @@ function openMap(from) {
   dlg.setAttribute('aria-labelledby', 'pmTitle');
   dlg.setAttribute('dir', 'rtl');
   M.opener = from; M.sel = null; M.mode = 'all'; M.view = 'map'; M.notice = '';
+  measure();
   render();
   dlg.showModal();
+  if (measure()) render(); // the real map area differs from the estimate: more or fewer columns
   mount();
   q('[data-pm="close"]').focus({ preventScroll: true });
 }
@@ -457,7 +488,11 @@ function openMap(from) {
 const redraw = () => { keepFocus(render); mount(); };
 function onKey(e) {
   const n = e.target.closest?.('.nd');
-  if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(M.sel === n.dataset.key ? null : n.dataset.key); }
+  if (n && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    select(M.sel === n.dataset.key ? null : n.dataset.key);
+    if (M.sel) q('[data-pm="clear"]')?.focus({ preventScroll: true }); // the card's close button returns focus to the node
+  }
 }
 function onClick(e) {
   const node = e.target.closest('.nd');
@@ -478,7 +513,19 @@ function onClick(e) {
   else if (act === 'view') { M.view = M.view === 'map' ? 'list' : 'map'; M.notice = ''; redraw(); }
 }
 
+let rz = 0;
 function setup() {
+  const onResize = () => {
+    clearTimeout(rz);
+    rz = setTimeout(() => {
+      if (!dlg?.open || M.view !== 'map') return;
+      measure();
+      const g = ctxOf(M.mode).g, o = M.c.g;
+      if (g.cols !== o.cols || g.H !== o.H || g.W !== o.W) redraw(); else M.fit?.(); // wide or narrow class changed: new geometry; otherwise just re-fit
+    }, 150);
+  };
+  addEventListener('resize', onResize);
+  addEventListener('orientationchange', onResize);
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act="openMap"]');
     if (b) openMap(b);
