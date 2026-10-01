@@ -488,6 +488,60 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
   .board-ctl { margin-bottom:4px; }
   #semnote .notice { padding:6px 10px; font-size:13px; line-height:1.4; margin-bottom:6px; }
 }
+
+/* friend timetable editor (ui-friend-editor.js): full-screen dialog, picker on the inline-start side (right in RTL), week grid beside it */
+#friendEd { width:100vw; height:100dvh; max-width:none; max-height:none; margin:0; padding:0; border:0; background:var(--bg); color:var(--text); overflow:hidden; }
+#friendEd[open] { display:flex; }
+body:has(#friendEd[open]) { overflow:hidden; }
+#friendEd .fe { display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; }
+#friendEd .err-text:empty { display:none; }
+.fe-head { display:flex; flex-wrap:wrap; align-items:flex-start; gap:4px 16px; padding:10px 20px; background:var(--surface); border-bottom:1px solid var(--border); }
+.fe-head h2 { font-size:18px; font-weight:600; line-height:var(--tap); }
+.fe-name { flex:1 1 220px; max-width:360px; display:grid; gap:2px; }
+.fe-name label, .fe-sec label { font-size:13px; color:var(--text-2); }
+.fe-actions { margin-inline-start:auto; display:flex; gap:8px; }
+.fe-err { margin:0; padding:8px 20px; background:var(--danger-soft); }
+.fe-body { flex:1; min-height:0; display:grid; grid-template-columns:minmax(300px, 400px) minmax(0, 1fr); }
+.fe-pick { min-height:0; overflow:auto; overscroll-behavior:contain; padding:16px; background:var(--surface); border-inline-end:1px solid var(--border); }
+.fe-pick-body { display:grid; gap:14px; }
+.fe-sheet-btn { display:none; }
+.fe-sec { display:grid; gap:6px; }
+.fe-sec h3 { font-size:15px; font-weight:600; }
+#friendEd .seg { margin:0; }
+#friendEd input[type=text], #friendEd textarea { width:100%; min-height:var(--tap); padding:0 10px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); }
+#friendEd textarea { padding:10px; font:inherit; font-size:14px; resize:vertical; }
+#friendEd input[type=file] { min-height:var(--tap); max-width:100%; }
+#friendEd input[aria-invalid="true"] { border-color:var(--danger); }
+#friendEd .row .btn { flex:none; }
+.fe-course { font-size:15px; font-weight:600; }
+.fe-type { margin:8px 0 4px; font-size:14px; color:var(--text-2); font-weight:500; }
+.fe-rows li { display:flex; align-items:center; gap:8px; padding:8px 10px; margin-bottom:6px; border:1px solid var(--border); border-radius:var(--radius); }
+.fe-rows li.on { background:var(--primary-soft); border-color:#C9DAFB; }
+.fe-info { flex:1; min-width:0; display:grid; gap:2px; font-size:14px; }
+.fe-info .gid, .fe-course .gid { color:var(--text-2); font-size:12px; }
+.fe-grid { min-width:0; min-height:0; display:flex; flex-direction:column; gap:8px; padding:12px 16px; }
+.fe-bar { display:flex; flex-wrap:wrap; align-items:center; gap:4px 16px; }
+.fe-bar .hint:nth-child(2) { flex:1; min-width:0; }
+.fe-wk { flex:1; min-height:0; overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); }
+.fe-wk:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.fe-grid .daysel { margin:0; }
+#friendEd .wk-head > * { top:0; } /* the board's headers hang under the page bar; here the scroll box is the grid itself */
+#friendEd .blk { inset-inline-end:auto; inset-inline-start:calc(3px + (100% - 6px) * var(--lane, 0) / var(--lanes, 1)); width:calc((100% - 6px) / var(--lanes, 1) - 2px); }
+#friendEd .blk.clash { outline:2px dashed var(--warning); outline-offset:-2px; }
+#friendEd .blk[aria-pressed="true"] { outline:3px solid var(--primary); outline-offset:-3px; z-index:1; }
+@media (max-width:899px) { .fe-body { grid-template-columns:minmax(260px, 320px) minmax(0, 1fr); } }
+@media (max-width:599px) {
+  .fe-head { padding:8px 12px; gap:0 8px; }
+  .fe-head h2 { flex:1; }
+  .fe-name { order:3; flex-basis:100%; max-width:none; }
+  .fe-body { display:flex; flex-direction:column; }
+  .fe-grid { flex:1; padding:8px 12px; }
+  /* the picker is a bottom sheet under the grid; its handle button collapses it */
+  .fe-pick { order:2; flex:none; max-height:46dvh; padding:10px 12px max(12px, env(safe-area-inset-bottom)); border-inline-end:0; border-top:1px solid var(--border-strong); border-radius:16px 16px 0 0; box-shadow:0 -8px 24px rgba(16,24,40,.16); }
+  .fe-pick[data-open="false"] .fe-pick-body { display:none; }
+  .fe-sheet-btn { display:flex; width:100%; margin-bottom:10px; }
+  .fe-pick[data-open="false"] .fe-sheet-btn { margin-bottom:0; }
+}
 </style>
 </head>
 <body>
@@ -530,6 +584,7 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
   <p><a href="https://github.com/dolhack/lets_learn/blob/main/TERMS.md" target="_blank" rel="noopener">תנאי שימוש ופרטיות</a> · <a href="https://github.com/dolhack/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a></p>
 </footer>
 <dialog id="drawer" class="drawer" aria-labelledby="drawerTitle"></dialog>
+<dialog id="friendEd" class="dlg-full" aria-labelledby="feTitle"></dialog>
 <div id="pop" class="pop" popover role="dialog"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script type="module" src="ui-plan.js"></script>
