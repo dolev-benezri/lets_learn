@@ -1,4 +1,4 @@
-import { classify, cleanProfile, studyYear } from './rules.js';
+import { classify, cleanProfile, studyYear, modeFor } from './rules.js';
 import { readHash } from './share.js';
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -84,14 +84,9 @@ export function save() { try { localStorage.setItem(KEY, JSON.stringify(app.stat
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
 const yearOneList = () => app.data.lists.find((l) => l.name.includes("שנה א'"));
 
-export function candidateMode(id) {
-  const s = app.cls.statuses[id]?.status;
-  if (!['retake', 'available', 'conditional'].includes(s)) return null;
-  if (app.state.choices[id]) return app.state.choices[id];
-  if (s === 'retake') return 'must';
-  const letter = ['', 'א', 'ב', 'ג', 'ד'][studyYear(app.data, app.state)];
-  return app.data.lists.find((l) => l.name.includes(`שנה ${letter}'`))?.courses.includes(id) ? 'optional' : 'no';
-}
+// The study year's mandatory list (e.g. "שנה ב'"): courses in it default to optional.
+export const yearCourses = () => app.data.lists.find((l) => l.name.includes(`שנה ${['', 'א', 'ב', 'ג', 'ד'][studyYear(app.data, app.state)]}'`))?.courses ?? [];
+export const candidateMode = (id) => modeFor(app.cls.statuses[id]?.status, app.state.choices[id], yearCourses().includes(id));
 
 // Rendering lives in ui-plan.js / ui-grid.js; they register here. Focus survives a re-render via data-k keys.
 let renderers = [];

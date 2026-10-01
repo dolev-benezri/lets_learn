@@ -100,6 +100,20 @@ export function backups(data, res, gid) {
   return out.slice(0, 3);
 }
 
+// Year results are pairs { a, b, credits: { a, b }, missing, warnings }; a one-semester result is the search result itself.
+// semResult gives the shown semester's result in the search-result shape (an empty one when that semester takes nothing).
+export const isPair = (r) => !!r && 'a' in r;
+const EMPTY = { courses: [], groups: [], exams: [], alts: {}, unlocks: 0, explanation: '', breakdown: { compact: 1, progress: 0 } };
+export const semResult = (r, sem) => {
+  if (!isPair(r)) return r;
+  const x = r[sem === 'א' ? 'a' : 'b'];
+  return x ? { ...EMPTY, ...x, breakdown: { ...EMPTY.breakdown, ...x.breakdown } } : EMPTY;
+};
+export const resCourses = (r) => (isPair(r) ? [...r.a.courses, ...(r.b?.courses ?? [])] : r.courses);
+export const resGroups = (r) => (isPair(r) ? [...r.a.groups, ...(r.b?.groups ?? [])] : r.groups);
+export const placedIn = (r, id) => (r.a.courses.includes(id) ? 'א' : r.b?.courses.includes(id) ? 'ב' : null);
+export const yearTotals = (r) => ({ courses: resCourses(r).length, credits: r.credits.a + r.credits.b });
+
 // Visible hours: earliest..latest meeting, padded by an hour, padding clamped to 08-21. A block is never cut off.
 export function hourRange(meetings) {
   const real = meetings.filter((m) => m.day >= 1 && m.day <= 6);

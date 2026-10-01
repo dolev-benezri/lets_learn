@@ -265,6 +265,10 @@ aside details .cards { margin:4px 0 8px; }
 .row input { flex:1; min-width:0; }
 .frow { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; padding:12px; margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius); }
 .frow-full { flex-basis:100%; }
+#semnote .notice { margin:0 0 12px; }
+.semtabs .seg { margin:0 0 12px; max-width:320px; }
+.course > .seg { margin-top:6px; }
+.reg-sem { margin:12px 0 0; font-size:15px; font-weight:600; }
 .reglist { display:grid; gap:8px; margin:12px 0; }
 .reglist li { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-inline-start:4px solid var(--cfg); border-radius:var(--radius); }
 .reglist p { font-size:14px; color:var(--text-2); }
@@ -337,7 +341,9 @@ aside details .cards { margin:4px 0 8px; }
     <section id="welcome" class="welcome" aria-labelledby="welTitle" hidden></section>
     <section id="board" class="board" aria-labelledby="weekTitle">
       <h2 id="weekTitle" class="sr">מערכת השעות</h2>
+      <div id="semnote"></div>
       <div class="board-top"><div id="pills" class="pills"></div><span id="busy" class="busy" hidden>מחשב…</span></div>
+      <div id="semtabs" class="semtabs"></div>
       <div id="daysel" class="daysel" role="group" aria-label="בחירת יום"></div>
       <div id="week" tabindex="-1"></div>
       <p id="live" class="sr" aria-live="polite"></p>
