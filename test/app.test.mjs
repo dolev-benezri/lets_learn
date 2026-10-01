@@ -141,7 +141,7 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
   assert.equal(html.split('כלי עזר לא רשמי').length, 2);
 });
 
-import { routeOf } from '../web/app.js';
+import { routeOf, hashOf } from '../web/app.js';
 test('routeOf: #me is the status page, everything else is the builder', () => {
   assert.equal(routeOf('#me'), 'me');
   for (const h of ['', '#', '#f=abc', '#b=abc', '#mex']) assert.equal(routeOf(h), 'plan');
@@ -159,4 +159,9 @@ test('normalize keeps integer grades 0-100 and drops the rest', () => {
 test('status page CSS is scoped to #me: the map lane div.ml.me must not inherit it', () => {
   const css = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
   assert.deepEqual(css.match(/(^|[\s,}])\.me(?![\w-])/gm), null);
+});
+
+test('hashOf: the inverse of routeOf, so a cancelled backup keeps the current page', () => {
+  for (const v of ['me', 'plan']) assert.equal(routeOf(hashOf(v)), v);
+  assert.equal(hashOf(undefined), '');
 });

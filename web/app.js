@@ -69,7 +69,7 @@ export function upsertFriend(friends, p, editing = null) {
   return { friends: friends.map((f, i) => (i === ti ? next : f)).filter((f, i) => i === ti || f.name !== p.name), replaced: true };
 }
 
-export const app = { state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, friendLanding: null, hashError: null };
+export const app = { loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, friendLanding: null, hashError: null };
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
 export function yearView(dataA, dataB) {
@@ -120,6 +120,7 @@ export function refresh() {
 
 // Two views in one page: #me is the status page, any other hash (friend and backup links too) is the builder.
 export const routeOf = (h) => (h === '#me' ? 'me' : 'plan');
+export const hashOf = (view) => (view === 'me' ? '#me' : ''); // routeOf's inverse: the hash that shows a view
 
 const SKELETON = `<div class="skel" role="status"><span class="sr">טוען את מערכת השעות…</span><div class="skel-grid" aria-hidden="true">${'<div><i></i><i></i><i></i></div>'.repeat(5)}</div></div>`;
 
@@ -135,11 +136,17 @@ async function init() {
   const [a, b] = await Promise.allSettled([get('א'), get('ב')]);
   app.status = await status;
   if (a.status === 'rejected') {
-    document.getElementById('week').innerHTML = '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b><p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions"><button class="btn" id="retry">נסה שוב</button> <button class="btn" id="reset">אפס נתונים שמורים</button></p></div></div>';
-    document.getElementById('retry').onclick = init;
-    document.getElementById('reset').onclick = () => { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } location.reload(); };
+    app.loadFailed = true; // the nav tabs still switch views (ui-plan.js onHash), both showing this message
+    for (const id of ['week', 'me']) {
+      const el = document.getElementById(id);
+      el.innerHTML = '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b><p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions"><button class="btn" data-retry>נסה שוב</button> <button class="btn" data-reset>אפס נתונים שמורים</button></p></div></div>';
+      el.querySelector('[data-retry]').onclick = init;
+      el.querySelector('[data-reset]').onclick = () => { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } location.reload(); };
+    }
+    dispatchEvent(new Event('hashchange')); // show the view the URL names (ui-plan.js onHash)
     return;
   }
+  app.loadFailed = false;
   app.sem = { 'א': a.value, 'ב': b.status === 'fulfilled' ? b.value : null };
   app.semNotice = app.sem['ב'] ? null : 'נתוני סמסטר ב׳ לא נטענו, מתכננים סמסטר אחד.';
   groupSem = null;
@@ -150,15 +157,17 @@ async function init() {
 // Friend (#f=) and backup (#b=) links: read at load, and again when one is pasted into an open tab (hashchange in ui-plan.js).
 export async function applyHash() {
   const h = await readHash(location.hash, app.state);
+  let keep = '';
   if (h) app.hashError = h.error ?? null; // a good link pasted after a bad one clears the old error
   if (h?.type === 'backup') {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
     if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) app.state = normalize(h.payload);
+    else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
   }
   if (!app.state.passed) app.state.passed = [...(yearOneList()?.courses ?? [])];
   if (h?.type === 'friend') app.friendLanding = h.payload;
-  if (h) history.replaceState(null, '', location.pathname);
+  if (h) history.replaceState(null, '', location.pathname + keep);
   refresh();
 }
 

@@ -11,6 +11,13 @@ export const meetingText = (m) => `יום ${D[m.day] ?? '?'}׳ ${m.start}–${m.
 // "הרצאה · קבוצה 01": the full 9-digit id stays visible elsewhere (registration), this is the human handle.
 export const groupLabel = (g) => `${typeName(g.type)} · קבוצה ${groupNumber(g.id)}`;
 
+// A grade field edit: '' clears (undefined), a whole number 0-100 is kept, anything else keeps the previous grade.
+export function gradeInput(raw, prev) {
+  if (raw === '') return undefined;
+  const v = Number(raw);
+  return Number.isInteger(v) && v >= 0 && v <= 100 ? v : prev;
+}
+
 export const friendToast = (name, updated) => `${updated ? 'החבר עודכן' : 'החבר נוסף'}: ${name}`;
 
 export const strictnessHint = (hard) => (hard ? 'מערכת שמפרה את זה לא תוצג.' : 'המערכת תעדיף את זה, אבל לא תפסול בגללו.');
