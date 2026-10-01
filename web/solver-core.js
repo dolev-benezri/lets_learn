@@ -378,8 +378,18 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     const left = Math.max(B_FLOOR, (deadline - Date.now()) / (aList.length - i));
     const args = { data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends, topK: 1, timeLimitMs: left };
     let rb = search({ ...args, courses: coursesB });
-    if (!rb.results.length) rb = search({ ...args, courses: coursesB.map((c) => ({ ...c, mode: 'optional' })) }); // keep the pair, report what is missing
     partial ||= rb.partial;
+    if (!rb.results.length) {
+      // Keep the pair and report what is missing, but give up as few must courses as possible: first relax one at a
+      // time (the best scoring success wins), and only when no single one is enough fall back to all optional.
+      // ponytail: two or more impossible musts fall straight to all optional; relax pairs if that shows up in real data.
+      const mustB = coursesB.filter((c) => c.mode === 'must');
+      const relax = (keep) => search({ ...args, timeLimitMs: left / (mustB.length + 1), courses: coursesB.map((c) => (keep(c) ? c : { ...c, mode: 'optional' })) });
+      const tries = mustB.map((m) => relax((c) => c !== m));
+      partial ||= tries.some((r) => r.partial);
+      rb = tries.filter((r) => r.results.length).sort((x, y) => y.results[0].score - x.results[0].score)[0] ?? relax(() => false);
+      partial ||= rb.partial;
+    }
     const b = rb.results[0] ?? null;
     if (!a.courses.length && !b?.courses.length) continue; // an empty plan is not an answer: let the UI say why nothing fits
     const all = new Set([...a.courses, ...(b?.courses ?? [])]);

@@ -493,6 +493,16 @@ test('searchYear: a pinned optional course is in every plan (no "take nothing in
 const anyOf = (...ids) => [{ kind: 'קדם', anyOf: ids.map((id) => ({ id, name: id })) }];
 const opt = (...ids) => Object.fromEntries(ids.map((id) => [id, 'optional']));
 
+test('S2 ב׳ fallback: an impossible must course does not drop a feasible must for a richer elective', () => {
+  // Y clashes with the pinned Z, so the musts-first ב׳ search fails. X is still feasible; E is worth more but clashes with X.
+  const none = { X: yc('X', 3, []), Y: yc('Y', 3, []), Z: yc('Z', 2, []), E: yc('E', 4, []) };
+  const dataA = semData('א', none);
+  const dataB = semData('ב', { X: yc('X', 3, [grp('XB', 1)]), Y: yc('Y', 3, [grp('YB', 2)]), Z: yc('Z', 2, [grp('ZB', 2, '09:00', '11:00')]), E: yc('E', 4, [grp('EB', 1, '09:00', '11:00')]) });
+  const p = best(searchYear({ dataA, dataB, state: yState({ choices: { X: 'must', Y: 'must', Z: 'optional', E: 'optional' } }), pins: ['ZB'], yearList: new Set(), weights: W }));
+  assert.ok(inB(p, 'X') && inB(p, 'Z'), JSON.stringify(p.b?.courses));
+  assert.deepEqual(p.missing, ['Y']);
+});
+
 test('S3 no "assumes you pass X" warning when another option of the same anyOf is already passed', () => {
   const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), P2: yc('P2', 3, []), N: yc('N', 3, [], anyOf('P', 'P2')) });
   const dataB = semData('ב', { P: yc('P', 3, []), P2: yc('P2', 3, []), N: yc('N', 3, [grp('NB', 3)], anyOf('P', 'P2')) });
