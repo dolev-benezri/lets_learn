@@ -1,10 +1,11 @@
 import { groupIndex } from './ui-grid.js';
 import { toMin } from './solver-core.js';
 
-// Afeka group ids are 9 digits, tutorials and labs add /N ("271001601/1"); the whole token is classified. (?<!\d)…(?!\d) keeps 10-digit phone numbers out.
+// Afeka group ids are 9 digits, tutorials and labs add /N ("271001601/1", spaces around the slash allowed); the whole token is classified. A ":" after /N means a time, not an id. (?<!\d)…(?!\d) keeps 10-digit phone numbers out.
 export function groupsFromText(text, data) {
   const known = groupIndex(data), found = [], unknown = [];
-  for (const [id] of String(text).matchAll(/(?<!\d)\d{9}(?:\/\d{1,2})?(?!\d)/g)) {
+  for (const [tok] of String(text).matchAll(/(?<!\d)\d{9}(?:\s*\/\s*\d{1,2}(?![\d:]))?(?!\d)/g)) {
+    const id = tok.replace(/\s+/g, ''); // pdf.js / OCR may split "271001601 / 1"
     const list = known.has(id) ? found : unknown;
     if (!list.includes(id)) list.push(id);
   }
@@ -45,7 +46,7 @@ export function findCourse(text, courses) {
   const t = String(text).trim();
   if (!t) return null;
   const ids = Object.keys(courses);
-  const exact = ids.find((id) => id === t || `${courses[id].name} (${id})` === t);
+  const exact = ids.find((id) => id === t || courses[id].name === t || `${courses[id].name} (${id})` === t);
   if (exact) return exact;
   const part = ids.filter((id) => courses[id].name.includes(t));
   return part.length === 1 ? part[0] : null;

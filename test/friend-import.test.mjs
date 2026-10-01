@@ -47,3 +47,15 @@ test('clashIds: overlapping meetings on one day clash, touching ends and other d
   assert.deepEqual([...clashIds(['x', 'y', 'z', 'w', 'nope'], cd)].sort(), ['x', 'y', 'z']);
   assert.deepEqual([...clashIds(['x', 'z', 'w'], cd)], []);
 });
+
+test('groupsFromText: spaces around the slash still read as one /N id; a time after a base id is not an /N id', () => {
+  const d = { courses: { c: { groups: [{ id: '271001601' }, { id: '271001601/1' }, { id: '270600101' }] } } };
+  assert.deepEqual(groupsFromText('271001601 / 1', d), { found: ['271001601/1'], unknown: [] });
+  assert.deepEqual(groupsFromText('271001601 /1 ו-271001601/ 1', d), { found: ['271001601/1'], unknown: [] });
+  assert.deepEqual(groupsFromText('270600101/10:00', d), { found: ['270600101'], unknown: [] });
+});
+test('findCourse: an exact name wins over other substring matches', () => {
+  const cs = { A: { name: 'אלגברה' }, B: { name: 'אלגברה לינארית' } };
+  assert.equal(findCourse('אלגברה', cs), 'A');
+  assert.equal(findCourse('לינארית', cs), 'B');
+});

@@ -35,18 +35,6 @@ export const initials = (name) => name.trim().split(/\s+/).map((w) => Array.from
 export const yedion = (id) => `https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx?prgname=S_LOOK_FOR_NOSE&arguments=-N${encodeURIComponent(id)}`;
 export const typeLabel = (t) => t.replace('סופי-', '');
 
-// Group options for a course: [{type, options: [{id, label}]}] by type, one label per group.
-export function groupOptions(course) {
-  const byType = new Map();
-  for (const g of course.groups) {
-    if (!byType.has(g.type)) byType.set(g.type, []);
-    const times = g.meetings.map((m) => `${DAYS[m.day]}׳ ${m.start}–${m.end}`).join(', ');
-    const label = `${typeLabel(g.type)} · ${times} · ${g.lecturer || '—'} (${g.id})`;
-    byType.get(g.type).push({ id: g.id, label });
-  }
-  return [...byType].map(([type, options]) => ({ type, options }));
-}
-
 // Nearest step of a 4-step scale (ties go to the higher step, so an old saved weight 2 reads as "חשוב").
 export const nearestStep = (v, steps) => steps.reduce((best, s) => (Math.abs(s - v) <= Math.abs(best - v) ? s : best), steps[0]);
 

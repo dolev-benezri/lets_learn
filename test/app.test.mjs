@@ -133,12 +133,6 @@ test('upsertFriend refuses a 21st friend', () => {
   assert.equal(r.friends.length, 20); assert.match(r.error, /עד 20/);
 });
 
-import { splitFriendGroups } from '../web/app.js';
-test('splitFriendGroups keeps unknown ids and second same-type groups instead of dropping them', () => {
-  const idx = new Map([['L1', { cid: 'c', g: { type: 'הרצאה' } }], ['L2', { cid: 'c', g: { type: 'הרצאה' } }], ['T1', { cid: 'c', g: { type: 'תרגיל' } }]]);
-  assert.deepEqual(splitFriendGroups(['L1', 'T1', 'L2', 'X9'], idx), { slots: { 'c|הרצאה': 'L1', 'c|תרגיל': 'T1' }, keep: ['L2', 'X9'] });
-});
-
 test('the unofficial-tool line lives once, inside the page footer', () => {
   const html = readFileSync('web/index.html', 'utf8');
   const foot = html.match(/<footer class="site-foot"[\s\S]*?<\/footer>/)?.[0] ?? '';

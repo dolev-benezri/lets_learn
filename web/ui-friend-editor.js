@@ -27,7 +27,7 @@ const firstDay = () => { const ds = ed.draft.flatMap(meetingsOf).map((m) => m.da
 export function openFriendEditor({ friend = null, onSave, returnFocusId }) {
   if (dlg.open) return;
   const draft = friend ? friend.groups.slice() : [];
-  ed = { friend, onSave, returnFocusId, draft, sem: draft.map(semOfGroup).find(Boolean) ?? 'א', day: 1, sel: null, cid: null, busy: false, colors: new Map() };
+  ed = { friend, onSave, returnFocusId, draft, sem: draft.map(semOfGroup).find(Boolean) ?? 'א', day: 1, sel: null, cid: null, busy: false, colors: new Map(), start: draft.join() };
   dlg.innerHTML = shell();
   renderTabs();
   renderCourses();
@@ -53,7 +53,6 @@ const shell = () => `<div class="fe">
     <section class="fe-pick" id="fePick" data-open="true" aria-label="בחירת קבוצות">
       <button type="button" class="btn fe-sheet-btn" data-fe="sheet" aria-expanded="true" aria-controls="fePickBody">${icon('plus')} קבוצות וייבוא</button>
       <div class="fe-pick-body" id="fePickBody">
-        <div id="feTabs"></div>
         <form id="feSearch" class="fe-sec"><label for="feCourse">הוספת קורס</label>
           <div class="row"><input id="feCourse" type="text" list="feCourses" autocomplete="off" placeholder="שם או מספר קורס"><button type="submit" class="btn">הצג קבוצות</button></div>
           <datalist id="feCourses"></datalist></form>
@@ -65,11 +64,11 @@ const shell = () => `<div class="fe">
           <button type="button" class="btn" id="feFind" data-fe="find">מצא קבוצות</button>
           <label for="feFile">או קובץ מערכת (PDF או תמונה)</label>
           <input type="file" id="feFile" accept="application/pdf,image/*">
-          <div id="feImpStatus" class="hint" aria-live="polite"></div></section>
+          <div id="feImpStatus" class="hint" aria-live="polite" tabindex="-1"></div></section>
       </div>
     </section>
     <section class="fe-grid" aria-label="מערכת השבוע של החבר">
-      <div class="fe-bar"><p id="feCount" class="hint"></p><p id="feSel" class="hint" aria-live="polite"></p>
+      <div class="fe-bar"><div id="feTabs"></div><p id="feCount" class="hint"></p><p id="feSel" class="hint" aria-live="polite"></p>
         <button type="button" class="btn" id="feRemove" data-fe="removeSel">${icon('x')} הסר קבוצה</button></div>
       <p class="hint warn-text" id="feUnk"></p>
       <div id="feDays" class="daysel" role="group" aria-label="בחירת יום"></div>
@@ -95,7 +94,7 @@ function row(g) {
   const on = ed.draft.includes(g.id);
   return `<li class="fe-row${on ? ' on' : ''}"><div class="fe-info"><span>${g.meetings.map(meetingHtml).join(' · ') || 'ללא מועד'}</span>
     <span>${esc(g.lecturer || '—')}${g.full ? ' <span class="tag bad">מלאה</span>' : ''} <bdi dir="ltr" class="gid">${esc(g.id)}</bdi></span></div>
-    <button type="button" class="btn${on ? '' : ' primary'}" data-fe="toggle" data-gid="${esc(g.id)}" aria-pressed="${on}"><span class="sr">${esc(typeLabel(g.type))} ${esc(groupNumber(g.id))}: </span>${on ? 'משובץ · הסר' : 'שבץ'}</button></li>`;
+    <button type="button" class="btn${on ? '' : ' primary'}" data-fe="toggle" data-gid="${esc(g.id)}"><span class="sr">${esc(typeLabel(g.type))} ${esc(groupNumber(g.id))}: </span>${on ? 'משובץ · הסר' : 'שבץ'}</button></li>`;
 }
 function renderGroups() {
   const c = ed.cid && semData().courses[ed.cid];
@@ -184,6 +183,8 @@ function selectBlock(gid) {
 }
 function setSem(sem) {
   ed.sem = sem;
+  const r = dlg.querySelector(`input[name="feSem"][value="${sem}"]`);
+  if (r) r.checked = true;
   if (ed.cid && !offered(sem)[ed.cid]) ed.cid = null;
   ed.sel = null;
   ed.day = firstDay();
@@ -211,14 +212,22 @@ function search() {
 const status = (html) => { $('feImpStatus').innerHTML = html; };
 function importText(text) {
   const all = app.sem['ב'] ? yearView(app.sem['א'], app.sem['ב']) : app.sem['א'];
-  const { found, unknown } = groupsFromText(text, all);
-  let full = false;
-  for (const gid of found) if (!ed.draft.includes(gid) && !put(gid)) full = true; // placeGroup toggles: an id already in the draft must stay
-  const other = found.filter((g) => semOfGroup(g) !== ed.sem).length;
-  setPickErr(full ? LIMIT : '');
+  const { found, unknown } = groupsFromText(text, all), placed = [];
+  let already = 0, refused = 0;
+  for (const gid of found) { // placeGroup toggles: an id already in the draft must stay
+    if (ed.draft.includes(gid)) already++;
+    else if (put(gid)) placed.push(gid);
+    else refused++;
+  }
+  const otherOf = (s) => (s === 'א' ? 'ב' : 'א');
+  const switched = placed.length && !placed.some((g) => semOfGroup(g) === ed.sem) ? semOfGroup(placed[0]) : null; // nothing here: show where they landed
+  if (switched) setSem(switched);
+  setPickErr(refused ? LIMIT : '');
   changed();
   renderGroups();
-  status(`<p>נמצאו ${found.length} קבוצות${other ? (other === found.length ? ` (כולן בסמסטר ${SEM_NAME[ed.sem === 'א' ? 'ב' : 'א']})` : ` (${other} מהן בסמסטר ${SEM_NAME[ed.sem === 'א' ? 'ב' : 'א']})`) : ''}.</p>`
+  const other = placed.filter((g) => semOfGroup(g) !== ed.sem).length, o = SEM_NAME[otherOf(ed.sem)];
+  const skipped = [already && `${already} כבר במערכת`, refused && `${refused} לא שובצו`].filter(Boolean).join(', ');
+  status(`<p>${placed.length === found.length ? `נמצאו ${found.length} קבוצות` : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${other ? ` (${other === placed.length ? 'כולן' : `${other} מהן`} בסמסטר ${o})` : ''}${switched ? `. עברנו לסמסטר ${SEM_NAME[ed.sem]}` : ''}.</p>`
     + (unknown.length ? `<p>לא נמצאו: ${unknown.map((id) => `<bdi dir="ltr">${esc(id)}</bdi>`).join(', ')}</p>` : '')
     + (found.length || unknown.length ? '' : '<p>לא זוהה אף מספר קבוצה (9 ספרות).</p>'));
 }
@@ -226,14 +235,15 @@ async function pdfText(file) {
   const pdfjs = await import(`${PDFJS}pdf.min.mjs`);
   pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS}pdf.worker.min.mjs`;
   const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
-  const pages = [];
-  for (let i = 1; i <= Math.min(doc.numPages, 30); i++) pages.push((await (await doc.getPage(i)).getTextContent()).items.map((x) => x.str).join(' '));
-  doc.destroy();
-  return pages.join(' ');
+  try {
+    const pages = [];
+    for (let i = 1; i <= Math.min(doc.numPages, 30); i++) pages.push((await (await doc.getPage(i)).getTextContent()).items.map((x) => x.str).join(' '));
+    return pages.join(' ');
+  } finally { doc.destroy(); }
 }
-async function imageText(file) {
+async function imageText(file, me) {
   const { createWorker } = (await import(TESSERACT)).default;
-  const w = await createWorker('eng', 1, { logger: (m) => { if (m.status === 'recognizing text' && ed) status(`<p>מזהה טקסט… ${Math.round(m.progress * 100)}%</p>`); } });
+  const w = await createWorker('eng', 1, { logger: (m) => { if (m.status === 'recognizing text' && ed === me) status(`<p>מזהה טקסט… ${Math.round(m.progress * 100)}%</p>`); } });
   try {
     await w.setParameters({ tessedit_char_whitelist: '0123456789/' }); // "/" is part of tutorial ids (271001601/1)
     return (await w.recognize(file)).data.text;
@@ -243,9 +253,10 @@ async function importFile(file) {
   const me = ed, input = $('feFile'), refocus = document.activeElement === input;
   const busy = (on) => { me.busy = on; input.disabled = on; $('feFind').disabled = on; $('feImpStatus').setAttribute('aria-busy', String(on)); };
   busy(true);
+  if (refocus) $('feImpStatus').focus({ preventScroll: true }); // a disabled input would drop focus to <body>
   status(`<p>${file.type.startsWith('image/') ? 'מזהה טקסט…' : 'קורא את הקובץ…'}</p>`);
   let text = '';
-  try { text = file.type.startsWith('image/') ? await imageText(file) : file.type === 'application/pdf' || /\.pdf$/i.test(file.name) ? await pdfText(file) : ''; } catch { /* any failure reads as "no text" */ }
+  try { text = file.type.startsWith('image/') ? await imageText(file, me) : file.type === 'application/pdf' || /\.pdf$/i.test(file.name) ? await pdfText(file) : ''; } catch { /* any failure reads as "no text" */ }
   if (me !== ed) return; // closed (or reopened) while working
   busy(false);
   input.value = '';
@@ -273,7 +284,10 @@ async function save() {
 }
 
 const ACT = {
-  cancel: () => dlg.close(),
+  async cancel() {
+    const dirty = $('feName').value.trim() !== (ed.friend?.name ?? '') || ed.draft.join() !== ed.start;
+    if (!dirty || await askConfirm('לסגור בלי לשמור?', { ok: 'סגור', cancel: 'המשך לערוך' })) dlg.close();
+  },
   save,
   sheet(b) { const p = $('fePick'), open = p.dataset.open !== 'true'; p.dataset.open = String(open); b.setAttribute('aria-expanded', String(open)); },
   day(b) { ed.day = Number(b.dataset.day); renderGrid(); $('feDays').querySelector(`[data-day="${ed.day}"]`)?.focus({ preventScroll: true }); },
@@ -283,7 +297,7 @@ const ACT = {
     const gid = b.dataset.gid;
     if (ed.draft.includes(gid)) ed.draft = ed.draft.filter((g) => g !== gid);
     else if (!put(gid)) { setPickErr(LIMIT); return; }
-    else ed.day = Math.min(...meetingsOf(gid).map((m) => m.day).filter((d) => d >= 1 && d <= 6), 6); // phone: show the day it landed on
+    else { const ds = meetingsOf(gid).map((m) => m.day).filter((d) => d >= 1 && d <= 6); if (ds.length) ed.day = Math.min(...ds); } // phone: show the day it landed on
     setPickErr('');
     changed();
     renderGroups();
@@ -291,35 +305,35 @@ const ACT = {
   },
 };
 
-if (dlg) {
-  dlg.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!ed) return;
-    const blk = e.target.closest('.blk');
-    if (blk) return selectBlock(blk.dataset.gid);
-    const b = e.target.closest('[data-fe]');
-    if (b && !b.disabled) ACT[b.dataset.fe]?.(b);
-  });
-  dlg.addEventListener('change', (e) => {
-    e.stopPropagation();
-    if (!ed) return;
-    if (e.target.name === 'feSem') setSem(e.target.value);
-    else if (e.target.id === 'feFile' && e.target.files[0] && !ed.busy) importFile(e.target.files[0]);
-  });
-  dlg.addEventListener('submit', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (ed && e.target.id === 'feSearch') search();
-  });
-  dlg.addEventListener('keydown', (e) => {
-    e.stopPropagation(); // Escape still closes this dialog natively, but not the drawer behind it; arrows don't flip the board
-    const blk = e.target.closest?.('.blk');
-    if (ed && blk && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); removeGroup(blk.dataset.gid); }
-  });
-  dlg.addEventListener('close', () => {
-    const id = ed?.returnFocusId;
-    ed = null;
-    dlg.innerHTML = '';
-    (document.getElementById(id) ?? document.getElementById('week'))?.focus({ preventScroll: true });
-  });
-}
+dlg.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (!ed) return;
+  const blk = e.target.closest('.blk');
+  if (blk) return selectBlock(blk.dataset.gid);
+  const b = e.target.closest('[data-fe]');
+  if (b && !b.disabled) ACT[b.dataset.fe]?.(b);
+});
+dlg.addEventListener('change', (e) => {
+  e.stopPropagation();
+  if (!ed) return;
+  if (e.target.name === 'feSem') setSem(e.target.value);
+  else if (e.target.id === 'feFile' && e.target.files[0] && !ed.busy) importFile(e.target.files[0]);
+});
+dlg.addEventListener('submit', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (ed && e.target.id === 'feSearch') search();
+});
+dlg.addEventListener('keydown', (e) => {
+  e.stopPropagation(); // the drawer's Escape and the board's arrow keys never see editor keys
+  const blk = e.target.closest?.('.blk');
+  if (ed && blk && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); removeGroup(blk.dataset.gid); }
+});
+// Escape: ask first when something would be lost (a stray Escape while using the datalist is easy).
+dlg.addEventListener('cancel', (e) => { e.preventDefault(); if (ed) ACT.cancel(); });
+dlg.addEventListener('close', () => {
+  const id = ed?.returnFocusId;
+  ed = null;
+  dlg.innerHTML = '';
+  (document.getElementById(id) ?? document.getElementById('week'))?.focus({ preventScroll: true });
+});
