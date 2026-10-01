@@ -519,3 +519,20 @@ test('S3 no "assumes you pass X" warning when another option of the same anyOf i
   assert.ok(inA(best(r), 'P') && inB(best(r), 'N'));
   for (const p of r.results) assert.deepEqual(p.warnings, []);
 });
+
+test('S5 a low-ranked א׳ alternative that alone unlocks a ב׳ must course is still found (top-50 cut)', () => {
+  // Seven 3-credit electives outrank {P} in א׳ alone (2^7 subsets, {P} ~121st), but only P unlocks the must N in ב׳.
+  const A = {}, B = {};
+  for (let i = 0; i < 7; i++) {
+    const g = grp(`E${i}A`, (i % 6) + 1, i < 6 ? '08:00' : '12:00', i < 6 ? '10:00' : '14:00');
+    A[`E${i}`] = yc(`E${i}`, 3, [g]);
+    B[`E${i}`] = yc(`E${i}`, 3, []);
+  }
+  const allDay = { ...grp('PA', 1), meetings: [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '08:00', end: '20:00' })) };
+  A.P = yc('P', 1, [allDay]); B.P = yc('P', 1, []);
+  A.N = yc('N', 4, [], pre('P')); B.N = yc('N', 4, [grp('NB', 1)], pre('P'));
+  const choices = { ...opt('P', ...Object.keys(A).filter((id) => id[0] === 'E')), N: 'must' };
+  const p = best(searchYear({ dataA: semData('א', A), dataB: semData('ב', B), state: yState({ choices }), yearList: new Set(), weights: W }));
+  assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses, p.missing]));
+  assert.deepEqual(p.missing, []);
+});

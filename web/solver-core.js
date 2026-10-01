@@ -374,15 +374,28 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   const sumV = (v, ids) => ids.reduce((s, id) => s + Math.max(0, v[id] ?? 0), 0);
   const Wp = weights.progress ?? 0;
 
-  const ra = search({ data: dataA, courses: coursesA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, topK: A_TOP, timeLimitMs: timeLimitMs * A_SHARE, bias });
+  const argsA = { data: dataA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, bias };
+  const ra = search({ ...argsA, courses: coursesA, topK: A_TOP, timeLimitMs: timeLimitMs * A_SHARE });
   const credits = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
   const name = (id) => dataA.courses[id]?.name ?? id;
   const settled = (x) => (state.passed ?? []).includes(x.id) || stA[x.id]?.status === 'exempt';
   const pairs = [];
   let partial = ra.partial;
+  // The top-A_TOP cut ranks א׳ alone, so it can drop the only א׳ plans that open a ב׳ must course. Seed one per such
+  // course: the best א׳ plan that takes its open prerequisites (the first א׳ candidate of each open anyOf).
+  const key = (a) => [...a.courses].sort().join();
+  const seen = new Set(ra.results.map(key)), seeds = [];
+  for (const m of must) {
+    const need = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled)).map((p) => p.anyOf.find((x) => inA.has(x.id))?.id);
+    if (!need.length || need.includes(undefined)) continue;
+    const r = search({ ...argsA, courses: coursesA.map((c) => (need.includes(c.id) ? { ...c, mode: 'must' } : c)), topK: 1, timeLimitMs: Math.max(B_FLOOR, (deadline - Date.now()) / (must.size + 1)) });
+    partial ||= r.partial;
+    const s = r.results[0];
+    if (s && !seen.has(key(s))) { seen.add(key(s)); seeds.push(s); }
+  }
   // search() never returns an empty selection; when nothing is must in א׳, "take nothing in א׳" is a valid year plan.
-  const aList = coursesA.some((c) => c.mode === 'must') ? ra.results
-    : [...ra.results, { score: 0, breakdown: {}, groups: [], courses: [], unlocks: 0, explanation: '', alts: {}, exams: [] }];
+  const aList = [...seeds, ...ra.results];
+  if (!coursesA.some((c) => c.mode === 'must')) aList.push({ score: 0, breakdown: {}, groups: [], courses: [], unlocks: 0, explanation: '', alts: {}, exams: [] });
   for (const [i, a] of aList.entries()) {
     if (Date.now() > deadline + timeLimitMs / 2) { partial = true; break; }
     const takenA = new Set(a.courses);
