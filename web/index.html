@@ -431,7 +431,8 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .views a:active { background:var(--primary-soft); }
 @media (max-width:1079px) { .views { padding:0 16px; } }
 /* on #me the bar keeps the title only: the alternatives and the plan actions belong to the builder */
-[data-view="me"] .switcher, [data-view="me"] .actions { display:none; }
+[data-view="me"] .switcher, [data-view="me"] .actions, body.gated .switcher, body.gated .actions { display:none; }
+.gate { max-width:440px; } /* the year question shown before planning starts (ui-plan.js renderMe) */
 /* status page (#me): profile and progress on the right (sticky) and the course lists beside them from 900px; one column below */
 #me { --gut:16px; max-width:1200px; margin:0 auto; padding:16px var(--gut) 0; }
 #me { scroll-margin-top:100vh; } /* loading or following #me must not scroll the page past the nav strip: the fragment scroll clamps to 0 */
