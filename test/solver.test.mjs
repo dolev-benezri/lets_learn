@@ -520,6 +520,16 @@ test('S3 no "assumes you pass X" warning when another option of the same anyOf i
   for (const p of r.results) assert.deepEqual(p.warnings, []);
 });
 
+test('S4 a must course offered in neither semester is never placed and nothing throws', () => {
+  const { dataA, dataB } = yearFixture();
+  dataA.courses.G = yc('G', 3, []);
+  dataB.courses.G = yc('G', 3, []);
+  const r = searchYear({ dataA, dataB, state: yState({ choices: { ...yState().choices, G: 'must' } }), yearList: new Set(), weights: W });
+  assert.ok(r.results.length > 0);
+  // Policy (same as a course blocked all year): not a candidate, so not must for the year; the sidebar lists it under "לא נלמד".
+  for (const p of r.results) assert.ok(!inA(p, 'G') && !inB(p, 'G') && !p.missing.includes('G'));
+});
+
 test('S5 a low-ranked א׳ alternative that alone unlocks a ב׳ must course is still found (top-50 cut)', () => {
   // Seven 3-credit electives outrank {P} in א׳ alone (2^7 subsets, {P} ~121st), but only P unlocks the must N in ב׳.
   const A = {}, B = {};
@@ -535,4 +545,24 @@ test('S5 a low-ranked א׳ alternative that alone unlocks a ב׳ must course is 
   const p = best(searchYear({ dataA: semData('א', A), dataB: semData('ב', B), state: yState({ choices }), yearList: new Set(), weights: W }));
   assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses, p.missing]));
   assert.deepEqual(p.missing, []);
+});
+
+test('S6 a friend only in ב׳ is neutral for every א׳ alternative and decides the ב׳ group', () => {
+  const { dataA, dataB } = yearFixture();
+  dataB.courses.OB.groups.push(grp('OBB2', 5));
+  const friends = [{ name: 'f', weight: 1, active: true, groups: ['OBB2'] }];
+  const r = searchYear({ dataA, dataB, state: yState(), yearList: new Set(), weights: { ...W, friends: 3 }, friends });
+  const fa = r.results.filter((p) => p.a.courses.length).map((p) => p.a.breakdown.friends);
+  assert.ok(fa.length > 1 && fa.every((x) => x === 0), JSON.stringify(fa));
+  assert.ok(best(r).b.groups.includes('OBB2'));
+});
+
+test('S7 a retake offered in both semesters is placed exactly once in every plan', () => {
+  const { dataA, dataB } = yearFixture();
+  const r = searchYear({ dataA, dataB, state: yState({ failed: { M: 1 }, choices: opt('P', 'N', 'OB') }), yearList: new Set(), weights: W });
+  assert.ok(r.results.length > 0);
+  for (const p of r.results) {
+    assert.equal(inA(p, 'M') + inB(p, 'M'), 1);
+    assert.ok(!p.missing.includes('M'));
+  }
 });
