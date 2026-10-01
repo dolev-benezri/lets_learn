@@ -502,7 +502,7 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
   #semnote .notice { padding:6px 10px; font-size:13px; line-height:1.4; margin-bottom:6px; }
 }
 
-/* friend timetable editor (ui-friend-editor.js): full-screen dialog, picker on the inline-start side (right in RTL), week grid beside it */
+/* friend timetable editor (ui-friend-editor.js): full-screen dialog, picker on the inline-start side (right in RTL), week grid beside it; phone: tabs */
 #friendEd { width:100vw; height:100dvh; max-width:none; max-height:none; margin:0; padding:0; border:0; background:var(--bg); color:var(--text); overflow:hidden; }
 #friendEd[open] { display:flex; }
 body:has(#friendEd[open]) { overflow:hidden; }
@@ -517,7 +517,7 @@ body:has(#friendEd[open]) { overflow:hidden; }
 .fe-body { flex:1; min-height:0; display:grid; grid-template-columns:minmax(300px, 400px) minmax(0, 1fr); }
 .fe-pick { min-height:0; overflow:auto; overscroll-behavior:contain; padding:16px; background:var(--surface); border-inline-end:1px solid var(--border); }
 .fe-pick-body { display:grid; gap:14px; }
-.fe-sheet-btn { display:none; }
+.fe-tabs, #fePickSem, .fe-actions [data-fe="cancel"] .icon { display:none; } /* phone only (below) */
 .fe-sec { display:grid; gap:6px; }
 .fe-sec h3 { font-size:15px; font-weight:600; }
 #friendEd .seg { margin:0; }
@@ -546,16 +546,27 @@ body:has(#friendEd[open]) { overflow:hidden; }
 #friendEd .blk[aria-pressed="true"] { outline:3px solid var(--primary); outline-offset:-3px; z-index:1; }
 @media (max-width:899px) { .fe-body { grid-template-columns:minmax(260px, 320px) minmax(0, 1fr); } }
 @media (max-width:599px) {
-  .fe-head { padding:8px 12px; gap:0 8px; }
-  .fe-head h2 { flex:1; }
-  .fe-name { order:3; flex-basis:100%; max-width:none; }
+  /* phone: a true full-screen page. Header = close | title | save, name below; two full-width tabs (groups / timetable), one shown at a time, each scrolling on its own */
+  #friendEd { padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+  .fe-head { display:grid; grid-template-columns:var(--tap) minmax(0, 1fr) auto; align-items:center; gap:0 8px; padding:6px 12px; }
+  .fe-head h2 { grid-area:1 / 2; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fe-actions { display:contents; }
+  .fe-actions [data-fe="cancel"] { grid-area:1 / 1; padding:0; }
+  .fe-actions [data-fe="save"] { grid-area:1 / 3; }
+  .fe-actions [data-fe="cancel"] .icon { display:block; }
+  .fe-actions .fe-lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } /* icon-only close, the word stays for screen readers */
+  .fe-name { grid-area:2 / 1 / 3 / -1; max-width:none; padding-bottom:6px; }
+  .fe-err { padding:8px 12px; }
+  .fe-tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--border); }
+  .fe-tabs [role="tab"] { flex:1; min-height:var(--tap); padding:0 8px; border:0; border-bottom:3px solid transparent; background:none; font:inherit; font-weight:500; color:var(--text-2); cursor:pointer; }
+  .fe-tabs [role="tab"][aria-selected="true"] { color:var(--primary); border-bottom-color:var(--primary); }
+  .fe-tabs [role="tab"]:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
   .fe-body { display:flex; flex-direction:column; }
-  .fe-grid { flex:1; padding:8px 12px; }
-  /* the picker is a bottom sheet under the grid; its handle button collapses it */
-  .fe-pick { order:2; flex:none; max-height:46dvh; padding:10px 12px max(12px, env(safe-area-inset-bottom)); border-inline-end:0; border-top:1px solid var(--border-strong); border-radius:16px 16px 0 0; box-shadow:0 -8px 24px rgba(16,24,40,.16); }
-  .fe-pick[data-open="false"] .fe-pick-body { display:none; }
-  .fe-sheet-btn { display:flex; width:100%; margin-bottom:10px; }
-  .fe-pick[data-open="false"] .fe-sheet-btn { margin-bottom:0; }
+  .fe-pick, .fe-grid { flex:1; min-width:0; border:0; }
+  .fe-pick { padding:12px 12px calc(16px + env(safe-area-inset-bottom)); }
+  .fe-grid { padding:8px 12px calc(8px + env(safe-area-inset-bottom)); }
+  #feRoot[data-tab="pick"] .fe-grid, #feRoot[data-tab="grid"] .fe-pick { display:none; }
+  #fePickSem:not(:empty) { display:block; }
 }
 </style>
 </head>
