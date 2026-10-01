@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, makeKeep, chainOf, SIZE, nodeRadius, edgePath } from '../web/ui-map.js';
+import { layoutMap, makeKeep, chainOf, SIZE, nodeRadius, edgePath, G, truncate, edgeEnds, sameLayerPath, geometry, fitScale, mapSvg } from '../web/ui-map.js';
+import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
 
@@ -98,4 +99,66 @@ test('nodeRadius grows with credits and is clamped', () => {
 
 test('edgePath is a horizontal-tangent cubic between two points', () => {
   assert.equal(edgePath({ x: 300, y: 50 }, { x: 100, y: 150 }), 'M300,50 C200,50 200,150 100,150');
+});
+
+const geo = (keep) => { const L = layoutMap(data, keep), g = geometry(L, (id) => data.courses[id]?.credits); return { L, g }; };
+
+test('truncate: 18 characters including the ellipsis, short names untouched', () => {
+  assert.equal(truncate('קצר'), 'קצר');
+  assert.equal(truncate('א'.repeat(18)), 'א'.repeat(18));
+  assert.equal(truncate('א'.repeat(19)), `${'א'.repeat(17)}…`);
+});
+
+test('edgeEnds: leaves the near edge of one circle and enters the near edge of the next, either direction', () => {
+  const a = { x: 300, y: 10, hw: 20 }, b = { x: 100, y: 50, hw: 14 };
+  assert.deepEqual(edgeEnds(a, b), [{ x: 280, y: 10 }, { x: 114, y: 50 }]);
+  assert.deepEqual(edgeEnds(b, a), [{ x: 114, y: 50 }, { x: 280, y: 10 }]);
+});
+
+test('sameLayerPath: a bowed cubic between two nodes of one column (edgePath would be a straight line)', () => {
+  const d = sameLayerPath({ x: 200, y: 10, hw: 20 }, { x: 200, y: 110, hw: 14 });
+  assert.equal(d, `M220,10 C${220 + G.bulge},10 ${214 + G.bulge},110 214,110`);
+});
+
+test('fitScale: whole width on a desktop (never above 1), a readable 0.7 on a phone', () => {
+  assert.equal(fitScale(1440, 976), 1); assert.ok(Math.abs(fitScale(800, 1000) - 0.8) < 1e-9); assert.equal(fitScale(375, 976), 0.7);
+});
+
+test('geometry: finite coordinates, layer 0 on the right, nodes inside their lane and the canvas, no two circles overlap', () => {
+  const { L, g } = geo();
+  const ok = (v) => Number.isFinite(v);
+  assert.ok(g.nodes.every((n) => [n.x, n.y, n.r, n.hw].every(ok)) && g.ors.every((o) => [o.x, o.y].every(ok)));
+  assert.ok(g.edges.length === L.paths.length && g.edges.every((e) => /^M[-\d.]+,[-\d.]+ C/.test(e.d) && !/NaN|undefined/.test(e.d)));
+  for (const n of g.nodes) {
+    const l = g.lanes.find((x) => x.i === n.lane);
+    assert.ok(n.x - n.hw >= 0 && n.x + n.hw <= g.W && n.y - n.r >= l.y && n.y + n.r + 22 <= l.y + l.h, n.key); // 22 = the name under the circle
+  }
+  const at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
+  for (const e of L.edges) if (at[e.from] && at[e.to] && at[e.from].layer < at[e.to].layer) assert.ok(at[e.from].x > at[e.to].x);
+  const all = [...g.nodes, ...g.ors];
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r, `${all[i].key} / ${all[j].key}`);
+  assert.deepEqual(g.nodes.map((n) => n.layer), [...g.nodes.map((n) => n.layer)].sort((a, b) => a - b)); // DOM and Tab order: layers first
+});
+
+test('geometry: a same-layer מקביל edge is bowed, not a straight line through the column', () => {
+  const c = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
+  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 0 }], courses: { a: c('A'), b: c('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) } };
+  const L = layoutMap(d), g = geometry(L, () => 3);
+  assert.equal(L.nodes[0].layer, L.nodes[1].layer);
+  assert.match(g.edges[0].d, /^M[\d.]+,[\d.]+ C/);
+  assert.ok(g.edges[0].d.includes(`${g.nodes[0].x + g.nodes[0].hw + G.bulge}`));
+});
+
+test('mapSvg: one button per course in Tab order, labelled and titled; ext pills and "או" circles are not buttons; all text escaped', () => {
+  const { L, g } = geo(), st = statuses, doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
+  const evil = { ...data, courses: { ...data.courses, [Object.keys(data.courses)[0]]: { ...data.courses[Object.keys(data.courses)[0]], name: '<img onerror=x>' + 'א'.repeat(30) } } };
+  const html = mapSvg({ data: evil, st, L, g, year: 2, unlocks: unlockCounts(evil, doneIds), mode: 'all' });
+  assert.equal((html.match(/role="button"/g) ?? []).length, Object.keys(data.courses).length);
+  assert.equal((html.match(/<title>/g) ?? []).length, g.nodes.length);
+  assert.ok(!html.includes('<img') && html.includes('&lt;img'));
+  assert.ok(!/NaN|undefined/.test(html));
+  assert.ok(html.includes('class="ml mine"') && !html.includes('class="ml me"'));
+  assert.ok(html.includes('class="ext"') && html.includes('class="or"'));
+  assert.ok([...html.matchAll(/<g class="(?:ext|or)"[^>]*>/g)].every(([m]) => m.includes('aria-hidden="true"') && !m.includes('role=')));
+  for (const s of ['done', 'retake', 'blocked']) if (Object.values(st).some((x) => x.status === s)) assert.ok(html.includes(`st-${s}`));
 });
