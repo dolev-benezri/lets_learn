@@ -1,6 +1,7 @@
 // Week grid, block popover and the small pure helpers behind them (hour range, pills summary, scale steps).
 import { esc } from './app.js';
 import { toMin, meetingsMask, overlaps, buildOptions } from './solver-core.js';
+import { groupLabel, groupNumber } from './ui-text.js';
 
 export const DAYS = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
 export const DAY_FULL = ['', 'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -182,7 +183,8 @@ export function renderDaySelector(range, res, data, day) {
     aria-pressed="${d === day}">${DAYS[d]}׳${busy.has(d) ? '' : '<span class="sr"> (פנוי)</span><span class="free" aria-hidden="true">פנוי</span>'}</button>`).join('');
 }
 
-// Popover: details of one group, friends in it, pin toggle and a Yedion link.
+// Popover: details of one group, friends in it, pin toggle and a Yedion link. Compact: header and actions stay, the rest scrolls inside.
+// The group is named for people (type + short number); the 9-digit registration id stays visible but secondary.
 export function openPop(btn, ctx) {
   const pop = document.getElementById('pop');
   const { cid, c, g } = groupIndex(ctx.data).get(btn.dataset.gid);
@@ -193,28 +195,31 @@ export function openPop(btn, ctx) {
   pop.className = `pop c${ctx.colors.get(cid) ?? 7}`;
   pop.innerHTML = `
     <div class="pop-head"><span class="dot" aria-hidden="true"></span>
-      <div><h3 id="popTitle">${esc(c.name)}</h3><p>${esc(cid)} · קבוצה <bdi dir="ltr">${esc(g.id)}</bdi> · ${esc(typeLabel(g.type))}</p></div>
+      <div><h3 id="popTitle">${esc(c.name)}</h3><p>${esc(groupLabel(g))} · קורס ${esc(cid)}</p></div>
       <button type="button" class="btn icon-btn ghost" data-act="popClose" aria-label="סגור">${icon('x')}</button></div>
+    <div class="pop-actions">
+      <button type="button" class="btn ${pinned ? '' : 'primary'}" data-act="pin" data-gid="${esc(g.id)}" aria-pressed="${pinned}" aria-describedby="popHint">${icon('pin')} ${pinned ? 'בטל נעיצה' : 'נעץ קבוצה'}</button>
+      <a class="btn" href="${yedion(cid)}" target="_blank" rel="noopener">ראה בידיעון ${icon('external-link')}<span class="sr"> (נפתח בחלון חדש)</span></a>
+    </div>
+    <div class="pop-body">
+    ${g.full ? `<p class="tag bad">${icon('alert')} הקבוצה מלאה</p>` : ''}
     <dl>
       <dt>מרצה</dt><dd>${esc(g.lecturer || '—')}</dd>
       <dt>מפגשים</dt><dd>${g.meetings.map((m) => `יום ${DAYS[m.day] ?? '?'}׳ <bdi dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>${m.room ? ` · ${esc(m.room)}` : ''}`).join('<br>')}</dd>
       <dt>בחינות</dt><dd>${!ctx.data.examsPublished ? 'לוח הבחינות טרם פורסם'
         : exams.length ? exams.map((e) => `מועד ${esc(e.moed)}: <bdi dir="ltr">${esc(e.date)}</bdi>`).join('<br>') : '—'}</dd>
-      <dt>חברים בקבוצה</dt><dd>${fr.length ? fr.map((f) => `<span class="av" aria-hidden="true">${esc(initials(f.name))}</span> ${esc(f.name)}`).join('<br>') : 'אין'}</dd>
+      ${fr.length ? `<dt>חברים בקבוצה</dt><dd>${fr.map((f) => `<span class="av" aria-hidden="true">${esc(initials(f.name))}</span> ${esc(f.name)}`).join('<br>')}</dd>` : ''}
+      <dt class="gid">מספר להרשמה</dt><dd class="gid"><bdi dir="ltr">${esc(g.id)}</bdi></dd>
     </dl>
-    ${g.full ? `<p class="tag bad">${icon('alert')} הקבוצה מלאה</p>` : ''}
-    <div class="pop-actions">
-      <button type="button" class="btn ${pinned ? '' : 'primary'}" data-act="pin" data-gid="${esc(g.id)}" aria-pressed="${pinned}">${icon('pin')} ${pinned ? 'בטל נעיצה' : 'נעץ קבוצה'}</button>
-      <a class="btn" href="${yedion(cid)}" target="_blank" rel="noopener">ראה בידיעון ${icon('external-link')}<span class="sr"> (נפתח בחלון חדש)</span></a>
-    </div>
-    <p class="pop-hint">נעיצה שומרת את הקבוצה הזו בכל החלופות.</p>
+    <p class="pop-hint" id="popHint">נעיצה שומרת את הקבוצה הזו בכל החלופות.</p>
     ${alts.length > 1 ? `<h4 class="pop-alt-h">קבוצות ${esc(typeLabel(g.type))} אחרות בקורס</h4><ul class="pop-alts">${alts.map(({ g: x, clash, ok }) => {
-      const body = `<bdi dir="ltr">${esc(x.id)}</bdi> · ${x.meetings.map((m) => `${DAYS[m.day] ?? '?'}׳ <bdi dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>`).join(', ')} · ${esc(x.lecturer || '—')}`
-        + `${x.full ? ' <span class="tag bad">מלאה</span>' : ''}${clash ? ' <span class="tag bad">מתנגשת</span>' : ''}`;
+      const body = `<b>קבוצה ${esc(groupNumber(x.id))}</b> · ${x.meetings.map((m) => `${DAYS[m.day] ?? '?'}׳ <bdi dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>`).join(', ')} · ${esc(x.lecturer || '—')}`
+        + `${x.full ? ' <span class="tag bad">מלאה</span>' : ''}${clash ? ' <span class="tag bad">מתנגשת</span>' : ''} <bdi dir="ltr" class="gid">${esc(x.id)}</bdi>`;
       return x.id === g.id ? `<li class="cur" aria-current="true">${body} <span class="tag ok">נוכחית</span></li>`
         : !ok ? `<li class="na">${body} <span class="tag bad">לא זמינה</span></li>`
         : `<li><button type="button" class="btn" data-act="pin" data-gid="${esc(x.id)}" data-k="alt-${esc(x.id)}">${body}</button></li>`;
-    }).join('')}</ul>` : ''}`;
+    }).join('')}</ul>` : ''}
+    </div>`;
   pop.setAttribute('aria-labelledby', 'popTitle');
   pop.dataset.src = btn.dataset.k;
   pop.dataset.gid = g.id;
@@ -224,6 +229,7 @@ export function openPop(btn, ctx) {
     const left = r.left - w - gap >= gap ? r.left - w - gap : r.right + w + gap <= innerWidth ? r.right + gap : Math.max(gap, (innerWidth - w) / 2);
     pop.style.left = `${left}px`;
     pop.style.top = `${Math.max(gap, Math.min(r.top, innerHeight - h - gap))}px`;
+    pop.dataset.top = r.top; // where the block was: a long scroll away from it closes the popover (ui-plan.js)
   } else pop.style.left = pop.style.top = '';
-  pop.querySelector('[data-act="pin"]').focus({ preventScroll: true });
+  pop.querySelector('.pop-actions [data-act="pin"]').focus({ preventScroll: true });
 }
