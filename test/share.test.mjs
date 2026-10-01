@@ -124,3 +124,13 @@ test('backup keeps scope/load/semesterOf through normalize; friend link never ca
   const fp = (await readHash(f.slice(f.indexOf('#')), at)).payload;
   for (const k of ['scope', 'load', 'semesterOf']) assert.ok(!(k in fp));
 });
+
+test('readHash ignores the #me route', async () => {
+  assert.equal(await readHash('#me', { year: 2027, semester: 'א' }), null);
+});
+
+test('a backup link carries grades', async () => {
+  const b = await backupLink('https://x.test/', { v: 1, year: 2027, semester: 'א', program: 30, passed: ['a'], grades: { a: 90 } });
+  const r = await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' });
+  assert.deepEqual(r.payload.grades, { a: 90 });
+});

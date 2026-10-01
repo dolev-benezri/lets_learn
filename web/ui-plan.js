@@ -1,7 +1,7 @@
-// Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status panel, courses sidebar,
+// Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, esc, upsertFriend, splitFriendGroups, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT } from './app.js';
-import { progress, setStatus, studyYear, cleanProfile } from './rules.js';
+import { app, esc, upsertFriend, splitFriendGroups, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
+import { progress, setStatus, studyYear, cleanProfile, gradeAverage } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
@@ -25,13 +25,16 @@ const SHEET = '(max-width: 1079px)'; // below: the drawer is a modal sheet; from
 const PHONE = '(max-width: 599px)'; // the popover is a bottom sheet
 
 let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, moreMul = 1, sem = 'א'; // sem: the shown semester of a year result
-let panel = null, opener = null, statusOpen = null, mobileDay = 1, friendMsg = '', friendUrl = '', liveText = '';
+let panel = null, opener = null, mobileDay = 1, friendMsg = '', friendUrl = '', liveText = '';
 let mfName = '', mfCourses = [], mfGroups = {}, mfKeep = [], mfEditName = null, mfCourseErr = ''; // manual friend entry draft: name, course ids, {type: gid}, group ids kept as they are, name of the friend being edited ('' = new, null = form closed), course error
 const openDetails = new Set(['plan']);
 const colors = new Map(); // sticky: a course keeps its colour unless it clashes inside the shown alternative
 let dashed = new Set(); // courses of the shown alternative that repeat a colour (more than 8 courses)
 const ONBOARDED = 'afeka-sched-v1-onboarded';
 const onboarded = () => { try { return localStorage.getItem(ONBOARDED) === '1'; } catch { return false; } };
+const markOnboarded = () => { try { localStorage.setItem(ONBOARDED, '1'); } catch { /* storage unavailable */ } };
+// Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
+let firstVisit = !onboarded() && !location.hash;
 
 const current = () => last?.results[cur] ?? null; // a search result, or a pair in year scope
 const shown = () => semResult(current(), sem); // what the grid, pills and popover render
@@ -130,19 +133,20 @@ function chip(id, li) {
   if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${esc(nm)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
   return `<div class="crs" data-st="${st}">${seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
-    }${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
+    }${st === 'passed' ? `<input class="grade" type="number" min="0" max="100" inputmode="numeric" placeholder="ציון" aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}">` : ''}${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
 }
 
 // Hebrew punctuation for names from the data (ASCII ' and " between letters become geresh and gershayim).
 const heb = (t) => String(t).replace(/(?<=[א-ת])'/g, '׳').replace(/(?<=[א-ת])"(?=[א-ת])/g, '״');
 
-// Height-capped panel: fixed title + one-line first step, an internal scroll area, and a footer that always shows
-// the progress and "סיימתי". The grid stays below it, so edits are visible without scrolling the page.
-function renderWelcome() {
-  const el = $('welcome');
-  el.hidden = !statusOpen;
-  if (!statusOpen) { el.innerHTML = ''; return; }
-  const keep = el.querySelector('.wel-body')?.scrollTop ?? 0; // a status change re-renders; stay where the user was
+// The weighted-average line; its container is always rendered so a grade change can refresh just this line.
+const avgLine = () => { const { avg, credits } = gradeAverage(app.data, app.state); return avg === null ? '' : `ממוצע: <b>${esc(Math.round(avg * 10) / 10)}</b> (על ${esc(credits)} נ״ז)`; };
+
+// The status page (#me): profile and progress beside the course lists on wide screens, one column on phones.
+// Rendered only while shown; every change saves at once, so leaving the page loses nothing.
+function renderMe() {
+  const el = $('me');
+  if (el.hidden) { el.innerHTML = ''; return; }
   const { data, state, cls } = app;
   const pr = progress(data, state);
   const pct = Math.min(100, Math.round(pr.ratio * 100));
@@ -152,26 +156,31 @@ function renderWelcome() {
   const lists = data.lists.map((l, i) => ({ ...l, i, year: l.name.match(/חובה שנה (\S)'/)?.[1] }));
   const past = (l) => l.year && ' אבגד'.indexOf(l.year) <= open;
   const YEARS = [[1, 'א׳'], [2, 'ב׳'], [3, 'ג׳'], [4, 'ד׳']];
-  const group = (l) => `<div class="year"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(l.name))} <span>${l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}" data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}<div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
+  const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(l.name))} <span>${l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}" data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
   const others = lists.filter((l) => !past(l));
   const step = onboarded()
-    ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתחת מתעדכנת לבד.'
+    ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
     : '<b>צעד ראשון:</b> סמנו מה כבר עברתם (שנה א׳ מסומנת מראש), ואז לחצו ״סיימתי״.';
-  el.innerHTML = `<div class="wel-head"><h2 id="welTitle" tabindex="-1">מה המצב שלך?</h2><p class="wel-step">${step}</p></div>
-    <div class="wel-body">
-    <section class="profile"><h3 class="sr">פרופיל</h3>
-      ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}
-      <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${state.profile.amirnet ?? ''}"><span class="hint">ריק אם לא ידוע</span></label>
-      <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button></section>
-    <p class="hint">כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון.</p>
-    ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
-    ${lists.filter(past).map(group).join('')}
-    ${details('others', 'שנים מתקדמות וקורסים נוספים', others.map(group).join(''), others.length)}
+  el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">המצב שלי</h1><p class="me-step">${step}</p></div>
+    <div class="me-grid">
+      <div class="me-side">
+        <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
+          ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}
+          <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label></section>
+        <section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
+          <div class="progress"><div class="progress-top"><span><b><bdi dir="ltr">${esc(pr.earned)}/${esc(pr.required)}</bdi> נ״ז</b> · ${pct}%</span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
+          <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
+          <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
+          <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button></section>
+      </div>
+      <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses">קורסים לפי שנה</h2>
+        ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
+        <p class="hint">כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון.</p>
+        ${lists.filter(past).map(group).join('')}
+        ${details('others', 'שנים מתקדמות וקורסים נוספים', others.map(group).join(''), others.length)}
+      </section>
     </div>
-    <div class="wel-foot"><div class="progress"><div class="progress-top"><span>התקדמות: <b><bdi dir="ltr">${pr.earned}/${pr.required}</bdi> נ״ז</b></span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
-      <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
-      <button type="button" class="btn primary" data-act="statusDone" data-k="statusDone">${icon('check')} סיימתי</button></div>`;
-  el.querySelector('.wel-body').scrollTop = keep;
+    <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#" data-act="statusDone" data-k="statusDone">${icon('check')} סיימתי, לבניית המערכת</a></div>`;
 }
 
 // ---------- sidebar ----------
@@ -492,8 +501,9 @@ const focusWeek = () => $('week').focus({ preventScroll: false });
 
 const ACT = {
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
-  statusDone() { statusOpen = false; try { localStorage.setItem(ONBOARDED, '1'); } catch { /* storage unavailable */ } renderWelcome(); focusWeek(); },
-  openStatus() { statusOpen = true; renderWelcome(); $('welTitle').focus({ preventScroll: true }); $('welcome').scrollIntoView({ block: 'nearest' }); },
+  statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = ''; },
+  openStatus() { location.hash = '#me'; },
+  skip(el, e) { e.preventDefault(); ($('me').hidden ? $('week') : $('meTitle'))?.focus(); }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
   closeDrawer: () => $('drawer').close(),
   prev: () => go(-1),
@@ -600,6 +610,14 @@ const CHG = {
   semOf: (el) => { if (el.value) app.state.semesterOf[el.dataset.id] = el.value; else delete app.state.semesterOf[el.dataset.id]; }, // a pin still wins in the solver
   pyear: (el) => { app.state.profile.year = cleanProfile({ year: Number(el.value) }).year; },
   amirnet: (el) => { app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet; },
+  grade: (el) => {
+    const v = el.value === '' ? NaN : Number(el.value);
+    if (Number.isInteger(v) && v >= 0 && v <= 100) app.state.grades[el.dataset.cid] = v; else delete app.state.grades[el.dataset.cid];
+    el.value = app.state.grades[el.dataset.cid] ?? ''; // snap an invalid entry back
+    const avg = $('gradeAvg');
+    if (avg) avg.innerHTML = avgLine(); // just this line: re-rendering the page would drop the caret
+    return 'save'; // grades do not touch the solver: no new search
+  },
   status: (el) => setStatus(app.state, el.dataset.id, el.value),
   failCount: (el) => { app.state.failed[el.dataset.id] = Number(el.value); },
   w: (el) => { app.state.weights[el.dataset.w] = Number(el.value); },
@@ -617,11 +635,34 @@ const CHG = {
   mfName: (el) => { mfName = el.value; return 'quiet'; },
 };
 
+// The view follows the hash: #me shows the status page, anything else the builder (index.html #me / #layout).
+// The top bar keeps only the title on #me (index.html [data-view="me"]): the alternatives and the plan actions belong to the builder.
+function renderRoute() {
+  const view = routeOf(location.hash), me = view === 'me';
+  $('me').hidden = !me;
+  $('layout').hidden = me;
+  document.body.dataset.view = view;
+  if (!me) markOnboarded(); // reaching the builder any way (tab, link, "סיימתי") ends the first-visit redirect
+  for (const a of document.querySelectorAll('.views a')) if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  renderMe();
+}
+const focusView = () => $($('me').hidden ? 'weekTitle' : 'meTitle')?.focus({ preventScroll: true });
+// Back/forward and the nav links switch views without a new search (a search would reset the shown alternative).
+// A friend or backup link pasted into the open tab is applied like at load, then lands on the builder.
+function onHash() {
+  document.activeElement?.blur(); // commit a typed grade or Amirnet value (fires change) before #me is emptied
+  if (!app.cls) return; // still loading: init() reads the hash when the data arrives
+  if (/^#[fb]=/.test(location.hash)) { applyHash().then(focusView); return; }
+  renderRoute();
+  scrollTo(0, 0);
+  focusView();
+}
+
 function renderAll() {
-  if (statusOpen === null) statusOpen = !onboarded();
+  if (firstVisit) { firstVisit = false; history.replaceState(null, '', '#me'); } // replace, not a new entry: Back must not bounce
+  renderRoute();
   renderTop();
   renderBanner();
-  renderWelcome();
   renderView();
   if (panel !== 'reg') renderDrawer();
   scheduleRun();
@@ -641,6 +682,7 @@ document.addEventListener('change', (e) => {
   const idx = visibleCards().indexOf(e.target.closest('.course'));
   const how = f(e.target);
   if (how === 'view') keepFocus(renderView);
+  else if (how === 'save') save();
   else if (how === 'quiet') { save(); scheduleRun(); } else refresh();
   // A card that moved into a collapsed section takes focus with it; land on the card now in its place instead.
   if (idx >= 0 && (document.activeElement === document.body || !shown(document.activeElement))) {
@@ -663,7 +705,7 @@ document.addEventListener('toggle', (e) => {
 }, true);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && $('drawer').open && !$('pop').matches(':popover-open') && !document.querySelector('dialog.dlg[open]')) { $('drawer').close(); return; }
-  if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || !$('me').hidden || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   if (e.target.closest?.('input, textarea, select, [contenteditable]') || $('drawer').contains(e.target) || $('pop').matches(':popover-open')) return;
   e.preventDefault();
   go(e.key === 'ArrowLeft' ? 1 : -1); // RTL: left = next
@@ -683,6 +725,7 @@ addEventListener('scroll', () => {
   const b = document.querySelector(`[data-k="${CSS.escape(p.dataset.src ?? '')}"]`);
   if (popStale(Number(p.dataset.top), b ? b.getBoundingClientRect().top : null, innerHeight)) p.hidePopover();
 }, { passive: true });
+addEventListener('hashchange', onHash);
 $('banner').setAttribute('aria-live', 'polite'); // static container, so the friend-landing banner inserted later is announced
 
 setRenderers(renderAll);
