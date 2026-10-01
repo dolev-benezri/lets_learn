@@ -1,0 +1,21 @@
+# Nightly yedion scrape, run by a GitLab.com pipeline schedule. GitHub's runners (Microsoft Azure IPs) cannot
+# reach the yedion; GitLab's shared runners (Google Cloud) can. The GitLab project holds no code: its
+# "CI/CD configuration file" setting points at the raw URL of this file, so this repo stays the single source.
+# Needs one masked GitLab CI variable, GH_PUSH_TOKEN: a GitHub fine-grained token, this repo only, Contents read/write.
+# A push with that token triggers .github/workflows/deploy.yml. GitLab emails the owner when a run fails.
+scrape:
+  image: node:24
+  timeout: 30m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web"
+  variables:
+    GIT_STRATEGY: none # nothing to check out on the GitLab side
+  script:
+    - git clone --depth 1 "https://x-access-token:${GH_PUSH_TOKEN}@github.com/dolhack/lets_learn.git" repo
+    - cd repo && npm ci --no-audit --no-fund
+    # stdout is one summary line (the commit message); a failed scrape writes nothing and fails the job.
+    - node scripts/scrape.mjs --all-semesters > ../summary.txt
+    - git add web/data/afeka
+    - if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+    - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com commit -q -m "$(cat ../summary.txt)" -- web/data/afeka
+    - git push
