@@ -336,6 +336,37 @@ aside details .cards { margin:4px 0 8px; }
 .skel-grid i:nth-child(3) { height:110px; }
 @keyframes shimmer { to { background-position:-200% 0; } }
 @media (max-width:759px) { .skel-grid { grid-template-columns:minmax(0, 1fr); } .skel-grid > div:nth-child(n+2) { display:none; } }
+/* batch 2: first run + chrome */
+/* status panel: height-capped, fixed head and foot, internal scroll area, so the grid below stays on screen */
+.welcome { display:flex; flex-direction:column; padding:0; overflow:hidden; max-height:clamp(260px, 40vh, 400px); scroll-margin-top:96px; }
+.welcome[hidden] { display:none; }
+.wel-head { flex:none; display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 16px; padding:10px 20px; border-bottom:1px solid var(--border); }
+.welcome h2 { font-size:18px; }
+.wel-step { font-size:15px; color:var(--text-2); }
+.wel-step b { color:var(--text); font-weight:600; }
+.wel-body { flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; padding:4px 20px 12px; }
+.wel-body > .hint { margin-top:4px; font-size:13px; }
+.profile { display:flex; flex-wrap:wrap; align-items:flex-end; gap:4px 20px; padding-top:8px; }
+.profile .seg { margin:0; flex:0 1 280px; }
+.wel-foot { flex:none; display:flex; align-items:center; gap:16px; margin:0; padding:10px 20px; border-top:1px solid var(--border); background:var(--surface); }
+.wel-foot { justify-content:space-between; }
+.wel-foot .progress { flex:1; display:flex; align-items:center; gap:12px; margin:0; min-width:0; max-width:560px; }
+.wel-foot .progress-top { flex:none; margin:0; gap:12px; font-size:14px; }
+.wel-foot .bar { flex:1; min-width:60px; }
+.year:first-of-type h3 { margin-top:12px; }
+/* header: one data line, smaller disclaimer */
+.meta { font-size:12px; }
+.disclaimer { padding:3px 24px 0; font-size:12px; line-height:1.4; }
+@media (max-width:899px) { .disclaimer { padding:3px 16px 0; } }
+@media (max-width:599px) {
+  .welcome { max-height:clamp(230px, 34vh, 300px); }
+  @supports (height:1dvh) { .welcome { max-height:clamp(230px, 34dvh, 300px); } }
+  .wel-head { padding:8px 16px; }
+  .wel-step { font-size:14px; line-height:1.4; }
+  .wel-body { padding:4px 16px 10px; }
+  .wel-foot { gap:12px; padding:6px 16px; }
+  .wel-foot .progress-top .hint { display:none; }
+}
 </style>
 </head>
 <body>
