@@ -4,6 +4,11 @@ name: refresh-deploy
 
 on:
   workflow_dispatch:
+  # Site code merged to main deploys without a scrape. Data commits made by this workflow use GITHUB_TOKEN,
+  # so they never re-trigger it.
+  push:
+    branches: [main]
+    paths: ['web/**', '!web/data/**']
   # Enable the schedule after about a week of successful manual runs: remove the leading "# " from the
   # four lines below. Slots avoid 02:00-03:00 (Israel DST changes). The second slot is a retry in case the
   # first one was dropped or failed; the skip guard below makes it a no-op when the first one worked.
@@ -23,6 +28,7 @@ concurrency:
 
 jobs:
   scrape:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -67,6 +73,7 @@ jobs:
       - name: Scrape
         id: scrape
         if: steps.guard.outputs.skip != 'true'
+        shell: bash # -eo pipefail: a failed scrape must fail the step, not hide behind tee
         run: |
           node scripts/scrape.mjs --all-semesters 2>&1 >"$RUNNER_TEMP/summary.txt" | tee "$RUNNER_TEMP/scrape.log"
           echo "summary=$(cat "$RUNNER_TEMP/summary.txt")" >> "$GITHUB_OUTPUT"
@@ -123,7 +130,8 @@ jobs:
   # A push made with GITHUB_TOKEN does not trigger on: push, so the deploy is a job here, not a separate workflow.
   deploy:
     needs: scrape
-    if: needs.scrape.outputs.skip != 'true' # runs also when the data did not change
+    # After a scrape (also when the data did not change), or on a web/ push where the scrape job is skipped.
+    if: always() && (needs.scrape.result == 'skipped' || (needs.scrape.result == 'success' && needs.scrape.outputs.skip != 'true'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
