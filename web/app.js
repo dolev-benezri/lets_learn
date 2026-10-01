@@ -104,7 +104,10 @@ export function refresh() {
   keepFocus(() => renderers.forEach((r) => r()));
 }
 
+const SKELETON = `<div class="skel" role="status"><span class="sr">טוען את מערכת השעות…</span><div class="skel-grid" aria-hidden="true">${'<div><i></i><i></i><i></i></div>'.repeat(5)}</div></div>`;
+
 async function init() {
+  document.getElementById('week').innerHTML = SKELETON; // replaced by the first render, or by the failure message
   app.state = load();
   const get = async (sem) => {
     const res = await fetch(dataPath(app.state, sem));
@@ -113,7 +116,7 @@ async function init() {
   };
   const [a, b] = await Promise.allSettled([get('א'), get('ב')]);
   if (a.status === 'rejected') {
-    document.getElementById('week').innerHTML = '<div class="msg bad"><p>טעינת הנתונים נכשלה.</p><p><button class="btn" id="retry">נסה שוב</button> <button class="btn" id="reset">אפס נתונים שמורים</button></p></div>';
+    document.getElementById('week').innerHTML = '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b><p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions"><button class="btn" id="retry">נסה שוב</button> <button class="btn" id="reset">אפס נתונים שמורים</button></p></div></div>';
     document.getElementById('retry').onclick = init;
     document.getElementById('reset').onclick = () => { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } location.reload(); };
     return;

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hourRange, nearestStep, summary, initials, assignColors, repeatIds, progressRanks, altGroups, backups, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from '../web/ui-grid.js';
+import { hourRange, nearestStep, summary, initials, firstName, rankText, assignColors, repeatIds, progressRanks, altGroups, backups, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from '../web/ui-grid.js';
 
 const m = (day, start, end) => ({ day, start, end });
 
@@ -35,6 +35,18 @@ test('summary: credits, free days, gaps, friends and exam gap of one alternative
 test('initials: two first letters, safe on empty names', () => {
   assert.equal(initials('נועה כהן'), 'נכ');
   assert.equal(initials('  '), '?');
+});
+
+test('firstName: first word, long names cut with an ellipsis, safe on empty', () => {
+  assert.equal(firstName('נועה כהן'), 'נועה');
+  assert.equal(firstName('  דן   לוי '), 'דן');
+  assert.equal(firstName('אלכסנדרה לוי'), 'אלכסנד…');
+  assert.equal(firstName('  '), '?');
+});
+
+test('rankText: plain Hebrew instead of "דירוג N מתוך M"', () => {
+  assert.equal(rankText(1, 10), 'מקדמת הכי הרבה בתואר');
+  assert.equal(rankText(3, 10), 'מקום 3 מתוך 10 בהתקדמות בתואר');
 });
 
 test('assignColors: a course keeps its colour when others leave the plan or new ones appear', () => {

@@ -4,7 +4,7 @@ import { app, esc, save, refresh, candidateMode, yearCourses, setRenderers, keep
 import { progress, setStatus, studyYear, cleanProfile } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
-import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
+import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 
 const $ = (id) => document.getElementById(id);
 const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -215,29 +215,42 @@ const PARTIAL_TEXT = 'החיפוש לא הספיק לבדוק את כל האפש
 function renderView() {
   const { state } = app;
   const results = last?.results ?? [];
-  const raw = current(), pair = isPair(raw);
-  const res = shown(), data = shownData(); // one semester's result and its data file; app.data only when the result is a single semester
+  const none = results.length > 0 && results.every((r) => !resCourses(r).length); // every alternative is empty: same as no result
+  const noRes = !!last && (!results.length || none);
+  const nAlt = none ? 0 : results.length;
+  const raw = current(), pair = isPair(raw) && !none;
+  const res = none ? null : shown(), data = shownData(); // one semester's result and its data file; app.data only when the result is a single semester
   const friends = state.friends.filter((f) => f.active);
   assignColors(colors, res?.courses ?? [], colorOrder());
   dashed = repeatIds(colors, res?.courses ?? []);
   const range = hourRange(results.flatMap((r) => resGroups(r).flatMap((g) => groupIndex(app.data).get(g)?.g.meetings ?? []))); // both semesters, so the hours don't jump between tabs
   if (mobileDay > range.days) mobileDay = 1;
-  $('semnote').innerHTML = app.semNotice ? `<p class="notice">${icon('alert')}<span>${esc(app.semNotice)}</span></p>` : '';
-  $('semtabs').innerHTML = pair ? seg('sem', 'סמסטר מוצג', SEMS, sem, 'data-chg="sem"') : '';
+  // Board header: scope and semester controls first, then the notices that hold for the whole plan (shown once, whichever tab is open).
+  const note = (ic, t) => `<p class="notice">${icon(ic)}<span>${esc(t)}</span></p>`;
+  const ctl = (app.sem['ב'] ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', SCOPE, state.scope, 'data-chg="scope"')}</div>` : '')
+    + (pair ? `<div class="ctl">${seg('sem', 'סמסטר מוצג', SEMS, sem, 'data-chg="sem"')}</div>` : '');
+  const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
+  $('semnote').innerHTML = (ctl ? `<div class="board-ctl">${ctl}</div>` : '')
+    + (app.semNotice ? note('info', app.semNotice) : '')
+    + (pair ? raw.warnings.map((w) => note('info', w)).join('') : '')
+    + (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
+  $('semtabs').innerHTML = '';
 
-  $('altLabel').textContent = results.length ? `חלופה ${cur + 1} מתוך ${results.length}` : 'אין חלופות';
-  const stranded = [$('prev'), $('next')].includes(document.activeElement) && results.length < 2;
-  $('prev').disabled = $('next').disabled = results.length < 2;
+  $('altLabel').textContent = nAlt ? `חלופה ${cur + 1} מתוך ${nAlt}` : 'אין חלופות';
+  const stranded = [$('prev'), $('next')].includes(document.activeElement) && nAlt < 2;
+  $('prev').disabled = $('next').disabled = nAlt < 2;
   if (stranded) $('switcher').focus();
 
-  let msg = last?.partial ? `<p class="notice partial" aria-live="polite">${icon('alert')}<span>${PARTIAL_TEXT}</span><button type="button" class="btn" data-act="more" data-k="searchMore">חפש עוד</button></p>` : '', live = '';
+  const more = '<button type="button" class="btn" data-act="more" data-k="searchMore">חפש עוד</button>';
+  let msg = last?.partial && !noRes ? `<p class="notice partial" aria-live="polite">${icon('info')}<span>${PARTIAL_TEXT}</span>${more}</p>` : '', live = '';
   if (runError) msg = `<div class="msg bad" role="alert">${icon('alert')}<div><b>שגיאה בחיפוש</b><p>${esc(runError)}</p></div></div>`;
   else if (!Object.keys(app.data.courses).some(planned)) {
     msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>סמנו "חובה" או "אולי" ליד קורסים ב"הקורסים שלי", והמערכת תיבנה לבד.</p></div></div>`;
     live = 'לא נבחרו קורסים';
-  } else if (last && !results.length) {
-    msg += `<div class="msg bad">${icon('alert')}<div><b>${last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${last.diagnosis.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
-      <p class="msg-actions"><button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
+  } else if (noRes) { // partial and empty: only this message, with the "search more" button (no second notice)
+    const why = last.diagnosis?.length ? last.diagnosis : ['ההעדפות, האילוצים והנעיצות הנוכחיים לא משאירים אף קורס אפשרי.'];
+    msg += `<div class="msg bad">${icon('alert')}<div><b>${last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${why.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
+      <p class="msg-actions">${last.partial ? more : ''}<button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
       ${state.pins.length ? `<button type="button" class="btn" data-act="clearPins">${icon('pin')} נקה נעיצות</button>` : ''}</p></div></div>`;
     live = last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת';
   }
@@ -245,15 +258,11 @@ function renderView() {
   if (res) {
     const s = summary(res, data, state.friends);
     const fd = !s.freeDays.length ? 'אין יום פנוי' : s.freeDays.length === 1 ? `יום ${DAYS[s.freeDays[0]]}׳ פנוי` : `ימים ${s.freeDays.map((d) => `${DAYS[d]}׳`).join(', ')} פנויים`;
-    const gap = s.gapH >= 10 ? '10+ ש׳ חלונות' : s.gapH ? `${s.gapH} ש׳ חלונות` : 'בלי חלונות';
-    const exams = !data.examsPublished ? 'בחינות: טרם פורסם' : s.examGap ? `לפחות ${esc(s.examGap)} ימים בין בחינות` : 'בחינות: אין פער לחישוב';
-    const fr = s.withFriends.map((f) => `${f.n} קורסים עם ${f.name}`);
+    const gap = s.gapH >= 10 ? 'יותר מ-10 שעות חלונות' : s.gapH ? `${s.gapH} שעות חלונות` : 'בלי חלונות';
+    const exams = !data.examsPublished ? 'לוח הבחינות טרם פורסם' : s.examGap ? `לפחות ${esc(s.examGap)} ימים בין בחינות` : 'פער בין בחינות: לא ידוע';
+    const fr = s.withFriends.map((f) => (f.n === 1 ? `קורס אחד עם ${f.name}` : `${f.n} קורסים עם ${f.name}`));
     const yt = pair ? yearTotals(raw) : null;
-    if (pair) {
-      const names = raw.missing.map((id) => esc(app.data.courses[id]?.name ?? id));
-      msg += raw.warnings.map((w) => `<p class="notice">${icon('alert')}<span>${esc(w)}</span></p>`).join('')
-        + (names.length ? `<p class="notice">${icon('alert')}<span>לא נכנס לאף סמסטר: ${names.join(', ')}</span></p>` : '');
-    }
+    if (pair && !res.courses.length) msg += note('info', `אין קורסים בסמסטר ${sem}׳ בחלופה הזו`);
 
     const ranks = progressRanks(results.map((r) => semResult(r, sem)));
     const myRank = ranks[cur];
@@ -261,12 +270,12 @@ function renderView() {
     const blocking = res.courses.filter((cid) => counts[cid] > 0);
     const blockingNames = blocking.slice(0, 3).map((cid) => esc(data.courses[cid].name));
     const blockingText = blockingNames.length ? blockingNames.join(', ') + (blocking.length > 3 ? ` ועוד ${blocking.length - 3}` : '') : '';
-    const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת קורס אחד' : `פותחת ${res.unlocks} קורסים`) : '';
-    const infoLine = [blockingText && `סוגרת חוסמים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
+    const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת לך קורס חדש אחד' : `פותחת לך ${res.unlocks} קורסים חדשים`) : '';
+    const infoLine = [blockingText && `קורסי קדם לקורסים אחרים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
 
-    $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar', `שנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), pill('check', `התקדמות: דירוג ${myRank} מתוך ${results.length}`), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
+    $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar', `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))] : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
       + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '');
-    live = [`חלופה ${cur + 1} מתוך ${results.length}`, pair && `סמסטר ${sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `שנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, last.partial && PARTIAL_TEXT].filter(Boolean).join(', ');
+    live = [`חלופה ${cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, last.partial && PARTIAL_TEXT].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed, pins: state.pins, friends, day: mobileDay });

@@ -8,6 +8,7 @@ export const DAY_FULL = ['', 'ראשון', 'שני', 'שלישי', 'רביעי',
 export const ICON = {
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/>',
@@ -139,8 +140,16 @@ export function summary(res, data, friends) {
   };
 }
 
-const friendAvs = (fr) => fr.slice(0, 2).map((f) => `<span class="av">${esc(initials(f.name))}</span>`).join('')
-  + (fr.length > 2 ? `<span class="av">+${fr.length - 2}</span>` : '');
+// Friend tags on a block: first name (tooltip = full name), at most two, then "+N". Tags, not circles, so they never overlap.
+export const firstName = (name) => {
+  const w = Array.from(name.trim().split(/\s+/)[0]);
+  return (w.length > 7 ? `${w.slice(0, 6).join('')}…` : w.join('')) || '?';
+};
+const friendAvs = (fr) => fr.slice(0, 2).map((f) => `<span class="fr" title="${esc(f.name)}" aria-hidden="true">${esc(firstName(f.name))}</span>`).join('')
+  + (fr.length > 2 ? `<span class="fr" title="${esc(fr.slice(2).map((f) => f.name).join(', '))}" aria-hidden="true">+${fr.length - 2}</span>` : '');
+
+// Plain-Hebrew progress pill: rank 1 = the alternative that moves furthest in the degree (ties share it).
+export const rankText = (rank, n) => (rank === 1 ? 'מקדמת הכי הרבה בתואר' : `מקום ${rank} מתוך ${n} בהתקדמות בתואר`);
 
 function block({ cid, c, g }, m, from, cls, pinned, fr) {
   const d = toMin(m.end) - toMin(m.start);
