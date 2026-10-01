@@ -86,6 +86,13 @@ const run = (over = {}) => {
   return search({ data, statuses: classify(data, me).statuses, weights: W0, friends: [], constraints: {}, topK: 1000, ...over });
 };
 
+test('search: weights default to none, topK <= 0 returns nothing without throwing', () => {
+  const data = mini();
+  const base = { data, courses: [{ id: 'Q', mode: 'must' }], statuses: classify(data, me).statuses, friends: [], constraints: {} };
+  assert.ok(search(base).results.length > 0);
+  for (const topK of [0, -1]) assert.deepEqual(search({ ...base, weights: W0, topK }), { results: [], partial: false, diagnosis: [] });
+});
+
 // Independent brute force: enumerate option products, reject overlaps by interval comparison.
 function brute(data, courses) {
   const toM = (t) => +t.slice(0, 2) * 60 + +t.slice(3);

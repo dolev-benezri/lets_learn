@@ -222,7 +222,8 @@ function diagnose(items, data) {
 }
 
 const KNOWN = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'];
-export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {} }) {
+export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {} }) {
+  if (!(topK > 0)) return { results: [], partial: false, diagnosis: [] };
   const forbidden = forbiddenMask(constraints);
   const down = downstream(data), base = courseValue(data, down);
   const value = {};
@@ -346,7 +347,7 @@ const LOAD_W = 3, MISSING_W = 5, A_TOP = 50;
 const A_SHARE = 0.6, B_FLOOR = 100;
 
 // Year plan: top א׳ alternatives, each completed by the best ב׳ alternative with the א׳ courses counted as passed.
-export function searchYear({ dataA, dataB, state, yearList, pins = [], constraints = {}, weights, friends = [], topK = 10, timeLimitMs = 3000 }) {
+export function searchYear({ dataA, dataB, state, yearList, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000 }) {
   const deadline = Date.now() + timeLimitMs;
   const offered = (d, id) => !!d.courses[id]?.offered;
   const pinnedIn = (d, id) => pins.some((p) => d.courses[id]?.groups.some((g) => g.id === p));
