@@ -4,6 +4,7 @@ import { app, esc, save, refresh, candidateMode, yearCourses, setRenderers, keep
 import { progress, setStatus, studyYear, cleanProfile } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
+import './ui-map.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 
 const $ = (id) => document.getElementById(id);
@@ -141,7 +142,8 @@ function renderWelcome() {
   el.innerHTML = `<h2 id="welTitle" tabindex="-1">מה המצב שלך?</h2>
     <section class="profile"><h3>פרופיל</h3>
       ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}
-      <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${state.profile.amirnet ?? ''}"><span class="hint">ריק אם לא ידוע</span></label></section>
+      <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${state.profile.amirnet ?? ''}"><span class="hint">ריק אם לא ידוע</span></label>
+      <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button></section>
     <p class="hint">בחרו לכל קורס: לא לקחתי, עברתי או נכשלתי (ואז כמה פעמים). כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון. המערכת מתעדכנת לבד.</p>
     ${onboarded() ? '' : `<p class="notice">${icon('alert')}<span>סימנו מראש את כל שנה א׳ כ"עברתי". נכשלת במשהו? בחרו בו "נכשלתי".</span></p>`}
     <div class="progress"><div class="progress-top"><span>התקדמות: <b><bdi dir="ltr">${pr.earned}/${pr.required}</bdi> נ״ז</b></span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
