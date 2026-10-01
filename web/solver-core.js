@@ -350,7 +350,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     if (mode === 'must') must.add(id);
     if ((mode !== 'must' && mode !== 'optional') || forced(id) === 'ב') continue;
     const flexible = !forced(id);
-    coursesA.push({ id, mode: flexible ? 'optional' : mode });
+    coursesA.push({ id, mode: pinnedIn(dataA, id) ? 'must' : flexible ? 'optional' : mode }); // a pin forces its course in, so "take nothing in א׳" below is not a plan
     if (flexible && state.load && state.load !== 'even') bias[id] = (state.load === 'א' ? 1 : -1) * dataA.courses[id].credits;
   }
   // Must courses not offered in א׳ (or not yet available there) still count as must for the year.

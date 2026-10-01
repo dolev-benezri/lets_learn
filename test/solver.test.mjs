@@ -480,3 +480,11 @@ test('searchYear: a hard constraint that excludes everything gives no results (n
   assert.equal(r.results.length, 0);
   assert.ok(r.diagnosis.length > 0);
 });
+
+test('searchYear: a pinned optional course is in every plan (no "take nothing in א׳" fallback)', () => {
+  const { dataA, dataB } = yearFixture();
+  const choices = { M: 'optional', P: 'optional', N: 'optional', OB: 'optional' };
+  const r = searchYear({ dataA, dataB, state: yState({ choices }), pins: ['PA'], yearList: new Set(), weights: W });
+  assert.ok(r.results.length > 0);
+  assert.ok(r.results.every((p) => inA(p, 'P')));
+});
