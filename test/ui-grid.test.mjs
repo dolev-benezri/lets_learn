@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hourRange, nearestStep, summary, initials, assignColors, repeatIds, progressRanks, altGroups, backups } from '../web/ui-grid.js';
+import { hourRange, nearestStep, summary, initials, assignColors, repeatIds, progressRanks, altGroups, backups, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from '../web/ui-grid.js';
 
 const m = (day, start, end) => ({ day, start, end });
 
@@ -115,4 +115,19 @@ test('backups: a tutorial backup must belong to the chosen lecture', () => {
     mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a1/2', 'T', [m(5, '08:00', '10:00')]), mk('a2/1', 'T', [m(5, '12:00', '13:00')]),
   ]) };
   assert.deepEqual(backups(data, { groups: ['a1', 'a1/1', 'b1'] }, 'a1/1'), ['a1/2']);
+});
+
+test('year pairs: shown-semester result, empty halves, totals and placement', () => {
+  const single = { courses: ['A'], groups: ['a1'], breakdown: { compact: 0.9 } };
+  const pair = { a: { courses: ['A'], groups: ['a1'], breakdown: { compact: 0.8, progress: 2 } }, b: null, credits: { a: 5, b: 0 }, missing: [], warnings: [] };
+  assert.equal(isPair(single), false); assert.equal(isPair(pair), true); assert.equal(isPair(null), false);
+  assert.equal(semResult(single, 'ב'), single);
+  assert.equal(semResult(pair, 'א').breakdown.compact, 0.8);
+  assert.deepEqual(semResult(pair, 'ב').courses, []); // a null half still renders and summarises
+  assert.equal(semResult({ ...pair, a: { courses: [], groups: [], breakdown: {} } }, 'א').breakdown.compact, 1); // the empty א׳ plan has no breakdown
+  const full = { ...pair, b: { courses: ['B'], groups: ['b1'], breakdown: {} }, credits: { a: 5, b: 2.5 } };
+  assert.deepEqual(resCourses(full), ['A', 'B']); assert.deepEqual(resGroups(full), ['a1', 'b1']);
+  assert.deepEqual(yearTotals(full), { courses: 2, credits: 7.5 });
+  assert.deepEqual([placedIn(full, 'A'), placedIn(full, 'B'), placedIn(full, 'C')], ['א', 'ב', null]);
+  assert.deepEqual(resCourses(single), ['A']);
 });

@@ -17,6 +17,7 @@ export function classify(data, state) {
   const failed = state.failed ?? {};
   const exempt = new Set(amirnetExempt(state.profile?.amirnet));
   const statuses = {};
+  const when = data.semester === 'שנה' ? 'השנה' : `בסמסטר ${data.semester}`; // the year view has no single semester
   const satisfied = (p) => p.anyOf.some((a) => a.id && (passed.has(a.id) || exempt.has(a.id))) || p.anyOf.every((a) => a.id === null);
   const outsideNotes = (c) => c.prereqs.filter((p) => p.anyOf.every((a) => a.id === null))
     .flatMap((p) => p.anyOf)
@@ -25,8 +26,8 @@ export function classify(data, state) {
   for (const [id, c] of Object.entries(data.courses)) {
     if (passed.has(id)) { statuses[id] = { status: 'done', reasons: [] }; continue; }
     if (exempt.has(id)) { statuses[id] = { status: 'exempt', reasons: ['פטור (ציון אמירנט)'] }; continue; }
-    if (!c.offered) { statuses[id] = { status: 'notOffered', reasons: [`לא נלמד בסמסטר ${data.semester}`] }; continue; }
-    if (failed[id]) { statuses[id] = { status: 'retake', reasons: [`נכשלת, מוצע בסמסטר ${data.semester} (תקנון 11.6.1)`] }; continue; }
+    if (!c.offered) { statuses[id] = { status: 'notOffered', reasons: [`לא נלמד ${when}`] }; continue; }
+    if (failed[id]) { statuses[id] = { status: 'retake', reasons: [`נכשלת, מוצע ${when} (תקנון 11.6.1)`] }; continue; }
     const hard = c.prereqs.filter((p) => p.kind === 'קדם' && !satisfied(p));
     if (hard.length) {
       statuses[id] = { status: 'blocked', reasons: [], blockedBy: hard.map((p) => p.anyOf.find((a) => a.id)?.id ?? null) };

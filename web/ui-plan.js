@@ -1,10 +1,10 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status panel, courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, esc, save, refresh, candidateMode, setRenderers, keepFocus, DEFAULT } from './app.js';
+import { app, esc, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT } from './app.js';
 import { progress, setStatus, studyYear, cleanProfile } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
-import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks } from './ui-grid.js';
+import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 
 const $ = (id) => document.getElementById(id);
 const CAND = ['retake', 'available', 'conditional'];
@@ -13,8 +13,12 @@ const SCALE = [[0, 'לא חשוב'], [1, 'קצת'], [3, 'חשוב'], [5, 'מאו
 const STATUS = [['none', 'לא לקחתי'], ['passed', 'עברתי'], ['failed', 'נכשלתי']];
 const FAILS = [[1, 'פעם'], [2, 'פעמיים'], [3, '3 פעמים']];
 const FSCALE = [[0, 'לא חשוב'], [1, 'קצת'], [2, 'חשוב'], [3, 'מאוד']];
+const SEMS = [['א', 'סמסטר א׳'], ['ב', 'סמסטר ב׳']];
+const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
+const LOAD = [['א', 'יותר בא׳'], ['even', 'מאוזן'], ['ב', 'יותר בב׳']];
+const SEM_PICK = [['', 'הכי טוב'], ['א', 'א׳'], ['ב', 'ב׳']];
 
-let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0;
+let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, sem = 'א'; // sem: the shown semester of a year result
 let panel = null, opener = null, statusOpen = null, mobileDay = 1, friendMsg = '', friendUrl = '', liveText = '';
 const openDetails = new Set(['plan']);
 const colors = new Map(); // sticky: a course keeps its colour unless it clashes inside the shown alternative
@@ -22,7 +26,10 @@ let dashed = new Set(); // courses of the shown alternative that repeat a colour
 const ONBOARDED = 'afeka-sched-v1-onboarded';
 const onboarded = () => { try { return localStorage.getItem(ONBOARDED) === '1'; } catch { return false; } };
 
-const current = () => last?.results[cur] ?? null;
+const current = () => last?.results[cur] ?? null; // a search result, or a pair in year scope
+const shown = () => semResult(current(), sem); // what the grid, pills and popover render
+const shownData = () => (isPair(current()) ? app.sem[sem] : app.data);
+const yearSearch = () => app.state.scope === 'year' && !!app.sem['ב'];
 const listIds = () => [...new Set(app.data.lists.flatMap((l) => l.courses))];
 const status = (id) => app.cls.statuses[id]?.status;
 const doneIds = () => Object.keys(app.cls.statuses).filter((id) => status(id) === 'done');
@@ -67,7 +74,8 @@ function run() {
   worker.onmessage = (e) => { last = e.data; cur = 0; done(); };
   worker.onerror = (e) => { runError = e.message || 'שגיאה לא ידועה'; done(); };
   const pins = state.pins.filter((p) => courses.some((c) => data.courses[c.id].groups.some((g) => g.id === p))); // stale pins stay in state
-  worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: 1500 });
+  if (yearSearch()) worker.postMessage({ year: { dataA: app.sem['א'], dataB: app.sem['ב'], state, yearList: new Set(yearCourses()), pins: state.pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: 3000 } });
+  else worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: 1500 });
 }
 function setBusy() {
   $('board').classList.toggle('is-busy', running);
@@ -78,7 +86,7 @@ function setBusy() {
 // ---------- top bar and banners ----------
 function renderTop() {
   const d = new Date(app.data.fetchedAt);
-  $('title').innerHTML = `המערכת שלי <small>· סמסטר ${esc(app.data.semester)}׳ תשפ״ז</small>`;
+  $('title').innerHTML = `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} תשפ״ז</small>`;
   $('meta').innerHTML = `נתונים מ-${esc(d.toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' }))}`
     + ((Date.now() - d) / 864e5 > 3 ? ` · <span class="warn-text">${icon('alert')} הנתונים בני יותר מ-3 ימים</span>` : '')
     + (app.data.examsPublished ? '' : ' · לוח הבחינות של תשפ״ז טרם פורסם');
@@ -142,24 +150,29 @@ function renderWelcome() {
 function outReason(id) {
   const c = app.data.courses[id], prim = c.groups.filter((g) => g.primary);
   if (!app.state.constraints.includeFull && prim.length && prim.every((g) => g.full)) return 'כל הקבוצות מלאות';
-  const k = last?.results.findIndex((r) => r.courses.includes(id)) ?? -1;
+  const k = last?.results.findIndex((r) => resCourses(r).includes(id)) ?? -1;
   return k >= 0 ? `נכנס בחלופה ${k + 1}` : '';
 }
 
 function card(id, res, unlocks) {
   const { data, cls } = app;
   const s = cls.statuses[id], c = data.courses[id], mode = candidateMode(id);
-  const inAlt = res?.courses.includes(id), out = res && !inAlt && mode !== 'no';
+  const where = isPair(res) ? placedIn(res, id) : null;
+  const inAlt = res && (isPair(res) ? !!where : res.courses.includes(id)), out = res && !inAlt && mode !== 'no';
   const why = out ? outReason(id) : '';
+  const offered = c.semesters; // only the year view lists them
+  const yearPick = app.state.scope === 'year' && offered?.length === 2;
   const tags = [
+    app.state.scope === 'year' && offered?.length === 1 ? `<span class="tag">רק בסמסטר ${esc(offered[0])}׳</span>` : '',
     s.status === 'retake' ? '<span class="tag warn">חזרה</span>' : '',
     s.status === 'conditional' ? '<span class="tag warn">זמין בתנאי</span>' : '',
     unlocks[id] ? `<span class="tag">${unlocks[id] === 1 ? 'פותח קורס אחד' : `פותח ${unlocks[id]} קורסים`}</span>` : '',
-    inAlt ? `<span class="tag ok">${icon('check')} במערכת</span>` : '',
+    inAlt ? `<span class="tag ok">${icon('check')} במערכת${where ? ` · סמסטר ${esc(where)}׳` : ''}</span>` : '',
     out ? `<span class="tag">לא נכנס${why ? `: ${esc(why)}` : ''}</span>` : '',
   ].join('');
   return `<article class="course c${colors.get(id) ?? 7}${dashed.has(id) ? ' rep' : ''}${inAlt ? ' in' : ''}${out ? ' out' : ''}">
     <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${esc(c.name)}</h3><span class="cr">${c.credits} נ״ז</span>${seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`)}</div>
+    ${yearPick ? seg(`sem-${id}`, `באיזה סמסטר ללמוד את ${c.name}`, SEM_PICK, app.state.semesterOf[id] ?? '', `data-chg="semOf" data-id="${esc(id)}"`) : ''}
     ${tags ? `<div class="tags">${tags}</div>` : ''}
     ${s.reasons.length ? `<p class="reason">${s.reasons.map(esc).join('<br>')}</p>` : ''}
   </article>`;
@@ -192,14 +205,17 @@ function colorOrder() {
 }
 
 function renderView() {
-  const { data, state } = app;
+  const { state } = app;
   const results = last?.results ?? [];
-  const res = current();
+  const raw = current(), pair = isPair(raw);
+  const res = shown(), data = shownData(); // one semester's result and its data file; app.data only when the result is a single semester
   const friends = state.friends.filter((f) => f.active);
   assignColors(colors, res?.courses ?? [], colorOrder());
   dashed = repeatIds(colors, res?.courses ?? []);
-  const range = hourRange(results.flatMap((r) => r.groups.flatMap((g) => groupIndex(data).get(g)?.g.meetings ?? [])));
+  const range = hourRange(results.flatMap((r) => resGroups(r).flatMap((g) => groupIndex(app.data).get(g)?.g.meetings ?? []))); // both semesters, so the hours don't jump between tabs
   if (mobileDay > range.days) mobileDay = 1;
+  $('semnote').innerHTML = app.semNotice ? `<p class="notice">${icon('alert')}<span>${esc(app.semNotice)}</span></p>` : '';
+  $('semtabs').innerHTML = pair ? seg('sem', 'סמסטר מוצג', SEMS, sem, 'data-chg="sem"') : '';
 
   $('altLabel').textContent = results.length ? `חלופה ${cur + 1} מתוך ${results.length}` : 'אין חלופות';
   const stranded = [$('prev'), $('next')].includes(document.activeElement) && results.length < 2;
@@ -208,7 +224,7 @@ function renderView() {
 
   let msg = '', live = '';
   if (runError) msg = `<div class="msg bad" role="alert">${icon('alert')}<div><b>שגיאה בחיפוש</b><p>${esc(runError)}</p></div></div>`;
-  else if (!Object.keys(data.courses).some(planned)) {
+  else if (!Object.keys(app.data.courses).some(planned)) {
     msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>סמנו "חובה" או "אולי" ליד קורסים ב"הקורסים שלי", והמערכת תיבנה לבד.</p></div></div>`;
     live = 'לא נבחרו קורסים';
   } else if (last && !results.length) {
@@ -224,8 +240,14 @@ function renderView() {
     const gap = s.gapH >= 10 ? '10+ ש׳ חלונות' : s.gapH ? `${s.gapH} ש׳ חלונות` : 'בלי חלונות';
     const exams = !data.examsPublished ? 'בחינות: טרם פורסם' : s.examGap ? `לפחות ${esc(s.examGap)} ימים בין בחינות` : 'בחינות: אין פער לחישוב';
     const fr = s.withFriends.map((f) => `${f.n} קורסים עם ${f.name}`);
+    const yt = pair ? yearTotals(raw) : null;
+    if (pair) {
+      const names = raw.missing.map((id) => esc(app.data.courses[id]?.name ?? id));
+      msg += raw.warnings.map((w) => `<p class="notice">${icon('alert')}<span>${esc(w)}</span></p>`).join('')
+        + (names.length ? `<p class="notice">${icon('alert')}<span>לא נכנס לאף סמסטר: ${names.join(', ')}</span></p>` : '');
+    }
 
-    const ranks = progressRanks(results);
+    const ranks = progressRanks(results.map((r) => semResult(r, sem)));
     const myRank = ranks[cur];
     const counts = unlockCounts(data, doneIds());
     const blocking = res.courses.filter((cid) => counts[cid] > 0);
@@ -234,16 +256,16 @@ function renderView() {
     const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת קורס אחד' : `פותחת ${res.unlocks} קורסים`) : '';
     const infoLine = [blockingText && `סוגרת חוסמים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
 
-    $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), pill('sun', fd), pill('clock', gap), pill('check', `התקדמות: דירוג ${myRank} מתוך ${results.length}`), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
+    $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar', `שנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), pill('check', `התקדמות: דירוג ${myRank} מתוך ${results.length}`), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
       + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '')
       + (last.partial ? '<span class="pill quiet">החיפוש חלקי: אלה הטובות שנמצאו בזמן</span>' : '');
-    live = [`חלופה ${cur + 1} מתוך ${results.length}`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, fd, gap, ...fr].join(', ');
+    live = [`חלופה ${cur + 1} מתוך ${results.length}`, pair && `סמסטר ${sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `שנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed, pins: state.pins, friends, day: mobileDay });
   $('daysel').innerHTML = renderDaySelector(range, res, data, mobileDay);
   if (live && live !== liveText) $('live').textContent = liveText = live;
-  renderSide(res);
+  renderSide(raw);
   if (panel === 'reg') renderDrawer();
   setBusy();
 }
@@ -259,6 +281,9 @@ function go(d) {
 function prefsPanel() {
   const { state, data } = app, c = state.constraints;
   return ['העדפות', `
+    ${app.sem['ב'] ? `<section class="dr-sec"><h3>תכנון</h3>
+      ${seg('scope', 'לתכנן', SCOPE, state.scope, 'data-chg="scope"', true)}
+      ${state.scope === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>` : ''}
     <section class="dr-sec"><h3>מה חשוב לך?</h3>
       ${WEIGHTS.filter(([k]) => k !== 'examSpread' || data.examsPublished).map(([k, t]) => seg(`w-${k}`, t, SCALE, nearestStep(state.weights[k], [0, 1, 3, 5]), `data-chg="w" data-w="${k}"`, true)).join('')}</section>
     <section class="dr-sec"><h3>ימים שאני רוצה פנויים</h3>
@@ -275,7 +300,7 @@ function prefsPanel() {
     ${state.pins.length ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length} קבוצות נעוצות: <bdi dir="ltr">${state.pins.map(esc).join(', ')}</bdi></p>
       <button type="button" class="btn" data-act="clearPins" data-k="clearPins">${icon('pin')} נקה נעיצות</button></section>` : ''}
     <section class="dr-sec"><button type="button" class="btn" data-act="resetPrefs" data-k="resetPrefs">איפוס העדפות</button>
-      <p class="hint">מחזיר את המשקלים, הימים והשעות, תקרת הנ"ז, בחינות באותו יום וקבוצות מלאות לברירת המחדל. המצב האישי, הקורסים, הנעיצות והחברים לא משתנים.</p></section>
+      <p class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות, תקרת הנ"ז, בחינות באותו יום וקבוצות מלאות לברירת המחדל. המצב האישי, הקורסים, הנעיצות והחברים לא משתנים.</p></section>
     <footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
       <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`];
 }
@@ -303,23 +328,30 @@ function friendsPanel() {
       <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`];
 }
 
-function registrationText(res) {
-  const alt = (g) => (res.alts?.[g] ? ` (או ${res.alts[g].join(', ')})` : '') + (backups(app.data, res, g).length ? ` [גיבוי: ${backups(app.data, res, g).join(', ')}]` : '');
-  return res.courses.map((cid) => `${cid} ${app.data.courses[cid].name}: ${res.groups.filter((g) => app.data.courses[cid].groups.some((x) => x.id === g)).map((g) => g + alt(g)).join(', ')}`).join('\n');
+// A pair lists each semester under its own heading, each against its own data file; a single result has one untitled part.
+const regParts = (r) => (isPair(r) ? SEMS.map(([s, title]) => ({ title, res: semResult(r, s), data: app.sem[s] })) : [{ title: null, res: r, data: app.data }]);
+
+function registrationText(r) {
+  const one = (res, data) => {
+    const alt = (g) => (res.alts?.[g] ? ` (או ${res.alts[g].join(', ')})` : '') + (backups(data, res, g).length ? ` [גיבוי: ${backups(data, res, g).join(', ')}]` : '');
+    return res.courses.map((cid) => `${cid} ${data.courses[cid].name}: ${res.groups.filter((g) => data.courses[cid].groups.some((x) => x.id === g)).map((g) => g + alt(g)).join(', ')}`).join('\n');
+  };
+  return regParts(r).map((p) => (p.title ? `${p.title}\n${one(p.res, p.data) || '—'}` : one(p.res, p.data))).join('\n\n');
 }
 
 function regPanel() {
-  const res = current(), { data } = app;
-  if (!res) return ['רשימה להרשמה', '<p class="hint">עוד אין מערכת. בחרו קורסים, והרשימה תופיע כאן.</p>'];
-  const rows = res.courses.map((cid) => {
+  const raw = current(), data = app.data;
+  if (!raw) return ['רשימה להרשמה', '<p class="hint">עוד אין מערכת. בחרו קורסים, והרשימה תופיע כאן.</p>'];
+  const rowsOf = (res, data) => res.courses.map((cid) => {
     const c = data.courses[cid], gs = c.groups.filter((g) => res.groups.includes(g.id));
     return `<li class="c${colors.get(cid) ?? 7}"><span class="dot" aria-hidden="true"></span><div class="grow"><b>${esc(c.name)}</b> <span class="hint">${esc(cid)} · ${c.credits} נ״ז</span>
-      <p>${gs.map((g) => `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>${res.alts?.[g.id] ? ` <span class="hint">(או <bdi dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>` : ''}${backups(app.data, res, g.id).length ? ` <span class="hint">(גיבוי: <bdi dir="ltr">${backups(app.data, res, g.id).map(esc).join(', ')}</bdi>)</span>` : ''}`).join(' · ')}</p></div>
+      <p>${gs.map((g) => `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>${res.alts?.[g.id] ? ` <span class="hint">(או <bdi dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>` : ''}${backups(data, res, g.id).length ? ` <span class="hint">(גיבוי: <bdi dir="ltr">${backups(data, res, g.id).map(esc).join(', ')}</bdi>)</span>` : ''}`).join(' · ')}</p></div>
       <a class="btn icon-btn ghost" href="${yedion(cid)}" target="_blank" rel="noopener" aria-label="${esc(c.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></li>`;
   }).join('');
-  const exams = res.exams.filter((e) => e.kind === 'בחינה').sort((a, b) => a.date.localeCompare(b.date));
+  const parts = regParts(raw);
+  const exams = parts.flatMap((p) => p.res.exams).filter((e) => e.kind === 'בחינה').sort((a, b) => a.date.localeCompare(b.date));
   return ['רשימה להרשמה', `<p class="hint">חלופה ${cur + 1} מתוך ${last.results.length}. ההרשמה עצמה נעשית באפקה-נט.</p>
-    <ul class="reglist">${rows}</ul>
+    ${parts.map((p) => `${p.title ? `<h3 class="reg-sem">${p.title}</h3>` : ''}${p.res.courses.length ? `<ul class="reglist">${rowsOf(p.res, p.data)}</ul>` : '<p class="hint">אין קורסים בסמסטר הזה.</p>'}`).join('')}
     <button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>
     <section class="dr-sec"><h3>בחינות</h3>${data.examsPublished
       ? `<ul class="plain">${exams.map((e) => `<li>${esc(data.courses[e.course].name)} · מועד ${esc(e.moed)} · <bdi dir="ltr">${esc(e.date)} ${esc(e.time ?? '')}</bdi></li>`).join('')}</ul>`
@@ -356,7 +388,7 @@ function addFriend(p) {
 async function share() {
   const res = current();
   if (!res) return toast('אין עדיין מערכת לשתף');
-  copy(await friendLink(location.origin + location.pathname, app.state, res.groups), 'הקישור הועתק. אפשר לשלוח לחברים.');
+  copy(await friendLink(location.origin + location.pathname, app.state, resGroups(res)), 'הקישור הועתק. אפשר לשלוח לחברים.');
 }
 const focusWeek = () => $('week').focus({ preventScroll: false });
 
@@ -369,7 +401,7 @@ const ACT = {
   prev: () => go(-1),
   next: () => go(1),
   day(el) { mobileDay = Number(el.dataset.day); keepFocus(renderView); },
-  block: (el) => openPop(el, { data: app.data, res: current(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors }),
+  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors }),
   popClose: () => $('pop').hidePopover(),
   pin(el) {
     const gid = el.dataset.gid, was = app.state.pins.includes(gid);
@@ -400,6 +432,8 @@ const ACT = {
     if (typeof confirm === 'function' && !confirm('לאפס את ההעדפות לברירת המחדל?')) return;
     app.state.weights = structuredClone(DEFAULT.weights);
     app.state.constraints = structuredClone(DEFAULT.constraints);
+    app.state.scope = DEFAULT.scope;
+    app.state.load = DEFAULT.load;
     refresh();
     toast('ההעדפות אופסו');
   },
@@ -416,6 +450,10 @@ const CHG = {
       if (kept.length < app.state.pins.length) { app.state.pins = kept; toast('הנעיצות של הקורס בוטלו'); }
     }
   },
+  sem: (el) => { sem = el.value === 'ב' ? 'ב' : 'א'; return 'view'; }, // a view switch: no new search
+  scope: (el) => { app.state.scope = el.value; },
+  load: (el) => { app.state.load = el.value; },
+  semOf: (el) => { if (el.value) app.state.semesterOf[el.dataset.id] = el.value; else delete app.state.semesterOf[el.dataset.id]; }, // a pin still wins in the solver
   pyear: (el) => { app.state.profile.year = cleanProfile({ year: Number(el.value) }).year; },
   amirnet: (el) => { app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet; },
   status: (el) => setStatus(app.state, el.dataset.id, el.value),
@@ -455,7 +493,9 @@ document.addEventListener('change', (e) => {
   const shown = (el) => (el.checkVisibility ? el.checkVisibility() : !!el.offsetParent); // closed <details> use content-visibility
   const visibleCards = () => [...$('side').querySelectorAll('.course')].filter(shown);
   const idx = visibleCards().indexOf(e.target.closest('.course'));
-  if (f(e.target) === 'quiet') { save(); scheduleRun(); } else refresh();
+  const how = f(e.target);
+  if (how === 'view') keepFocus(renderView);
+  else if (how === 'quiet') { save(); scheduleRun(); } else refresh();
   // A card that moved into a collapsed section takes focus with it; land on the card now in its place instead.
   if (idx >= 0 && (document.activeElement === document.body || !shown(document.activeElement))) {
     const cards = visibleCards();
