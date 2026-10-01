@@ -369,9 +369,9 @@ function friendsPanel() {
       const opts = groupOptions(course);
       const groupSelects = opts.map((opt) => `
         <label class="sr">${esc(typeLabel(opt.type))}</label>
-        <select data-chg="mfGroup" data-ci="${ci}" data-type="${esc(opt.type)}" data-k="mfGroup-${ci}-${esc(opt.type)}">
+        <select data-chg="mfGroup" data-ci="${ci}" data-cid="${esc(cid)}" data-type="${esc(opt.type)}" data-k="mfGroup-${ci}-${esc(opt.type)}">
           <option value="">לא נבחר</option>
-          ${opt.options.map((o) => `<option value="${esc(o.id)}"${mfGroups[opt.type] === o.id ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}
+          ${opt.options.map((o) => `<option value="${esc(o.id)}"${mfGroups[`${cid}|${opt.type}`] === o.id ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}
         </select>`).join('');
       return `<div class="field row"><span>${esc(course.name)}</span>${groupSelects}<button type="button" class="btn icon-btn" data-act="mfRemoveCourse" data-ci="${ci}" style="width:44px" aria-label="הסר קורס">${icon('x')}</button></div>`;
     }).join('');
@@ -385,7 +385,7 @@ function friendsPanel() {
         ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}
         <button type="button" class="btn" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
       ${mfEditIdx !== null ? `<section class="dr-sec"><h3>${editingFriend ? 'עריכת חבר' : 'הוסף חבר ידנית'}</h3>
-        <label class="field"><span>שם החבר</span><input type="text" maxlength="60" data-k="mfName" value="${esc(mfName)}" placeholder="שם החבר"></label>
+        <label class="field"><span>שם החבר</span><input id="mfName" type="text" maxlength="60" data-k="mfName" data-chg="mfName" value="${esc(mfName)}" placeholder="שם החבר"></label>
         <div class="row">
           <label for="mfCourse" class="sr">בחר קורס</label>
           <input id="mfCourse" type="text" list="mfCourseList" data-k="mfCourse" placeholder="חפש קורס" aria-invalid="${mfCourseErr ? 'true' : 'false'}" aria-describedby="${mfCourseErr ? 'mfCourseErr' : ''}">
@@ -533,7 +533,7 @@ const ACT = {
       if (!info) continue;
       const { cid, g } = info;
       if (!seenCourses.has(cid)) { mfCourses.push(cid); seenCourses.add(cid); }
-      mfGroups[g.type] = gid;
+      mfGroups[`${cid}|${g.type}`] = gid;
     }
     mfEditIdx = i;
     mfCourseErr = '';
@@ -552,14 +552,14 @@ const ACT = {
     mfCourses.push(cid);
     input.value = ''; keepFocus(renderDrawer); input.focus();
   },
-  mfRemoveCourse(el) { mfCourses.splice(Number(el.dataset.ci), 1); keepFocus(renderDrawer); $('mfCourse')?.focus(); },
+  mfRemoveCourse(el) { const [cid] = mfCourses.splice(Number(el.dataset.ci), 1); for (const k of Object.keys(mfGroups)) if (k.startsWith(`${cid}|`)) delete mfGroups[k]; keepFocus(renderDrawer); $('mfCourse')?.focus(); },
   async mfSave(el) {
-    const name = mfName.trim().slice(0, 60);
+    const name = ($('mfName')?.value ?? mfName).trim().slice(0, 60);
     if (!name) return toast('יש להזין שם חבר');
     const groups = Object.values(mfGroups).filter((g) => g);
     if (!groups.length) return toast('יש לבחור קבוצה אחת לפחות');
     const old = app.state.friends.find((f) => f.name === name && f !== app.state.friends[mfEditIdx]);
-    if (old && !await askConfirm(`החבר ${esc(name)} כבר קיים. להחליף?`, { ok: 'החלף', cancel: 'ביטול' })) return;
+    if (old && !await askConfirm(`החבר ${name} כבר קיים. להחליף?`, { ok: 'החלף', cancel: 'ביטול' })) return;
     const updated = mfEditIdx >= 0 && app.state.friends[mfEditIdx];
     if (updated) { updated.name = name; updated.groups = groups; updated.manual = true; } else {
       if (app.state.friends.length >= 20) { toast('אפשר עד 20 חברים. הסירו חבר כדי להוסיף.'); return; }
@@ -619,7 +619,8 @@ const CHG = {
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
   maxCredits: (el) => { const n = parseFloat(el.value); app.state.constraints.maxCredits = Number.isFinite(n) && n >= 0 ? n : null; return 'quiet'; },
   myName: (el) => { app.state.name = el.value.trim().slice(0, 60); return 'quiet'; },
-  mfGroup: (el) => { mfGroups[el.dataset.type] = el.value; return 'quiet'; },
+  mfGroup: (el) => { mfGroups[`${el.dataset.cid}|${el.dataset.type}`] = el.value; return 'quiet'; },
+  mfName: (el) => { mfName = el.value; return 'quiet'; },
 };
 
 function renderAll() {
