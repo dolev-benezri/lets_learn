@@ -127,11 +127,13 @@ async function init() {
   document.getElementById('week').innerHTML = SKELETON; // replaced by the first render, or by the failure message
   app.state = load();
   const get = async (sem) => {
-    const res = await fetch(dataPath(app.state, sem));
+    const res = await fetch(dataPath(app.state, sem), { cache: 'no-cache' }); // revalidate (ETag) so a nightly update shows up at once
     if (!res.ok) throw new Error(res.status);
     return res.json();
   };
+  const status = fetch('data/afeka/status.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const [a, b] = await Promise.allSettled([get('א'), get('ב')]);
+  app.status = await status;
   if (a.status === 'rejected') {
     document.getElementById('week').innerHTML = '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b><p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions"><button class="btn" id="retry">נסה שוב</button> <button class="btn" id="reset">אפס נתונים שמורים</button></p></div></div>';
     document.getElementById('retry').onclick = init;

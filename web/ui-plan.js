@@ -8,7 +8,7 @@ import './ui-map.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 import { askConfirm, showText, trapTab } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale } from './ui-text.js';
+import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins } from './ui-text.js';
 
 const $ = (id) => document.getElementById(id);
 const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -105,11 +105,10 @@ function setBusy() {
 
 // ---------- top bar and banners ----------
 function renderTop() {
-  const d = new Date(app.data.fetchedAt);
   $('title').innerHTML = `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} תשפ״ז</small>`;
-  // The exams-not-published note lives in the summary pills only; the header keeps the data date (and a stale warning).
-  $('meta').innerHTML = `נתונים מ-${esc(d.toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' }))}`
-    + ((Date.now() - d) / 864e5 > 3 ? ` · <span class="warn-text">${icon('alert')} בני יותר מ-3 ימים</span>` : '');
+  // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
+  const f = freshness(app.status, app.data.fetchedAt);
+  $('meta').innerHTML = f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text);
   const fr = app.state.friends;
   $('friendsBtn').innerHTML = `<span class="stack" aria-hidden="true">${fr.slice(0, 3).map((f) => `<span class="av">${esc(initials(f.name))}</span>`).join('')}<span class="av plus">${icon('plus')}</span></span><span class="lbl">חברים${fr.length ? ` (${fr.length})` : ''}</span>`;
 }
@@ -118,8 +117,11 @@ function renderBanner() {
   const L = app.friendLanding;
   const known = allGroupIds();
   const missing = L ? L.groups.filter((g) => !known.has(g)).length : 0;
+  const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : []; // with one semester loaded, the other's pins would look gone
   $('banner').innerHTML = (app.hashError ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
       <button type="button" class="btn icon-btn ghost" data-act="dismissError" aria-label="סגור הודעה">${icon('x')}</button></div>` : '')
+    + gone.map((p) => `<div class="banner warn">${icon('alert')}<span class="grow">${esc(p.text)}. המערכת תבחר קבוצה אחרת אם תסירו את הנעיצה.</span>
+      <button type="button" class="btn" data-act="dropPin" data-gid="${esc(p.gid)}">${icon('pin')} הסר נעיצה</button></div>`).join('')
     + (L ? `<div class="banner"><span class="av lg" aria-hidden="true">${esc(initials(L.name || 'חבר'))}</span>
       <div class="grow"><b>${esc(L.name || 'חבר')}</b> שיתף/ה איתך מערכת (${L.groups.length} שיעורים)${missing ? ` · <span class="warn-text">${missing} לא נמצאו בהיצע הנוכחי</span>` : ''}</div>
       <button type="button" class="btn primary" data-act="landingAdd" data-k="landingAdd">${icon('user-plus')} הוסף כחבר</button>
@@ -493,6 +495,7 @@ const ACT = {
   landingAdd: () => addFriend(app.friendLanding),
   landingDrop() { app.friendLanding = null; renderBanner(); focusWeek(); },
   dismissError() { app.hashError = null; renderBanner(); focusWeek(); },
+  dropPin(el) { app.state.pins = app.state.pins.filter((p) => p !== el.dataset.gid); refresh(); focusWeek(); },
   removeFriend(el) { app.state.friends.splice(Number(el.dataset.i), 1); refresh(); $('drawer').querySelector('[data-k="closeDrawer"]')?.focus(); },
   openFriendEditor: () => openFriendEditor({ onSave: saveManualFriend, returnFocusId: 'openFriendEditor' }),
   editFriend: (el) => openFriendEditor({ friend: app.state.friends[Number(el.dataset.i)], onSave: saveManualFriend, returnFocusId: `editFriend-${el.dataset.i}` }),
