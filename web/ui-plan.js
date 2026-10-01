@@ -94,9 +94,9 @@ function setBusy() {
 function renderTop() {
   const d = new Date(app.data.fetchedAt);
   $('title').innerHTML = `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} תשפ״ז</small>`;
+  // The exams-not-published note lives in the summary pills only; the header keeps the data date (and a stale warning).
   $('meta').innerHTML = `נתונים מ-${esc(d.toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' }))}`
-    + ((Date.now() - d) / 864e5 > 3 ? ` · <span class="warn-text">${icon('alert')} הנתונים בני יותר מ-3 ימים</span>` : '')
-    + (app.data.examsPublished ? '' : ' · לוח הבחינות של תשפ״ז טרם פורסם');
+    + ((Date.now() - d) / 864e5 > 3 ? ` · <span class="warn-text">${icon('alert')} בני יותר מ-3 ימים</span>` : '');
   const fr = app.state.friends;
   $('friendsBtn').innerHTML = `<span class="stack" aria-hidden="true">${fr.slice(0, 3).map((f) => `<span class="av">${esc(initials(f.name))}</span>`).join('')}<span class="av plus">${icon('plus')}</span></span><span class="lbl">חברים${fr.length ? ` (${fr.length})` : ''}</span>`;
 }
@@ -116,17 +116,23 @@ function renderBanner() {
 // ---------- status panel ----------
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
-  const s = app.state, n = s.failed[id] ?? 0, k = `${li}-${id}`;
-  if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${esc(app.data.courses[id].name)}</b> <span class="tag ok">פטור</span></div>`;
+  const s = app.state, n = s.failed[id] ?? 0, k = `${li}-${id}`, nm = heb(app.data.courses[id].name);
+  if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${esc(nm)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
-  return `<div class="crs" data-st="${st}">${seg(`st-${k}`, app.data.courses[id].name, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
-    }${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${app.data.courses[id].name}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
+  return `<div class="crs" data-st="${st}">${seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
+    }${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
 }
 
+// Hebrew punctuation for names from the data (ASCII ' and " between letters become geresh and gershayim).
+const heb = (t) => String(t).replace(/(?<=[א-ת])'/g, '׳').replace(/(?<=[א-ת])"(?=[א-ת])/g, '״');
+
+// Height-capped panel: fixed title + one-line first step, an internal scroll area, and a footer that always shows
+// the progress and "סיימתי". The grid stays below it, so edits are visible without scrolling the page.
 function renderWelcome() {
   const el = $('welcome');
   el.hidden = !statusOpen;
   if (!statusOpen) { el.innerHTML = ''; return; }
+  const keep = el.querySelector('.wel-body')?.scrollTop ?? 0; // a status change re-renders; stay where the user was
   const { data, state, cls } = app;
   const pr = progress(data, state);
   const pct = Math.min(100, Math.round(pr.ratio * 100));
@@ -136,20 +142,25 @@ function renderWelcome() {
   const lists = data.lists.map((l, i) => ({ ...l, i, year: l.name.match(/חובה שנה (\S)'/)?.[1] }));
   const past = (l) => l.year && ' אבגד'.indexOf(l.year) <= open;
   const YEARS = [[1, 'א׳'], [2, 'ב׳'], [3, 'ג׳'], [4, 'ד׳']];
-  const group = (l) => `<div class="year"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(l.name)} <span>${l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}" data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ"עברתי"</button>` : ''}<div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
+  const group = (l) => `<div class="year"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(l.name))} <span>${l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}" data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}<div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
   const others = lists.filter((l) => !past(l));
-  el.innerHTML = `<h2 id="welTitle" tabindex="-1">מה המצב שלך?</h2>
-    <section class="profile"><h3>פרופיל</h3>
+  const step = onboarded()
+    ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתחת מתעדכנת לבד.'
+    : '<b>צעד ראשון:</b> סמנו מה כבר עברתם (שנה א׳ מסומנת מראש), ואז לחצו ״סיימתי״.';
+  el.innerHTML = `<div class="wel-head"><h2 id="welTitle" tabindex="-1">מה המצב שלך?</h2><p class="wel-step">${step}</p></div>
+    <div class="wel-body">
+    <section class="profile"><h3 class="sr">פרופיל</h3>
       ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}
       <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${state.profile.amirnet ?? ''}"><span class="hint">ריק אם לא ידוע</span></label></section>
-    <p class="hint">בחרו לכל קורס: לא לקחתי, עברתי או נכשלתי (ואז כמה פעמים). כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון. המערכת מתעדכנת לבד.</p>
-    ${onboarded() ? '' : `<p class="notice">${icon('alert')}<span>סימנו מראש את כל שנה א׳ כ"עברתי". נכשלת במשהו? בחרו בו "נכשלתי".</span></p>`}
-    <div class="progress"><div class="progress-top"><span>התקדמות: <b><bdi dir="ltr">${pr.earned}/${pr.required}</bdi> נ״ז</b></span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
-      <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
+    <p class="hint">כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון.</p>
     ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
     ${lists.filter(past).map(group).join('')}
     ${details('others', 'שנים מתקדמות וקורסים נוספים', others.map(group).join(''), others.length)}
-    <div class="wel-foot"><button type="button" class="btn primary" data-act="statusDone" data-k="statusDone">${icon('check')} סיימתי</button></div>`;
+    </div>
+    <div class="wel-foot"><div class="progress"><div class="progress-top"><span>התקדמות: <b><bdi dir="ltr">${pr.earned}/${pr.required}</bdi> נ״ז</b></span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
+      <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
+      <button type="button" class="btn primary" data-act="statusDone" data-k="statusDone">${icon('check')} סיימתי</button></div>`;
+  el.querySelector('.wel-body').scrollTop = keep;
 }
 
 // ---------- sidebar ----------
@@ -402,7 +413,7 @@ const focusWeek = () => $('week').focus({ preventScroll: false });
 const ACT = {
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
   statusDone() { statusOpen = false; try { localStorage.setItem(ONBOARDED, '1'); } catch { /* storage unavailable */ } renderWelcome(); focusWeek(); },
-  openStatus() { statusOpen = true; renderWelcome(); $('welTitle').focus(); $('welcome').scrollIntoView({ block: 'start' }); },
+  openStatus() { statusOpen = true; renderWelcome(); $('welTitle').focus({ preventScroll: true }); $('welcome').scrollIntoView({ block: 'nearest' }); },
   panel: (el) => openPanel(el.dataset.panel, el),
   closeDrawer: () => $('drawer').close(),
   prev: () => go(-1),
