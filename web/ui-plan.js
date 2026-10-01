@@ -4,6 +4,7 @@ import { app, esc, save, refresh, candidateMode, yearCourses, setRenderers, keep
 import { progress, setStatus, studyYear, cleanProfile } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
+import './ui-map.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 
 const $ = (id) => document.getElementById(id);
@@ -151,7 +152,8 @@ function renderWelcome() {
     <div class="wel-body">
     <section class="profile"><h3 class="sr">פרופיל</h3>
       ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}
-      <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${state.profile.amirnet ?? ''}"><span class="hint">ריק אם לא ידוע</span></label></section>
+      <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${state.profile.amirnet ?? ''}"><span class="hint">ריק אם לא ידוע</span></label>
+      <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button></section>
     <p class="hint">כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון.</p>
     ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
     ${lists.filter(past).map(group).join('')}
