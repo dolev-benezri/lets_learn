@@ -106,7 +106,9 @@ function check(seed) {
   const stA = classify(dataA, state).statuses;
   const cand = ids.filter((id) => wantSem(id) !== 'ב' && modeFor(stA[id]?.status, state.choices[id], false));
   const stY = classify(dataB, { ...state, passed: [...state.passed, ...cand] }).statuses;
-  const mustIds = ids.filter((id) => modeFor(stA[id]?.status, state.choices[id], false) === 'must' || modeFor(stY[id]?.status, state.choices[id], false) === 'must');
+  // A ב׳ pin makes its course must for the year (ruling, final review I1).
+  const mustIds = ids.filter((id) => modeFor(stA[id]?.status, state.choices[id], false) === 'must' || modeFor(stY[id]?.status, state.choices[id], false) === 'must'
+    || (pinSem[id] === 'ב' && modeFor(stY[id]?.status, state.choices[id], false)));
 
   for (const p of results) {
     const A = p.a.courses, B = p.b?.courses ?? [];
@@ -134,8 +136,12 @@ function check(seed) {
     for (const g of gB) assert.ok(g in gmB, `ב group ${g} unknown`);
     for (const g of gA) assert.ok(A.includes(courseOfGroup(dataA, g)), `group ${g} not of a chosen א course`);
     for (const g of gB) assert.ok(B.includes(courseOfGroup(dataB, g)), `group ${g} not of a chosen ב course`);
-    // 6. pins land in their semester; semesterOf is respected (a pin wins over it)
-    for (const g of pins) assert.ok((semOfPin(g) === 'א' ? gA : gB).includes(g), `pin ${g} missing from ${semOfPin(g)}`);
+    // 6. pins land in their semester; semesterOf is respected (a pin wins over it). An א׳ pin is in every plan; a ב׳ pin
+    // the ב׳ search cannot honour is reported: its course is in missing (ruling, final review I1).
+    for (const g of pins) {
+      const ok = (semOfPin(g) === 'א' ? gA : gB).includes(g) || (semOfPin(g) === 'ב' && p.missing.includes(courseOfGroup(dataB, g)));
+      assert.ok(ok, `pin ${g} missing from ${semOfPin(g)}`);
+    }
     for (const id of ids) {
       const want = wantSem(id);
       if (want === 'א') assert.ok(!B.includes(id), `${id} forced to א but in ב`);

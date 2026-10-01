@@ -595,3 +595,13 @@ test('searchYear: 20 random real-data states each finish within 3.5 s, at most 2
   console.log(`random states: worst ${worst}ms, partial ${partial}/20`);
   assert.ok(partial <= 2, `${partial} of 20 partial`);
 });
+
+test('a ב׳ pin the ב׳ search cannot honour is a missing must, and the rest of ב׳ is still planned', () => {
+  // Shape of property seeds 545/1331: a pin on a 4-credit ב׳ course with maxCredits 3. It used to vanish (b null, no missing).
+  const dataA = semData('א', { Q: yc('Q', 2, [grp('QA', 2)]), R: yc('R', 4, []), E: yc('E', 2, []) });
+  const dataB = semData('ב', { Q: yc('Q', 2, []), R: yc('R', 4, [grp('RB', 1)]), E: yc('E', 2, [grp('EB', 3)]) });
+  const r = searchYear({ dataA, dataB, state: yState({ choices: opt('Q', 'R', 'E') }), pins: ['RB'], yearList: new Set(), weights: W, constraints: { maxCredits: 3 } });
+  assert.ok(r.results.length > 0);
+  for (const p of r.results) assert.ok(!inB(p, 'R') && p.missing.includes('R'), JSON.stringify([p.b?.courses, p.missing]));
+  assert.ok(inA(best(r), 'Q') && inB(best(r), 'E'), JSON.stringify([best(r).a.courses, best(r).b?.courses]));
+});

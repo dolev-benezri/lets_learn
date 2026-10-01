@@ -343,6 +343,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   const deadline = Date.now() + timeLimitMs;
   const offered = (d, id) => !!d.courses[id]?.offered;
   const pinnedIn = (d, id) => pins.some((p) => d.courses[id]?.groups.some((g) => g.id === p));
+  const pinnedB = (id) => !pinnedIn(dataA, id) && pinnedIn(dataB, id); // an א׳ pin wins (see forced)
   const pinsOf = (d) => pins.filter((p) => Object.values(d.courses).some((c) => c.groups.some((g) => g.id === p)));
   // Where a course must go: a pin wins, then the student's choice, then the only semester that offers it.
   const forced = (id) => (pinnedIn(dataA, id) ? 'א' : pinnedIn(dataB, id) ? 'ב' : state.semesterOf?.[id]
@@ -368,7 +369,8 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   let yearMax = coursesA.reduce((s, c) => s + Math.max(0, vA[c.id]), 0);
   for (const id of Object.keys(dataB.courses)) {
     const mode = modeFor(stY[id]?.status, choices[id], yearList.has(id));
-    if (mode === 'must') must.add(id);
+    // A ב׳ pin makes its course must for the year (as in א׳): if ב׳ cannot honour it, the pair lists it as missing.
+    if (mode === 'must' || (mode === 'optional' && pinnedB(id))) must.add(id);
     if ((mode === 'must' || mode === 'optional') && !inA.has(id) && forced(id) !== 'א') yearMax += Math.max(0, vB[id]);
   }
   const sumV = (v, ids) => ids.reduce((s, id) => s + Math.max(0, v[id] ?? 0), 0);
@@ -403,20 +405,34 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     const stB = classify(dataB, stateB).statuses;
     const coursesB = Object.keys(dataB.courses).filter((id) => !takenA.has(id) && forced(id) !== 'א')
       .map((id) => ({ id, mode: modeFor(stB[id]?.status, choices[id], yearList.has(id)) }))
-      .filter((c) => c.mode === 'must' || c.mode === 'optional');
+      .filter((c) => c.mode === 'must' || c.mode === 'optional')
+      .map((c) => (pinnedB(c.id) ? { ...c, mode: 'must' } : c));
     const left = Math.max(B_FLOOR, (deadline - Date.now()) / (aList.length - i));
     const args = { data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends, topK: 1, timeLimitMs: left };
     let rb = search({ ...args, courses: coursesB });
     partial ||= rb.partial;
     if (!rb.results.length) {
       // Keep the pair and report what is missing, but give up as few must courses as possible: first relax one at a
-      // time (the best scoring success wins), and only when no single one is enough fall back to all optional.
+      // time (the best scoring success wins), and only when no single one is enough fall back to all optional
+      // (keeping the pins if that works). Relaxing a pinned course also lifts its pin, since search() forces pins.
       // ponytail: two or more impossible musts fall straight to all optional; relax pairs if that shows up in real data.
       const mustB = coursesB.filter((c) => c.mode === 'must');
-      const relax = (keep) => search({ ...args, timeLimitMs: left / (mustB.length + 1), courses: coursesB.map((c) => (keep(c) ? c : { ...c, mode: 'optional' })) });
-      const tries = mustB.map((m) => relax((c) => c !== m));
-      partial ||= tries.some((r) => r.partial);
-      rb = tries.filter((r) => r.results.length).sort((x, y) => y.results[0].score - x.results[0].score)[0] ?? relax(() => false);
+      const relax = (keep) => {
+        const lifted = new Set(coursesB.filter((c) => !keep(c)).map((c) => c.id));
+        return search({ ...args, timeLimitMs: left / (mustB.length + 2), pins: args.pins.filter((p) => ![...lifted].some((id) => pinnedIn(dataB, id) && dataB.courses[id].groups.some((g) => g.id === p))),
+          courses: coursesB.map((c) => (keep(c) ? c : { ...c, mode: 'optional' })) });
+      };
+      // A pin names the exact group, so it is a stronger wish than a must choice: pins are only lifted when no
+      // unpinned must is enough.
+      const round = (ms) => {
+        const tries = ms.map((m) => relax((c) => c !== m));
+        partial ||= tries.some((r) => r.partial);
+        return tries.filter((r) => r.results.length).sort((x, y) => y.results[0].score - x.results[0].score)[0];
+      };
+      const pinnedMust = mustB.filter((c) => pinnedB(c.id));
+      rb = round(mustB.filter((c) => !pinnedB(c.id))) ?? round(pinnedMust);
+      if (!rb && pinnedMust.length) { rb = relax((c) => pinnedB(c.id)); if (!rb.results.length) rb = null; }
+      rb ??= relax(() => false);
       partial ||= rb.partial;
     }
     const b = rb.results[0] ?? null;
