@@ -251,14 +251,31 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   const canPrune = prune && Object.values(weights).every((w) => w >= 0) && Object.entries(weights).every(([k, w]) => !(w > 0) || KNOWN.includes(k));
   const restValue = new Array(items.length + 1).fill(0);
   for (let i = items.length - 1; i >= 0; i--) restValue[i] = restValue[i + 1] + Math.max(0, value[items[i].id]);
-  const fixedUp = W('friends') * (activeFriends.some((f) => f.weight) ? 1 : 0) + W('compact');
+  // Friends: per friend the ratio is (shared minutes) / (total minutes), so what is left can lift it to at most
+  // (s + R) / (T + R), R = the most shared minutes the remaining items could still add (each item at its best option).
+  const fw = activeFriends.reduce((a, f) => a + f.weight, 0);
+  const restShared = activeFriends.map(() => new Array(items.length + 1).fill(0));
+  for (let i = items.length - 1; i >= 0; i--) {
+    for (let f = 0; f < activeFriends.length; f++) restShared[f][i] = restShared[f][i + 1] + Math.max(0, ...items[i].options.map((o) => o.sharedMin[f]));
+  }
+  const fixedUp = W('compact');
+  function friendsUp(i) {
+    if (!fw) return 0;
+    const T = sel.reduce((a, o) => a + o.minutes, 0);
+    let up = 0;
+    for (let f = 0; f < activeFriends.length; f++) {
+      const s = sel.reduce((a, o) => a + o.sharedMin[f], 0), R = restShared[f][i];
+      up += activeFriends[f].weight * (T + R ? (s + R) / (T + R) : 0);
+    }
+    return up / fw;
+  }
   function bound(i, mask, val) {
     let free = 0, outside = 0;
     for (let d = 1; d <= 6; d++) {
       if (d <= 5 && mask[d] === 0) free++;
       outside += popcount(mask[d] & prefMask[d]) * 30;
     }
-    let b = fixedUp + W('progress') * ((val + restValue[i]) / ctx.maxValue) + W('freeDays') * (free / 5) + W('timeWindow') * (1 - Math.min(outside / 600, 1));
+    let b = fixedUp + W('friends') * friendsUp(i) + W('progress') * ((val + restValue[i]) / ctx.maxValue) + W('freeDays') * (free / 5) + W('timeWindow') * (1 - Math.min(outside / 600, 1));
     if (ctx.examsPublished && W('examSpread')) {
       const dates = sel.flatMap((o) => o.exams).sort();
       let g = null;
@@ -312,6 +329,9 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
 
 const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };
 const LOAD_W = 3, MISSING_W = 5, A_TOP = 50;
+// Phase A gets most of the budget (B is usually cheap and hands its unused time forward); each B search has a floor,
+// and once the budget is spent by more than half again the remaining alternatives are skipped (they are the lowest ranked).
+const A_SHARE = 0.6, B_FLOOR = 100;
 
 // Year plan: top א׳ alternatives, each completed by the best ב׳ alternative with the א׳ courses counted as passed.
 export function searchYear({ dataA, dataB, state, yearList, pins = [], constraints = {}, weights, friends = [], topK = 10, timeLimitMs = 3000 }) {
@@ -338,7 +358,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   const stY = classify(dataB, { ...state, passed: [...(state.passed ?? []), ...coursesA.map((c) => c.id)] }).statuses;
   for (const id of Object.keys(dataB.courses)) if (modeFor(stY[id]?.status, choices[id], yearList.has(id)) === 'must') must.add(id);
 
-  const ra = search({ data: dataA, courses: coursesA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, topK: A_TOP, timeLimitMs: timeLimitMs / 2, bias });
+  const ra = search({ data: dataA, courses: coursesA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, topK: A_TOP, timeLimitMs: timeLimitMs * A_SHARE, bias });
   const credits = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
   const name = (id) => dataA.courses[id]?.name ?? id;
   const pairs = [];
@@ -346,19 +366,21 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   // search() never returns an empty selection; when nothing is must in א׳, "take nothing in א׳" is a valid year plan.
   const aList = coursesA.some((c) => c.mode === 'must') ? ra.results
     : [...ra.results, { score: 0, breakdown: {}, groups: [], courses: [], unlocks: 0, explanation: '', alts: {}, exams: [] }];
-  aList.forEach((a, i) => {
+  for (const [i, a] of aList.entries()) {
+    if (Date.now() > deadline + timeLimitMs / 2) { partial = true; break; }
     const takenA = new Set(a.courses);
     const stateB = { ...state, passed: [...(state.passed ?? []), ...a.courses] };
     const stB = classify(dataB, stateB).statuses;
     const coursesB = Object.keys(dataB.courses).filter((id) => !takenA.has(id) && forced(id) !== 'א')
       .map((id) => ({ id, mode: modeFor(stB[id]?.status, choices[id], yearList.has(id)) }))
       .filter((c) => c.mode === 'must' || c.mode === 'optional');
-    const left = Math.max(50, (deadline - Date.now()) / (aList.length - i));
+    const left = Math.max(B_FLOOR, (deadline - Date.now()) / (aList.length - i));
     const args = { data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends, topK: 1, timeLimitMs: left };
     let rb = search({ ...args, courses: coursesB });
     if (!rb.results.length) rb = search({ ...args, courses: coursesB.map((c) => ({ ...c, mode: 'optional' })) }); // keep the pair, report what is missing
     partial ||= rb.partial;
     const b = rb.results[0] ?? null;
+    if (!a.courses.length && !b?.courses.length) continue; // an empty plan is not an answer: let the UI say why nothing fits
     const all = new Set([...a.courses, ...(b?.courses ?? [])]);
     const missing = [...must].filter((id) => !all.has(id));
     const ca = credits(dataA, a.courses), cb = credits(dataB, b?.courses ?? []), total = ca + cb;
@@ -370,7 +392,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
       a, b, credits: { a: ca, b: cb }, missing,
       warnings: needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : [],
     });
-  });
+  }
   pairs.sort((x, y) => y.score - x.score);
   return { results: pairs.slice(0, topK), partial, diagnosis: pairs.length ? [] : ra.diagnosis };
 }
