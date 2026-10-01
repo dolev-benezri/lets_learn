@@ -598,6 +598,7 @@ function onHash() {
   }
   renderRoute();
   scrollTo(0, 0);
+  dayScroll = true; // back on the builder: show the day's first lesson again (no-op while #me is shown)
   scrollToDay();
   focusView();
 }
