@@ -8,7 +8,7 @@ import './ui-map.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 import { askConfirm, showText, trapTab } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins } from './ui-text.js';
+import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, gradeInput } from './ui-text.js';
 
 const $ = (id) => document.getElementById(id);
 const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -128,14 +128,14 @@ function renderBanner() {
       <button type="button" class="btn" data-act="landingDrop">לא עכשיו</button></div>` : '');
 }
 
-// ---------- status panel ----------
+// ---------- status page (#me) ----------
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
   const s = app.state, n = s.failed[id] ?? 0, k = `${li}-${id}`, nm = heb(app.data.courses[id].name);
   if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${esc(nm)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
   return `<div class="crs" data-st="${st}">${seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
-    }${st === 'passed' ? `<input class="grade" type="number" min="0" max="100" inputmode="numeric" placeholder="ציון" aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}">` : ''}${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
+    }${st === 'passed' ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric" aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>` : ''}${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
 }
 
 // Hebrew punctuation for names from the data (ASCII ' and " between letters become geresh and gershayim).
@@ -317,6 +317,21 @@ function renderView() {
   renderSide(raw);
   if (panel === 'reg') renderDrawer();
   setBusy();
+  scrollToDay();
+}
+
+// Phone: the day column starts at the earliest hour of any day, so a later-starting day opens on empty hours.
+// On the first view of a result and after each day switch, scroll to the day's first lesson (not on every refresh).
+let dayScroll = true;
+function scrollToDay() {
+  if (!dayScroll || !current() || $('layout').hidden || !matchMedia(PHONE).matches) return; // kept armed until a result is on screen
+  dayScroll = false;
+  const blocks = [...document.querySelectorAll('.day.on .blk')];
+  if (!blocks.length) return;
+  const b = blocks.reduce((a, c) => (Number(c.style.getPropertyValue('--s')) < Number(a.style.getPropertyValue('--s')) ? c : a));
+  const head = parseFloat(getComputedStyle($('daysel')).top) + $('daysel').offsetHeight + 8; // under the sticky day selector
+  const top = b.getBoundingClientRect().top;
+  if (top < head || top > innerHeight - 100) scrollBy(0, top - head);
 }
 
 function go(d) {
@@ -473,7 +488,7 @@ const ACT = {
   closeDrawer: () => $('drawer').close(),
   prev: () => go(-1),
   next: () => go(1),
-  day(el) { mobileDay = Number(el.dataset.day); keepFocus(renderView); },
+  day(el) { mobileDay = Number(el.dataset.day); dayScroll = true; keepFocus(renderView); },
   block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors }),
   more() { if (running) return; moreMul *= 2; scheduleRun(true); },
   popClose: () => $('pop').hidePopover(),
@@ -534,9 +549,9 @@ const CHG = {
   pyear: (el) => { app.state.profile.year = cleanProfile({ year: Number(el.value) }).year; },
   amirnet: (el) => { app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet; },
   grade: (el) => {
-    const v = el.value === '' ? NaN : Number(el.value);
-    if (Number.isInteger(v) && v >= 0 && v <= 100) app.state.grades[el.dataset.cid] = v; else delete app.state.grades[el.dataset.cid];
-    el.value = app.state.grades[el.dataset.cid] ?? ''; // snap an invalid entry back
+    const g = gradeInput(el.validity?.badInput ? 'x' : el.value, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
+    if (g === undefined) delete app.state.grades[el.dataset.cid]; else app.state.grades[el.dataset.cid] = g;
+    el.value = g ?? ''; // snap an invalid entry back
     const avg = $('gradeAvg');
     if (avg) avg.innerHTML = avgLine(); // just this line: re-rendering the page would drop the caret
     return 'save'; // grades do not touch the solver: no new search
@@ -563,19 +578,28 @@ function renderRoute() {
   $('me').hidden = !me;
   $('layout').hidden = me;
   document.body.dataset.view = view;
-  if (!me) markOnboarded(); // reaching the builder any way (tab, link, "סיימתי") ends the first-visit redirect
+  if (!me && app.cls) markOnboarded(); // reaching the builder any way (tab, link, "סיימתי") ends the first-visit redirect
   for (const a of document.querySelectorAll('.views a')) if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
-  renderMe();
+  if (app.cls) renderMe();
 }
 const focusView = () => $($('me').hidden ? 'weekTitle' : 'meTitle')?.focus({ preventScroll: true });
 // Back/forward and the nav links switch views without a new search (a search would reset the shown alternative).
 // A friend or backup link pasted into the open tab is applied like at load, then lands on the builder.
 function onHash() {
   document.activeElement?.blur(); // commit a typed grade or Amirnet value (fires change) before #me is emptied
-  if (!app.cls) return; // still loading: init() reads the hash when the data arrives
-  if (/^#[fb]=/.test(location.hash)) { applyHash().then(focusView); return; }
+  if (!app.cls) { // loading: init() reads the hash when the data arrives; failed: the tabs switch views, both showing the error (app.js)
+    if (app.loadFailed) { renderRoute(); scrollTo(0, 0); focusView(); }
+    return;
+  }
+  if (/^#[fb]=/.test(location.hash)) { scrollTo(0, 0); applyHash().then(focusView); return; }
+  if (routeOf(location.hash) !== document.body.dataset.view) { // builder overlays do not follow a view switch (focusView below keeps focus out of <body>)
+    $('drawer').open && $('drawer').close();
+    $('pop').matches(':popover-open') && $('pop').hidePopover();
+  }
   renderRoute();
   scrollTo(0, 0);
+  dayScroll = true; // back on the builder: show the day's first lesson again (no-op while #me is shown)
+  scrollToDay();
   focusView();
 }
 

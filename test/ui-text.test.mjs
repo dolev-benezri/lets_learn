@@ -69,3 +69,12 @@ test('stalePins: pins missing from every loaded semester, named by course when i
     { gid: 'L2', text: 'הקבוצה L2 כבר לא קיימת בנתונים' },
   ]);
 });
+
+import { gradeInput } from '../web/ui-text.js';
+test('gradeInput: valid kept, empty clears, invalid keeps the previous grade', () => {
+  assert.equal(gradeInput('85', 90), 85);
+  assert.equal(gradeInput('0', 90), 0);
+  assert.equal(gradeInput('', 90), undefined);
+  for (const bad of ['900', '-1', '8.5', 'x']) assert.equal(gradeInput(bad, 90), 90);
+  assert.equal(gradeInput('900', undefined), undefined);
+});
