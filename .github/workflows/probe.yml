@@ -1,0 +1,35 @@
+# One-off check: can a GitHub runner reach the yedion? One GET, nothing is written to the repo.
+# Delete this file once the answer is recorded.
+name: probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci
+      - name: One GET to the yedion start page
+        run: |
+          echo "runner IP: $(curl -fsS https://api.ipify.org)"
+          node --input-type=module <<'JS'
+          import { BASE, USER_AGENT } from './scripts/scrape.mjs';
+          import { pageKind } from './scripts/polite.mjs';
+          const res = await fetch(BASE, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(25000) });
+          const html = await res.text();
+          const kind = pageKind(html);
+          console.log(`status: ${res.status}`);
+          for (const [k, v] of res.headers) console.log(`header ${k}: ${v}`);
+          console.log(`body: ${html.length} chars, kind: ${kind}`);
+          if (!res.ok || kind !== 'ok') { console.error(`BLOCKED or throttled (${kind}, HTTP ${res.status})`); process.exit(1); }
+          JS

@@ -10,8 +10,8 @@ import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
 import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary } from './polite.mjs';
 
-const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
-const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolhack/lets_learn)';
+export const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
+export const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolhack/lets_learn)';
 const LISTS = { 30: [30001, 30002, 30003, 30004, 30007, 30010, 30031, 30901, 60004] };
 const DEPARTMENT = { 30: 'מכנית' };
 const SEMESTER_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
