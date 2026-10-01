@@ -558,13 +558,14 @@ const ACT = {
     const groups = Object.values(mfGroups).filter((g) => g);
     if (!groups.length) return toast('יש לבחור קבוצה אחת לפחות');
     if (name !== mfEditName && app.state.friends.some((f) => f.name === name) && !await askConfirm(`החבר ${name} כבר קיים. להחליף?`, { ok: 'החלף', cancel: 'ביטול' })) return;
-    const r = upsertFriend(app.state.friends, { name, groups, manual: true }, mfEditName || null);
+    const was = mfEditName;
+    const r = upsertFriend(app.state.friends, { name, groups, manual: true }, was || null);
     if (r.error) return toast(r.error);
     app.state.friends = r.friends;
     mfName = ''; mfCourses = []; mfGroups = {}; mfEditName = null; mfCourseErr = '';
     app.friendLanding = null;
     refresh();
-    toast(friendToast(name, r.replaced || !!mfEditName));
+    toast(friendToast(name, r.replaced || !!was));
     keepFocus(renderDrawer);
   },
   mfCancel() { mfName = ''; mfCourses = []; mfGroups = {}; mfEditName = null; mfCourseErr = ''; keepFocus(renderDrawer); $('openManualFriend')?.focus(); },
