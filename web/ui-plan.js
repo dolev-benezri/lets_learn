@@ -5,7 +5,7 @@ import { progress, setStatus, studyYear, cleanProfile } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
-import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
+import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, groupOptions, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 import { askConfirm, showText, trapTab } from './ui-dialog.js';
 import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale } from './ui-text.js';
 
@@ -26,6 +26,7 @@ const PHONE = '(max-width: 599px)'; // the popover is a bottom sheet
 
 let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, moreMul = 1, sem = 'א'; // sem: the shown semester of a year result
 let panel = null, opener = null, statusOpen = null, mobileDay = 1, friendMsg = '', friendUrl = '', liveText = '';
+let mfName = '', mfCourses = [], mfGroups = {}, mfEditIdx = null, mfCourseErr = ''; // manual friend entry draft: name, course ids, {type: gid}, editing index, course error
 const openDetails = new Set(['plan']);
 const colors = new Map(); // sticky: a course keeps its colour unless it clashes inside the shown alternative
 let dashed = new Set(); // courses of the shown alternative that repeat a colour (more than 8 courses)
@@ -353,10 +354,56 @@ function friendsPanel() {
     const miss = f.groups.filter((g) => !known.has(g)).length;
     return `<div class="frow"><span class="av lg" aria-hidden="true">${esc(initials(f.name))}</span>
       <div class="grow"><b>${esc(f.name)}</b><p class="hint">${f.groups.length - miss} קבוצות${miss ? ` · <span class="warn-text">${miss} לא נמצאו</span>` : ''}</p></div>
+      ${f.manual ? `<button type="button" class="btn icon-btn ghost" data-act="editFriend" data-i="${i}" aria-label="ערוך את ${esc(f.name)}">${icon('pencil')}</button>` : ''}
       <button type="button" class="btn icon-btn ghost" data-act="removeFriend" data-i="${i}" aria-label="הסר את ${esc(f.name)}">${icon('x')}</button>
       <div class="frow-full">${seg(`fw-${i}`, `כמה חשוב להיות עם ${f.name}?`, FSCALE, nearestStep(f.weight, [0, 1, 2, 3]), `data-chg="fw" data-i="${i}"`, true)}
       <label class="check"><input type="checkbox" data-chg="factive" data-i="${i}" data-k="fa-${i}"${f.active ? ' checked' : ''}> להציג במערכת</label></div></div>`;
   };
+  if (mfEditIdx !== null) {
+    const editingFriend = state.friends[mfEditIdx];
+    const coursesList = Object.entries(app.data.courses).map(([cid, c]) => ({ cid, name: heb(c.name) }));
+    const datalistOptions = coursesList.map((c) => `<option value="${esc(c.name)} (${esc(c.cid)})" label="${esc(c.name)}">`).join('');
+    const courseRows = mfCourses.map((cid, ci) => {
+      const course = app.data.courses[cid];
+      if (!course) return '';
+      const opts = groupOptions(course);
+      const groupSelects = opts.map((opt) => `
+        <label class="sr">${esc(typeLabel(opt.type))}</label>
+        <select data-chg="mfGroup" data-ci="${ci}" data-type="${esc(opt.type)}" data-k="mfGroup-${ci}-${esc(opt.type)}">
+          <option value="">לא נבחר</option>
+          ${opt.options.map((o) => `<option value="${esc(o.id)}"${mfGroups[opt.type] === o.id ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}
+        </select>`).join('');
+      return `<div class="field row"><span>${esc(course.name)}</span>${groupSelects}<button type="button" class="btn icon-btn" data-act="mfRemoveCourse" data-ci="${ci}" style="width:44px" aria-label="הסר קורס">${icon('x')}</button></div>`;
+    }).join('');
+    return ['חברים', `
+      <section class="dr-sec"><h3>הוספת חבר</h3>
+        <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
+        <form id="addFriendForm" class="row"><label for="friendUrl" class="sr">קישור שחבר שלח</label>
+          <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו כאן קישור שחבר שלח" value="${esc(friendUrl)}"
+            aria-describedby="friendHow${friendMsg ? ' friendErr' : ''}"${friendMsg ? ' aria-invalid="true"' : ''}>
+          <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
+        ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}
+        <button type="button" class="btn" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
+      ${mfEditIdx !== null ? `<section class="dr-sec"><h3>${editingFriend ? 'עריכת חבר' : 'הוסף חבר ידנית'}</h3>
+        <label class="field"><span>שם החבר</span><input type="text" maxlength="60" data-k="mfName" value="${esc(mfName)}" placeholder="שם החבר"></label>
+        <div class="row">
+          <label for="mfCourse" class="sr">בחר קורס</label>
+          <input id="mfCourse" type="text" list="mfCourseList" data-k="mfCourse" placeholder="חפש קורס" aria-invalid="${mfCourseErr ? 'true' : 'false'}" aria-describedby="${mfCourseErr ? 'mfCourseErr' : ''}">
+          <datalist id="mfCourseList">${datalistOptions}</datalist>
+          <button type="button" class="btn" data-act="mfAddCourse" data-k="mfAddCourse">הוסף קורס</button>
+        </div>
+        ${mfCourseErr ? `<p class="err-text" id="mfCourseErr" role="alert">${icon('alert')} ${esc(mfCourseErr)}</p>` : ''}
+        ${courseRows}
+        <div class="row" style="justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn" data-act="mfCancel" data-k="mfCancel">ביטול</button>
+          <button type="button" class="btn primary" data-act="mfSave" data-k="mfSave">שמור חבר</button>
+        </div></section>` : ''}
+      <section class="dr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || '<p class="hint">עוד אין חברים.</p>'}</section>
+      <section class="dr-sec"><h3>הקישור שלי</h3>
+        <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
+        <button type="button" class="btn" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
+        <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`, ''];
+  }
   return ['חברים', `
     <section class="dr-sec"><h3>הוספת חבר</h3>
       <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
@@ -364,7 +411,8 @@ function friendsPanel() {
         <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו כאן קישור שחבר שלח" value="${esc(friendUrl)}"
           aria-describedby="friendHow${friendMsg ? ' friendErr' : ''}"${friendMsg ? ' aria-invalid="true"' : ''}>
         <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
-      ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}</section>
+      ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}
+      <button type="button" class="btn" data-act="openManualFriend" data-k="openManualFriend">הזנה ידנית</button></section>
     <section class="dr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || '<p class="hint">עוד אין חברים.</p>'}</section>
     <section class="dr-sec"><h3>הקישור שלי</h3>
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
@@ -473,6 +521,57 @@ const ACT = {
   landingDrop() { app.friendLanding = null; renderBanner(); focusWeek(); },
   dismissError() { app.hashError = null; renderBanner(); focusWeek(); },
   removeFriend(el) { app.state.friends.splice(Number(el.dataset.i), 1); refresh(); $('drawer').querySelector('[data-k="closeDrawer"]')?.focus(); },
+  openManualFriend() { mfName = ''; mfCourses = []; mfGroups = {}; mfEditIdx = -1; mfCourseErr = ''; keepFocus(renderDrawer); $('mfName')?.focus(); },
+  editFriend(el) {
+    const i = Number(el.dataset.i), f = app.state.friends[i], idx = groupIndex(app.data);
+    mfName = f.name;
+    mfCourses = [];
+    mfGroups = {};
+    const seenCourses = new Set();
+    for (const gid of f.groups) {
+      const info = idx.get(gid);
+      if (!info) continue;
+      const { cid, g } = info;
+      if (!seenCourses.has(cid)) { mfCourses.push(cid); seenCourses.add(cid); }
+      mfGroups[g.type] = gid;
+    }
+    mfEditIdx = i;
+    mfCourseErr = '';
+    keepFocus(renderDrawer);
+    $('mfName')?.focus();
+  },
+  mfAddCourse(el) {
+    const input = $('mfCourse'), text = input.value.trim();
+    mfCourseErr = '';
+    const m = text.match(/^(.+?)\s*\(([^)]{1,20})\)$/);
+    const cid = m?.[2];
+    if (!cid || !app.data.courses[cid]) { mfCourseErr = 'לא מצאתי קורס בשם הזה'; keepFocus(renderDrawer); return; }
+    if (mfCourses.includes(cid)) return; // ignore duplicate
+    const course = app.data.courses[cid];
+    if (!course.groups?.length) { mfCourseErr = 'לקורס זה אין קבוצות'; keepFocus(renderDrawer); return; }
+    mfCourses.push(cid);
+    input.value = ''; keepFocus(renderDrawer); input.focus();
+  },
+  mfRemoveCourse(el) { mfCourses.splice(Number(el.dataset.ci), 1); keepFocus(renderDrawer); $('mfCourse')?.focus(); },
+  async mfSave(el) {
+    const name = mfName.trim().slice(0, 60);
+    if (!name) return toast('יש להזין שם חבר');
+    const groups = Object.values(mfGroups).filter((g) => g);
+    if (!groups.length) return toast('יש לבחור קבוצה אחת לפחות');
+    const old = app.state.friends.find((f) => f.name === name && f !== app.state.friends[mfEditIdx]);
+    if (old && !await askConfirm(`החבר ${esc(name)} כבר קיים. להחליף?`, { ok: 'החלף', cancel: 'ביטול' })) return;
+    const updated = mfEditIdx >= 0 && app.state.friends[mfEditIdx];
+    if (updated) { updated.name = name; updated.groups = groups; updated.manual = true; } else {
+      if (app.state.friends.length >= 20) { toast('אפשר עד 20 חברים. הסירו חבר כדי להוסיף.'); return; }
+      app.state.friends.push({ name, groups, weight: 1, active: true, manual: true });
+    }
+    mfName = ''; mfCourses = []; mfGroups = {}; mfEditIdx = null; mfCourseErr = '';
+    app.friendLanding = null;
+    refresh();
+    toast(friendToast(name, updated));
+    keepFocus(renderDrawer);
+  },
+  mfCancel() { mfName = ''; mfCourses = []; mfGroups = {}; mfEditIdx = null; mfCourseErr = ''; keepFocus(renderDrawer); $('openManualFriend')?.focus(); },
   dayOff(el) {
     const c = app.state.constraints, d = Number(el.dataset.day);
     c.dayOff = c.dayOff.includes(d) ? c.dayOff.filter((x) => x !== d) : [...c.dayOff, d];
@@ -520,6 +619,7 @@ const CHG = {
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
   maxCredits: (el) => { const n = parseFloat(el.value); app.state.constraints.maxCredits = Number.isFinite(n) && n >= 0 ? n : null; return 'quiet'; },
   myName: (el) => { app.state.name = el.value.trim().slice(0, 60); return 'quiet'; },
+  mfGroup: (el) => { mfGroups[el.dataset.type] = el.value; return 'quiet'; },
 };
 
 function renderAll() {

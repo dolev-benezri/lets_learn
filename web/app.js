@@ -39,7 +39,7 @@ export function normalize(raw) {
   if (isObj(raw.choices)) out.choices = Object.fromEntries(Object.entries(raw.choices).filter(([, v]) => ['must', 'optional', 'no'].includes(v)));
   if (Array.isArray(raw.friends)) {
     out.friends = raw.friends.filter((f) => isObj(f) && typeof f.name === 'string' && f.name.length <= 60 && Array.isArray(f.groups)).slice(0, 20)
-      .map((f) => ({ name: f.name, groups: strs(f.groups, 40, 20), weight: num(f.weight) ? clamp(f.weight, 0, 3) : 1, active: typeof f.active === 'boolean' ? f.active : true }));
+      .map((f) => ({ name: f.name, groups: strs(f.groups, 40, 20), weight: num(f.weight) ? clamp(f.weight, 0, 3) : 1, active: typeof f.active === 'boolean' ? f.active : true, ...(f.manual === true ? { manual: true } : {}) }));
   }
   out.pins = strs(raw.pins, 40, 20) ?? out.pins;
   out.profile = cleanProfile(raw.profile);
