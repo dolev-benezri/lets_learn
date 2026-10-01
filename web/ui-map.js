@@ -9,7 +9,7 @@ import { studyYear } from './rules.js';
 // ---------- layout (pure) ----------
 const YEAR_LETTERS = 'אבגד';
 const yearOf = (l) => l.name.match(/חובה שנה (\S)'/)?.[1];
-const bandName = (y) => (y ? `שנה ${YEAR_LETTERS[y - 1]}׳` : 'קורסי בחירה');
+const bandName = (y) => (y ? `שנה ${YEAR_LETTERS[y - 1]}׳` : 'חובה כללית ובחירה'); // English, final project and chosen electives
 
 // Which courses to draw: "remaining" hides done + exempt; "year" keeps only the student's study-year list.
 export function makeKeep(mode, data, statuses, year) {
@@ -27,10 +27,11 @@ export function courseYears(data) {
   for (const l of data.lists) { const y = YEAR_LETTERS.indexOf(yearOf(l) ?? '?'); if (y >= 0) l.courses.forEach((id) => { if (data.courses[id] && !m.has(id)) m.set(id, y + 1); }); }
   return m;
 }
-// Electives the student has no stake in stay off the map: not chosen "חובה"/"אולי" and not passed or being retaken.
+// Electives the student has no stake in stay off the map: in no required list (a year, English, the final project…), not chosen "חובה"/"אולי", not passed or being retaken.
+const REQUIRED = /חובה|פרויקט גמר/;
 export const asideIds = (data, statuses, choices = {}) => {
-  const yr = courseYears(data);
-  return Object.keys(data.courses).filter((id) => !yr.has(id) && !['must', 'optional'].includes(choices[id]) && !['done', 'exempt', 'retake'].includes(statuses[id]?.status));
+  const req = new Set(data.lists.filter((l) => REQUIRED.test(l.name)).flatMap((l) => l.courses));
+  return Object.keys(data.courses).filter((id) => !req.has(id) && !['must', 'optional'].includes(choices[id]) && !['done', 'exempt', 'retake'].includes(statuses[id]?.status));
 };
 
 // Geometry helpers for the progress-map renderer

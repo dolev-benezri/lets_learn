@@ -44,7 +44,7 @@ test('layout: outside-the-program prerequisites become ext nodes, one per band a
 test('layout: one band per study year, א׳ rightmost; the electives band comes last (leftmost); semester א right of ב; columns run by depth', () => {
   const { L, g } = geo();
   assert.deepEqual(L.bands.map((b) => b.year), [1, 2, 3, 4, null]);
-  assert.deepEqual(L.bands.map((b) => b.name), ['שנה א׳', 'שנה ב׳', 'שנה ג׳', 'שנה ד׳', 'קורסי בחירה']);
+  assert.deepEqual(L.bands.map((b) => b.name), ['שנה א׳', 'שנה ב׳', 'שנה ג׳', 'שנה ד׳', 'חובה כללית ובחירה']);
   assert.deepEqual(g.bands.map((b) => b.x), [...g.bands.map((b) => b.x)].sort((a, b) => b - a)); // later bands further left
   assert.ok(g.bands.every((b, i) => i === 0 || b.x + b.w < g.bands[i - 1].x)); // a gap between bands
   const yr = courseYears(data);
@@ -195,19 +195,19 @@ test('courseYears: only "חובה שנה X\'" lists give a year; the first list 
   assert.equal(courseYears(data).size, new Set(data.lists.filter((l) => /חובה שנה \S'/.test(l.name)).flatMap((l) => l.courses)).size);
 });
 
-test('asideIds: an elective is aside unless chosen חובה/אולי, passed, exempt or being retaken; year courses never are', () => {
-  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['y'] }, { name: 'בחירה', courses: ['a', 'b', 'c', 'e', 'f', 'g'] }], courses: Object.fromEntries(['y', 'a', 'b', 'c', 'e', 'f', 'g', 'h'].map((k) => [k, mc(k)])) };
+test('asideIds: an elective is aside unless chosen חובה/אולי, passed, exempt or being retaken; required courses (year, English, final project) never are', () => {
+  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['y'] }, { name: 'קורסי חובה לימודי אנגלית', courses: ['n'] }, { name: 'פרויקט גמר', courses: ['p'] }, { name: 'בחירה', courses: ['a', 'b', 'c', 'e', 'f', 'g'] }], courses: Object.fromEntries(['y', 'n', 'p', 'a', 'b', 'c', 'e', 'f', 'g', 'h'].map((k) => [k, mc(k)])) };
   const st = { e: { status: 'done' }, f: { status: 'retake' }, g: { status: 'blocked' } };
   // h is in no list at all: an elective too
   assert.deepEqual(asideIds(d, st, { a: 'must', b: 'optional', c: 'no' }).sort(), ['c', 'g', 'h']);
   assert.deepEqual(asideIds(d, {}).sort(), ['a', 'b', 'c', 'e', 'f', 'g', 'h']);
 });
 
-test('layout: aside electives are not drawn; a chosen one gets the electives band, last', () => {
+test('layout: aside electives are not drawn; a chosen one joins the last band', () => {
   const aside = new Set(asideIds(data, {}, {}));
   assert.ok(aside.size > 20);
   const L0 = layoutMap(data, (id) => !aside.has(id));
-  assert.deepEqual(L0.bands.map((b) => b.year), [1, 2, 3, 4]); // nothing chosen: no electives band
+  assert.deepEqual(L0.bands.map((b) => b.year), [1, 2, 3, 4, null]); // nothing chosen: the last band still holds English and the final project
   assert.ok(L0.nodes.every((n) => n.type === 'ext' || !aside.has(n.id)));
   const pick = [...aside][0], off = new Set(asideIds(data, {}, { [pick]: 'optional' })), L1 = layoutMap(data, (id) => !off.has(id));
   assert.equal(L1.bands.at(-1).year, null);
