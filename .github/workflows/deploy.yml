@@ -1,5 +1,5 @@
-# Deploy web/ to GitHub Pages. The data itself is refreshed by scripts/refresh.ps1 on the maintainer's PC,
-# which pushes web/data to main (an owner push triggers this workflow).
+# Deploy web/ to GitHub Pages. The data is refreshed nightly by ci/gitlab-scrape.yml on GitLab CI,
+# which pushes web/data/afeka to main (that push triggers this workflow).
 name: deploy
 
 on:
