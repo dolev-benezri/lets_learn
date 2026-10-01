@@ -108,6 +108,17 @@ export function progress(data, state) {
   return { earned, required, ratio: required ? earned / required : 1 };
 }
 
+// Credit-weighted average over passed courses that have a grade (courses without credits in the data don't count).
+export function gradeAverage(data, state) {
+  let sum = 0, credits = 0;
+  for (const id of state.passed ?? []) {
+    const g = state.grades?.[id], c = data.courses[id]?.credits ?? 0;
+    if (g === undefined || !(c > 0)) continue;
+    sum += g * c; credits += c;
+  }
+  return { avg: credits ? sum / credits : null, credits };
+}
+
 // Default plan mode for a course: the student's choice, else retakes are must and the study year's list is optional.
 export function modeFor(status, choice, inYearList) {
   if (!['retake', 'available', 'afterA', 'conditional'].includes(status)) return null;

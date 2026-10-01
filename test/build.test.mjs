@@ -189,3 +189,47 @@ test('compareToPrevious thresholds: a drop at the limit passes, one step past it
   assert.equal(refused(groups(4), groups(3), 'group count'), false); // 25% exactly
   assert.equal(refused(groups(8), groups(5), 'group count'), true);
 });
+
+// ---- field health ----
+const healthy = () => {
+  const mk = (id) => ({ name: id, credits: 3, offered: true, prereqs: [{ kind: 'קדם', anyOf: [{ id: null, name: 'x' }] }],
+    groups: [{ id: `${id}01`, primary: true, full: false, linked: [], meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
+      exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time: '09:00' }] }] });
+  const courses = Object.fromEntries(Array.from({ length: 50 }, (_, i) => [String(20000 + i), mk(String(20000 + i))]));
+  courses['90903'] = mk('90903');
+  courses['90903'].groups = [1, 2, 3].map((n) => ({ ...courses['20000'].groups[0], id: `9090${n}` }));
+  return { year: 2027, startYear: 2026, examsPublished: true, lists: [], courses };
+};
+
+test('validate: a healthy synthetic dataset has no errors', () => assert.deepEqual(validate(healthy()).errors, []));
+
+test('validate: meetings with day === null are an error', () => {
+  const d = healthy();
+  d.courses['20001'].groups[0].meetings[0].day = null;
+  assert.ok(validate(d).errors.some((e) => e.includes('day')));
+});
+
+test('validate: at most 90% of offered courses having credits is an error', () => {
+  const d = healthy();
+  const ids = Object.keys(d.courses);
+  for (const id of ids.slice(0, 6)) d.courses[id].credits = 0; // 6 of 51 = 11.8% without credits
+  assert.ok(validate(d).errors.some((e) => e.includes('credits')));
+  d.courses[ids[0]].credits = d.courses[ids[1]].credits = d.courses[ids[2]].credits = 3; // 3 of 51 = 5.9%
+  assert.ok(!validate(d).errors.some((e) => e.includes('credits')));
+});
+
+test('validate: prerequisite count must stay within ±20% of the previous file', () => {
+  const prev = healthy(), d = healthy();
+  assert.deepEqual(validate(d, prev).errors, []);
+  for (const id of Object.keys(d.courses).slice(0, 11)) d.courses[id].prereqs = []; // 51 -> 40 is -21.6%
+  assert.ok(validate(d, prev).errors.some((e) => e.includes('prerequisite')));
+  assert.ok(!validate(d).errors.some((e) => e.includes('prerequisite')), 'without a previous file there is nothing to compare');
+});
+
+test('validate: exam dates outside the academic year are an error', () => {
+  const d = healthy();
+  d.courses['20002'].groups[0].exams[0].date = '2025-02-04';
+  assert.ok(validate(d).errors.some((e) => e.includes('exam')));
+  d.courses['20002'].groups[0].exams[0].date = '2027-09-20'; // moed gimel in September is fine
+  assert.deepEqual(validate(d).errors, []);
+});

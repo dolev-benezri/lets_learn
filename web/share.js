@@ -96,6 +96,7 @@ export async function readHash(hash, { year, semester }) {
     if (typeof payload.name === 'string') rebuilt.name = payload.name;
     if (Array.isArray(payload.passed)) rebuilt.passed = payload.passed;
     if (payload.failed && typeof payload.failed === 'object' && !Array.isArray(payload.failed)) rebuilt.failed = payload.failed;
+    if (payload.grades && typeof payload.grades === 'object' && !Array.isArray(payload.grades)) rebuilt.grades = payload.grades; // normalize() drops bad values
     if (payload.choices && typeof payload.choices === 'object' && !Array.isArray(payload.choices)) rebuilt.choices = payload.choices;
     if (payload.friends && Array.isArray(payload.friends)) rebuilt.friends = payload.friends;
     if (payload.pins && Array.isArray(payload.pins)) rebuilt.pins = payload.pins;

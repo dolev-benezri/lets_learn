@@ -37,6 +37,7 @@
 
 ### Task 0: Owner decisions + runner probe (no code in the repo yet)
 
+- **Owner decisions so far (2026-10-01):** no domain; host = GitHub Pages on the free `dolhack.github.io/lets_learn`. That origin is shared by every `dolhack.github.io/*` project, so localStorage keys must stay prefixed (`afeka-sched-v1…`). Task 2 uses only the Pages deploy job (no Cloudflare).
 - [ ] Ask the owner, one decision at a time:
   1. **Domain:** buy one, and which? Not "afeka" alone in the name.
   2. **Host:** with a domain, GitHub Pages; without one, Cloudflare.
