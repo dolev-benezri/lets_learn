@@ -222,12 +222,13 @@ aside details .cards { margin:4px 0 8px; }
 .blk > span { overflow:hidden; text-overflow:ellipsis; }
 .blk-name { font-weight:500; color:var(--cfg); display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; white-space:normal; }
 .blk-meta, .blk-room { font-size:13px; color:var(--text-2); }
-.blk-meta { white-space:nowrap; }
+.blk-meta { white-space:nowrap; text-overflow:clip; }
 .blk-room { display:none; }
 /* the block is a size container: the more minutes it spans, the more lines of name and the room it shows */
 @container (min-height:54px) { .blk-name { -webkit-line-clamp:2; } }
 @container (min-height:74px) { .blk-room { display:block; } }
 @container (min-height:96px) { .blk-name { -webkit-line-clamp:3; } }
+@container (max-width:96px) { .blk-end { display:none; } }
 .blk.pinned { outline:2px solid var(--primary); outline-offset:-2px; padding-inline-end:24px; }
 .blk:focus-visible { outline:2px solid var(--primary); outline-offset:2px; z-index:1; }
 .blk-pin { position:absolute; top:4px; inset-inline-end:4px; color:var(--primary); }
@@ -260,7 +261,7 @@ aside details .cards { margin:4px 0 8px; }
   border:0; border-start-start-radius:16px; border-end-start-radius:16px; background:var(--surface); color:var(--text); box-shadow:var(--shadow-pop); overflow:auto; }
 /* non-modal: the grid stays visible and live; on wide screens the page makes room for the drawer */
 .drawer { z-index:20; }
-@media (min-width:900px) { body.drawer-open { padding-inline-end:var(--drawer-w, 440px); } } /* docked: the top bar and the grid shrink instead of sliding under it */
+@media (min-width:1080px) { body.drawer-open { padding-inline-end:var(--drawer-w, 440px); } } /* docked: the top bar and the grid shrink instead of sliding under it */
 .dr-top { position:sticky; top:0; z-index:1; background:var(--surface); border-bottom:1px solid var(--border); }
 .dr-head { display:flex; align-items:center; justify-content:space-between; padding:12px 12px 12px 20px; padding-inline-start:20px; }
 .dr-head h2 { font-size:18px; font-weight:600; }
@@ -317,12 +318,20 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .disclaimer { padding:6px 24px 0; }
 
 /* tablet and below: icon-only actions */
-@media (max-width:899px) {
+@media (max-width:1079px) {
   .top { padding:0 16px; column-gap:8px; }
   .actions { gap:4px; }
   .actions .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   .actions .btn:not(.avatars) { width:var(--tap); padding:0; }
   .disclaimer { padding:6px 16px 0; }
+}
+/* the docked drawer takes up to 440px: below 1500 the bar is tablet-narrow, so actions go icon-only and the title keeps room */
+@media (min-width:1080px) and (max-width:1499px) {
+  body.drawer-open .actions .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  body.drawer-open .actions .btn:not(.avatars) { width:var(--tap); padding:0; }
+  body.drawer-open .top .meta { display:none; }
+  body.drawer-open .top h1 { grid-row:1 / 3; white-space:normal; }
+  body.drawer-open .top h1 small { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 }
 /* below 760px a 5-day week gets too narrow to read: one day at a time with a day selector */
 @media (max-width:759px) {
@@ -467,7 +476,7 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
 .toast[popover] { top:auto; border:0; overflow:visible; }
 /* phone: keep the grid in view (final check: grid was at y=777 of 812 at 375px) */
 @media (max-width:599px) {
-  .board-ctl .ctl:has(input[name="bscope"]):not(:only-child) { display:none; } /* scope stays in the preferences drawer */
+  .board-ctl .ctl:has(input[name="bscope"]) { display:none; } /* scope stays in the preferences drawer */
   .board-ctl { margin-bottom:4px; }
   #semnote .notice { padding:6px 10px; font-size:13px; line-height:1.4; margin-bottom:6px; }
 }

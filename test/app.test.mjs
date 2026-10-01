@@ -111,3 +111,30 @@ test('pickData: year view, single-semester scopes, and fallback when ב is missi
   app.sem = { 'א': A, 'ב': null }; // ב failed to load
   for (const scope of ['year', 'ב']) { app.state.scope = scope; pickData(); assert.equal(app.data, A); }
 });
+
+import { upsertFriend } from '../web/app.js';
+const F = (name, groups = ['1'], extra = {}) => ({ name, groups, weight: 1, active: true, ...extra });
+test('upsertFriend replaces by name instead of duplicating', () => {
+  const r = upsertFriend([F('דנה', ['1', '2', '3'], { weight: 3 })], { name: 'דנה', groups: ['9'], manual: true });
+  assert.equal(r.friends.length, 1); assert.deepEqual(r.friends[0].groups, ['9']);
+  assert.equal(r.friends[0].weight, 3); assert.equal(r.friends[0].manual, true); assert.equal(r.replaced, true);
+});
+test('upsertFriend edits by name, so deleting another friend mid-edit cannot retarget the save', () => {
+  const r = upsertFriend([F('א'), F('ג')], { name: 'א', groups: ['5'] }, 'א'); // 'ב' was deleted while editing 'א'
+  assert.deepEqual(r.friends.map((f) => [f.name, f.groups[0]]), [['א', '5'], ['ג', '1']]);
+});
+test('upsertFriend rename onto an existing name leaves one friend', () => {
+  const r = upsertFriend([F('א'), F('ב')], { name: 'ב', groups: ['7'] }, 'א');
+  assert.deepEqual(r.friends.map((f) => [f.name, f.groups[0]]), [['ב', '7']]);
+});
+test('upsertFriend refuses a 21st friend', () => {
+  const many = Array.from({ length: 20 }, (_, i) => F(`f${i}`));
+  const r = upsertFriend(many, { name: 'new', groups: ['1'] });
+  assert.equal(r.friends.length, 20); assert.match(r.error, /עד 20/);
+});
+
+import { splitFriendGroups } from '../web/app.js';
+test('splitFriendGroups keeps unknown ids and second same-type groups instead of dropping them', () => {
+  const idx = new Map([['L1', { cid: 'c', g: { type: 'הרצאה' } }], ['L2', { cid: 'c', g: { type: 'הרצאה' } }], ['T1', { cid: 'c', g: { type: 'תרגיל' } }]]);
+  assert.deepEqual(splitFriendGroups(['L1', 'T1', 'L2', 'X9'], idx), { slots: { 'c|הרצאה': 'L1', 'c|תרגיל': 'T1' }, keep: ['L2', 'X9'] });
+});

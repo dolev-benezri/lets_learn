@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hourRange, nearestStep, summary, initials, firstName, rankText, assignColors, repeatIds, progressRanks, altGroups, backups, isPair, semResult, resCourses, resGroups, placedIn, yearTotals, groupOptions, typeLabel } from '../web/ui-grid.js';
+import { hourRange, nearestStep, summary, initials, firstName, rankText, assignColors, repeatIds, progressRanks, altGroups, backups, isPair, semResult, resCourses, resGroups, placedIn, yearTotals, groupOptions, typeLabel, renderWeek } from '../web/ui-grid.js';
 
 const m = (day, start, end) => ({ day, start, end });
 
@@ -162,4 +162,39 @@ test('groupOptions: groups by type with label per option (day time lecturer id)'
   assert.equal(opts[1].options.length, 2);
   assert.equal(opts[1].options[0].label, 'תרגול · ג׳ 11:00–12:00 · ד״ר כהן (L1/T1)');
   assert.equal(opts[1].options[1].label, 'תרגול · ד׳ 13:00–14:00 · ד״ר כהן (L1/T2)');
+});
+
+test('a block wraps the end time in .blk-end so narrow blocks can drop it', () => {
+  const data = {
+    courses: {
+      A: {
+        name: 'Test Course',
+        groups: [{
+          id: 'a1',
+          type: 'הרצאה',
+          meetings: [{ day: 2, start: '08:00', end: '10:00' }],
+          linked: [],
+          primary: true,
+          full: false,
+          exams: [],
+          lecturer: '',
+        }],
+      },
+    },
+  };
+  const res = { courses: ['A'], groups: ['a1'] };
+  const range = { from: 8, to: 18, days: 5 };
+  const colors = new Map([['A', 0]]);
+  const ctx = {
+    data,
+    res,
+    range,
+    colors,
+    dashed: new Set(),
+    pins: [],
+    friends: [],
+    day: null,
+  };
+  const html = renderWeek(ctx);
+  assert.match(html, /<bdi dir="ltr">08:00<span class="blk-end">–10:00<\/span><\/bdi>/);
 });
