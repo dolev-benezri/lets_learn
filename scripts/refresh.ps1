@@ -20,6 +20,8 @@ $node = if ($env:REFRESH_NODE) { $env:REFRESH_NODE } else { 'node' } # override 
 
 function Log($m) { Add-Content $log "$(Get-Date -Format s) $m" }
 
+# Data goes to main only, and only the data paths are committed (anything else staged stays out).
+if ((git branch --show-current) -ne 'main') { Log 'not on main: skipped'; exit 1 }
 git pull --ff-only
 if ($LASTEXITCODE) { Log 'git pull failed'; exit 1 }
 
@@ -36,7 +38,7 @@ Log $summary
 git add web/data/afeka
 git diff --cached --quiet
 if ($LASTEXITCODE) {
-  git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com commit -m $summary
+  git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com commit -m $summary -- web/data/afeka
   if ($LASTEXITCODE) { Log 'git commit failed'; exit 1 }
   git push
   if ($LASTEXITCODE) { Log 'git push failed'; exit 1 }
