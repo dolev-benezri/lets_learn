@@ -25,3 +25,29 @@ export function defaultNotes(c) {
 
 // The block a popover hangs from has scrolled away from where it opened: keep it for small scrolls, close it for a long one.
 export const popStale = (openTop, nowTop, vh) => nowTop === null || nowTop + 40 < 0 || nowTop > vh || Math.abs(nowTop - openTop) > Math.max(160, vh * 0.25);
+
+// Header freshness line. checkedAt = last scraper run (status.json); changedAt = the data file's fetchedAt (last real change).
+const REL = new Intl.RelativeTimeFormat('he', { numeric: 'always' });
+const ago = (ms) => {
+  const m = Math.round(ms / 6e4), h = Math.round(ms / 36e5), d = Math.round(ms / 864e5);
+  const s = m < 1 ? 'עכשיו' : m < 60 ? REL.format(-m, 'minute') : h < 24 ? REL.format(-h, 'hour') : REL.format(-d, 'day');
+  return s.replace(/ \(\d+\)$/, ''); // ICU writes "לפני שעה (1)"
+};
+const dayMonth = (iso) => new Date(iso).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', timeZone: 'Asia/Jerusalem' });
+export function freshness(status, changedAt, now = new Date()) {
+  const changed = `השתנה לאחרונה ${dayMonth(changedAt)}`;
+  if (!status?.checkedAt) return { text: `${changed} · לא ידוע מתי נבדק`, stale: true };
+  const age = now - new Date(status.checkedAt);
+  return { text: `נבדק ${ago(age)} · ${changed}`, stale: !status.ok || age > 36 * 36e5 };
+}
+
+// Pinned groups that no loaded semester has any more. Reported, never auto-removed. Group id = "27" + 5-digit course id + group.
+export function stalePins(pins, datasets) {
+  const sets = datasets.filter(Boolean);
+  const has = (gid) => sets.some((d) => Object.values(d.courses).some((c) => c.groups.some((g) => g.id === gid)));
+  return pins.filter((gid) => !has(gid)).map((gid) => {
+    const cid = /^27(\d{5})/.exec(gid)?.[1];
+    const course = cid && (sets.map((d) => d.courses[Number(cid)]).find(Boolean)?.name ?? String(Number(cid)));
+    return { gid, text: `הקבוצה ${groupNumber(gid)}${course ? ` בקורס ${course}` : ''} כבר לא קיימת בנתונים` };
+  });
+}

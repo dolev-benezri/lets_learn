@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -46,4 +46,26 @@ test('popStale: small scrolls keep the popover, long ones or an off-screen block
 
 test('askConfirm: without <dialog> and confirm() it proceeds, like the old guard did', async () => {
   assert.equal(await askConfirm('x'), true);
+});
+
+test('freshness: relative check time, last-change date, stale after 36h or a failed check', () => {
+  const now = new Date('2026-10-01T12:00:00Z');
+  const ok = { checkedAt: '2026-10-01T09:00:00Z', ok: true };
+  assert.deepEqual(freshness(ok, '2026-09-28T09:00:00Z', now), { text: 'נבדק לפני 3 שעות · השתנה לאחרונה 28.9', stale: false });
+  assert.equal(freshness({ ...ok, checkedAt: '2026-10-01T11:00:00Z' }, ok.checkedAt, now).text.split(' · ')[0], 'נבדק לפני שעה');
+  assert.equal(freshness({ ...ok, checkedAt: '2026-10-01T11:59:40Z' }, ok.checkedAt, now).text.split(' · ')[0], 'נבדק עכשיו');
+  assert.equal(freshness({ ...ok, checkedAt: '2026-09-29T23:00:00Z' }, ok.checkedAt, now).stale, true, 'over 36h old');
+  assert.equal(freshness({ ...ok, ok: false }, ok.checkedAt, now).stale, true, 'last check failed');
+  assert.deepEqual(freshness(null, '2026-09-28T09:00:00Z', now), { text: 'השתנה לאחרונה 28.9 · לא ידוע מתי נבדק', stale: true });
+});
+
+test('stalePins: pins missing from every loaded semester, named by course when it still exists', () => {
+  const A = { courses: { 6001: { name: 'אנגלית בסיסי', groups: [{ id: '270600101' }] } } };
+  const B = { courses: { 30003: { name: 'סטטיקה', groups: [{ id: '273000301' }] } } };
+  assert.deepEqual(stalePins(['270600101', '273000301'], [A, B]), [], 'a pin in either semester is fine');
+  assert.deepEqual(stalePins(['270600102', '279999901', 'L2'], [A, null]), [
+    { gid: '270600102', text: 'הקבוצה 02 בקורס אנגלית בסיסי כבר לא קיימת בנתונים' },
+    { gid: '279999901', text: 'הקבוצה 01 בקורס 99999 כבר לא קיימת בנתונים' },
+    { gid: 'L2', text: 'הקבוצה L2 כבר לא קיימת בנתונים' },
+  ]);
 });
