@@ -450,8 +450,7 @@ function addFriend(p) {
 function saveManualFriend(p, editing) {
   const r = upsertFriend(app.state.friends, p, editing);
   if (r.error) return r.error;
-  app.state.friends = r.friends;
-  app.friendLanding = null;
+  app.state.friends = r.friends; // a pending friend-link banner stays: it is a different friend
   refresh();
   toast(friendToast(p.name, r.replaced));
   return null;

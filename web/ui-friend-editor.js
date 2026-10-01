@@ -279,6 +279,7 @@ async function save() {
     return;
   }
   if (name !== ed.friend?.name && app.state.friends.some((f) => f.name === name) && !await askConfirm(`החבר ${name} כבר קיים. להחליף?`, { ok: 'החלף', cancel: 'ביטול' })) return;
+  if (!ed) return; // closed while the confirm was open
   const err = ed.onSave({ name, groups: ed.draft.slice(), manual: true }, ed.friend?.name ?? null);
   if (err) { setErr('feErr', err); return; }
   closeEditor();
