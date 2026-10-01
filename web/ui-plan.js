@@ -21,7 +21,7 @@ const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
 const LOAD = [['א', 'יותר בא׳'], ['even', 'מאוזן'], ['ב', 'יותר בב׳']];
 const SEM_PICK = [['', 'אוטומטי'], ['א', 'א׳'], ['ב', 'ב׳']];
 const HARD = [['hard', 'חובה לגמרי'], ['soft', 'רק העדפה']]; // the constraint toggles; the course mode keeps "חובה/אולי/לא"
-const SHEET = '(max-width: 899px)'; // below: the drawer is a modal sheet; from here up it is docked and the page reserves its width (index.html)
+const SHEET = '(max-width: 1079px)'; // below: the drawer is a modal sheet; from here up it is docked and the page reserves its width (index.html)
 const PHONE = '(max-width: 599px)'; // the popover is a bottom sheet
 
 let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, moreMul = 1, sem = 'א'; // sem: the shown semester of a year result
@@ -561,7 +561,7 @@ const ACT = {
     mfName = ''; mfCourses = []; mfGroups = {}; mfKeep = []; mfEditName = null; mfCourseErr = '';
     app.friendLanding = null;
     refresh();
-    toast(friendToast(name, r.replaced || !!was));
+    toast(friendToast(name, r.replaced));
     keepFocus(renderDrawer);
     $('openManualFriend')?.focus();
   },
