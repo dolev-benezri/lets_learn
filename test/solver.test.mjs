@@ -493,6 +493,15 @@ test('searchYear: a pinned optional course is in every plan (no "take nothing in
 const anyOf = (...ids) => [{ kind: 'קדם', anyOf: ids.map((id) => ({ id, name: id })) }];
 const opt = (...ids) => Object.fromEntries(ids.map((id) => [id, 'optional']));
 
+test('S1 year score: the א׳ choice that unlocks a heavier ב׳ course wins (no per-ב׳ denominator)', () => {
+  // P and Q clash in א׳ (3 credits each). P unlocks N (4 credits) in ב׳; N clashes with E (3 credits).
+  // P + N = 7 credits beats Q + E = 6, but a per-search ב׳ denominator made Q's lonely E look "complete" (progress 1).
+  const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), Q: yc('Q', 3, [grp('QA', 1)]), N: yc('N', 4, [], pre('P')), E: yc('E', 3, []) });
+  const dataB = semData('ב', { P: yc('P', 3, []), Q: yc('Q', 3, []), N: yc('N', 4, [grp('NB', 3)], pre('P')), E: yc('E', 3, [grp('EB', 3)]) });
+  const p = best(searchYear({ dataA, dataB, state: yState({ choices: opt('P', 'Q', 'N', 'E') }), yearList: new Set(), weights: W }));
+  assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses]));
+});
+
 test('S2 ב׳ fallback: an impossible must course does not drop a feasible must for a richer elective', () => {
   // Y clashes with the pinned Z, so the musts-first ב׳ search fails. X is still feasible; E is worth more but clashes with X.
   const none = { X: yc('X', 3, []), Y: yc('Y', 3, []), Z: yc('Z', 2, []), E: yc('E', 4, []) };
