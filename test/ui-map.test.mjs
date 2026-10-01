@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, makeKeep, chainOf, SIZE } from '../web/ui-map.js';
+import { layoutMap, makeKeep, chainOf, SIZE, nodeRadius, edgePath, G, truncate, edgeEnds, sameLayerPath, geometry, balance, pickCols, fitScale, mapSvg } from '../web/ui-map.js';
+import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
 
@@ -89,4 +90,125 @@ test('chainOf: all upstream and downstream, nothing from siblings', () => {
   const r = chainOf(paths, 'c');
   assert.deepEqual([...r.nodes].sort(), ['a', 'b', 'c', 'd', 'x']);
   assert.deepEqual([...r.paths].sort(), [0, 1, 2, 3]);
+});
+
+test('nodeRadius grows with credits and is clamped', () => {
+  assert.equal(nodeRadius(0), 14); assert.equal(nodeRadius(100), 30);
+  assert.ok(nodeRadius(5) > nodeRadius(2));
+});
+
+test('edgePath is a horizontal-tangent cubic between two points', () => {
+  assert.equal(edgePath({ x: 300, y: 50 }, { x: 100, y: 150 }), 'M300,50 C200,50 200,150 100,150');
+});
+
+const geo = (keep) => { const L = layoutMap(data, keep), g = geometry(L, (id) => data.courses[id]?.credits); return { L, g }; };
+
+test('truncate: 18 characters including the ellipsis, short names untouched', () => {
+  assert.equal(truncate('קצר'), 'קצר');
+  assert.equal(truncate('א'.repeat(18)), 'א'.repeat(18));
+  assert.equal(truncate('א'.repeat(19)), `${'א'.repeat(17)}…`);
+});
+
+test('edgeEnds: leaves the near edge of one circle and enters the near edge of the next, either direction', () => {
+  const a = { x: 300, y: 10, hw: 20 }, b = { x: 100, y: 50, hw: 14 };
+  assert.deepEqual(edgeEnds(a, b), [{ x: 280, y: 10 }, { x: 114, y: 50 }]);
+  assert.deepEqual(edgeEnds(b, a), [{ x: 114, y: 50 }, { x: 280, y: 10 }]);
+});
+
+test('sameLayerPath: a bowed cubic between two nodes of one column (edgePath would be a straight line)', () => {
+  const d = sameLayerPath({ x: 200, y: 10, hw: 20 }, { x: 200, y: 110, hw: 14 });
+  assert.equal(d, `M220,10 C${220 + G.bulge},10 ${214 + G.bulge},110 214,110`);
+});
+
+test('fitScale: the whole graph on a desktop (never above 1), by height on a phone (floor 0.3)', () => {
+  assert.equal(fitScale(1440, 900, 976, 1000), 0.9); assert.equal(fitScale(1440, 2000, 976, 1000), 1);
+  assert.ok(Math.abs(fitScale(800, 900, 1000, 1000) - 0.8) < 1e-9); assert.equal(fitScale(700, 100, 1000, 1000), 0.2);
+  assert.ok(Math.abs(fitScale(375, 500, 976, 1100) - 500 / 1100) < 1e-9); assert.equal(fitScale(375, 200, 976, 1100), 0.3);
+});
+
+test('geometry: one evenly spread column per layer, same height for all, layer 0 on the right, no overlaps, Tab order by layer', () => {
+  const { L, g } = geo();
+  const ok = (v) => Number.isFinite(v);
+  assert.ok(g.nodes.every((n) => [n.x, n.y, n.r, n.hw].every(ok)) && g.ors.every((o) => [o.x, o.y].every(ok)));
+  assert.ok(g.edges.length === L.paths.length && g.edges.every((e) => /^M[-\d.]+,[-\d.]+ C/.test(e.d) && !/NaN|undefined/.test(e.d)));
+  assert.ok(g.H < 1500 && g.nodes.every((n) => n.x - n.hw >= 0 && n.x + n.hw <= g.W && n.y - n.r >= 0 && n.y + n.r + 22 <= g.H), `H=${g.H}`); // 22 = the name under the circle
+  const at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
+  for (const e of L.edges) assert.ok(e.kind === 'קדם' ? at[e.from].x > at[e.to].x : at[e.from].x >= at[e.to].x, `${e.from} -> ${e.to}`); // balancing keeps every edge flowing leftwards
+  const per = Object.values(Object.groupBy(g.nodes, (n) => n.layer)).map((a) => a.length);
+  assert.ok(Math.max(...per) - Math.min(...per) <= 2, `columns ${per}`);
+  assert.equal(Math.max(...g.nodes.map((n) => n.x)), g.W - G.padX); // layer 0 is the rightmost column
+  const all = [...g.nodes, ...g.ors];
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r, `${all[i].key} / ${all[j].key}`);
+  assert.deepEqual(g.nodes.map((n) => n.layer), [...g.nodes.map((n) => n.layer)].sort((a, b) => a - b));
+  for (const col of Object.values(Object.groupBy(g.nodes, (n) => n.layer))) for (let i = 1; i < col.length; i++) assert.ok(col[i].y - col[i - 1].y >= col[i].r + col[i - 1].r + 22 - 1e-6, `${col[i - 1].key} / ${col[i].key}`); // both circles and the name between them
+});
+
+test('geometry: a same-layer מקביל edge is bowed, not a straight line through the column', () => {
+  const c = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
+  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 0 }], courses: { a: c('A'), b: c('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) } };
+  const L = layoutMap(d), g = geometry(L, () => 3);
+  assert.equal(L.nodes[0].layer, L.nodes[1].layer);
+  assert.match(g.edges[0].d, /^M[\d.]+,[\d.]+ C/);
+  assert.ok(g.edges[0].d.includes(`${g.nodes[0].x + g.nodes[0].hw + G.bulge}`));
+});
+
+test('mapSvg: one button per course in Tab order, labelled and titled; ext pills and "או" circles are not buttons; all text escaped', () => {
+  const { L, g } = geo(), st = statuses, doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
+  const evil = { ...data, courses: { ...data.courses, [Object.keys(data.courses)[0]]: { ...data.courses[Object.keys(data.courses)[0]], name: '<img onerror=x>' + 'א'.repeat(30) } } };
+  const html = mapSvg({ data: evil, st, L, g, year: 2, unlocks: unlockCounts(evil, doneIds), mode: 'all' });
+  assert.equal((html.match(/role="button"/g) ?? []).length, Object.keys(data.courses).length);
+  assert.equal((html.match(/<title>/g) ?? []).length, g.nodes.length);
+  assert.ok(!html.includes('<img') && html.includes('&lt;img'));
+  assert.ok(!/NaN|undefined/.test(html));
+  assert.ok(!html.includes('class="ml') && html.includes('mine-halo') && html.includes(' mine"'));
+  assert.ok(html.includes('class="ext"') && html.includes('class="or"'));
+  assert.ok([...html.matchAll(/<g class="(?:ext|or)"[^>]*>/g)].every(([m]) => m.includes('aria-hidden="true"') && !m.includes('role=')));
+  for (const s of ['done', 'retake', 'blocked']) if (Object.values(st).some((x) => x.status === s)) assert.ok(html.includes(`st-${s}`));
+});
+
+test('pickCols: never fewer columns than layers, at most 12, and more columns for a wider screen', () => {
+  assert.equal(pickCols(97, 375, 600, 6), 6);
+  assert.ok(pickCols(97, 1440, 760, 6) > 6 && pickCols(97, 2400, 700, 6) <= 12);
+  assert.ok(pickCols(97, 2400, 700, 6) >= pickCols(97, 1440, 760, 6));
+  assert.equal(pickCols(0, 1440, 760, 1), 1);
+});
+
+test('wide layout: 1440x760 fits at 0.8 or more, every edge still flows leftwards, columns are level, nothing overlaps', () => {
+  const L = layoutMap(data), mc = pickCols(L.nodes.length, 1440, 760, L.cols), g = geometry(L, (id) => data.courses[id]?.credits, mc);
+  assert.ok(mc > L.cols && g.cols > L.cols);
+  assert.ok(fitScale(1440, 760, g.W, g.H) >= 0.8, `scale ${fitScale(1440, 760, g.W, g.H)} (${g.W}x${g.H})`);
+  const at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
+  for (const e of L.edges) assert.ok(e.kind === 'קדם' ? at[e.from].x > at[e.to].x : at[e.from].x >= at[e.to].x, `${e.from} -> ${e.to}`);
+  const per = Object.values(Object.groupBy(g.nodes, (n) => n.layer)).map((a) => a.length);
+  assert.ok(Math.max(...per) - Math.min(...per) <= 3, `columns ${per}`);
+  const all = [...g.nodes, ...g.ors];
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r, `${all[i].key} / ${all[j].key}`);
+  assert.ok(g.nodes.every((n) => [n.x, n.y].every(Number.isFinite)) && g.W > 0 && g.H > 0);
+});
+
+const mini = (courses) => ({ lists: [{ name: "קורסי חובה שנה א'", courses: Object.keys(courses), minCredits: 0 }], courses });
+const mc = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
+
+test('balance: a chain a -> b -> c is never squeezed into one column, even with spare columns', () => {
+  const L = layoutMap(mini({ a: mc('A'), b: mc('B', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }] }]), c: mc('C', [{ kind: 'קדם', anyOf: [{ id: 'b', name: 'B' }] }]) }));
+  for (const cols of [0, 3, 8]) { const l = balance(L, cols); assert.ok(l.get('a') < l.get('b') && l.get('b') < l.get('c'), `minCols ${cols}`); }
+});
+
+test('geometry: the cycle graph and an empty filter both give finite geometry', () => {
+  const cyc = mini({ a: mc('A', [{ kind: 'מקביל', anyOf: [{ id: 'b', name: 'B' }] }]), b: mc('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) });
+  const g = geometry(layoutMap(cyc), () => 3, 4);
+  assert.ok(g.nodes.length === 2 && [g.W, g.H, ...g.nodes.flatMap((n) => [n.x, n.y])].every(Number.isFinite));
+  const none = geometry(layoutMap(data, () => false), () => 3);
+  assert.equal(none.nodes.length, 0); assert.ok(Number.isFinite(none.W) && Number.isFinite(none.H) && none.W > 0 && none.H > 0);
+});
+
+test('chainOf: a node with no edges lights only itself', () => {
+  const r = chainOf([], 'q');
+  assert.deepEqual([...r.nodes], ['q']); assert.equal(r.paths.size, 0);
+});
+
+test('mapSvg: an outside-the-program name with markup and a quote is escaped', () => {
+  const d = mini({ a: mc('A', [{ kind: 'קדם', anyOf: [{ id: null, name: "<b x=\"1\">'" }] }]) });
+  const L = layoutMap(d), html = mapSvg({ data: d, st: {}, L, g: geometry(L, () => 3), year: 1, unlocks: {}, mode: 'all' });
+  assert.ok(html.includes('class="ext"') && !html.includes('<b x=') && html.includes('&lt;b x=&quot;1&quot;&gt;&#39;'));
 });
