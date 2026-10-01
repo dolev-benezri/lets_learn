@@ -424,3 +424,19 @@ test('searchYear: default state on real data finishes within 3 s', { skip: !exis
   assert.ok(Date.now() - t < 3500);
   assert.ok(r.results.length > 0);
 });
+
+test('searchYear: a must course with an afterA status lands in ב׳ when its prerequisite is in א׳', () => {
+  const { dataA, dataB } = yearFixture();
+  const state = yState({ choices: { P: 'must', N: 'must' }, semesterOf: { P: 'א' } });
+  const p = best(searchYear({ dataA, dataB, state, yearList: new Set(), weights: W }));
+  assert.ok(inA(p, 'P') && inB(p, 'N') && !inA(p, 'N'));
+  assert.deepEqual(p.missing, []);
+});
+
+test('searchYear: a must course that needs an optional א׳ prerequisite the plan skips is reported missing', () => {
+  const { dataA, dataB } = yearFixture();
+  dataA.courses.P.groups[0].meetings[0].day = 2; // P in א׳ clashes with M, which is forced to א׳
+  const p = best(searchYear({ dataA, dataB, state: yState({ choices: { M: 'must', P: 'optional', N: 'must', OB: 'optional' }, semesterOf: { M: 'א', P: 'א' } }), yearList: new Set(), weights: W }));
+  assert.ok(!inA(p, 'P'));
+  assert.deepEqual(p.missing, ['N']);
+});

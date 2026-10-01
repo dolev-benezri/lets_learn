@@ -130,3 +130,41 @@ test('modeFor: choice wins, retake is must, year list optional, others no, non-c
   assert.equal(modeFor('blocked', 'must', true), null);
   assert.equal(modeFor('done', undefined, true), null);
 });
+
+// Year view: C1 (retake or available in א׳), C2 needs C1 (ב׳ only), C3 needs C2, C4 needs C1 but is א׳-only.
+import { withAfterA } from '../web/rules.js';
+const yearData = () => {
+  const c = (name, semesters, prev) => ({ name, credits: 3, offered: semesters.length > 0, semesters, groups: [], prereqs: prev ? [{ kind: 'קדם', anyOf: [{ id: prev, name: prev }] }] : [] });
+  return { year: 2027, startYear: 2026, semester: 'שנה', lists: [], courses: { C1: c('C1', ['א', 'ב']), C2: c('C2', ['ב'], 'C1'), C3: c('C3', ['ב'], 'C2'), C4: c('C4', ['א'], 'C1') } };
+};
+const st = (extra = {}) => ({ passed: [], failed: {}, ...extra });
+const run = (state, data = yearData()) => withAfterA(data, state, classify(data, state)).statuses;
+
+test('withAfterA: a course whose prerequisite is available or a retake in א׳ is afterA, with its names', () => {
+  for (const s of [st(), st({ failed: { C1: 1 } })]) {
+    const r = run(s);
+    assert.equal(r.C2.status, 'afterA');
+    assert.deepEqual(r.C2.reasons, ['אפשר בסמסטר ב׳ אחרי C1']);
+    assert.equal(r.C3.status, 'blocked'); // two steps away
+    assert.equal(r.C4.status, 'blocked'); // not offered in ב׳
+  }
+});
+
+test('withAfterA: passed prerequisite is plain available; prerequisite not offered in א׳ stays blocked; single semester untouched', () => {
+  assert.equal(run(st({ passed: ['C1'] })).C2.status, 'available');
+  const d = yearData();
+  d.courses.C1.semesters = ['ב'];
+  assert.equal(run(st(), d).C2.status, 'blocked');
+  const single = { ...yearData(), semester: 'א' };
+  const cls = classify(single, st());
+  assert.equal(withAfterA(single, st(), cls), cls);
+});
+
+test('withAfterA is pure, and modeFor treats afterA like available', () => {
+  const data = yearData(), state = st(), cls = classify(data, state);
+  withAfterA(data, state, cls);
+  assert.equal(cls.statuses.C2.status, 'blocked'); assert.deepEqual(state.passed, []);
+  assert.equal(modeFor('afterA', undefined, true), 'optional');
+  assert.equal(modeFor('afterA', undefined, false), 'no');
+  assert.equal(modeFor('afterA', 'must', false), 'must');
+});

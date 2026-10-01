@@ -334,7 +334,8 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     if (flexible && state.load && state.load !== 'even') bias[id] = (state.load === 'א' ? 1 : -1) * dataA.courses[id].credits;
   }
   // Must courses not offered in א׳ (or not yet available there) still count as must for the year.
-  const stY = classify(dataB, state).statuses;
+  // א׳ candidates count as passed here, so a must course that only opens after one of them (status afterA) is still owed.
+  const stY = classify(dataB, { ...state, passed: [...(state.passed ?? []), ...coursesA.map((c) => c.id)] }).statuses;
   for (const id of Object.keys(dataB.courses)) if (modeFor(stY[id]?.status, choices[id], yearList.has(id)) === 'must') must.add(id);
 
   const ra = search({ data: dataA, courses: coursesA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, topK: A_TOP, timeLimitMs: timeLimitMs / 2, bias });

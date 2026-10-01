@@ -69,6 +69,24 @@ export function classify(data, state) {
   return { statuses, warnings };
 }
 
+// Year view only: a blocked course offered in ב׳ whose missing prerequisites are candidates in א׳ becomes afterA
+// (second classify pass with those א׳ candidates counted as passed). Pure; searchYear reclassifies ב׳ with the real א׳ result.
+export function withAfterA(data, state, cls) {
+  if (data.semester !== 'שנה') return cls;
+  const candA = new Set(Object.keys(cls.statuses).filter((id) => ['retake', 'available'].includes(cls.statuses[id].status) && data.courses[id].semesters?.includes('א')));
+  const second = classify(data, { ...state, passed: [...state.passed, ...candA] }).statuses;
+  const settled = (a) => a.id && ['done', 'exempt'].includes(cls.statuses[a.id]?.status);
+  const statuses = { ...cls.statuses };
+  for (const [id, s] of Object.entries(cls.statuses)) {
+    const c = data.courses[id];
+    if (s.status !== 'blocked' || !c.semesters?.includes('ב') || !['available', 'conditional'].includes(second[id].status)) continue;
+    const names = [...new Set(c.prereqs.filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled))
+      .flatMap((p) => p.anyOf.filter((a) => candA.has(a.id)).map((a) => a.name)))];
+    statuses[id] = { status: 'afterA', reasons: [`אפשר בסמסטר ב׳ אחרי ${names.join(', ')}`] };
+  }
+  return { ...cls, statuses };
+}
+
 // Direct status choice. Failures stay on file once passed: regulations 11.4.1 and 11.5.x count every failure.
 export function setStatus(state, id, st) {
   state.passed = state.passed.filter((x) => x !== id);
@@ -92,7 +110,7 @@ export function progress(data, state) {
 
 // Default plan mode for a course: the student's choice, else retakes are must and the study year's list is optional.
 export function modeFor(status, choice, inYearList) {
-  if (!['retake', 'available', 'conditional'].includes(status)) return null;
+  if (!['retake', 'available', 'afterA', 'conditional'].includes(status)) return null;
   if (choice) return choice;
   if (status === 'retake') return 'must';
   return inYearList ? 'optional' : 'no';

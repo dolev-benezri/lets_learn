@@ -7,7 +7,7 @@ import { friendLink, backupLink, readHash } from './share.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 
 const $ = (id) => document.getElementById(id);
-const CAND = ['retake', 'available', 'conditional'];
+const CAND = ['retake', 'available', 'afterA', 'conditional'];
 const WEIGHTS = [['friends', 'להיות עם החברים'], ['progress', 'להתקדם בתואר'], ['freeDays', 'ימים פנויים'], ['compact', 'בלי חלונות'], ['timeWindow', 'שעות נוחות'], ['examSpread', 'פיזור בחינות']];
 const SCALE = [[0, 'לא חשוב'], [1, 'קצת'], [3, 'חשוב'], [5, 'מאוד']];
 const STATUS = [['none', 'לא לקחתי'], ['passed', 'עברתי'], ['failed', 'נכשלתי']];
@@ -161,7 +161,7 @@ function card(id, res, unlocks) {
   const inAlt = res && (isPair(res) ? !!where : res.courses.includes(id)), out = res && !inAlt && mode !== 'no';
   const why = out ? outReason(id) : '';
   const offered = c.semesters; // only the year view lists them
-  const yearPick = app.state.scope === 'year' && offered?.length === 2;
+  const yearPick = app.state.scope === 'year' && offered?.length === 2 && s.status !== 'afterA' && ['must', 'optional'].includes(mode); // afterA only fits ב׳; a course set to no has nothing to place
   const tags = [
     app.state.scope === 'year' && offered?.length === 1 ? `<span class="tag">רק בסמסטר ${esc(offered[0])}׳</span>` : '',
     s.status === 'retake' ? '<span class="tag warn">חזרה</span>' : '',
@@ -180,7 +180,7 @@ function card(id, res, unlocks) {
 
 function renderSide(res) {
   const ids = listIds(), unlocks = unlockCounts(app.data, doneIds());
-  const order = { retake: 0, available: 1, conditional: 1 };
+  const order = { retake: 0, available: 1, afterA: 1, conditional: 1 };
   const cand = ids.filter((id) => CAND.includes(status(id))).sort((a, b) => order[status(a)] - order[status(b)]);
   const plan = cand.filter(planned), rest = cand.filter((id) => !planned(id));
   const taken = new Set(); // a course sits in the first list that has it
