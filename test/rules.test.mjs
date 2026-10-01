@@ -70,6 +70,23 @@ test('blocked reasons are deduped when two prereqs share their first alternative
   assert.equal(s.reasons.length, 1);
 });
 
+test('blocked chain lists every blocker of an intermediate course, not just the first', () => {
+  const data = mini();
+  data.courses.B.prereqs.push({ kind: 'קדם', anyOf: [{ id: 'Q', name: 'משוואות' }] });
+  assert.match(classify(data, me).statuses.C.reasons.join(' '), /דינמיקה ← פיזיקה-מכניקה \(נכשלת\) \+ משוואות/);
+});
+
+test('retake keeps its corequisite: tagged with the parallel course, like a first attempt', () => {
+  const failedP = { passed: ['Q0'], failed: { P: 1 } };
+  const s = classify(mini(), failedP).statuses.P;
+  assert.equal(s.status, 'retake');
+  assert.deepEqual(s.missingParallel, [['Q']]);
+  assert.match(s.reasons.join(' '), /רק יחד עם משוואות/);
+  const met = classify(mini(), { ...failedP, passed: ['Q0', 'Q'] }).statuses.P;
+  assert.equal(met.status, 'retake');
+  assert.equal(met.missingParallel, undefined);
+});
+
 test('passing a course keeps its failures and they still count toward the regulations', () => {
   const s = { passed: [], failed: { A: 2 } };
   setStatus(s, 'A', 'passed');

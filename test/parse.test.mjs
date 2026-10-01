@@ -37,6 +37,12 @@ test('parseGroups reads primaries, linked tutorials and meetings for 90903', () 
   assert.deepEqual(t.meetings, [{ semester: 'א', day: 2, start: '10:00', end: '11:50', room: "ז'2 קריה - עגלת תחשבים" }]);
 });
 
+test('parseGroups fails loudly, naming the field, when the layout changes', () => {
+  const chunk = (body) => `<div class="TextAlignRight">${body}</div>`;
+  assert.throws(() => parseGroups(chunk('קורס מסוג')), /קורס מסוג.*קורס מסוג/);
+  assert.throws(() => parseGroups(chunk('קורס מסוג סופי-הרצאה, אין מספר')), /קבוצה.*אין מספר/);
+});
+
 test('parseGroups reads the full flag and standalone labs', () => {
   const gs = parseGroups(fx('groups-10336.html'));
   const lab = gs.find((g) => g.id === '271033601');

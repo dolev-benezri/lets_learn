@@ -51,6 +51,15 @@ test('forbidden mask removes options (hard day off / window)', () => {
   assert.deepEqual(buildOptions(A, { forbidden: w }).map((o) => o.groups), [['A2']]);
 });
 
+test('hard time window edges: lessons end at :50, "not after 17:50" allows one ending 17:50; "not before 08:00" allows a start at 08:00', () => {
+  const hit = (c, start, end) => overlaps(forbiddenMask({ ...c, windowHard: true }), meetingsMask([{ day: 2, start, end }]));
+  assert.equal(hit({ notAfter: '17:50' }, '16:00', '17:50'), false);
+  assert.equal(hit({ notAfter: '17:50' }, '18:00', '19:50'), true);
+  assert.equal(hit({ notAfter: '17:30' }, '16:00', '17:50'), true);
+  assert.equal(hit({ notBefore: '08:00' }, '08:00', '09:50'), false);
+  assert.equal(hit({ notBefore: '08:00' }, '07:30', '08:50'), true);
+});
+
 test('unlockCounts is transitive', () => {
   const u = unlockCounts(mini());
   assert.equal(u.A, 2); // B, C
@@ -76,6 +85,21 @@ const run = (over = {}) => {
   const data = over.data ?? mini();
   return search({ data, statuses: classify(data, me).statuses, weights: W0, friends: [], constraints: {}, topK: 1000, ...over });
 };
+
+test('search: weights default to none, topK <= 0 returns nothing without throwing', () => {
+  const data = mini();
+  const base = { data, courses: [{ id: 'Q', mode: 'must' }], statuses: classify(data, me).statuses, friends: [], constraints: {} };
+  assert.ok(search(base).results.length > 0);
+  for (const topK of [0, -1]) assert.deepEqual(search({ ...base, weights: W0, topK }), { results: [], partial: false, diagnosis: [] });
+});
+
+test('search: a retaken course still needs its corequisite planned together', () => {
+  const data = mini();
+  const statuses = classify(data, { passed: ['Q0'], failed: { P: 1 } }).statuses;
+  const args = { data, statuses, weights: W0, friends: [], constraints: {} };
+  assert.equal(search({ ...args, courses: [{ id: 'P', mode: 'must' }] }).results.length, 0);
+  assert.deepEqual(search({ ...args, courses: [{ id: 'P', mode: 'must' }, { id: 'Q', mode: 'optional' }] }).results[0].courses.sort(), ['P', 'Q']);
+});
 
 // Independent brute force: enumerate option products, reject overlaps by interval comparison.
 function brute(data, courses) {
