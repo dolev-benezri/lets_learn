@@ -566,3 +566,32 @@ test('S7 a retake offered in both semesters is placed exactly once in every plan
     assert.ok(!p.missing.includes('M'));
   }
 });
+
+test('searchYear: 20 random real-data states each finish within 3.5 s, at most 2 partial', { skip: !existsSync(REAL2) }, () => {
+  const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+  const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
+  const list = (n) => dataA.lists.find((l) => l.name.includes(n)).courses;
+  const y1 = list("שנה א'"), y2 = list("שנה ב'"), y3 = list("שנה ג'");
+  const yearList = new Set(y2);
+  const groupIds = Object.values({ ...dataA.courses, ...dataB.courses }).flatMap((c) => c.groups.map((g) => g.id));
+  let s = Math.imul(1 + 1, 2654435761) >>> 1; // seeded LCG (same style as solver-props), so a failing run reproduces
+  const rnd = () => ((s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff) / 2 ** 31);
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  const weights = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 };
+  const constraints = { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' };
+  let partial = 0, worst = 0;
+  for (let i = 0; i < 20; i++) {
+    const passed = [...y1.filter(() => rnd() < 0.9), ...y2.filter(() => rnd() < 0.3)];
+    const choices = {};
+    for (const id of [...y2, ...y3].filter(() => rnd() < 0.15)) choices[id] = pick(['must', 'optional']);
+    const friends = Array.from({ length: Math.floor(rnd() * 3) }, (_, k) => ({ name: `f${k}`, weight: 1, active: true, groups: groupIds.filter(() => rnd() < 0.2) }));
+    const t = Date.now();
+    const r = searchYear({ dataA, dataB, state: { passed, failed: {}, choices, semesterOf: {}, load: 'even' }, yearList, friends, weights, constraints });
+    const ms = Date.now() - t;
+    worst = Math.max(worst, ms);
+    if (r.partial) partial++;
+    assert.ok(ms <= 3500, `state ${i}: took ${ms}ms (passed ${passed.length}, choices ${JSON.stringify(choices)}, friends ${friends.length})`);
+  }
+  console.log(`random states: worst ${worst}ms, partial ${partial}/20`);
+  assert.ok(partial <= 2, `${partial} of 20 partial`);
+});
