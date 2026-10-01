@@ -342,7 +342,8 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
   .pop::backdrop { background:rgba(16,24,40,.45); }
 }
 /* in-page dialog (replaces confirm / prompt) */
-.dlg { width:min(420px, calc(100vw - 32px)); padding:20px; border:1px solid var(--border); border-radius:16px; background:var(--surface); color:var(--text); box-shadow:var(--shadow-pop); }
+.dlg { width:min(420px, calc(100vw - 32px)); padding:0; border:1px solid var(--border); border-radius:16px; background:var(--surface); color:var(--text); box-shadow:var(--shadow-pop); }
+.dlg form { padding:20px; } /* the padding sits inside, so a click on the dialog itself is a backdrop click */
 .dlg p { margin:0 0 16px; font-size:16px; }
 .dlg h2 { margin:0 0 12px; font-size:17px; font-weight:600; }
 .dlg textarea { display:block; width:100%; margin-bottom:16px; padding:10px; border:1px solid var(--border-strong); border-radius:10px; font:inherit; font-size:14px; }
