@@ -1,13 +1,13 @@
 # Nightly yedion scrape, run by a GitLab.com pipeline schedule. GitHub's runners (Microsoft Azure IPs) cannot
 # reach the yedion; GitLab's shared runners (Google Cloud) can. The GitLab project holds no code: its
-# "CI/CD configuration file" setting points at the raw URL of this file, so this repo stays the single source.
+# .gitlab-ci.yml is just `include: remote:` with the raw URL of this file, so this repo stays the single source.
 # Needs one masked GitLab CI variable, GH_PUSH_TOKEN: a GitHub fine-grained token, this repo only, Contents read/write.
 # A push with that token triggers .github/workflows/deploy.yml. GitLab emails the owner when a run fails.
 scrape:
   image: node:24
   timeout: 30m
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_PIPELINE_SOURCE =~ /^(schedule|web|api)$/ # api = run via the GitLab API or MCP
   variables:
     GIT_STRATEGY: none # nothing to check out on the GitLab side
   script:
