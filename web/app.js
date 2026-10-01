@@ -20,7 +20,7 @@ const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 const strs = (a, max, len) => Array.isArray(a) ? a.filter((x) => typeof x === 'string' && x.length <= len).slice(0, max) : null;
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 // Personal busy time. Invalid items are dropped one by one (like friends), the rest are kept; times stay inside the 07:00-23:00 slot grid.
-const cleanBlocks = (a) => Array.isArray(a) ? a.filter((b) => isObj(b) && Number.isInteger(b.day) && b.day >= 1 && b.day <= 6 && typeof b.start === 'string' && typeof b.end === 'string'
+export const cleanBlocks = (a) => Array.isArray(a) ? a.filter((b) => isObj(b) && Number.isInteger(b.day) && b.day >= 1 && b.day <= 6 && typeof b.start === 'string' && typeof b.end === 'string'
   && HHMM.test(b.start) && HHMM.test(b.end) && b.start >= '07:00' && b.end <= '23:00' && b.start < b.end && typeof b.label === 'string' && b.label.length <= 30)
   .slice(0, 12).map((b) => ({ day: b.day, start: b.start, end: b.end, label: b.label })) : [];
 const CONSTRAINT_OK = {

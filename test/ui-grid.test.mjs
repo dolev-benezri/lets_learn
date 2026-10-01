@@ -178,3 +178,20 @@ test('a block wraps the end time in .blk-end so narrow blocks can drop it', () =
   const html = renderWeek(ctx);
   assert.match(html, /<bdi dir="ltr">08:00<span class="blk-end">–10:00<\/span><\/bdi>/);
 });
+
+test('hourRange: a busy block outside lesson hours extends the range (blocks are passed as meetings)', () => {
+  const lessons = [m(2, '10:00', '11:50')];
+  assert.deepEqual(hourRange([...lessons, m(2, '19:00', '22:00')]), { from: 9, to: 22, days: 5 });
+  assert.deepEqual(hourRange([m(6, '18:00', '20:00')]), { from: 17, to: 21, days: 6 });
+  assert.deepEqual(hourRange([...lessons, m(3, '07:00', '08:00')]), { from: 7, to: 13, days: 5 });
+});
+
+test('renderWeek: a busy block is a non-interactive div with escaped label and screen-reader text; empty label falls back', () => {
+  const html = renderWeek({ data: { courses: {} }, res: null, range: { from: 8, to: 21, days: 5 }, colors: new Map(), dashed: new Set(), pins: [], friends: [], day: null,
+    blocks: [{ day: 2, start: '18:00', end: '20:00', label: '<b>עבודה</b>' }, { day: 3, start: '09:00', end: '10:00', label: '' }, { day: 6, start: '09:00', end: '10:00', label: 'x' }] });
+  assert.match(html, /<div class="off" style="--s:600;--d:120"><span class="off-l" aria-hidden="true">&lt;b&gt;עבודה&lt;\/b&gt;<\/span>\s*<span class="sr">זמן תפוס: &lt;b&gt;עבודה&lt;\/b&gt; 18:00–20:00<\/span>/);
+  assert.match(html, /aria-hidden="true">זמן תפוס<\/span>\s*<span class="sr">זמן תפוס: 09:00–10:00<\/span>/);
+  assert.equal(html.split('class="off"').length - 1, 2); // the Friday block is outside a 5-day range
+  assert.ok(!html.includes('<b>עבודה'));
+  assert.ok(!/<button[^>]*class="off/.test(html));
+});

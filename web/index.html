@@ -216,7 +216,7 @@ aside details .cards { margin:4px 0 8px; }
   background:repeating-linear-gradient(to bottom, transparent 0 calc(60 * var(--ppm) - 1px), var(--border) calc(60 * var(--ppm) - 1px) calc(60 * var(--ppm))),
              repeating-linear-gradient(to bottom, var(--surface) 0 calc(60 * var(--ppm)), #FAFBFD calc(60 * var(--ppm)) calc(120 * var(--ppm))); }
 .day:last-child { border-inline-end:1px solid var(--border); }
-.blk { position:absolute; inset-inline:3px; top:calc(var(--s) * var(--ppm) + 1px); height:calc(var(--d) * var(--ppm) - 2px); display:flex; flex-direction:column; align-items:stretch; gap:1px;
+.blk { position:absolute; z-index:1; inset-inline:3px; top:calc(var(--s) * var(--ppm) + 1px); height:calc(var(--d) * var(--ppm) - 2px); display:flex; flex-direction:column; align-items:stretch; gap:1px;
   padding:4px 6px; border:0; border-inline-start:3px solid var(--cfg); border-radius:var(--radius-sm); background:var(--cbg); color:var(--text); font-size:var(--fs-sm); line-height:1.3;
   text-align:start; overflow:hidden; cursor:pointer; transition:background-color .15s ease; container-type:size; }
 .blk:active { filter:brightness(.96); }
@@ -236,6 +236,10 @@ aside details .cards { margin:4px 0 8px; }
 .blk:focus-visible { outline:2px solid var(--primary); outline-offset:2px; z-index:1; }
 .blk-pin { position:absolute; top:4px; inset-inline-end:4px; color:var(--primary); }
 .blk-pin .icon { width:14px; height:14px; }
+/* personal busy time: neutral hatching, under the lessons, never interactive */
+.off { position:absolute; inset-inline:3px; top:calc(var(--s) * var(--ppm) + 1px); height:calc(var(--d) * var(--ppm) - 2px); z-index:0; overflow:hidden; pointer-events:none;
+  border-inline-start:3px solid var(--border-strong); border-radius:var(--radius-sm); background:repeating-linear-gradient(135deg, var(--surface-2) 0 6px, var(--border) 6px 8px); color:var(--text-2); font-size:var(--fs-sm); line-height:1.3; }
+.off-l { display:inline-block; max-width:100%; margin:4px 4px 0; padding:0 4px; border-radius:4px; background:var(--surface-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:top; }
 
 /* popover (block details) */
 .pop { inset:auto; margin:0; width:340px; max-width:calc(100vw - 16px); padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:var(--surface); color:var(--text); box-shadow:var(--shadow-pop); }
@@ -281,6 +285,11 @@ aside details .cards { margin:4px 0 8px; }
 .field.col { flex-direction:column; align-items:stretch; gap:4px; margin-bottom:8px; }
 .drawer input[type=time], .drawer input[type=number], .drawer input[type=text] { min-height:44px; padding:0 10px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); }
 .drawer input[type=number] { width:96px; }
+.drawer select { min-height:44px; padding:0 8px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); font:inherit; }
+.brow { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:4px 10px; padding:12px; margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius); }
+.brow .field { min-width:0; } .brow input[type=time] { flex:1; min-width:0; }
+.brow .grow { grid-column:1 / -1; margin-bottom:0; }
+.brow .btn { grid-column:2; grid-row:1; justify-self:end; }
 .check { display:flex; align-items:center; gap:10px; min-height:44px; cursor:pointer; }
 .check input { width:20px; height:20px; margin:0; accent-color:var(--primary); }
 .row { display:flex; gap:8px; }
