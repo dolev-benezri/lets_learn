@@ -273,6 +273,10 @@ let pzLib = null;
 // Lazy so node tests (which import this file) never touch the network; a failed or slow load falls back to the list view.
 const loadPanzoom = () => (pzLib ??= Promise.race([import(PZ_URL).then((m) => m.default), new Promise((_, no) => setTimeout(no, 8000, new Error('timeout')))]).catch((e) => { pzLib = null; throw e; }));
 
+// panzoom's zoomWithWheel takes one fixed step per wheel event, so the step follows the event's size: a mouse notch zooms about 16%,
+// a trackpad's stream of small events stays gentle (Firefox reports lines, not pixels).
+export const wheelStep = (e) => Math.max(0.03, Math.min(0.6, (Math.abs(e.deltaY || e.deltaX) * (e.deltaMode ? 33 : 1) / 100) * 0.45));
+
 // Opening scale: the whole graph on a desktop; on a phone fit by height (floor 0.3), pinned to year א׳ on the right, one finger pans.
 export const fitScale = (vw, vh, W, H) => (vw >= 600 ? Math.max(0.2, Math.min(1, vw / W, vh / H)) : Math.max(0.3, Math.min(1, vh / H)));
 
@@ -357,9 +361,7 @@ async function mount() {
   const pz = M.pz = Panzoom(g, { canvas: true, origin: '0 0', cursor: 'grab', minScale: 0.2, maxScale: 3, handleStartEvent: () => {} });
   const ends = () => { const s = pz.getScale(), o = pz.getOptions(); q('[data-pm="zin"]').disabled = s >= o.maxScale - 0.01; q('[data-pm="zout"]').disabled = s <= o.minScale + 0.01; };
   g.addEventListener('panzoomchange', ends);
-  // The wheel zooms toward the pointer (panzoom's zoomWithWheel; trackpad pinch arrives as ctrl+wheel). The lib takes one fixed step per event,
-  // so the step follows the event's size: a mouse notch is about 16%, a trackpad's many small events stay gentle.
-  root.addEventListener('wheel', (e) => pz.zoomWithWheel(e, { step: Math.max(0.03, Math.min(0.9, (Math.abs(e.deltaY || e.deltaX) * (e.deltaMode ? 33 : 1) / 100) * 0.45)) }), { passive: false });
+  root.addEventListener('wheel', (e) => pz.zoomWithWheel(e, { step: wheelStep(e) }), { passive: false }); // zooms toward the pointer; trackpad pinch arrives as ctrl+wheel
   root.addEventListener('pointerdown', (e) => { M.down = { x: e.clientX, y: e.clientY }; });
   M.fit = () => {
     const r = root.getBoundingClientRect(), s = fitScale(r.width, r.height, W, H), w = W * s, h = H * s;

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, mapSvg, courseYears, asideIds } from '../web/ui-map.js';
+import { layoutMap, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, wheelStep, mapSvg, courseYears, asideIds } from '../web/ui-map.js';
 import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
@@ -221,4 +221,12 @@ test('layout: a course offered in one semester sits in that column; others follo
   assert.equal(sem.a, 0); assert.equal(sem.b, 1); assert.equal(sem.c, 1); // c needs a, so it cannot share a's semester
   assert.ok(Math.abs(cnt(0) - cnt(1)) <= 1);
   assert.equal(layoutMap(mini({ a: mc('A'), b: mc('B') })).cols.length, 1); // single-semester data: one column
+});
+
+test('wheelStep: a mouse notch is about 16% (either browser), small trackpad events stay gentle, huge ones are capped', () => {
+  const pct = (e) => Math.exp(wheelStep(e) / 3) - 1;
+  assert.ok(Math.abs(pct({ deltaY: 100, deltaMode: 0 }) - 0.16) < 0.01 && Math.abs(pct({ deltaY: -100 }) - 0.16) < 0.01 && Math.abs(pct({ deltaY: 3, deltaMode: 1 }) - 0.16) < 0.01);
+  assert.ok(pct({ deltaY: 4 }) < 0.02 && pct({ deltaY: 0, deltaX: 0 }) > 0);
+  assert.equal(wheelStep({ deltaY: 5000 }), 0.6);
+  assert.equal(wheelStep({ deltaY: 0, deltaX: 100 }), wheelStep({ deltaY: 100 })); // shift+wheel on a Mac
 });
