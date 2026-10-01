@@ -107,7 +107,7 @@ test('stableJson drops fetchedAt and is deterministic', () => {
 
 ### Task 2: Workflow + deploy (after Task 0 approval)
 
-**Files:** `.github/workflows/refresh-deploy.yml`, `README.md` (badge + scraping rate, hours and UA).
+**Files:** `.github/workflows/refresh-deploy.yml`, `README.md` (badge + scraping rate, hours and UA), `TERMS.md` (section "איך אנחנו אוספים" describes today's 1 s manual scraper; update it to the new rate, hours and stop rules).
 
 - [ ] **Triggers:** `workflow_dispatch` plus a disabled `schedule`. Enable the cron only after a week of manual runs. Cron lines: `17 0 * * *` and `47 3 * * *`, with `timezone: Asia/Jerusalem`. A skip guard exits early if `status.json.checkedAt` is less than 12 h old or if it is after 07:00 in Israel.
 - [ ] **Job `scrape`:**
