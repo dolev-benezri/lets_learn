@@ -11,13 +11,18 @@ export const DEFAULT = {
   passed: null, failed: {}, grades: {}, choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null },
   scope: 'year', load: 'even', semesterOf: {},
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
-  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, examsSameDay: 'forbid', includeFull: false },
+  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, examsSameDay: 'forbid', includeFull: false, blocks: [] },
 };
 
 const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
 const num = (x) => typeof x === 'number' && Number.isFinite(x);
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 const strs = (a, max, len) => Array.isArray(a) ? a.filter((x) => typeof x === 'string' && x.length <= len).slice(0, max) : null;
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+// Personal busy time. Invalid items are dropped one by one (like friends), the rest are kept; times stay inside the 07:00-23:00 slot grid.
+const cleanBlocks = (a) => Array.isArray(a) ? a.filter((b) => isObj(b) && Number.isInteger(b.day) && b.day >= 1 && b.day <= 6 && typeof b.start === 'string' && typeof b.end === 'string'
+  && HHMM.test(b.start) && HHMM.test(b.end) && b.start >= '07:00' && b.end <= '23:00' && b.start < b.end && typeof b.label === 'string' && b.label.length <= 30)
+  .slice(0, 12).map((b) => ({ day: b.day, start: b.start, end: b.end, label: b.label })) : [];
 const CONSTRAINT_OK = {
   dayOff: (v) => Array.isArray(v) && v.every((d) => Number.isInteger(d) && d >= 1 && d <= 6),
   dayOffHard: (v) => typeof v === 'boolean', windowHard: (v) => typeof v === 'boolean', includeFull: (v) => typeof v === 'boolean',
@@ -49,6 +54,7 @@ export function normalize(raw) {
   if (isObj(raw.semesterOf)) out.semesterOf = Object.fromEntries(Object.entries(raw.semesterOf).filter(([k, v]) => k.length <= 20 && (v === 'א' || v === 'ב')).slice(0, 200));
   if (isObj(raw.weights)) for (const k of Object.keys(DEFAULT.weights)) if (num(raw.weights[k])) out.weights[k] = [0, 1, 3, 5].reduce((b, s) => (Math.abs(s - raw.weights[k]) <= Math.abs(b - raw.weights[k]) ? s : b), 0); // snap to the UI scale; ties go up like nearestStep
   if (isObj(raw.constraints)) for (const k of Object.keys(CONSTRAINT_OK)) if (CONSTRAINT_OK[k](raw.constraints[k])) out.constraints[k] = raw.constraints[k];
+  if (isObj(raw.constraints)) out.constraints.blocks = cleanBlocks(raw.constraints.blocks);
   return out;
 }
 
