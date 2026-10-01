@@ -18,4 +18,4 @@ scrape:
     - git add web/data/afeka
     - if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
     - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com commit -q -m "$(cat ../summary.txt)" -- web/data/afeka
-    - git push
+    - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com pull --rebase -q && git push # main may move during the ~8 min scrape; only web/data/afeka changes here, so the rebase is clean
