@@ -28,11 +28,24 @@ export const ICON = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   cap: '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
   file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  pencil: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z"/>',
 };
 export const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICON[name]}</svg>`;
 export const initials = (name) => name.trim().split(/\s+/).map((w) => Array.from(w)[0] ?? '').slice(0, 2).join('') || '?';
 export const yedion = (id) => `https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx?prgname=S_LOOK_FOR_NOSE&arguments=-N${encodeURIComponent(id)}`;
 export const typeLabel = (t) => t.replace('סופי-', '');
+
+// Group options for a course: [{type, options: [{id, label}]}] by type, one label per group.
+export function groupOptions(course) {
+  const byType = new Map();
+  for (const g of course.groups) {
+    if (!byType.has(g.type)) byType.set(g.type, []);
+    const times = g.meetings.map((m) => `${DAYS[m.day]}׳ ${m.start}–${m.end}`).join(', ');
+    const label = `${typeLabel(g.type)} · ${times} · ${g.lecturer || '—'} (${g.id})`;
+    byType.get(g.type).push({ id: g.id, label });
+  }
+  return [...byType].map(([type, options]) => ({ type, options }));
+}
 
 // Nearest step of a 4-step scale (ties go to the higher step, so an old saved weight 2 reads as "חשוב").
 export const nearestStep = (v, steps) => steps.reduce((best, s) => (Math.abs(s - v) <= Math.abs(best - v) ? s : best), steps[0]);

@@ -47,6 +47,17 @@ test('normalize: valid constraints and friends round-trip', () => {
   assert.deepEqual([s.passed, s.pins], [['1', '2'], ['p']]);
 });
 
+test('normalize: manual: true is kept, manual: "yes" is dropped', () => {
+  const s = normalize({ v: 1, friends: [
+    { name: 'a', groups: ['g1'], manual: true },
+    { name: 'b', groups: ['g2'], manual: 'yes' },
+    { name: 'c', groups: ['g3'], manual: false },
+  ] });
+  assert.equal(s.friends[0].manual, true);
+  assert.ok(!('manual' in s.friends[1]));
+  assert.ok(!('manual' in s.friends[2]));
+});
+
 test('DEFAULT weights sit on the 0/1/3/5 scale the preferences panel shows', async () => {
   const { DEFAULT } = await import('../web/app.js');
   for (const [k, v] of Object.entries(DEFAULT.weights)) assert.ok([0, 1, 3, 5].includes(v), `${k}=${v}`);
