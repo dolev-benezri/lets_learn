@@ -14,11 +14,17 @@ const int = (x, lo, hi) => (Number.isInteger(x) && x >= lo && x <= hi ? x : null
 // cleanProfile only checks the shape (1-2 distinct short ids); validSpecs judges a choice against one dataset. No rule in the data = the mechanical one.
 const specs = (a) => (Array.isArray(a) && a.length >= 1 && a.length <= 2 && a.every((x) => typeof x === 'string' && /^[a-z][a-z0-9]{0,19}$/.test(x)) && new Set(a).size === a.length ? a : []);
 export const specRule = (data) => ({ pick: 2, alone: ['vehicle'], ...data.specRule });
+// rule.groups (industrial engineering: a main and a secondary area): two lists of area ids, one area from each, and not the same subject (same position in both lists).
+const areaPos = (rule, id) => Math.max(...rule.groups.map((g) => g.indexOf(id)));
+export const specConflict = (rule, a, b) => !!rule.groups && a !== b
+  && (rule.groups.some((g) => g.includes(a) && g.includes(b)) || (areaPos(rule, a) >= 0 && areaPos(rule, a) === areaPos(rule, b)));
 // Valid: every id is an area of this dataset, and there are `pick` of them or exactly one standalone area. Returned in the dataset's order, else [].
 export function validSpecs(data, ids) {
   if (!Array.isArray(ids)) return [];
   const rule = specRule(data), ok = (data.specializations ?? []).map((s) => s.id).filter((id) => ids.includes(id));
-  return ok.length === ids.length && (ok.length === rule.pick || (ok.length === 1 && rule.alone.includes(ok[0]))) ? ok : [];
+  const inGroups = (id) => rule.groups.flat().includes(id);
+  const paired = ok.length === rule.pick && (!rule.groups || (ok.length === 2 && ok.every(inGroups) && !specConflict(rule, ok[0], ok[1])));
+  return ok.length === ids.length && (paired || (ok.length === 1 && rule.alone.includes(ok[0]))) ? ok : [];
 }
 export const cleanProfile = (p) => ({ year: int(p?.year, 1, 4), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
 
