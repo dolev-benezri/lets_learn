@@ -6,12 +6,12 @@ import { DAYS, icon, typeLabel, groupIndex, hourRange, renderWeek, assignColors 
 import { askConfirm } from './ui-dialog.js';
 import { groupsFromText, placeGroup, findCourse, clashIds } from './friend-import.js';
 import { groupNumber } from './ui-text.js';
-import { loadPdfjs } from './grade-import.js';
+import { imageCanvas, withPdf, pageCanvas, bigPage, scanCanvases } from './friend-scan.js';
+import { rowsFromTable, matchRows } from './friend-schedule.js';
 
 const MAX = 40;
 const LIMIT = `אפשר עד ${MAX} קבוצות לחבר`;
 const NOTEXT = 'לא נמצא טקסט בקובץ, נסו להעתיק ולהדביק';
-const TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js'; // ESM build: default export only
 const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳' };
 
 const dlg = document.getElementById('friendEd');
@@ -70,7 +70,8 @@ const shell = () => `<div class="fe" id="feRoot">
           <button type="button" class="btn" id="feFind" data-fe="find">מצא קבוצות</button>
           <label for="feFile">או קובץ מערכת (PDF או תמונה)</label>
           <input type="file" id="feFile" accept="application/pdf,image/*">
-          <div id="feImpStatus" class="hint" aria-live="polite" tabindex="-1"></div></section>
+          <div id="feImpStatus" class="hint" aria-live="polite" tabindex="-1"></div>
+          <div id="feImpPages" class="fe-pages-box" hidden></div></section>
       </div>
     </section>
     <section class="fe-grid" id="feGrid" aria-label="מערכת השבוע של החבר">
@@ -228,9 +229,10 @@ function search() {
 
 // ---------- import ----------
 const status = (html) => { $('feImpStatus').innerHTML = html; };
-function importText(text) {
-  const all = app.sem['ב'] ? yearView(app.sem['א'], app.sem['ב']) : app.sem['א'];
-  const { found, unknown } = groupsFromText(text, all), placed = [];
+const allData = () => (app.sem['ב'] ? yearView(app.sem['א'], app.sem['ב']) : app.sem['א']);
+const importText = (text) => applyFound(groupsFromText(text, allData()));
+function applyFound({ found, unknown, ambiguous = 0, weak = 0 }) {
+  const placed = [];
   let already = 0, refused = 0;
   for (const gid of found) { // placeGroup toggles: an id already in the draft must stay
     if (ed.draft.includes(gid)) already++;
@@ -246,39 +248,80 @@ function importText(text) {
   const other = placed.filter((g) => semOfGroup(g) !== ed.sem).length, o = SEM_NAME[otherOf(ed.sem)];
   const skipped = [already && `${already} כבר במערכת`, refused && `${refused} לא שובצו`].filter(Boolean).join(', ');
   status(`<p>${placed.length === found.length ? `נמצאו ${found.length} קבוצות` : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${other ? ` (${other === placed.length ? 'כולן' : `${other} מהן`} בסמסטר ${o})` : ''}${switched ? `. עברנו לסמסטר ${SEM_NAME[ed.sem]}` : ''}.</p>`
-    + (unknown.length ? `<p>לא נמצאו: ${unknown.map((id) => `<bdi dir="ltr">${esc(id)}</bdi>`).join(', ')}</p>` : '')
+    + (ambiguous ? `<p>ב-${ambiguous} קורסים יש כמה קבוצות באותן שעות, נבחרה הראשונה. כדאי לבדוק במערכת.</p>` : '')
+    + (weak ? `<p>${weak} קבוצות זוהו לפי יום ושעות בלבד (השם בתמונה לא ברור). כדאי לבדוק אותן במערכת.</p>` : '')
+    + (unknown.length ? `<p>לא נמצאו: ${unknown.slice(0, 8).map((id) => `<bdi dir="ltr">${esc(id)}</bdi>`).join(', ')}${unknown.length > 8 ? ` ועוד ${unknown.length - 8}` : ''}</p>` : '')
     + (found.length || unknown.length ? '' : '<p>לא זוהה אף מספר קבוצה (9 ספרות).</p>'));
 }
 async function pdfText(file) {
-  const task = (await loadPdfjs()).getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
-  try {
-    const doc = await task.promise;
+  return withPdf(file, async (doc) => {
     const pages = [];
     for (let i = 1; i <= Math.min(doc.numPages, 30); i++) pages.push((await (await doc.getPage(i)).getTextContent()).items.map((x) => x.str).join(' '));
     return pages.join(' ');
-  } finally { task.destroy(); } // pdf.js 6: destroy lives on the loading task, not the document
+  });
 }
-async function imageText(file, me) {
-  const { createWorker } = (await import(TESSERACT)).default;
-  const w = await createWorker('eng', 1, { logger: (m) => { if (m.status === 'recognizing text' && ed === me) status(`<p>מזהה טקסט… ${Math.round(m.progress * 100)}%</p>`); } });
-  try {
-    await w.setParameters({ tessedit_char_whitelist: '0123456789/' }); // "/" is part of tutorial ids (271001601/1)
-    return (await w.recognize(file)).data.text;
-  } finally { await w.terminate(); }
+// Group ids in the text win; otherwise whatever a table or grid gave.
+function applyScan(text, result) {
+  const ids = groupsFromText(text, allData());
+  applyFound(ids.found.length || !(result.found.length || result.unknown.length) ? ids : result);
+}
+const progress = (me) => (i, n, f) => { if (ed === me) status(`<p>מזהה טקסט… ${n > 1 ? `שקף ${i + 1} מתוך ${n}, ` : ''}${Math.round(f * 100)}%</p>`); };
+// A scanned PDF (pictures only): thumbnails to tick, e.g. a whole deck of options where a friend picked one.
+async function showPages(file, me) {
+  const box = $('feImpPages');
+  box.replaceChildren();
+  box.hidden = false;
+  status('<p>הקובץ סרוק (תמונות). סמנו את השקפים לייבוא: לוח שבועי, טבלה, או שניהם של אפשרות אחת.</p>');
+  const go = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', textContent: 'ייבא את השקפים שסומנו' });
+  go.dataset.fe = 'pages';
+  const list = Object.assign(document.createElement('div'), { className: 'fe-pages' });
+  box.append(go, list);
+  me.pdf = file;
+  await withPdf(file, async (doc) => {
+    for (let n = 1; n <= Math.min(doc.numPages, 80) && ed === me; n++) {
+      const label = Object.assign(document.createElement('label'), { className: 'fe-page' }), cb = Object.assign(document.createElement('input'), { type: 'checkbox', value: String(n) });
+      label.append(await pageCanvas(doc, n, 240), cb, ` שקף ${n}`);
+      list.append(label);
+    }
+  });
+}
+async function scanSelected() {
+  const me = ed, n = [...$('feImpPages').querySelectorAll('input:checked')].map((i) => Number(i.value));
+  if (!n.length) { status('<p>סמנו שקף אחד לפחות.</p>'); return; }
+  if (n.length > 12) { status('<p>אפשר עד 12 שקפים בכל פעם.</p>'); return; }
+  const input = $('feFile');
+  me.busy = true; input.disabled = true; $('feFind').disabled = true;
+  status('<p>מכין את השקפים…</p>');
+  let out = null;
+  try { out = await withPdf(me.pdf, async (doc) => scanCanvases(await Promise.all(n.map((i) => bigPage(doc, i))), allData().courses, progress(me))); } catch { /* reads as "no text" */ }
+  if (me !== ed) return;
+  me.busy = false; input.disabled = false; $('feFind').disabled = false;
+  if (out) applyScan(out.text, out.result); else status(`<p>${NOTEXT}</p>`);
 }
 async function importFile(file) {
-  const me = ed, input = $('feFile'), refocus = document.activeElement === input;
+  const me = ed, input = $('feFile'), refocus = document.activeElement === input, isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
   const busy = (on) => { me.busy = on; input.disabled = on; $('feFind').disabled = on; };
   busy(true);
+  $('feImpPages').hidden = true;
   if (refocus) $('feImpStatus').focus({ preventScroll: true }); // a disabled input would drop focus to <body>
-  status(`<p>${file.type.startsWith('image/') ? 'מזהה טקסט…' : 'קורא את הקובץ…'}</p>`);
-  let text = '';
-  try { text = file.type.startsWith('image/') ? await imageText(file, me) : file.type === 'application/pdf' || /\.pdf$/i.test(file.name) ? await pdfText(file) : ''; } catch { /* any failure reads as "no text" */ }
+  status(`<p>${isPdf ? 'קורא את הקובץ…' : 'מזהה טקסט…'}</p>`);
+  let text = '', result = null, scanned = false;
+  const courses = allData().courses;
+  try {
+    if (isPdf) {
+      text = await pdfText(file);
+      const rows = rowsFromTable(text, courses);
+      if (rows.some((r) => r.cid)) result = matchRows(rows, courses);
+      else { const ids = groupsFromText(text, allData()); scanned = !(ids.found.length || ids.unknown.length); }
+    } else if (file.type.startsWith('image/')) ({ text, result } = await scanCanvases([await imageCanvas(file)], courses, progress(me)));
+  } catch { /* any failure reads as "no text" */ }
   if (me !== ed) return; // closed (or reopened) while working
   busy(false);
   input.value = '';
   if (refocus) input.focus();
-  if (text.trim()) importText(text); else status(`<p>${NOTEXT}</p>`);
+  if (scanned) { try { await showPages(file, me); } catch { status(`<p>${NOTEXT}</p>`); } } // pictures only: let the user pick slides
+  else if (text.trim() || result) applyScan(text, result ?? { found: [], unknown: [] });
+  else status(`<p>${NOTEXT}</p>`);
 }
 
 // ---------- save / close ----------
@@ -309,6 +352,7 @@ const ACT = {
   tab(b) { setTab(b.dataset.tab); },
   day(b) { ed.day = Number(b.dataset.day); renderGrid(); $('feDays').querySelector(`[data-day="${ed.day}"]`)?.focus({ preventScroll: true }); },
   find() { importText($('feText').value); },
+  pages() { if (!ed.busy) scanSelected(); },
   removeSel() { if (ed.sel) removeGroup(ed.sel); },
   toggle(b) {
     const gid = b.dataset.gid;
