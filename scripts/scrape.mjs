@@ -100,6 +100,7 @@ export function semestersIn(raw) {
 
 const readJson = async (file) => { try { return JSON.parse(await readFile(file, 'utf8')); } catch { return null; } };
 
+const MAX_LISTED = 6; // the summary is a commit message: a first run over many programs must not make it a wall of text
 // Write every changed data file, then status.json. `results`: [{ key, file, dataset, prev }].
 // A file whose content (ignoring fetchedAt) is unchanged is left alone, so fetchedAt in a data file means "last changed".
 export async function writeResults({ results, statusFile, now }) {
@@ -116,7 +117,8 @@ export async function writeResults({ results, statusFile, now }) {
   }
   await mkdir(dirname(statusFile), { recursive: true });
   await writeFile(statusFile, JSON.stringify({ checkedAt: now, ok: true, semesters }, null, 1));
-  return `data(afeka): ${changes.join('; ') || 'no changes'}`;
+  const shown = changes.length > MAX_LISTED ? [...changes.slice(0, MAX_LISTED), `and ${changes.length - MAX_LISTED} more of ${changes.length} files`] : changes;
+  return `data(afeka): ${shown.join('; ') || 'no changes'}`;
 }
 
 // Program x cohort pairs to build. One pair (--program, --start), or with --all-programs every configured program and cohort (--programs 20,30 narrows it).

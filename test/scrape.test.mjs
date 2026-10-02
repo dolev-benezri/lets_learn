@@ -359,3 +359,11 @@ test('patient: waits for the named hour, starts a new session, retries; gives up
   fail = 1;
   await assert.rejects(patient(async () => { throw new Error('other'); }, { year: '2027' })('prgname=S_X'), /other/);
 });
+
+test('writeResults: many changed files give a short one-line summary', async () => {
+  const d = dirs();
+  const keys = Array.from({ length: 20 }, (_, i) => `2027-${i}`);
+  const summary = await writeResults({ results: keys.map((k) => job(d, k, ds(2))), statusFile: d.status, now: 'N1' });
+  assert.ok(!summary.includes('\n') && summary.length < 400, summary);
+  assert.match(summary, /and 14 more of 20 files$/);
+});
