@@ -62,12 +62,15 @@ export function classify(data, state) {
     const s = statuses[id];
     if (s?.status === 'blocked' && !seen.has(id)) {
       seen.add(id);
-      return `${c.name} ← ${s.blockedBy.map((b) => chain(b, seen)).filter(Boolean).join(' + ')}`;
+      return `${c.name} ← ${[...new Set(s.blockedBy)].map((b) => chain(b, seen)).filter(Boolean).join(' + ')}`; // two requirements naming the same course: once
     }
     return c.name;
   };
-  for (const s of Object.values(statuses)) {
-    if (s.status === 'blocked') s.reasons = [...new Set(s.blockedBy.map((b) => `חסום: דורש ${chain(b)} (תקנון 7.4)`))];
+  const noScore = !Number.isFinite(state.profile?.amirnet); // the English level comes from the Amirnet score: without it every level looks blocked
+  for (const [id, s] of Object.entries(statuses)) {
+    if (s.status !== 'blocked') continue;
+    s.reasons = [...new Set(s.blockedBy.map((b) => `חסום: דורש ${chain(b)} (תקנון 7.4)`))];
+    if (noScore && ENGLISH.includes(id)) s.reasons.push(`הזינו ציון אמירנט ב"המצב שלי" כדי לדעת מאיזו רמה מתחילים (${AMIRNET[0]} ומעלה פוטר מהמכינה)`);
   }
 
   const counts = Object.values(failed);

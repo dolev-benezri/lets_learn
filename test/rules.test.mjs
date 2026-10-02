@@ -198,3 +198,12 @@ test('englishOptions: levels in the data with their exempting score, exempt flag
   assert.deepEqual(englishOptions(data, 100), [{ id: '6000', name: 'א', min: 85, exempt: true }, { id: '6001', name: 'ב', min: 100, exempt: true }, { id: '6003', name: 'ד', min: 134, exempt: false }]);
   assert.deepEqual(englishOptions(data, null).map((e) => e.exempt), [false, false, false]);
 });
+
+test('English without an Amirnet score: blocked levels say to enter it, and a doubled requirement is named once', () => {
+  const eng = (id, name, pre) => ({ name, credits: 0, offered: true, groups: [], prereqs: pre.map((p) => ({ kind: 'קדם', anyOf: [{ id: p, name: 'טרום' }] })) });
+  const d = { semester: 'א', courses: { 6000: { ...eng('6000', 'טרום', []), offered: false }, 6001: eng('6001', 'בסיסי', ['6000', '6000']), 6002: eng('6002', 'מתקדמים א', ['6001']) } };
+  const st = classify(d, { passed: [], profile: { amirnet: null } }).statuses;
+  assert.match(st[6001].reasons.at(-1), /הזינו ציון אמירנט/);
+  assert.equal(st[6002].reasons[0], 'חסום: דורש בסיסי ← טרום (תקנון 7.4)');
+  assert.equal(classify(d, { passed: [], profile: { amirnet: 90 } }).statuses[6001].status, 'available');
+});
