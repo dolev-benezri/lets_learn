@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor, gradeAverage, englishOptions, SPECS } from '../web/rules.js';
+import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor, gradeAverage, englishOptions, specRule, validSpecs } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
@@ -139,23 +139,38 @@ test('profile year overrides the cohort-derived study year; cleanProfile drops b
   assert.deepEqual(cleanProfile({ year: 4, amirnet: 150.5 }), { year: 4, amirnet: null, specs: [], summer: false });
 });
 
-test('cleanProfile specs: two different known areas or vehicle alone, anything else is empty', () => {
+test('cleanProfile specs: shape only (1-2 distinct short ids); which areas and how many is validSpecs against the data', () => {
   const sp = (specs) => cleanProfile({ specs }).specs;
-  assert.deepEqual(SPECS.map((s) => s.id), ['solid', 'flow', 'mech', 'vehicle', 'materials', 'aero']);
   assert.deepEqual(sp(['solid', 'flow']), ['solid', 'flow']);
-  assert.deepEqual(sp(['aero', 'solid']), ['solid', 'aero'], 'stored in SPECS order');
   assert.deepEqual(sp(['vehicle']), ['vehicle']);
-  assert.deepEqual(sp(['vehicle', 'materials']), ['vehicle', 'materials'], 'vehicle with another area is an ordinary pair');
   assert.deepEqual(sp(['solid', 'solid']), []);
-  assert.deepEqual(sp(['vehicle', 'vehicle']), []);
   assert.deepEqual(sp(['solid', 'flow', 'mech']), []);
-  assert.deepEqual(sp(['solid']), []);
   assert.deepEqual(sp([]), []);
-  assert.deepEqual(sp(['solid', 'nope']), []);
-  assert.deepEqual(sp(['nope']), []);
+  assert.deepEqual(sp(['Bad id!']), []);
+  assert.deepEqual(sp(['x'.repeat(21)]), []);
   for (const bad of [undefined, null, 'solid', 'solid,flow', { 0: 'solid', 1: 'flow', length: 2 }, 7, [{}, 'flow']]) assert.deepEqual(sp(bad), []);
   assert.deepEqual(cleanProfile().specs, [], 'no argument');
   assert.deepEqual(cleanProfile({ amirnet: 100 }), { year: null, amirnet: 100, specs: [], summer: false }, 'partial callers keep working');
+});
+
+test('validSpecs: pick count and standalone areas come from the data; no rule in the data is the mechanical rule', () => {
+  const area = (id) => ({ id, name: id });
+  const mech = { specializations: ['solid', 'flow', 'mech', 'vehicle', 'materials', 'aero'].map(area) };
+  assert.deepEqual(specRule(mech), { pick: 2, alone: ['vehicle'] });
+  assert.deepEqual(validSpecs(mech, ['solid', 'flow']), ['solid', 'flow']);
+  assert.deepEqual(validSpecs(mech, ['aero', 'solid']), ['solid', 'aero'], 'dataset order');
+  assert.deepEqual(validSpecs(mech, ['vehicle']), ['vehicle']);
+  assert.deepEqual(validSpecs(mech, ['vehicle', 'materials']), ['vehicle', 'materials']);
+  for (const bad of [['solid'], ['solid', 'solid'], ['solid', 'flow', 'mech'], ['solid', 'nope'], ['nope'], [], null, 'solid']) assert.deepEqual(validSpecs(mech, bad), [], String(bad));
+  const ee = { specializations: ['comm', 'signals', 'computers', 'power'].map(area), specRule: { pick: 2, alone: ['power'] } };
+  assert.deepEqual(validSpecs(ee, ['power']), ['power']);
+  assert.deepEqual(validSpecs(ee, ['vehicle']), [], 'vehicle is not an electrical area');
+  assert.deepEqual(validSpecs(ee, ['comm']), [], 'one ordinary area is not a complete choice');
+  const sw = { specializations: ['tech', 'mobile', 'cyber', 'ml'].map(area), specRule: { pick: 1 } };
+  assert.deepEqual(validSpecs(sw, ['cyber']), ['cyber']);
+  assert.deepEqual(validSpecs(sw, ['cyber', 'ml']), [], 'software picks one');
+  assert.deepEqual(validSpecs(mech, ['cyber']), [], 'an id from another program does not survive');
+  assert.deepEqual(validSpecs({ specializations: [] , specRule: { pick: 0 } }, []), [], 'no areas: nothing to choose');
 });
 
 test('cleanProfile summer: only exactly true', () => {

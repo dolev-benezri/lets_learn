@@ -188,7 +188,7 @@ test('run: lists, department, anchor and specializations come from the program c
 });
 
 test('every committed data file carries the specializations, their lists and the degree', () => {
-  const root = 'web/data/afeka', files = readdirSync(root).filter((d) => d !== 'status.json').map((d) => `${root}/${d}/30-2026.json`);
+  const root = 'web/data/afeka', files = readdirSync(root).filter((d) => /^\d{4}-\d$/.test(d)).map((d) => `${root}/${d}/30-2026.json`);
   assert.ok(files.length >= 2);
   for (const f of files) {
     const d = json(f), codes = new Set(d.lists.map((l) => l.code));

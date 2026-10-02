@@ -1,4 +1,4 @@
-import { classify, withAfterA, cleanProfile, SPECS, studyYear, modeFor, specLists, summerOnly } from './rules.js';
+import { classify, withAfterA, cleanProfile, studyYear, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
 
@@ -15,6 +15,11 @@ export const DEFAULT = {
   constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, examsSameDay: 'forbid', includeFull: false, blocks: [] },
 };
 
+// The programs and cohorts the site has data for (data/afeka/catalog.json, written by the scraper). Without it: mechanical engineering 2026, the first program.
+export const FALLBACK_CATALOG = { programs: [{ id: 30, name: 'הנדסה מכנית', startYears: [2026] }] };
+export const inCatalog = (c, program, startYear) => !!c?.programs?.some((p) => p.id === program && p.startYears.includes(startYear));
+const goodCatalog = (c) => isObj(c) && Array.isArray(c.programs) && c.programs.length > 0 && c.programs.every((p) => isObj(p) && Number.isInteger(p.id) && typeof p.name === 'string'
+  && Array.isArray(p.startYears) && p.startYears.every(Number.isInteger));
 const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
 const num = (x) => typeof x === 'number' && Number.isFinite(x);
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -34,10 +39,11 @@ const CONSTRAINT_OK = {
 };
 
 // The one gate for state from localStorage and from backup links: only valid values get through.
-// year/semester/program/startYear are never taken from input (a foreign program would 404 the data file forever).
-export function normalize(raw) {
+// year/semester are never taken from input; program/startYear only when the catalog lists them (a foreign program would 404 the data file forever).
+export function normalize(raw, catalog = FALLBACK_CATALOG) {
   const out = structuredClone(DEFAULT);
   if (!isObj(raw) || raw.v !== 1) return out;
+  if (inCatalog(catalog, raw.program, raw.startYear)) { out.program = raw.program; out.startYear = raw.startYear; }
   if (typeof raw.name === 'string' && raw.name.length <= 60) out.name = raw.name;
   const passed = strs(raw.passed, 200, 20);
   if (passed) out.passed = passed;
@@ -52,7 +58,7 @@ export function normalize(raw) {
   out.pins = strs(raw.pins, 40, 20) ?? out.pins;
   out.profile = cleanProfile(raw.profile);
   const draft = strs(raw.specDraft, 2, 20);
-  if (draft && draft.length === 1 && SPECS.some((s) => s.id === draft[0])) out.specDraft = draft; // one area of two; a complete choice lives in profile.specs
+  if (draft && draft.length === 1 && /^[a-z][a-z0-9]{0,19}$/.test(draft[0])) out.specDraft = draft; // shape only (reconcileSpecs checks it against the data); a complete choice lives in profile.specs
   out.yearIds = strs(raw.yearIds, 60, 20) ?? [];
   if (['year', 'א', 'ב', 'קיץ'].includes(raw.scope)) out.scope = raw.scope;
   if (['א', 'even', 'ב'].includes(raw.load)) out.load = raw.load;
@@ -67,8 +73,13 @@ export function normalize(raw) {
 function load() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(KEY)); } catch { /* storage unavailable */ }
-  return normalize(saved);
+  return normalize(saved, app.catalog);
 }
+// Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.
+const stashKey = (p, y) => `${KEY}:${p}-${y}`;
+const stash = (s) => { try { localStorage.setItem(stashKey(s.program, s.startYear), JSON.stringify(s)); } catch { /* storage unavailable */ } };
+const unstash = (p, y) => { try { return JSON.parse(localStorage.getItem(stashKey(p, y))); } catch { return null; } };
+export function clearSaved() { try { for (const k of Object.keys(localStorage)) if (k === KEY || k.startsWith(`${KEY}:`)) localStorage.removeItem(k); } catch { /* storage unavailable */ } }
 // One add/replace/rename path for friends. `editing` is the NAME of the friend being edited (names, not indexes, survive deletes mid-edit).
 export function upsertFriend(friends, p, editing = null) {
   const at = (n) => friends.findIndex((f) => f.name === n);
@@ -81,7 +92,8 @@ export function upsertFriend(friends, p, editing = null) {
   return { friends: friends.map((f, i) => (i === ti ? next : f)).filter((f, i) => i === ti || f.name !== p.name), replaced: true };
 }
 
-export const app = { loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), summerIds: [], friendLanding: null, hashError: null };
+export const app = { catalog: FALLBACK_CATALOG, loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), summerIds: [],
+  friendLanding: null, hashError: null };
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
 export function yearView(dataA, dataB) {
@@ -112,6 +124,8 @@ export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
 export function save() { try { localStorage.setItem(KEY, JSON.stringify(app.state)); } catch { /* storage unavailable */ } }
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
 const yearOneList = () => app.data.lists.find((l) => l.name.includes("שנה א'"));
+// First time: the earlier years are assumed passed; a first-year student has passed nothing.
+export function ensurePassed() { if (!app.state.passed) app.state.passed = studyYear(app.data, app.state) > 1 ? [...(yearOneList()?.courses ?? [])] : []; }
 
 // The study year's mandatory list (e.g. "שנה ב'"): courses in it default to optional. From year 3 the chosen specialization areas' courses (mandatory and elective) join it.
 export function yearCourses() {
@@ -131,8 +145,16 @@ export function keepFocus(fn) {
   if (k && document.activeElement?.dataset?.k !== k) document.querySelector(`[data-k="${CSS.escape(k)}"]`)?.focus({ preventScroll: true });
 }
 
+// A saved choice must fit the loaded program: another program's area ids (or a different pick count) would mislead the progress map and the lists.
+export function reconcileSpecs() {
+  const { profile, specDraft } = app.state, ok = validSpecs(app.data, profile.specs);
+  if (ok.join() !== profile.specs.join()) profile.specs = ok;
+  if (specDraft && !(specDraft.length < specRule(app.data).pick && specDraft.every((id) => app.data.specializations?.some((x) => x.id === id)))) app.state.specDraft = null;
+}
+
 export function refresh() {
   pickData();
+  reconcileSpecs();
   // Summer assumes the shown year plan is passed (as ב assumes א); elsewhere a course taught only in summer says so.
   const st = summerScope() ? { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.state.yearIds])] } : app.state;
   app.cls = withAfterA(app.data, st, classify(app.data, st));
@@ -147,18 +169,61 @@ export const hashOf = (view) => (view === 'me' ? '#me' : ''); // routeOf's inver
 
 const SKELETON = `<div class="skel" role="status"><span class="sr">טוען את מערכת השעות…</span><div class="skel-grid" aria-hidden="true">${'<div><i></i><i></i><i></i></div>'.repeat(5)}</div></div>`;
 
-async function init() {
-  document.getElementById('week').innerHTML = SKELETON; // replaced by the first render, or by the failure message
-  app.state = load();
+async function fetchSemesters(s) {
   const get = async (sem) => {
-    const res = await fetch(dataPath(app.state, sem), { cache: 'no-cache' }); // revalidate (ETag) so a nightly update shows up at once
+    const res = await fetch(dataPath(s, sem), { cache: 'no-cache' }); // revalidate (ETag) so a nightly update shows up at once
     if (!res.ok) throw new Error(res.status);
     return res.json();
   };
+  const [a, b, c] = await Promise.allSettled([get('א'), get('ב'), get('קיץ')]);
+  if (a.status === 'rejected') throw a.reason;
+  return { 'א': a.value, 'ב': b.status === 'fulfilled' ? b.value : null, 'קיץ': c.status === 'fulfilled' ? c.value : null };
+}
+function setSemesters(sem) {
+  app.sem = sem;
+  app.semNotice = sem['ב'] ? null : 'נתוני סמסטר ב׳ לא נטענו, מתכננים סמסטר אחד.';
+  groupSem = null;
+  pickData();
+}
+
+// The personal part of the state (who you are, how you plan) survives a program change; what you passed does not.
+const PERSONAL = ['name', 'friends', 'weights', 'constraints', 'load'];
+const withPersonal = (to, from) => {
+  for (const k of PERSONAL) to[k] = structuredClone(from[k]);
+  to.scope = 'year';
+  to.profile.amirnet = from.profile.amirnet;
+  to.profile.summer = from.profile.summer;
+  return to;
+};
+let switchGen = 0;
+// Switch program/cohort: every needed file first, the state only after they all arrived (a failed switch changes nothing). A newer choice cancels an older one.
+export async function switchTo(program, startYear) {
+  const prev = app.state;
+  if (!inCatalog(app.catalog, program, startYear) || (prev.program === program && prev.startYear === startYear)) return false;
+  const gen = ++switchGen;
+  let sem;
+  try { sem = await fetchSemesters({ ...prev, program, startYear }); } catch { return false; }
+  if (gen !== switchGen) return false;
+  stash(prev);
+  const saved = normalize(unstash(program, startYear), app.catalog);
+  const back = saved.program === program && saved.startYear === startYear && !!unstash(program, startYear);
+  const next = back ? saved : { ...structuredClone(DEFAULT), program, startYear, profile: { ...cleanProfile({}), year: prev.profile.year === null ? null : clamp(prev.year - startYear + 1, 1, 4) } };
+  app.state = withPersonal(next, prev);
+  setSemesters(sem);
+  ensurePassed();
+  return true;
+}
+
+async function init() {
+  document.getElementById('week').innerHTML = SKELETON; // replaced by the first render, or by the failure message
+  const cat = await fetch('data/afeka/catalog.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  app.catalog = goodCatalog(cat) ? cat : FALLBACK_CATALOG;
+  app.state = load();
   const status = fetch('data/afeka/status.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const [a, b, s] = await Promise.allSettled([get('א'), get('ב'), get('קיץ')]);
+  let sem;
+  try { sem = await fetchSemesters(app.state); } catch { sem = null; }
   app.status = await status;
-  if (a.status === 'rejected') {
+  if (!sem) {
     app.loadFailed = true; // the nav tabs still switch views (ui-plan.js onHash), both showing this message
     for (const id of ['week', 'me']) {
       const el = document.getElementById(id);
@@ -166,16 +231,13 @@ async function init() {
         '<p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions">' +
         '<button class="btn" data-retry>נסה שוב</button> <button class="btn" data-reset>אפס נתונים שמורים</button></p></div></div>';
       el.querySelector('[data-retry]').onclick = init;
-      el.querySelector('[data-reset]').onclick = () => { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } location.reload(); };
+      el.querySelector('[data-reset]').onclick = () => { clearSaved(); location.reload(); };
     }
     dispatchEvent(new Event('hashchange')); // show the view the URL names (ui-plan.js onHash)
     return;
   }
   app.loadFailed = false;
-  app.sem = { 'א': a.value, 'ב': b.status === 'fulfilled' ? b.value : null, 'קיץ': s.status === 'fulfilled' ? s.value : null };
-  app.semNotice = app.sem['ב'] ? null : 'נתוני סמסטר ב׳ לא נטענו, מתכננים סמסטר אחד.';
-  groupSem = null;
-  pickData();
+  setSemesters(sem);
   await applyHash();
 }
 
@@ -187,10 +249,14 @@ export async function applyHash() {
   if (h?.type === 'backup') {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
-    if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) app.state = normalize(h.payload);
-    else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
+    if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
+      const p = normalize(h.payload, app.catalog); // another program or cohort: its data loads before the state is replaced
+      let sem = null;
+      if (p.program !== app.state.program || p.startYear !== app.state.startYear) { try { sem = await fetchSemesters(p); } catch { app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי'; } }
+      if (sem || (p.program === app.state.program && p.startYear === app.state.startYear)) { if (sem) setSemesters(sem); app.state = p; }
+    } else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
   }
-  if (!app.state.passed) app.state.passed = [...(yearOneList()?.courses ?? [])];
+  ensurePassed();
   if (h?.type === 'friend') app.friendLanding = h.payload;
   if (h) history.replaceState(null, '', location.pathname + keep);
   refresh();

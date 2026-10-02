@@ -1,6 +1,6 @@
 // The status page (#me): profile, specialization form, course lists with their states, grade-sheet import.
 import { app, esc, refresh } from './app.js';
-import { progress, setStatus, studyYear, cleanProfile, gradeAverage, specLists, SPECS } from './rules.js';
+import { progress, setStatus, studyYear, gradeAverage, specLists, specRule, validSpecs } from './rules.js';
 import { icon } from './ui-grid.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet } from './grade-import.js';
@@ -29,22 +29,36 @@ export const avgLine = () => { const { avg, credits } = gradeAverage(app.data, a
 // The specialization form: only a valid choice is saved in profile.specs. A half-made one (two areas, one ticked) lives here and in
 // state.specDraft, and only while it still matches the saved state (a reset or an import drops it).
 
-export const specSave = (mode, picks) => (mode === 'vehicle' ? ['vehicle'] : mode === 'two' ? cleanProfile({ specs: picks }).specs : []);
-export function specView(saved) {
-  const kept = ui.specPick ?? (app.state.specDraft && { mode: 'two', picks: app.state.specDraft }); // after a refresh only the draft is left
-  if (kept && specSave(kept.mode, kept.picks).join() === saved.join()) return kept;
-  return saved[0] === 'vehicle' && saved.length === 1 ? { mode: 'vehicle', picks: [] } : saved.length ? { mode: 'two', picks: saved } : { mode: 'none', picks: [] };
+// mode: 'none', 'alone' (one standalone area, e.g. vehicle) or 'pick' (rule.pick areas). Only the data's own areas and pick count are ever saved.
+export const specSave = (data, mode, picks) => (mode === 'alone' ? [specRule(data).alone[0]] : mode === 'pick' ? validSpecs(data, picks) : []);
+export function specView(data, saved) {
+  const rule = specRule(data), kept = ui.specPick ?? (app.state.specDraft && { mode: 'pick', picks: app.state.specDraft }); // after a refresh only the draft is left
+  if (kept && specSave(data, kept.mode, kept.picks).join() === saved.join()) return kept;
+  return saved.length === 1 && rule.pick > 1 && rule.alone.includes(saved[0]) ? { mode: 'alone', picks: [] } : saved.length ? { mode: 'pick', picks: saved } : { mode: 'none', picks: [] };
 }
+const PICK_WORD = { 1: 'תחום אחד', 2: 'שני תחומים', 3: 'שלושה תחומים' };
 const specForm = (saved) => {
-  const { mode, picks } = specView(saved);
-  const full = picks.length >= 2;
-  return `${seg('p-spec', 'התמחות', [['none', 'עוד לא בחרתי'], ['vehicle', 'רכב בלבד'], ['two', 'שני תחומים']], mode, 'data-chg="specMode"', true)}
-    ${mode === 'two' ? `<fieldset class="specs"><legend class="sr">שני תחומי התמחות</legend>${SPECS.map((p) => `<label class="check"><input type="checkbox"
-      data-chg="specPick" data-id="${p.id}" data-k="spec-${p.id}"${picks.includes(p.id) ? ' checked' : ''}${full && !picks.includes(p.id) ? ' disabled'
+  const { specializations: areas = [] } = app.data, rule = specRule(app.data), { mode, picks } = specView(app.data, saved), full = picks.length >= rule.pick;
+  const aloneName = areas.find((s) => s.id === rule.alone[0])?.name, word = PICK_WORD[rule.pick] ?? `${rule.pick} תחומים`;
+  const modes = [['none', 'עוד לא בחרתי'], ...(rule.pick > 1 && aloneName ? [['alone', `${aloneName} בלבד`]] : []), ['pick', word]].map(([v, t]) => [v, esc(t)]);
+  return `${seg('p-spec', 'התמחות', modes, mode, 'data-chg="specMode"', true)}
+    ${mode === 'pick' ? `<fieldset class="specs"><legend class="sr">${esc(word)}</legend>${areas.map((p) => `<label class="check"><input type="checkbox"
+      data-chg="specPick" data-id="${esc(p.id)}" data-k="spec-${esc(p.id)}"${picks.includes(p.id) ? ' checked' : ''}${full && !picks.includes(p.id) ? ' disabled'
       : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
-      ${saved.length ? '' : '<p class="hint" role="status">בחרו שני תחומים</p>'}` : ''}
-    <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>`;
+      ${saved.length ? '' : `<p class="hint" role="status">בחרו ${esc(word)}</p>`}` : ''}
+    <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה לפי הסבר התמחויות של המחלקה מ-2020. לא אומת.</p>' : ''}`;
 };
+
+// Program and cohort: only when the catalog offers a choice (one program with one cohort looks exactly as before).
+export function programPick() {
+  const { programs } = app.catalog, cur = programs.find((p) => p.id === app.state.program) ?? programs[0];
+  if (programs.length < 2 && cur.startYears.length < 2) return '';
+  const opt = (v, t, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(t)}</option>`;
+  const yr = (start) => YEARS.find(([n]) => n === app.data.year - start + 1)?.[1];
+  const years = cur.startYears.map((y) => opt(y, yr(y) ? `${y} · שנה ${yr(y)}׳` : String(y), y === app.state.startYear)).join('');
+  return `<div class="pick"><label class="field">תוכנית <select data-chg="program" data-k="program">${programs.map((p) => opt(p.id, heb(p.name), p.id === cur.id)).join('')}</select></label>
+    <label class="field">מחזור <select data-chg="cohort" data-k="cohort">${years}</select></label></div>`;
+}
 
 export function renderMe() {
   const el = $('me');
@@ -52,7 +66,7 @@ export function renderMe() {
   const { data, state, cls } = app;
   if (gated() && document.body.dataset.view !== 'me') { // the builder waits for the study year: one question, nothing else
     el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">באיזו שנה את/ה?</h1></div>
-      <section class="me-card gate">${seg('p-year', 'שנת לימודים', YEARS, null, 'data-chg="pyear"', false)}
+      <section class="me-card gate">${programPick()}${seg('p-year', 'שנת לימודים', YEARS, null, 'data-chg="pyear"', false)}
         <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p></section>`;
     return;
   }
@@ -71,12 +85,12 @@ export function renderMe() {
   const others = lists.filter((l) => !past(l) && !isSpec(l)), specOthers = lists.filter((l) => isSpec(l) && !sp.chosen.has(l.code));
   const step = onboarded()
     ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
-    : '<b>צעד ראשון:</b> סמנו מה כבר עברתם (שנה א׳ מסומנת מראש), ואז לחצו ״סיימתי״.';
+    : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${studyYear(data, state) > 1 ? ' (שנה א׳ מסומנת מראש)' : ''}, ואז לחצו ״סיימתי״.`;
   el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">המצב שלי</h1><p class="me-step">${step}</p></div>
     <div class="me-grid">
       <div class="me-side">
         <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
-          ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
+          ${programPick()}${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
           <div class="spec-sec">${specForm(state.profile.specs)}</div>
