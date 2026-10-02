@@ -10,7 +10,9 @@
       (6px between phone filters). Each node has an invisible hit circle of radius max(r, 22) in map units, so the target scales with the
       zoom. One finger pans, two pinch.
    4. Up to ~100 nodes: plain SVG. Edges are a muted neutral, one accent colour (--primary) marks the highlighted path.
-   5. Keyboard: focus reveals the chain, Enter or Space opens the card, Escape closes the map. */
+   5. Keyboard: focus reveals the chain, Enter or Space opens the card, Escape closes the map.
+   6. Layout: a band per study year (the student's own year outlined), electives last; electives nobody chose wait in the "לא רלוונטי" box.
+      Mouse wheel zooms toward the pointer, drag pans; the small +/-/fit buttons are for keyboards. */
 
 .pmap { position:fixed; inset:0; width:100vw; height:100dvh; max-width:none; max-height:none; margin:0; padding:0; border:0; background:var(--bg); color:var(--text);
   font:var(--fs)/1.5 var(--font); }
@@ -38,6 +40,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-seg button { padding:0 14px; }
 .pmap .pm-seg button[aria-pressed="true"] { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
 .pmap .pm-tools, .pmap .pm-zoom { display:flex; gap:8px; align-items:center; }
+@media (pointer:fine) { .pmap .pm-zoom .pm-ibtn { width:32px; min-height:32px; } } /* the wheel zooms: with a mouse the buttons are only a keyboard fallback */
 
 /* legend */
 .pmap .pm-legend { flex:none; padding:0 16px 8px; background:var(--surface); border-bottom:1px solid var(--border); font-size:var(--fs-sm); color:var(--text-2); }
@@ -55,6 +58,21 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-svg.ready { visibility:visible; }
 .pmap .pm-loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-2); pointer-events:none; }
 .pmap .pm-svg.ready ~ .pm-loading { display:none; }
+
+/* study-year bands: a quiet panel per year behind the graph, the student's own year outlined */
+.pmap .bands { pointer-events:none; }
+.pmap .band rect { fill:var(--surface-2); stroke:var(--border); stroke-width:1; }
+.pmap .band.mine rect { stroke:var(--primary); stroke-dasharray:6 4; }
+.pmap .band .bt { fill:var(--text); font-size:16px; font-weight:700; }
+.pmap .band .bs { fill:var(--text-2); font-size:11px; }
+
+/* "לא רלוונטי": a collapsed box over the map's bottom corner (far side from the first year), a plain section in the list view */
+.pmap .pm-aside { position:absolute; inset-block-end:8px; inset-inline-end:8px; z-index:4; max-width:min(340px, calc(100% - 16px)); max-height:min(55%, 420px); overflow:auto; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:var(--shadow-pop); font-size:var(--fs-sm); }
+.pmap .pm-aside summary { cursor:pointer; min-height:36px; padding:0 14px; display:flex; align-items:center; font-weight:600; }
+.pmap .pm-aside p { margin:0; padding:0 14px 4px; color:var(--text-2); font-size:var(--fs-xs); }
+.pmap .pm-aside ul { padding:0 14px 10px; }
+.pmap .pm-aside li { padding:4px 0; border-top:1px solid var(--border); }
+.pmap .pm-list .pm-aside { position:static; max-width:none; max-height:none; box-shadow:none; }
 
 /* edges: soft neutral curves; prerequisites solid, parallel dashed */
 .pmap .edges { pointer-events:none; }
