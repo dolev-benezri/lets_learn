@@ -16,14 +16,14 @@ const RULES = {
   19: { deptName: 'מדעי הנתונים', degree: { total: null, specCredits: 0 } },
   20: { deptName: 'חשמל', specRule: { pick: 2, alone: ['power'], verified: false }, degree: { total: 160, specCredits: 20 } },
   30: { deptName: 'מכנית', specRule: { pick: 2, alone: ['vehicle'] }, degree: { total: 160, specCredits: 27 } },
-  40: { deptName: 'תעשייה וניהול', degree: { total: 160, specCredits: 0 } },
+  40: { deptName: 'תעשייה וניהול', specRule: { pick: 2, alone: [], groups: [['mis', 'dss', 'bi'], ['smis', 'sdss', 'sbi']], verified: false }, degree: { total: 160, specCredits: 0 } },
   50: { deptName: 'רפואית', specRule: { pick: 1, verified: false }, degree: { total: 160, specCredits: 0 } },
   61: { deptName: 'מערכות', degree: { total: null, specCredits: 0 } },
   65: { deptName: 'מערכות תבוניות', degree: { total: null, specCredits: 0 } },
 };
 // Specialization track code -> the id stored in users' saved state (never change one that has shipped).
 export const SPEC_IDS = { 37: 'solid', 31: 'flow', 39: 'mech', 302: 'vehicle', 303: 'materials', 304: 'aero', 21: 'comm', 24: 'signals', 208: 'computers', 23: 'power', 209: 'powerel',
-  13: 'tech', 16: 'mobile', 17: 'cyber', 18: 'ml', 53: 'medinfo', 54: 'physio' };
+  47: 'mis', 48: 'dss', 49: 'bi', 407: 'smis', 408: 'sdss', 409: 'sbi', 13: 'tech', 16: 'mobile', 17: 'cyber', 18: 'ml', 53: 'medinfo', 54: 'physio' };
 
 // { dept: { year: [{ code, name, lists: [{ code, name }] }] } } for the tracks the site shows.
 export async function discover({ request, depts = DEPTS, years, log = () => {} }) {
@@ -71,7 +71,7 @@ export function draftPrograms(found) {
       const specializations = byYear[newest].filter(isSpec).map((t) => {
         const of = (kind) => t.lists.filter((l) => listKind(l.name) === kind).map((l) => l.code), one = (c) => (c.length > 1 ? c : c[0]);
         const [mandatory, elective, alone] = ['mandatory', 'elective', 'alone'].map(of);
-        return { id: SPEC_IDS[t.code] ?? `s${t.code}`, name: t.name.replace(/^התמחות\s*/, '').replace(/,(?=\S)/g, ', '), ...(mandatory.length && { mandatory: one(mandatory) }),
+        return { id: SPEC_IDS[t.code] ?? `s${t.code}`, name: t.name.replace(/^התמחות\s*/, '').replace(/^ראש'/, 'ראשית').replace(/^מש'/, 'משנית').replace(/,(?=\S)/g, ', '), ...(mandatory.length && { mandatory: one(mandatory) }),
           ...(elective.length && { elective: one(elective) }), ...(alone.length && { aloneExtra: alone[0] }) };
       });
       out[code] = { name, dept, ...RULES[dept], lists, cohorts, ...(specializations.length && { specializations }), anchor: null };

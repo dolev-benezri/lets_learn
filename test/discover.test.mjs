@@ -54,3 +54,13 @@ test('draftPrograms: several mandatory or elective lists of one area become arra
   assert.deepEqual(p[10].specializations, [{ id: 'tech', name: 'טכנולוגיות תוכנה ומידע', mandatory: [10101, 10103], elective: 10102 },
     { id: 'signals', name: 'עיבוד אותות, עיבוד תמונה', mandatory: [20117, 20133], elective: 20118 }]);
 });
+
+test('draftPrograms: industrial engineering main and secondary areas get stable ids, spelled-out names and the main+secondary rule', () => {
+  const p = draftPrograms({ 40: { 2026: [{ code: 40, name: 'הנדסת תעשייה וניהול מסלול יום', lists: [L(40001, "קורסי חובה שנה א'")] },
+    { code: 47, name: 'התמחות ראשית מערכות מידע', lists: [L(40121, 'חובה'), L(40122, 'בחירה')] },
+    { code: 49, name: "התמחות ראש' אנליטיקה", lists: [L(40127, 'חובה'), L(40128, 'בחירה')] },
+    { code: 407, name: 'התמחות משנית מערכות מידע', lists: [L(40123, 'חובה')] },
+    { code: 409, name: "התמחות מש' אנליטיקה", lists: [L(40129, 'חובה')] }] } });
+  assert.deepEqual(p[40].specializations.map((s) => [s.id, s.name]), [['mis', 'ראשית מערכות מידע'], ['bi', 'ראשית אנליטיקה'], ['smis', 'משנית מערכות מידע'], ['sbi', 'משנית אנליטיקה']]);
+  assert.deepEqual(p[40].specRule.groups, [['mis', 'dss', 'bi'], ['smis', 'sdss', 'sbi']]);
+});

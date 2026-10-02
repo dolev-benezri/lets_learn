@@ -15,6 +15,7 @@ for (const [id, p] of Object.entries(programs)) {
     }
     const ids = (p.specializations ?? []).map((s) => s.id);
     assert.equal(new Set(ids).size, ids.length, 'duplicate specialization id');
+    for (const g of p.specRule?.groups ?? []) for (const a of g) assert.ok(ids.includes(a), `specRule.groups names an unknown area ${a}`);
     assert.ok(p.name && p.deptName && p.degree, 'name, deptName and degree are required');
   });
 }
