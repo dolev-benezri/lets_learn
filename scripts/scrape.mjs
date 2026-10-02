@@ -250,7 +250,7 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
         year: Number(opt.year), startYear: u.start, program: u.program, semester, department: u.cfg.deptName, lists: u.lists, raw, exams: examsOf.get(u.cfg.dept), fetchedAt,
         warnings: buildWarnings, specializations: u.cfg.specializations, degree: u.cfg.degree, specRule: u.cfg.specRule, verified: u.cfg.verified,
       });
-      const { errors, warnings } = check(dataset, prev, u.cfg.anchor);
+      const { errors, warnings } = check(dataset, prev, u.cfg.anchor, u.cfg.minCourses);
       [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${label}: ${w}`));
       const found = errors.map((e) => `${label}: ${e}`);
       const { errors: comparisonErrors } = compareToPrevious(prev, dataset);

@@ -303,3 +303,9 @@ test('compareToPrevious: a field the parser stops filling is refused, a field th
   const some = full(); Object.values(some.courses).slice(0, 3).forEach((c) => { c.groups[0].lecturer = ''; }); // 15% fewer: within tolerance
   assert.equal(refusedFor(full(), some, 'lecturer'), false);
 });
+
+test('validate: a small program sets its own minimum course count', () => {
+  const d = buildDataset(base());
+  assert.ok(validate(d, null, null).errors.some((e) => e.includes('at least 40')));
+  assert.deepEqual(validate(d, null, null, 1).errors, []);
+});

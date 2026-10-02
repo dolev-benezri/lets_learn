@@ -65,13 +65,13 @@ const prereqCount = (d, ids = Object.keys(d.courses)) => ids.reduce((a, id) => a
 
 // `prev` (the existing file for this semester, if any) enables the checks that compare against it.
 // `anchor` ({ course, name, minPrimaryGroups }): a course every full semester must have, a cheap sign the scrape is whole.
-export function validate(d, prev = null, anchor = null) {
+export function validate(d, prev = null, anchor = null, minCourses = 40) {
   const errors = [], warnings = [];
   const n = Object.keys(d.courses).length;
   if (d.semester === 'קיץ') { // thin: no size or anchor requirement, but something must be scheduled
     if (!Object.values(d.courses).some((c) => c.groups.length)) errors.push('summer has no course with a group');
   } else {
-    if (n < 40) errors.push(`only ${n} courses, expected at least 40`);
+    if (n < minCourses) errors.push(`only ${n} courses, expected at least ${minCourses}`);
     const a = anchor && d.courses[anchor.course];
     if (anchor && !a) errors.push(`course ${anchor.course} (${anchor.name}) missing`);
     else if (a && a.groups.filter((g) => g.primary).length < anchor.minPrimaryGroups) errors.push(`course ${anchor.course} has fewer than ${anchor.minPrimaryGroups} primary groups`);
