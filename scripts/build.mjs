@@ -1,7 +1,7 @@
 export const normName = (s) => s.replace(/["'׳״]/g, '').replace(/\s+/g, ' ').trim();
 export const normLecturer = (s) => normName(s).replace(/^(דר|פרופ|מר|גב|גברת)\.?\s+/, '');
 
-export function buildDataset({ year, startYear, program, semester, department, lists, raw, exams, fetchedAt, warnings = [] }) {
+export function buildDataset({ year, startYear, program, semester, department, lists, raw, exams, fetchedAt, warnings = [], specializations, degree }) {
   const idByName = new Map();
   for (const l of lists) for (const c of l.courses) idByName.set(normName(c.name), c.id);
 
@@ -56,20 +56,27 @@ export function buildDataset({ year, startYear, program, semester, department, l
     fetchedAt, year, startYear, program, semester,
     examsPublished: semExams.length > 0,
     lists: lists.map((l) => ({ code: l.code, name: l.name, minCredits: l.minCredits, courses: [...new Set(l.courses.map((c) => c.id))] })),
+    specializations, degree,
     courses,
   };
 }
 
-const prereqCount = (d) => Object.values(d.courses).reduce((a, c) => a + c.prereqs.length, 0);
+const prereqCount = (d, ids = Object.keys(d.courses)) => ids.reduce((a, id) => a + d.courses[id].prereqs.length, 0);
 
 // `prev` (the existing file for this semester, if any) enables the checks that compare against it.
 export function validate(d, prev = null) {
   const errors = [], warnings = [];
   const n = Object.keys(d.courses).length;
-  if (n < 40) errors.push(`only ${n} courses, expected at least 40`);
-  const phys = d.courses['90903'];
-  if (!phys) errors.push('course 90903 (פיזיקה-מכניקה) missing');
-  else if (phys.groups.filter((g) => g.primary).length < 3) errors.push('course 90903 has fewer than 3 primary groups');
+  if (d.semester === 'קיץ') { // thin: no size or 90903 requirement, but something must be scheduled
+    if (!Object.values(d.courses).some((c) => c.groups.length)) errors.push('summer has no course with a group');
+  } else {
+    if (n < 40) errors.push(`only ${n} courses, expected at least 40`);
+    const phys = d.courses['90903'];
+    if (!phys) errors.push('course 90903 (פיזיקה-מכניקה) missing');
+    else if (phys.groups.filter((g) => g.primary).length < 3) errors.push('course 90903 has fewer than 3 primary groups');
+  }
+  const listed = new Set(d.lists.map((l) => l.code));
+  for (const s of d.specializations ?? []) for (const code of [s.mandatory, s.elective, s.aloneExtra]) if (code && !listed.has(code)) errors.push(`specialization ${s.id}: list ${code} not scraped`);
   for (const [id, c] of Object.entries(d.courses)) {
     if (c.offered && c.credits === 0) warnings.push(`${id}: offered course with 0 credits (check parseDetails)`);
     const linked = new Set(c.groups.flatMap((g) => g.linked));
@@ -94,8 +101,10 @@ function fieldHealth(d, prev, errors) {
   const withCredits = offered.filter((c) => c.credits > 0).length;
   if (offered.length && withCredits / offered.length <= 0.9) errors.push(`only ${withCredits} of ${offered.length} offered courses have credits (check parseDetails)`);
 
-  if (prev && prereqCount(prev)) {
-    const a = prereqCount(prev), b = prereqCount(d), change = (b - a) / a;
+  // Only courses in both files: adding a list of new courses is not a parser regression.
+  const common = prev ? Object.keys(d.courses).filter((id) => prev.courses[id]) : [];
+  if (prev && prereqCount(prev, common)) {
+    const a = prereqCount(prev, common), b = prereqCount(d, common), change = (b - a) / a;
     if (Math.abs(change) > 0.2) errors.push(`prerequisite count changed by ${(change * 100).toFixed(1)}% (was ${a}, now ${b})`);
   }
 

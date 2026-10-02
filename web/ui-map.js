@@ -29,8 +29,11 @@ export function courseYears(data) {
 }
 // Electives the student has no stake in stay off the map: in no required list (a year, English, the final project…), not chosen "חובה"/"אולי", not passed or being retaken.
 const REQUIRED = /חובה|פרויקט גמר/;
+// Specialization lists (data.specializations) are required of nobody by default: out of REQUIRED and the progress total until they follow the chosen specs.
+const specCodes = (data) => new Set((data.specializations ?? []).flatMap((s) => [s.mandatory, s.elective, s.aloneExtra]));
 export const asideIds = (data, statuses, choices = {}) => {
-  const req = new Set(data.lists.filter((l) => REQUIRED.test(l.name)).flatMap((l) => l.courses));
+  const spec = specCodes(data);
+  const req = new Set(data.lists.filter((l) => REQUIRED.test(l.name) && !spec.has(l.code)).flatMap((l) => l.courses));
   return Object.keys(data.courses).filter((id) => !req.has(id) && !['must', 'optional'].includes(choices[id]) && !['done', 'exempt', 'retake'].includes(statuses[id]?.status));
 };
 
@@ -149,7 +152,8 @@ const isDone = (st, id) => ['done', 'exempt'].includes(st[id]?.status);
 export function progressInfo(data, st, plan = new Set()) {
   const seen = new Set();
   let total = 0, done = 0, planned = 0;
-  for (const l of data.lists) {
+  const spec = specCodes(data);
+  for (const l of data.lists.filter((x) => !spec.has(x.code))) {
     const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)), min = Number(l.minCredits) || 0;
     ids.forEach((id) => seen.add(id));
     const sum = (f) => ids.filter(f).reduce((s, id) => s + (Number(data.courses[id].credits) || 0), 0);

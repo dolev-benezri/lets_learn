@@ -86,9 +86,10 @@ test('semestersIn lists the semesters that have meetings, in site order', () => 
   assert.deepEqual(semestersIn(raw), ['א', 'ב']);
 });
 
-test('semestersIn leaves out summer: the app plans only א and ב, and a thin summer must not abort the run', () => {
-  const raw = { 1: { groups: [{ meetings: [{ semester: 'א' }, { semester: 'קיץ' }] }] } };
-  assert.deepEqual(semestersIn(raw), ['א']);
+test('semestersIn includes summer when it has meetings, after ב', () => {
+  const raw = { 1: { groups: [{ meetings: [{ semester: 'קיץ' }, { semester: 'ב' }] }, { meetings: [{ semester: 'א' }] }] } };
+  assert.deepEqual(semestersIn(raw), ['א', 'ב', 'קיץ']);
+  assert.deepEqual(semestersIn({ 1: { groups: [{ meetings: [{ semester: 'א' }] }] } }), ['א']);
 });
 
 // ---- writing ----
@@ -168,4 +169,43 @@ test('run: a failing check on any semester writes nothing', async () => {
   // fixture data is far smaller than a real semester, so validate() refuses it
   await assert.rejects(run({ opt, request: site(), dataDir, log: () => {} }), /checks failed, nothing written/);
   assert.deepEqual(readdirSync(dataDir), []);
+});
+
+// ---- summer ----
+const withSummer = () => { // course 1 (and only it) has its ב meetings moved to summer
+  const real = site();
+  let n = 0;
+  return async (query) => {
+    const html = await real(query);
+    return query?.startsWith('prgname=S_LOOK_FOR_NOSE') && ++n === 1 ? html.replaceAll('&nbsp;ב<', '&nbsp;קיץ<') : html;
+  };
+};
+const noErrors = () => ({ errors: [], warnings: [] });
+
+test('run: a summer that fails its checks is skipped with a warning; א and ב are still written', async () => {
+  const root = join(dirs().status, '..'), logs = [];
+  const check = (d) => ({ errors: d.semester === 'קיץ' ? ['no groups'] : [], warnings: [] });
+  const summary = await run({ opt, request: withSummer(), dataDir: root, log: (m) => logs.push(m), check });
+  assert.deepEqual(readdirSync(root).sort(), ['2027-1', '2027-2', 'status.json']);
+  assert.ok(logs.some((m) => m.startsWith('WARN summer not written') && m.includes('2027-3: no groups')));
+  assert.ok(!summary.includes('2027-3'));
+  assert.deepEqual(Object.keys(json(join(root, 'status.json')).semesters).sort(), ['2027-1', '2027-2']);
+});
+
+test('run: a summer that passes is written to 2027-3 with the specializations', async () => {
+  const root = join(dirs().status, '..');
+  await run({ opt, request: withSummer(), dataDir: root, log: () => {}, check: noErrors });
+  assert.deepEqual(readdirSync(root).sort(), ['2027-1', '2027-2', '2027-3', 'status.json']);
+  const d = json(join(root, '2027-3', '30-2026.json'));
+  assert.equal(d.semester, 'קיץ');
+  assert.deepEqual(d.specializations.map((s) => s.id), ['solid', 'flow', 'mech', 'vehicle', 'materials', 'aero']);
+  assert.deepEqual(d.degree, { total: 160, specCredits: 27 });
+  assert.deepEqual(d.specializations.find((s) => s.id === 'vehicle'), { id: 'vehicle', name: 'מערכות רכב', mandatory: 30121, elective: 30122, aloneExtra: 30127 });
+});
+
+test('run: a failure in א or ב still aborts everything, even when summer is fine', async () => {
+  const root = join(dirs().status, '..');
+  const check = (d) => ({ errors: d.semester === 'ב' ? ['boom'] : [], warnings: [] });
+  await assert.rejects(run({ opt, request: withSummer(), dataDir: root, log: () => {}, check }), /2027-2: boom/);
+  assert.deepEqual(readdirSync(root), []);
 });
