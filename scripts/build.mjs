@@ -96,6 +96,8 @@ function fieldHealth(d, prev, errors) {
   const meetings = courses.flatMap((c) => c.groups).flatMap((g) => g.meetings);
   const noDay = meetings.filter((m) => m.day === null).length;
   if (noDay) errors.push(`${noDay} meeting(s) without a day (check parseDay)`);
+  const oddHours = meetings.filter((m) => !(m.start < m.end && m.start >= '07:00' && m.end <= '23:30')).length;
+  if (oddHours) errors.push(`${oddHours} meeting(s) with implausible hours (check parseTime)`);
 
   const offered = courses.filter((c) => c.offered);
   const withCredits = offered.filter((c) => c.credits > 0).length;
@@ -115,15 +117,26 @@ function fieldHealth(d, prev, errors) {
   if (badExams) errors.push(`${badExams} exam date(s) outside ${lo}..${hi} (check toIsoDate)`);
 }
 
+const groupsOf = (d) => Object.values(d.courses).flatMap((c) => c.groups);
+
 // Refuse a scrape that shrank sharply against the existing file (a partly blocked run must not overwrite good data).
 const SHRINK = [['course count', 0.1, (d) => Object.keys(d.courses).length],
   ['offered-course count', 0.2, (d) => Object.values(d.courses).filter((c) => c.offered).length],
-  ['group count', 0.25, (d) => Object.values(d.courses).reduce((a, c) => a + c.groups.length, 0)]];
+  ['group count', 0.25, (d) => Object.values(d.courses).reduce((a, c) => a + c.groups.length, 0)],
+  ['meeting count', 0.25, (d) => groupsOf(d).reduce((a, g) => a + g.meetings.length, 0)],
+  ['exam count', 0.5, (d) => groupsOf(d).reduce((a, g) => a + g.exams.length, 0)]]; // 0 before: nothing to compare
+// A field the parser stops filling: the share of groups that have it must not fall by more than 20 points. No growth check: semester ב fills up as groups open.
+const FILLED = [['lecturer', (g) => g.lecturer], ['room', (g) => g.meetings.length && g.meetings.every((m) => m.room)], ['linked sub-groups', (g) => g.linked.length]];
+const share = (d, has) => { const gs = groupsOf(d); return gs.length ? gs.filter(has).length / gs.length : 0; };
 export function compareToPrevious(prev, next) {
   const errors = [];
   if (prev) for (const [what, max, count] of SHRINK) {
     const a = count(prev), b = count(next), drop = (a - b) / a;
     if (drop > max) errors.push(`${what} dropped by ${(drop * 100).toFixed(1)}% (was ${a}, now ${b})`);
+  }
+  if (prev) for (const [what, has] of FILLED) {
+    const a = share(prev, has), b = share(next, has);
+    if (a - b > 0.2) errors.push(`groups with ${what} fell from ${(a * 100).toFixed(0)}% to ${(b * 100).toFixed(0)}% (check the parser)`);
   }
   return { errors };
 }

@@ -179,8 +179,9 @@ test('compareToPrevious allows group count drop <= 25%', () => {
 });
 
 test('compareToPrevious thresholds: a drop at the limit passes, one step past it is refused', () => {
-  const sized = (n, offered = n) => ({ courses: Object.fromEntries(Array.from({ length: n }, (_, i) => [`c${i}`, { offered: i < offered, groups: [{}] }])) });
-  const groups = (n) => ({ courses: { c: { offered: true, groups: Array.from({ length: n }, () => ({})) } } });
+  const bare = { linked: [], meetings: [], exams: [] };
+  const sized = (n, offered = n) => ({ courses: Object.fromEntries(Array.from({ length: n }, (_, i) => [`c${i}`, { offered: i < offered, groups: [{ ...bare }] }])) });
+  const groups = (n) => ({ courses: { c: { offered: true, groups: Array.from({ length: n }, () => ({ ...bare })) } } });
   const refused = (prev, next, what) => compareToPrevious(prev, next).errors.some((e) => e.includes(what));
   assert.equal(refused(sized(10), sized(9), 'course count'), false); // 10% exactly
   assert.equal(refused(sized(10), sized(8), 'course count'), true);
@@ -263,4 +264,32 @@ test('validate: exam dates outside the academic year are an error', () => {
   assert.ok(validate(d).errors.some((e) => e.includes('exam')));
   d.courses['20002'].groups[0].exams[0].date = '2027-09-20'; // moed gimel in September is fine
   assert.deepEqual(validate(d).errors, []);
+});
+
+// ---- anomaly guards: a changed page layout that still parses must not overwrite good data ----
+test('validate: a meeting that ends before it starts, or sits outside 07:00-23:30, is an error', () => {
+  for (const [start, end] of [['10:00', '09:00'], ['05:00', '06:50'], ['21:00', '23:50']]) {
+    const d = healthy();
+    Object.assign(d.courses['20001'].groups[0].meetings[0], { start, end });
+    assert.ok(validate(d).errors.some((e) => e.includes('implausible hours')), `${start}-${end}`);
+  }
+});
+
+const full = (n = 20) => ({ courses: Object.fromEntries(Array.from({ length: n }, (_, i) => [`c${i}`, { offered: true, groups: [{ lecturer: 'x', linked: ['y'], meetings: [{ room: 'r' }, { room: 'r' }], exams: [{}] }] }])) });
+const refusedFor = (prev, next, what) => compareToPrevious(prev, next).errors.some((e) => e.includes(what));
+const edit = (d, f) => { const c = structuredClone(d); Object.values(c.courses).forEach((x) => x.groups.forEach(f)); return c; };
+
+test('compareToPrevious: meetings or exams collapsing while groups stay is refused', () => {
+  assert.equal(refusedFor(full(), edit(full(), (g) => { g.meetings = g.meetings.slice(0, 1); }), 'meeting count'), true); // 50% gone
+  assert.equal(refusedFor(full(), edit(full(), (g) => { g.exams = []; }), 'exam count'), true);
+  assert.equal(refusedFor(edit(full(), (g) => { g.exams = []; }), full(), 'exam count'), false); // exams published later: no guard on growth
+});
+
+test('compareToPrevious: a field the parser stops filling is refused, a field that fills up is not', () => {
+  assert.equal(refusedFor(full(), edit(full(), (g) => { g.lecturer = ''; }), 'lecturer'), true);
+  assert.equal(refusedFor(full(), edit(full(), (g) => { g.meetings[0].room = ''; }), 'room'), true);
+  assert.equal(refusedFor(full(), edit(full(), (g) => { g.linked = []; }), 'linked'), true);
+  assert.equal(refusedFor(edit(full(), (g) => { g.lecturer = ''; }), full(), 'lecturer'), false);
+  const some = full(); Object.values(some.courses).slice(0, 3).forEach((c) => { c.groups[0].lecturer = ''; }); // 15% fewer: within tolerance
+  assert.equal(refusedFor(full(), some, 'lecturer'), false);
 });
