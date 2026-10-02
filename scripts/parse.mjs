@@ -102,3 +102,9 @@ export function parseExams(html) {
         .filter((m) => m.date),
     }));
 }
+
+// JSON Action=700: the tracks of one department in one cohort year.
+export const parseTracks = (text) => (JSON.parse(text).Answer ?? []).map((t) => ({ code: Number(t.Code), name: clean(t.Name) }));
+
+// S_PROG: the lists (code and name) that a track page links to, in page order.
+export const parseTrackLists = (html) => [...html.matchAll(/<div class="col">([^<]*)<\/div>\s*<div class="col"><A href="[^"]*-N\d+,-N(\d+)"/g)].map((m) => ({ code: Number(m[2]), name: clean(m[1]) }));
