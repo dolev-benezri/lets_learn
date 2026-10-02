@@ -459,24 +459,24 @@ function friendsPanel() {
     const miss = f.groups.filter((g) => !known.has(g)).length;
     return `<div class="frow"><span class="av lg" aria-hidden="true">${esc(initials(f.name))}</span>
       <div class="grow"><b>${esc(f.name)}</b><p class="hint">${f.groups.length - miss} קבוצות${miss ? ` · <span class="warn-text">${miss} לא נמצאו</span>` : ''}</p></div>
-      ${f.manual ? `<button type="button" class="btn icon-btn ghost" id="editFriend-${i}" data-act="editFriend" data-i="${i}" aria-label="ערוך את ${esc(f.name)}">${icon('pencil')}</button>` : ''}
-      <button type="button" class="btn icon-btn ghost" data-act="removeFriend" data-i="${i}" aria-label="הסר את ${esc(f.name)}">${icon('x')}</button>
+      <div class="frow-acts">${f.manual ? `<button type="button" class="btn icon-btn ghost" id="editFriend-${i}" data-act="editFriend" data-i="${i}" aria-label="ערוך את ${esc(f.name)}">${icon('pencil')}</button>` : ''}
+      <button type="button" class="btn icon-btn ghost" data-act="removeFriend" data-i="${i}" aria-label="הסר את ${esc(f.name)}">${icon('x')}</button></div>
       <div class="frow-full">${seg(`fw-${i}`, `כמה חשוב להיות עם ${f.name}?`, FSCALE, nearestStep(f.weight, [0, 1, 2, 3]), `data-chg="fw" data-i="${i}"`, true)}
       <label class="check"><input type="checkbox" data-chg="factive" data-i="${i}" data-k="fa-${i}"${f.active ? ' checked' : ''}> להציג במערכת</label></div></div>`;
   };
   return ['חברים', `
-    <section class="dr-sec"><h3>הוספת חבר</h3>
+    <section class="dr-sec fr-sec"><h3>הוספת חבר</h3>
       <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
       <form id="addFriendForm" class="row"><label for="friendUrl" class="sr">קישור שחבר שלח</label>
         <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו כאן קישור שחבר שלח" value="${esc(friendUrl)}"
           aria-describedby="friendHow${friendMsg ? ' friendErr' : ''}"${friendMsg ? ' aria-invalid="true"' : ''}>
         <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
       ${friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(friendMsg)}</p>` : ''}
-      <button type="button" class="btn" id="openFriendEditor" data-act="openFriendEditor" data-k="openFriendEditor">הזנת מערכת של חבר</button></section>
-    <section class="dr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || '<p class="hint">עוד אין חברים.</p>'}</section>
-    <section class="dr-sec"><h3>הקישור שלי</h3>
+      <button type="button" class="btn fr-wide" id="openFriendEditor" data-act="openFriendEditor" data-k="openFriendEditor">הזנת מערכת של חבר</button></section>
+    <section class="dr-sec fr-sec"><h3>החברים שלי</h3>${state.friends.map(row).join('') || `<div class="fr-empty">${icon('user-plus')}<p><b>עוד אין חברים</b></p><p class="hint">הדביקו למעלה קישור שחבר שלח, או הזינו את המערכת שלו ידנית.</p></div>`}</section>
+    <section class="dr-sec fr-sec"><h3>הקישור שלי</h3>
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
-      <button type="button" class="btn" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
+      <button type="button" class="btn fr-wide" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
       <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`];
 }
 
