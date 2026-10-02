@@ -34,7 +34,7 @@ export const decode = async (s) => {
 };
 
 export const friendPayload = (state, groups) =>
-  ({ v: 1, year: state.year, semester: state.semester, program: state.program, name: state.name, groups });
+  ({ v: 1, year: state.year, semester: state.semester, program: state.program, startYear: state.startYear, name: state.name, groups });
 
 export const friendLink = async (base, state, groups) => `${base}#f=${await encode(friendPayload(state, groups))}`;
 export const backupLink = async (base, state) => `${base}#b=${await encode({ ...state, v: 1 })}`;
@@ -76,7 +76,7 @@ export async function readHash(hash, { year, semester }) {
       if (typeof g !== 'string' || g.length > 20) return { error: 'הקישור פגום' };
     }
     // Rebuild friend object (drops unknown keys, no __proto__)
-    return { type: 'friend', payload: { v: 1, year: payload.year, semester: payload.semester, program: payload.program, name: payload.name, groups: payload.groups } };
+    return { type: 'friend', payload: { v: 1, year: payload.year, semester: payload.semester, program: payload.program, startYear: payload.startYear, name: payload.name, groups: payload.groups } };
   } else {
     // Backup: passed (array of strings), failed/choices/weights/constraints (plain objects), friends/pins (arrays)
     if (!Array.isArray(payload.passed)) return { error: 'הקישור פגום' };

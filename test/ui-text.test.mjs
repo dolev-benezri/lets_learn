@@ -100,3 +100,8 @@ test('partialNote: offers "חפש עוד" below the cap, explains instead at the
   assert.equal(b.more, false);
   assert.match(b.text, /סמנו פחות קורסים/);
 });
+
+import { hebYear } from '../web/ui-text.js';
+test('hebYear: the Hebrew academic year of a Gregorian end year, with the 15 and 16 exceptions', () => {
+  assert.deepEqual([2027, 2026, 2025, 2024, 2023, 2015, 1955, 1956].map(hebYear), ['תשפ״ז', 'תשפ״ו', 'תשפ״ה', 'תשפ״ד', 'תשפ״ג', 'תשע״ה', 'תשט״ו', 'תשט״ז']);
+});

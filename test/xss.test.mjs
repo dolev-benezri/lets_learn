@@ -37,7 +37,7 @@ globalThis.location = { hash: '', origin: 'https://x', pathname: '/' };
 const { app, normalize, refresh, yearCourses } = app_;
 const { ui, current } = await import('../web/ui-common.js');
 const { renderTop, renderBanner, renderView } = await import('../web/ui-view.js');
-const { renderMe } = await import('../web/ui-me.js');
+const { renderMe, programPick } = await import('../web/ui-me.js');
 const { renderSide } = await import('../web/ui-side.js');
 const { renderDrawer } = await import('../web/ui-drawer.js');
 const { openPop, groupIndex } = await import('../web/ui-grid.js');
@@ -52,6 +52,7 @@ app.sem['א'] = hostile(read(1));
 app.sem['ב'] = hostile(read(2));
 app.sem['קיץ'] = hostile(read(3));
 const gids = Object.values(app.sem['א'].courses).flatMap((c) => c.groups.map((g) => g.id));
+app.catalog = { programs: [{ id: 30, name: `a${P}`, startYears: [2026, 2025] }, { id: 20, name: `b${P}`, startYears: [2026] }] }; // a hostile catalog: names reach the picker and the title
 app.state = normalize({ v: 1 });
 Object.assign(app.state, { name: P, passed: app.sem['א'].lists.find((l) => l.name.includes("שנה א'")).courses }); // year 1 passed, as on a first visit
 app.state.profile = { ...app.state.profile, year: 2, summer: true, amirnet: 120 };
@@ -80,6 +81,7 @@ run('banner', () => { renderBanner(); });
 document.body.dataset.view = 'me';
 run('me', () => { fake('me').hidden = false; renderMe(); });
 document.body.dataset.view = 'plan';
+run('picker', () => { writes.push({ scope: 'picker', id: 'pick', html: programPick() }); });
 run('view', () => { renderView(); });
 run('side', () => { renderSide(current()); });
 for (const p of ['prefs', 'friends', 'reg']) run(`drawer-${p}`, () => { ui.panel = p; renderDrawer(); });
@@ -100,7 +102,7 @@ test('the search found plans, so the board and the registration list render real
 });
 
 test('every renderer got the payload and wrote it escaped (no element or on* attribute created from data)', () => {
-  const scopes = ['top', 'banner', 'me', 'view', 'side', 'drawer-prefs', 'drawer-friends', 'drawer-reg', 'pop', 'map', 'friend-editor'];
+  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'drawer-prefs', 'drawer-friends', 'drawer-reg', 'pop', 'map', 'friend-editor'];
   for (const s of scopes) {
     const mine = writes.filter((w) => w.scope === s);
     assert.ok(mine.length, `${s}: nothing written`);

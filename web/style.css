@@ -115,6 +115,8 @@ aside { grid-area:side; min-width:0; padding:2px; }
 .crs[data-st="passed"] { background:var(--success-soft); border-color:#B7E4CF; }
 .crs[data-st="failed"] { background:var(--danger-soft); border-color:#F6C7C9; }
 .crs[data-st="exempt"] { display:flex; align-items:center; gap:8px; padding:10px; background:var(--surface-2); color:var(--text-2); }
+.pick { display:flex; flex-wrap:wrap; gap:4px 12px; margin-bottom:8px; } /* program and cohort (ui-me.js programPick) */
+.pick select { min-height:var(--tap); max-width:100%; padding:0 8px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); font:inherit; }
 .profile .field input { width:96px; min-height:var(--tap); padding:0 10px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); }
 .crs .grade { width:96px; min-height:var(--tap); padding:0 10px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); }
 .crs .seg legend { font-weight:500; }

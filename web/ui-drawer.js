@@ -1,7 +1,7 @@
 // Drawer panels: preferences, friends, registration list.
 import { app, esc, DEFAULT } from './app.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, backups, isPair, semResult } from './ui-grid.js';
-import { groupLabel, strictnessHint, defaultNotes } from './ui-text.js';
+import { groupLabel, strictnessHint, defaultNotes, hebYear } from './ui-text.js';
 import { WEIGHTS, SCALE, FSCALE, SEMS, scopes, colors, LOAD, HARD, SHEET, current, allGroupIds, seg, $, ui } from './ui-common.js';
 
 // ---------- drawer panels ----------
@@ -117,7 +117,7 @@ function regPanel() {
       : '<p class="hint">אין קורסים בסמסטר הזה.</p>'}`).join('')}
     <section class="dr-sec"><h3>בחינות</h3>${data.examsPublished
       ? `<ul class="plain">${exams.map((e) => `<li>${esc(data.courses[e.course].name)} · מועד ${esc(e.moed)} · <bdi dir="ltr">${esc(e.date)} ${esc(e.time ?? '')}</bdi></li>`).join('')}</ul>`
-      : '<p class="hint">לוח הבחינות של תשפ״ז טרם פורסם.</p>'}</section>`,
+      : `<p class="hint">לוח הבחינות של ${hebYear(data.year)} טרם פורסם.</p>`}</section>`,
   `<button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>`];
 }
 

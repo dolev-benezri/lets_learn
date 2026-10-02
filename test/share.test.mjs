@@ -12,7 +12,7 @@ test('encode/decode round-trips Hebrew JSON', async () => {
 
 test('friend payload carries no personal academic state', () => {
   const p = friendPayload(state, ['279090303', '279090303/1']);
-  assert.deepEqual(Object.keys(p).sort(), ['groups', 'name', 'program', 'semester', 'v', 'year']);
+  assert.deepEqual(Object.keys(p).sort(), ['groups', 'name', 'program', 'semester', 'startYear', 'v', 'year']);
 });
 
 test('readHash reads friend and backup links', async () => {

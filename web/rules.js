@@ -10,20 +10,22 @@ export const englishOptions = (data, score) => ENGLISH.map((id, i) => ({ id, nam
 
 // Personal profile: integers in range, else null (state, backup links and the form share this).
 const int = (x, lo, hi) => (Number.isInteger(x) && x >= lo && x <= hi ? x : null);
-// Year-3 specialization: two different areas, or vehicle alone. Checked against the fixed list (not data), so old backup links keep loading; stored in SPECS order.
-export const SPECS = [{ id: 'solid', name: 'מכניקת מוצק' }, { id: 'flow', name: 'זרימה ואנרגיה' }, { id: 'mech', name: 'מכטרוניקה ורובוטיקה' }, { id: 'vehicle',
-  name: 'מערכות רכב' }, { id: 'materials', name: 'חומרים' }, { id: 'aero', name: 'אווירונאוטיקה וחלל' }];
-const specs = (a) => {
-  if (!Array.isArray(a)) return [];
-  const ids = SPECS.map((s) => s.id).filter((id) => a.includes(id));
-  return a.length === ids.length && (ids.length === 2 || (ids.length === 1 && ids[0] === 'vehicle')) ? ids : [];
-};
+// Specialization areas come from the data (data.specializations) and the pick rule from data.specRule, so this stays program-neutral.
+// cleanProfile only checks the shape (1-2 distinct short ids); validSpecs judges a choice against one dataset. No rule in the data = the mechanical one.
+const specs = (a) => (Array.isArray(a) && a.length >= 1 && a.length <= 2 && a.every((x) => typeof x === 'string' && /^[a-z][a-z0-9]{0,19}$/.test(x)) && new Set(a).size === a.length ? a : []);
+export const specRule = (data) => ({ pick: 2, alone: ['vehicle'], ...data.specRule });
+// Valid: every id is an area of this dataset, and there are `pick` of them or exactly one standalone area. Returned in the dataset's order, else [].
+export function validSpecs(data, ids) {
+  if (!Array.isArray(ids)) return [];
+  const rule = specRule(data), ok = (data.specializations ?? []).map((s) => s.id).filter((id) => ids.includes(id));
+  return ok.length === ids.length && (ok.length === rule.pick || (ok.length === 1 && rule.alone.includes(ok[0]))) ? ok : [];
+}
 export const cleanProfile = (p) => ({ year: int(p?.year, 1, 4), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
 
-// Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the vehicle-only extra when vehicle is chosen alone;
+// Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the standalone extra (aloneExtra) when its area is chosen alone;
 // elective = their בחירה lists minus what is mandatory (a course in several lists counts once). chosen / all = list codes of the chosen areas / of every specialization list.
 export function specLists(data, specs = []) {
-  const alone = specs.length === 1 && specs[0] === 'vehicle', out = { mandatory: new Set(), elective: new Set(), chosen: new Set(), all: new Set() };
+  const alone = specs.length === 1 && specRule(data).alone.includes(specs[0]), out = { mandatory: new Set(), elective: new Set(), chosen: new Set(), all: new Set() };
   for (const s of data.specializations ?? []) {
     for (const [kind, code] of [['mandatory', s.mandatory], ['elective', s.elective], ['mandatory', s.aloneExtra]]) {
       if (!code) continue;

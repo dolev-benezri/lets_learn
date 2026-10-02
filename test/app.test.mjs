@@ -187,9 +187,9 @@ test('normalize: blocks keep valid items, drop invalid ones individually, cap at
   assert.equal(normalize({ v: 1, constraints: { blocks: [{ ...ok, start: '07:00', end: '23:00' }] } }).constraints.blocks.length, 1);
 });
 
-test('normalize: specDraft keeps one known area, yearIds keeps short strings; the rest is dropped', () => {
+test('normalize: specDraft keeps one well-formed id (the data check is reconcileSpecs), yearIds keeps short strings; the rest is dropped', () => {
   assert.deepEqual(normalize({ v: 1, specDraft: ['solid'], yearIds: ['30112', 7, 'x'.repeat(30)] }).specDraft, ['solid']);
   assert.deepEqual(normalize({ v: 1, yearIds: ['30112', 7, 'x'.repeat(30)] }).yearIds, ['30112']);
-  for (const bad of [['nope'], ['solid', 'flow'], [], 'solid', null]) assert.equal(normalize({ v: 1, specDraft: bad }).specDraft, null);
+  for (const bad of [['Nope!'], ['solid', 'flow'], [], 'solid', null]) assert.equal(normalize({ v: 1, specDraft: bad }).specDraft, null);
   assert.deepEqual(normalize({ v: 1, yearIds: 'x' }).yearIds, []);
 });
