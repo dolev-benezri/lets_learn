@@ -4,7 +4,7 @@
 import { app, esc, keepFocus } from './app.js';
 import { icon, yedion } from './ui-grid.js';
 import { unlockCounts } from './solver-core.js';
-import { studyYear } from './rules.js';
+import { studyYear, classify } from './rules.js';
 
 // ---------- layout (pure) ----------
 const YEAR_LETTERS = 'אבגד';
@@ -38,32 +38,36 @@ export const asideIds = (data, statuses, choices = {}) => {
 export const nodeRadius = (credits) => Math.max(14, Math.min(30, 12 + 3 * (Number(credits) || 0)));
 export const edgePath = (a, b) => { const mx = (a.x + b.x) / 2; return `M${a.x},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x},${b.y}`; };
 
-// Structure only, no pixels: a band per study year (א׳ first = rightmost) and an electives band last (leftmost); a band has one column per semester
-// (א first) and a column lists its courses by prerequisite depth, so arrows mostly flow right to left, top to bottom. `קדם` weighs 1 in the depth, `מקביל` 0.
-// An `anyOf` with more than one distinct option goes through an "או" diamond; options outside the program become `ext` pills in their target's column.
+// Structure only, no pixels: a band per study year (א׳ first = rightmost) and an electives band last (leftmost). A band has unlabelled columns by
+// prerequisite depth inside the band (a depth with many courses wraps into more columns), so arrows mostly flow right to left, top to bottom.
+// `קדם` weighs 1 in the depth, `מקביל` 0. An `anyOf` with more than one distinct option goes through an "או" diamond; options outside the program
+// become `ext` pills in their target's column, except pre-academic ones (מכינה), which sit in their own band right of year א׳: they come before
+// the degree, and only some students need them.
+const PRE = /מכינה|קורס הכנה/, PRE_BAND = -1, ROWS = 9;
+export const PRE_NAME = 'לפני התואר (מכינה)', PRE_NOTE = 'רק למי שנדרש/ה לפי תנאי הקבלה';
 export function layoutMap(data, keep = () => true) {
   const C = data.courses, yr = courseYears(data);
   const bandOf = (id) => (yr.get(id) ?? 5) - 1; // electives: 4
   const order = Object.keys(C).filter((id) => keep(id));
   const K = new Set(order);
 
-  // Requirements that survive the filter. ext options are keyed per band and name.
+  // Requirements that survive the filter. ext options are keyed per band and name (pre-academic ones once, for the whole map).
   const entries = [];
   for (const id of order) C[id].prereqs.forEach((p, pi) => {
     const seen = new Set(), opts = [];
     for (const a of p.anyOf) {
-      const isCourse = a.id && C[a.id];
-      const k = isCourse ? a.id : `x:${bandOf(id)}:${a.name}`;
+      const isCourse = a.id && C[a.id], pre = !isCourse && PRE.test(a.name);
+      const k = isCourse ? a.id : `x:${pre ? 'pre' : bandOf(id)}:${a.name}`;
       if (seen.has(k) || a.id === id || (isCourse && !K.has(a.id))) continue;
       seen.add(k);
-      opts.push(isCourse ? { key: k, id: a.id } : { key: k, ext: true, name: a.name });
+      opts.push(isCourse ? { key: k, id: a.id } : { key: k, ext: true, pre, name: a.name });
     }
     if (opts.length) entries.push({ to: id, kind: p.kind, opts, pi });
   });
 
-  // Longest path. A cycle (bad data) just stops the recursion.
+  // Longest path inside the band (a prerequisite from another year says nothing about the column). A cycle (bad data) just stops the recursion.
   const incoming = new Map();
-  for (const e of entries) for (const o of e.opts) if (!o.ext) (incoming.get(e.to) ?? incoming.set(e.to, []).get(e.to)).push([o.id, e.kind === 'קדם' ? 1 : 0]);
+  for (const e of entries) for (const o of e.opts) if (!o.ext && bandOf(o.id) === bandOf(e.to)) (incoming.get(e.to) ?? incoming.set(e.to, []).get(e.to)).push([o.id, e.kind === 'קדם' ? 1 : 0]);
   const memo = new Map(), stack = new Set();
   const depthOf = (id) => {
     if (memo.has(id)) return memo.get(id);
@@ -74,34 +78,32 @@ export function layoutMap(data, keep = () => true) {
     memo.set(id, v);
     return v;
   };
-  const nodes = new Map(order.map((id) => [id, { key: id, type: 'course', id, band: bandOf(id), sem: null, depth: depthOf(id), year: yr.get(id) ?? null }]));
-  // Semester column. A course offered in one semester only sits there. One offered in both (or neither) has no fixed place in the data, so it
-  // goes after its in-band prerequisites, then the surplus of the first column moves to the second: a suggestion, not the curriculum.
-  const band = (id) => nodes.get(id).band, preds = (id) => (incoming.get(id) ?? []).filter(([q, w]) => w && nodes.get(q)?.band === band(id)).map(([q]) => q);
+  const nodes = new Map(order.map((id) => [id, { key: id, type: 'course', id, band: bandOf(id), depth: depthOf(id), sub: 0, year: yr.get(id) ?? null }]));
+  // Sub-column inside the band: one per depth, a crowded depth split into ROWS-sized (balanced) columns.
   for (const b of new Set([...nodes.values()].map((n) => n.band))) {
-    const ids = order.filter((id) => band(id) === b).sort((x, y) => nodes.get(x).depth - nodes.get(y).depth), free = [], after = new Set(ids.flatMap(preds));
-    for (const id of ids) {
-      const ss = C[id].semesters ?? [data.semester], n = nodes.get(id);
-      if (ss.length === 1) n.sem = ss[0] === 'ב' ? 1 : 0;
-      else { n.sem = preds(id).some((q) => nodes.get(q).sem === 0) ? 1 : 0; free.push(id); }
+    const ids = order.filter((id) => nodes.get(id).band === b), depths = [...new Set(ids.map((id) => nodes.get(id).depth))].sort((x, y) => x - y);
+    let sub = 0;
+    for (const d of depths) {
+      const at = ids.filter((id) => nodes.get(id).depth === d), k = Math.ceil(at.length / ROWS), per = Math.ceil(at.length / k);
+      at.forEach((id, i) => { nodes.get(id).sub = sub + Math.floor(i / per); });
+      sub += k;
     }
-    const cnt = (v) => ids.filter((id) => nodes.get(id).sem === v).length;
-    for (const id of free.reverse()) if (cnt(0) - cnt(1) > 1 && nodes.get(id).sem === 0 && !after.has(id)) nodes.get(id).sem = 1;
   }
   for (const e of entries) for (const o of e.opts) if (o.ext) { // one pill per band and name, in the earliest column of its targets, just above the shallowest one
-    const t = nodes.get(e.to), n = nodes.get(o.key) ?? nodes.set(o.key, { key: o.key, type: 'ext', name: o.name, band: t.band, sem: t.sem, depth: t.depth - 1, year: t.year }).get(o.key);
-    n.sem = Math.min(n.sem, t.sem); n.depth = Math.min(n.depth, t.depth - 1);
+    const t = nodes.get(e.to);
+    if (o.pre) { nodes.get(o.key) ?? nodes.set(o.key, { key: o.key, type: 'ext', pre: true, name: o.name, band: PRE_BAND, depth: 0, sub: 0, year: null }); continue; }
+    const n = nodes.get(o.key) ?? nodes.set(o.key, { key: o.key, type: 'ext', name: o.name, band: t.band, depth: t.depth - 1, sub: t.sub, year: t.year }).get(o.key);
+    n.sub = Math.min(n.sub, t.sub); n.depth = Math.min(n.depth, t.depth - 1);
   }
 
-  // Columns in flow order (band, semester), an empty one skipped. Rows: depth, then list order (the sort is stable; ext pills come last).
+  // Columns in flow order (band, sub-column), an empty one skipped. Rows: depth, then list order (the sort is stable; ext pills come first).
   const list = [...nodes.values()], cols = [], bands = [];
   for (const b of [...new Set(list.map((n) => n.band))].sort((x, y) => x - y)) {
-    const band = { year: b < 4 ? b + 1 : null, name: bandName(b < 4 ? b + 1 : null), first: cols.length, n: 0 };
-    for (const s of [0, 1]) {
-      const col = list.filter((n) => n.band === b && n.sem === s).sort((x, y) => x.depth - y.depth);
-      if (!col.length) continue;
-      col.forEach((n, row) => { n.col = cols.length; n.row = row; });
-      cols.push({ sem: s });
+    const year = b >= 0 && b < 4 ? b + 1 : null;
+    const band = { year, kind: b === PRE_BAND ? 'pre' : year ? 'year' : 'other', name: b === PRE_BAND ? PRE_NAME : bandName(year), note: b === PRE_BAND ? PRE_NOTE : null, first: cols.length, n: 0 };
+    for (const s of [...new Set(list.filter((n) => n.band === b).map((n) => n.sub))].sort((x, y) => x - y)) {
+      list.filter((n) => n.band === b && n.sub === s).sort((x, y) => x.depth - y.depth).forEach((n, row) => { n.col = cols.length; n.row = row; });
+      cols.push({});
       band.n++;
     }
     bands.push(band);
@@ -135,9 +137,38 @@ export function chainOf(paths, key) {
   return { nodes, paths: used };
 }
 
+// Paths that carry a planned course's contribution: from a planned course, or from an "או" diamond one of the planned courses feeds.
+export function planPaths(paths, plan) {
+  const via = new Set(paths.filter((p) => plan.has(p.from)).map((p) => p.to));
+  return new Set(paths.filter((p) => plan.has(p.from) || via.has(p.from)).map((p) => p.id));
+}
+
+// Degree progress in credits. Required = sum of the lists' minCredits (an approximation: the regulations have more rules). A course counts once, for the
+// first list that holds it, and a list never counts past its minimum, so surplus electives don't inflate the bar. `adds` = the plan's own credits.
+const isDone = (st, id) => ['done', 'exempt'].includes(st[id]?.status);
+export function progressInfo(data, st, plan = new Set()) {
+  const seen = new Set();
+  let total = 0, done = 0, planned = 0;
+  for (const l of data.lists) {
+    const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)), min = Number(l.minCredits) || 0;
+    ids.forEach((id) => seen.add(id));
+    const sum = (f) => ids.filter(f).reduce((s, id) => s + (Number(data.courses[id].credits) || 0), 0);
+    const d = Math.min(min, sum((id) => isDone(st, id)));
+    total += min; done += d; planned += Math.min(min - d, sum((id) => !isDone(st, id) && plan.has(id)));
+  }
+  const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + (Number(data.courses[id].credits) || 0), 0);
+  return { total, done, planned, adds };
+}
+// Courses the plan newly opens: blocked now, not blocked once the plan's courses count as passed (the plan's own courses excluded).
+export function newlyUnlocked(data, state, plan) {
+  if (!plan.size) return 0;
+  const before = classify(data, state).statuses, after = classify(data, { ...state, passed: [...new Set([...(state.passed ?? []), ...plan])] }).statuses;
+  return Object.keys(before).filter((id) => !plan.has(id) && before[id].status === 'blocked' && after[id].status !== 'blocked').length;
+}
+
 
 // ---------- neural-style geometry (pure) ----------
-export const G = { pitch: 164, row: 72, padX: 28, padY: 20, head: 58, bandGap: 32, orR: 11, orDx: 76, extHW: 66, extR: 11, bulge: 56 };
+export const G = { pitch: 150, row: 72, padX: 28, padY: 20, head: 58, bandGap: 32, orR: 11, orDx: 76, extHW: 66, extR: 15, bulge: 56 };
 export const truncate = (s, n = 18) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 // Edge leaves the near side of one circle and enters the near side of the next (flow runs right to left in RTL).
 export const edgeEnds = (a, b) => { const d = b.x < a.x ? -1 : 1; return [{ x: a.x + d * a.hw, y: a.y }, { x: b.x - d * b.hw, y: b.y }]; };
@@ -151,9 +182,8 @@ export function geometry(L, creditsOf = () => 0) {
   const colX = [], bands = [];
   let xr = W - G.padX;
   for (const b of L.bands) {
-    const cols = [];
-    for (let j = 0; j < b.n; j++) { colX[b.first + j] = xr - (j + 0.5) * G.pitch; cols.push({ x: colX[b.first + j], label: L.cols[b.first + j].sem ? 'סמסטר ב׳ (מוצע)' : 'סמסטר א׳ (מוצע)' }); }
-    bands.push({ year: b.year, name: b.name, x: xr - b.n * G.pitch, w: b.n * G.pitch, cols });
+    for (let j = 0; j < b.n; j++) colX[b.first + j] = xr - (j + 0.5) * G.pitch;
+    bands.push({ year: b.year, kind: b.kind, name: b.name, note: b.note, x: xr - b.n * G.pitch, w: b.n * G.pitch });
     xr -= b.n * G.pitch + G.bandGap;
   }
   // A column's step is at least a row, and enough for the two circles and the name between any pair that follow each other.
@@ -216,23 +246,30 @@ const num = (n) => Math.round(n * 10) / 10;
 function nodeSvg(c, n) {
   const x = num(n.x), y = num(n.y);
   if (n.type === 'ext') {
-    const t = `מחוץ לתוכנית: ${n.name}`;
-    return `<g class="ext" data-key="${esc(n.key)}" aria-hidden="true"><title>${esc(t)}</title><rect x="${x - n.hw}" y="${y - n.r}" width="${2 * n.hw}" height="${2 * n.r}" rx="${n.r}"/><text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central">${esc(truncate(n.name, 20))}</text></g>`;
+    const tag = n.pre ? 'לפני התואר' : 'לא בתוכנית שלך', t = `${n.pre ? 'קורס הכנה לפני התואר (רק למי שנדרש/ה)' : 'לא בתוכנית שלך'}: ${n.name}`;
+    return `<g class="ext${n.pre ? ' pre' : ''}" data-key="${esc(n.key)}" aria-hidden="true"><title>${esc(t)}</title><rect x="${x - n.hw}" y="${y - n.r}" width="${2 * n.hw}" height="${2 * n.r}" rx="${n.r}"/><text class="tg" x="${x}" y="${y - 6}" text-anchor="middle" dominant-baseline="central">${tag}</text><text x="${x}" y="${y + 7}" text-anchor="middle" dominant-baseline="central">${esc(truncate(n.name, 20))}</text></g>`;
   }
   const yr = n.year, mine = c.year && yr === c.year; // the student's study year: dotted halo, also named in the label and the card
-  const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, lbl = nodeLabel(c, n.id, yr), bw = o > 9 ? 52 : 46;
-  return `<g class="nd st-${s}${mine ? ' mine' : ''}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}" aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
-    ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}<circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring" cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
-    <text class="nm" x="${x}" y="${num(y + n.r + 16)}" text-anchor="middle">${esc(truncate(co.name))}</text>${o ? `<g class="opens" aria-hidden="true"><rect x="${num(x - n.r * 0.8 - bw / 2)}" y="${num(y - n.r * 0.85 - 8)}" width="${bw}" height="16" rx="8"/><text x="${num(x - n.r * 0.8)}" y="${num(y - n.r * 0.85)}" text-anchor="middle" dominant-baseline="central">פותח ${o}</text></g>` : ''}</g>`;
+  const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, bw = o > 9 ? 52 : 46, planned = inPlan(c, n.id), lbl = nodeLabel(c, n.id, yr) + (planned ? ', בתכנון' : '');
+  return `<g class="nd st-${s}${mine ? ' mine' : ''}${planned ? ' plan' : ''}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}" aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
+    ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}${planned ? `<circle class="plan-ring" cx="${x}" cy="${y}" r="${n.r + 4}"/>` : ''}<circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring" cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
+    <text class="nm" x="${x}" y="${num(y + n.r + 16)}" text-anchor="middle">${esc(truncate(co.name))}</text>${o ? `<g class="opens" aria-hidden="true"><rect x="${num(x - n.r * 0.8 - bw / 2)}" y="${num(y - n.r * 0.85 - 8)}" width="${bw}" height="16" rx="8"/><text x="${num(x - n.r * 0.8)}" y="${num(y - n.r * 0.85)}" text-anchor="middle" dominant-baseline="central">פותח ${o}</text></g>` : ''}${planned ? `<g class="plan-tag" aria-hidden="true"><rect x="${num(x + n.r * 0.8 - 26)}" y="${num(y - n.r * 0.85 - 8)}" width="52" height="16" rx="8"/><text x="${num(x + n.r * 0.8)}" y="${num(y - n.r * 0.85)}" text-anchor="middle" dominant-baseline="central">בתכנון</text></g>` : ''}</g>`;
 }
+// A planned course not yet passed (a passed one has nothing left to plan).
+const inPlan = (c, id) => !!c.plan?.has(id) && !['done', 'exempt'].includes(statusOf(c, id));
+
+// A caption under a band title, broken in two at the middle word so it fits one column.
+export const noteLines = (t) => { if (!t) return []; const w = t.split(' '), k = Math.ceil(w.length / 2); return [w.slice(0, k).join(' '), w.slice(k).join(' ')].filter(Boolean); };
 
 export function mapSvg(c) {
   const g = c.g;
-  const bands = g.bands.map((b) => `<g class="band${c.year && b.year === c.year ? ' mine' : ''}" aria-hidden="true"><rect x="${num(b.x)}" y="8" width="${b.w}" height="${num(g.H - 16)}" rx="12"/><text class="bt" x="${num(b.x + b.w / 2)}" y="30" text-anchor="middle">${esc(b.name)}</text>${b.cols.map((k) => `<text class="bs" x="${num(k.x)}" y="${g.head - 8}" text-anchor="middle">${k.label}</text>`).join('')}</g>`).join('');
-  const edges = g.edges.map((p) => `<path class="e ${p.kind === 'מקביל' ? 'p' : 'k'}" data-p="${p.id}" d="${p.d}"/>`).join('');
+  const bands = g.bands.map((b) => `<g class="band${c.year && b.year === c.year ? ' mine' : ''}${b.kind === 'pre' ? ' pre' : ''}" aria-hidden="true"><rect x="${num(b.x)}" y="8" width="${b.w}" height="${num(g.H - 16)}" rx="12"/><text class="bt" x="${num(b.x + b.w / 2)}" y="${b.note ? 20 : 30}" text-anchor="middle">${esc(b.name)}</text>${noteLines(b.note).map((t, i) => `<text class="bs" x="${num(b.x + b.w / 2)}" y="${34 + i * 13}" text-anchor="middle">${esc(t)}</text>`).join('')}</g>`).join('');
+  const plan = planPaths(c.L.paths, c.plan ?? new Set());
+  const edges = g.edges.map((p) => `<path class="e ${p.kind === 'מקביל' ? 'p' : 'k'}${plan.has(p.id) ? ' plan' : ''}" data-p="${p.id}" d="${p.d}"/>`).join('');
   const ors = g.ors.map((o) => `<g class="or" data-key="${esc(o.key)}" aria-hidden="true"><circle cx="${num(o.x)}" cy="${num(o.y)}" r="${o.r}"/><text x="${num(o.x)}" y="${num(o.y)}" text-anchor="middle" dominant-baseline="central">או</text></g>`).join('');
   return `<svg class="pm-svg" width="100%" height="100%" role="group" aria-label="מפת הקורסים"><defs>
     <marker id="pmArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar"/></marker>
+    <marker id="pmArrP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar plan"/></marker>
     <marker id="pmArrL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar lit"/></marker></defs>
     <g class="pz"><g class="bands">${bands}</g><g class="edges" aria-hidden="true">${edges}</g><g class="ors">${ors}</g><g class="nodes">${g.nodes.map((n) => nodeSvg(c, n)).join('')}</g></g></svg>`;
 }
@@ -242,9 +279,9 @@ const legendEdge = (cls) => `<svg width="34" height="10" aria-hidden="true"><pat
 
 function listHtml(c) {
   const byBand = c.L.bands.map((b) => c.L.nodes.filter((n) => n.type === 'course' && n.col >= b.first && n.col < b.first + b.n).map((n) => n.id));
-  return `<div class="pm-list">${c.L.bands.map((b, i) => `<section><h3>${esc(b.name)}</h3><ul>${byBand[i].map((id) => {
+  return `<div class="pm-list">${c.L.bands.map((b, i) => !byBand[i].length ? '' : `<section><h3>${esc(b.name)}</h3><ul>${byBand[i].map((id) => {
     const co = c.data.courses[id], s = statusOf(c, id), req = requires(c.data, id), o = c.unlocks[id] ?? 0;
-    return `<li class="st-${s}"><div class="li-top"><b>${esc(co.name)}</b><span class="li-st">${LABEL[s]}</span><span class="li-cr"><bdi>${esc(co.credits)}</bdi> נ״ז</span>
+    return `<li class="st-${s}"><div class="li-top"><b>${esc(co.name)}</b><span class="li-st">${LABEL[s]}</span>${inPlan(c, id) ? '<span class="li-st li-plan">בתכנון</span>' : ''}<span class="li-cr"><bdi>${esc(co.credits)}</bdi> נ״ז</span>
       <a class="li-link" href="${yedion(id)}" target="_blank" rel="noopener" aria-label="${esc(co.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></div>
       ${req.length ? `<p>דורש: ${req.map(esc).join('; ')}</p>` : ''}${o ? `<p>פותח: ${plural(o, 'קורס אחד', 'קורסים')}</p>` : ''}${c.st[id]?.reasons.length ? `<p class="li-why">${c.st[id].reasons.map(esc).join('<br>')}</p>` : ''}</li>`;
   }).join('')}</ul></section>`).join('') || '<p>אין קורסים להצגה.</p>'}${asideHtml(c)}</div>`;
@@ -263,6 +300,16 @@ function cardHtml(c, id) {
     ${opens.length ? `<h4>פותח${c.unlocks[id] > opens.length ? ` (בסך הכל ${c.unlocks[id]})` : ''}</h4><ul>${opens.slice(0, 8).map((k) => `<li>${esc(c.data.courses[k].name)}</li>`).join('')}${opens.length > 8 ? `<li>ועוד ${opens.length - 8}</li>` : ''}</ul>` : ''}
     <p class="card-note">הדגשנו על המפה את כל מה שדרוש כדי להגיע אליו ואת כל מה שהוא פותח.</p>
     <a class="pm-btn" href="${yedion(id)}" target="_blank" rel="noopener">${icon('external-link')} ראה בידיעון (חלון חדש)</a>`;
+}
+
+// Progress bar: credits done (green) and the plan's share (purple) out of the required total. Text carries the same numbers for screen readers.
+export function progressHtml(c) {
+  const { total, done, planned, adds } = c.prog;
+  if (!total) return '';
+  const pct = (v) => Math.round((100 * v) / total), txt = `${done} מתוך ${total} נ״ז`, ext = adds ? `המערכת שנבחרה מוסיפה ${adds} נ״ז${c.opened ? ` ופותחת ${plural(c.opened, 'קורס אחד', 'קורסים')}` : ''}` : '';
+  const title = 'הסכום המשוער של הרשימות בתוכנית (נ״ז מינימום לכל רשימה); לא כולל כללים נוספים שבתקנון. קורס נספר פעם אחת, ורשימה לא נספרת מעבר למינימום שלה.';
+  return `<div class="pm-prog" title="${esc(title)}"><p class="pm-prog-t">הושלמו <b><bdi>${done}</bdi></b> מתוך <b><bdi>${total}</bdi></b> נ״ז${ext ? ` · <span class="pm-prog-plan">${esc(ext)}</span>` : ''}</p>
+    <div class="pm-meter" role="progressbar" aria-label="התקדמות בתואר בנקודות זכות" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done + planned}" aria-valuetext="${esc(ext ? `${txt}, ${ext}` : txt)}"><i class="d" style="width:${pct(done)}%"></i><i class="p" style="width:${pct(planned)}%"></i></div></div>`;
 }
 
 // ---------- dialog ----------
@@ -284,10 +331,11 @@ export const fitScale = (vw, vh, W, H) => (vw >= 600 ? Math.max(0.2, Math.min(1,
 function ctxOf(mode) {
   const { data, state, cls } = app, st = cls.statuses;
   const year = studyYear(data, state), base = makeKeep(mode, data, st, year);
-  const aside = asideIds(data, st, state.choices).filter((id) => base(id)), off = new Set(aside);
+  const plan = new Set([...(app.planIds ?? [])].filter((id) => data.courses[id] && !isDone(st, id))); // what the shown schedule alternative takes
+  const aside = asideIds(data, st, state.choices).filter((id) => base(id) && !plan.has(id)), off = new Set(aside); // a planned course is always drawn
   const L = layoutMap(data, (id) => base(id) && !off.has(id));
   const doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
-  return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits), year, unlocks: unlockCounts(data, doneIds), mode, aside };
+  return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits), year, unlocks: unlockCounts(data, doneIds), mode, aside, plan, prog: progressInfo(data, st, plan), opened: newlyUnlocked(data, state, plan) };
 }
 
 function light() {
@@ -322,6 +370,7 @@ function render() {
   dlg.innerHTML = `<header class="pm-head"><h2 id="pmTitle" class="pm-title">המסע שלי בתואר</h2>
       <button type="button" class="pm-ibtn pm-close" data-pm="close" data-k="pm-close" aria-label="סגור את המפה">${icon('x')}</button></header>
     <p class="pm-band">עברתם או קיבלתם פטור ב-<b><bdi>${done}</bdi></b> מתוך <b><bdi>${total}</bdi></b> קורסים. לחצו על קורס כדי לראות מה צריך כדי להגיע אליו ומה הוא פותח.</p>
+    ${progressHtml(c)}
     ${M.notice ? `<p class="pm-note" role="status">${esc(M.notice)}</p>` : ''}
     <div class="pm-bar"><div class="pm-seg" role="group" aria-label="סינון">${MODES.map(([k, t]) => `<button type="button" data-pm="mode" data-v="${k}" data-k="pm-mode-${k}" aria-pressed="${M.mode === k}">${t}</button>`).join('')}</div>
       <div class="pm-tools"><button type="button" class="pm-btn" data-pm="view" data-k="pm-view">${map ? ICONS.list : ICONS.map} ${map ? 'תצוגת רשימה' : 'תצוגת מפה'}</button>
@@ -329,7 +378,8 @@ function render() {
     ${map ? `<details class="pm-legend"${matchMedia('(max-width: 700px), (max-height: 1000px)').matches ? '' : ' open'}><summary>מקרא</summary><div class="lg">${LEGEND.map(([k, t]) => `<span class="lg-i">${legendSw(k)}${t}</span>`).join('')}
       <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-available"><circle class="mine-halo" cx="13" cy="13" r="12"/><circle class="ring" cx="13" cy="13" r="8"/></g></svg>השנה שלך</span><span class="lg-i">${legendEdge('k')}קדם</span><span class="lg-i">${legendEdge('p')}מקביל (יחד עם)</span>
       <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="or"><circle cx="13" cy="13" r="10"/><text x="13" y="13" text-anchor="middle" dominant-baseline="central">או</text></g></svg>אחד מהם מספיק</span>
-      <span class="lg-i"><svg width="44" height="22" viewBox="0 0 44 22" aria-hidden="true"><g class="ext"><rect x="1" y="2" width="42" height="18" rx="9"/></g></svg>מחוץ לתוכנית</span>
+      <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-available"><circle class="plan-ring" cx="13" cy="13" r="12"/><circle class="ring" cx="13" cy="13" r="8"/></g></svg>בתכנון (במערכת שנבחרה)</span><span class="lg-i">${legendEdge('plan')}קורס שהמערכת פותחת</span>
+      <span class="lg-i"><svg width="44" height="22" viewBox="0 0 44 22" aria-hidden="true"><g class="ext"><rect x="1" y="2" width="42" height="18" rx="9"/></g></svg>לא בתוכנית שלך</span><span class="lg-i"><svg width="44" height="22" viewBox="0 0 44 22" aria-hidden="true"><g class="ext pre"><rect x="1" y="2" width="42" height="18" rx="9"/></g></svg>לפני התואר (מכינה), רק למי שנדרש/ה</span>
       <span class="lg-i"><svg width="52" height="20" viewBox="0 0 52 20" aria-hidden="true"><g class="opens"><rect x="2" y="2" width="48" height="16" rx="8"/><text x="26" y="10" text-anchor="middle" dominant-baseline="central">פותח 3</text></g></svg>כמה קורסים הוא פותח</span></div></details>` : ''}
     <div class="pm-body">${map
     ? `<div class="pm-view" role="region" aria-label="מפת הקורסים לפי שנות לימוד. אפשר לגרור, לגלגל או לצבוט כדי להתקרב, ולהשתמש בכפתורי הזום">${empty ? `<p class="pm-empty">${emptyMsg}</p>` : `${mapSvg(c)}<p class="pm-loading" role="status">טוען מפה…</p>`}${asideHtml(c)}</div>`

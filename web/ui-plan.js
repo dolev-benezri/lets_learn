@@ -317,6 +317,7 @@ function renderView() {
   const nAlt = none ? 0 : results.length;
   const raw = current(), pair = isPair(raw) && !none;
   const res = none ? null : shown(), data = shownData(); // one semester's result and its data file; app.data only when the result is a single semester
+  app.planIds = new Set(raw && !none ? resCourses(raw) : []); // the shown alternative's courses (both semesters of a year pair): the progress map marks them
   const friends = state.friends.filter((f) => f.active);
   assignColors(colors, res?.courses ?? [], colorOrder());
   dashed = repeatIds(colors, res?.courses ?? []);

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, wheelStep, mapSvg, courseYears, asideIds } from '../web/ui-map.js';
+import { layoutMap, planPaths, progressInfo, newlyUnlocked, progressHtml, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, wheelStep, mapSvg, courseYears, asideIds } from '../web/ui-map.js';
 import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
@@ -41,10 +41,11 @@ test('layout: outside-the-program prerequisites become ext nodes, one per band a
   assert.ok(ext.some((n) => n.name.includes('מכינה')));
 });
 
-test('layout: one band per study year, א׳ rightmost; the electives band comes last (leftmost); semester א right of ב; columns run by depth', () => {
+test('layout: bands are the pre-degree band, one per study year (א׳ rightmost) and the electives band last; no semester labels anywhere', () => {
   const { L, g } = geo();
-  assert.deepEqual(L.bands.map((b) => b.year), [1, 2, 3, 4, null]);
-  assert.deepEqual(L.bands.map((b) => b.name), ['שנה א׳', 'שנה ב׳', 'שנה ג׳', 'שנה ד׳', 'חובה כללית ובחירה']);
+  assert.deepEqual(L.bands.map((b) => b.year), [null, 1, 2, 3, 4, null]);
+  assert.deepEqual(L.bands.map((b) => b.kind), ['pre', 'year', 'year', 'year', 'year', 'other']);
+  assert.deepEqual(L.bands.map((b) => b.name), ['לפני התואר (מכינה)', 'שנה א׳', 'שנה ב׳', 'שנה ג׳', 'שנה ד׳', 'חובה כללית ובחירה']);
   assert.deepEqual(g.bands.map((b) => b.x), [...g.bands.map((b) => b.x)].sort((a, b) => b - a)); // later bands further left
   assert.ok(g.bands.every((b, i) => i === 0 || b.x + b.w < g.bands[i - 1].x)); // a gap between bands
   const yr = courseYears(data);
@@ -53,9 +54,23 @@ test('layout: one band per study year, א׳ rightmost; the electives band comes 
     assert.equal(b.year, yr.get(n.id) ?? null, n.id);
     assert.ok(n.x > b.x && n.x < b.x + b.w);
   }
-  g.bands.forEach((b) => { if (b.cols.length === 2) assert.ok(b.cols[0].x > b.cols[1].x && b.cols[0].label.includes('א') && b.cols[1].label.includes('ב')); });
   for (let c = 0; c < L.cols.length; c++) { const d = L.nodes.filter((n) => n.col === c).map((n) => n.depth); assert.deepEqual(d, [...d].sort((a, b) => a - b)); }
   assert.equal(L.nodes.filter((n) => n.type === 'course').length, Object.keys(data.courses).length);
+  const text = JSON.stringify({ b: L.bands, g: g.bands }) + [...mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() }).matchAll(/<text class="b[ts]"[^>]*>[^<]*/g)].join(); // band headers (course names may say סמסטר)
+  assert.ok(!/מוצע|סמסטר/.test(text), 'no semester or suggested labels');
+  assert.ok(g.bands.every((b) => !('cols' in b)));
+});
+
+test('layout: inside a year band the columns are prerequisite depth: a course sits right of what it needs, a crowded depth wraps into more columns', () => {
+  const pre = (id) => [{ kind: 'קדם', anyOf: [{ id, name: id }] }];
+  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b', 'c', 'd'], minCredits: 0 }, { name: "קורסי חובה שנה ב'", courses: ['e'], minCredits: 0 }], courses: { a: mc('A'), b: mc('B', pre('a')), c: mc('C', pre('b')), d: mc('D'), e: mc('E', pre('a')) } };
+  const L = layoutMap(d), at = Object.fromEntries(L.nodes.map((n) => [n.id, n]));
+  assert.ok(at.a.col < at.b.col && at.b.col < at.c.col); // right to left in flow order
+  assert.equal(at.d.col, at.a.col); // no prerequisite: depth 0
+  assert.equal(at.e.depth, 0); // a prerequisite from another year says nothing about the column inside the band
+  assert.equal(L.bands.find((b) => b.year === 1).n, 3);
+  const many = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`k${i}`, mc(`K${i}`)]));
+  assert.equal(layoutMap(mini(many)).bands[0].n, 3); // 20 at one depth: three columns (7, 7, 6)
 });
 
 test('filter "מה שנשאר לי" drops done and exempt courses (and their edges); "year" keeps one list', () => {
@@ -166,7 +181,7 @@ test('mapSvg: a header per band (the student\'s year marked), decorative only', 
   const { L, g } = geo(), html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all' });
   for (const b of L.bands) assert.ok(html.includes(`>${b.name}</text>`), b.name);
   assert.equal((html.match(/class="band mine"/g) ?? []).length, 1);
-  assert.equal((html.match(/class="band( mine)?" aria-hidden="true"/g) ?? []).length, g.bands.length);
+  assert.equal((html.match(/class="band( mine| pre)?" aria-hidden="true"/g) ?? []).length, g.bands.length);
   assert.ok(!/NaN|undefined/.test(html));
 });
 
@@ -207,20 +222,80 @@ test('layout: aside electives are not drawn; a chosen one joins the last band', 
   const aside = new Set(asideIds(data, {}, {}));
   assert.ok(aside.size > 20);
   const L0 = layoutMap(data, (id) => !aside.has(id));
-  assert.deepEqual(L0.bands.map((b) => b.year), [1, 2, 3, 4, null]); // nothing chosen: the last band still holds English and the final project
+  assert.deepEqual(L0.bands.map((b) => b.year), [null, 1, 2, 3, 4, null]); // nothing chosen: the last band still holds English and the final project
   assert.ok(L0.nodes.every((n) => n.type === 'ext' || !aside.has(n.id)));
   const pick = [...aside][0], off = new Set(asideIds(data, {}, { [pick]: 'optional' })), L1 = layoutMap(data, (id) => !off.has(id));
   assert.equal(L1.bands.at(-1).year, null);
   assert.equal(L1.nodes.find((n) => n.id === pick).year, null);
 });
 
-test('layout: a course offered in one semester sits in that column; others follow their in-band prerequisite; the surplus moves to ב', () => {
-  const sc = (name, semesters, prereqs = []) => ({ ...mc(name, prereqs), semesters });
-  const d = mini({ a: sc('A', ['א']), b: sc('B', ['ב']), c: sc('C', ['א', 'ב'], [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }] }]), d: sc('D', ['א', 'ב']), e: sc('E', ['א', 'ב']), f: sc('F', []) });
-  const L = layoutMap(d), sem = Object.fromEntries(L.nodes.map((n) => [n.id, n.sem])), cnt = (v) => L.nodes.filter((n) => n.sem === v).length;
-  assert.equal(sem.a, 0); assert.equal(sem.b, 1); assert.equal(sem.c, 1); // c needs a, so it cannot share a's semester
-  assert.ok(Math.abs(cnt(0) - cnt(1)) <= 1);
-  assert.equal(layoutMap(mini({ a: mc('A'), b: mc('B') })).cols.length, 1); // single-semester data: one column
+test('layout: required courses are always drawn, chosen or not; the filter hides only electives that are in no required list', () => {
+  const required = new Set(data.lists.filter((l) => /חובה|פרויקט גמר/.test(l.name)).flatMap((l) => l.courses));
+  const aside = new Set(asideIds(data, {}, {})); // nothing chosen at all
+  for (const id of required) assert.ok(!aside.has(id), id);
+  const L = layoutMap(data, (id) => !aside.has(id)), drawn = new Set(L.nodes.filter((n) => n.type === 'course').map((n) => n.id));
+  for (const id of data.lists[0].courses) assert.ok(drawn.has(id), `year-א course ${id} unchosen but present`);
+});
+
+test('layout: מכינה / קורס הכנה outside items form their own band, right of year א׳, one pill per name; other outside items stay in their target\'s band', () => {
+  const { L, g } = geo(), pre = L.bands[0], ext = L.nodes.filter((n) => n.type === 'ext');
+  assert.equal(pre.kind, 'pre'); assert.equal(pre.note, 'רק למי שנדרש/ה לפי תנאי הקבלה'); assert.equal(g.bands[0].x > g.bands[1].x, true);
+  const inPre = ext.filter((n) => n.col >= pre.first && n.col < pre.first + pre.n), rest = ext.filter((n) => !inPre.includes(n));
+  assert.ok(inPre.length >= 3 && inPre.every((n) => n.pre && /מכינה|קורס הכנה/.test(n.name)));
+  assert.ok(rest.length > 0 && rest.every((n) => !n.pre && !/מכינה|קורס הכנה/.test(n.name)));
+  assert.equal(new Set(inPre.map((n) => n.name)).size, inPre.length);
+  assert.equal(L.nodes.filter((n) => n.col >= pre.first && n.col < pre.first + pre.n && n.type !== 'ext').length, 0); // nothing but the pre-degree pills in that band
+  for (const n of rest) { const t = L.nodes.find((c) => c.type === 'course' && L.paths.some((p) => p.from === n.key && (p.to === c.id || L.diamonds.some((d) => d.key === p.to && d.target === c.id)))); assert.equal(n.band, t.band, n.key); }
+  // a map with no pre-academic requirement has no such band
+  const stripped = Object.fromEntries(Object.entries(data.courses).map(([k, c]) => [k, { ...c, prereqs: c.prereqs.map((p) => ({ ...p, anyOf: p.anyOf.filter((a) => !/מכינה|קורס הכנה/.test(a.name)) })).filter((p) => p.anyOf.length) }]));
+  assert.ok(layoutMap({ ...data, courses: stripped }).bands.every((b) => b.kind !== 'pre'));
+});
+
+test('mapSvg: the pre-degree band is muted and captioned; outside pills say who they are for', () => {
+  const { L, g } = geo(), html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() });
+  assert.ok(html.includes('class="band pre"') && html.includes('לפני התואר (מכינה)') && html.includes('לפי תנאי הקבלה'));
+  assert.ok(html.includes('class="ext pre"') && html.includes('לא בתוכנית שלך'));
+});
+
+test('planPaths: edges out of a planned course, and the "או" hop after a planned option', () => {
+  const paths = [['a', 'b'], ['c', 'or1'], ['d', 'or1'], ['or1', 'e'], ['x', 'y']].map(([from, to], id) => ({ id, from, to }));
+  assert.deepEqual([...planPaths(paths, new Set(['a', 'c']))].sort(), [0, 1, 3]);
+  assert.equal(planPaths(paths, new Set()).size, 0);
+});
+
+test('mapSvg: planned courses get the plan marker and their edges are highlighted; a passed course is never marked', () => {
+  const d = mini({ a: mc('A'), b: mc('B', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }] }]), c: mc('C') }), L = layoutMap(d), g = geometry(L, () => 3);
+  const html = mapSvg({ data: d, st: { c: { status: 'done' } }, L, g, year: 1, unlocks: {}, mode: 'all', plan: new Set(['a', 'c']) });
+  assert.equal((html.match(/class="plan-ring"/g) ?? []).length, 1); // a only
+  assert.ok(html.includes('בתכנון') && html.includes('class="e k plan"'));
+  assert.ok(!mapSvg({ data: d, st: {}, L, g, year: 1, unlocks: {}, mode: 'all' }).includes('plan-ring'));
+});
+
+test('progressInfo: a course counts once, a list never past its minimum; plan credits count only for what is not done', () => {
+  const co = (credits) => ({ ...mc('x'), credits });
+  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 7 }, { name: 'בחירה', courses: ['b', 'e1', 'e2'], minCredits: 4 }, { name: 'אנגלית', courses: ['en'], minCredits: 0 }], courses: { a: co(4), b: co(3), e1: co(3), e2: co(3), en: co(2) } };
+  assert.deepEqual(progressInfo(d, {}), { total: 11, done: 0, planned: 0, adds: 0 });
+  const st = { a: { status: 'done' }, e1: { status: 'exempt' }, en: { status: 'done' } };
+  assert.deepEqual(progressInfo(d, st, new Set(['b', 'e2', 'a'])), { total: 11, done: 7, planned: 3 + 1, adds: 6 }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
+});
+
+test('newlyUnlocked: courses blocked now and open once the plan counts as passed (the plan itself excluded)', () => {
+  const pre = (id) => [{ kind: 'קדם', anyOf: [{ id, name: id }] }];
+  const d = mini({ a: mc('A'), b: mc('B', pre('a')), c: mc('C', pre('b')), z: mc('Z') });
+  assert.equal(newlyUnlocked(d, { passed: [] }, new Set(['a'])), 1); // b (c still needs b)
+  assert.equal(newlyUnlocked(d, { passed: [] }, new Set(['a', 'b'])), 1); // c; b is in the plan
+  assert.equal(newlyUnlocked(d, { passed: [] }, new Set()), 0);
+});
+
+test('progressHtml: an accessible progressbar with the same numbers as the text; plan sentence only when there is a plan; escaped', () => {
+  const base = { prog: { total: 100, done: 40, planned: 10, adds: 12 }, opened: 3 };
+  const html = progressHtml(base);
+  assert.ok(html.includes('role="progressbar"') && html.includes('aria-valuemax="100"') && html.includes('aria-valuenow="50"') && html.includes('title="'));
+  assert.ok(html.includes('המערכת שנבחרה מוסיפה 12 נ״ז ופותחת 3 קורסים') && html.includes('width:40%') && html.includes('width:10%'));
+  const plain = progressHtml({ prog: { total: 100, done: 40, planned: 0, adds: 0 }, opened: 0 });
+  assert.ok(!plain.includes('המערכת שנבחרה') && plain.includes('aria-valuenow="40"'));
+  assert.ok(progressHtml({ prog: { total: 100, done: 1, planned: 1, adds: 3 }, opened: 1 }).includes('ופותחת קורס אחד'));
+  assert.equal(progressHtml({ prog: { total: 0, done: 0, planned: 0, adds: 0 }, opened: 0 }), '');
 });
 
 test('wheelStep: a mouse notch is about 16% (either browser), small trackpad events stay gentle, huge ones are capped', () => {
