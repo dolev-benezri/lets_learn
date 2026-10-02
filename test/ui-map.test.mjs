@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, planPaths, progressInfo, newlyUnlocked, progressHtml, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, wheelStep, mapSvg, courseYears, asideIds } from '../web/ui-map.js';
+import { layoutMap, planPaths, progressInfo, newlyUnlocked, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, wheelStep, courseYears, asideIds } from '../web/map-layout.js';
+import { progressHtml, mapSvg } from '../web/map-render.js';
 import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
