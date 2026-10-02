@@ -4,14 +4,14 @@
 # Needs one masked GitLab CI variable, GH_PUSH_TOKEN: a GitHub fine-grained token, this repo only, Contents read/write.
 # A push with that token triggers .github/workflows/deploy.yml. GitLab emails the owner when a run fails.
 # The site allows about 400 requests per clock hour, a full run is ~1300 the first time: the scraper waits out the limit (--wait-throttle) and every answer is kept in
-# .yedion-cache, which the pipeline cache carries to the next night (also after a failed run), so a first run may need a few nights. Later nights: groups and exams only (~430).
+# .yedion-cache (next to the clone), which the pipeline cache carries to the next night (also after a failed run), so a first run may need a few nights. Later nights: groups and exams only (~430).
 scrape:
   image: node:24
   timeout: 3h
   cache:
     key: yedion-responses
     paths:
-      - repo/.yedion-cache/
+      - .yedion-cache/ # next to the clone, not inside it: a restored cache would make `git clone ... repo` fail on a non-empty directory
     when: always
   rules:
     - if: $CI_PIPELINE_SOURCE =~ /^(schedule|web|api)$/ # api = run via the GitLab API or MCP
@@ -21,7 +21,7 @@ scrape:
     - git clone --depth 1 "https://x-access-token:${GH_PUSH_TOKEN}@github.com/dolhack/lets_learn.git" repo
     - cd repo && npm ci --no-audit --no-fund
     # stdout is one summary line (the commit message); a failed scrape writes nothing and fails the job.
-    - node scripts/scrape.mjs --all-semesters --all-programs --cache .yedion-cache --nightly --wait-throttle > ../summary.txt
+    - node scripts/scrape.mjs --all-semesters --all-programs --cache ../.yedion-cache --nightly --wait-throttle > ../summary.txt
     - git add web/data/afeka
     - if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
     - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com commit -q -m "$(cat ../summary.txt)" -- web/data/afeka
