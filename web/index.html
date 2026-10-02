@@ -547,6 +547,12 @@ body:has(#friendEd[open]) { overflow:hidden; }
 .fe-tabs, #fePickSem, .fe-actions [data-fe="cancel"] .icon { display:none; } /* phone only (below) */
 .fe-sec { display:grid; gap:6px; }
 .fe-sec h3 { font-size:14px; font-weight:600; }
+.fe-pages-box { display:grid; gap:8px; }
+.fe-pages-box[hidden] { display:none; }
+.fe-pages { display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:8px; }
+.fe-page { display:grid; gap:4px; padding:4px; border:1px solid var(--border); border-radius:var(--radius); font-size:12px; color:var(--text-2); cursor:pointer; }
+.fe-page canvas { width:100%; height:auto; background:#fff; }
+.fe-page:has(input:checked) { background:var(--primary-soft); border-color:#C9DAFB; }
 #friendEd .seg { margin:0; }
 #friendEd input[type=text], #friendEd textarea { width:100%; min-height:var(--tap); padding:0 10px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); }
 #friendEd textarea { padding:10px; font:inherit; font-size:13px; resize:vertical; }
