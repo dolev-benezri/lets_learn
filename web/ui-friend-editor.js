@@ -15,6 +15,7 @@ const TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesserac
 const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳' };
 
 const dlg = document.getElementById('friendEd');
+const phone = matchMedia('(max-width:599px)'); // phone: the editor is two full-screen tabs (CSS shows one, driven by #feRoot[data-tab]); wider: both side by side
 let ed = null; // the open editor: { friend, onSave, returnFocusId, draft, sem, day, sel, cid, busy, colors }
 const $ = (id) => dlg.querySelector(`#${id}`);
 const semData = () => app.sem[ed.sem];
@@ -29,6 +30,7 @@ export function openFriendEditor({ friend = null, onSave, returnFocusId }) {
   const draft = friend ? friend.groups.slice() : [];
   ed = { friend, onSave, returnFocusId, draft, sem: draft.map(semOfGroup).find(Boolean) ?? 'א', day: 1, sel: null, cid: null, busy: false, colors: new Map(), start: draft.join() };
   dlg.innerHTML = shell();
+  setTab(draft.length ? 'grid' : 'pick'); // nothing picked yet: start where groups are picked
   renderTabs();
   renderCourses();
   renderGroups();
@@ -36,23 +38,27 @@ export function openFriendEditor({ friend = null, onSave, returnFocusId }) {
   renderGrid();
   updateBar();
   dlg.showModal();
-  $('feName').focus();
+  if (!(phone.matches && friend)) $('feName').focus(); // editing on a phone: don't raise the keyboard over the page
 }
+phone.addEventListener('change', () => { if (ed) setTab($('feRoot').dataset.tab); });
 
-const shell = () => `<div class="fe">
+const shell = () => `<div class="fe" id="feRoot">
   <header class="fe-head">
     <h2 id="feTitle">${ed.friend ? 'עריכת חבר' : 'הזנת מערכת של חבר'}</h2>
     <div class="fe-name"><label for="feName">שם החבר</label>
       <input id="feName" type="text" maxlength="60" autocomplete="off" aria-required="true" value="${esc(ed.friend?.name ?? '')}">
       <p class="err-text" id="feNameErr" role="alert"></p></div>
-    <div class="fe-actions"><button type="button" class="btn" data-fe="cancel">ביטול</button>
+    <div class="fe-actions"><button type="button" class="btn" data-fe="cancel">${icon('x')}<span class="fe-lbl">ביטול</span></button>
       <button type="button" class="btn primary" data-fe="save">${icon('check')} שמור חבר</button></div>
   </header>
   <p class="err-text fe-err" id="feErr" role="alert"></p>
+  <div class="fe-tabs" role="tablist" aria-label="חלקי העורך">
+    <button type="button" role="tab" id="feTabPick" aria-controls="fePick" data-fe="tab" data-tab="pick">קבוצות</button>
+    <button type="button" role="tab" id="feTabGrid" aria-controls="feGrid" data-fe="tab" data-tab="grid">מערכת</button></div>
   <div class="fe-body">
-    <section class="fe-pick" id="fePick" data-open="true" aria-label="בחירת קבוצות">
-      <button type="button" class="btn fe-sheet-btn" data-fe="sheet" aria-expanded="true" aria-controls="fePickBody">${icon('plus')} קבוצות וייבוא</button>
+    <section class="fe-pick" id="fePick" aria-label="בחירת קבוצות">
       <div class="fe-pick-body" id="fePickBody">
+        <div id="fePickSem"></div>
         <form id="feSearch" class="fe-sec"><label for="feCourse">הוספת קורס</label>
           <div class="row"><input id="feCourse" type="text" list="feCourses" autocomplete="off" placeholder="שם או מספר קורס"><button type="submit" class="btn">הצג קבוצות</button></div>
           <datalist id="feCourses"></datalist></form>
@@ -67,7 +73,7 @@ const shell = () => `<div class="fe">
           <div id="feImpStatus" class="hint" aria-live="polite" tabindex="-1"></div></section>
       </div>
     </section>
-    <section class="fe-grid" aria-label="מערכת השבוע של החבר">
+    <section class="fe-grid" id="feGrid" aria-label="מערכת השבוע של החבר">
       <div class="fe-bar"><div id="feTabs"></div><p id="feCount" class="hint"></p><p id="feSel" class="hint" aria-live="polite"></p>
         <button type="button" class="btn" id="feRemove" data-fe="removeSel">${icon('x')} הסר קבוצה</button></div>
       <p class="hint warn-text" id="feUnk"></p>
@@ -76,10 +82,22 @@ const shell = () => `<div class="fe">
     </section>
   </div></div>`;
 
+// ---------- tabs (phone) ----------
+function setTab(tab) {
+  $('feRoot').dataset.tab = tab;
+  for (const b of dlg.querySelectorAll('[role="tab"]')) { b.setAttribute('aria-selected', String(b.dataset.tab === tab)); b.tabIndex = b.dataset.tab === tab ? 0 : -1; }
+  for (const id of ['fePick', 'feGrid']) { // tabpanel roles only while the tab strip is shown
+    const p = $(id);
+    if (phone.matches) { p.setAttribute('role', 'tabpanel'); p.setAttribute('aria-labelledby', id === 'fePick' ? 'feTabPick' : 'feTabGrid'); }
+    else { p.removeAttribute('role'); p.removeAttribute('aria-labelledby'); }
+  }
+}
+
 // ---------- rendering (each region on its own: inputs, the textarea and the focus are never re-rendered) ----------
-function renderTabs() {
-  $('feTabs').innerHTML = app.sem['ב'] ? `<fieldset class="seg"><legend class="sr">סמסטר</legend><div class="seg-opts">${['א', 'ב'].map((s) =>
-    `<label><input type="radio" name="feSem" value="${s}"${s === ed.sem ? ' checked' : ''}><span data-s="${s}"></span></label>`).join('')}</div></fieldset>` : '';
+function renderTabs() { // the semester switch shows in both panes (the picker's copy only on a phone); setSem keeps both checked
+  const html = (name) => app.sem['ב'] ? `<fieldset class="seg"><legend class="sr">סמסטר</legend><div class="seg-opts">${['א', 'ב'].map((s) =>
+    `<label><input type="radio" name="${name}" value="${s}"${s === ed.sem ? ' checked' : ''}><span data-s="${s}"></span></label>`).join('')}</div></fieldset>` : '';
+  $('feTabs').innerHTML = html('feSem'); $('fePickSem').innerHTML = html('feSemP'); // two names: one radio group would leave only one copy checked
   refreshTabs();
 }
 function refreshTabs() {
@@ -140,6 +158,7 @@ function updateBar() {
   $('feCount').textContent = `${ed.draft.length} מתוך ${MAX} קבוצות`;
   $('feSel').textContent = sel ? `נבחרה: ${sel.c.name} · ${typeLabel(sel.g.type)}` : 'בחרו קבוצה בלוח כדי להסיר אותה';
   $('feRemove').disabled = !sel;
+  $('feTabGrid').textContent = ed.draft.length ? `מערכת · ${ed.draft.length}` : 'מערכת';
   $('feUnk').innerHTML = unk ? `${icon('alert')} ${unk === 1 ? 'עוד קבוצה אחת שלא נמצאה בנתונים תישמר כמו שהיא' : `עוד ${unk} קבוצות שלא נמצאו בנתונים יישמרו כמו שהן`}` : '';
 }
 function setErr(id, text, input) {
@@ -183,8 +202,7 @@ function selectBlock(gid) {
 }
 function setSem(sem) {
   ed.sem = sem;
-  const r = dlg.querySelector(`input[name="feSem"][value="${sem}"]`);
-  if (r) r.checked = true;
+  for (const r of dlg.querySelectorAll(`input[name^="feSem"][value="${sem}"]`)) r.checked = true;
   if (ed.cid && !offered(sem)[ed.cid]) ed.cid = null;
   ed.sel = null;
   ed.day = firstDay();
@@ -272,8 +290,7 @@ async function save() {
   setErr('feNameErr', '', input);
   if (!name) { setErr('feNameErr', 'יש להזין שם חבר', input); input.focus(); return; }
   if (!ed.draft.length) {
-    $('fePick').dataset.open = 'true';
-    dlg.querySelector('.fe-sheet-btn').setAttribute('aria-expanded', 'true');
+    setTab('pick');
     setPickErr('יש לשבץ קבוצה אחת לפחות', true);
     $('feCourse').focus();
     return;
@@ -291,7 +308,7 @@ const ACT = {
     if (!dirty || await askConfirm('לסגור בלי לשמור?', { ok: 'סגור', cancel: 'המשך לערוך' })) closeEditor();
   },
   save,
-  sheet(b) { const p = $('fePick'), open = p.dataset.open !== 'true'; p.dataset.open = String(open); b.setAttribute('aria-expanded', String(open)); },
+  tab(b) { setTab(b.dataset.tab); },
   day(b) { ed.day = Number(b.dataset.day); renderGrid(); $('feDays').querySelector(`[data-day="${ed.day}"]`)?.focus({ preventScroll: true }); },
   find() { importText($('feText').value); },
   removeSel() { if (ed.sel) removeGroup(ed.sel); },
@@ -318,7 +335,7 @@ dlg.addEventListener('click', (e) => {
 dlg.addEventListener('change', (e) => {
   e.stopPropagation();
   if (!ed) return;
-  if (e.target.name === 'feSem') setSem(e.target.value);
+  if (e.target.name?.startsWith('feSem')) setSem(e.target.value);
   else if (e.target.id === 'feFile' && e.target.files[0] && !ed.busy) importFile(e.target.files[0]);
 });
 dlg.addEventListener('submit', (e) => {
@@ -328,6 +345,13 @@ dlg.addEventListener('submit', (e) => {
 });
 dlg.addEventListener('keydown', (e) => {
   e.stopPropagation(); // the drawer's Escape and the board's arrow keys never see editor keys
+  const tab = e.target.closest?.('[role="tab"]');
+  if (ed && tab && /^(Arrow(Left|Right)|Home|End)$/.test(e.key)) { // two tabs: any arrow moves to the other one
+    e.preventDefault();
+    const to = e.key === 'Home' ? 'pick' : e.key === 'End' ? 'grid' : tab.dataset.tab === 'pick' ? 'grid' : 'pick';
+    setTab(to);
+    $(to === 'pick' ? 'feTabPick' : 'feTabGrid').focus();
+  }
   const blk = e.target.closest?.('.blk');
   if (ed && blk && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); removeGroup(blk.dataset.gid); }
 });
