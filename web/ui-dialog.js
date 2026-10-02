@@ -40,6 +40,34 @@ export async function askConfirm(text, { ok = 'אישור', cancel = 'ביטול
   return v === 'ok';
 }
 
+// A table with a checkbox per row (all checked), apply / cancel. `rows` are arrays of plain strings (set via textContent, never HTML).
+// Resolves the indexes of the checked rows on apply, null on cancel / Escape / backdrop. Without <dialog> support: null.
+export async function askRows(title, note, head, rows, { ok = 'החל', cancel = 'ביטול' } = {}) {
+  if (!supported()) return null;
+  let form;
+  const v = await open((d) => {
+    d.classList.add('dlg-rows');
+    d.setAttribute('aria-labelledby', 'dlgTitle');
+    const boxes = rows.map((r, i) => node('input', { type: 'checkbox', checked: true, name: 'row', value: String(i) }));
+    boxes.forEach((b, i) => b.setAttribute('aria-label', `${rows[i][0]}: ${rows[i].at(-1)}`));
+    const apply = node('button', { type: 'submit', className: 'btn primary', value: 'ok', textContent: ok });
+    const table = node('table', {},
+      node('thead', {}, node('tr', {}, node('th', { scope: 'col', textContent: 'החל' }), ...head.map((h) => node('th', { scope: 'col', textContent: h })))),
+      node('tbody', {}, ...rows.map((r, i) => node('tr', {}, node('td', {}, boxes[i]), ...r.map((c) => node('td', { textContent: c }))))));
+    form = node('form', { method: 'dialog' },
+      node('h2', { id: 'dlgTitle', textContent: title }),
+      node('p', { className: 'hint', textContent: note }),
+      node('div', { className: 'dlg-scroll', tabIndex: 0 }, table),
+      node('div', { className: 'dlg-actions' }, node('button', { type: 'submit', className: 'btn', value: '', textContent: cancel }), apply));
+    form.querySelector('.dlg-scroll').setAttribute('role', 'region');
+    form.querySelector('.dlg-scroll').setAttribute('aria-label', title);
+    form.addEventListener('change', () => { apply.disabled = !boxes.some((b) => b.checked); });
+    apply.dataset.first = '';
+    d.append(form);
+  });
+  return v === 'ok' ? [...form.querySelectorAll('input[name=row]:checked')].map((b) => Number(b.value)) : null;
+}
+
 // Shows `text` selected in a read-only box so it can be copied by hand (when the clipboard API is refused).
 export async function showText(title, text) {
   if (!supported()) { if (typeof prompt === 'function') prompt(title, text); return; }
