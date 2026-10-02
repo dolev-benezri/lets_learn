@@ -49,15 +49,12 @@ const specForm = (saved) => {
     <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה לפי הסבר התמחויות של המחלקה מ-2020. לא אומת.</p>' : ''}`;
 };
 
-// Program and cohort: only when the catalog offers a choice (one program with one cohort looks exactly as before).
-export function programPick(withCohort = true) {
+// The two questions that fix who the schedule is for: the track (only when the catalog has more than one) and the study year, which also picks the cohort.
+export function identityPick(year, visible) {
   const { programs } = app.catalog, cur = programs.find((p) => p.id === app.state.program) ?? programs[0];
-  if (programs.length < 2 && (!withCohort || cur.startYears.length < 2)) return '';
-  const opt = (v, t, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(t)}</option>`;
-  const yr = (start) => YEARS.find(([n]) => n === app.data.year - start + 1)?.[1];
-  const years = cur.startYears.map((y) => opt(y, yr(y) ? `${y} · שנה ${yr(y)}` : String(y), y === app.state.startYear)).join('');
-  return `<div class="pick"><label class="field">תוכנית <select data-chg="program" data-k="program">${programs.map((p) => opt(p.id, heb(p.name), p.id === cur.id)).join('')}</select></label>
-    ${withCohort ? `<label class="field">מחזור <select data-chg="cohort" data-k="cohort">${years}</select></label>` : ''}</div>`;
+  const opt = (p) => `<option value="${esc(p.id)}"${p.id === cur.id ? ' selected' : ''}>${esc(heb(p.name))}</option>`;
+  const track = programs.length < 2 ? '' : `<label class="field pick">מסלול <select data-chg="program" data-k="program">${programs.map(opt).join('')}</select></label>`;
+  return track + seg('p-year', 'שנת לימודים', YEARS, year, 'data-chg="pyear"', visible);
 }
 
 export function renderMe() {
@@ -65,8 +62,8 @@ export function renderMe() {
   if (el.hidden) { el.innerHTML = ''; return; }
   const { data, state, cls } = app;
   if (gated() && document.body.dataset.view !== 'me') { // the builder waits for the study year: one question, nothing else
-    el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">${app.catalog.programs.length > 1 ? 'באיזו תוכנית ובאיזו שנה את/ה?' : 'באיזו שנה את/ה?'}</h1></div>
-      <section class="me-card gate">${programPick(false)}${seg('p-year', 'שנת לימודים', YEARS, null, 'data-chg="pyear"', false)}
+    el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">${app.catalog.programs.length > 1 ? 'באיזה מסלול ובאיזו שנה את/ה?' : 'באיזו שנה את/ה?'}</h1></div>
+      <section class="me-card gate">${identityPick(null, true)}
         <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p></section>`;
     return;
   }
@@ -91,7 +88,7 @@ export function renderMe() {
     <div class="me-grid">
       <div class="me-side">
         <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
-          ${programPick()}${unverified}${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
+          ${identityPick(state.profile.year, true)}${unverified}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
           <div class="spec-sec">${specForm(state.profile.specs)}</div>

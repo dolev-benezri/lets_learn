@@ -123,10 +123,14 @@ async function changeIdentity(program, startYear) {
   refresh();
   toast(`עברנו ל${app.catalog.programs.find((p) => p.id === program)?.name ?? ''} ${startYear}`);
 }
+const cohortOf = (y) => y && app.data.year - y + 1; // the cohort that is in study year y
 const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math.abs(b - want) ? y : b), list[0]); // same cohort if offered, else the closest
 export const CHG = {
-  program: (el) => { const p = app.catalog.programs.find((x) => x.id === Number(el.value)); if (p) changeIdentity(p.id, nearest(p.startYears, app.state.startYear)); return 'save'; },
-  cohort: (el) => { changeIdentity(app.state.program, Number(el.value)); return 'save'; },
+  program: (el) => {
+    const p = app.catalog.programs.find((x) => x.id === Number(el.value));
+    if (p) changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear));
+    return 'save';
+  },
   gradeFile: (el) => { const f = el.files[0]; el.value = ''; if (f) importGrades(f); return 'save'; },
   mode: (el) => {
     const id = el.dataset.id;
@@ -143,8 +147,8 @@ export const CHG = {
   pyear: (el) => {
     const was = gated(), y = cleanProfile({ year: Number(el.value) }).year;
     app.state.profile.year = y;
-    const start = y && app.data.year - y + 1; // the first answer also picks the cohort that is in that year (a later change of the year only relabels)
-    if (was && start !== app.state.startYear && app.catalog.programs.find((p) => p.id === app.state.program)?.startYears.includes(start)) changeIdentity(app.state.program, start);
+    const start = cohortOf(y); // the year picks the cohort that is in it when the catalog has one, else it only relabels
+    if (start && start !== app.state.startYear && app.catalog.programs.find((p) => p.id === app.state.program)?.startYears.includes(start)) changeIdentity(app.state.program, start);
     if (was) queueMicrotask(focusWeek); // after the refresh: the question is gone, keep focus out of <body>
   },
   amirnet: (el) => { app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet; },
