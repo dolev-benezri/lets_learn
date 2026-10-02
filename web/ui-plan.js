@@ -1,14 +1,14 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
 import { app, esc, cleanBlocks, upsertFriend, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
-import { progress, setStatus, studyYear, cleanProfile, gradeAverage } from './rules.js';
+import { progress, setStatus, studyYear, cleanProfile, gradeAverage, englishOptions } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
 import { askConfirm, showText, trapTab } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, gradeInput } from './ui-text.js';
+import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, gradeInput, creditsGoal, notFitReason } from './ui-text.js';
 
 const $ = (id) => document.getElementById(id);
 const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -20,6 +20,7 @@ const FSCALE = [[0, 'לא חשוב'], [1, 'קצת'], [2, 'חשוב'], [3, 'מא�
 const SEMS = [['א', 'סמסטר א׳'], ['ב', 'סמסטר ב׳']];
 const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
 const LOAD = [['א', 'יותר בא׳'], ['even', 'מאוזן'], ['ב', 'יותר בב׳']];
+const YEARS = [[1, 'א׳'], [2, 'ב׳'], [3, 'ג׳'], [4, 'ד׳']];
 const SEM_PICK = [['', 'אוטומטי'], ['א', 'א׳'], ['ב', 'ב׳']];
 const HARD = [['hard', 'חובה לגמרי'], ['soft', 'רק העדפה']]; // the constraint toggles; the course mode keeps "חובה/אולי/לא"
 const SHEET = '(max-width: 1079px)'; // below: the drawer is a modal sheet; from here up it is docked and the page reserves its width (index.html)
@@ -36,6 +37,7 @@ const markOnboarded = () => { try { localStorage.setItem(ONBOARDED, '1'); } catc
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 let firstVisit = !onboarded() && !location.hash;
 
+const gated = () => !!app.state && !app.state.profile.year; // planning waits for the study year (credits goal and English depend on it)
 const current = () => last?.results[cur] ?? null; // a search result, or a pair in year scope
 const shown = () => semResult(current(), sem); // what the grid, pills and popover render
 const shownData = () => (isPair(current()) ? app.sem[sem] : app.data);
@@ -70,6 +72,7 @@ const MAX_MS = 12000; // "חפש עוד" doubles the time limit up to this
 function scheduleRun(again = false) {
   if (!again) moreMul = 1;
   clearTimeout(timer);
+  if (gated()) { gen++; running = false; last = null; worker?.terminate(); setBusy(); return; }
   gen++;
   running = true;
   setBusy();
@@ -87,7 +90,7 @@ function run() {
   };
   worker?.terminate();
   runError = null;
-  if (!courses.length) { last = null; done(); return; }
+  if (gated() || !courses.length) { last = null; done(); return; }
   try {
     worker = new Worker(new URL('./solver-worker.js', import.meta.url), { type: 'module' });
   } catch (err) { runError = err.message || 'לא ניתן להפעיל את החיפוש'; done(); return; }
@@ -150,6 +153,12 @@ function renderMe() {
   const el = $('me');
   if (el.hidden) { el.innerHTML = ''; return; }
   const { data, state, cls } = app;
+  if (gated() && document.body.dataset.view !== 'me') { // the builder waits for the study year: one question, nothing else
+    el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">באיזו שנה את/ה?</h1></div>
+      <section class="me-card gate">${seg('p-year', 'שנת לימודים', YEARS, null, 'data-chg="pyear"', false)}
+        <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p></section>`;
+    return;
+  }
   const pr = progress(data, state);
   const pct = Math.min(100, Math.round(pr.ratio * 100));
   // Years already studied are open; later years and the other lists sit in a collapsed section.
@@ -157,7 +166,6 @@ function renderMe() {
   const open = state.profile.year ?? studyYear(data, state) - 1;
   const lists = data.lists.map((l, i) => ({ ...l, i, year: l.name.match(/חובה שנה (\S)'/)?.[1] }));
   const past = (l) => l.year && ' אבגד'.indexOf(l.year) <= open;
-  const YEARS = [[1, 'א׳'], [2, 'ב׳'], [3, 'ג׳'], [4, 'ד׳']];
   const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(l.name))} <span>${l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}" data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
   const others = lists.filter((l) => !past(l));
   const step = onboarded()
@@ -167,10 +175,10 @@ function renderMe() {
     <div class="me-grid">
       <div class="me-side">
         <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
-          ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}
+          ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label></section>
         <section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
-          <div class="progress"><div class="progress-top"><span><b><bdi dir="ltr">${esc(pr.earned)}/${esc(pr.required)}</bdi> נ״ז</b> · ${pct}%</span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
+          <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
           <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
           <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
           <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button></section>
@@ -194,12 +202,24 @@ function outReason(id) {
   return k >= 0 ? `נכנס בחלופה ${k + 1}` : '';
 }
 
-function card(id, res, unlocks) {
+// Why a must course is missing from a shown plan (a search with no plan at all uses the solver's diagnosis instead).
+function outWhy(id) {
+  const prim = app.data.courses[id].groups.filter((g) => g.primary);
+  if (!app.state.constraints.includeFull && prim.length && prim.every((g) => g.full)) return 'כל הקבוצות מלאות';
+  const k = last?.results.findIndex((r) => resCourses(r).includes(id)) ?? -1;
+  return k >= 0 ? `הוא נכנס רק בחלופה ${k + 1}` : 'אין לו מקום ליד שאר הקורסים שבחרת';
+}
+
+function card(id, res, unlocks, musts) {
   const { data, cls } = app;
   const s = cls.statuses[id], c = data.courses[id], mode = candidateMode(id);
   const where = isPair(res) ? placedIn(res, id) : null;
   const inAlt = res && (isPair(res) ? !!where : res.courses.includes(id)), out = res && !inAlt && mode !== 'no';
   const why = out ? outReason(id) : '';
+  const required = data.lists.some((l) => l.name.startsWith('קורסי חובה') && l.courses.includes(id));
+  const noRes = !!last && !last.results.some((r) => resCourses(r).length);
+  const dropped = mode === 'must' && (out || noRes); // wanted for sure, but the found plan (or the search) left it out
+  const dropWhy = dropped ? (noRes ? notFitReason(c.name, last.diagnosis ?? [], musts) : outWhy(id)) : '';
   const offered = c.semesters; // only the year view lists them
   const yearPick = app.state.scope === 'year' && offered?.length === 2 && s.status !== 'afterA' && ['must', 'optional'].includes(mode); // afterA only fits ב׳; a course set to no has nothing to place
   const tags = [
@@ -208,7 +228,7 @@ function card(id, res, unlocks) {
     s.status === 'conditional' ? '<span class="tag warn">זמין בתנאי</span>' : '',
     unlocks[id] ? `<span class="tag">${unlocks[id] === 1 ? 'פותח קורס אחד' : `פותח ${unlocks[id]} קורסים`}</span>` : '',
     inAlt ? `<span class="tag ok">${icon('check')} במערכת${where ? ` · סמסטר ${esc(where)}׳` : ''}</span>` : '',
-    out ? `<span class="tag">לא נכנס${why ? `: ${esc(why)}` : ''}</span>` : '',
+    out && !dropped ? `<span class="tag">לא נכנס${why ? `: ${esc(why)}` : ''}</span>` : '',
   ].join('');
   return `<article class="course c${colors.get(id) ?? 7}${dashed.has(id) ? ' rep' : ''}${inAlt ? ' in' : ''}${out ? ' out' : ''}">
     <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${esc(c.name)}</h3><span class="cr">${c.credits} נ״ז</span></div>
@@ -216,6 +236,8 @@ function card(id, res, unlocks) {
     ${yearPick ? `<div class="sem-row"><span class="sem-lbl" aria-hidden="true">סמסטר:</span>${seg(`sem-${id}`, `באיזה סמסטר ללמוד את ${c.name}`, SEM_PICK, app.state.semesterOf[id] ?? '', `data-chg="semOf" data-id="${esc(id)}"`)}</div>` : ''}
     ${tags ? `<div class="tags">${tags}</div>` : ''}
     ${s.reasons.length ? `<p class="reason">${s.reasons.map(esc).join('<br>')}</p>` : ''}
+    ${required && app.state.choices[id] === 'no' ? '<p class="reason warn-text">תצטרך/י ללמוד אותו בהמשך</p>' : ''}
+    ${dropped ? `<p class="reason warn-text">לא נכנס למערכת${dropWhy ? ` כי ${esc(dropWhy)}` : ''}</p>` : ''}
   </article>`;
 }
 
@@ -224,19 +246,25 @@ function renderSide(res) {
   const order = { retake: 0, available: 1, afterA: 1, conditional: 1 };
   const cand = ids.filter((id) => CAND.includes(status(id))).sort((a, b) => order[status(a)] - order[status(b)]);
   const plan = cand.filter(planned), rest = cand.filter((id) => !planned(id));
+  const musts = plan.filter((id) => candidateMode(id) === 'must').map((id) => app.data.courses[id].name);
+  const eng = englishOptions(app.data, app.state.profile.amirnet);
+  const engBody = `<p class="hint">אנגלית נלמדת לפי רמה. ציון אמירנט פוטר מהרמה ומהרמות שמתחתיה (פטור לא נותן נ״ז).</p>
+    <ul class="plain">${eng.map((e) => `<li><b>${esc(heb(e.name))}</b> · פטור בציון ${e.min}+${e.exempt ? ' <span class="tag ok">פטור</span>' : ''}</li>`).join('')}</ul>
+    ${app.state.profile.amirnet === null ? '<p class="hint">אם יש לך ציון אמירנט, <a href="#me">הזינו אותו בפרופיל</a>.</p>' : ''}`;
   const taken = new Set(); // a course sits in the first list that has it
   const locked = (st) => ids.filter((id) => status(id) === st);
   const rows = (list) => `<ul class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${esc(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
   $('side').innerHTML = `<div class="side-head"><h2>הקורסים שלי</h2><button type="button" class="link-btn" data-act="openStatus" data-k="openStatus">עדכן מצב</button></div>
     <p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
-    ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks)).join('') || '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'}</div>`, 1)}
+    ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks, musts)).join('') || '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'}</div>`, 1)}
     ${app.data.lists.map((l, i) => {
     const ids = l.courses.filter((id) => rest.includes(id) && !taken.has(id) && taken.add(id));
-    return details(`more-${i}`, `${esc(l.name)} (${ids.length})`, `<div class="cards">${ids.map((id) => card(id, res, unlocks)).join('')}</div>`, ids.length);
+    return details(`more-${i}`, `${esc(l.name)} (${ids.length})`, `<div class="cards">${ids.map((id) => card(id, res, unlocks, musts)).join('')}</div>`, ids.length);
   }).join('')}
     ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked')), locked('blocked').length)}
     ${details('notOffered', `לא נלמד בסמסטר (${locked('notOffered').length})`, rows(locked('notOffered')), locked('notOffered').length)}
-    ${details('exempt', `פטור (ציון אמירנט) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}`;
+    ${details('exempt', `פטור (ציון אמירנט) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}
+    ${details('english', 'אנגלית: רמות ופטור', engBody, eng.length)}`;
 }
 
 // ---------- grid area ----------
@@ -579,7 +607,11 @@ const CHG = {
   scope: (el) => { app.state.scope = el.value; },
   load: (el) => { app.state.load = el.value; },
   semOf: (el) => { if (el.value) app.state.semesterOf[el.dataset.id] = el.value; else delete app.state.semesterOf[el.dataset.id]; }, // a pin still wins in the solver
-  pyear: (el) => { app.state.profile.year = cleanProfile({ year: Number(el.value) }).year; },
+  pyear: (el) => {
+    const was = gated();
+    app.state.profile.year = cleanProfile({ year: Number(el.value) }).year;
+    if (was) queueMicrotask(focusWeek); // after the refresh: the question is gone, keep focus out of <body>
+  },
   amirnet: (el) => { app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet; },
   grade: (el) => {
     const g = gradeInput(el.validity?.badInput ? 'x' : el.value, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
@@ -611,10 +643,11 @@ const CHG = {
 // The view follows the hash: #me shows the status page, anything else the builder (index.html #me / #layout).
 // The top bar keeps only the title on #me (index.html [data-view="me"]): the alternatives and the plan actions belong to the builder.
 function renderRoute() {
-  const view = routeOf(location.hash), me = view === 'me';
-  $('me').hidden = !me;
-  $('layout').hidden = me;
+  const view = routeOf(location.hash), me = view === 'me', gate = !me && gated(); // the gate question takes the status page's container
+  $('me').hidden = !me && !gate;
+  $('layout').hidden = me || gate;
   document.body.dataset.view = view;
+  document.body.classList.toggle('gated', gate);
   if (!me && app.cls) markOnboarded(); // reaching the builder any way (tab, link, "סיימתי") ends the first-visit redirect
   for (const a of document.querySelectorAll('.views a')) if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   if (app.cls) renderMe();
