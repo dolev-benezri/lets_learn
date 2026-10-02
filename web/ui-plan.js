@@ -159,11 +159,12 @@ const avgLine = () => { const { avg, credits } = gradeAverage(app.data, app.stat
 
 // The status page (#me): profile and progress beside the course lists on wide screens, one column on phones.
 // Rendered only while shown; every change saves at once, so leaving the page loses nothing.
-// The specialization form: only a valid choice is saved. A half-made one (two areas, one ticked) lives here, and only while it still matches the saved state (a reset or an import drops it).
+// The specialization form: only a valid choice is saved in profile.specs. A half-made one (two areas, one ticked) lives here and in state.specDraft, and only while it still matches the saved state (a reset or an import drops it).
 let specPick = null;
 const specSave = (mode, picks) => (mode === 'vehicle' ? ['vehicle'] : mode === 'two' ? cleanProfile({ specs: picks }).specs : []);
 function specView(saved) {
-  if (specPick && specSave(specPick.mode, specPick.picks).join() === saved.join()) return specPick;
+  const kept = specPick ?? (app.state.specDraft && { mode: 'two', picks: app.state.specDraft }); // after a refresh only the draft is left
+  if (kept && specSave(kept.mode, kept.picks).join() === saved.join()) return kept;
   return saved[0] === 'vehicle' && saved.length === 1 ? { mode: 'vehicle', picks: [] } : saved.length ? { mode: 'two', picks: saved } : { mode: 'none', picks: [] };
 }
 const specForm = (saved) => {
@@ -349,8 +350,8 @@ function renderView() {
   const raw = current(), pair = isPair(raw) && !none;
   const res = none ? null : shown(), data = shownData(); // one semester's result and its data file; app.data only when the result is a single semester
   const ids = raw && !none ? resCourses(raw) : []; // the shown alternative's courses (both semesters of a year pair)
-  if (summerScope()) app.summerIds = ids; else app.yearIds = ids; // summer is planned on top of the last shown year plan
-  app.planIds = new Set([...app.yearIds, ...(summerOn() ? app.summerIds : [])]); // the progress map marks them
+  if (summerScope()) app.summerIds = ids; else if (!running) { state.yearIds = ids; save(); } // summer is planned on top of the last shown year plan (kept over a refresh)
+  app.planIds = new Set([...state.yearIds, ...(summerOn() ? app.summerIds : [])]); // the progress map marks them
   const friends = state.friends.filter((f) => f.active);
   assignColors(colors, res?.courses ?? [], colorOrder());
   dashed = repeatIds(colors, res?.courses ?? []);
@@ -362,7 +363,7 @@ function renderView() {
     + (pair ? `<div class="ctl">${seg('sem', 'סמסטר מוצג', SEMS, sem, 'data-chg="sem"')}</div>` : '');
   const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
   $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
-  const summerNote = summerScope() ? (app.yearIds.length ? `הקיץ מניח שעוברים את ${app.yearIds.length} הקורסים שבמערכת השנה המוצגת.` : 'עוד אין מערכת לשנה: הקיץ מתוכנן לפי מה שכבר עברת.') : '';
+  const summerNote = summerScope() ? (state.yearIds.length ? `הקיץ מניח שעוברים את ${state.yearIds.length} הקורסים שבמערכת השנה המוצגת.` : 'עוד אין מערכת לשנה: הקיץ מתוכנן לפי מה שכבר עברת.') : '';
   $('semnote').innerHTML = (app.semNotice ? note('info', app.semNotice) : '') + (summerNote ? note('info', summerNote) : '')
     + (pair ? raw.warnings.map((w) => note('info', w)).join('') : '')
     + (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
@@ -696,11 +697,13 @@ const CHG = {
     const mode = el.value, picks = mode === 'two' ? specView(app.state.profile.specs).picks : [];
     specPick = { mode, picks };
     app.state.profile.specs = specSave(mode, picks);
+    app.state.specDraft = mode === 'two' && picks.length === 1 ? picks : null;
   },
   specPick: (el) => {
     const { picks } = specView(app.state.profile.specs), next = el.checked ? [...picks, el.dataset.id] : picks.filter((x) => x !== el.dataset.id);
     specPick = { mode: 'two', picks: next.slice(0, 2) };
     app.state.profile.specs = specSave('two', specPick.picks);
+    app.state.specDraft = specPick.picks.length === 1 ? specPick.picks : null;
   },
   summer: (el) => { app.state.profile.summer = el.checked; if (!el.checked && app.state.scope === 'קיץ') app.state.scope = 'year'; },
   grade: (el) => {
