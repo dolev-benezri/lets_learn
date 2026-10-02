@@ -44,6 +44,11 @@
     "elective": [10114, 10118]
    }
   ],
+  "anchor": {
+   "course": "10016",
+   "name": "מבוא למדעי המחשב",
+   "minPrimaryGroups": 3
+  },
   "verified": false
  },
  "20": {
