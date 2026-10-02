@@ -1,0 +1,10160 @@
+{
+ "fetchedAt": "2026-10-02T21:21:58.236Z",
+ "year": 2027,
+ "startYear": 2025,
+ "program": 22,
+ "semester": "ב",
+ "examsPublished": false,
+ "lists": [
+  {
+   "code": 22001,
+   "name": "קורסי חובה שנה א'",
+   "minCredits": 34.5,
+   "courses": [
+    "10826",
+    "20119",
+    "20126",
+    "90901",
+    "90902",
+    "90903",
+    "90904",
+    "90905",
+    "90918"
+   ]
+  },
+  {
+   "code": 22002,
+   "name": "קורסי חובה שנה ב'",
+   "minCredits": 30,
+   "courses": [
+    "20120",
+    "20121",
+    "20122",
+    "20123",
+    "20125",
+    "20144",
+    "90911",
+    "90914",
+    "90916",
+    "90917",
+    "90928"
+   ]
+  },
+  {
+   "code": 22003,
+   "name": "קורסי חובה שנה ג'",
+   "minCredits": 34,
+   "courses": [
+    "10804",
+    "20118",
+    "20128",
+    "20129",
+    "20138",
+    "20140",
+    "20148",
+    "20304",
+    "90915",
+    "90925",
+    "90929"
+   ]
+  },
+  {
+   "code": 22004,
+   "name": "קורסי חובה שנה ד'",
+   "minCredits": 21.5,
+   "courses": [
+    "20115",
+    "20127",
+    "20132",
+    "20134",
+    "20135",
+    "20147",
+    "20367",
+    "20372"
+   ]
+  },
+  {
+   "code": 22005,
+   "name": "קורסי חובה שנה ה'",
+   "minCredits": 4,
+   "courses": [
+    "20149"
+   ]
+  },
+  {
+   "code": 22007,
+   "name": "פרויקט גמר",
+   "minCredits": 8,
+   "courses": [
+    "20411",
+    "20422",
+    "20423"
+   ]
+  },
+  {
+   "code": 22010,
+   "name": "נושא חובה נוסף",
+   "minCredits": 0,
+   "courses": [
+    "8080"
+   ]
+  },
+  {
+   "code": 22031,
+   "name": "חטיבת יזמות",
+   "minCredits": 0,
+   "courses": [
+    "88101",
+    "88102"
+   ]
+  },
+  {
+   "code": 22901,
+   "name": "קורסי יחידה ללימודי חברה ורוח",
+   "minCredits": 4,
+   "courses": [
+    "80834",
+    "80840",
+    "80874",
+    "80892",
+    "80909",
+    "80912",
+    "80919",
+    "80926",
+    "80932",
+    "80935",
+    "80940",
+    "80941",
+    "80946",
+    "80947",
+    "80948",
+    "80951",
+    "80961",
+    "80963",
+    "80965",
+    "80966",
+    "80967",
+    "80970",
+    "80971",
+    "80972",
+    "80973",
+    "80974",
+    "80975",
+    "80976",
+    "80977"
+   ]
+  },
+  {
+   "code": 60008,
+   "name": "קורסי חובה לימודי אנגלית",
+   "minCredits": 0,
+   "courses": [
+    "6000",
+    "6001",
+    "6002",
+    "6003"
+   ]
+  },
+  {
+   "code": 20111,
+   "name": "התמחות תקשורת קורסי חובה",
+   "minCredits": 6.5,
+   "courses": [
+    "20309",
+    "20326",
+    "20363"
+   ]
+  },
+  {
+   "code": 20112,
+   "name": "התמחות תקשורת קורסי בחירה",
+   "minCredits": 0,
+   "courses": [
+    "20221",
+    "20343",
+    "20346",
+    "20348",
+    "20375",
+    "20383",
+    "20385"
+   ]
+  },
+  {
+   "code": 20115,
+   "name": "התמחות מערכות הספק ואנרגיה-חובה",
+   "minCredits": 31.5,
+   "courses": [
+    "20351",
+    "20353",
+    "20354",
+    "20359",
+    "20360",
+    "20377",
+    "20379",
+    "20380",
+    "20381",
+    "20386",
+    "20387"
+   ]
+  },
+  {
+   "code": 20117,
+   "name": "התמחות עיבוד אותות",
+   "minCredits": 5,
+   "courses": [
+    "20332",
+    "20337"
+   ]
+  },
+  {
+   "code": 20118,
+   "name": "התמחות עיבוד אותות תמונה וידאו בחירה",
+   "minCredits": 0,
+   "courses": [
+    "20217",
+    "20218",
+    "20221",
+    "20315",
+    "20324",
+    "20342"
+   ]
+  },
+  {
+   "code": 20133,
+   "name": "התמחות עיבוד אותות חובה מעבדה",
+   "minCredits": 1.5,
+   "courses": [
+    "20327",
+    "20338"
+   ]
+  },
+  {
+   "code": 20131,
+   "name": "התמחות מחשבים-חובה",
+   "minCredits": 6.5,
+   "courses": [
+    "20209",
+    "20210",
+    "20216"
+   ]
+  },
+  {
+   "code": 20132,
+   "name": "התמחות מחשבים-בחירה",
+   "minCredits": 0,
+   "courses": [
+    "10820",
+    "20211",
+    "20221",
+    "20370"
+   ]
+  },
+  {
+   "code": 20134,
+   "name": "התמחות אלקטרוניקת הספק",
+   "minCredits": 8,
+   "courses": [
+    "20377",
+    "20380",
+    "20387"
+   ]
+  },
+  {
+   "code": 20135,
+   "name": "התמחות אלקטרוניקת הספק-בחירה",
+   "minCredits": 0,
+   "courses": [
+    "20221",
+    "20351",
+    "20381",
+    "20386"
+   ]
+  }
+ ],
+ "specializations": [
+  {
+   "id": "comm",
+   "name": "תקשורת",
+   "mandatory": 20111,
+   "elective": 20112
+  },
+  {
+   "id": "power",
+   "name": "מערכות הספק ואנרגיה והינע חשמלי",
+   "elective": 20115,
+   "aloneExtra": 20115
+  },
+  {
+   "id": "signals",
+   "name": "עיבוד אותות, עיבוד תמונה ווידאו",
+   "mandatory": [
+    20117,
+    20133
+   ],
+   "elective": 20118
+  },
+  {
+   "id": "computers",
+   "name": "מחשבים",
+   "mandatory": 20131,
+   "elective": 20132
+  },
+  {
+   "id": "powerel",
+   "name": "אלקטרוניקת הספק",
+   "mandatory": 20134,
+   "elective": 20135
+  }
+ ],
+ "specRule": {
+  "pick": 2,
+  "alone": [
+   "power"
+  ],
+  "verified": false
+ },
+ "verified": false,
+ "degree": {
+  "total": 160,
+  "specCredits": 20
+ },
+ "courses": {
+  "6000": {
+   "name": "אנגלית טרום בסיסי (מכינה)",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "6001": {
+   "name": "אנגלית בסיסי (מתחילים)",
+   "credits": 0,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6000",
+       "name": "אנגלית טרום בסיסי (מכינה)"
+      },
+      {
+       "id": null,
+       "name": "אנגלית - מכינה בדרך לאפקה"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6000",
+       "name": "אנגלית טרום בסיסי (מכינה)"
+      },
+      {
+       "id": null,
+       "name": "אנגלית1 - מכינה בדרך לאפקה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "270600103",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "מר קרמה אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "מפ\"ט תאנה"
+      },
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "6002": {
+   "name": "אנגלית מתקדמים א' (בינוניים)",
+   "credits": 0,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6001",
+       "name": "אנגלית בסיסי (מתחילים)"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "270600204",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' קלף לואיז",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "101 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600205",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר חריזמן קרן (אנה)",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600206",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' וולפרט רחל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600207",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' גולדבלט ליבוביץ נעה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "6003": {
+   "name": "אנגלית מתקדמים ב' (מתקדמים)",
+   "credits": 0,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6002",
+       "name": "אנגלית מתקדמים א' (בינוניים)"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "270600306",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' נסים רונלי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "09:00",
+       "end": "12:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600307",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' בללוב נינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט תאנה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600308",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' וולפרט רחל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600309",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' מרקס אן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט תאנה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600310",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' גולדבלט ליבוביץ נעה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "16:00",
+       "end": "19:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600311",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר חריזמן קרן (אנה)",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "8080": {
+   "name": "לומדה למניעת הטרדה מינית-און ליין",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "10804": {
+   "name": "אלגוריתמים ומבנה נתונים להנדסת חשמל",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      },
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "271080401",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "גב' הרצברג מורג אפרת",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "271080401/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271080403",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "גב' הרצברג מורג אפרת",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "271080403/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": ""
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271080405",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "גב' הרצברג מורג אפרת",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "271080405/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271080401/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' הרצברג מורג אפרת",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271080403/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' הרצברג מורג אפרת",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271080405/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' הרצברג מורג אפרת",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "10820": {
+   "name": "תכנות מונחה עצמים++C",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      },
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20144",
+       "name": "מבנה מחשבים"
+      },
+      {
+       "id": null,
+       "name": "ארגון המחשב ושפת סף"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "10826": {
+   "name": "מבוא לתכנות",
+   "credits": 4,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "271082604",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר שאולוב גריגורי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "271082604/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271082604/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20115": {
+   "name": "מבוא לתקשורת",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      },
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20125",
+       "name": "אלקטרוניקה תקבילית"
+      },
+      {
+       "id": null,
+       "name": "מעגלים אלקטרוניים אנלוגיים2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272011502",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בלל יעל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272011502/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011503",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בלל יעל",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272011503/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011504",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בלל יעל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272011504/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011502/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר בלל יעל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011503/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר בלל יעל",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011504/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר בלל יעל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20118": {
+   "name": "מבוא לבקרה",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      },
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272011805",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' הופר אושרית",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272011805/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011805/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "פרופ' הופר אושרית",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20119": {
+   "name": "מערכות ספרתיות",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "272011902",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר לבינגר ערן",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272011902/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "102 פיקוס"
+      },
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "08:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011903",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר לבינגר ערן",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272011903/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "201 פיקוס"
+      },
+      {
+       "day": 5,
+       "start": "13:00",
+       "end": "13:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011904",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר לבינגר ערן",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272011904/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "קריה ג'6"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011906",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר סידורוב מיכאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272011906/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "15:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011902/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר לבינגר ערן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "09:00",
+       "end": "09:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011903/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר לבינגר ערן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "14:00",
+       "end": "14:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011904/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר לבינגר ערן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272011906/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר סידורוב מיכאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20120": {
+   "name": "סדנה ליישומי מחשב בהנדסה MATLAB",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "20121": {
+   "name": "סדנה לפיתון",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "20122": {
+   "name": "הנדסת חשמל א'",
+   "credits": 5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90901",
+       "name": "חשבון דיפרנציאלי אינטגרלי1"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272012202",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בלל יעל",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272012202/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "202 פיקוס"
+      },
+      {
+       "day": 5,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012203",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272012203/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "102 פיקוס"
+      },
+      {
+       "day": 2,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012204",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר עמר ניסים",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272012204/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "200 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012205",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר עמר ניסים",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012205/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "204 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012202/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר בלל יעל",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012203/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "054 פרונטלי בנין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012204/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' אורן ירדן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012205/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' אורן ירדן",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20123": {
+   "name": "הנדסת חשמל ב'",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20122",
+       "name": "הנדסת חשמל א'"
+      },
+      {
+       "id": null,
+       "name": "הנדסת חשמל 1"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20122",
+       "name": "הנדסת חשמל א'"
+      },
+      {
+       "id": null,
+       "name": "מבוא להנדסת חשמל ואלקטרוניקה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272012305",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012305/1"
+     ],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012305/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20125": {
+   "name": "אלקטרוניקה תקבילית",
+   "credits": 5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20123",
+       "name": "הנדסת חשמל ב'"
+      },
+      {
+       "id": null,
+       "name": "הנדסת חשמל 2"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272012501",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012501/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      },
+      {
+       "day": 5,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012502",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272012502/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      },
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012503",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012503/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "055 פרונטלי בניין מעבדות"
+      },
+      {
+       "day": 1,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "055 פרונטלי בניין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012504",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012504/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "301 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "304 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012501/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012502/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012503/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "304 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012504/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שפט גבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20126": {
+   "name": "מעבדת מערכות ספרתיות",
+   "credits": 1,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      },
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272012609",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר גבאי יוסף",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012610",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר גבאי יוסף",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "21:00",
+       "end": "22:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20127": {
+   "name": "מבוא לתהליכים אקראיים",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      },
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272012701",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר הדס ניסים",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012701/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012702",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' לפידות יצחק",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012702/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "14:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012703",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' לפידות יצחק",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012703/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "202 פיקוס"
+      },
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "15:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012704",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272012704/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012701/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר הדס ניסים",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "20:00",
+       "end": "20:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012702/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "פרופ' לפידות יצחק",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "15:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012703/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "פרופ' לפידות יצחק",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012704/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20128": {
+   "name": "מבוא לעיבוד ספרתי של אותות",
+   "credits": 4,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      },
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272012805",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר קלמרו נצח",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272012805/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272012805/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר קלמרו נצח",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20129": {
+   "name": "מיקרו מעבדים ומיקרו בקרים",
+   "credits": 3.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      },
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20144",
+       "name": "מבנה מחשבים"
+      },
+      {
+       "id": null,
+       "name": "ארגון המחשב ושפת סף"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20132": {
+   "name": "התקני מוליכים למחצה",
+   "credits": 4,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90914",
+       "name": "משוואות דיפ' רגילות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90928",
+       "name": "פיזיקה מודרנית"
+      },
+      {
+       "id": null,
+       "name": "פיזיקה מודרנית להנדסה רפואית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272013201",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אפרת אבישי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272013201/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "16:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013202",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שטרנפלד איתי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272013202/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "16:50",
+       "room": "103 מעב' דואלי פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013203",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שטרנפלד איתי",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272013203/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013201/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר אפרת אבישי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "251 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013202/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שטרנפלד איתי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013203/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שטרנפלד איתי",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "303 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20134": {
+   "name": "שדות וגלים אלקטרומגנטיים",
+   "credits": 4,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90915",
+       "name": "משוואות דיפ' חלקיות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90929",
+       "name": "גלים"
+      },
+      {
+       "id": null,
+       "name": "תורת הגלים להנדסה רפואית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20135": {
+   "name": "מעבדת בקרה",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20118",
+       "name": "מבוא לבקרה"
+      },
+      {
+       "id": null,
+       "name": "תורת הבקרה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272013502",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר מלמד יוסף",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013503",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר חצקלביץ רון חיים",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013504",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר מלמד יוסף",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013505",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר חצקלביץ רון חיים",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "12:00",
+       "end": "14:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013506",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר נמני יגאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "11:00",
+       "end": "13:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013507",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר נמני יגאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "14:00",
+       "end": "16:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013510",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר נמני יגאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "14:00",
+       "end": "16:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20138": {
+   "name": "מבוא לאותות ומערכות",
+   "credits": 4,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20123",
+       "name": "הנדסת חשמל ב'"
+      },
+      {
+       "id": null,
+       "name": "הנדסת חשמל 2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90902",
+       "name": "חשבון דיפרנציאלי אינטגרלי2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90916",
+       "name": "אנליזה הרמונית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272013802",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר טריגנו תום",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272013802/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "12:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013803",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272013803/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "קריה ה'5"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013804",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272013804/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013805",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272013805/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "15:00",
+       "end": "17:50",
+       "room": "304 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013802/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר טריגנו תום",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013803/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013804/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272013805/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20140": {
+   "name": "מעבדת חשמל",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20122",
+       "name": "הנדסת חשמל א'"
+      },
+      {
+       "id": null,
+       "name": "הנדסת חשמל 1"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20122",
+       "name": "הנדסת חשמל א'"
+      },
+      {
+       "id": null,
+       "name": "מבוא להנדסת חשמל ואלקטרוניקה"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20123",
+       "name": "הנדסת חשמל ב'"
+      },
+      {
+       "id": null,
+       "name": "הנדסת חשמל 2"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272014001",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ארנפלד יוסף",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014002",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ברק אורי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014003",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר לבנת מיקי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "16:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014004",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ברק אורי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "16:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014005",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ברק אורי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014006",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ברק אורי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "11:00",
+       "end": "13:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014007",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ארנפלד יוסף",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "15:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014008",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר חצקלביץ רון חיים",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "15:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20144": {
+   "name": "מבנה מחשבים",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      },
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      },
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272014405",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר לבינגר ערן",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272014405/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014405/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר לבינגר ערן",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20147": {
+   "name": "שפת תאור חומרה VHDL",
+   "credits": 4,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20144",
+       "name": "מבנה מחשבים"
+      },
+      {
+       "id": null,
+       "name": "ארגון המחשב ושפת סף"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272014702",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אברמוב בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272014702/1",
+      "272014702/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "14:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014703",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אברמוב בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272014703/1",
+      "272014703/2"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "16:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014704",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "גב' מדינה דורית",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272014704/1",
+      "272014704/2"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "11:00",
+       "end": "13:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014702/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר אברמוב בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014702/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר אברמוב בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014703/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר אברמוב בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014703/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר אברמוב בנימין",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014704/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' מדינה דורית",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014704/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' מדינה דורית",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20148": {
+   "name": "מעבדה לאלקטרוניקה תקבילית",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20125",
+       "name": "אלקטרוניקה תקבילית"
+      },
+      {
+       "id": null,
+       "name": "מעגלים אלקטרוניים אנלוגיים1"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20140",
+       "name": "מעבדת חשמל"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272014809",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ברק אורי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20149": {
+   "name": "מעבדת תקשורת",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20115",
+       "name": "מבוא לתקשורת"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20148",
+       "name": "מעבדה לאלקטרוניקה תקבילית"
+      },
+      {
+       "id": null,
+       "name": "מעבדה ותיב\"ם מעגלים אנלוגיים"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20148",
+       "name": "מעבדה לאלקטרוניקה תקבילית"
+      },
+      {
+       "id": null,
+       "name": "מעבדת מעגלים אנלוגיים2"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272014905",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "גב' ליבסטר אירנה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014906",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "גב' ליבסטר אירנה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "12:00",
+       "end": "14:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272014907",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "גב' ליבסטר אירנה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "20:00",
+       "end": "22:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20209": {
+   "name": "מעבדה מתקדמת בתכן חומרה",
+   "credits": 1.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20147",
+       "name": "שפת תאור חומרה VHDL"
+      },
+      {
+       "id": "20147",
+       "name": "שפת תאור חומרה VHDL"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20216",
+       "name": "תכן חומרה מתקדם"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20210": {
+   "name": "יישומי מחשב להנדסת אלקטרוניקה",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      },
+      {
+       "id": null,
+       "name": "מבוא למדעי המחשב"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      },
+      {
+       "id": "10826",
+       "name": "מבוא לתכנות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20144",
+       "name": "מבנה מחשבים"
+      },
+      {
+       "id": null,
+       "name": "ארגון המחשב ושפת סף"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272021001",
+     "type": "סופי-הרצאה+מעבדה",
+     "primary": true,
+     "lecturer": "ד\"ר טורצ'ינסקי דמיטרי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272021001/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "22:00",
+       "end": "22:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272021003",
+     "type": "סופי-הרצאה+מעבדה",
+     "primary": true,
+     "lecturer": "פרופ' פלקסר אלעזר",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272021003/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "11:00",
+       "end": "11:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272021005",
+     "type": "סופי-הרצאה+מעבדה",
+     "primary": true,
+     "lecturer": "פרופ' פלקסר אלעזר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272021005/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "11:00",
+       "end": "11:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272021001/1",
+     "type": "מעבדה",
+     "primary": false,
+     "lecturer": "ד\"ר טורצ'ינסקי דמיטרי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272021003/1",
+     "type": "מעבדה",
+     "primary": false,
+     "lecturer": "פרופ' פלקסר אלעזר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272021005/1",
+     "type": "מעבדה",
+     "primary": false,
+     "lecturer": "פרופ' פלקסר אלעזר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20211": {
+   "name": "תכן מערכות ספרתיות מהירות",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20304",
+       "name": "אלקטרוניקה ספרתית"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20372",
+       "name": "קוי תמסורת מיקרו-גלים וקרינה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272021101",
+     "type": "סופי-הרצאה+מעבדה",
+     "primary": true,
+     "lecturer": "ד\"ר אברמוב בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272021101/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272021101/1",
+     "type": "מעבדה",
+     "primary": false,
+     "lecturer": "ד\"ר אברמוב בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "19:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20216": {
+   "name": "תכן חומרה מתקדם",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20144",
+       "name": "מבנה מחשבים"
+      },
+      {
+       "id": null,
+       "name": "ארכיטקטורת מחשבים ושפת סף"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20144",
+       "name": "מבנה מחשבים"
+      },
+      {
+       "id": null,
+       "name": "ארגון המחשב ושפת סף"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20147",
+       "name": "שפת תאור חומרה VHDL"
+      },
+      {
+       "id": "20147",
+       "name": "שפת תאור חומרה VHDL"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20217": {
+   "name": "ראייה ממוחשבת",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20327",
+       "name": "מעבדה מתקדמת בעיבוד תמונה"
+      },
+      {
+       "id": null,
+       "name": "מבוא לראייה ממוחשבת"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20332",
+       "name": "מבוא לעיבוד תמונה"
+      },
+      {
+       "id": null,
+       "name": "מבוא לראייה ממוחשבת"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20218": {
+   "name": "למידת מכונה",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20127",
+       "name": "מבוא לתהליכים אקראיים"
+      },
+      {
+       "id": "20127",
+       "name": "מבוא לתהליכים אקראיים"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272021801",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר סידורוב מיכאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272021801/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272021801/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר סידורוב מיכאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "20:00",
+       "end": "20:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20221": {
+   "name": "מבוא לחישוב קוונטי",
+   "credits": 3.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      },
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90928",
+       "name": "פיזיקה מודרנית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20304": {
+   "name": "אלקטרוניקה ספרתית",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      },
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20125",
+       "name": "אלקטרוניקה תקבילית"
+      },
+      {
+       "id": null,
+       "name": "מעגלים אלקטרוניים אנלוגיים1"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20309": {
+   "name": "תקשורת ספרתית",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20115",
+       "name": "מבוא לתקשורת"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20315": {
+   "name": "עיבוד ספרתי של אותות",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      },
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20324": {
+   "name": "עיבוד וידאו מולטימדיה",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20327",
+       "name": "מעבדה מתקדמת בעיבוד תמונה"
+      },
+      {
+       "id": null,
+       "name": "מבוא לראייה ממוחשבת"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20332",
+       "name": "מבוא לעיבוד תמונה"
+      },
+      {
+       "id": null,
+       "name": "מבוא לראייה ממוחשבת"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272032402",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר כץ אייל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272032402/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "251 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272032402/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר כץ אייל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "251 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20326": {
+   "name": "מעבדה מתקדמת בתקשורת",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20149",
+       "name": "מעבדת תקשורת"
+      },
+      {
+       "id": "20149",
+       "name": "מעבדת תקשורת"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20309",
+       "name": "תקשורת ספרתית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272032602",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "ד\"ר בלל יעל, גב' ליבסטר אירנה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272032603",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "ד\"ר בלל יעל, גב' ליבסטר אירנה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20327": {
+   "name": "מעבדה מתקדמת בעיבוד תמונה",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20332",
+       "name": "מבוא לעיבוד תמונה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272032702",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "ד\"ר כץ אייל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "15:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20332": {
+   "name": "מבוא לעיבוד תמונה",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      },
+      {
+       "id": "20138",
+       "name": "מבוא לאותות ומערכות"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      },
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20337": {
+   "name": "עיבוד אותות אקראים",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20127",
+       "name": "מבוא לתהליכים אקראיים"
+      },
+      {
+       "id": "20127",
+       "name": "מבוא לתהליכים אקראיים"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      },
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272033702",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר סידורוב מיכאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272033702/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "208 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272033702/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר סידורוב מיכאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "208 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20338": {
+   "name": "מעבדה מתקדמת בעיבוד ספרתי של אותות",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      },
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20337",
+       "name": "עיבוד אותות אקראים"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272033801",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר נח יואב",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20342": {
+   "name": "עיבוד ספרתי של תמונה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20327",
+       "name": "מעבדה מתקדמת בעיבוד תמונה"
+      },
+      {
+       "id": "20338",
+       "name": "מעבדה מתקדמת בעיבוד ספרתי של אותות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20332",
+       "name": "מבוא לעיבוד תמונה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20343": {
+   "name": "מבוא להנדסה אל\"אופטית",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90916",
+       "name": "אנליזה הרמונית"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90929",
+       "name": "גלים"
+      },
+      {
+       "id": null,
+       "name": "תורת הגלים להנדסה רפואית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272034301",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272034301/1"
+     ],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272034301/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר זיו עופר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20346": {
+   "name": "רכיבי רדיו ומיקרוגלים",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20309",
+       "name": "תקשורת ספרתית"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20372",
+       "name": "קוי תמסורת מיקרו-גלים וקרינה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272034601",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' לוין עלי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272034601/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272034601/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "פרופ' לוין עלי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20348": {
+   "name": "אנטנות בתקשורת",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20115",
+       "name": "מבוא לתקשורת"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20134",
+       "name": "שדות וגלים אלקטרומגנטיים"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20309",
+       "name": "תקשורת ספרתית"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20348",
+       "name": "אנטנות בתקשורת"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20351": {
+   "name": "ייצור והמרת אנרגיה",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20123",
+       "name": "הנדסת חשמל ב'"
+      },
+      {
+       "id": null,
+       "name": "הנדסת חשמל 2"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272035101",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מיטב נדה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272035101/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272035101/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר מיטב נדה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "22:00",
+       "end": "22:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20353": {
+   "name": "מערכות הספק א'",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20351",
+       "name": "ייצור והמרת אנרגיה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272035301",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר גורפינקל משה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272035301/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "מפ\"ט אולם כנסים"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272035301/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר גורפינקל משה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "20:00",
+       "end": "20:50",
+       "room": "מפ\"ט אולם כנסים"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20354": {
+   "name": "מערכות הספק ב'",
+   "credits": 3.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20351",
+       "name": "ייצור והמרת אנרגיה"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20353",
+       "name": "מערכות הספק א'"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20359": {
+   "name": "מתקנים ורשתות למתח גבוה",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20353",
+       "name": "מערכות הספק א'"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20354",
+       "name": "מערכות הספק ב'"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20360": {
+   "name": "מתקני מתח נמוך",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20353",
+       "name": "מערכות הספק א'"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20363": {
+   "name": "מערכות תקשורת אלחוטית",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20309",
+       "name": "תקשורת ספרתית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272036301",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "גב' ליבסטר אירנה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272036301/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "208 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272036301/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' ליבסטר אירנה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "19:00",
+       "end": "19:50",
+       "room": "208 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20367": {
+   "name": "מעבדה לאלקטרוניקה ספרתית",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20126",
+       "name": "מעבדת מערכות ספרתיות"
+      },
+      {
+       "id": "20126",
+       "name": "מעבדת מערכות ספרתיות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20304",
+       "name": "אלקטרוניקה ספרתית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272036702",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר חצקלביץ רון חיים",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272036703",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "12:50",
+       "room": "355 מעב' אותות/משובצות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272036704",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר חצקלביץ רון חיים",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "12:00",
+       "end": "14:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272036705",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר חצקלביץ רון חיים",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272036706",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "גב' הרדי אלרוד עינת",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272036708",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "גב' הרדי אלרוד עינת",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "052 מעב' אלקט'/בקרים/רובוטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272036710",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר נמני יגאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "12:50",
+       "room": "מעבדת תעשיה 4 (056)"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20370": {
+   "name": "מתודולוגיה תכן וטכנולוגיה VLSI",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      },
+      {
+       "id": "20119",
+       "name": "מערכות ספרתיות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20147",
+       "name": "שפת תאור חומרה VHDL"
+      },
+      {
+       "id": "20147",
+       "name": "שפת תאור חומרה VHDL"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20372": {
+   "name": "קוי תמסורת מיקרו-גלים וקרינה",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20134",
+       "name": "שדות וגלים אלקטרומגנטיים"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272037201",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר מלי בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272037201/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037202",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר מלי בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272037202/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037203",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר מלי בנימין",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272037203/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037204",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר מלי בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272037204/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037201/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מלי בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037202/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מלי בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037203/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מלי בנימין",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037204/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מלי בנימין",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20375": {
+   "name": "מבוא למערכות מכ\"ם",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20115",
+       "name": "מבוא לתקשורת"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20377": {
+   "name": "מעבדה לאלקטרוניקת הספק",
+   "credits": 1.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20380",
+       "name": "אלקטרוניקת הספק"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272037701",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "18:00",
+       "end": "20:50",
+       "room": "053 מעב' המרת אנרגיה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037702",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "15:00",
+       "end": "17:50",
+       "room": "053 מעב' המרת אנרגיה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037703",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "ד\"ר עמר ניסים, מר ארנפלד יוסף",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "11:00",
+       "room": "053 מעב' המרת אנרגיה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037704",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "053 מעב' המרת אנרגיה"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20379": {
+   "name": "מעבדה להמרת אנרגיה",
+   "credits": 1.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20351",
+       "name": "ייצור והמרת אנרגיה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20380": {
+   "name": "אלקטרוניקת הספק",
+   "credits": 3.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20123",
+       "name": "הנדסת חשמל ב'"
+      },
+      {
+       "id": null,
+       "name": "הנדסת חשמל 2"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20304",
+       "name": "אלקטרוניקה ספרתית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20381": {
+   "name": "הינע חשמלי ואלקטרוני",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20351",
+       "name": "ייצור והמרת אנרגיה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20383": {
+   "name": "מערכות מכ\"ם מתקדמות",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20375",
+       "name": "מבוא למערכות מכ\"ם"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272038301",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר הדס ניסים",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272038301/1"
+     ],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272038301/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר הדס ניסים",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "13:00",
+       "end": "13:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20385": {
+   "name": "תקשורת לווינים",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20115",
+       "name": "מבוא לתקשורת"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20386": {
+   "name": "מבוא למערכות פוטו-וולטאיות",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20353",
+       "name": "מערכות הספק א'"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20360",
+       "name": "מתקני מתח נמוך"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272038601",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר גורפינקל משה",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "272038601/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272038601/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר גורפינקל משה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "20:00",
+       "end": "20:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20387": {
+   "name": "ממירים ממותגים ועיבוד הספק",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20380",
+       "name": "אלקטרוניקת הספק"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272038701",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר עמר ניסים",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "272038701/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272038701/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר ארנפלד יוסף",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20411": {
+   "name": "פרויקט גמר חלק א'",
+   "credits": 1,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20115",
+       "name": "מבוא לתקשורת"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20118",
+       "name": "מבוא לבקרה"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20125",
+       "name": "אלקטרוניקה תקבילית"
+      },
+      {
+       "id": null,
+       "name": "מעגלים אלקטרוניים אנלוגיים2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      },
+      {
+       "id": "20128",
+       "name": "מבוא לעיבוד ספרתי של אותות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20144",
+       "name": "מבנה מחשבים"
+      },
+      {
+       "id": null,
+       "name": "ארגון המחשב ושפת סף"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20304",
+       "name": "אלקטרוניקה ספרתית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "272041101",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "מר רבינוביץ אבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272041102",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "מר רבינוביץ אבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "103 מעב' דואלי פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272041103",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר עמר ניסים",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "055 פרונטלי בניין מעבדות"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "20422": {
+   "name": "פרויקט גמר חלק ב'",
+   "credits": 1,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "20411",
+       "name": "פרויקט גמר חלק א'"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "20423": {
+   "name": "פרויקט גמר חלק ג'",
+   "credits": 6,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "20422",
+       "name": "פרויקט גמר חלק ב'"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "80834": {
+   "name": "מושגי יסוד בפילוסופיה",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278083402",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר שהם יקותיאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80840": {
+   "name": "זהות עצמית בקולנוע ופילוסופיה",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278084001",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר בידרמן שי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80874": {
+   "name": "Engineers Go to Maraket",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80892": {
+   "name": "Engineers become Enterpreneurs",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278089201",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "מר ניר אייל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80909": {
+   "name": "Professional Writing in AI-Imbued Workpl",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80912": {
+   "name": "סוגיות נבחרות באתיקה הנדסית",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80919": {
+   "name": "Ethics in Engineering",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": null,
+       "name": "אתיקה בהנדסה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "80926": {
+   "name": "Gender Sexuality & Desire in Cyberspace",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80932": {
+   "name": "מאמרי דעה - מתיאוריה לפרקטיקה",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278093201",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר שהם יקותיאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80935": {
+   "name": "אקזיסטנציאליזם: קריאה מודרכת",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80940": {
+   "name": "Wonders of Human Language",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6002",
+       "name": "אנגלית מתקדמים א' (בינוניים)"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "80941": {
+   "name": "מערכת הבריאות בישראל",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80946": {
+   "name": "תרבות ותודעה : מי מייצר את האני שלנו?",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278094601",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר גרפינקל אבי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80947": {
+   "name": "Introduction to Research Methods",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80948": {
+   "name": "היסטוריה ו-AI : אמריקה הלטינית במאה ה-20",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80951": {
+   "name": "From Atomic Bomb to Green Nuclear Energy",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278095101",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר לוי אורי ניסים",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80961": {
+   "name": "האדם הדיגיטלי בין אוטופיה לדיסטופיה",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80963": {
+   "name": "קולנוע ופילוסופיה",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80965": {
+   "name": "מח טכנולוגיה ובני אדם",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278096501",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר בן דוד ליאת",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80966": {
+   "name": "מי שולט במי",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278096601",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר בן דוד ליאת",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80967": {
+   "name": "ממציאים ומדענים ששינו את העולם",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278096701",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר בן דוד ליאת",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80970": {
+   "name": "פילוסופיה של מושג הקניין -למי שייך העולם",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278097001",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "עו\"ד ליואי עדי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80971": {
+   "name": "סמינר ניהול מוצר בעולמות הבינה המלאכותית",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80972": {
+   "name": "מודלי עולם מול LLMs - קו השבר הבא של AI",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80973": {
+   "name": "קניין, חירות וחדשנות - למי שייך העתיד?",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80974": {
+   "name": "כלכלת הבינה המלאכותית",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80975": {
+   "name": "ממשקים אדפטיביים וחוויות מותאמות אישית",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80976": {
+   "name": "הסברתיות ופרשנות של מודלים",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278097601",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר עבד אלחלים הישאם",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "מפ\"ט יעד"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80977": {
+   "name": "אינטליגנציה קולקטיבית: אדם, AI וקבוצות",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278097701",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר עבד אלחלים הישאם",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "מפ\"ט יעד"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "88101": {
+   "name": "התנעת המיזם הטכנולוגי",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "88102": {
+   "name": "מהפיתוח לשוק הגלובלי",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "88101",
+       "name": "התנעת המיזם הטכנולוגי"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "278810201",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר ברוש גיל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "מפ\"ט אתרוג"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90901": {
+   "name": "חשבון דיפרנציאלי אינטגרלי1",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "90902": {
+   "name": "חשבון דיפרנציאלי אינטגרלי2",
+   "credits": 5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90901",
+       "name": "חשבון דיפרנציאלי אינטגרלי1"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279090201",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090201/1",
+      "279090213/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "קריה ז'1"
+      },
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "קריה ז'1"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090202",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר לייטנר אריאלה מירה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090202/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "304 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090205",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090205/1",
+      "279090205/2"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "קריה ז'1"
+      },
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "קריה ז'1"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090207",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אמיר ענת",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090207/1",
+      "279090207/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "201 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "304 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090208",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אבן-דר מאנדל ליאת",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090208/1",
+      "279090208/2"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "203 פיקוס"
+      },
+      {
+       "day": 5,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090209",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' סטאנצ'סקו יוני",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090209/1",
+      "279090209/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "202 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090210",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אולבסקי ויקטור",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090210/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "202 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "18:50",
+       "room": ""
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090211",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר רוזנצוייג ליאור",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090211/1",
+      "279090211/2"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "102 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090212",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר לייטנר אריאלה מירה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090212/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "קריה ז'1"
+      },
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "251 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090214",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אבן-דר מאנדל ליאת",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090214/1",
+      "279090214/2"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "301 פיקוס"
+      },
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090215",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר גבל מיקה",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090215/1",
+      "279090215/2"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "303 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "קריה ה'7"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090216",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר רוזנצוייג ליאור",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090216/1",
+      "279090216/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "303 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090217",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אולבסקי ויקטור",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090217/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "200 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090218",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר סגל אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090218/1",
+      "279090218/2"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "16:00",
+       "end": "17:50",
+       "room": ""
+      },
+      {
+       "day": 5,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "קריה ה'4"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090219",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שלום תמיר",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090219/1",
+      "279090219/2"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "201 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "מפ\"ט תאנה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090220",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' סטאנצ'סקו יוני",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090220/1",
+      "279090220/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "203 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090221",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שרייבר ניר",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090221/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "208 פיקוס"
+      },
+      {
+       "day": 5,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090222",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שלום תמיר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090222/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "204 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090223",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אמיר ענת",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090223/1",
+      "279090223/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "קריה ה'9"
+      },
+      {
+       "day": 5,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "מפ\"ט אולם כנסים"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090201/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "קריה ג'6"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090202/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נמירובסקי אירינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090205/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090205/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "055 פרונטלי בניין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090207/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר גלמן ולדימיר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "208 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090207/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "103 מעב' דואלי פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090208/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נמירובסקי אירינה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090208/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090209/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר גלמן ולדימיר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090209/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090210/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר גלמן ולדימיר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090211/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כרמון שי",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090211/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090212/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כהן יונתן",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "מפ\"ט גפן"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090213/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כרמון שי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "055 פרונטלי בניין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090214/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר גלמן ולדימיר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090214/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "115 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090215/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "115 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090215/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נגר איריס",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "מפ\"ט תאנה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090216/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר גלמן ולדימיר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "115 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090216/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כרמון שי",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "115 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090217/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090218/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090218/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "מפ\"ט אתרוג"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090219/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר גלמן ולדימיר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090219/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כרמון שי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090220/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קנדליס אלינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090220/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כהן יונתן",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090221/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כהן יונתן",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090222/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר בנגיאט עמית",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "קריה ה'13"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090223/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090223/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כהן יונתן",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "מפ\"ט אולם כנסים"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90903": {
+   "name": "פיזיקה-מכניקה",
+   "credits": 5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": null,
+       "name": "קורס הכנה פיזיקה"
+      },
+      {
+       "id": null,
+       "name": "פיזיקה - מכינה בדרך לאפקה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279090302",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר דינאי יהודה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090302/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "115 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090306",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר עצמון ישעיהו",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090306/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "מפ\"ט יעד"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090307",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר דרורי אלון",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090307/1",
+      "279090307/2"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 5,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090308",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שטרנפלד איתי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090308/1",
+      "279090308/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "201 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "101 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090309",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שמעון מאיר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090309/1",
+      "279090309/2"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090310",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שמעון מאיר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090310/1",
+      "279090310/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "302 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090311",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר עצמון ישעיהו",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090311/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "מפ\"ט יעד"
+      },
+      {
+       "day": 5,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090313",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר עצמון ישעיהו",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090313/1",
+      "279090313/2"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "מפ\"ט יעד"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090302/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אבישר עמיחי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "054 פרונטלי בנין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090306/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' אליהו דנה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "21:00",
+       "end": "22:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090307/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אלקיים רמי",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090307/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' בלובשטיין הראל אילנה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "208 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090308/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אולבינסקי אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090308/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' אליהו דנה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "101 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090309/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אולבינסקי אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "קריה אודיטוריום"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090309/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אולבינסקי אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "304 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090310/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אבישר עמיחי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "200 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090310/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אולבינסקי אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090311/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אולבינסקי אלכסנדר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090313/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אולבינסקי אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090313/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר שפירא יובל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90904": {
+   "name": "פיזיקה חשמל ומגנטיות",
+   "credits": 5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90903",
+       "name": "פיזיקה-מכניקה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279090401",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר עצמון ישעיהו",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090401/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 5,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090402",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אפרת אבישי",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090402/1",
+      "279090402/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090403",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אפרת אבישי",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279090403/1",
+      "279090403/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090404",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שמעון מאיר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090404/1",
+      "279090404/2"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090413",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר דינאי יהודה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279090413/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "115 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090401/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר חסנוב אולג",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "054 פרונטלי בנין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090402/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' בלובשטיין הראל אילנה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090402/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר שפירא יובל",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090403/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' בלובשטיין הראל אילנה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "054 פרונטלי בנין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090403/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' אליהו דנה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090404/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אולבינסקי אלכסנדר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090404/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' אליהו דנה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "208 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090413/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר אבישר עמיחי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90905": {
+   "name": "אלגברה ליניארית",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "279090526/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כהן יונתן",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090527/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כהן יונתן",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "ז'2 קריה - עגלת תחשבים"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90911": {
+   "name": "מבוא להסתברות",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90901",
+       "name": "חשבון דיפרנציאלי אינטגרלי1"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279091101",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר פרל אפרת",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091101/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "10:00",
+       "end": "12:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091102",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מרגלית תמר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091102/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "15:50",
+       "room": "מפ\"ט יעד"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091112",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר טטרואשוילי לובה",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091112/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "14:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091114",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מרגלית תמר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091114/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "קריה ה'7"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091116",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר טטרואשוילי לובה",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091116/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "12:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091117",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר וקסמן עזרא",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091117/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "12:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091118",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מרגלית תמר",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091118/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "12:00",
+       "end": "14:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091119",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מכורה מיכאל מרצין",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091119/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091120",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר טטרואשוילי לובה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091120/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "13:00",
+       "end": "15:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091121",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מגנזיק אבלין",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091121/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "10:00",
+       "end": "12:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091122",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר טטרואשוילי לובה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091122/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "16:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091123",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר וקסמן עזרא",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091123/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "קריה ה'13"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091101/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "14:50",
+       "room": "251 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091102/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "14:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091112/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "11:00",
+       "end": "11:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091114/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091116/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091117/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091118/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091119/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "17:50",
+       "room": "303 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091120/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091121/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "11:00",
+       "end": "11:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091122/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "15:50",
+       "room": "מפ\"ט אולם כנסים"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091123/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' יעקובוב רבקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "קריה ה'13"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90914": {
+   "name": "משוואות דיפ' רגילות",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "90902",
+       "name": "חשבון דיפרנציאלי אינטגרלי2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279091401",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מוחוב אלונה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091401/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "ז'2 קריה - עגלת תחשבים"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091402",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר גבל מיקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091402/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091404",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מוחוב אלונה",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091404/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091405",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן סימון גבריאל",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091405/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "קריה ז'1"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091406",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091406/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091407",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר דביר יניב",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091407/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "304 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091410",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן סימון גבריאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091410/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091411",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אמיר ענת",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091411/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091412",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר גבל מיקה",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091412/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091413",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר גבל מיקה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091413/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "קריה אודיטוריום"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091414",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן סימון גבריאל",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279091414/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091416",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אמיר ענת",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091416/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091401/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "15:00",
+       "end": "15:50",
+       "room": "054 פרונטלי בנין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091402/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר ויינר בועז",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "15:00",
+       "end": "15:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091404/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר בנגיאט עמית",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "11:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091405/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר ויינר בועז",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "17:50",
+       "room": "054 פרונטלי בנין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091406/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091407/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נמירובסקי אירינה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "251 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091410/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "17:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091411/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091412/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר ויינר בועז",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "14:00",
+       "end": "14:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091413/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "09:00",
+       "end": "09:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091414/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "17:50",
+       "room": "103 מעב' דואלי פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091416/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נמירובסקי אירינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "08:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091417/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר בנגיאט עמית",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "09:00",
+       "end": "09:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90915": {
+   "name": "משוואות דיפ' חלקיות",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90916",
+       "name": "אנליזה הרמונית"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90917",
+       "name": "פונקציות מרוכבות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279091501",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן סימון גבריאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091501/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "102 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091502",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר סעדון תפארת",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091502/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091503",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר לה בלנק אן",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091503/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "055 פרונטלי בניין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091504",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' טל-עזר הלל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091504/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091505",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן סימון גבריאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091505/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "מפ\"ט גפן"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091507",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר סעדון תפארת",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091507/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "054 פרונטלי בנין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091508",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' פישלוב דליה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091508/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091509",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר לה בלנק אן",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091509/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "מפ\"ט אולם כנסים"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091510",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן סימון גבריאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091510/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091512",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר לה בלנק אן",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091512/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091501/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "13:50",
+       "room": "200 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091502/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "08:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091503/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "18:00",
+       "end": "18:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091504/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נמירובסקי אירינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "09:00",
+       "end": "09:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091505/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נמירובסקי אירינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091507/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "15:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091508/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091509/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "15:00",
+       "end": "15:50",
+       "room": "מפ\"ט אולם כנסים"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091510/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "11:00",
+       "end": "11:50",
+       "room": "101 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091512/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "20:00",
+       "end": "20:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90916": {
+   "name": "אנליזה הרמונית",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90902",
+       "name": "חשבון דיפרנציאלי אינטגרלי2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90914",
+       "name": "משוואות דיפ' רגילות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279091614",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר סגל אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90917": {
+   "name": "פונקציות מרוכבות",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90914",
+       "name": "משוואות דיפ' רגילות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279091706",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן סימון גבריאל",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279091706/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "204 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091714",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר סגל אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "קריה ז'1"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091706/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר ויינר בועז",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "19:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90918": {
+   "name": "מעבדת פיזיקה מכניקה",
+   "credits": 1,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90903",
+       "name": "פיזיקה-מכניקה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279091801",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר חסנוב אולג, מר אמבר עמית אדם",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091802",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר אמבר עמית אדם, גב' ארזי שחם תמר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091803",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר אמבר עמית אדם, גב' ארזי שחם תמר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091804",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר אמבר עמית אדם, מר חסנוב אולג",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091805",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר אולבינסקי אלכסנדר, מר אבישר עמיחי",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "09:00",
+       "end": "10:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091806",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר אבישר עמיחי, מר שפירא יובל",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "14:00",
+       "end": "15:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091807",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר אמבר עמית אדם, מר חסנוב אולג",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091820",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר אלקיים רמי, גב' אליהו דנה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091821",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "גב' אליהו דנה, מר אולבינסקי אלכסנדר",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90925": {
+   "name": "אנליזה נומרית",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90902",
+       "name": "חשבון דיפרנציאלי אינטגרלי2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "90914",
+       "name": "משוואות דיפ' רגילות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279092501",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מיברג שרה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092501/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "303 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092502",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' פישלוב דליה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092502/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092503",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מוחוב אלונה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092503/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "101 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092504",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' פישלוב דליה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092504/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "12:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092505",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר לה בלנק אן",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092505/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "13:00",
+       "end": "15:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092506",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר דביר יניב",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092506/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "302 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092507",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מוחוב אלונה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092507/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "304 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092516",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מיברג שרה",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092516/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092501/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092502/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "10:00",
+       "end": "10:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092503/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "101 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092504/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נמירובסקי אירינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "13:00",
+       "end": "13:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092505/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "09:00",
+       "end": "09:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092506/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' זלקמן סמירין אולגה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "13:00",
+       "end": "13:50",
+       "room": "301 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092507/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר מינקין אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "14:00",
+       "end": "14:50",
+       "room": "054 פרונטלי בנין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092516/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' נמירובסקי אירינה",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "קריה ה'9"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90928": {
+   "name": "פיזיקה מודרנית",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90904",
+       "name": "פיזיקה חשמל ומגנטיות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90918",
+       "name": "מעבדת פיזיקה מכניקה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279092805",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר רזניק אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092805/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "17:50",
+       "room": "101 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "18:50",
+       "room": ""
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092806",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר אפרת אבישי",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092806/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "11:50",
+       "room": "מפ\"ט אתרוג"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092807",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שטרנפלד איתי",
+     "full": true,
+     "semester": "ב",
+     "linked": [
+      "279092807/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "14:50",
+       "room": "205 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "16:00",
+       "end": "16:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092805/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר רזניק אלכסנדר",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "18:00",
+       "end": "18:50",
+       "room": "101 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092806/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר אפרת אבישי",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "12:00",
+       "end": "12:50",
+       "room": "מפ\"ט אתרוג"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092807/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר שטרנפלד איתי",
+     "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "17:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90929": {
+   "name": "גלים",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90904",
+       "name": "פיזיקה חשמל ומגנטיות"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "90915",
+       "name": "משוואות דיפ' חלקיות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90916",
+       "name": "אנליזה הרמונית"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279092901",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר דרורי אלון",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092901/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "16:00",
+       "end": "17:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092902",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר רויטברג ולדיסלב",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092902/1"
+     ],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092903",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר רויטברג ולדיסלב",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092903/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092904",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר דרורי אלון",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "279092904/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092901/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר דרורי אלון",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "18:00",
+       "end": "18:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092902/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר רויטברג ולדיסלב",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "19:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092903/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר רויטברג ולדיסלב",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "14:00",
+       "end": "14:50",
+       "room": "203 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092904/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר דרורי אלון",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "13:00",
+       "end": "13:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  }
+ }
+}

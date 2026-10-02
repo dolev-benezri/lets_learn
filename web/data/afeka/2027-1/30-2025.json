@@ -1,7 +1,7 @@
 {
  "fetchedAt": "2026-10-02T21:21:58.236Z",
  "year": 2027,
- "startYear": 2026,
+ "startYear": 2025,
  "program": 30,
  "semester": "א",
  "examsPublished": false,
@@ -9,12 +9,12 @@
   {
    "code": 30001,
    "name": "קורסי חובה שנה א'",
-   "minCredits": 41,
+   "minCredits": 42.5,
    "courses": [
-    "10016",
+    "10812",
     "30003",
     "30130",
-    "30133",
+    "30131",
     "30135",
     "30137",
     "90901",
@@ -27,7 +27,7 @@
   {
    "code": 30002,
    "name": "קורסי חובה שנה ב'",
-   "minCredits": 42,
+   "minCredits": 40.5,
    "courses": [
     "10336",
     "20816",
@@ -36,7 +36,7 @@
     "30113",
     "30117",
     "30127",
-    "30131",
+    "30133",
     "30136",
     "90904",
     "90911",
@@ -257,7 +257,6 @@
    "courses": [
     "30222",
     "30239",
-    "30244",
     "30246",
     "30324",
     "30338",
@@ -659,394 +658,6 @@
    "prereqs": [],
    "groups": []
   },
-  "10016": {
-   "name": "מבוא למדעי המחשב",
-   "credits": 4.5,
-   "offered": true,
-   "prereqs": [],
-   "groups": [
-    {
-     "id": "271001601",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "מר קרני ירדן",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001601/1"
-     ],
-     "meetings": [
-      {
-       "day": 1,
-       "start": "11:00",
-       "end": "13:50",
-       "room": "202 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001602",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "ד\"ר שטטר דוד",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001602/1"
-     ],
-     "meetings": [
-      {
-       "day": 5,
-       "start": "12:00",
-       "end": "14:50",
-       "room": "קריה ה'7"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001605",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "גב' כליף קרן",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001605/1"
-     ],
-     "meetings": [
-      {
-       "day": 1,
-       "start": "14:00",
-       "end": "16:50",
-       "room": "קריה ז'4"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001608",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "ד\"ר לפיד הדס",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001608/1"
-     ],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "11:00",
-       "end": "13:50",
-       "room": "קריה ז'1"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001609",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "מר אש רועי",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001609/1"
-     ],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "12:00",
-       "end": "14:50",
-       "room": "251 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001613",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "מר שלומי פיני",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001613/1"
-     ],
-     "meetings": [
-      {
-       "day": 4,
-       "start": "19:00",
-       "end": "21:50",
-       "room": "205 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001618",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "מר שלומי פיני",
-     "full": true,
-     "semester": "א",
-     "linked": [
-      "271001618/1"
-     ],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "13:00",
-       "end": "15:50",
-       "room": "מפ\"ט תאנה"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001619",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "גב' מרינוב עדי",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001619/1"
-     ],
-     "meetings": [
-      {
-       "day": 3,
-       "start": "10:00",
-       "end": "12:50",
-       "room": "115 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001620",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "ד\"ר לפיד הדס",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001620/1"
-     ],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "14:00",
-       "end": "16:50",
-       "room": "קריה ז'1"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001621",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "מר אש רועי",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271001621/1"
-     ],
-     "meetings": [
-      {
-       "day": 3,
-       "start": "08:00",
-       "end": "10:50",
-       "room": "101 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001601/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "מר קרני ירדן",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 4,
-       "start": "10:00",
-       "end": "12:50",
-       "room": "מפ\"ט אתרוג"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001602/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "ד\"ר שטטר דוד",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 1,
-       "start": "13:00",
-       "end": "15:50",
-       "room": "מפ\"ט גפן"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001605/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "גב' כליף קרן",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "13:00",
-       "end": "15:50",
-       "room": "קריה ז'4"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001608/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "ד\"ר לפיד הדס",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 1,
-       "start": "12:00",
-       "end": "14:50",
-       "room": "מפ\"ט רימון"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001609/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "מר אש רועי",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 3,
-       "start": "12:00",
-       "end": "14:50",
-       "room": "מפ\"ט אתרוג"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001613/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "מר שלומי פיני",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 3,
-       "start": "19:00",
-       "end": "21:50",
-       "room": "201 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001618/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "מר שלומי פיני",
-     "full": true,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 1,
-       "start": "09:00",
-       "end": "11:50",
-       "room": "204 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001619/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "גב' מרינוב עדי",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "08:00",
-       "end": "10:50",
-       "room": "101 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001620/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "ד\"ר לפיד הדס",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 5,
-       "start": "10:00",
-       "end": "12:50",
-       "room": "103 מעב' דואלי פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271001621/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "מר אש רועי",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 4,
-       "start": "10:00",
-       "end": "12:50",
-       "room": "207 פיקוס"
-      }
-     ],
-     "exams": []
-    }
-   ]
-  },
   "10336": {
    "name": "יישומי מחשב בהנדסה MATLAB",
    "credits": 0.5,
@@ -1136,6 +747,13 @@
      "exams": []
     }
    ]
+  },
+  "10812": {
+   "name": "מבוא לתכנות פיתון",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
   },
   "20812": {
    "name": "מעבדת בקרים",
@@ -5051,11 +4669,11 @@
      "kind": "קדם",
      "anyOf": [
       {
-       "id": "10016",
+       "id": null,
        "name": "מבוא למדעי המחשב"
       },
       {
-       "id": "10016",
+       "id": null,
        "name": "מבוא למדעי המחשב"
       }
      ]
@@ -5064,11 +4682,11 @@
      "kind": "קדם",
      "anyOf": [
       {
-       "id": "10016",
+       "id": null,
        "name": "מבוא למדעי המחשב"
       },
       {
-       "id": null,
+       "id": "10812",
        "name": "מבוא לתכנות פיתון"
       }
      ]
@@ -5845,11 +5463,11 @@
      "kind": "קדם",
      "anyOf": [
       {
-       "id": "10016",
+       "id": null,
        "name": "מבוא למדעי המחשב"
       },
       {
-       "id": "10016",
+       "id": null,
        "name": "מבוא למדעי המחשב"
       }
      ]
@@ -5858,7 +5476,7 @@
      "kind": "קדם",
      "anyOf": [
       {
-       "id": "10016",
+       "id": null,
        "name": "מבוא למדעי המחשב"
       },
       {
@@ -5871,11 +5489,11 @@
      "kind": "קדם",
      "anyOf": [
       {
-       "id": "10016",
+       "id": null,
        "name": "מבוא למדעי המחשב"
       },
       {
-       "id": null,
+       "id": "10812",
        "name": "מבוא לתכנות פיתון"
       }
      ]
@@ -5884,11 +5502,11 @@
      "kind": "קדם",
      "anyOf": [
       {
-       "id": "10016",
+       "id": null,
        "name": "מבוא למדעי המחשב"
       },
       {
-       "id": null,
+       "id": "10812",
        "name": "מבוא לתכנות פיתון"
       }
      ]

@@ -1,0 +1,349 @@
+{
+ "fetchedAt": "2026-10-02T21:21:58.236Z",
+ "year": 2027,
+ "startYear": 2027,
+ "program": 65,
+ "semester": "א",
+ "examsPublished": false,
+ "lists": [
+  {
+   "code": 65001,
+   "name": "קורסי חובה שנה א'",
+   "minCredits": 15,
+   "courses": [
+    "60002",
+    "60003",
+    "65021",
+    "65028",
+    "65029"
+   ]
+  },
+  {
+   "code": 65002,
+   "name": "קורסי חובה שנה ב'",
+   "minCredits": 9,
+   "courses": [
+    "65013",
+    "65030"
+   ]
+  },
+  {
+   "code": 65004,
+   "name": "נושא חובה נוסף",
+   "minCredits": 0,
+   "courses": [
+    "8080"
+   ]
+  },
+  {
+   "code": 65006,
+   "name": "קורסי בחירה קבוצה1",
+   "minCredits": 3,
+   "courses": [
+    "65007",
+    "65011",
+    "65027",
+    "65031",
+    "68119"
+   ]
+  },
+  {
+   "code": 65007,
+   "name": "קורסי בחירה קבוצה2",
+   "minCredits": 3,
+   "courses": [
+    "65026",
+    "65032",
+    "65033",
+    "65035"
+   ]
+  }
+ ],
+ "verified": false,
+ "degree": {
+  "total": null,
+  "specCredits": 0
+ },
+ "courses": {
+  "8080": {
+   "name": "לומדה למניעת הטרדה מינית-און ליין",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "60002": {
+   "name": "הסקה סטטיסטית וקבלת החלטות",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276000202",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר זאבי יואב",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2307"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "276000204",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2304"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "60003": {
+   "name": "אופטימיזציה וחקר ביצועים",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276000301",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר מרגלית תמר",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2314"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "65007": {
+   "name": "עיבוד שפות טבעיות ודיבור",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276500701",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר ילוב הנדזל שרון",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2305"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "65011": {
+   "name": "ראיה ממוחשבת",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276501101",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר אפרשטיין יהודית",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "עתידים 2304"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "65013": {
+   "name": "עבודת גמר",
+   "credits": 6,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "65021": {
+   "name": "מבוא ללמידה עמוקה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "65026": {
+   "name": "למידת חיזוק ורובוטיקה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "65027": {
+   "name": "טכנולוגיות ענן ו-Big Data",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276502701",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר מורוז בוריס",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2313"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "65028": {
+   "name": "יסודות למידת מכונה",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276502803",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר אפרשטיין יהודית",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2304"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "65029": {
+   "name": "שיטות מתקדמות בלמידת מכונה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "65030": {
+   "name": "למידה עמוקה למתקדמים",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276503001",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר אפרשטיין יהודית",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "עתידים 2311"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "65031": {
+   "name": "אתיקה של בינה מלאכותית ורגולציה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "65032": {
+   "name": "נושאים מתקדמים ב-AI",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "65033": {
+   "name": "רכב אוטונומי ותחבורה חכמה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "65035": {
+   "name": "קולנוע ו-AI",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "68119": {
+   "name": "למידת מכונה ברפואה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "65028",
+       "name": "יסודות למידת מכונה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  }
+ }
+}

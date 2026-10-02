@@ -1,0 +1,538 @@
+{
+ "fetchedAt": "2026-10-02T21:21:58.236Z",
+ "year": 2027,
+ "startYear": 2025,
+ "program": 61,
+ "semester": "א",
+ "examsPublished": false,
+ "lists": [
+  {
+   "code": 61001,
+   "name": "קורסי חובה שנה א'",
+   "minCredits": 12,
+   "courses": [
+    "60003",
+    "61001",
+    "61026",
+    "61029"
+   ]
+  },
+  {
+   "code": 61002,
+   "name": "קורסי חובה שנה ב'",
+   "minCredits": 15,
+   "courses": [
+    "61014",
+    "61023",
+    "61028",
+    "61030"
+   ]
+  },
+  {
+   "code": 61004,
+   "name": "נושא חובה נוסף",
+   "minCredits": 0,
+   "courses": [
+    "8080"
+   ]
+  },
+  {
+   "code": 61005,
+   "name": "קורסי בחירה",
+   "minCredits": 3,
+   "courses": [
+    "61211",
+    "61213"
+   ]
+  },
+  {
+   "code": 61006,
+   "name": "קורסי בחירה נוספים",
+   "minCredits": 0,
+   "courses": [
+    "60002",
+    "61223",
+    "61225",
+    "61230",
+    "63029",
+    "65028",
+    "66007",
+    "66101"
+   ]
+  }
+ ],
+ "verified": false,
+ "degree": {
+  "total": null,
+  "specCredits": 0
+ },
+ "courses": {
+  "8080": {
+   "name": "לומדה למניעת הטרדה מינית-און ליין",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "60002": {
+   "name": "הסקה סטטיסטית וקבלת החלטות",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276000202",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר זאבי יואב",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2307"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "276000204",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2304"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "60003": {
+   "name": "אופטימיזציה וחקר ביצועים",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276000301",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר מרגלית תמר",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2314"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61001": {
+   "name": "יסודות הנדסת מערכות",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276100101",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר ענתבי עידו ישראל",
+     "full": true,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "עתידים 2314"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61014": {
+   "name": "עבודת גמר",
+   "credits": 6,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "61001",
+       "name": "יסודות הנדסת מערכות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "61023": {
+   "name": "הנדסת דרישות וממשקים",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "61001",
+       "name": "יסודות הנדסת מערכות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "276102301",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר שאבי יעקב",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2313"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61026": {
+   "name": "כלכלת פרויקט וניהול משאבים",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276102601",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "מר בראל אלי",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "עתידים 2313"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61028": {
+   "name": "אינטגרציה ובחינה של מערכות",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "61001",
+       "name": "יסודות הנדסת מערכות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "276102801",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר ענתבי עידו ישראל",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "עתידים 2313"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61029": {
+   "name": "ארכיטקטורה מערכתית",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "61001",
+       "name": "יסודות הנדסת מערכות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "61030": {
+   "name": "תכן מערכתי",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "61001",
+       "name": "יסודות הנדסת מערכות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "276103001",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר כספי עומר",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "עתידים 2314"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61211": {
+   "name": "ניהול סיכונים וקבלת החלטות",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "61001",
+       "name": "יסודות הנדסת מערכות"
+      },
+      {
+       "id": "66007",
+       "name": "ניהול פרויקטים ומערכת"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "276121101",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר ענתבי עידו ישראל",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2314"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61213": {
+   "name": "היבט אמינות בהנדסת מערכות",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "61001",
+       "name": "יסודות הנדסת מערכות"
+      },
+      {
+       "id": "66007",
+       "name": "ניהול פרויקטים ומערכת"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "276121302",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר בראל אלכס",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2314"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61223": {
+   "name": "ניהול תהליכי מיקור חוץ",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "61225": {
+   "name": "הנדסת מערכות מבוססות מודלים",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "61001",
+       "name": "יסודות הנדסת מערכות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "276122502",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר כספי עומר",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2307"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "61230": {
+   "name": "ניהול בסביבה עתירת טכנולוגיה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "63029": {
+   "name": "קורס דירקטורים ומנהלים",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "65028": {
+   "name": "יסודות למידת מכונה",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276502803",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר אפרשטיין יהודית",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2304"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "66007": {
+   "name": "ניהול פרויקטים ומערכת",
+   "credits": 3,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "276600702",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר פוקס עדי, גב' שליט משעל גילי",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "16:00",
+       "end": "18:50",
+       "room": "עתידים 2305"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "66101": {
+   "name": "יזמות",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  }
+ }
+}

@@ -1,0 +1,2236 @@
+{
+ "fetchedAt": "2026-10-02T21:21:58.236Z",
+ "year": 2027,
+ "startYear": 2026,
+ "program": 19,
+ "semester": "קיץ",
+ "examsPublished": false,
+ "lists": [
+  {
+   "code": 19001,
+   "name": "קורסי חובה שנה א'",
+   "minCredits": 44.5,
+   "courses": [
+    "10016",
+    "10117",
+    "40006",
+    "90901",
+    "90902",
+    "90905",
+    "90911",
+    "90914",
+    "90926",
+    "90954",
+    "90958"
+   ]
+  },
+  {
+   "code": 19002,
+   "name": "קורסי חובה שנה ב'",
+   "minCredits": 40.5,
+   "courses": [
+    "10120",
+    "10139",
+    "10245",
+    "19101",
+    "40005",
+    "40102",
+    "40112",
+    "40205",
+    "90916",
+    "90917",
+    "90923",
+    "90925"
+   ]
+  },
+  {
+   "code": 19003,
+   "name": "קורסי חובה שנה ג'",
+   "minCredits": 24,
+   "courses": [
+    "10121",
+    "10240",
+    "10351",
+    "11402",
+    "11403",
+    "19104",
+    "40123",
+    "40229",
+    "40242"
+   ]
+  },
+  {
+   "code": 19010,
+   "name": "נושא חובה נוסף",
+   "minCredits": 0,
+   "courses": [
+    "8080"
+   ]
+  },
+  {
+   "code": 19011,
+   "name": "אשכול עיבוד אות-תמונה-דיבור",
+   "minCredits": 2,
+   "courses": [
+    "10247",
+    "19103",
+    "30356"
+   ]
+  },
+  {
+   "code": 19012,
+   "name": "אשכול רשתות ואנליטיקה עסקית",
+   "minCredits": 2,
+   "courses": [
+    "10359",
+    "40243",
+    "40268"
+   ]
+  },
+  {
+   "code": 19031,
+   "name": "חטיבת יזמות",
+   "minCredits": 0,
+   "courses": [
+    "88101",
+    "88102"
+   ]
+  },
+  {
+   "code": 19901,
+   "name": "קורסי יחידה ללימודי חברה ורוח",
+   "minCredits": 4,
+   "courses": [
+    "80834",
+    "80840",
+    "80874",
+    "80892",
+    "80909",
+    "80912",
+    "80919",
+    "80926",
+    "80932",
+    "80935",
+    "80940",
+    "80941",
+    "80946",
+    "80947",
+    "80948",
+    "80951",
+    "80961",
+    "80963",
+    "80965",
+    "80966",
+    "80967",
+    "80970",
+    "80971",
+    "80972",
+    "80973",
+    "80974",
+    "80975",
+    "80976",
+    "80977"
+   ]
+  },
+  {
+   "code": 60021,
+   "name": "קורסי חובה לימודי אנגלית",
+   "minCredits": 0,
+   "courses": [
+    "6000",
+    "6001",
+    "6002",
+    "6003"
+   ]
+  }
+ ],
+ "verified": false,
+ "degree": {
+  "total": null,
+  "specCredits": 0
+ },
+ "courses": {
+  "6000": {
+   "name": "אנגלית טרום בסיסי (מכינה)",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "6001": {
+   "name": "אנגלית בסיסי (מתחילים)",
+   "credits": 0,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6000",
+       "name": "אנגלית טרום בסיסי (מכינה)"
+      },
+      {
+       "id": null,
+       "name": "אנגלית - מכינה בדרך לאפקה"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6000",
+       "name": "אנגלית טרום בסיסי (מכינה)"
+      },
+      {
+       "id": null,
+       "name": "אנגלית1 - מכינה בדרך לאפקה"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "270600104",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "מר קרמה אלכסנדר",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט אתרוג"
+      },
+      {
+       "day": 4,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט תאנה"
+      },
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט אתרוג"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600105",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' גולדבלט ליבוביץ נעה",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט תאנה"
+      },
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט אתרוג"
+      },
+      {
+       "day": 5,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "6002": {
+   "name": "אנגלית מתקדמים א' (בינוניים)",
+   "credits": 0,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6001",
+       "name": "אנגלית בסיסי (מתחילים)"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "270600208",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' וולפרט רחל",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "12:00",
+       "end": "15:50",
+       "room": "מפ\"ט זית"
+      },
+      {
+       "day": 6,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600209",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' וולפרט רחל",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "16:00",
+       "end": "19:50",
+       "room": "מפ\"ט זית"
+      },
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600210",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' גרוסו פאולה",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט זית"
+      },
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "6003": {
+   "name": "אנגלית מתקדמים ב' (מתקדמים)",
+   "credits": 0,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6002",
+       "name": "אנגלית מתקדמים א' (בינוניים)"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "270600312",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר חריזמן קרן (אנה)",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט זית"
+      },
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600313",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' נסים רונלי",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "09:00",
+       "end": "12:50",
+       "room": "מפ\"ט זית"
+      },
+      {
+       "day": 6,
+       "start": "09:00",
+       "end": "12:50",
+       "room": "מפ\"ט תאנה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600314",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' נסים רונלי",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "09:00",
+       "end": "12:50",
+       "room": "מפ\"ט תאנה"
+      },
+      {
+       "day": 5,
+       "start": "09:00",
+       "end": "12:50",
+       "room": "מפ\"ט תאנה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600315",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' מרקס אן",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "15:50",
+       "room": "מפ\"ט זית"
+      },
+      {
+       "day": 4,
+       "start": "12:00",
+       "end": "15:50",
+       "room": "מפ\"ט תאנה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600316",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' מרקס אן",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט תאנה"
+      },
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט זית"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "270600317",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "גב' קלף לואיז",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט זית"
+      },
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט תאנה"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "8080": {
+   "name": "לומדה למניעת הטרדה מינית-און ליין",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "10016": {
+   "name": "מבוא למדעי המחשב",
+   "credits": 4.5,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "271001617",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר קרני ירדן",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [
+      "271001617/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "201 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271001617/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר קרני ירדן",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "20:00",
+       "end": "22:50",
+       "room": "201 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "20:00",
+       "end": "22:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "10117": {
+   "name": "מבני נתונים",
+   "credits": 5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "271011706",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בינסקי הדר",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [
+      "271011706/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "קריה ג'6"
+      },
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271011706/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר בינסקי הדר",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "21:00",
+       "end": "22:50",
+       "room": "קריה ג'6"
+      },
+      {
+       "day": 3,
+       "start": "21:00",
+       "end": "22:50",
+       "room": "קריה ה'11 מעב דואלי"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "10120": {
+   "name": "תכנון וניתוח אלגוריתמים",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10117",
+       "name": "מבני נתונים"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "10121": {
+   "name": "אלגוריתם מתקדם וסיבוכיות",
+   "credits": 4,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10120",
+       "name": "תכנון וניתוח אלגוריתמים"
+      },
+      {
+       "id": null,
+       "name": "אלגוריתמים ומבנה נתונים להנדסת חשמל"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10139",
+       "name": "מודלים חישוביים"
+      },
+      {
+       "id": "10139",
+       "name": "מודלים חישוביים"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "271012105",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר גנוט יצחק",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [
+      "271012105/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "קריה ה'5"
+      },
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "ז'2 קריה - עגלת תחשבים"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271012105/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר גנוט יצחק",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "קריה ה'5"
+      },
+      {
+       "day": 3,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "ז'2 קריה - עגלת תחשבים"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "10139": {
+   "name": "מודלים חישוביים",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90923",
+       "name": "לוגיקה מתמטית למדעי מחשב"
+      },
+      {
+       "id": null,
+       "name": "לוגיקה מתמטית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "10240": {
+   "name": "רשתות נוירונים ולמידה עמוקה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "10245",
+       "name": "למידת מכונה"
+      },
+      {
+       "id": "10245",
+       "name": "למידת מכונה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "10245": {
+   "name": "למידת מכונה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "10247": {
+   "name": "עיבוד שפה טבעית",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10240",
+       "name": "רשתות נוירונים ולמידה עמוקה"
+      },
+      {
+       "id": null,
+       "name": "למידה עמוקה"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "10351": {
+   "name": "ניתוח נתוני עתק",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "40102",
+       "name": "בסיסי נתונים"
+      },
+      {
+       "id": "40102",
+       "name": "בסיסי נתונים"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "10359": {
+   "name": "רכבים אוטונומיים והנדסת אנוש בעולמות הAI",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": null,
+       "name": "סטטיסטיקה"
+      },
+      {
+       "id": "40005",
+       "name": "הסקה סטטיסטית"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": null,
+       "name": "תכנות מונחה עצמים"
+      },
+      {
+       "id": null,
+       "name": "תכנות מונחה עצמים"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": null,
+       "name": "תכנות מונחה עצמים"
+      },
+      {
+       "id": null,
+       "name": "תכנות ותיכון מונחה עצמים"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": null,
+       "name": "תכנות מונחה עצמים"
+      },
+      {
+       "id": null,
+       "name": "תכנות ותיכון מונחה עצמים"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "11402": {
+   "name": "פרויקט גמר למדעים1",
+   "credits": 4,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10120",
+       "name": "תכנון וניתוח אלגוריתמים"
+      },
+      {
+       "id": null,
+       "name": "אלגוריתמים ומבנה נתונים להנדסת חשמל"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "11403": {
+   "name": "פרויקט גמר למדעים2",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "11402",
+       "name": "פרויקט גמר למדעים1"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "19101": {
+   "name": "מבוא לבינה מלאכותית",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": null,
+       "name": "מבוא לתכנות פיתון"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90902",
+       "name": "חשבון דיפרנציאלי אינטגרלי2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90926",
+       "name": "מתמטיקה בדידה"
+      },
+      {
+       "id": null,
+       "name": "מתמטיקה בדידה IBL"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "19103": {
+   "name": "בינה מלאכותית יוצרת",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10240",
+       "name": "רשתות נוירונים ולמידה עמוקה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "19104": {
+   "name": "אתיקה במדעי נתונים",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "30356": {
+   "name": "מבוא לראייה ממוחשבת",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": null,
+       "name": "מבוא לתכנות ושפת C"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": null,
+       "name": "מבוא לתכנות פיתון"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": null,
+       "name": "מבוא לתכנות פיתון"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40005": {
+   "name": "הסקה סטטיסטית",
+   "credits": 4,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": null,
+       "name": "סטטיסטיקה"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40006": {
+   "name": "מבוא למערכות מידע",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "40102": {
+   "name": "בסיסי נתונים",
+   "credits": 3.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": null,
+       "name": "מבוא לתכנות פיתון"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "10016",
+       "name": "מבוא למדעי המחשב"
+      },
+      {
+       "id": null,
+       "name": "מבוא לתכנות פיתון"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "40006",
+       "name": "מבוא למערכות מידע"
+      },
+      {
+       "id": "40006",
+       "name": "מבוא למערכות מידע"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40112": {
+   "name": "מבוא לחקר ביצועים",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90911",
+       "name": "מבוא להסתברות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40123": {
+   "name": "שיטות אופטימיזציה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "40112",
+       "name": "מבוא לחקר ביצועים"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90926",
+       "name": "מתמטיקה בדידה"
+      },
+      {
+       "id": null,
+       "name": "מתמטיקה בדידה IBL"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40205": {
+   "name": "בינה עסקית",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "19101",
+       "name": "מבוא לבינה מלאכותית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40229": {
+   "name": "שיטות סטטיסטיות בניתוח נתונים",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "40005",
+       "name": "הסקה סטטיסטית"
+      },
+      {
+       "id": null,
+       "name": "סטטיסטיקה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40242": {
+   "name": "הבטים סטטיסטיים בלמידת מכונה",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "40005",
+       "name": "הסקה סטטיסטית"
+      },
+      {
+       "id": null,
+       "name": "סטטיסטיקה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40243": {
+   "name": "מבוא למודלים ניהוליים מבוססי נתונים",
+   "credits": 3,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "40005",
+       "name": "הסקה סטטיסטית"
+      },
+      {
+       "id": null,
+       "name": "סטטיסטיקה"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "40123",
+       "name": "שיטות אופטימיזציה"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "40229",
+       "name": "שיטות סטטיסטיות בניתוח נתונים"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "40268": {
+   "name": "שיווק מבוסס נתונים ברשתות חברתיות",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "40005",
+       "name": "הסקה סטטיסטית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "80834": {
+   "name": "מושגי יסוד בפילוסופיה",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80840": {
+   "name": "זהות עצמית בקולנוע ופילוסופיה",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80874": {
+   "name": "Engineers Go to Maraket",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80892": {
+   "name": "Engineers become Enterpreneurs",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80909": {
+   "name": "Professional Writing in AI-Imbued Workpl",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278090901",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "מר כהן רן",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "14:00",
+       "end": "17:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "278090902",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "מר כהן רן",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "14:00",
+       "end": "17:50",
+       "room": "מפ\"ט אתרוג"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80912": {
+   "name": "סוגיות נבחרות באתיקה הנדסית",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278091201",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר שהם יקותיאל",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80919": {
+   "name": "Ethics in Engineering",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": null,
+       "name": "אתיקה בהנדסה"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "80926": {
+   "name": "Gender Sexuality & Desire in Cyberspace",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278092601",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר נור עופר",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80932": {
+   "name": "מאמרי דעה - מתיאוריה לפרקטיקה",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80935": {
+   "name": "אקזיסטנציאליזם: קריאה מודרכת",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278093501",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר שהם יקותיאל",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80940": {
+   "name": "Wonders of Human Language",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "6002",
+       "name": "אנגלית מתקדמים א' (בינוניים)"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "278094001",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר שוורץ בריגיטה רחל",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "09:00",
+       "end": "12:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80941": {
+   "name": "מערכת הבריאות בישראל",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80946": {
+   "name": "תרבות ותודעה : מי מייצר את האני שלנו?",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80947": {
+   "name": "Introduction to Research Methods",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278094701",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר רוס גיא משה",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "14:00",
+       "end": "17:50",
+       "room": "205 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80948": {
+   "name": "היסטוריה ו-AI : אמריקה הלטינית במאה ה-20",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80951": {
+   "name": "From Atomic Bomb to Green Nuclear Energy",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80961": {
+   "name": "האדם הדיגיטלי בין אוטופיה לדיסטופיה",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278096101",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "ד\"ר נור עופר",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "08:00",
+       "end": "11:50",
+       "room": "מפ\"ט תמר"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80963": {
+   "name": "קולנוע ופילוסופיה",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80965": {
+   "name": "מח טכנולוגיה ובני אדם",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80966": {
+   "name": "מי שולט במי",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80967": {
+   "name": "ממציאים ומדענים ששינו את העולם",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80970": {
+   "name": "פילוסופיה של מושג הקניין -למי שייך העולם",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80971": {
+   "name": "סמינר ניהול מוצר בעולמות הבינה המלאכותית",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80972": {
+   "name": "מודלי עולם מול LLMs - קו השבר הבא של AI",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80973": {
+   "name": "קניין, חירות וחדשנות - למי שייך העתיד?",
+   "credits": 2,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "278097301",
+     "type": "סופי-הרצאה",
+     "primary": true,
+     "lecturer": "עו\"ד ליואי עדי",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "20:50",
+       "room": "מפ\"ט גפן"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "80974": {
+   "name": "כלכלת הבינה המלאכותית",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80975": {
+   "name": "ממשקים אדפטיביים וחוויות מותאמות אישית",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80976": {
+   "name": "הסברתיות ופרשנות של מודלים",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "80977": {
+   "name": "אינטליגנציה קולקטיבית: אדם, AI וקבוצות",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "88101": {
+   "name": "התנעת המיזם הטכנולוגי",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "88102": {
+   "name": "מהפיתוח לשוק הגלובלי",
+   "credits": 2,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "88101",
+       "name": "התנעת המיזם הטכנולוגי"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "90901": {
+   "name": "חשבון דיפרנציאלי אינטגרלי1",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "90902": {
+   "name": "חשבון דיפרנציאלי אינטגרלי2",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90901",
+       "name": "חשבון דיפרנציאלי אינטגרלי1"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "90905": {
+   "name": "אלגברה ליניארית",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
+  "90911": {
+   "name": "מבוא להסתברות",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90901",
+       "name": "חשבון דיפרנציאלי אינטגרלי1"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279091113",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר מכורה מיכאל מרצין",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [
+      "279091113/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "21:50",
+       "room": "קריה ג'6"
+      },
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "קריה ה'5"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091113/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "קריה ג'6"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90914": {
+   "name": "משוואות דיפ' רגילות",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "90902",
+       "name": "חשבון דיפרנציאלי אינטגרלי2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "90916": {
+   "name": "אנליזה הרמונית",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90902",
+       "name": "חשבון דיפרנציאלי אינטגרלי2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90914",
+       "name": "משוואות דיפ' רגילות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279091606",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן סימון גבריאל",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [
+      "279091606/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
+      },
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279091606/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר בנגיאט עמית",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90917": {
+   "name": "פונקציות מרוכבות",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90914",
+       "name": "משוואות דיפ' רגילות"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "90923": {
+   "name": "לוגיקה מתמטית למדעי מחשב",
+   "credits": 3.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90926",
+       "name": "מתמטיקה בדידה"
+      },
+      {
+       "id": null,
+       "name": "מתמטיקה בדידה IBL"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "90925": {
+   "name": "אנליזה נומרית",
+   "credits": 3.5,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90902",
+       "name": "חשבון דיפרנציאלי אינטגרלי2"
+      }
+     ]
+    },
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "90914",
+       "name": "משוואות דיפ' רגילות"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279092511",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "פרופ' טל-עזר הלל",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [
+      "279092511/1"
+     ],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "202 פיקוס"
+      },
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "201 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092512",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר סעדון תפארת",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [
+      "279092512/1"
+     ],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "103 מעב' דואלי פיקוס"
+      },
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "103 מעב' דואלי פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092517",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [
+      "279092517/1"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "101 פיקוס"
+      },
+      {
+       "day": 6,
+       "start": "08:00",
+       "end": "10:50",
+       "room": "200 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092511/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092512/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "103 מעב' דואלי פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279092517/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "",
+     "full": false,
+     "semester": "קיץ",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "90926": {
+   "name": "מתמטיקה בדידה",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "90901",
+       "name": "חשבון דיפרנציאלי אינטגרלי1"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "90954": {
+   "name": "אלגברה ליניארית2",
+   "credits": 5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90905",
+       "name": "אלגברה ליניארית"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "90958": {
+   "name": "סדנת מתמטיקה",
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  }
+ }
+}
