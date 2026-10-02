@@ -42,7 +42,9 @@ const { renderSide } = await import('../web/ui-side.js');
 const { renderDrawer } = await import('../web/ui-drawer.js');
 const { openPop, groupIndex } = await import('../web/ui-grid.js');
 const { openFriendEditor } = await import('../web/ui-friend-editor.js');
-const { mapSvg, layoutMap, geometry } = await import('../web/ui-map.js');
+const { layoutMap, geometry } = await import('../web/map-layout.js');
+const { mapSvg } = await import('../web/map-render.js');
+await import('../web/ui-map.js'); // the dialog module loads without a browser too
 const { searchYear } = await import('../web/solver-core.js');
 
 // ---- hostile world ----

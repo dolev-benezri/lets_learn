@@ -167,7 +167,7 @@ test('normalize keeps integer grades 0-100 and drops the rest', () => {
 });
 
 test('status page CSS is scoped to #me: the map lane div.ml.me must not inherit it', () => {
-  const css = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../web/style.css', import.meta.url), 'utf8');
   assert.deepEqual(css.match(/(^|[\s,}])\.me(?![\w-])/gm), null);
 });
 

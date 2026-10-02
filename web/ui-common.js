@@ -5,7 +5,8 @@ import { showText } from './ui-dialog.js';
 
 export const $ = (id) => document.getElementById(id);
 export const CAND = ['retake', 'available', 'afterA', 'conditional'];
-export const WEIGHTS = [['friends', 'להיות עם החברים'], ['progress', 'להתקדם בתואר'], ['freeDays', 'ימים פנויים'], ['compact', 'בלי חלונות'], ['timeWindow', 'שעות נוחות'], ['examSpread', 'פיזור בחינות']];
+export const WEIGHTS = [['friends', 'להיות עם החברים'], ['progress', 'להתקדם בתואר'], ['freeDays', 'ימים פנויים'], ['compact', 'בלי חלונות'], ['timeWindow',
+  'שעות נוחות'], ['examSpread', 'פיזור בחינות']];
 export const SCALE = [[0, 'לא חשוב'], [1, 'קצת'], [3, 'חשוב'], [5, 'מאוד']];
 export const STATUS = [['none', 'לא לקחתי'], ['passed', 'עברתי'], ['failed', 'נכשלתי']];
 export const FAILS = [[1, 'פעם'], [2, 'פעמיים'], [3, '3 פעמים']];
@@ -39,8 +40,10 @@ export const planned = (id) => ['must', 'optional'].includes(candidateMode(id));
 export const allGroupIds = () => groupIndex(app.data);
 export const pill = (ic, text, cls = '') => `<span class="pill ${cls}">${icon(ic)}<span>${text}</span></span>`;
 export const seg = (name, legend, opts, cur, attrs, visible = false) => `<fieldset class="seg"><legend${visible ? '' : ' class="sr"'}>${esc(legend)}</legend><div class="seg-opts">${
-  opts.map(([v, t]) => `<label><input type="radio" name="${esc(name)}" value="${v}"${String(v) === String(cur) ? ' checked' : ''} data-k="${esc(name)}-${v}" ${attrs}><span>${t}</span></label>`).join('')}</div></fieldset>`;
-export const details = (key, summaryHtml, body, n) => n ? `<details data-key="${key}"${openDetails.has(key) ? ' open' : ''}><summary data-k="sum-${key}">${summaryHtml}</summary>${body}</details>` : '';
+  opts.map(([v, t]) => `<label><input type="radio" name="${esc(name)}" value="${v}"${String(v) === String(cur) ? ' checked' : ''} data-k="${esc(name)}-${v}"
+    ${attrs}><span>${t}</span></label>`).join('')}</div></fieldset>`;
+export const details = (key, summaryHtml, body, n) => n ? `<details data-key="${key}"${openDetails.has(key) ? ' open' : ''}><summary
+  data-k="sum-${key}">${summaryHtml}</summary>${body}</details>` : '';
 
 let toastTimer, toastHide;
 export function toast(text) {
@@ -68,4 +71,5 @@ export const listTitle = (l) => {
 export const focusWeek = () => $('week').focus({ preventScroll: false });
 
 // state shared by the modules (sem: the shown semester of a year result)
-export const ui = { worker: null, timer: null, last: null, cur: 0, running: false, runError: null, gen: 0, moreMul: 1, sem: 'א', gradeMsg: '', panel: null, opener: null, mobileDay: 1, friendMsg: '', friendUrl: '', liveText: '', dashed: new Set(), dayScroll: true, specPick: null };
+export const ui = { worker: null, timer: null, last: null, cur: 0, running: false, runError: null, gen: 0, moreMul: 1, sem: 'א', gradeMsg: '', panel: null,
+  opener: null, mobileDay: 1, friendMsg: '', friendUrl: '', liveText: '', dashed: new Set(), dayScroll: true, specPick: null };

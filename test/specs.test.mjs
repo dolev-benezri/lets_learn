@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { specLists } from '../web/rules.js';
-import { asideIds, progressInfo, progressHtml } from '../web/ui-map.js';
+import { asideIds, progressInfo } from '../web/map-layout.js';
+import { progressHtml } from '../web/map-render.js';
 import { app, candidateMode, yearCourses } from '../web/app.js';
 
 // Areas a and b plus vehicle with its alone-only extra. `shared` is an elective of both a and b; `am2` is mandatory and also sits in an elective list; `ghost` is in no course table.

@@ -57,7 +57,8 @@ async function gridBlocks(canvas, worker) {
   return out;
 }
 
-const wordsOf = (blocks) => (blocks ?? []).flatMap((b) => b.paragraphs.flatMap((p) => p.lines.flatMap((l) => l.words.map((w) => ({ t: w.text, x0: w.bbox.x0, x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1 })))));
+const wordsOf = (blocks) => (blocks ?? []).flatMap((b) => b.paragraphs.flatMap((p) => p.lines.flatMap((l) => l.words.map((w) => ({ t: w.text, x0: w.bbox.x0,
+  x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1 })))));
 
 // Canvases -> { text, result }: all OCR text (for 9-digit group ids) and the groups found from a table or grid. onProgress(i, n, fraction).
 // A table is exact (course codes); a grid fills in what the tables missed, but only with matches whose name was readable.

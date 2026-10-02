@@ -11,7 +11,8 @@ export const englishOptions = (data, score) => ENGLISH.map((id, i) => ({ id, nam
 // Personal profile: integers in range, else null (state, backup links and the form share this).
 const int = (x, lo, hi) => (Number.isInteger(x) && x >= lo && x <= hi ? x : null);
 // Year-3 specialization: two different areas, or vehicle alone. Checked against the fixed list (not data), so old backup links keep loading; stored in SPECS order.
-export const SPECS = [{ id: 'solid', name: 'מכניקת מוצק' }, { id: 'flow', name: 'זרימה ואנרגיה' }, { id: 'mech', name: 'מכטרוניקה ורובוטיקה' }, { id: 'vehicle', name: 'מערכות רכב' }, { id: 'materials', name: 'חומרים' }, { id: 'aero', name: 'אווירונאוטיקה וחלל' }];
+export const SPECS = [{ id: 'solid', name: 'מכניקת מוצק' }, { id: 'flow', name: 'זרימה ואנרגיה' }, { id: 'mech', name: 'מכטרוניקה ורובוטיקה' }, { id: 'vehicle',
+  name: 'מערכות רכב' }, { id: 'materials', name: 'חומרים' }, { id: 'aero', name: 'אווירונאוטיקה וחלל' }];
 const specs = (a) => {
   if (!Array.isArray(a)) return [];
   const ids = SPECS.map((s) => s.id).filter((id) => a.includes(id));

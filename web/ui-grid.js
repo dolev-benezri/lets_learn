@@ -8,7 +8,9 @@ export const DAY_FULL = ['', 'ראשון', 'שני', 'שלישי', 'רביעי',
 // Lucide icons (design-system/afeka-scheduler/pages/app.md). No emoji in the UI.
 export const ICON = {
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  pin: '<path d="M12 17v5"/>' +
+    '<path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 ' +
+    '2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
@@ -19,14 +21,19 @@ export const ICON = {
   check: '<path d="M20 6 9 17l-5-5"/>',
   x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
-  sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
-  'clipboard-list': '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/>' +
+    '<line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/>' +
+    '<line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+  'clipboard-list': '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>' +
+    '<path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
   'user-plus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
   'external-link': '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
-  cap: '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>' +
+    '<path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  cap: '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/>' +
+    '<path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
   file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/>',
   pencil: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z"/>',
 };
@@ -183,7 +190,8 @@ export function renderWeek(ctx) {
     const x = byId.get(gid);
     if (!x) continue;
     const fr = friends.filter((f) => f.groups.includes(gid));
-    for (const m of x.g.meetings) if (m.day >= 1 && m.day <= range.days) cols[m.day].push(block(x, m, range.from, `c${colors.get(x.cid) ?? 7}${dashed?.has(x.cid) ? ' rep' : ''}`, pins.includes(gid), fr));
+    for (const m of x.g.meetings) if (m.day >= 1 && m.day <= range.days) cols[m.day].push(block(x, m, range.from, `c${colors.get(x.cid)
+      ?? 7}${dashed?.has(x.cid) ? ' rep' : ''}`, pins.includes(gid), fr));
   }
   const days = cols.map((_, d) => d).slice(1);
   let hours = '';
@@ -216,7 +224,8 @@ export function openPop(btn, ctx) {
       <div><h3 id="popTitle">${esc(c.name)}</h3><p>${esc(groupLabel(g))} · קורס ${esc(cid)}</p></div>
       <button type="button" class="btn icon-btn ghost" data-act="popClose" aria-label="סגור">${icon('x')}</button></div>
     <div class="pop-actions">
-      <button type="button" class="btn ${pinned ? '' : 'primary'}" data-act="pin" data-gid="${esc(g.id)}" aria-pressed="${pinned}" aria-describedby="popHint">${icon('pin')} ${pinned ? 'בטל נעיצה' : 'נעץ קבוצה'}</button>
+      <button type="button" class="btn ${pinned ? '' : 'primary'}" data-act="pin" data-gid="${esc(g.id)}" aria-pressed="${pinned}"
+        aria-describedby="popHint">${icon('pin')} ${pinned ? 'בטל נעיצה' : 'נעץ קבוצה'}</button>
       <a class="btn" href="${yedion(cid)}" target="_blank" rel="noopener">ראה בידיעון ${icon('external-link')}<span class="sr"> (נפתח בחלון חדש)</span></a>
     </div>
     <div class="pop-body">
@@ -231,7 +240,8 @@ export function openPop(btn, ctx) {
     </dl>
     <p class="pop-hint" id="popHint">נעיצה שומרת את הקבוצה הזו בכל החלופות.</p>
     ${alts.length > 1 ? `<h4 class="pop-alt-h">קבוצות ${esc(typeLabel(g.type))} אחרות בקורס</h4><ul class="pop-alts">${alts.map(({ g: x, clash, ok }) => {
-      const body = `<b>קבוצה ${esc(groupNumber(x.id))}</b> · ${x.meetings.map((m) => `${DAYS[m.day] ?? '?'}׳ <bdi dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>`).join(', ')} · ${esc(x.lecturer || '—')}`
+      const body = `<b>קבוצה ${esc(groupNumber(x.id))}</b> · ${x.meetings.map((m) => `${DAYS[m.day] ?? '?'}׳ <bdi
+        dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>`).join(', ')} · ${esc(x.lecturer || '—')}`
         + `${x.full ? ' <span class="tag bad">מלאה</span>' : ''}${clash ? ' <span class="tag bad">מתנגשת</span>' : ''} <bdi dir="ltr" class="gid">${esc(x.id)}</bdi>`;
       return x.id === g.id ? `<li class="cur" aria-current="true">${body} <span class="tag ok">נוכחית</span></li>`
         : !ok ? `<li class="na">${body} <span class="tag bad">לא זמינה</span></li>`

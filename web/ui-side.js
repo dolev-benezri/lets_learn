@@ -46,7 +46,8 @@ function card(id, res, unlocks, musts) {
   return `<article class="course c${colors.get(id) ?? 7}${ui.dashed.has(id) ? ' rep' : ''}${inAlt ? ' in' : ''}${out ? ' out' : ''}">
     <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${esc(c.name)}</h3><span class="cr">${c.credits} נ״ז</span></div>
     ${seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`)}
-    ${yearPick ? `<div class="sem-row"><span class="sem-lbl" aria-hidden="true">סמסטר:</span>${seg(`sem-${id}`, `באיזה סמסטר ללמוד את ${c.name}`, SEM_PICK, app.state.semesterOf[id] ?? '', `data-chg="semOf" data-id="${esc(id)}"`)}</div>` : ''}
+    ${yearPick ? `<div class="sem-row"><span class="sem-lbl" aria-hidden="true">סמסטר:</span>${seg(`sem-${id}`, `באיזה סמסטר ללמוד את ${c.name}`, SEM_PICK,
+      app.state.semesterOf[id] ?? '', `data-chg="semOf" data-id="${esc(id)}"`)}</div>` : ''}
     ${tags ? `<div class="tags">${tags}</div>` : ''}
     ${s.reasons.length ? `<p class="reason">${s.reasons.map(esc).join('<br>')}</p>` : ''}
     ${required && app.state.choices[id] === 'no' ? '<p class="reason warn-text">תצטרך/י ללמוד אותו בהמשך</p>' : ''}
@@ -67,14 +68,17 @@ export function renderSide(res) {
   const taken = new Set(), sp = specLists(app.data, app.state.profile.specs); // a course sits in the first list that has it; the unchosen specialization lists come last, folded into one group
   const take = (l) => l.courses.filter((id) => rest.includes(id) && !taken.has(id) && taken.add(id));
   const lists = app.data.lists.map((l, i) => ({ l, i })), cards = (ids) => `<div class="cards">${ids.map((id) => card(id, res, unlocks, musts)).join('')}</div>`;
-  const listsHtml = lists.filter(({ l }) => !sp.all.has(l.code) || sp.chosen.has(l.code)).map(({ l, i }) => { const ids = take(l); return details(`more-${i}`, `${esc(listTitle(l))} (${ids.length})`, cards(ids), ids.length); }).join('');
+  const listsHtml = lists.filter(({ l }) => !sp.all.has(l.code) || sp.chosen.has(l.code)).map(({ l, i }) => { const ids = take(l); return details(`more-${i}`,
+    `${esc(listTitle(l))} (${ids.length})`, cards(ids), ids.length); }).join('');
   const spec = lists.filter(({ l }) => sp.all.has(l.code) && !sp.chosen.has(l.code)).map(({ l }) => ({ l, ids: take(l) })).filter((x) => x.ids.length);
   const specN = spec.reduce((n, x) => n + x.ids.length, 0);
   const locked = (st) => ids.filter((id) => status(id) === st);
-  const rows = (list) => `<ul class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${esc(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
+  const rows = (list) => `<ul
+    class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${esc(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
   $('side').innerHTML = `<div class="side-head"><h2>הקורסים שלי</h2><button type="button" class="link-btn" data-act="openStatus" data-k="openStatus">עדכן מצב</button></div>
     <p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
-    ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks, musts)).join('') || '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'}</div>`, 1)}
+    ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks, musts)).join('')
+      || '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'}</div>`, 1)}
     ${listsHtml}
     ${details('specOthers', `התמחויות אחרות (${specN})`, spec.map(({ l, ids }) => `<h4>${esc(listTitle(l))} (${ids.length})</h4>${cards(ids)}`).join(''), specN)}
     ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked')), locked('blocked').length)}

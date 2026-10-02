@@ -14,7 +14,9 @@ function chip(id, li) {
   if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${esc(nm)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
   return `<div class="crs" data-st="${st}">${seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
-    }${st === 'passed' ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric" aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>` : ''}${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
+    }${st === 'passed' ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
+      aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>` : ''}${n
+      ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
 }
 
 
@@ -24,7 +26,8 @@ export const avgLine = () => { const { avg, credits } = gradeAverage(app.data, a
 
 // The status page (#me): profile and progress beside the course lists on wide screens, one column on phones.
 // Rendered only while shown; every change saves at once, so leaving the page loses nothing.
-// The specialization form: only a valid choice is saved in profile.specs. A half-made one (two areas, one ticked) lives here and in state.specDraft, and only while it still matches the saved state (a reset or an import drops it).
+// The specialization form: only a valid choice is saved in profile.specs. A half-made one (two areas, one ticked) lives here and in
+// state.specDraft, and only while it still matches the saved state (a reset or an import drops it).
 
 export const specSave = (mode, picks) => (mode === 'vehicle' ? ['vehicle'] : mode === 'two' ? cleanProfile({ specs: picks }).specs : []);
 export function specView(saved) {
@@ -36,7 +39,9 @@ const specForm = (saved) => {
   const { mode, picks } = specView(saved);
   const full = picks.length >= 2;
   return `${seg('p-spec', 'התמחות', [['none', 'עוד לא בחרתי'], ['vehicle', 'רכב בלבד'], ['two', 'שני תחומים']], mode, 'data-chg="specMode"', true)}
-    ${mode === 'two' ? `<fieldset class="specs"><legend class="sr">שני תחומי התמחות</legend>${SPECS.map((p) => `<label class="check"><input type="checkbox" data-chg="specPick" data-id="${p.id}" data-k="spec-${p.id}"${picks.includes(p.id) ? ' checked' : ''}${full && !picks.includes(p.id) ? ' disabled' : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
+    ${mode === 'two' ? `<fieldset class="specs"><legend class="sr">שני תחומי התמחות</legend>${SPECS.map((p) => `<label class="check"><input type="checkbox"
+      data-chg="specPick" data-id="${p.id}" data-k="spec-${p.id}"${picks.includes(p.id) ? ' checked' : ''}${full && !picks.includes(p.id) ? ' disabled'
+      : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
       ${saved.length ? '' : '<p class="hint" role="status">בחרו שני תחומים</p>'}` : ''}
     <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>`;
 };
@@ -58,7 +63,10 @@ export function renderMe() {
   const open = state.profile.year ?? studyYear(data, state) - 1;
   const lists = data.lists.map((l, i) => ({ ...l, i, year: l.name.match(/חובה שנה (\S)'/)?.[1] }));
   const past = (l) => l.year && ' אבגד'.indexOf(l.year) <= open;
-  const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(listTitle(l)))} <span>${l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}" data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
+  const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(listTitle(l)))} <span>${l.minCredits
+    ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}"
+    data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id,
+    l.i)).join('')}</div></div>`;
   const sp = specLists(data, state.profile.specs), isSpec = (l) => sp.all.has(l.code);
   const others = lists.filter((l) => !past(l) && !isSpec(l)), specOthers = lists.filter((l) => isSpec(l) && !sp.chosen.has(l.code));
   const step = onboarded()
@@ -69,13 +77,16 @@ export function renderMe() {
       <div class="me-side">
         <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
           ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
-          <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
+          <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
+            value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
           <div class="spec-sec">${specForm(state.profile.specs)}</div>
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
           <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>
         <section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
-          <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
-          <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
+          <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span
+            class="hint">יעד 70% (תקנון 11.4.4)</span></div>
+          <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i
+            style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
           <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
           <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button>
           <button type="button" class="btn" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
@@ -108,7 +119,8 @@ export async function importGrades(file) {
   const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
   const todo = rows.filter((r) => (r.result === 'failed' ? now(r.id) !== 'failed' : now(r.id) !== 'passed' || (r.grade !== null && r.result === 'passed' && state.grades[r.id] !== r.grade)));
   if (!todo.length) return setGradeMsg(`זוהו ${rows.length} קורסים והכול כבר מעודכן.`);
-  const label = (r) => { const to = r.result === 'failed' ? 'failed' : 'passed', was = now(r.id); return `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[to]}${was === to ? '' : ` (היה: ${WORD[was]})`}`; };
+  const label = (r) => { const to = r.result === 'failed' ? 'failed' : 'passed', was = now(r.id); return `${r.result === 'exempt' ? 'פטור, נחשב עברתי'
+    : WORD[to]}${was === to ? '' : ` (היה: ${WORD[was]})`}`; };
   const pick = await askRows('ייבוא מגליון ציונים', 'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.', ['קורס', 'ציון', 'שינוי'],
     todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]));
   if (!pick) return setGradeMsg('');

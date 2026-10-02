@@ -67,7 +67,9 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .band .bs { fill:var(--text-2); font-size:11px; }
 
 /* "לא רלוונטי": a collapsed box over the map's bottom corner (far side from the first year), a plain section in the list view */
-.pmap .pm-aside { position:absolute; inset-block-end:8px; inset-inline-end:8px; z-index:4; max-width:min(340px, calc(100% - 16px)); max-height:min(55%, 420px); overflow:auto; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:var(--shadow-pop); font-size:var(--fs-sm); }
+.pmap .pm-aside { position:absolute; inset-block-end:8px; inset-inline-end:8px; z-index:4; max-width:min(340px, calc(100% - 16px)); max-height:min(55%, 420px);
+  overflow:auto; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:var(--shadow-pop);
+  font-size:var(--fs-sm); }
 .pmap .pm-aside summary { cursor:pointer; min-height:36px; padding:0 14px; display:flex; align-items:center; font-weight:600; }
 .pmap .pm-aside p { margin:0; padding:0 14px 4px; color:var(--text-2); font-size:var(--fs-xs); }
 .pmap .pm-aside ul { padding:0 14px 10px; }
@@ -116,7 +118,9 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-svg.dim .nd:not(.lit), .pmap .pm-svg.dim .or:not(.lit), .pmap .pm-svg.dim .ext:not(.lit), .pmap .pm-svg.dim .e:not(.lit) { opacity:.14; }
 
 /* side / bottom card */
-.pmap .pm-card { position:absolute; inset-inline:0; bottom:0; z-index:5; max-height:42%; overflow:auto; padding:10px 14px 14px; background:var(--surface); border-top:1px solid var(--border-strong); border-radius:var(--radius-lg) var(--radius-lg) 0 0; box-shadow:var(--shadow-pop); } /* overlay sheet: the map keeps its size */
+.pmap .pm-card { position:absolute; inset-inline:0; bottom:0; z-index:5; max-height:42%; overflow:auto; padding:10px 14px 14px; background:var(--surface);
+  border-top:1px solid var(--border-strong); border-radius:var(--radius-lg) var(--radius-lg) 0 0; box-shadow:var(--shadow-pop);
+  } /* overlay sheet: the map keeps its size */
 .pmap .pm-card[hidden] { display:none; }
 .pmap .pm-card h3 { font-size:17px; font-weight:600; line-height:1.3; margin:6px 0 2px; }
 .pmap .pm-card h4 { margin:10px 0 2px; font-size:var(--fs-sm); color:var(--text-2); }
@@ -125,7 +129,8 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .card-meta { color:var(--text-2); font-size:var(--fs-sm); }
 .pmap .card-why { margin:7px 0; padding:7px 9px; border-radius:var(--radius-sm); background:var(--surface-2); font-size:var(--fs-sm); }
 .pmap .card-note { margin:10px 0; font-size:var(--fs-xs); color:var(--text-2); }
-.pmap .chip { display:inline-block; padding:2px 12px; border-radius:999px; border:1px solid var(--c, var(--primary)); background:var(--soft, var(--primary-soft)); color:var(--c, var(--primary)); font-weight:600; font-size:12px; }
+.pmap .chip { display:inline-block; padding:2px 12px; border-radius:999px; border:1px solid var(--c, var(--primary));
+  background:var(--soft, var(--primary-soft)); color:var(--c, var(--primary)); font-weight:600; font-size:12px; }
 .pmap .chip.st-notOffered { border-style:dashed; }
 .pmap .chip.st-blocked { color:var(--text-2); border-color:var(--border-strong); }
 .pmap .pm-card .pm-btn { margin-top:4px; }
@@ -139,7 +144,8 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-list li:first-child { border-top:0; }
 .pmap .li-top { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 .pmap .li-top b { flex:1 1 180px; font-weight:600; }
-.pmap .li-st { padding:1px 10px; border-radius:999px; border:1px solid var(--c, var(--primary)); background:var(--soft, var(--primary-soft)); color:var(--c, var(--primary)); font-size:12px; font-weight:600; }
+.pmap .li-st { padding:1px 10px; border-radius:999px; border:1px solid var(--c, var(--primary)); background:var(--soft, var(--primary-soft));
+  color:var(--c, var(--primary)); font-size:12px; font-weight:600; }
 .pmap .li-cr, .pmap .pm-list p { font-size:var(--fs-sm); color:var(--text-2); }
 .pmap .li-link { margin-inline-start:auto; width:var(--tap); height:var(--tap); display:inline-flex; align-items:center; justify-content:center; color:var(--primary); }
 .pmap .pm-list li > p.li-why { color:var(--text); }
