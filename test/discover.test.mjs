@@ -36,6 +36,7 @@ const found = {
 test('draftPrograms: a program per main track, the specializations shared by day and evening, lists and cohorts per year', () => {
   const p = draftPrograms(found);
   assert.deepEqual(Object.keys(p), ['20', '22', '30']);
+  assert.deepEqual([p[20].name, p[22].name], ['הנדסת חשמל', 'הנדסת חשמל (ערב)']);
   assert.deepEqual(p[20].cohorts, [2025, 2026]);
   assert.deepEqual(p[20].lists, { 2025: [20001, 20115, 20116], 2026: [20001, 60003, 20115, 20116, 20111, 20112] });
   assert.deepEqual(p[22].cohorts, [2026], 'the evening track only exists from 2026 here');

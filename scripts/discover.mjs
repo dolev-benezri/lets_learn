@@ -49,13 +49,16 @@ const isSpec = (t) => t.name.startsWith('התמחות');
 // A specialization list is an elective list (בחירה), the extra mandatory list of the standalone area (לבד), or else mandatory (חובה, core, seminar, or the area's plain list).
 const listKind = (name) => (/לבד/.test(name) ? 'alone' : /בחירה/.test(name) ? 'elective' : 'mandatory');
 
+// The track name as the picker shows it: the day track is the plain name, the evening track gets a suffix.
+const trackName = (name) => name.replace(/\s*מסלול יום$/, '').replace(/\s*מסלול ערב$/, ' (ערב)');
+
 // One program per main track (day, evening, or the department's only track); specialization tracks of the department are shared by all of them.
 export function draftPrograms(found) {
   const out = {};
   for (const [deptKey, byYear] of Object.entries(found)) {
     const dept = Number(deptKey), years = Object.keys(byYear).map(Number).sort();
     const mains = new Map();
-    for (const y of years) for (const t of byYear[y]) if (!isSpec(t) && t.lists.length) mains.set(t.code, t.name);
+    for (const y of years) for (const t of byYear[y]) if (!isSpec(t) && t.lists.length) mains.set(t.code, trackName(t.name));
     for (const [code, name] of mains) {
       const lists = {}, cohorts = [];
       for (const y of years) {
