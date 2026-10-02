@@ -45,3 +45,11 @@ test('draftPrograms: a program per main track, the specializations shared by day
   assert.deepEqual(p[30].specializations, [{ id: 'vehicle', name: 'מערכות רכב', mandatory: 30121, elective: 30122, aloneExtra: 30127 }]);
   assert.equal(p[30].anchor, null, 'the anchor course is chosen by hand');
 });
+
+test('draftPrograms: several mandatory or elective lists of one area become arrays, a plain area list or a seminar is mandatory', () => {
+  const p = draftPrograms({ 10: { 2026: [{ code: 10, name: 'הנדסת תוכנה מסלול יום', lists: [L(10001, "קורסי חובה שנה א'")] },
+    { code: 13, name: 'התמחות טכנולוגיות תוכנה ומידע', lists: [L(10101, 'התמחות טכנולוגיות תוכנה ומידע'), L(10102, 'קורסי בחירה נוספים'), L(10103, 'סמינר חובה')] },
+    { code: 24, name: 'התמחות עיבוד אותות,עיבוד תמונה', lists: [L(20117, 'חובה'), L(20118, 'בחירה'), L(20133, 'חובה מעבדה')] }] } });
+  assert.deepEqual(p[10].specializations, [{ id: 'tech', name: 'טכנולוגיות תוכנה ומידע', mandatory: [10101, 10103], elective: 10102 },
+    { id: 'signals', name: 'עיבוד אותות, עיבוד תמונה', mandatory: [20117, 20133], elective: 20118 }]);
+});

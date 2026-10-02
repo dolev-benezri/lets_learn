@@ -46,6 +46,8 @@ export async function discover({ request, depts = DEPTS, years, log = () => {} }
 }
 
 const isSpec = (t) => t.name.startsWith('התמחות');
+// A specialization list is an elective list (בחירה), the extra mandatory list of the standalone area (לבד), or else mandatory (חובה, core, seminar, or the area's plain list).
+const listKind = (name) => (/לבד/.test(name) ? 'alone' : /בחירה/.test(name) ? 'elective' : 'mandatory');
 
 // One program per main track (day, evening, or the department's only track); specialization tracks of the department are shared by all of them.
 export function draftPrograms(found) {
@@ -64,9 +66,10 @@ export function draftPrograms(found) {
       }
       const newest = years.findLast((y) => cohorts.includes(y));
       const specializations = byYear[newest].filter(isSpec).map((t) => {
-        const code_ = (re) => t.lists.find((l) => re.test(l.name))?.code;
-        const alone = t.lists.find((l) => /לבד/.test(l.name))?.code;
-        return { id: SPEC_IDS[t.code] ?? `s${t.code}`, name: t.name.replace(/^התמחות\s*/, ''), mandatory: code_(/חובה(?!.*לבד)/), elective: code_(/בחירה/), ...(alone && { aloneExtra: alone }) };
+        const of = (kind) => t.lists.filter((l) => listKind(l.name) === kind).map((l) => l.code), one = (c) => (c.length > 1 ? c : c[0]);
+        const [mandatory, elective, alone] = ['mandatory', 'elective', 'alone'].map(of);
+        return { id: SPEC_IDS[t.code] ?? `s${t.code}`, name: t.name.replace(/^התמחות\s*/, '').replace(/,(?=\S)/g, ', '), ...(mandatory.length && { mandatory: one(mandatory) }),
+          ...(elective.length && { elective: one(elective) }), ...(alone.length && { aloneExtra: alone[0] }) };
       });
       out[code] = { name, dept, ...RULES[dept], lists, cohorts, ...(specializations.length && { specializations }), anchor: null };
     }

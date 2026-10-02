@@ -2,6 +2,7 @@
 import { app, esc, candidateMode, summerOn } from './app.js';
 import { icon, groupIndex, summary, isPair, semResult } from './ui-grid.js';
 import { showText } from './ui-dialog.js';
+import { specCodes } from './rules.js';
 
 export const $ = (id) => document.getElementById(id);
 export const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -64,8 +65,9 @@ export async function copy(text, ok) {
 export const heb = (t) => String(t).replace(/(?<=[א-ת])'/g, '׳').replace(/(?<=[א-ת])"(?=[א-ת])/g, '״');
 // A specialization list is titled by its area; the other lists keep their name.
 export const listTitle = (l) => {
-  const s = app.data.specializations?.find((x) => [x.mandatory, x.elective, x.aloneExtra].includes(l.code));
-  return s ? `התמחות ${s.name}: ${l.code === s.mandatory ? 'חובה' : l.code === s.elective ? 'בחירה' : 'חובה לרכב בלבד'}` : l.name;
+  const s = app.data.specializations?.find((x) => specCodes(x).some(([, c]) => c === l.code));
+  const kind = s && specCodes(s).find(([, c]) => c === l.code)[0];
+  return s ? `התמחות ${s.name}: ${kind === 'mandatory' ? 'חובה' : kind === 'elective' ? 'בחירה' : 'חובה כשהיא נבחרת לבד'}` : l.name;
 };
 
 export const focusWeek = () => $('week').focus({ preventScroll: false });

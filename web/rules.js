@@ -24,15 +24,16 @@ export const cleanProfile = (p) => ({ year: int(p?.year, 1, 4), amirnet: int(p?.
 
 // Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the standalone extra (aloneExtra) when its area is chosen alone;
 // elective = their בחירה lists minus what is mandatory (a course in several lists counts once). chosen / all = list codes of the chosen areas / of every specialization list.
+// An area's lists as [kind, code]: mandatory and elective may each be one list code or an array of them (an area can have a core, a seminar and extra electives).
+export const specCodes = (s) => [...[s.mandatory].flat().map((c) => ['mandatory', c]), ...[s.elective].flat().map((c) => ['elective', c]), ['alone', s.aloneExtra]].filter(([, c]) => c);
 export function specLists(data, specs = []) {
   const alone = specs.length === 1 && specRule(data).alone.includes(specs[0]), out = { mandatory: new Set(), elective: new Set(), chosen: new Set(), all: new Set() };
   for (const s of data.specializations ?? []) {
-    for (const [kind, code] of [['mandatory', s.mandatory], ['elective', s.elective], ['mandatory', s.aloneExtra]]) {
-      if (!code) continue;
+    for (const [kind, code] of specCodes(s)) {
       out.all.add(code);
-      if (!specs.includes(s.id) || (code === s.aloneExtra && !alone)) continue;
+      if (!specs.includes(s.id) || (kind === 'alone' && !alone)) continue;
       out.chosen.add(code);
-      (data.lists.find((l) => l.code === code)?.courses ?? []).filter((id) => data.courses[id]).forEach((id) => out[kind].add(id));
+      (data.lists.find((l) => l.code === code)?.courses ?? []).filter((id) => data.courses[id]).forEach((id) => out[kind === 'elective' ? 'elective' : 'mandatory'].add(id));
     }
   }
   out.mandatory.forEach((id) => out.elective.delete(id));

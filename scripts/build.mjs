@@ -77,7 +77,7 @@ export function validate(d, prev = null, anchor = null) {
     else if (a && a.groups.filter((g) => g.primary).length < anchor.minPrimaryGroups) errors.push(`course ${anchor.course} has fewer than ${anchor.minPrimaryGroups} primary groups`);
   }
   const listed = new Set(d.lists.map((l) => l.code));
-  for (const s of d.specializations ?? []) for (const code of [s.mandatory, s.elective, s.aloneExtra]) if (code && !listed.has(code)) errors.push(`specialization ${s.id}: list ${code} not scraped`);
+  for (const s of d.specializations ?? []) for (const code of [s.mandatory, s.elective, s.aloneExtra].flat()) if (code && !listed.has(code)) errors.push(`specialization ${s.id}: list ${code} not scraped`);
   for (const [id, c] of Object.entries(d.courses)) {
     if (c.offered && c.credits === 0) warnings.push(`${id}: offered course with 0 credits (check parseDetails)`);
     const linked = new Set(c.groups.flatMap((g) => g.linked));

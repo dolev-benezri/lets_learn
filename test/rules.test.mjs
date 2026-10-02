@@ -257,3 +257,14 @@ test('summerOnly: a course not taught in א/ב but taught in summer points at th
   assert.match(summerOnly(st(), summer, false).a.reasons[0], /סמנו "אני מתכנן\/ת סמסטר קיץ השנה"/);
   assert.deepEqual(summerOnly(st(), null, true).a.reasons, ['x'], 'no summer file: unchanged');
 });
+
+import { specLists, specCodes } from '../web/rules.js';
+test('specLists: an area may have several mandatory and elective lists (core + seminar, extra electives)', () => {
+  const data = { specRule: { pick: 1 }, courses: { a: {}, b: {}, c: {}, d: {} },
+    lists: [{ code: 1, courses: ['a'] }, { code: 2, courses: ['b', 'c'] }, { code: 3, courses: ['c', 'd'] }],
+    specializations: [{ id: 'x', name: 'X', mandatory: [1, 2], elective: [3] }] };
+  assert.deepEqual(specCodes(data.specializations[0]).map((p) => p.join(':')), ['mandatory:1', 'mandatory:2', 'elective:3']);
+  const sp = specLists(data, ['x']);
+  assert.deepEqual([[...sp.mandatory], [...sp.elective], [...sp.all]], [['a', 'b', 'c'], ['d'], [1, 2, 3]]);
+  assert.deepEqual([...specLists(data, []).mandatory], [], 'an area that is not chosen adds nothing');
+});
