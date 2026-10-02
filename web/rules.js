@@ -19,6 +19,23 @@ const specs = (a) => {
 };
 export const cleanProfile = (p) => ({ year: int(p?.year, 1, 4), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
 
+// Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the vehicle-only extra when vehicle is chosen alone;
+// elective = their בחירה lists minus what is mandatory (a course in several lists counts once). chosen / all = list codes of the chosen areas / of every specialization list.
+export function specLists(data, specs = []) {
+  const alone = specs.length === 1 && specs[0] === 'vehicle', out = { mandatory: new Set(), elective: new Set(), chosen: new Set(), all: new Set() };
+  for (const s of data.specializations ?? []) {
+    for (const [kind, code] of [['mandatory', s.mandatory], ['elective', s.elective], ['mandatory', s.aloneExtra]]) {
+      if (!code) continue;
+      out.all.add(code);
+      if (!specs.includes(s.id) || (code === s.aloneExtra && !alone)) continue;
+      out.chosen.add(code);
+      (data.lists.find((l) => l.code === code)?.courses ?? []).filter((id) => data.courses[id]).forEach((id) => out[kind].add(id));
+    }
+  }
+  out.mandatory.forEach((id) => out.elective.delete(id));
+  return out;
+}
+
 // ponytail: profile.year only overrides the label; a real different cohort needs its own data file (data.startYear).
 export const studyYear = (data, state) => state.profile?.year ?? data.year - data.startYear + 1;
 

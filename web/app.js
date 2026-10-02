@@ -1,4 +1,4 @@
-import { classify, withAfterA, cleanProfile, studyYear, modeFor } from './rules.js';
+import { classify, withAfterA, cleanProfile, studyYear, modeFor, specLists } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
 
@@ -104,8 +104,13 @@ export function save() { try { localStorage.setItem(KEY, JSON.stringify(app.stat
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
 const yearOneList = () => app.data.lists.find((l) => l.name.includes("שנה א'"));
 
-// The study year's mandatory list (e.g. "שנה ב'"): courses in it default to optional.
-export const yearCourses = () => app.data.lists.find((l) => l.name.includes(`שנה ${['', 'א', 'ב', 'ג', 'ד'][studyYear(app.data, app.state)]}'`))?.courses ?? [];
+// The study year's mandatory list (e.g. "שנה ב'"): courses in it default to optional. From year 3 the chosen specialization areas' courses (mandatory and elective) join it.
+export function yearCourses() {
+  const y = studyYear(app.data, app.state), list = app.data.lists.find((l) => l.name.includes(`שנה ${['', 'א', 'ב', 'ג', 'ד'][y]}'`))?.courses ?? [];
+  if (y < 3) return list;
+  const sp = specLists(app.data, app.state.profile.specs);
+  return [...list, ...sp.mandatory, ...sp.elective];
+}
 export const candidateMode = (id) => modeFor(app.cls.statuses[id]?.status, app.state.choices[id], yearCourses().includes(id));
 
 // Rendering lives in ui-plan.js / ui-grid.js; they register here. Focus survives a re-render via data-k keys.

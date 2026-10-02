@@ -275,9 +275,9 @@ test('mapSvg: planned courses get the plan marker and their edges are highlighte
 test('progressInfo: a course counts once, a list never past its minimum; plan credits count only for what is not done', () => {
   const co = (credits) => ({ ...mc('x'), credits });
   const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 7 }, { name: 'בחירה', courses: ['b', 'e1', 'e2'], minCredits: 4 }, { name: 'אנגלית', courses: ['en'], minCredits: 0 }], courses: { a: co(4), b: co(3), e1: co(3), e2: co(3), en: co(2) } };
-  assert.deepEqual(progressInfo(d, {}), { total: 11, done: 0, planned: 0, adds: 0 });
+  assert.deepEqual(progressInfo(d, {}), { total: 11, done: 0, planned: 0, adds: 0, specLeft: null });
   const st = { a: { status: 'done' }, e1: { status: 'exempt' }, en: { status: 'done' } };
-  assert.deepEqual(progressInfo(d, st, new Set(['b', 'e2', 'a'])), { total: 11, done: 7, planned: 3 + 1, adds: 6 }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
+  assert.deepEqual(progressInfo(d, st, new Set(['b', 'e2', 'a'])), { total: 11, done: 7, planned: 3 + 1, adds: 6, specLeft: null }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
 });
 
 test('newlyUnlocked: courses blocked now and open once the plan counts as passed (the plan itself excluded)', () => {
@@ -316,6 +316,6 @@ test('specialization lists are neither required of everyone nor part of the prog
     { code: 4, name: 'חובה רכב לבוחרי ללא התמחות נוספת', courses: ['x'], minCredits: 3 }],
   courses: { a: co(4), m: co(5), e: co(3), x: co(3) } };
   assert.deepEqual(asideIds(d, {}).sort(), ['e', 'm', 'x']);
-  assert.deepEqual(progressInfo(d, { m: { status: 'done' } }, new Set(['e'])), { total: 4, done: 0, planned: 0, adds: 3 });
+  assert.deepEqual(progressInfo(d, { m: { status: 'done' } }, new Set(['e'])), { total: 4, done: 0, planned: 0, adds: 3, specLeft: null }, 'no data.degree: the specialization part is zero');
   assert.deepEqual(asideIds({ ...d, specializations: undefined }, {}), ['e'], 'without specializations the name rule applies as before');
 });

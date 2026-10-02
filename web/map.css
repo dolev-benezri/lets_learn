@@ -188,6 +188,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-prog { flex:none; padding:6px 14px 8px; background:var(--surface); border-top:1px solid var(--border); }
 .pmap .pm-prog-t { margin:0 0 5px; font-size:var(--fs-sm); color:var(--text); }
 .pmap .pm-prog-plan { color:var(--c2-fg); font-weight:600; }
+.pmap .pm-prog-spec { margin:4px 0 0; font-size:var(--fs-xs); color:var(--text-2); }
 .pmap .pm-meter { display:flex; height:10px; overflow:hidden; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; } /* RTL: fills from the right */
 .pmap .pm-meter i { display:block; height:100%; }
 .pmap .pm-meter .d { background:var(--success); }

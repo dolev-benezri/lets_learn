@@ -1,7 +1,7 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
 import { app, esc, cleanBlocks, upsertFriend, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
-import { progress, setStatus, studyYear, cleanProfile, gradeAverage, englishOptions, SPECS } from './rules.js';
+import { progress, setStatus, studyYear, cleanProfile, gradeAverage, englishOptions, specLists, SPECS } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
@@ -147,6 +147,11 @@ function chip(id, li) {
 
 // Hebrew punctuation for names from the data (ASCII ' and " between letters become geresh and gershayim).
 const heb = (t) => String(t).replace(/(?<=[א-ת])'/g, '׳').replace(/(?<=[א-ת])"(?=[א-ת])/g, '״');
+// A specialization list is titled by its area; the other lists keep their name.
+const listTitle = (l) => {
+  const s = app.data.specializations?.find((x) => [x.mandatory, x.elective, x.aloneExtra].includes(l.code));
+  return s ? `התמחות ${s.name}: ${l.code === s.mandatory ? 'חובה' : l.code === s.elective ? 'בחירה' : 'חובה לרכב בלבד'}` : l.name;
+};
 
 // The weighted-average line; its container is always rendered so a grade change can refresh just this line.
 const avgLine = () => { const { avg, credits } = gradeAverage(app.data, app.state); return avg === null ? '' : `ממוצע: <b>${esc(Math.round(avg * 10) / 10)}</b> (על ${esc(credits)} נ״ז)`; };
@@ -186,8 +191,9 @@ function renderMe() {
   const open = state.profile.year ?? studyYear(data, state) - 1;
   const lists = data.lists.map((l, i) => ({ ...l, i, year: l.name.match(/חובה שנה (\S)'/)?.[1] }));
   const past = (l) => l.year && ' אבגד'.indexOf(l.year) <= open;
-  const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(l.name))} <span>${l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}" data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
-  const others = lists.filter((l) => !past(l));
+  const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(listTitle(l)))} <span>${l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}" data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
+  const sp = specLists(data, state.profile.specs), isSpec = (l) => sp.all.has(l.code);
+  const others = lists.filter((l) => !past(l) && !isSpec(l)), specOthers = lists.filter((l) => isSpec(l) && !sp.chosen.has(l.code));
   const step = onboarded()
     ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
     : '<b>צעד ראשון:</b> סמנו מה כבר עברתם (שנה א׳ מסומנת מראש), ואז לחצו ״סיימתי״.';
@@ -213,7 +219,9 @@ function renderMe() {
         ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
         <p class="hint">כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון.</p>
         ${lists.filter(past).map(group).join('')}
+        ${lists.filter((l) => sp.chosen.has(l.code)).map(group).join('')}
         ${details('others', 'שנים מתקדמות וקורסים נוספים', others.map(group).join(''), others.length)}
+        ${details('specOthers', 'התמחויות אחרות', specOthers.map(group).join(''), specOthers.length)}
       </section>
     </div>
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#" data-act="statusDone" data-k="statusDone">${icon('check')} סיימתי, לבניית המערכת</a></div>`;
@@ -271,7 +279,7 @@ function card(id, res, unlocks, musts) {
   const where = isPair(res) ? placedIn(res, id) : null;
   const inAlt = res && (isPair(res) ? !!where : res.courses.includes(id)), out = res && !inAlt && mode !== 'no';
   const why = out ? outReason(id) : '';
-  const required = data.lists.some((l) => l.name.startsWith('קורסי חובה') && l.courses.includes(id));
+  const required = data.lists.some((l) => l.name.startsWith('קורסי חובה') && l.courses.includes(id)) || specLists(data, app.state.profile.specs).mandatory.has(id);
   const noRes = !!last && !last.results.some((r) => resCourses(r).length);
   const dropped = mode === 'must' && (out || noRes); // wanted for sure, but the found plan (or the search) left it out
   const dropWhy = dropped ? (noRes ? notFitReason(c.name, last.diagnosis ?? [], musts) : outWhy(id)) : '';
@@ -306,16 +314,19 @@ function renderSide(res) {
   const engBody = `<p class="hint">אנגלית נלמדת לפי רמה. ציון אמירנט פוטר מהרמה ומהרמות שמתחתיה (פטור לא נותן נ״ז).</p>
     <ul class="plain">${eng.map((e) => `<li><b>${esc(heb(e.name))}</b> · פטור בציון ${e.min}+${e.exempt ? ' <span class="tag ok">פטור</span>' : ''}</li>`).join('')}</ul>
     ${app.state.profile.amirnet === null ? '<p class="hint">אם יש לך ציון אמירנט, <a href="#me">הזינו אותו בפרופיל</a>.</p>' : ''}`;
-  const taken = new Set(); // a course sits in the first list that has it
+  const taken = new Set(), sp = specLists(app.data, app.state.profile.specs); // a course sits in the first list that has it; the unchosen specialization lists come last, folded into one group
+  const take = (l) => l.courses.filter((id) => rest.includes(id) && !taken.has(id) && taken.add(id));
+  const lists = app.data.lists.map((l, i) => ({ l, i })), cards = (ids) => `<div class="cards">${ids.map((id) => card(id, res, unlocks, musts)).join('')}</div>`;
+  const listsHtml = lists.filter(({ l }) => !sp.all.has(l.code) || sp.chosen.has(l.code)).map(({ l, i }) => { const ids = take(l); return details(`more-${i}`, `${esc(listTitle(l))} (${ids.length})`, cards(ids), ids.length); }).join('');
+  const spec = lists.filter(({ l }) => sp.all.has(l.code) && !sp.chosen.has(l.code)).map(({ l }) => ({ l, ids: take(l) })).filter((x) => x.ids.length);
+  const specN = spec.reduce((n, x) => n + x.ids.length, 0);
   const locked = (st) => ids.filter((id) => status(id) === st);
   const rows = (list) => `<ul class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${esc(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
   $('side').innerHTML = `<div class="side-head"><h2>הקורסים שלי</h2><button type="button" class="link-btn" data-act="openStatus" data-k="openStatus">עדכן מצב</button></div>
     <p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
     ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks, musts)).join('') || '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'}</div>`, 1)}
-    ${app.data.lists.map((l, i) => {
-    const ids = l.courses.filter((id) => rest.includes(id) && !taken.has(id) && taken.add(id));
-    return details(`more-${i}`, `${esc(l.name)} (${ids.length})`, `<div class="cards">${ids.map((id) => card(id, res, unlocks, musts)).join('')}</div>`, ids.length);
-  }).join('')}
+    ${listsHtml}
+    ${details('specOthers', `התמחויות אחרות (${specN})`, spec.map(({ l, ids }) => `<h4>${esc(listTitle(l))} (${ids.length})</h4>${cards(ids)}`).join(''), specN)}
     ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked')), locked('blocked').length)}
     ${details('notOffered', `לא נלמד בסמסטר (${locked('notOffered').length})`, rows(locked('notOffered')), locked('notOffered').length)}
     ${details('exempt', `פטור (ציון אמירנט) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}
