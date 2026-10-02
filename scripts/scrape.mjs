@@ -2,7 +2,7 @@
 // Scrape the public Afeka Yedion into web/data/afeka/{year}-{sem}/{program}-{start}.json (+ status.json).
 // One polite pass fetches everything once; every semester is built from it. Writes nothing if any step or check fails (except summer: a failing summer is skipped with a warning).
 // stdout carries only the one-line change summary (it becomes the commit message); progress goes to stderr.
-import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { writeFile, mkdir, readFile, stat } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -10,7 +10,7 @@ import { parseArgs } from 'node:util';
 import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs';
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
 import PROGRAMS from './programs.json' with { type: 'json' };
-import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary } from './polite.mjs';
+import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary, msUntil } from './polite.mjs';
 
 // scripts/programs.json: per program the list codes, department, specializations (hand-maintained, docs/research-degree-rules.md 5.2), degree credits and the anchor course validate() demands.
 const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
@@ -136,20 +136,50 @@ export function unitsOf(opt, programs) {
 }
 
 // Answers kept on disk, keyed by the request (so a run can resume or build offline). The session requests are swallowed and replayed before the first real one.
-export function cachedRequester(inner, dir, { offline = false } = {}) {
+// ttl(key, html) = how long a cached answer stays good in ms (default: forever); an older one is fetched again.
+export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity } = {}) {
   const session = [];
   let replayed = false;
   return async (query, form) => {
     if (query === 'prgname=Enter_Search' || form?.PRGNAME === 'Enter_Search') { session.push([query, form]); return ''; }
     const key = query ?? new URLSearchParams(form).toString();
     const file = `${dir}/${createHash('sha1').update(key).digest('hex')}.html`;
-    try { return await readFile(file, 'utf8'); } catch { /* not cached */ }
+    try {
+      const html = await readFile(file, 'utf8');
+      if (offline || Date.now() - (await stat(file)).mtimeMs <= ttl(key, html)) return html;
+    } catch { /* not cached */ }
     if (offline) throw new Error(`offline and not in the cache: ${key}`);
     if (!replayed) { replayed = true; for (const [q, f] of session) await inner(q, f); }
     const html = await inner(query, form);
     await mkdir(dir, { recursive: true });
     await writeFile(file, html);
     return html;
+  };
+}
+
+const DAY = 86400e3;
+// The nightly policy: what changes through the day (a course's groups, the exam table) is fetched every run; lists, course details and track pages weekly; a course with no groups at all weekly too.
+export function nightlyTtl(key, html) {
+  if (key.includes('S_EXAMS')) return 0;
+  if (key.startsWith('prgname=S_LOOK_FOR_NOSE')) return parseGroups(html).length ? 0 : 7 * DAY;
+  return 7 * DAY;
+}
+
+// Wait out the site's hourly limit instead of failing: sleep until the hour it names (Jerusalem time), start a new session, ask again. Gives up past maxWaitMs.
+export function patient(request, { year, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), now = () => new Date(), log = console.error, maxWaitMs = 75 * 60e3, maxWaits = 6 }) {
+  let waits = 0;
+  return async (query, form) => {
+    for (;;) {
+      try { return await request(query, form); } catch (e) {
+        if (!(e instanceof ThrottledError) || !e.until) throw e;
+        const ms = msUntil(e.until, now());
+        if (ms > maxWaitMs || ++waits > maxWaits) throw e;
+        log(`hourly limit: waiting ${Math.round(ms / 60000)} min until ${e.until}`);
+        await sleep(ms);
+        await request('prgname=Enter_Search');
+        await request(null, { PRGNAME: 'Enter_Search', ARGUMENTS: '-A,,-A,ChangeYear', ChangeYear: year });
+      }
+    }
   };
 }
 
@@ -216,7 +246,7 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
       const buildWarnings = [];
       const dataset = buildDataset({
         year: Number(opt.year), startYear: u.start, program: u.program, semester, department: u.cfg.deptName, lists: u.lists, raw, exams: examsOf.get(u.cfg.dept), fetchedAt,
-        warnings: buildWarnings, specializations: u.cfg.specializations, degree: u.cfg.degree, specRule: u.cfg.specRule,
+        warnings: buildWarnings, specializations: u.cfg.specializations, degree: u.cfg.degree, specRule: u.cfg.specRule, verified: u.cfg.verified,
       });
       const { errors, warnings } = check(dataset, prev, u.cfg.anchor);
       [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${label}: ${w}`));
@@ -248,9 +278,12 @@ async function main() {
     programs: { type: 'string' },
     cache: { type: 'string' },
     offline: { type: 'boolean', default: false },
+    nightly: { type: 'boolean', default: false },
+    'wait-throttle': { type: 'boolean', default: false },
   } });
-  const live = makeRequester({ delay: Number(opt.delay) });
-  const request = opt.cache ? cachedRequester(live, opt.cache, { offline: opt.offline }) : live;
+  const made = makeRequester({ delay: Number(opt.delay) });
+  const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
+  const request = opt.cache ? cachedRequester(live, opt.cache, { offline: opt.offline, ttl: opt.nightly ? nightlyTtl : undefined }) : live;
   console.log(await run({ opt, request }));
 }
 

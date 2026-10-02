@@ -32,3 +32,14 @@ export function changeSummary(prev, next) {
   const parts = [delta && `${delta > 0 ? '+' : ''}${delta} groups`, full && `${full} became full`].filter(Boolean);
   return parts.join(', ') || 'updated';
 }
+
+// Milliseconds from `now` until the next HH:MM on the site's clock (Asia/Jerusalem), plus a minute of margin. The runner's own zone does not matter.
+export function msUntil(hhmm, now = new Date()) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(now);
+  const at = (t) => Number(parts.find((p) => p.type === t).value);
+  const nowSec = (at('hour') % 24) * 3600 + at('minute') * 60 + at('second');
+  let wait = h * 3600 + m * 60 - nowSec;
+  if (wait <= 0) wait += 86400;
+  return (wait + 60) * 1000;
+}
