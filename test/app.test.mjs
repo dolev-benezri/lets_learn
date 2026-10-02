@@ -147,7 +147,8 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
   const html = readFileSync('web/index.html', 'utf8');
   const foot = html.match(/<footer class="site-foot"[\s\S]*?<\/footer>/)?.[0] ?? '';
   assert.match(foot, /כלי עזר לא רשמי/);
-  assert.match(foot, /TERMS\.md/);
+  assert.match(foot, /legal\.html#terms/);
+  assert.match(foot, /legal\.html#accessibility/);
   assert.equal(html.split('כלי עזר לא רשמי').length, 2);
 });
 

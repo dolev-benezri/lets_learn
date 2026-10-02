@@ -106,6 +106,9 @@ export function renderMe() {
           <button type="button" class="btn" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
           <input type="file" id="gradeFile" hidden accept="application/pdf" data-chg="gradeFile">
           <p class="hint" id="gradeMsg" role="status">${esc(ui.gradeMsg)}</p></section>
+        <section class="me-card" aria-labelledby="meData"><h2 id="meData">הנתונים שלי</h2>
+          <p class="hint">הכול נשמר רק בדפדפן הזה. <a href="legal.html#privacy" target="_blank" rel="noopener">פרטיות<span class="sr"> (נפתח בחלון חדש)</span></a></p>
+          <button type="button" class="btn" data-act="eraseAll" data-k="eraseAll">${icon('trash')} מחק את כל הנתונים שלי</button></section>
       </div>
       <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses">קורסים לפי שנה</h2>
         ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}

@@ -81,6 +81,7 @@ test('switchTo: going back finds the old progress with the current personal sett
   assert.deepEqual([app.state.passed, app.state.failed, app.state.profile.specs, app.state.profile.year], [['a', 'b'], { b: 1 }, ['solid', 'flow'], 3]);
   assert.equal(app.state.name, 'שם חדש');
   assert.ok(store.size > 0);
+  store.set('afeka-sched-v1-onboarded', '1'); // erasing everything also starts a first visit again
   sync();
   clearSaved();
   assert.equal(store.size, 0);

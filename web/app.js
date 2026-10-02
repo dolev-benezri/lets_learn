@@ -79,7 +79,7 @@ function load() {
 const stashKey = (p, y) => `${KEY}:${p}-${y}`;
 const stash = (s) => { try { localStorage.setItem(stashKey(s.program, s.startYear), JSON.stringify(s)); } catch { /* storage unavailable */ } };
 const unstash = (p, y) => { try { return JSON.parse(localStorage.getItem(stashKey(p, y))); } catch { return null; } };
-export function clearSaved() { try { for (const k of Object.keys(localStorage)) if (k === KEY || k.startsWith(`${KEY}:`)) localStorage.removeItem(k); } catch { /* storage unavailable */ } }
+export function clearSaved() { try { for (const k of Object.keys(localStorage)) if (k.startsWith(KEY)) localStorage.removeItem(k); } catch { /* storage unavailable */ } }
 // One add/replace/rename path for friends. `editing` is the NAME of the friend being edited (names, not indexes, survive deletes mid-edit).
 export function upsertFriend(friends, p, editing = null) {
   const at = (n) => friends.findIndex((f) => f.name === n);

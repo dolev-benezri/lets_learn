@@ -1,5 +1,5 @@
 // Click (ACT) and change (CHG) handlers, wired to the document in ui-plan.js.
-import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, DEFAULT } from './app.js';
+import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, clearSaved, DEFAULT } from './app.js';
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
@@ -98,6 +98,12 @@ export const ACT = {
     ($('drawer').querySelector(`[data-k="blk-rm-${Math.min(i, bl.length - 1)}"]`) ?? $('drawer').querySelector('[data-k="blkAdd"]'))?.focus();
   },
   clearPins() { app.state.pins = []; refresh(); },
+  async eraseAll() {
+    if (!await askConfirm('למחוק מהדפדפן את כל הנתונים השמורים: ההתקדמות, החברים וההעדפות? אי אפשר לשחזר, אלא מגיבוי שיצרתם.', { ok: 'מחק הכול', cancel: 'ביטול' })) return;
+    clearSaved();
+    history.replaceState(null, '', location.pathname); // no hash: the reload is a first visit again
+    location.reload();
+  },
   async resetPrefs() {
     if (!await askConfirm('לאפס את ההעדפות לברירת המחדל?', { ok: 'אפס', cancel: 'ביטול' })) return;
     app.state.weights = structuredClone(DEFAULT.weights);
