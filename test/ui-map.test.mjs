@@ -160,7 +160,7 @@ test('geometry: a same-column מקביל edge is bowed, not a straight line thro
   const L = layoutMap(d), g = geometry(L, () => 3);
   assert.equal(L.nodes[0].col, L.nodes[1].col);
   assert.match(g.edges[0].d, /^M[\d.]+,[\d.]+ C/);
-  assert.ok(g.edges[0].d.includes(`C${g.nodes[0].x + g.nodes[0].hw + G.bulge + 12},`));
+  assert.ok(g.edges[0].d.includes(`C${g.nodes[0].x + g.nodes[0].hw + G.bulge + Math.min(40, Math.abs(g.nodes[1].y - g.nodes[0].y) / 6)},`));
 });
 
 test('mapSvg: one button per course in Tab order, labelled and titled; ext pills and "או" circles are not buttons; all text escaped', () => {

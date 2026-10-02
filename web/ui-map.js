@@ -186,9 +186,10 @@ export function geometry(L, creditsOf = () => 0) {
     bands.push({ year: b.year, kind: b.kind, name: b.name, note: b.note, x: xr - b.n * G.pitch, w: b.n * G.pitch });
     xr -= b.n * G.pitch + G.bandGap;
   }
-  // A column's step is at least a row, and enough for the two circles and the name between any pair that follow each other.
+  // A column's step is at least a row, and enough for what sits between two circles that follow each other: the upper one's name (16px below it)
+  // and the lower one's "פותח N" badge (riding 0.85r + 8 above its centre), plus a small gap.
   const byCol = Object.groupBy(L.nodes, (n) => n.col), step = {};
-  for (const [c, col] of Object.entries(byCol)) step[c] = Math.max(G.row, ...col.slice(1).map((n, i) => radius(n) + radius(col[i]) + 22));
+  for (const [c, col] of Object.entries(byCol)) step[c] = Math.max(G.row, ...col.slice(1).map((n, i) => radius(col[i]) + 22 + 0.85 * radius(n) + 12));
   const H = top + G.padY + Math.max(0, ...Object.entries(byCol).map(([c, col]) => col.length * step[c])), pos = new Map();
   for (const n of L.nodes) { const r = radius(n); pos.set(n.key, { ...n, x: colX[n.col], y: top + (n.row + 0.5) * step[n.col], r, hw: n.type === 'ext' ? G.extHW : r }); }
   const seen = new Map(), ors = L.diamonds.map((d) => {
