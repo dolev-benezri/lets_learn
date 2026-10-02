@@ -6,7 +6,7 @@ const sat = (d, i) => Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 
 const near = (d, i, c, tol) => Math.abs(d[i] - c[0]) <= tol && Math.abs(d[i + 1] - c[1]) <= tol && Math.abs(d[i + 2] - c[2]) <= tol;
 
 // All colored regions worth a look: [{ x, y, w, h, color }], bigger than a glyph, filled enough not to be a line. `box` limits the search to part of the image.
-export function regions(rgba, w, h, box = { x: 0, y: 0, w, h }) {
+export function regions(rgba, w, h, box = { x: 0, y: 0, w, h }, tol = TOL) {
   const seen = new Uint8Array(w * h), out = [], bx2 = box.x + box.w, by2 = box.y + box.h;
   for (let y0 = box.y; y0 < by2; y0++) for (let x0 = box.x; x0 < bx2; x0++) {
     const p0 = y0 * w + x0;
@@ -21,7 +21,7 @@ export function regions(rgba, w, h, box = { x: 0, y: 0, w, h }) {
       for (const q of [p - 1, p + 1, p - w, p + w]) {
         const qx = q % w, qy = (q - qx) / w;
         if (q < 0 || q >= w * h || seen[q] || qx < box.x || qx >= bx2 || qy < box.y || qy >= by2 || Math.abs(qx - x) > 1) continue;
-        if (near(rgba, q * 4, color, TOL)) { seen[q] = 1; stack.push(q); }
+        if (near(rgba, q * 4, color, tol)) { seen[q] = 1; stack.push(q); }
       }
     }
     const bw = x2 - x1 + 1, bh = y2 - y0 + 1;
@@ -30,13 +30,17 @@ export function regions(rgba, w, h, box = { x: 0, y: 0, w, h }) {
   return out;
 }
 
-// Headers = the most common (color, top, height) among regions that repeat at least 3 times in a row; everything else below them is a block.
+// The largest set (at least 3) of regions on one row with the same height and nearly the same color: the day header cells. Touching cells need a strict `tol` to come apart.
+function headerCells(rgba, w, h, tol) {
+  // the title band spans the page; a header cell is a good fraction of it wide and tall (not a glyph)
+  const all = regions(rgba, w, h, undefined, tol).filter((r) => r.w < 0.6 * w && r.w >= 0.06 * w && r.h >= 0.04 * h);
+  const alike = (a, b) => Math.abs(a.y - b.y) <= 6 && Math.abs(a.h - b.h) <= 6 && a.color.every((c, i) => Math.abs(c - b.color[i]) <= 30);
+  return all.map((r) => all.filter((o) => alike(r, o))).filter((g) => g.length >= 3).sort((a, b) => b.length - a.length || a[0].y - b[0].y)[0] ?? [];
+}
+
+// The day header cells and the course blocks below them.
 export function findBlocks(rgba, w, h) {
-  const all = regions(rgba, w, h).filter((r) => r.w < 0.6 * w); // the title band spans the page
-  const key = (r) => `${Math.round(r.y / 6)}|${Math.round(r.h / 6)}|${r.color.map((c) => Math.round(c / 24)).join(',')}`;
-  const groups = new Map();
-  for (const r of all) groups.set(key(r), [...(groups.get(key(r)) ?? []), r]);
-  const headers = [...groups.values()].filter((g) => g.length >= 3).sort((a, b) => a[0].y - b[0].y || b.length - a.length)[0] ?? [];
+  const headers = headerCells(rgba, w, h, TOL).length ? headerCells(rgba, w, h, TOL) : headerCells(rgba, w, h, 12);
   if (!headers.length) return { headers: [], blocks: [] };
   const bottom = Math.max(...headers.map((r) => r.y + r.h)), hh = Math.min(...headers.map((r) => r.h));
   const cols = headers.slice().sort((a, b) => b.x - a.x); // right to left: ראשון first

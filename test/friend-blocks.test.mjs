@@ -43,3 +43,12 @@ test('gridHours: fits the hour height and gives each block its hour offset and l
   assert.deepEqual(g.slots, [{ off: 0, hours: 2 }, { off: 1, hours: 1 }, { off: 3, hours: 4 }, { off: 2, hours: 2 }]);
   assert.equal(gridHours([], headers), null);
 });
+
+test('findBlocks: header cells that touch (a faint separator only) are still told apart', () => {
+  const { d, rect } = canvas(500, 200);
+  for (const x of [10, 130, 250, 370]) { rect(x, 30, 118, 40, PURPLE); rect(x + 118, 30, 2, 40, [215, 165, 205]); } // 2px separator, within normal tolerance of the cell color
+  rect(130, 80, 118, 40, [0, 90, 230]);
+  const { headers, blocks } = findBlocks(d, 500, 200);
+  assert.equal(headers.length, 4);
+  assert.deepEqual(blocks.map((b) => columnOf(b, headers)), [2]);
+});
