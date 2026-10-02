@@ -171,6 +171,30 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
   .pmap .pm-legend { padding-bottom:2px; }
   .pmap .pm-legend summary { min-height:28px; }
 }
+/* Round 3: bands by year only; pre-degree band; the plan overlay; progress bar. Plan colour = the site's purple (--c2-*), used by no status. */
+.pmap .band.pre rect { fill:var(--surface); stroke:var(--text-2); stroke-width:1.5; stroke-dasharray:7 5; stroke-opacity:.8; }
+.pmap .band.pre .bt { fill:var(--text-2); font-size:14px; }
+.pmap .ext rect { fill:var(--surface-2); stroke-opacity:.8; }
+.pmap .ext text { font-style:italic; }
+.pmap .ext .tg { font-size:10px; font-style:normal; font-weight:600; }
+.pmap .ext.pre rect { fill:var(--surface); stroke-dasharray:2 3; }
+.pmap .plan-ring { fill:none; stroke:var(--c2-fg); stroke-width:3; }
+.pmap .nd.plan .ring { fill:var(--c2-bg); }
+.pmap .plan-tag rect { fill:var(--c2-bg); stroke:var(--c2-fg); stroke-width:1; }
+.pmap .plan-tag text { fill:var(--c2-fg); font-size:11px; font-weight:600; }
+.pmap .e.plan { stroke:var(--c2-fg); stroke-opacity:1; stroke-width:2.5; marker-end:url(#pmArrP); }
+.pmap .ar.plan { fill:var(--c2-fg); fill-opacity:1; }
+.pmap .e.plan.lit { stroke:var(--primary); marker-end:url(#pmArrL); }
+.pmap .lg-e.plan { stroke:var(--c2-fg); stroke-opacity:1; stroke-width:2.5; }
+.pmap .li-plan { --c:var(--c2-fg); --soft:var(--c2-bg); }
+.pmap .pm-prog { flex:none; padding:6px 14px 8px; background:var(--surface); border-top:1px solid var(--border); }
+.pmap .pm-prog-t { margin:0 0 5px; font-size:var(--fs-sm); color:var(--text); }
+.pmap .pm-prog-plan { color:var(--c2-fg); font-weight:600; }
+.pmap .pm-meter { display:flex; height:10px; overflow:hidden; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; } /* RTL: fills from the right */
+.pmap .pm-meter i { display:block; height:100%; }
+.pmap .pm-meter .d { background:var(--success); }
+.pmap .pm-meter .p { background:var(--c2-fg); }
+@media (max-width:599px) { .pmap .pm-prog { padding:4px 12px 6px; } .pmap .pm-prog-t { margin-bottom:3px; font-size:var(--fs-xs); } .pmap .pm-meter { height:8px; } }
 @media (prefers-reduced-motion: reduce) {
   .pmap *, .pmap *::before, .pmap *::after { transition:none !important; scroll-behavior:auto !important; }
 }
