@@ -8,7 +8,7 @@ const KEY = 'afeka-sched-v1';
 const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 export const DEFAULT = {
   v: 1, year: 2027, semester: 'א', program: 30, startYear: 2026, name: '',
-  passed: null, failed: {}, grades: {}, choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null },
+  passed: null, failed: {}, grades: {}, choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null, specs: [], summer: false },
   scope: 'year', load: 'even', semesterOf: {},
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
   constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, examsSameDay: 'forbid', includeFull: false, blocks: [] },

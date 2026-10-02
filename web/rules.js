@@ -10,7 +10,14 @@ export const englishOptions = (data, score) => ENGLISH.map((id, i) => ({ id, nam
 
 // Personal profile: integers in range, else null (state, backup links and the form share this).
 const int = (x, lo, hi) => (Number.isInteger(x) && x >= lo && x <= hi ? x : null);
-export const cleanProfile = (p) => ({ year: int(p?.year, 1, 4), amirnet: int(p?.amirnet, 50, 150) });
+// Year-3 specialization: two different areas, or vehicle alone. Checked against the fixed list (not data), so old backup links keep loading; stored in SPECS order.
+export const SPECS = [{ id: 'solid', name: 'מכניקת מוצק' }, { id: 'flow', name: 'זרימה ואנרגיה' }, { id: 'mech', name: 'מכטרוניקה ורובוטיקה' }, { id: 'vehicle', name: 'מערכות רכב' }, { id: 'materials', name: 'חומרים' }, { id: 'aero', name: 'אווירונאוטיקה וחלל' }];
+const specs = (a) => {
+  if (!Array.isArray(a)) return [];
+  const ids = SPECS.map((s) => s.id).filter((id) => a.includes(id));
+  return a.length === ids.length && (ids.length === 2 || (ids.length === 1 && ids[0] === 'vehicle')) ? ids : [];
+};
+export const cleanProfile = (p) => ({ year: int(p?.year, 1, 4), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
 
 // ponytail: profile.year only overrides the label; a real different cohort needs its own data file (data.startYear).
 export const studyYear = (data, state) => state.profile?.year ?? data.year - data.startYear + 1;

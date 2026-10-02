@@ -127,6 +127,9 @@ aside { grid-area:side; min-width:0; padding:2px; }
 .profile .field input { width:96px; min-height:var(--tap); padding:0 10px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); }
 .crs .grade { width:96px; min-height:var(--tap); padding:0 10px; border:1px solid var(--border-strong); border-radius:10px; background:var(--surface); }
 .crs .seg legend { font-weight:500; }
+.profile .spec-sec { margin-top:12px; } .profile .check { margin-top:4px; } .spec-sec .hint { margin-top:6px; }
+.check:has(input:disabled) { opacity:.45; cursor:not-allowed; }
+.specs { border:0; margin:6px 0 0; padding:0; min-width:0; }
 details > summary { display:flex; align-items:center; gap:8px; min-height:var(--tap); padding:0 4px; cursor:pointer; font-weight:500; border-radius:8px; list-style:none; }
 details > summary::-webkit-details-marker { display:none; }
 details > summary::after { content:""; width:8px; height:8px; margin-inline-start:auto; border:solid var(--text-2); border-width:0 2px 2px 0; transform:rotate(45deg); }
