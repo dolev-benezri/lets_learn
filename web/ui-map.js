@@ -4,7 +4,7 @@
 import { app, esc, keepFocus } from './app.js';
 import { icon, yedion } from './ui-grid.js';
 import { unlockCounts } from './solver-core.js';
-import { studyYear, classify } from './rules.js';
+import { studyYear, classify, specLists } from './rules.js';
 
 // ---------- layout (pure) ----------
 const YEAR_LETTERS = 'אבגד';
@@ -29,12 +29,11 @@ export function courseYears(data) {
 }
 // Electives the student has no stake in stay off the map: in no required list (a year, English, the final project…), not chosen "חובה"/"אולי", not passed or being retaken.
 const REQUIRED = /חובה|פרויקט גמר/;
-// Specialization lists (data.specializations) are required of nobody by default: out of REQUIRED and the progress total until they follow the chosen specs.
-const specCodes = (data) => new Set((data.specializations ?? []).flatMap((s) => [s.mandatory, s.elective, s.aloneExtra]));
-export const asideIds = (data, statuses, choices = {}) => {
-  const spec = specCodes(data);
-  const req = new Set(data.lists.filter((l) => REQUIRED.test(l.name) && !spec.has(l.code)).flatMap((l) => l.courses));
-  return Object.keys(data.courses).filter((id) => !req.has(id) && !['must', 'optional'].includes(choices[id]) && !['done', 'exempt', 'retake'].includes(statuses[id]?.status));
+// Specialization lists never count by their name: only the chosen areas' mandatory courses are required, and their electives are the student's pool (not aside).
+export const asideIds = (data, statuses, choices = {}, specs = []) => {
+  const sp = specLists(data, specs);
+  const req = new Set([...data.lists.filter((l) => REQUIRED.test(l.name) && !sp.all.has(l.code)).flatMap((l) => l.courses), ...sp.mandatory]);
+  return Object.keys(data.courses).filter((id) => !req.has(id) && !sp.elective.has(id) && !['must', 'optional'].includes(choices[id]) && !['done', 'exempt', 'retake'].includes(statuses[id]?.status));
 };
 
 // Geometry helpers for the progress-map renderer
@@ -146,22 +145,26 @@ export function planPaths(paths, plan) {
   return new Set(paths.filter((p) => plan.has(p.from) || via.has(p.from)).map((p) => p.id));
 }
 
-// Degree progress in credits. Required = sum of the lists' minCredits (an approximation: the regulations have more rules). A course counts once, for the
-// first list that holds it, and a list never counts past its minimum, so surplus electives don't inflate the bar. `adds` = the plan's own credits.
+// Degree progress in credits. Required = the lists' minCredits (an approximation: the regulations have more rules) with the specialization lists replaced by
+// data.degree.specCredits. A course counts once, for the first list that holds it, and a list never counts past its minimum, so surplus electives don't inflate
+// the bar. The specialization part is the chosen areas' courses (every specialization list while none is chosen), done first, capped. `adds` = the plan's own
+// credits; `specLeft` = specialization credits still missing (null while no area is chosen).
 const isDone = (st, id) => ['done', 'exempt'].includes(st[id]?.status);
-export function progressInfo(data, st, plan = new Set()) {
-  const seen = new Set();
+export function progressInfo(data, st, plan = new Set(), specs = []) {
+  const seen = new Set(), sp = specLists(data, specs), cap = Number(data.degree?.specCredits) || 0, credits = (id) => Number(data.courses[id].credits) || 0;
   let total = 0, done = 0, planned = 0;
-  const spec = specCodes(data);
-  for (const l of data.lists.filter((x) => !spec.has(x.code))) {
+  for (const l of data.lists.filter((x) => !sp.all.has(x.code))) {
     const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)), min = Number(l.minCredits) || 0;
     ids.forEach((id) => seen.add(id));
-    const sum = (f) => ids.filter(f).reduce((s, id) => s + (Number(data.courses[id].credits) || 0), 0);
+    const sum = (f) => ids.filter(f).reduce((s, id) => s + credits(id), 0);
     const d = Math.min(min, sum((id) => isDone(st, id)));
     total += min; done += d; planned += Math.min(min - d, sum((id) => !isDone(st, id) && plan.has(id)));
   }
-  const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + (Number(data.courses[id].credits) || 0), 0);
-  return { total, done, planned, adds };
+  const pool = new Set((specs.length ? [...sp.mandatory, ...sp.elective] : data.lists.filter((x) => sp.all.has(x.code)).flatMap((x) => x.courses)).filter((id) => data.courses[id] && !seen.has(id)));
+  const pick = (f) => [...pool].filter(f).reduce((s, id) => s + credits(id), 0), sd = Math.min(cap, pick((id) => isDone(st, id)));
+  done += sd; planned += Math.min(cap - sd, pick((id) => !isDone(st, id) && plan.has(id)));
+  const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + credits(id), 0);
+  return { total: Number(data.degree?.total) || total + cap, done, planned, adds, specLeft: specs.length ? cap - sd : null };
 }
 // Courses the plan newly opens: blocked now, not blocked once the plan's courses count as passed (the plan's own courses excluded).
 export function newlyUnlocked(data, state, plan) {
@@ -309,12 +312,12 @@ function cardHtml(c, id) {
 
 // Progress bar: credits done (green) and the plan's share (purple) out of the required total. Text carries the same numbers for screen readers.
 export function progressHtml(c) {
-  const { total, done, planned, adds } = c.prog;
+  const { total, done, planned, adds, specLeft } = c.prog;
   if (!total) return '';
   const pct = (v) => Math.round((100 * v) / total), txt = `${done} מתוך ${total} נ״ז`, ext = adds ? `המערכת שנבחרה מוסיפה ${adds} נ״ז${c.opened ? ` ופותחת ${plural(c.opened, 'קורס אחד', 'קורסים')}` : ''}` : '';
   const title = 'הסכום המשוער של הרשימות בתוכנית (נ״ז מינימום לכל רשימה); לא כולל כללים נוספים שבתקנון. קורס נספר פעם אחת, ורשימה לא נספרת מעבר למינימום שלה.';
   return `<div class="pm-prog" title="${esc(title)}"><p class="pm-prog-t">הושלמו <b><bdi>${done}</bdi></b> מתוך <b><bdi>${total}</bdi></b> נ״ז${ext ? ` · <span class="pm-prog-plan">${esc(ext)}</span>` : ''}</p>
-    <div class="pm-meter" role="progressbar" aria-label="התקדמות בתואר בנקודות זכות" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done + planned}" aria-valuetext="${esc(ext ? `${txt}, ${ext}` : txt)}"><i class="d" style="width:${pct(done)}%"></i><i class="p" style="width:${pct(planned)}%"></i></div></div>`;
+    <div class="pm-meter" role="progressbar" aria-label="התקדמות בתואר בנקודות זכות" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done + planned}" aria-valuetext="${esc(ext ? `${txt}, ${ext}` : txt)}"><i class="d" style="width:${pct(done)}%"></i><i class="p" style="width:${pct(planned)}%"></i></div>${specLeft != null ? `<p class="pm-prog-spec">נותרו <b><bdi>${+specLeft.toFixed(1)}</bdi></b> נ״ז מקורסי ההתמחות</p>` : c.year >= 2 && !c.specs?.length ? '<p class="pm-prog-spec"><a href="#me" data-pm="spec" data-k="pm-spec">בחרו התמחות ב״המצב שלי״ כדי לראות את קורסי החובה שלה</a></p>' : ''}</div>`;
 }
 
 // ---------- dialog ----------
@@ -337,10 +340,10 @@ function ctxOf(mode) {
   const { data, state, cls } = app, st = cls.statuses;
   const year = studyYear(data, state), base = makeKeep(mode, data, st, year);
   const plan = new Set([...(app.planIds ?? [])].filter((id) => data.courses[id] && !isDone(st, id))); // what the shown schedule alternative takes
-  const aside = asideIds(data, st, state.choices).filter((id) => base(id) && !plan.has(id)), off = new Set(aside); // a planned course is always drawn
+  const aside = asideIds(data, st, state.choices, state.profile?.specs).filter((id) => base(id) && !plan.has(id)), off = new Set(aside); // a planned course is always drawn
   const L = layoutMap(data, (id) => base(id) && !off.has(id));
   const doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
-  return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits), year, unlocks: unlockCounts(data, doneIds), mode, aside, plan, prog: progressInfo(data, st, plan), opened: newlyUnlocked(data, state, plan) };
+  return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits), year, unlocks: unlockCounts(data, doneIds), mode, aside, plan, prog: progressInfo(data, st, plan, state.profile?.specs), specs: state.profile?.specs ?? [], opened: newlyUnlocked(data, state, plan) };
 }
 
 function light() {
@@ -489,6 +492,7 @@ function onClick(e) {
   const act = b.dataset.pm;
   const zoomBy = (f) => { const r = q('.pm-svg').getBoundingClientRect(); M.pz?.zoomToPoint(M.pz.getScale() * f, { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }); };
   if (act === 'close') dlg.close();
+  else if (act === 'spec') { e.preventDefault(); M.opener = document.querySelector('.spec-sec input:checked'); dlg.close(); }
   else if (act === 'clear') { const k = M.sel; select(null); M.els?.nodes.get(k)?.focus({ preventScroll: true }); }
   else if (act === 'zin') zoomBy(1.25);
   else if (act === 'zout') zoomBy(0.8);
