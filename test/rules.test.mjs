@@ -268,3 +268,10 @@ test('specLists: an area may have several mandatory and elective lists (core + s
   assert.deepEqual([[...sp.mandatory], [...sp.elective], [...sp.all]], [['a', 'b', 'c'], ['d'], [1, 2, 3]]);
   assert.deepEqual([...specLists(data, []).mandatory], [], 'an area that is not chosen adds nothing');
 });
+
+test('specLists: one list can be elective in a pair and mandatory when its area is chosen alone (electrical power)', () => {
+  const data = { specRule: { pick: 2, alone: ['p'] }, courses: { a: {}, b: {} },
+    lists: [{ code: 1, courses: ['a', 'b'] }], specializations: [{ id: 'p', name: 'P', elective: 1, aloneExtra: 1 }, { id: 'q', name: 'Q' }] };
+  assert.deepEqual([[...specLists(data, ['p']).mandatory], [...specLists(data, ['p']).elective]], [['a', 'b'], []], 'alone: all mandatory');
+  assert.deepEqual([[...specLists(data, ['p', 'q']).mandatory], [...specLists(data, ['p', 'q']).elective]], [[], ['a', 'b']], 'in a pair: electives');
+});
