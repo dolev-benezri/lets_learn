@@ -104,3 +104,14 @@ test('isThrottled spots the hourly rate-limit page, not real pages', () => {
   assert.equal(isThrottled(fx('groups-90903.html')), false);
   assert.equal(isThrottled(fx('rejected.html')), false);
 });
+
+import { parseTracks, parseTrackLists } from '../scripts/parse.mjs';
+test('parseTracks: the tracks of a department; parseTrackLists: the list codes of a track page', () => {
+  const tracks = parseTracks(fx('tracks-20-2026.json'));
+  assert.deepEqual(tracks.slice(0, 3), [{ code: 20, name: 'הנדסת חשמל מסלול יום' }, { code: 21, name: 'התמחות תקשורת' }, { code: 22, name: 'הנדסת חשמל מסלול ערב' }]);
+  assert.equal(tracks.length, 7);
+  assert.deepEqual(parseTracks('{"Answer":[]}'), []);
+  assert.deepEqual(parseTracks('{}'), []);
+  assert.deepEqual(parseTrackLists(fx('sprog-20-2026-23.html')), [{ code: 20115, name: 'התמחות מערכות הספק ואנרגיה-חובה' }, { code: 20116, name: 'התמחות מערכות הספק ואנרגיה-בחירה' }]);
+  assert.deepEqual(parseTrackLists('<html></html>'), []);
+});
