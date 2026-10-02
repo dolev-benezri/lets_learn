@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { makeRequester, ThrottledError, semestersIn, writeResults, run, unitsOf, cachedRequester, writeCatalog } from '../scripts/scrape.mjs';
+import { makeRequester, ThrottledError, semestersIn, writeResults, run, unitsOf, cachedRequester, writeCatalog, catalogOrder } from '../scripts/scrape.mjs';
 
 const throttled = readFileSync('scripts/fixtures/throttled.html', 'utf8');
 const rejected = readFileSync('scripts/fixtures/rejected.html', 'utf8');
@@ -294,6 +294,12 @@ test('writeCatalog: lists the cohorts of the run, keeps programs that were not i
   const before = readFileSync(file, 'utf8');
   await writeCatalog(file, [{ program: 20, start: 2026 }], programs);
   assert.equal(readFileSync(file, 'utf8'), before);
+});
+
+test('catalogOrder: a track and its evening twin are neighbours, day first, pairs by lowest program number', () => {
+  const p = (id, name) => ({ id, name });
+  const ids = catalogOrder([p(112, 'מדעי המחשב (ערב)'), p(11, 'מדעי המחשב'), p(12, 'תוכנה (ערב)'), p(10, 'תוכנה'), p(19, 'נתונים')]).map((x) => x.id);
+  assert.deepEqual(ids, [10, 12, 11, 112, 19]);
 });
 
 test('cachedRequester: a cached answer costs no request; the session requests are replayed before the first miss only; offline refuses a miss', async () => {
