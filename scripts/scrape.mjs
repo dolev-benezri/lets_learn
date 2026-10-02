@@ -4,6 +4,7 @@
 // stdout carries only the one-line change summary (it becomes the commit message); progress goes to stderr.
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs';
@@ -118,22 +119,72 @@ export async function writeResults({ results, statusFile, now }) {
   return `data(afeka): ${changes.join('; ') || 'no changes'}`;
 }
 
+// Program x cohort pairs to build. One pair (--program, --start), or with --all-programs every configured program and cohort (--programs 20,30 narrows it).
+export function unitsOf(opt, programs) {
+  const wanted = opt.programs ? opt.programs.split(',').map(Number) : null;
+  const ids = opt['all-programs'] ? Object.keys(programs).map(Number).filter((id) => !wanted || wanted.includes(id)) : [Number(opt.program)];
+  return ids.flatMap((program) => {
+    const cfg = programs[program];
+    if (!cfg) throw new Error(`no list codes configured for program ${program}`);
+    const starts = opt['all-programs'] ? cfg.cohorts ?? [Number(opt.start)] : [Number(opt.start)];
+    return starts.map((start) => {
+      const codes = Array.isArray(cfg.lists) ? cfg.lists : cfg.lists[start];
+      if (!codes) throw new Error(`no list codes configured for program ${program} cohort ${start}`);
+      return { program, start, cfg, codes };
+    });
+  });
+}
+
+// Answers kept on disk, keyed by the request (so a run can resume or build offline). The session requests are swallowed and replayed before the first real one.
+export function cachedRequester(inner, dir, { offline = false } = {}) {
+  const session = [];
+  let replayed = false;
+  return async (query, form) => {
+    if (query === 'prgname=Enter_Search' || form?.PRGNAME === 'Enter_Search') { session.push([query, form]); return ''; }
+    const key = query ?? new URLSearchParams(form).toString();
+    const file = `${dir}/${createHash('sha1').update(key).digest('hex')}.html`;
+    try { return await readFile(file, 'utf8'); } catch { /* not cached */ }
+    if (offline) throw new Error(`offline and not in the cache: ${key}`);
+    if (!replayed) { replayed = true; for (const [q, f] of session) await inner(q, f); }
+    const html = await inner(query, form);
+    await mkdir(dir, { recursive: true });
+    await writeFile(file, html);
+    return html;
+  };
+}
+
+// data/afeka/catalog.json: which program x cohort the site has files for. Programs not in this run keep their entry.
+export async function writeCatalog(file, units, programs) {
+  const old = (await readJson(file))?.programs ?? [];
+  const mine = new Map();
+  for (const u of units) mine.set(u.program, { id: u.program, name: programs[u.program].name, startYears: [...(mine.get(u.program)?.startYears ?? []), u.start].sort() });
+  const next = [...old.filter((p) => !mine.has(p.id)), ...mine.values()].sort((x, y) => x.id - y.id);
+  if (JSON.stringify(old) !== JSON.stringify(next)) { await mkdir(dirname(file), { recursive: true }); await writeFile(file, JSON.stringify({ programs: next }, null, 1)); }
+}
+
 export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/data/afeka', now = () => new Date().toISOString(), log = console.error, check = validate }) {
-  const program = Number(opt.program), cfg = programs[program];
-  if (!cfg) throw new Error(`no list codes configured for program ${program}`);
+  const units = unitsOf(opt, programs);
 
   await request('prgname=Enter_Search');
   await request(null, { PRGNAME: 'Enter_Search', ARGUMENTS: '-A,,-A,ChangeYear', ChangeYear: opt.year });
 
-  const lists = [];
-  for (const code of cfg.lists) {
-    const p = parseProgram(await request(`prgname=S_SHOW_PROGS&arguments=-N${opt.start},-N${code}`));
-    if (!p.courses.length) throw new Error(`list ${code} returned no courses`);
-    lists.push({ code, ...p });
-    log(`list ${code} "${p.name}": ${p.courses.length} courses`);
+  // Lists and courses are fetched once however many programs share them.
+  const listCache = new Map();
+  for (const u of units) {
+    u.lists = [];
+    for (const code of u.codes) {
+      const k = `${u.start}/${code}`;
+      if (!listCache.has(k)) {
+        const p = parseProgram(await request(`prgname=S_SHOW_PROGS&arguments=-N${u.start},-N${code}`));
+        if (!p.courses.length) throw new Error(`list ${code} returned no courses`);
+        listCache.set(k, p);
+        log(`list ${code} (${u.start}) "${p.name}": ${p.courses.length} courses`);
+      }
+      u.lists.push({ code, ...listCache.get(k) });
+    }
   }
 
-  const ids = [...new Set(lists.flatMap((l) => l.courses.map((c) => c.id)))];
+  const ids = [...new Set(units.flatMap((u) => u.lists.flatMap((l) => l.courses.map((c) => c.id))))];
   const raw = {};
   for (const [i, id] of ids.entries()) {
     const groups = parseGroups(await request(`prgname=S_LOOK_FOR_NOSE&arguments=-N${id}`));
@@ -143,39 +194,45 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
     log(`[${i + 1}/${ids.length}] ${id}: ${groups.length} groups, ${details ? `${details.credits} credits` : 'no details'}`);
   }
 
-  const exams = parseExams(await request(null, {
-    PRGNAME: 'S_EXAMS', ARGUMENTS: 'R1C28,R1C29,R1C30', R1C28: String(cfg.dept), R1C29: '0', R1C30: '0',
-  }));
-  log(`exams: ${exams.length} rows`);
+  const examsOf = new Map();
+  for (const dept of new Set(units.map((u) => u.cfg.dept))) {
+    examsOf.set(dept, parseExams(await request(null, { PRGNAME: 'S_EXAMS', ARGUMENTS: 'R1C28,R1C29,R1C30', R1C28: String(dept), R1C29: '0', R1C30: '0' })));
+    log(`exams (department ${dept}): ${examsOf.get(dept).length} rows`);
+  }
 
-  // Build and check every semester before writing any file.
-  const semesters = opt['all-semesters'] ? semestersIn(raw) : [opt.semester];
-  if (!semesters.length) throw new Error('no semester has any meetings');
+  // Build and check every program, cohort and semester before writing any file.
   const fetchedAt = now();
   const results = [], failures = [];
-  for (const semester of semesters) {
-    const soft = semester === 'קיץ' && opt['all-semesters']; // a failing summer warns and keeps its old file; א and ב still abort the run
-    const bad = (e) => (soft ? log(`WARN summer not written: ${e}`) : failures.push(e));
-    const key = `${opt.year}-${SEMESTER_CODE[semester]}`;
-    const file = `${dataDir}/${key}/${program}-${opt.start}.json`;
-    const prev = await readJson(file);
-    const buildWarnings = [];
-    const dataset = buildDataset({
-      year: Number(opt.year), startYear: Number(opt.start), program, semester,
-      department: cfg.deptName, lists, raw, exams, fetchedAt, warnings: buildWarnings, specializations: cfg.specializations, degree: cfg.degree,
-    });
-    const { errors, warnings } = check(dataset, prev, cfg.anchor);
-    [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${key}: ${w}`));
-    const found = errors.map((e) => `${key}: ${e}`);
-    const { errors: comparisonErrors } = compareToPrevious(prev, dataset);
-    if (opt.force) comparisonErrors.forEach((e) => log(`SAFETY ${key}: ${e} (--force given, continuing)`));
-    else found.push(...comparisonErrors.map((e) => `${key}: ${e} (use --force to override)`));
-    found.forEach(bad);
-    if (!soft || !found.length) results.push({ key, file, dataset, prev });
+  for (const u of units) {
+    const mine = Object.fromEntries(u.lists.flatMap((l) => l.courses).map((c) => [c.id, raw[c.id]]));
+    const semesters = opt['all-semesters'] ? semestersIn(mine) : [opt.semester];
+    if (!semesters.length) throw new Error(`no semester has any meetings (${u.program}-${u.start})`);
+    for (const semester of semesters) {
+      const soft = semester === 'קיץ' && opt['all-semesters']; // a failing summer warns and keeps its old file; א and ב still abort the run
+      const label = `${opt.year}-${SEMESTER_CODE[semester]}/${u.program}-${u.start}`;
+      const bad = (e) => (soft ? log(`WARN summer not written: ${e}`) : failures.push(e));
+      const file = `${dataDir}/${label}.json`;
+      const prev = await readJson(file);
+      const buildWarnings = [];
+      const dataset = buildDataset({
+        year: Number(opt.year), startYear: u.start, program: u.program, semester, department: u.cfg.deptName, lists: u.lists, raw, exams: examsOf.get(u.cfg.dept), fetchedAt,
+        warnings: buildWarnings, specializations: u.cfg.specializations, degree: u.cfg.degree, specRule: u.cfg.specRule,
+      });
+      const { errors, warnings } = check(dataset, prev, u.cfg.anchor);
+      [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${label}: ${w}`));
+      const found = errors.map((e) => `${label}: ${e}`);
+      const { errors: comparisonErrors } = compareToPrevious(prev, dataset);
+      if (opt.force) comparisonErrors.forEach((e) => log(`SAFETY ${label}: ${e} (--force given, continuing)`));
+      else found.push(...comparisonErrors.map((e) => `${label}: ${e} (use --force to override)`));
+      found.forEach(bad);
+      if (!soft || !found.length) results.push({ key: label, file, dataset, prev });
+    }
   }
   if (failures.length) throw new Error(`checks failed, nothing written:\n${failures.join('\n')}`);
 
-  return writeResults({ results, statusFile: `${dataDir}/status.json`, now: fetchedAt });
+  const summary = await writeResults({ results, statusFile: `${dataDir}/status.json`, now: fetchedAt });
+  if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs);
+  return summary;
 }
 
 async function main() {
@@ -187,8 +244,13 @@ async function main() {
     'all-semesters': { type: 'boolean', default: false },
     delay: { type: 'string', default: '2500' },
     force: { type: 'boolean', default: false },
+    'all-programs': { type: 'boolean', default: false },
+    programs: { type: 'string' },
+    cache: { type: 'string' },
+    offline: { type: 'boolean', default: false },
   } });
-  const request = makeRequester({ delay: Number(opt.delay) });
+  const live = makeRequester({ delay: Number(opt.delay) });
+  const request = opt.cache ? cachedRequester(live, opt.cache, { offline: opt.offline }) : live;
   console.log(await run({ opt, request }));
 }
 
