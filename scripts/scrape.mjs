@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Scrape the public Afeka Yedion into web/data/afeka/{year}-{sem}/{program}-{start}.json (+ status.json).
-// One polite pass fetches everything once; every semester is built from it. Writes nothing if any step or check fails.
+// One polite pass fetches everything once; every semester is built from it. Writes nothing if any step or check fails (except summer: a failing summer is skipped with a warning).
 // stdout carries only the one-line change summary (it becomes the commit message); progress goes to stderr.
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -12,7 +12,17 @@ import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash,
 
 const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
 const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolhack/lets_learn)';
-const LISTS = { 30: [30001, 30002, 30003, 30004, 30007, 30010, 30031, 30901, 60004] };
+const LISTS = { 30: [30001, 30002, 30003, 30004, 30007, 30010, 30031, 30901, 60004, 30115, 30116, 30117, 30118, 30119, 30120, 30121, 30122, 30123, 30124, 30125, 30126, 30127] };
+// Hand-maintained from the third-year specialization lists (docs/research-degree-rules.md 5.2). `aloneExtra`: the list a student who takes vehicles alone adds.
+const SPECS = [
+  { id: 'solid', name: 'מכניקת מוצק', mandatory: 30115, elective: 30116 },
+  { id: 'flow', name: 'זרימה ואנרגיה', mandatory: 30117, elective: 30118 },
+  { id: 'mech', name: 'מכטרוניקה ורובוטיקה', mandatory: 30119, elective: 30120 },
+  { id: 'vehicle', name: 'מערכות רכב', mandatory: 30121, elective: 30122, aloneExtra: 30127 },
+  { id: 'materials', name: 'חומרים', mandatory: 30123, elective: 30124 },
+  { id: 'aero', name: 'אווירונאוטיקה וחלל', mandatory: 30125, elective: 30126 },
+];
+const DEGREE = { total: 160, specCredits: 27 };
 const DEPARTMENT = { 30: 'מכנית' };
 const SEMESTER_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
@@ -91,11 +101,10 @@ export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r)
   };
 }
 
-// Semesters that have at least one meeting in the scraped groups, in site order. Summer is left out: the app plans
-// only א and ב, and a thin summer semester failing its checks would abort the whole all-or-nothing run.
+// Semesters that have at least one meeting in the scraped groups, in site order.
 export function semestersIn(raw) {
   const seen = new Set(Object.values(raw).flatMap((r) => r.groups).flatMap((g) => g.meetings).map((m) => m.semester));
-  return ['א', 'ב'].filter((s) => seen.has(s));
+  return ['א', 'ב', 'קיץ'].filter((s) => seen.has(s));
 }
 
 const readJson = async (file) => { try { return JSON.parse(await readFile(file, 'utf8')); } catch { return null; } };
@@ -119,7 +128,7 @@ export async function writeResults({ results, statusFile, now }) {
   return `data(afeka): ${changes.join('; ') || 'no changes'}`;
 }
 
-export async function run({ opt, request, dataDir = 'web/data/afeka', now = () => new Date().toISOString(), log = console.error }) {
+export async function run({ opt, request, dataDir = 'web/data/afeka', now = () => new Date().toISOString(), log = console.error, check = validate }) {
   const program = Number(opt.program);
   if (!LISTS[program]) throw new Error(`no list codes configured for program ${program}`);
 
@@ -155,21 +164,24 @@ export async function run({ opt, request, dataDir = 'web/data/afeka', now = () =
   const fetchedAt = now();
   const results = [], failures = [];
   for (const semester of semesters) {
+    const soft = semester === 'קיץ' && opt['all-semesters']; // a failing summer warns and keeps its old file; א and ב still abort the run
+    const bad = (e) => (soft ? log(`WARN summer not written: ${e}`) : failures.push(e));
     const key = `${opt.year}-${SEMESTER_CODE[semester]}`;
     const file = `${dataDir}/${key}/${program}-${opt.start}.json`;
     const prev = await readJson(file);
     const buildWarnings = [];
     const dataset = buildDataset({
       year: Number(opt.year), startYear: Number(opt.start), program, semester,
-      department: DEPARTMENT[program], lists, raw, exams, fetchedAt, warnings: buildWarnings,
+      department: DEPARTMENT[program], lists, raw, exams, fetchedAt, warnings: buildWarnings, specializations: SPECS, degree: DEGREE,
     });
-    const { errors, warnings } = validate(dataset, prev);
+    const { errors, warnings } = check(dataset, prev);
     [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${key}: ${w}`));
-    errors.forEach((e) => failures.push(`${key}: ${e}`));
+    const found = errors.map((e) => `${key}: ${e}`);
     const { errors: comparisonErrors } = compareToPrevious(prev, dataset);
     if (opt.force) comparisonErrors.forEach((e) => log(`SAFETY ${key}: ${e} (--force given, continuing)`));
-    else comparisonErrors.forEach((e) => failures.push(`${key}: ${e} (use --force to override)`));
-    results.push({ key, file, dataset, prev });
+    else found.push(...comparisonErrors.map((e) => `${key}: ${e} (use --force to override)`));
+    found.forEach(bad);
+    if (!soft || !found.length) results.push({ key, file, dataset, prev });
   }
   if (failures.length) throw new Error(`checks failed, nothing written:\n${failures.join('\n')}`);
 

@@ -1,14 +1,18 @@
 {
- "checkedAt": "2026-10-01T22:17:29.980Z",
+ "checkedAt": "2026-10-02T09:48:31.863Z",
  "ok": true,
  "semesters": {
   "2027-1": {
-   "hash": "14dcde606582c3e2b0070b4e0300b1171782f683531e4e6d7f99e4eea8874d3f",
-   "changedAt": "2026-10-01T22:17:29.980Z"
+   "hash": "198bc0f9f7224280d8982481d3f91506f321da0d0d6360cfc6a537838fb04fd6",
+   "changedAt": "2026-10-02T09:47:39.110Z"
   },
   "2027-2": {
-   "hash": "eb0e0eb36c07cf46938f441f147087f1a2f5a338a74f30a63e8d2ad937074a1d",
-   "changedAt": "2026-10-01T22:17:29.980Z"
+   "hash": "01403ae8196ee2462f9ee75cb844f74425859f0ed78fc18a9fa6cc4b50a5d304",
+   "changedAt": "2026-10-02T09:47:39.110Z"
+  },
+  "2027-3": {
+   "hash": "1080b1398d4c20bb10225ba6d6c6fe3652b21a292e7f6fa6b6d2c2ce9986135a",
+   "changedAt": "2026-10-02T09:48:31.863Z"
   }
  }
 }

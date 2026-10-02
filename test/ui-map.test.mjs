@@ -230,7 +230,8 @@ test('layout: aside electives are not drawn; a chosen one joins the last band', 
 });
 
 test('layout: required courses are always drawn, chosen or not; the filter hides only electives that are in no required list', () => {
-  const required = new Set(data.lists.filter((l) => /חובה|פרויקט גמר/.test(l.name)).flatMap((l) => l.courses));
+  const spec = new Set(data.specializations.flatMap((s) => [s.mandatory, s.elective, s.aloneExtra]));
+  const required = new Set(data.lists.filter((l) => /חובה|פרויקט גמר/.test(l.name) && !spec.has(l.code)).flatMap((l) => l.courses));
   const aside = new Set(asideIds(data, {}, {})); // nothing chosen at all
   for (const id of required) assert.ok(!aside.has(id), id);
   const L = layoutMap(data, (id) => !aside.has(id)), drawn = new Set(L.nodes.filter((n) => n.type === 'course').map((n) => n.id));
@@ -304,4 +305,17 @@ test('wheelStep: a mouse notch is about 16% (either browser), small trackpad eve
   assert.ok(pct({ deltaY: 4 }) < 0.02 && pct({ deltaY: 0, deltaX: 0 }) > 0);
   assert.equal(wheelStep({ deltaY: 5000 }), 0.6);
   assert.equal(wheelStep({ deltaY: 0, deltaX: 100 }), wheelStep({ deltaY: 100 })); // shift+wheel on a Mac
+});
+
+test('specialization lists are neither required of everyone nor part of the progress total', () => {
+  const co = (credits) => ({ ...mc('x'), credits });
+  const d = { specializations: [{ id: 's', mandatory: 2, elective: 3, aloneExtra: 4 }], lists: [
+    { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
+    { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 10 },
+    { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 8 },
+    { code: 4, name: 'חובה רכב לבוחרי ללא התמחות נוספת', courses: ['x'], minCredits: 3 }],
+  courses: { a: co(4), m: co(5), e: co(3), x: co(3) } };
+  assert.deepEqual(asideIds(d, {}).sort(), ['e', 'm', 'x']);
+  assert.deepEqual(progressInfo(d, { m: { status: 'done' } }, new Set(['e'])), { total: 4, done: 0, planned: 0, adds: 3 });
+  assert.deepEqual(asideIds({ ...d, specializations: undefined }, {}), ['e'], 'without specializations the name rule applies as before');
 });

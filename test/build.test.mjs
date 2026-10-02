@@ -226,6 +226,37 @@ test('validate: prerequisite count must stay within ±20% of the previous file',
   assert.ok(!validate(d).errors.some((e) => e.includes('prerequisite')), 'without a previous file there is nothing to compare');
 });
 
+test('validate: the prerequisite check compares only courses in both files, so new courses do not trip it', () => {
+  const prev = healthy(), d = healthy();
+  for (let i = 0; i < 60; i++) d.courses[`3${i}000`] = { ...d.courses['20000'], prereqs: [{ kind: 'קדם', anyOf: [{ id: null, name: 'x' }] }, { kind: 'קדם', anyOf: [{ id: null, name: 'y' }] }] };
+  assert.deepEqual(validate(d, prev).errors, []); // 51 -> 171 prerequisite groups, but none changed in the shared courses
+  for (const id of Object.keys(prev.courses).slice(0, 11)) d.courses[id].prereqs = [];
+  assert.ok(validate(d, prev).errors.some((e) => e.includes('prerequisite')), 'a real regression in shared courses is still caught');
+});
+
+test('validate: summer is checked lightly (no size or 90903) but needs a scheduled course and healthy fields', () => {
+  const summer = (n) => ({ year: 2027, semester: 'קיץ', examsPublished: false, lists: [], courses: Object.fromEntries(Array.from({ length: n }, (_, i) => [`3${i}`, { name: 'x', credits: 3, offered: true, prereqs: [], groups: [{ id: `g${i}`, primary: true, linked: [], meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }], exams: [] }] }])) });
+  assert.deepEqual(validate(summer(3)).errors, []);
+  const thin = summer(10);
+  ['30', '31', '32'].forEach((id) => { thin.courses[id].credits = 0; });
+  assert.deepEqual(validate(thin).errors, [], 'no credits-ratio check on a thin semester');
+  const none = summer(2);
+  Object.values(none.courses).forEach((c) => { c.groups = []; c.offered = false; });
+  assert.ok(validate(none).errors.some((e) => e.includes('summer')));
+  const noDay = summer(2);
+  noDay.courses['30'].groups[0].meetings[0].day = null;
+  assert.ok(validate(noDay).errors.some((e) => e.includes('day')));
+});
+
+test('buildDataset writes the specializations and degree it is given; validate wants their lists scraped', () => {
+  const specializations = [{ id: 's', name: 'ס', mandatory: 30001, elective: 30002, aloneExtra: 99999 }], degree = { total: 160, specCredits: 27 };
+  const d = buildDataset({ ...base(), specializations, degree });
+  assert.deepEqual([d.specializations, d.degree], [specializations, degree]);
+  d.lists.forEach((l, i) => { l.code = 30001 + i; });
+  assert.ok(validate(d).errors.some((e) => e.includes('specialization s: list 99999')));
+  assert.ok(!validate(d).errors.some((e) => e.includes('30001') || e.includes('30002')));
+});
+
 test('validate: exam dates outside the academic year are an error', () => {
   const d = healthy();
   d.courses['20002'].groups[0].exams[0].date = '2025-02-04';
