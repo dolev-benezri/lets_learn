@@ -65,3 +65,10 @@ test('no rows, no courses: empty result', () => {
   assert.deepEqual(parseGradeSheet([], data), []);
   assert.deepEqual(parseGradeSheet([['hello', 'world'], ['10016']], data), []);
 });
+
+test('a summer row (semester 3) counts like any other', () => {
+  const r = parseGradeSheet(sheet(
+    cells(1, 700, ['10016', 'תשפ"ו 3/', 'פיזיקה 1', 'צוות', '77', '4.0', '4.00']),
+    cells(1, 680, ['30003', 'תשפ"ו 3/', 'מבוא', 'צוות', '40', '3.0', '3.00', '*'])), data);
+  assert.deepEqual(by(r), { 10016: ['passed', 77], 30003: ['failed', 40] });
+});

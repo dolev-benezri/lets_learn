@@ -36,6 +36,15 @@ export function specLists(data, specs = []) {
   return out;
 }
 
+// A course not taught in א/ב but taught in summer says so (in place), pointing at the summer tab or at the profile switch that opens it.
+export function summerOnly(statuses, summer, on) {
+  for (const [id, s] of Object.entries(statuses)) {
+    if (s.status !== 'notOffered' || !summer?.courses[id]?.offered) continue;
+    s.reasons = [on ? 'נלמד רק בקיץ: תכננו אותו בלשונית "קיץ"' : 'נלמד רק בקיץ. כדי לתכנן אותו, סמנו "אני מתכנן/ת סמסטר קיץ השנה" ב"המצב שלי"'];
+  }
+  return statuses;
+}
+
 // ponytail: profile.year only overrides the label; a real different cohort needs its own data file (data.startYear).
 export const studyYear = (data, state) => state.profile?.year ?? data.year - data.startYear + 1;
 

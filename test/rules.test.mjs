@@ -231,3 +231,14 @@ test('English without an Amirnet score: blocked levels say to enter it, and a do
   assert.equal(st[6002].reasons[0], 'חסום: דורש בסיסי ← טרום (תקנון 7.4)');
   assert.equal(classify(d, { passed: [], profile: { amirnet: 90 } }).statuses[6001].status, 'available');
 });
+
+import { summerOnly } from '../web/rules.js';
+test('summerOnly: a course not taught in א/ב but taught in summer points at the summer tab or the profile switch', () => {
+  const st = () => ({ a: { status: 'notOffered', reasons: ['x'] }, b: { status: 'notOffered', reasons: ['x'] }, c: { status: 'available', reasons: [] } });
+  const summer = { courses: { a: { offered: true }, b: { offered: false }, c: { offered: true } } };
+  const on = summerOnly(st(), summer, true);
+  assert.match(on.a.reasons[0], /נלמד רק בקיץ: תכננו/);
+  assert.deepEqual(on.b.reasons, ['x']); assert.equal(on.c.status, 'available');
+  assert.match(summerOnly(st(), summer, false).a.reasons[0], /סמנו "אני מתכנן\/ת סמסטר קיץ השנה"/);
+  assert.deepEqual(summerOnly(st(), null, true).a.reasons, ['x'], 'no summer file: unchanged');
+});
