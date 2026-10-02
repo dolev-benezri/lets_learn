@@ -50,14 +50,14 @@ const specForm = (saved) => {
 };
 
 // Program and cohort: only when the catalog offers a choice (one program with one cohort looks exactly as before).
-export function programPick() {
+export function programPick(withCohort = true) {
   const { programs } = app.catalog, cur = programs.find((p) => p.id === app.state.program) ?? programs[0];
-  if (programs.length < 2 && cur.startYears.length < 2) return '';
+  if (programs.length < 2 && (!withCohort || cur.startYears.length < 2)) return '';
   const opt = (v, t, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(t)}</option>`;
   const yr = (start) => YEARS.find(([n]) => n === app.data.year - start + 1)?.[1];
-  const years = cur.startYears.map((y) => opt(y, yr(y) ? `${y} · שנה ${yr(y)}׳` : String(y), y === app.state.startYear)).join('');
+  const years = cur.startYears.map((y) => opt(y, yr(y) ? `${y} · שנה ${yr(y)}` : String(y), y === app.state.startYear)).join('');
   return `<div class="pick"><label class="field">תוכנית <select data-chg="program" data-k="program">${programs.map((p) => opt(p.id, heb(p.name), p.id === cur.id)).join('')}</select></label>
-    <label class="field">מחזור <select data-chg="cohort" data-k="cohort">${years}</select></label></div>`;
+    ${withCohort ? `<label class="field">מחזור <select data-chg="cohort" data-k="cohort">${years}</select></label>` : ''}</div>`;
 }
 
 export function renderMe() {
@@ -65,8 +65,8 @@ export function renderMe() {
   if (el.hidden) { el.innerHTML = ''; return; }
   const { data, state, cls } = app;
   if (gated() && document.body.dataset.view !== 'me') { // the builder waits for the study year: one question, nothing else
-    el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">באיזו שנה את/ה?</h1></div>
-      <section class="me-card gate">${programPick()}${seg('p-year', 'שנת לימודים', YEARS, null, 'data-chg="pyear"', false)}
+    el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">${app.catalog.programs.length > 1 ? 'באיזו תוכנית ובאיזו שנה את/ה?' : 'באיזו שנה את/ה?'}</h1></div>
+      <section class="me-card gate">${programPick(false)}${seg('p-year', 'שנת לימודים', YEARS, null, 'data-chg="pyear"', false)}
         <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p></section>`;
     return;
   }

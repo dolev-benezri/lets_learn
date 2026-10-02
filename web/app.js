@@ -241,6 +241,18 @@ async function init() {
   await applyHash();
 }
 
+// Replace the state with a backup. Another program or cohort loads its data first; if that fails nothing changes and it returns false.
+export async function restoreBackup(payload) {
+  const p = normalize(payload, app.catalog);
+  if (p.program !== app.state.program || p.startYear !== app.state.startYear) {
+    let sem;
+    try { sem = await fetchSemesters(p); } catch { return false; }
+    setSemesters(sem);
+  }
+  app.state = p;
+  return true;
+}
+
 // Friend (#f=) and backup (#b=) links: read at load, and again when one is pasted into an open tab (hashchange in ui-plan.js).
 export async function applyHash() {
   const h = await readHash(location.hash, app.state);
@@ -250,10 +262,7 @@ export async function applyHash() {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
     if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
-      const p = normalize(h.payload, app.catalog); // another program or cohort: its data loads before the state is replaced
-      let sem = null;
-      if (p.program !== app.state.program || p.startYear !== app.state.startYear) { try { sem = await fetchSemesters(p); } catch { app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי'; } }
-      if (sem || (p.program === app.state.program && p.startYear === app.state.startYear)) { if (sem) setSemesters(sem); app.state = p; }
+      if (!await restoreBackup(h.payload)) app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי';
     } else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
   }
   ensurePassed();

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { app, normalize, switchTo, ensurePassed, reconcileSpecs, inCatalog, clearSaved, DEFAULT } from '../web/app.js';
+import { app, normalize, switchTo, restoreBackup, ensurePassed, reconcileSpecs, inCatalog, clearSaved, DEFAULT } from '../web/app.js';
 
 const CATALOG = { programs: [{ id: 30, name: 'מכונות', startYears: [2025, 2026, 2027] }, { id: 20, name: 'חשמל', startYears: [2026, 2027] }] };
 const area = (id) => ({ id, name: id });
@@ -118,4 +118,17 @@ test('ensurePassed: nothing for year 1, the year-1 list from year 2, and a saved
   app.state.passed = ['z'];
   ensurePassed();
   assert.deepEqual(app.state.passed, ['z']);
+});
+
+test('restoreBackup: another program loads its data before the state is replaced; a failed load changes nothing', async () => {
+  serve(); reset(mine());
+  assert.equal(await restoreBackup({ v: 1, program: 20, startYear: 2026, name: 'מגובה', passed: ['x1'] }), true);
+  assert.deepEqual([app.state.program, app.state.name, app.state.passed, app.data.program], [20, 'מגובה', ['x1'], 20]);
+  serve((m) => m[3] === '30'); reset(mine());
+  const before = JSON.stringify(app.state), data = app.data;
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2027, name: 'מגובה' }), false);
+  assert.equal(JSON.stringify(app.state), before);
+  assert.equal(app.data, data);
+  assert.equal(await restoreBackup({ v: 1, program: 99, startYear: 2027, name: 'זר' }), true, 'a foreign program falls back to the default one, whose data is already loaded');
+  assert.deepEqual([app.state.program, app.state.startYear, app.state.name], [DEFAULT.program, DEFAULT.startYear, 'זר']);
 });
