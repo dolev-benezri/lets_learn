@@ -311,3 +311,49 @@ test('cachedRequester: a cached answer costs no request; the session requests ar
   await assert.rejects(offline('prgname=S_Z'), /offline and not in the cache/);
   assert.equal(calls.length, 4);
 });
+
+// ---- nightly cache policy and waiting out the hourly limit ----
+import { utimesSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { nightlyTtl, patient } from '../scripts/scrape.mjs';
+
+test('nightlyTtl: groups and exams every run, an unoffered course (no groups) and everything else weekly', () => {
+  const WEEK = 7 * 86400e3;
+  assert.equal(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N90903', fx('groups-90903.html')), 0);
+  assert.equal(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>'), WEEK);
+  assert.equal(nightlyTtl('PRGNAME=S_EXAMS&ARGUMENTS=R1C28', fx('exams-2026.html')), 0);
+  for (const k of ['prgname=S_SHOW_PROGS&arguments=-N2026,-N30001', 'prgname=S_CourseDetails&arguments=x', 'PRGNAME=S_PROG&HUG=30']) assert.equal(nightlyTtl(k, OK), WEEK);
+});
+
+test('cachedRequester with a ttl: a stale answer is fetched again, a fresh one is not', async () => {
+  const dir = join(dirs().status, '..', 'cache2'), calls = [];
+  const inner = async (q) => { calls.push(q); return `<p>${calls.length}</p>`; };
+  const r = cachedRequester(inner, dir, { ttl: (key) => (key.includes('fresh') ? 0 : 1000) });
+  await r('prgname=S_a&x=slow');
+  await r('prgname=S_a&x=slow');
+  assert.equal(calls.length, 1, 'within the ttl');
+  const file = `${dir}/${createHash('sha1').update('prgname=S_a&x=slow').digest('hex')}.html`;
+  utimesSync(file, new Date(Date.now() - 5000), new Date(Date.now() - 5000));
+  assert.equal(await r('prgname=S_a&x=slow'), '<p>2</p>');
+  await r('prgname=S_b&x=fresh');
+  await new Promise((res) => setTimeout(res, 5));
+  await r('prgname=S_b&x=fresh');
+  assert.equal(calls.length, 4, 'ttl 0 asks every time');
+});
+
+test('patient: waits for the named hour, starts a new session, retries; gives up on a long wait or too many waits', async () => {
+  const log = [], sleeps = [];
+  let fail = 1;
+  const base = async (q, f) => { log.push(q ?? f.PRGNAME); if (!q?.startsWith('prgname=S_') ) return ''; if (fail-- > 0) throw new ThrottledError('21:00'); return 'ok'; };
+  const now = () => new Date('2026-10-02T17:19:31Z');
+  const request = patient(base, { year: '2027', sleep: async (ms) => { sleeps.push(ms); }, now, log: () => {} });
+  assert.equal(await request('prgname=S_X'), 'ok');
+  assert.deepEqual(sleeps, [(40 * 60 + 29 + 60) * 1000]);
+  assert.deepEqual(log, ['prgname=S_X', 'prgname=Enter_Search', 'Enter_Search', 'prgname=S_X']);
+  fail = 9;
+  await assert.rejects(patient(base, { year: '2027', sleep: async () => {}, now, log: () => {}, maxWaits: 2 })('prgname=S_X'), ThrottledError);
+  fail = 1;
+  await assert.rejects(patient(base, { year: '2027', sleep: async () => {}, now, log: () => {}, maxWaitMs: 60000 })('prgname=S_X'), ThrottledError);
+  fail = 1;
+  await assert.rejects(patient(async () => { throw new Error('other'); }, { year: '2027' })('prgname=S_X'), /other/);
+});

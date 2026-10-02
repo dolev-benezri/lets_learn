@@ -38,3 +38,11 @@ test('changeSummary counts group delta and groups that became full', () => {
   assert.equal(changeSummary(null, next), '+4 groups, 3 became full'); // brand-new file: everything is new
   assert.equal(changeSummary(prev, { courses: { c: { groups: [{ id: 'a', full: false }, { id: 'b', full: false }, { id: 'c', full: true }], name: 'x' } } }), 'updated');
 });
+
+import { msUntil } from '../scripts/polite.mjs';
+test('msUntil: the next HH:MM on Jerusalem time (UTC+3 in October 2026) plus a minute, across midnight too', () => {
+  const at = (iso, hhmm) => msUntil(hhmm, new Date(iso)) / 1000;
+  assert.equal(at('2026-10-02T17:19:31Z', '21:00'), 40 * 60 + 29 + 60, '20:19:31 Jerusalem -> 21:00');
+  assert.equal(at('2026-10-02T20:59:00Z', '00:00'), 60 + 60, '23:59 -> 00:00');
+  assert.equal(at('2026-10-02T18:00:00Z', '21:00'), 86400 + 60, 'already 21:00: the next day');
+});
