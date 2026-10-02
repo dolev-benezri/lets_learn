@@ -1,4 +1,4 @@
-import { classify, withAfterA, cleanProfile, studyYear, modeFor, specLists, summerOnly } from './rules.js';
+import { classify, withAfterA, cleanProfile, SPECS, studyYear, modeFor, specLists, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
 
@@ -10,6 +10,7 @@ export const DEFAULT = {
   v: 1, year: 2027, semester: 'א', program: 30, startYear: 2026, name: '',
   passed: null, failed: {}, grades: {}, choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null, specs: [], summer: false },
   scope: 'year', load: 'even', semesterOf: {},
+  specDraft: null, yearIds: [], // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
   constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, examsSameDay: 'forbid', includeFull: false, blocks: [] },
 };
@@ -49,6 +50,9 @@ export function normalize(raw) {
   }
   out.pins = strs(raw.pins, 40, 20) ?? out.pins;
   out.profile = cleanProfile(raw.profile);
+  const draft = strs(raw.specDraft, 2, 20);
+  if (draft && draft.length === 1 && SPECS.some((s) => s.id === draft[0])) out.specDraft = draft; // one area of two; a complete choice lives in profile.specs
+  out.yearIds = strs(raw.yearIds, 60, 20) ?? [];
   if (['year', 'א', 'ב', 'קיץ'].includes(raw.scope)) out.scope = raw.scope;
   if (['א', 'even', 'ב'].includes(raw.load)) out.load = raw.load;
   if (isObj(raw.semesterOf)) out.semesterOf = Object.fromEntries(Object.entries(raw.semesterOf).filter(([k, v]) => k.length <= 20 && (v === 'א' || v === 'ב')).slice(0, 200));
@@ -75,7 +79,7 @@ export function upsertFriend(friends, p, editing = null) {
   return { friends: friends.map((f, i) => (i === ti ? next : f)).filter((f, i) => i === ti || f.name !== p.name), replaced: true };
 }
 
-export const app = { loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), yearIds: [], summerIds: [], friendLanding: null, hashError: null };
+export const app = { loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), summerIds: [], friendLanding: null, hashError: null };
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
 export function yearView(dataA, dataB) {
@@ -128,7 +132,7 @@ export function keepFocus(fn) {
 export function refresh() {
   pickData();
   // Summer assumes the shown year plan is passed (as ב assumes א); elsewhere a course taught only in summer says so.
-  const st = summerScope() ? { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.yearIds])] } : app.state;
+  const st = summerScope() ? { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.state.yearIds])] } : app.state;
   app.cls = withAfterA(app.data, st, classify(app.data, st));
   if (!summerScope()) summerOnly(app.cls.statuses, app.sem?.['קיץ'], summerOn());
   save();
