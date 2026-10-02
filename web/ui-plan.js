@@ -9,7 +9,7 @@ import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIn
 import { askConfirm, askRows, showText, trapTab } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet } from './grade-import.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, gradeInput, creditsGoal, notFitReason } from './ui-text.js';
+import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, partialNote, gradeInput, creditsGoal, notFitReason } from './ui-text.js';
 
 const $ = (id) => document.getElementById(id);
 const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -84,8 +84,10 @@ function run() {
   const { state, data, cls } = app;
   const courses = Object.keys(data.courses).map((id) => ({ id, mode: candidateMode(id) })).filter((x) => x.mode === 'must' || x.mode === 'optional');
   const my = gen; // a newer scheduled search keeps the indicator on
+  const byMore = moreMul > 1, ms = Math.min((yearSearch() ? 3000 : 1500) * moreMul, MAX_MS);
   const done = () => {
     running = my !== gen;
+    if (byMore && !running && last) toast(last.partial ? `החיפוש המורחב הסתיים (${+(ms / 1000).toFixed(1)} שניות)` : 'החיפוש הושלם: נבדקו כל האפשרויות');
     const hadMore = document.activeElement?.dataset?.k === 'searchMore';
     keepFocus(renderView);
     if (hadMore && !document.querySelector('[data-k="searchMore"]')) focusWeek(); // the search finished: the button is gone
@@ -96,11 +98,11 @@ function run() {
   try {
     worker = new Worker(new URL('./solver-worker.js', import.meta.url), { type: 'module' });
   } catch (err) { runError = err.message || 'לא ניתן להפעיל את החיפוש'; done(); return; }
-  worker.onmessage = (e) => { last = e.data; cur = 0; done(); };
+  worker.onmessage = (e) => { last = { ...e.data, ms }; cur = 0; done(); };
   worker.onerror = (e) => { runError = e.message || 'שגיאה לא ידועה'; done(); };
   const pins = state.pins.filter((p) => courses.some((c) => data.courses[c.id].groups.some((g) => g.id === p))); // stale pins stay in state
-  if (yearSearch()) worker.postMessage({ year: { dataA: app.sem['א'], dataB: app.sem['ב'], state, yearList: new Set(yearCourses()), pins: state.pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: Math.min(3000 * moreMul, MAX_MS) } });
-  else worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: Math.min(1500 * moreMul, MAX_MS) });
+  if (yearSearch()) worker.postMessage({ year: { dataA: app.sem['א'], dataB: app.sem['ב'], state, yearList: new Set(yearCourses()), pins: state.pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: ms } });
+  else worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: ms });
 }
 function setBusy() {
   $('board').classList.toggle('is-busy', running);
@@ -307,7 +309,6 @@ function colorOrder() {
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
 }
 
-const PARTIAL_TEXT = 'החיפוש לא הספיק לבדוק את כל האפשרויות. התוצאות טובות, אבל ייתכן שיש טובות יותר.';
 function renderView() {
   const { state } = app;
   const results = last?.results ?? [];
@@ -336,8 +337,9 @@ function renderView() {
   $('prev').disabled = $('next').disabled = nAlt < 2;
   if (stranded) $('switcher').focus();
 
-  const more = '<button type="button" class="btn" data-act="more" data-k="searchMore">חפש עוד</button>';
-  let msg = last?.partial && !noRes ? `<p class="notice partial" aria-live="polite">${icon('info')}<span>${PARTIAL_TEXT}</span>${more}</p>` : '', live = '';
+  const pn = last?.partial ? partialNote(last.ms, MAX_MS) : null;
+  const more = pn?.more ? '<button type="button" class="btn" data-act="more" data-k="searchMore">חפש עוד</button>' : '';
+  let msg = pn && !noRes ? `<p class="notice partial" aria-live="polite">${icon('info')}<span>${pn.text}</span>${more}</p>` : '', live = '';
   if (runError) msg = `<div class="msg bad" role="alert">${icon('alert')}<div><b>שגיאה בחיפוש</b><p>${esc(runError)}</p></div></div>`;
   else if (!Object.keys(app.data.courses).some(planned)) {
     msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>סמנו "חובה" או "אולי" ליד קורסים ב"הקורסים שלי", והמערכת תיבנה לבד.</p></div></div>`;
@@ -345,7 +347,7 @@ function renderView() {
   } else if (noRes) { // partial and empty: only this message, with the "search more" button (no second notice)
     const why = last.diagnosis?.length ? last.diagnosis : ['ההעדפות, האילוצים והנעיצות הנוכחיים לא משאירים אף קורס אפשרי.'];
     msg += `<div class="msg bad">${icon('alert')}<div><b>${last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${why.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
-      <p class="msg-actions">${last.partial ? more : ''}<button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
+      <p class="msg-actions">${more}<button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
       ${state.pins.length ? `<button type="button" class="btn" data-act="clearPins">${icon('pin')} נקה נעיצות</button>` : ''}</p></div></div>`;
     live = last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת';
   }
@@ -370,7 +372,7 @@ function renderView() {
 
     $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar', `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))] : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
       + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '');
-    live = [`חלופה ${cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, last.partial && PARTIAL_TEXT].filter(Boolean).join(', ');
+    live = [`חלופה ${cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed, pins: state.pins, friends, day: mobileDay, blocks: state.constraints.blocks });
@@ -568,7 +570,13 @@ const ACT = {
   next: () => go(1),
   day(el) { mobileDay = Number(el.dataset.day); dayScroll = true; keepFocus(renderView); },
   block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors }),
-  more() { if (running) return; moreMul *= 2; scheduleRun(true); },
+  more(el) { // the button says it is working until the result replaces it
+    if (running) return;
+    moreMul *= 2;
+    el.textContent = 'מחפש…';
+    el.setAttribute('aria-disabled', 'true');
+    scheduleRun(true);
+  },
   popClose: () => $('pop').hidePopover(),
   pin(el) {
     const gid = el.dataset.gid, was = app.state.pins.includes(gid);

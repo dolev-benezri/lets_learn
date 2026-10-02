@@ -67,3 +67,11 @@ export function stalePins(pins, datasets) {
     return { gid, text: `הקבוצה ${groupNumber(gid)}${course ? ` בקורס ${course}` : ''} כבר לא קיימת בנתונים` };
   });
 }
+
+// The "search ran out of time" notice. ms = the time limit of the search that just ran; at the cap, "חפש עוד" would only repeat it.
+export function partialNote(ms, max) {
+  const sec = +(ms / 1000).toFixed(1);
+  return ms >= max
+    ? { text: `גם אחרי ${sec} שניות החיפוש לא הספיק לבדוק את כל האפשרויות, כי סומנו הרבה קורסים. התוצאות טובות. לתוצאה מדויקת יותר, סמנו פחות קורסים "אולי".`, more: false }
+    : { text: `החיפוש לא הספיק לבדוק את כל האפשרויות (נבדקו ${sec} שניות). התוצאות טובות, אבל ייתכן שיש טובות יותר.`, more: true };
+}
