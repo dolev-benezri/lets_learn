@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -90,4 +90,13 @@ test('notFitReason: lines naming the course, else the general ones, else nothing
   assert.equal(notFitReason('פיזיקה', ['פיזיקה: אין קבוצה', 'לינארית: אין קבוצה'], names), 'פיזיקה: אין קבוצה');
   assert.equal(notFitReason('לינארית', ['אין מערכת שעומדת בכל האילוצים'], names), 'אין מערכת שעומדת בכל האילוצים');
   assert.equal(notFitReason('לינארית', ['פיזיקה: אין קבוצה'], names), '');
+});
+
+test('partialNote: offers "חפש עוד" below the cap, explains instead at the cap', () => {
+  const a = partialNote(1500, 12000);
+  assert.equal(a.more, true);
+  assert.match(a.text, /1\.5 שניות/);
+  const b = partialNote(12000, 12000);
+  assert.equal(b.more, false);
+  assert.match(b.text, /סמנו פחות קורסים/);
 });
