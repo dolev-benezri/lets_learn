@@ -64,12 +64,22 @@ test('buildDataset attaches exams by lecturer, falls back to course level, ignor
   assert.deepEqual(d.courses['20816'].groups[0].exams, [{ kind: 'בחינה', moed: 1, date: '2027-02-10', time: '09:00' }]);
 });
 
-test('validate flags a too-small dataset and missing 90903', () => {
+const ANCHOR = { course: '90903', name: 'פיזיקה-מכניקה', minPrimaryGroups: 3 };
+test('validate flags a too-small dataset and a missing anchor course', () => {
   const d = buildDataset(base());
-  const { errors } = validate(d);
+  const { errors } = validate(d, null, ANCHOR);
   assert.ok(errors.some((e) => e.includes('40')));
   delete d.courses['90903'];
-  assert.ok(validate(d).errors.some((e) => e.includes('90903')));
+  assert.ok(validate(d, null, ANCHOR).errors.some((e) => e.includes('90903')));
+});
+
+test('validate: the anchor course comes from the program config, none means no anchor check', () => {
+  const d = healthy();
+  assert.deepEqual(validate(d, null, ANCHOR).errors, []);
+  assert.ok(validate(d, null, { ...ANCHOR, minPrimaryGroups: 4 }).errors.some((e) => e.includes('fewer than 4')));
+  assert.ok(validate(d, null, { course: '20000', name: 'other', minPrimaryGroups: 1 }).errors.length === 0, 'another program picks its own course');
+  delete d.courses['90903'];
+  assert.deepEqual(validate(d).errors, [], 'no anchor given: nothing to demand');
 });
 
 test('validate warns for courses with 0 credits', () => {

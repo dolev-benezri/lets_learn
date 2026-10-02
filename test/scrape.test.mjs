@@ -171,6 +171,22 @@ test('run: a failing check on any semester writes nothing', async () => {
   assert.deepEqual(readdirSync(dataDir), []);
 });
 
+test('run: lists, department, anchor and specializations come from the program config', async () => {
+  const root = join(dirs().status, '..'), seen = { lists: [], exams: null }, real = site();
+  const request = async (query, form) => {
+    if (query?.startsWith('prgname=S_SHOW_PROGS')) seen.lists.push(query.split(',-N')[1]);
+    if (form?.PRGNAME === 'S_EXAMS') seen.exams = form.R1C28;
+    return real(query, form);
+  };
+  const programs = { 77: { name: 'x', dept: 8, deptName: 'ח', lists: [30001], specializations: [], degree: { total: 100, specCredits: 0 }, anchor: { course: '90903', name: 'p', minPrimaryGroups: 1 } } };
+  let anchor;
+  await run({ opt: { ...opt, program: '77' }, request, programs, dataDir: root, log: () => {}, check: (d, prev, a) => { anchor = a; return { errors: [], warnings: [] }; } });
+  assert.deepEqual(seen, { lists: ['30001'], exams: '8' });
+  assert.deepEqual(anchor, programs[77].anchor);
+  assert.ok(readdirSync(join(root, '2027-1')).includes('77-2026.json'));
+  await assert.rejects(run({ opt: { ...opt, program: '78' }, request, programs, dataDir: root, log: () => {} }), /no list codes configured for program 78/);
+});
+
 test('every committed data file carries the specializations, their lists and the degree', () => {
   const root = 'web/data/afeka', files = readdirSync(root).filter((d) => d !== 'status.json').map((d) => `${root}/${d}/30-2026.json`);
   assert.ok(files.length >= 2);

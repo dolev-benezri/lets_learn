@@ -64,16 +64,17 @@ export function buildDataset({ year, startYear, program, semester, department, l
 const prereqCount = (d, ids = Object.keys(d.courses)) => ids.reduce((a, id) => a + d.courses[id].prereqs.length, 0);
 
 // `prev` (the existing file for this semester, if any) enables the checks that compare against it.
-export function validate(d, prev = null) {
+// `anchor` ({ course, name, minPrimaryGroups }): a course every full semester must have, a cheap sign the scrape is whole.
+export function validate(d, prev = null, anchor = null) {
   const errors = [], warnings = [];
   const n = Object.keys(d.courses).length;
-  if (d.semester === 'קיץ') { // thin: no size or 90903 requirement, but something must be scheduled
+  if (d.semester === 'קיץ') { // thin: no size or anchor requirement, but something must be scheduled
     if (!Object.values(d.courses).some((c) => c.groups.length)) errors.push('summer has no course with a group');
   } else {
     if (n < 40) errors.push(`only ${n} courses, expected at least 40`);
-    const phys = d.courses['90903'];
-    if (!phys) errors.push('course 90903 (פיזיקה-מכניקה) missing');
-    else if (phys.groups.filter((g) => g.primary).length < 3) errors.push('course 90903 has fewer than 3 primary groups');
+    const a = anchor && d.courses[anchor.course];
+    if (anchor && !a) errors.push(`course ${anchor.course} (${anchor.name}) missing`);
+    else if (a && a.groups.filter((g) => g.primary).length < anchor.minPrimaryGroups) errors.push(`course ${anchor.course} has fewer than ${anchor.minPrimaryGroups} primary groups`);
   }
   const listed = new Set(d.lists.map((l) => l.code));
   for (const s of d.specializations ?? []) for (const code of [s.mandatory, s.elective, s.aloneExtra]) if (code && !listed.has(code)) errors.push(`specialization ${s.id}: list ${code} not scraped`);
