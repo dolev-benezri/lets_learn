@@ -133,3 +133,16 @@ test('restoreBackup: another program loads its data before the state is replaced
   assert.equal(await restoreBackup({ v: 1, program: 99, startYear: 2027, name: 'זר' }), true, 'a foreign program falls back to the default one, whose data is already loaded');
   assert.deepEqual([app.state.program, app.state.startYear, app.state.name], [DEFAULT.program, DEFAULT.startYear, 'זר']);
 });
+
+test('switchTo: default hours follow the track (evening: not before 16:00) until the student changes them', async () => {
+  const catalog = { programs: [...CATALOG.programs, { id: 22, name: 'חשמל (ערב)', startYears: [2026, 2027] }] };
+  serve(); reset(mine()); app.catalog = catalog;
+  Object.assign(app.state.constraints, { notBefore: '', notAfter: '20:00' });
+  await switchTo(22, 2026);
+  assert.deepEqual([app.state.constraints.notBefore, app.state.constraints.notAfter], ['16:00', ''], 'day defaults become the evening defaults');
+  await switchTo(30, 2026);
+  assert.deepEqual([app.state.constraints.notBefore, app.state.constraints.notAfter], ['', '20:00'], 'and back');
+  app.state.constraints.notAfter = '18:00';
+  await switchTo(22, 2026);
+  assert.deepEqual([app.state.constraints.notBefore, app.state.constraints.notAfter], ['', '18:00'], 'hours the student set are kept');
+});

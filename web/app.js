@@ -195,6 +195,13 @@ const withPersonal = (to, from) => {
   to.profile.summer = from.profile.summer;
   return to;
 };
+// Evening tracks: a day student is not asked to come before 16:00, so the default hours differ. They follow the track only while the student has not changed them.
+export const eveningTrack = (catalog, program) => /\(ערב\)$/.test(catalog?.programs?.find((p) => p.id === program)?.name ?? '');
+const hoursOf = (catalog, program) => (eveningTrack(catalog, program) ? { notBefore: '16:00', notAfter: '' } : { notBefore: DEFAULT.constraints.notBefore, notAfter: DEFAULT.constraints.notAfter });
+function followTrackHours(constraints, catalog, from, to) {
+  const was = hoursOf(catalog, from), now = hoursOf(catalog, to);
+  if (constraints.notBefore === was.notBefore && constraints.notAfter === was.notAfter) Object.assign(constraints, now);
+}
 let switchGen = 0;
 // Switch program/cohort: every needed file first, the state only after they all arrived (a failed switch changes nothing). A newer choice cancels an older one.
 export async function switchTo(program, startYear) {
@@ -209,6 +216,7 @@ export async function switchTo(program, startYear) {
   const back = saved.program === program && saved.startYear === startYear && !!unstash(program, startYear);
   const next = back ? saved : { ...structuredClone(DEFAULT), program, startYear, profile: { ...cleanProfile({}), year: prev.profile.year === null ? null : clamp(prev.year - startYear + 1, 1, 4) } };
   app.state = withPersonal(next, prev);
+  followTrackHours(app.state.constraints, app.catalog, prev.program, program);
   setSemesters(sem);
   ensurePassed();
   return true;
