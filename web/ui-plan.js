@@ -1,7 +1,7 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
 import { app, esc, cleanBlocks, upsertFriend, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
-import { progress, setStatus, studyYear, cleanProfile, gradeAverage, englishOptions } from './rules.js';
+import { progress, setStatus, studyYear, cleanProfile, gradeAverage, englishOptions, SPECS } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
@@ -153,6 +153,22 @@ const avgLine = () => { const { avg, credits } = gradeAverage(app.data, app.stat
 
 // The status page (#me): profile and progress beside the course lists on wide screens, one column on phones.
 // Rendered only while shown; every change saves at once, so leaving the page loses nothing.
+// The specialization form: only a valid choice is saved. A half-made one (two areas, one ticked) lives here, and only while it still matches the saved state (a reset or an import drops it).
+let specPick = null;
+const specSave = (mode, picks) => (mode === 'vehicle' ? ['vehicle'] : mode === 'two' ? cleanProfile({ specs: picks }).specs : []);
+function specView(saved) {
+  if (specPick && specSave(specPick.mode, specPick.picks).join() === saved.join()) return specPick;
+  return saved[0] === 'vehicle' && saved.length === 1 ? { mode: 'vehicle', picks: [] } : saved.length ? { mode: 'two', picks: saved } : { mode: 'none', picks: [] };
+}
+const specForm = (saved) => {
+  const { mode, picks } = specView(saved);
+  const full = picks.length >= 2;
+  return `${seg('p-spec', 'התמחות', [['none', 'עוד לא בחרתי'], ['vehicle', 'רכב בלבד'], ['two', 'שני תחומים']], mode, 'data-chg="specMode"', true)}
+    ${mode === 'two' ? `<fieldset class="specs"><legend class="sr">שני תחומי התמחות</legend>${SPECS.map((p) => `<label class="check"><input type="checkbox" data-chg="specPick" data-id="${p.id}" data-k="spec-${p.id}"${picks.includes(p.id) ? ' checked' : ''}${full && !picks.includes(p.id) ? ' disabled' : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
+      ${saved.length ? '' : '<p class="hint" role="status">בחרו שני תחומים</p>'}` : ''}
+    <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>`;
+};
+
 function renderMe() {
   const el = $('me');
   if (el.hidden) { el.innerHTML = ''; return; }
@@ -180,7 +196,10 @@ function renderMe() {
       <div class="me-side">
         <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
           ${seg('p-year', 'שנת לימודים', YEARS, state.profile.year, 'data-chg="pyear"', true)}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
-          <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label></section>
+          <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet" value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
+          <div class="spec-sec">${specForm(state.profile.specs)}</div>
+          <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
+          <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>
         <section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
           <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
           <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
@@ -658,6 +677,17 @@ const CHG = {
     if (was) queueMicrotask(focusWeek); // after the refresh: the question is gone, keep focus out of <body>
   },
   amirnet: (el) => { app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet; },
+  specMode: (el) => {
+    const mode = el.value, picks = mode === 'two' ? specView(app.state.profile.specs).picks : [];
+    specPick = { mode, picks };
+    app.state.profile.specs = specSave(mode, picks);
+  },
+  specPick: (el) => {
+    const { picks } = specView(app.state.profile.specs), next = el.checked ? [...picks, el.dataset.id] : picks.filter((x) => x !== el.dataset.id);
+    specPick = { mode: 'two', picks: next.slice(0, 2) };
+    app.state.profile.specs = specSave('two', specPick.picks);
+  },
+  summer: (el) => { app.state.profile.summer = el.checked; },
   grade: (el) => {
     const g = gradeInput(el.validity?.badInput ? 'x' : el.value, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
     if (g === undefined) delete app.state.grades[el.dataset.cid]; else app.state.grades[el.dataset.cid] = g;

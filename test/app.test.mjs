@@ -64,9 +64,18 @@ test('DEFAULT weights sit on the 0/1/3/5 scale the preferences panel shows', asy
 });
 
 test('normalize: out-of-range profile dropped, valid kept', () => {
-  assert.deepEqual(normalize({ v: 1, profile: { year: 9, amirnet: 49 } }).profile, { year: null, amirnet: null });
-  assert.deepEqual(normalize({ v: 1, profile: { year: 2, amirnet: 110 } }).profile, { year: 2, amirnet: 110 });
-  assert.deepEqual(normalize({ v: 1, profile: 'x' }).profile, { year: null, amirnet: null });
+  const none = { specs: [], summer: false };
+  assert.deepEqual(normalize({ v: 1, profile: { year: 9, amirnet: 49 } }).profile, { year: null, amirnet: null, ...none });
+  assert.deepEqual(normalize({ v: 1, profile: { year: 2, amirnet: 110 } }).profile, { year: 2, amirnet: 110, ...none });
+  assert.deepEqual(normalize({ v: 1, profile: 'x' }).profile, { year: null, amirnet: null, ...none });
+});
+
+test('normalize: old saved state without specs/summer gets the defaults; valid ones are kept, bad ones dropped', () => {
+  assert.deepEqual(normalize({ v: 1, profile: { year: 3, amirnet: 100 } }).profile, { year: 3, amirnet: 100, specs: [], summer: false });
+  assert.deepEqual(normalize({ v: 1 }).profile, { year: null, amirnet: null, specs: [], summer: false });
+  assert.deepEqual(normalize(null).profile, { year: null, amirnet: null, specs: [], summer: false });
+  assert.deepEqual(normalize({ v: 1, profile: { specs: ['solid', 'flow'], summer: true } }).profile, { year: null, amirnet: null, specs: ['solid', 'flow'], summer: true });
+  assert.deepEqual(normalize({ v: 1, profile: { specs: ['solid', 'flow', 'mech'], summer: 'true' } }).profile, { year: null, amirnet: null, specs: [], summer: false });
 });
 
 import { yearView } from '../web/app.js';

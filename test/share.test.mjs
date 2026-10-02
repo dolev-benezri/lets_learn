@@ -104,12 +104,23 @@ test('backup keeps a validated profile; friend link never carries it', async () 
   const at = { year: 2027, semester: 'א' };
   const s = { ...state, profile: { year: 3, amirnet: 110 } };
   const b = await backupLink('https://x.test/', s);
-  assert.deepEqual((await readHash(b.slice(b.indexOf('#')), at)).payload.profile, { year: 3, amirnet: 110 });
+  assert.deepEqual((await readHash(b.slice(b.indexOf('#')), at)).payload.profile, { year: 3, amirnet: 110, specs: [], summer: false });
   const bad = await backupLink('https://x.test/', { ...state, profile: { year: 7, amirnet: 10 } });
-  assert.deepEqual((await readHash(bad.slice(bad.indexOf('#')), at)).payload.profile, { year: null, amirnet: null });
+  assert.deepEqual((await readHash(bad.slice(bad.indexOf('#')), at)).payload.profile, { year: null, amirnet: null, specs: [], summer: false });
   assert.ok(!('profile' in friendPayload(s, ['G1'])));
   const f = await friendLink('https://x.test/', s, ['G1']);
   assert.ok(!('profile' in (await readHash(f.slice(f.indexOf('#')), at)).payload));
+});
+
+test('backup round-trips specs and summer; an old link without them still loads with the defaults', async () => {
+  const at = { year: 2027, semester: 'א' };
+  const prof = { year: 3, amirnet: 110, specs: ['solid', 'vehicle'], summer: true };
+  const b = await backupLink('https://x.test/', { ...state, profile: prof });
+  assert.deepEqual((await readHash(b.slice(b.indexOf('#')), at)).payload.profile, prof);
+  const bad = await backupLink('https://x.test/', { ...state, profile: { ...prof, specs: ['solid', 'solid'], summer: 1 } });
+  assert.deepEqual((await readHash(bad.slice(bad.indexOf('#')), at)).payload.profile, { ...prof, specs: [], summer: false });
+  const old = await backupLink('https://x.test/', { ...state, profile: { year: 3, amirnet: 110 } });
+  assert.deepEqual((await readHash(old.slice(old.indexOf('#')), at)).payload.profile, { year: 3, amirnet: 110, specs: [], summer: false });
 });
 
 test('backup keeps scope/load/semesterOf through normalize; friend link never carries them', async () => {

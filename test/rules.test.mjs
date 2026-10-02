@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor, gradeAverage, englishOptions } from '../web/rules.js';
+import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor, gradeAverage, englishOptions, SPECS } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
@@ -135,8 +135,32 @@ test('profile year overrides the cohort-derived study year; cleanProfile drops b
   const d = english();
   assert.equal(studyYear(d, {}), 2);
   assert.equal(studyYear(d, { profile: { year: 3 } }), 3);
-  assert.deepEqual(cleanProfile({ year: 5, amirnet: 49 }), { year: null, amirnet: null });
-  assert.deepEqual(cleanProfile({ year: 4, amirnet: 150.5 }), { year: 4, amirnet: null });
+  assert.deepEqual(cleanProfile({ year: 5, amirnet: 49 }), { year: null, amirnet: null, specs: [], summer: false });
+  assert.deepEqual(cleanProfile({ year: 4, amirnet: 150.5 }), { year: 4, amirnet: null, specs: [], summer: false });
+});
+
+test('cleanProfile specs: two different known areas or vehicle alone, anything else is empty', () => {
+  const sp = (specs) => cleanProfile({ specs }).specs;
+  assert.deepEqual(SPECS.map((s) => s.id), ['solid', 'flow', 'mech', 'vehicle', 'materials', 'aero']);
+  assert.deepEqual(sp(['solid', 'flow']), ['solid', 'flow']);
+  assert.deepEqual(sp(['aero', 'solid']), ['solid', 'aero'], 'stored in SPECS order');
+  assert.deepEqual(sp(['vehicle']), ['vehicle']);
+  assert.deepEqual(sp(['vehicle', 'materials']), ['vehicle', 'materials'], 'vehicle with another area is an ordinary pair');
+  assert.deepEqual(sp(['solid', 'solid']), []);
+  assert.deepEqual(sp(['vehicle', 'vehicle']), []);
+  assert.deepEqual(sp(['solid', 'flow', 'mech']), []);
+  assert.deepEqual(sp(['solid']), []);
+  assert.deepEqual(sp([]), []);
+  assert.deepEqual(sp(['solid', 'nope']), []);
+  assert.deepEqual(sp(['nope']), []);
+  for (const bad of [undefined, null, 'solid', 'solid,flow', { 0: 'solid', 1: 'flow', length: 2 }, 7, [{}, 'flow']]) assert.deepEqual(sp(bad), []);
+  assert.deepEqual(cleanProfile().specs, [], 'no argument');
+  assert.deepEqual(cleanProfile({ amirnet: 100 }), { year: null, amirnet: 100, specs: [], summer: false }, 'partial callers keep working');
+});
+
+test('cleanProfile summer: only exactly true', () => {
+  assert.equal(cleanProfile({ summer: true }).summer, true);
+  for (const v of [1, 'true', 'yes', [], {}, null, undefined, false, 0]) assert.equal(cleanProfile({ summer: v }).summer, false);
 });
 
 test('modeFor: choice wins, retake is must, year list optional, others no, non-candidates null', () => {
