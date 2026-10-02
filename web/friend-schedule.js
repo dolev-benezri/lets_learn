@@ -115,7 +115,7 @@ export function rowsFromWords(words, courses) {
       if (!cid) { const near = inCode.flatMap((w) => nearCodes(clean(w.t), known)); if (near.length) cids = near; }
     }
     return { cid, cids, code, kinds: kindsOf(text), meets: ranges(text) };
-  });
+  }).filter((r) => r.cid || r.cids || r.meets.length); // a stray digit that anchored a row with nothing in it
 }
 
 // "(סופי-הרצאה+תרגול)" -> the kinds it names, tolerant to one OCR slip per word.

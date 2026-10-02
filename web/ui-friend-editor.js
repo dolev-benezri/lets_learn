@@ -312,7 +312,7 @@ async function importFile(file) {
       text = await pdfText(file);
       const rows = rowsFromTable(text, courses);
       if (rows.some((r) => r.cid)) result = matchRows(rows, courses);
-      else scanned = !groupsFromText(text, allData()).found.length;
+      else { const ids = groupsFromText(text, allData()); scanned = !(ids.found.length || ids.unknown.length); }
     } else if (file.type.startsWith('image/')) ({ text, result } = await scanCanvases([await imageCanvas(file)], courses, progress(me)));
   } catch { /* any failure reads as "no text" */ }
   if (me !== ed) return; // closed (or reopened) while working
