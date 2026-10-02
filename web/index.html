@@ -569,6 +569,15 @@ body:has(#friendEd[open]) { overflow:hidden; }
   #feRoot[data-tab="pick"] .fe-grid, #feRoot[data-tab="grid"] .fe-pick { display:none; }
   #fePickSem:not(:empty) { display:block; }
 }
+/* grade-sheet import preview (askRows in ui-dialog.js) */
+.dlg-rows { width:min(560px, calc(100vw - 32px)); }
+.dlg-rows .hint { margin:0 0 12px; font-size:14px; }
+.dlg-scroll { max-height:50vh; margin-bottom:16px; overflow:auto; border:1px solid var(--border); border-radius:10px; }
+.dlg-scroll table { width:100%; border-collapse:collapse; font-size:14px; }
+.dlg-scroll th, .dlg-scroll td { padding:6px 10px; text-align:start; border-bottom:1px solid var(--border); }
+.dlg-scroll th { position:sticky; top:0; background:var(--surface-2); font-weight:600; }
+.dlg-scroll input[type=checkbox] { width:20px; height:20px; }
+#gradeMsg:empty { display:none; }
 </style>
 </head>
 <body>

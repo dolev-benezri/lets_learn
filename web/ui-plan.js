@@ -6,7 +6,8 @@ import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
 import './ui-map.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, hourRange, summary, renderWeek, renderDaySelector, openPop, backups, paired, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, placedIn, yearTotals } from './ui-grid.js';
-import { askConfirm, showText, trapTab } from './ui-dialog.js';
+import { askConfirm, askRows, showText, trapTab } from './ui-dialog.js';
+import { readGradeSheet, parseGradeSheet } from './grade-import.js';
 import { openFriendEditor } from './ui-friend-editor.js';
 import { groupLabel, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, gradeInput, creditsGoal, notFitReason } from './ui-text.js';
 
@@ -27,6 +28,7 @@ const SHEET = '(max-width: 1079px)'; // below: the drawer is a modal sheet; from
 const PHONE = '(max-width: 599px)'; // the popover is a bottom sheet
 
 let worker = null, timer = null, last = null, cur = 0, running = false, runError = null, gen = 0, moreMul = 1, sem = 'א'; // sem: the shown semester of a year result
+let gradeMsg = ''; // result of the last grade-sheet import (kept across re-renders of #me)
 let panel = null, opener = null, mobileDay = 1, friendMsg = '', friendUrl = '', liveText = '';
 const openDetails = new Set(['plan']);
 const colors = new Map(); // sticky: a course keeps its colour unless it clashes inside the shown alternative
@@ -181,7 +183,10 @@ function renderMe() {
           <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span class="hint">יעד 70% (תקנון 11.4.4)</span></div>
           <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
           <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
-          <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button></section>
+          <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button>
+          <button type="button" class="btn" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
+          <input type="file" id="gradeFile" hidden accept="application/pdf" data-chg="gradeFile">
+          <p class="hint" id="gradeMsg" role="status">${esc(gradeMsg)}</p></section>
       </div>
       <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses">קורסים לפי שנה</h2>
         ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
@@ -191,6 +196,35 @@ function renderMe() {
       </section>
     </div>
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#" data-act="statusDone" data-k="statusDone">${icon('check')} סיימתי, לבניית המערכת</a></div>`;
+}
+
+// ---------- grade-sheet import (PDF read on this device only, never stored) ----------
+const GRADE_NONE = 'לא זוהו קורסים. האם זה גליון הציונים מהפורטל?';
+const setGradeMsg = (m) => { gradeMsg = m; const el = $('gradeMsg'); if (el) el.textContent = m; };
+async function importGrades(file) {
+  const { data, state } = app;
+  setGradeMsg('קוראים את הגליון…');
+  let found;
+  try { found = parseGradeSheet(await readGradeSheet(file), data); } catch (e) { return setGradeMsg(e.user ? e.message : 'לא הצלחנו לקרוא את הקובץ.'); }
+  const rows = found.filter((r) => r.result !== 'pending');
+  if (!rows.length) return setGradeMsg(GRADE_NONE);
+  const now = (id) => (state.passed.includes(id) ? 'passed' : state.failed[id] ? 'failed' : 'none');
+  const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
+  const todo = rows.filter((r) => (r.result === 'failed' ? now(r.id) !== 'failed' : now(r.id) !== 'passed' || (r.grade !== null && r.result === 'passed' && state.grades[r.id] !== r.grade)));
+  if (!todo.length) return setGradeMsg(`זוהו ${rows.length} קורסים והכול כבר מעודכן.`);
+  const label = (r) => { const to = r.result === 'failed' ? 'failed' : 'passed', was = now(r.id); return `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[to]}${was === to ? '' : ` (היה: ${WORD[was]})`}`; };
+  const pick = await askRows('ייבוא מגליון ציונים', 'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.', ['קורס', 'ציון', 'שינוי'],
+    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]));
+  if (!pick) return setGradeMsg('');
+  for (const i of pick) {
+    const r = todo[i];
+    setStatus(state, r.id, r.result === 'failed' ? 'failed' : 'passed');
+    if (r.result === 'failed') delete state.grades[r.id]; // gradeAverage counts passed courses only
+    else if (r.result === 'passed') state.grades[r.id] = r.grade;
+  }
+  setGradeMsg('');
+  refresh();
+  toast(pick.length === 1 ? 'עודכן קורס אחד' : `עודכנו ${pick.length} קורסים`);
 }
 
 // ---------- sidebar ----------
@@ -523,6 +557,7 @@ async function share() {
 const focusWeek = () => $('week').focus({ preventScroll: false });
 
 const ACT = {
+  gradeImport() { $('gradeFile').click(); },
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
   statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = ''; },
   openStatus() { location.hash = '#me'; },
@@ -595,6 +630,7 @@ const blockEdit = (el, k, v) => {
   if (cleanBlocks([{ ...b, [k]: v }]).length) b[k] = v;
 };
 const CHG = {
+  gradeFile: (el) => { const f = el.files[0]; el.value = ''; if (f) importGrades(f); return 'save'; },
   mode: (el) => {
     const id = el.dataset.id;
     app.state.choices[id] = el.value;

@@ -6,11 +6,11 @@ import { DAYS, icon, typeLabel, groupIndex, hourRange, renderWeek, assignColors 
 import { askConfirm } from './ui-dialog.js';
 import { groupsFromText, placeGroup, findCourse, clashIds } from './friend-import.js';
 import { groupNumber } from './ui-text.js';
+import { loadPdfjs } from './grade-import.js';
 
 const MAX = 40;
 const LIMIT = `אפשר עד ${MAX} קבוצות לחבר`;
 const NOTEXT = 'לא נמצא טקסט בקובץ, נסו להעתיק ולהדביק';
-const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.3.289/';
 const TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js'; // ESM build: default export only
 const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳' };
 
@@ -250,9 +250,7 @@ function importText(text) {
     + (found.length || unknown.length ? '' : '<p>לא זוהה אף מספר קבוצה (9 ספרות).</p>'));
 }
 async function pdfText(file) {
-  const pdfjs = await import(`${PDFJS}pdf.min.mjs`);
-  pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS}pdf.worker.min.mjs`;
-  const task = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
+  const task = (await loadPdfjs()).getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
   try {
     const doc = await task.promise;
     const pages = [];
