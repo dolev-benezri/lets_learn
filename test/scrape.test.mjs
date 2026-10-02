@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { makeRequester, ThrottledError, semestersIn, writeResults, run } from '../scripts/scrape.mjs';
+import { makeRequester, ThrottledError, semestersIn, writeResults, run, unitsOf, cachedRequester, writeCatalog } from '../scripts/scrape.mjs';
 
 const throttled = readFileSync('scripts/fixtures/throttled.html', 'utf8');
 const rejected = readFileSync('scripts/fixtures/rejected.html', 'utf8');
@@ -215,9 +215,9 @@ test('run: a summer that fails its checks is skipped with a warning; א and ב a
   const check = (d) => ({ errors: d.semester === 'קיץ' ? ['no groups'] : [], warnings: [] });
   const summary = await run({ opt, request: withSummer(), dataDir: root, log: (m) => logs.push(m), check });
   assert.deepEqual(readdirSync(root).sort(), ['2027-1', '2027-2', 'status.json']);
-  assert.ok(logs.some((m) => m.startsWith('WARN summer not written') && m.includes('2027-3: no groups')));
+  assert.ok(logs.some((m) => m.startsWith('WARN summer not written') && m.includes('2027-3/30-2026: no groups')));
   assert.ok(!summary.includes('2027-3'));
-  assert.deepEqual(Object.keys(json(join(root, 'status.json')).semesters).sort(), ['2027-1', '2027-2']);
+  assert.deepEqual(Object.keys(json(join(root, 'status.json')).semesters).sort(), ['2027-1/30-2026', '2027-2/30-2026']);
 });
 
 test('run: a summer that passes is written to 2027-3 with the specializations', async () => {
@@ -234,6 +234,80 @@ test('run: a summer that passes is written to 2027-3 with the specializations', 
 test('run: a failure in א or ב still aborts everything, even when summer is fine', async () => {
   const root = join(dirs().status, '..');
   const check = (d) => ({ errors: d.semester === 'ב' ? ['boom'] : [], warnings: [] });
-  await assert.rejects(run({ opt, request: withSummer(), dataDir: root, log: () => {}, check }), /2027-2: boom/);
+  await assert.rejects(run({ opt, request: withSummer(), dataDir: root, log: () => {}, check }), /2027-2\/30-2026: boom/);
   assert.deepEqual(readdirSync(root), []);
+});
+
+// ---- several programs in one run ----
+const cfg = (extra = {}) => ({ name: 'x', dept: 8, deptName: 'ח', lists: [30001], specializations: [], degree: { total: 100, specCredits: 0 }, anchor: null, cohorts: [2026], ...extra });
+const multi = { ...opt, 'all-programs': true, program: undefined };
+const counting = () => {
+  const real = site(), seen = { lists: 0, groups: 0, exams: [] };
+  const request = async (query, form) => {
+    if (query?.startsWith('prgname=S_SHOW_PROGS')) seen.lists++;
+    if (query?.startsWith('prgname=S_LOOK_FOR_NOSE')) seen.groups++;
+    if (form?.PRGNAME === 'S_EXAMS') seen.exams.push(form.R1C28);
+    return real(query, form);
+  };
+  return { request, seen };
+};
+
+test('unitsOf: one pair by default, every program and cohort with --all-programs, --programs narrows, lists may differ per cohort', () => {
+  const programs = { 30: cfg({ cohorts: [2025, 2026] }), 20: cfg({ lists: { 2026: [20001] }, cohorts: [2026] }) };
+  assert.deepEqual(unitsOf({ program: '30', start: '2026' }, programs).map((u) => [u.program, u.start]), [[30, 2026]]);
+  assert.deepEqual(unitsOf({ 'all-programs': true, start: '2026' }, programs).map((u) => [u.program, u.start]), [[20, 2026], [30, 2025], [30, 2026]]);
+  assert.deepEqual(unitsOf({ 'all-programs': true, programs: '30' }, programs).map((u) => [u.program, u.start]), [[30, 2025], [30, 2026]]);
+  assert.deepEqual(unitsOf({ 'all-programs': true }, programs)[0].codes, [20001]);
+  assert.throws(() => unitsOf({ 'all-programs': true }, { 20: cfg({ lists: { 2025: [1] }, cohorts: [2026] }) }), /program 20 cohort 2026/);
+  assert.throws(() => unitsOf({ program: '5' }, programs), /program 5/);
+});
+
+test('run: programs that share lists and courses fetch each once; exams once per department', async () => {
+  const root = join(dirs().status, '..'), { request, seen } = counting();
+  const programs = { 77: cfg({ dept: 8, cohorts: [2026, 2025] }), 78: cfg({ dept: 9 }) };
+  const one = counting();
+  await run({ opt: { ...opt, program: '77' }, request: one.request, programs, dataDir: join(dirs().status, '..'), log: () => {}, check: noErrors });
+  await run({ opt: multi, request, programs, dataDir: root, log: () => {}, check: noErrors });
+  assert.equal(seen.groups, one.seen.groups, 'two programs and two cohorts cost the same course requests as one');
+  assert.equal(seen.lists, 2, 'the list is per cohort, not per program');
+  assert.deepEqual(seen.exams.sort(), ['8', '9']);
+  assert.deepEqual(readdirSync(join(root, '2027-1')).sort(), ['77-2025.json', '77-2026.json', '78-2026.json']);
+  assert.deepEqual(Object.keys(json(join(root, 'status.json')).semesters).filter((k) => k.startsWith('2027-1')).sort(), ['2027-1/77-2025', '2027-1/77-2026', '2027-1/78-2026']);
+});
+
+test('run: a check failing in one program writes nothing for any program', async () => {
+  const root = join(dirs().status, '..');
+  const check = (d) => ({ errors: d.program === 78 ? ['boom'] : [], warnings: [] });
+  await assert.rejects(run({ opt: multi, request: site(), programs: { 77: cfg(), 78: cfg() }, dataDir: root, log: () => {}, check }), /2027-1\/78-2026: boom/);
+  assert.deepEqual(readdirSync(root), []);
+});
+
+test('writeCatalog: lists the cohorts of the run, keeps programs that were not in it, writes nothing when unchanged', async () => {
+  const root = join(dirs().status, '..'), file = join(root, 'catalog.json');
+  const programs = { 20: cfg({ name: 'חשמל' }), 30: cfg({ name: 'מכונות' }) };
+  await writeCatalog(file, [{ program: 30, start: 2026 }, { program: 30, start: 2025 }], programs);
+  assert.deepEqual(json(file), { programs: [{ id: 30, name: 'מכונות', startYears: [2025, 2026] }] });
+  await writeCatalog(file, [{ program: 20, start: 2026 }], programs);
+  assert.deepEqual(json(file).programs.map((p) => [p.id, p.startYears]), [[20, [2026]], [30, [2025, 2026]]]);
+  const before = readFileSync(file, 'utf8');
+  await writeCatalog(file, [{ program: 20, start: 2026 }], programs);
+  assert.equal(readFileSync(file, 'utf8'), before);
+});
+
+test('cachedRequester: a cached answer costs no request; the session requests are replayed before the first miss only; offline refuses a miss', async () => {
+  const dir = join(dirs().status, '..', 'cache'), calls = [];
+  const inner = async (q, f) => { calls.push(q ?? f.PRGNAME); return `<p>${q ?? f.PRGNAME}</p>`; };
+  const r = cachedRequester(inner, dir);
+  await r('prgname=Enter_Search');
+  await r(null, { PRGNAME: 'Enter_Search', ARGUMENTS: 'x' });
+  assert.deepEqual(calls, [], 'swallowed until needed');
+  assert.equal(await r('prgname=S_X&arguments=-N1'), '<p>prgname=S_X&arguments=-N1</p>');
+  assert.deepEqual(calls, ['prgname=Enter_Search', 'Enter_Search', 'prgname=S_X&arguments=-N1']);
+  await r('prgname=S_X&arguments=-N1');
+  await r(null, { PRGNAME: 'S_Y', A: '1' });
+  assert.equal(calls.length, 4, 'the repeat came from disk');
+  const offline = cachedRequester(inner, dir, { offline: true });
+  assert.equal(await offline('prgname=S_X&arguments=-N1'), '<p>prgname=S_X&arguments=-N1</p>');
+  await assert.rejects(offline('prgname=S_Z'), /offline and not in the cache/);
+  assert.equal(calls.length, 4);
 });
