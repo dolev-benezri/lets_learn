@@ -1,4 +1,4 @@
-import { classify, withAfterA, cleanProfile, studyYear, modeFor, specLists } from './rules.js';
+import { classify, withAfterA, cleanProfile, studyYear, modeFor, specLists, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
 
@@ -49,7 +49,7 @@ export function normalize(raw) {
   }
   out.pins = strs(raw.pins, 40, 20) ?? out.pins;
   out.profile = cleanProfile(raw.profile);
-  if (['year', 'א', 'ב'].includes(raw.scope)) out.scope = raw.scope;
+  if (['year', 'א', 'ב', 'קיץ'].includes(raw.scope)) out.scope = raw.scope;
   if (['א', 'even', 'ב'].includes(raw.load)) out.load = raw.load;
   if (isObj(raw.semesterOf)) out.semesterOf = Object.fromEntries(Object.entries(raw.semesterOf).filter(([k, v]) => k.length <= 20 && (v === 'א' || v === 'ב')).slice(0, 200));
   if (isObj(raw.weights)) for (const k of Object.keys(DEFAULT.weights)) if (num(raw.weights[k])) out.weights[k] = [0, 1, 3, 5].reduce((b, s) => (Math.abs(s - raw.weights[k]) <= Math.abs(b - raw.weights[k]) ? s : b), 0); // snap to the UI scale; ties go up like nearestStep
@@ -75,7 +75,7 @@ export function upsertFriend(friends, p, editing = null) {
   return { friends: friends.map((f, i) => (i === ti ? next : f)).filter((f, i) => i === ti || f.name !== p.name), replaced: true };
 }
 
-export const app = { loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), friendLanding: null, hashError: null };
+export const app = { loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), yearIds: [], summerIds: [], friendLanding: null, hashError: null };
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
 export function yearView(dataA, dataB) {
@@ -98,8 +98,11 @@ export const semOfGroup = (gid) => {
 // app.data = year view, or the single chosen semester's file (also the fallback when ב is missing).
 export function pickData() {
   const { א: A, ב: B } = app.sem, scope = app.state.scope;
-  app.data = scope === 'year' && B ? { ...yearView(A, B), fetchedAt: A.fetchedAt, examsPublished: A.examsPublished } : (scope === 'ב' && B ? B : A);
+  app.data = summerScope() ? app.sem['קיץ'] : scope === 'year' && B ? { ...yearView(A, B), fetchedAt: A.fetchedAt, examsPublished: A.examsPublished } : (scope === 'ב' && B ? B : A);
 }
+// Summer is planned after the school year: on only when the profile asks for it and the summer file loaded.
+export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ']);
+export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
 export function save() { try { localStorage.setItem(KEY, JSON.stringify(app.state)); } catch { /* storage unavailable */ } }
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
 const yearOneList = () => app.data.lists.find((l) => l.name.includes("שנה א'"));
@@ -124,7 +127,10 @@ export function keepFocus(fn) {
 
 export function refresh() {
   pickData();
-  app.cls = withAfterA(app.data, app.state, classify(app.data, app.state));
+  // Summer assumes the shown year plan is passed (as ב assumes א); elsewhere a course taught only in summer says so.
+  const st = summerScope() ? { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.yearIds])] } : app.state;
+  app.cls = withAfterA(app.data, st, classify(app.data, st));
+  if (!summerScope()) summerOnly(app.cls.statuses, app.sem?.['קיץ'], summerOn());
   save();
   keepFocus(() => renderers.forEach((r) => r()));
 }
@@ -144,7 +150,7 @@ async function init() {
     return res.json();
   };
   const status = fetch('data/afeka/status.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const [a, b] = await Promise.allSettled([get('א'), get('ב')]);
+  const [a, b, s] = await Promise.allSettled([get('א'), get('ב'), get('קיץ')]);
   app.status = await status;
   if (a.status === 'rejected') {
     app.loadFailed = true; // the nav tabs still switch views (ui-plan.js onHash), both showing this message
@@ -158,7 +164,7 @@ async function init() {
     return;
   }
   app.loadFailed = false;
-  app.sem = { 'א': a.value, 'ב': b.status === 'fulfilled' ? b.value : null };
+  app.sem = { 'א': a.value, 'ב': b.status === 'fulfilled' ? b.value : null, 'קיץ': s.status === 'fulfilled' ? s.value : null };
   app.semNotice = app.sem['ב'] ? null : 'נתוני סמסטר ב׳ לא נטענו, מתכננים סמסטר אחד.';
   groupSem = null;
   pickData();

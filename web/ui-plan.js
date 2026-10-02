@@ -1,6 +1,6 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
 // preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, esc, cleanBlocks, upsertFriend, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash } from './app.js';
+import { app, esc, cleanBlocks, upsertFriend, save, refresh, candidateMode, yearCourses, setRenderers, keepFocus, DEFAULT, routeOf, applyHash, summerOn, summerScope } from './app.js';
 import { progress, setStatus, studyYear, cleanProfile, gradeAverage, englishOptions, specLists, SPECS } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { friendLink, backupLink, readHash } from './share.js';
@@ -20,6 +20,7 @@ const FAILS = [[1, 'פעם'], [2, 'פעמיים'], [3, '3 פעמים']];
 const FSCALE = [[0, 'לא חשוב'], [1, 'קצת'], [2, 'חשוב'], [3, 'מאוד']];
 const SEMS = [['א', 'סמסטר א׳'], ['ב', 'סמסטר ב׳']];
 const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
+const scopes = () => (summerOn() ? [...SCOPE, ['קיץ', 'קיץ']] : SCOPE); // summer only when the profile plans one
 const LOAD = [['א', 'יותר בא׳'], ['even', 'מאוזן'], ['ב', 'יותר בב׳']];
 const YEARS = [[1, 'א׳'], [2, 'ב׳'], [3, 'ג׳'], [4, 'ד׳']];
 const SEM_PICK = [['', 'אוטומטי'], ['א', 'א׳'], ['ב', 'ב׳']];
@@ -347,7 +348,9 @@ function renderView() {
   const nAlt = none ? 0 : results.length;
   const raw = current(), pair = isPair(raw) && !none;
   const res = none ? null : shown(), data = shownData(); // one semester's result and its data file; app.data only when the result is a single semester
-  app.planIds = new Set(raw && !none ? resCourses(raw) : []); // the shown alternative's courses (both semesters of a year pair): the progress map marks them
+  const ids = raw && !none ? resCourses(raw) : []; // the shown alternative's courses (both semesters of a year pair)
+  if (summerScope()) app.summerIds = ids; else app.yearIds = ids; // summer is planned on top of the last shown year plan
+  app.planIds = new Set([...app.yearIds, ...(summerOn() ? app.summerIds : [])]); // the progress map marks them
   const friends = state.friends.filter((f) => f.active);
   assignColors(colors, res?.courses ?? [], colorOrder());
   dashed = repeatIds(colors, res?.courses ?? []);
@@ -355,11 +358,12 @@ function renderView() {
   if (mobileDay > range.days) mobileDay = 1;
   // Board header: scope and semester controls first, then the notices that hold for the whole plan (shown once, whichever tab is open).
   const note = (ic, t) => `<p class="notice">${icon(ic)}<span>${esc(t)}</span></p>`;
-  const ctl = (app.sem['ב'] ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', SCOPE, state.scope, 'data-chg="scope"')}</div>` : '')
+  const ctl = (app.sem['ב'] ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', scopes(), state.scope, 'data-chg="scope"')}</div>` : '')
     + (pair ? `<div class="ctl">${seg('sem', 'סמסטר מוצג', SEMS, sem, 'data-chg="sem"')}</div>` : '');
   const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
   $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
-  $('semnote').innerHTML = (app.semNotice ? note('info', app.semNotice) : '')
+  const summerNote = summerScope() ? (app.yearIds.length ? `הקיץ מניח שעוברים את ${app.yearIds.length} הקורסים שבמערכת השנה המוצגת.` : 'עוד אין מערכת לשנה: הקיץ מתוכנן לפי מה שכבר עברת.') : '';
+  $('semnote').innerHTML = (app.semNotice ? note('info', app.semNotice) : '') + (summerNote ? note('info', summerNote) : '')
     + (pair ? raw.warnings.map((w) => note('info', w)).join('') : '')
     + (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
@@ -453,7 +457,7 @@ function prefsPanel() {
   const pinName = (p) => { const x = groupIndex(data).get(p); return x ? `${esc(x.c.name)} · ${esc(groupLabel(x.g))}` : esc(p); };
   return ['העדפות', `
     ${app.sem['ב'] ? `<section class="dr-sec"><h3>תכנון</h3>
-      ${seg('scope', 'לתכנן', SCOPE, state.scope, 'data-chg="scope"', true)}
+      ${seg('scope', 'לתכנן', scopes(), state.scope, 'data-chg="scope"', true)}
       ${state.scope === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>` : ''}
     <section class="dr-sec"><h3>מה חשוב לך?</h3>
       ${WEIGHTS.filter(([k]) => k !== 'examSpread' || data.examsPublished).map(([k, t]) => seg(`w-${k}`, t, SCALE, nearestStep(state.weights[k], [0, 1, 3, 5]), `data-chg="w" data-w="${k}"`, true)).join('')}</section>
@@ -698,7 +702,7 @@ const CHG = {
     specPick = { mode: 'two', picks: next.slice(0, 2) };
     app.state.profile.specs = specSave('two', specPick.picks);
   },
-  summer: (el) => { app.state.profile.summer = el.checked; },
+  summer: (el) => { app.state.profile.summer = el.checked; if (!el.checked && app.state.scope === 'קיץ') app.state.scope = 'year'; },
   grade: (el) => {
     const g = gradeInput(el.validity?.badInput ? 'x' : el.value, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
     if (g === undefined) delete app.state.grades[el.dataset.cid]; else app.state.grades[el.dataset.cid] = g;

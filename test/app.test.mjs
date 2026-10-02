@@ -86,8 +86,9 @@ test('normalize: scope/load/semesterOf default, validate, and survive', () => {
   assert.equal(old.scope, 'year'); assert.equal(old.load, 'even'); assert.deepEqual(old.semesterOf, {});
   const n = normalize({ v: 1, scope: 'ב', load: 'א', semesterOf: { 90901: 'ב', bad: 'x', 90902: 'א' } });
   assert.equal(n.scope, 'ב'); assert.equal(n.load, 'א'); assert.deepEqual(n.semesterOf, { 90901: 'ב', 90902: 'א' });
-  const bad = normalize({ v: 1, scope: 'קיץ', load: 2 });
+  const bad = normalize({ v: 1, scope: 'סתיו', load: 2 });
   assert.equal(bad.scope, 'year'); assert.equal(bad.load, 'even');
+  assert.equal(normalize({ v: 1, scope: 'קיץ' }).scope, 'קיץ', 'summer is a scope (it applies only when the profile plans a summer)');
 });
 test('normalize: semesterOf caps entries and key length', () => {
   const big = Object.fromEntries(Array.from({ length: 300 }, (_, i) => [`c${i}`, 'א']));
