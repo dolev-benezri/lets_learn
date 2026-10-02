@@ -54,7 +54,9 @@ export function identityPick(year, visible) {
   const { programs } = app.catalog, cur = programs.find((p) => p.id === app.state.program) ?? programs[0];
   const opt = (p) => `<option value="${esc(p.id)}"${p.id === cur.id ? ' selected' : ''}>${esc(heb(p.name))}</option>`;
   const track = programs.length < 2 ? '' : `<label class="field pick">מסלול <select data-chg="program" data-k="program">${programs.map(opt).join('')}</select></label>`;
-  return track + seg('p-year', 'שנת לימודים', YEARS, year, 'data-chg="pyear"', visible);
+  const own = !year || cur.startYears.includes(app.data.year - year + 1); // no data for that cohort: the plan runs on the nearest one, and the page says so
+  const note = own ? '' : `<p class="hint" role="status">אין עדיין נתונים למחזור של שנה ${esc(YEARS.find(([n]) => n === year)[1])}. התכנון לפי מחזור ${app.state.startYear}.</p>`;
+  return track + seg('p-year', 'שנת לימודים', YEARS, year, 'data-chg="pyear"', visible) + note;
 }
 
 export function renderMe() {
