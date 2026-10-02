@@ -230,7 +230,8 @@ test('layout: aside electives are not drawn; a chosen one joins the last band', 
 });
 
 test('layout: required courses are always drawn, chosen or not; the filter hides only electives that are in no required list', () => {
-  const required = new Set(data.lists.filter((l) => /חובה|פרויקט גמר/.test(l.name)).flatMap((l) => l.courses));
+  const spec = new Set(data.specializations.flatMap((s) => [s.mandatory, s.elective, s.aloneExtra]));
+  const required = new Set(data.lists.filter((l) => /חובה|פרויקט גמר/.test(l.name) && !spec.has(l.code)).flatMap((l) => l.courses));
   const aside = new Set(asideIds(data, {}, {})); // nothing chosen at all
   for (const id of required) assert.ok(!aside.has(id), id);
   const L = layoutMap(data, (id) => !aside.has(id)), drawn = new Set(L.nodes.filter((n) => n.type === 'course').map((n) => n.id));

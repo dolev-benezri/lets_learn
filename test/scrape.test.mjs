@@ -171,6 +171,18 @@ test('run: a failing check on any semester writes nothing', async () => {
   assert.deepEqual(readdirSync(dataDir), []);
 });
 
+test('every committed data file carries the specializations, their lists and the degree', () => {
+  const root = 'web/data/afeka', files = readdirSync(root).filter((d) => d !== 'status.json').map((d) => `${root}/${d}/30-2026.json`);
+  assert.ok(files.length >= 2);
+  for (const f of files) {
+    const d = json(f), codes = new Set(d.lists.map((l) => l.code));
+    assert.deepEqual(d.specializations.map((s) => s.id), ['solid', 'flow', 'mech', 'vehicle', 'materials', 'aero'], f);
+    assert.ok(d.specializations.every((s) => codes.has(s.mandatory) && codes.has(s.elective)), f);
+    assert.equal(d.specializations.find((s) => s.id === 'vehicle').aloneExtra, 30127);
+    assert.deepEqual(d.degree, { total: 160, specCredits: 27 });
+  }
+});
+
 // ---- summer ----
 const withSummer = () => { // course 1 (and only it) has its ב meetings moved to summer
   const real = site();

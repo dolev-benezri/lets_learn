@@ -237,6 +237,9 @@ test('validate: the prerequisite check compares only courses in both files, so n
 test('validate: summer is checked lightly (no size or 90903) but needs a scheduled course and healthy fields', () => {
   const summer = (n) => ({ year: 2027, semester: 'קיץ', examsPublished: false, lists: [], courses: Object.fromEntries(Array.from({ length: n }, (_, i) => [`3${i}`, { name: 'x', credits: 3, offered: true, prereqs: [], groups: [{ id: `g${i}`, primary: true, linked: [], meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }], exams: [] }] }])) });
   assert.deepEqual(validate(summer(3)).errors, []);
+  const thin = summer(10);
+  ['30', '31', '32'].forEach((id) => { thin.courses[id].credits = 0; });
+  assert.deepEqual(validate(thin).errors, [], 'no credits-ratio check on a thin semester');
   const none = summer(2);
   Object.values(none.courses).forEach((c) => { c.groups = []; c.offered = false; });
   assert.ok(validate(none).errors.some((e) => e.includes('summer')));

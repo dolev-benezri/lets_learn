@@ -97,8 +97,8 @@ test('chainDepth is the longest קדם chain below a course', () => {
   const real = new URL('../web/data/afeka/2027-1/30-2026.json', import.meta.url);
   if (existsSync(real)) {
     const r = chainDepth(JSON.parse(readFileSync(real, 'utf8')));
-    assert.equal(r['90914'], 3);
-    assert.equal(r['30137'], 1);
+    assert.equal(r['90914'], 4); // was 3 before the specialization lists: 30308 and others lead on to new courses
+    assert.equal(r['30137'], 2); // was 1: a chain through a specialization course now follows
   }
 });
 

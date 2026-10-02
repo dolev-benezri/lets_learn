@@ -99,7 +99,8 @@ function fieldHealth(d, prev, errors) {
 
   const offered = courses.filter((c) => c.offered);
   const withCredits = offered.filter((c) => c.credits > 0).length;
-  if (offered.length && withCredits / offered.length <= 0.9) errors.push(`only ${withCredits} of ${offered.length} offered courses have credits (check parseDetails)`);
+  // Summer is too thin for a ratio (3 credit-less מכינה English courses of 29 fail it); the same parser is judged by א and ב in the same run.
+  if (d.semester !== 'קיץ' && offered.length && withCredits / offered.length <= 0.9) errors.push(`only ${withCredits} of ${offered.length} offered courses have credits (check parseDetails)`);
 
   // Only courses in both files: adding a list of new courses is not a parser regression.
   const common = prev ? Object.keys(d.courses).filter((id) => prev.courses[id]) : [];
