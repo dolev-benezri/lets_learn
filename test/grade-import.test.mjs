@@ -50,6 +50,17 @@ test('rows read left to right, or fused into one item, parse the same', () => {
   assert.deepEqual(by(parseGradeSheet(rowsFromItems([...ltr, ...fused]), data)), { 10016: ['passed', 88], 30003: ['passed', 51] });
 });
 
+test('real layout: year/sem, code, name, lecturer, decimals, then the grade; the `*` sits rightmost, a few points lower', () => {
+  const row = (y, list, star) => [...cells(1, y, list), ...(star ? [{ str: '*', x: 560, y: y - 3.4, page: 1 }] : [])];
+  const r = parseGradeSheet(sheet(
+    row(700, ['תשפ"ו 1/', '10016', 'פיזיקה 1', 'ד"ר כהן', '2.50', '3.0', '77']),
+    row(685, ['תשפ"ו 1/', '30003', 'מבוא', 'צוות', '5.00', '6.0', '42'], true),
+    row(670, ['תשפ"ו 1/', '30130', 'אנגלית', '6.0', 'פ.פנימ']),
+    row(655, ['תשפ"ו 2/', '30133', 'סדנה', 'צוות', '4.50', '6.0', 'חייב']),
+    row(640, ['טרם', '30135', 'קורס', '1.00', '2.0', 'חייב'])), data);
+  assert.deepEqual(by(r), { 10016: ['passed', 77], 30003: ['failed', 42], 30130: ['exempt', null], 30133: ['pending', null] });
+});
+
 test('no rows, no courses: empty result', () => {
   assert.deepEqual(parseGradeSheet([], data), []);
   assert.deepEqual(parseGradeSheet([['hello', 'world'], ['10016']], data), []);

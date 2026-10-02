@@ -2,7 +2,7 @@
 // rowsFromItems / parseGradeSheet are pure (node-tested); readGradeSheet is the only part that touches the network (pdf.js CDN, lazily).
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.3.289/';
 const BIDI = /[‎‏‪-‮⁦-⁩]/g; // direction marks the portal wraps around tokens
-const MAX_BYTES = 5 * 1024 * 1024, MAX_PAGES = 10, ROW_TOL = 3;
+const MAX_BYTES = 5 * 1024 * 1024, MAX_PAGES = 10, ROW_TOL = 5; // rows sit ~15pt apart; the failure `*` is drawn ~3.5pt below its row
 
 export async function loadPdfjs() {
   const pdfjs = await import(`${PDFJS}pdf.min.mjs`);
@@ -25,22 +25,23 @@ export function rowsFromItems(items) {
 
 const RANK = { passed: 3, exempt: 2, failed: 1, pending: 0 };
 const DEC = /^\d+\.\d+$/, INT = /^\d{1,3}$/;
-// One row -> {id, grade, result} or null. Layout (RTL): code, year/sem, name, lecturer, grade, ש"ס, נ"ז [*]. The grade is the token just before the
-// first decimal (credits), so digits inside a course name ("פיזיקה 1") are never taken for a grade.
+// One row -> {id, grade, result} or null. Real sheet, read right to left: year/sem, code, name, lecturer, ש"ס, נ"ז, grade, with the failure `*`
+// rightmost. The grade is the token just after the decimal run (falling back to just before it), so digits inside a course name are never a grade.
+const CODE = (data) => (x) => /^\d{4,5}$/.test(x) && !!data.courses[x];
 function parseRow(row, data) {
   let t = row.join(' ').split(/\s+/);
-  let c = t.findIndex((x) => /^\d{4,5}$/.test(x) && data.courses[x]);
-  let d = t.findIndex(DEC.test.bind(DEC));
+  let c = t.findIndex(CODE(data)), d = t.findIndex((x) => DEC.test(x));
   if (c < 0 || d < 0) return null;
-  if (c > d) { t = t.reverse(); c = t.findIndex((x) => /^\d{4,5}$/.test(x) && data.courses[x]); d = t.findIndex(DEC.test.bind(DEC)); } // sheet read left to right
-  const id = t[c], text = t.join(' ');
+  if (c > d) { t = t.reverse(); c = t.findIndex(CODE(data)); d = t.findIndex((x) => DEC.test(x)); } // sheet read left to right
   if (t.includes('טרם')) return null;
-  const before = t.slice(Math.max(c + 1, d - 2), d), last = before.at(-1) ?? '';
-  const grade = INT.test(last) && +last <= 100 ? +last : null;
-  if (text.includes('*')) return { id, grade, result: 'failed' };
+  let e = d;
+  while (DEC.test(t[e + 1] ?? '')) e++;
+  const slot = [t[e + 1], d - 1 > c ? t[d - 1] : undefined].find((x) => x && (INT.test(x) && +x <= 100 || /^(פ\.?פנימ|פטור|חייב)$/.test(x))) ?? '';
+  const id = t[c], grade = INT.test(slot) ? +slot : null;
+  if (t.includes('*')) return { id, grade, result: 'failed' };
   if (grade !== null) return { id, grade, result: 'passed' };
-  if (/פ\.?\s*פנימ|פטור/.test(before.join(' '))) return { id, grade: null, result: 'exempt' };
-  if (last === 'חייב') return { id, grade: null, result: 'pending' };
+  if (slot !== 'חייב' && slot) return { id, grade: null, result: 'exempt' };
+  if (slot === 'חייב') return { id, grade: null, result: 'pending' };
   return null;
 }
 
