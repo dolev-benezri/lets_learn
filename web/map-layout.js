@@ -175,7 +175,8 @@ export const truncate = (s, n = 18) => (s.length > n ? `${s.slice(0, n - 1)}…`
 // Edge leaves the near side of one circle and enters the near side of the next (flow runs right to left in RTL).
 export const edgeEnds = (a, b) => { const d = b.x < a.x ? -1 : 1; return [{ x: a.x + d * a.hw, y: a.y }, { x: b.x - d * b.hw, y: b.y }]; };
 // Two nodes in one column: edgePath would be a straight line through the column, so bow out to the right (further for a longer hop, clear of the names between).
-export const sameColPath = (a, b) => { const x1 = a.x + a.hw, x2 = b.x + b.hw, k = G.bulge + Math.min(40, Math.abs(b.y - a.y) / 6); return `M${x1},${a.y} C${x1 + k},${a.y} ${x2 + k},${b.y} ${x2},${b.y}`; };
+export const sameColPath = (a, b) => { const x1 = a.x + a.hw, x2 = b.x + b.hw, k = G.bulge + Math.min(40, Math.abs(b.y - a.y) / 6); return `M${x1},${a.y} C${x1
+  + k},${a.y} ${x2 + k},${b.y} ${x2},${b.y}`; };
 
 export function geometry(L, creditsOf = () => 0) {
   const radius = (n) => (n.type === 'ext' ? G.extR : nodeRadius(creditsOf(n.id)));

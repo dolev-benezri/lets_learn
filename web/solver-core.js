@@ -213,7 +213,8 @@ function explain(info, unlocks) {
 function diagnose(items, data, freedByBlocks) {
   const name = (id) => data.courses[id].name;
   const out = [];
-  for (const it of items) if (it.mode === 'must' && !it.options.length) out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id) ? 'זמן תפוס, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
+  for (const it of items) if (it.mode === 'must' && !it.options.length) out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id)
+    ? 'זמן תפוס, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
   const must = items.filter((x) => x.mode === 'must' && x.options.length);
   for (let i = 0; i < must.length; i++) for (let j = i + 1; j < must.length; j++) {
     if (must[i].options.every((a) => must[j].options.every((b) => overlaps(a.mask, b.mask)))) {
@@ -340,7 +341,8 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
 
   dfs(0, new Array(DAYS).fill(0), 0, new Set(), 0);
   const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
-  return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins, includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups }).length > 0) };
+  return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins,
+    includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups }).length > 0) };
 }
 
 const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };
@@ -401,7 +403,8 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   for (const m of must) {
     const need = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled)).map((p) => p.anyOf.find((x) => inA.has(x.id))?.id);
     if (!need.length || need.includes(undefined)) continue;
-    const r = search({ ...argsA, courses: coursesA.map((c) => (need.includes(c.id) ? { ...c, mode: 'must' } : c)), topK: 1, timeLimitMs: Math.max(B_FLOOR, (deadline - Date.now()) / (must.size + 1)) });
+    const r = search({ ...argsA, courses: coursesA.map((c) => (need.includes(c.id) ? { ...c, mode: 'must' } : c)), topK: 1, timeLimitMs: Math.max(B_FLOOR,
+      (deadline - Date.now()) / (must.size + 1)) });
     partial ||= r.partial;
     const s = r.results[0];
     if (s && !seen.has(key(s))) { seen.add(key(s)); seeds.push(s); }
@@ -430,7 +433,8 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
       const mustB = coursesB.filter((c) => c.mode === 'must');
       const relax = (keep) => {
         const lifted = new Set(coursesB.filter((c) => !keep(c)).map((c) => c.id));
-        return search({ ...args, timeLimitMs: left / (mustB.length + 2), pins: args.pins.filter((p) => ![...lifted].some((id) => pinnedIn(dataB, id) && dataB.courses[id].groups.some((g) => g.id === p))),
+        return search({ ...args, timeLimitMs: left / (mustB.length + 2), pins: args.pins.filter((p) => ![...lifted].some((id) => pinnedIn(dataB, id)
+          && dataB.courses[id].groups.some((g) => g.id === p))),
           courses: coursesB.map((c) => (keep(c) ? c : { ...c, mode: 'optional' })) });
       };
       // A pin names the exact group, so it is a stronger wish than a must choice: pins are only lifted when no

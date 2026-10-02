@@ -2,7 +2,8 @@
 import { app, esc, save, refresh, candidateMode, keepFocus, summerOn, summerScope } from './app.js';
 import { progress } from './rules.js';
 import { unlockCounts } from './solver-core.js';
-import { DAYS, icon, initials, groupIndex, hourRange, summary, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair, semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
+import { DAYS, icon, initials, groupIndex, hourRange, summary, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
+  semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
 import { freshness, stalePins, partialNote } from './ui-text.js';
 import { SEMS, scopes, PHONE, colors, current, shown, shownData, doneIds, planned, allGroupIds, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
@@ -16,7 +17,9 @@ export function renderTop() {
   const f = freshness(app.status, app.data.fetchedAt);
   $('meta').innerHTML = f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text);
   const fr = app.state.friends;
-  $('friendsBtn').innerHTML = `<span class="stack" aria-hidden="true">${fr.slice(0, 3).map((f) => `<span class="av">${esc(initials(f.name))}</span>`).join('')}<span class="av plus">${icon('plus')}</span></span><span class="lbl">חברים${fr.length ? ` (${fr.length})` : ''}</span>`;
+  $('friendsBtn').innerHTML = `<span class="stack" aria-hidden="true">${fr.slice(0, 3).map((f) => `<span
+    class="av">${esc(initials(f.name))}</span>`).join('')}<span class="av plus">${icon('plus')}</span></span><span class="lbl">חברים${fr.length
+    ? ` (${fr.length})` : ''}</span>`;
 }
 
 export function renderBanner() {
@@ -54,7 +57,8 @@ export function renderView() {
   const friends = state.friends.filter((f) => f.active);
   assignColors(colors, res?.courses ?? [], colorOrder());
   ui.dashed = repeatIds(colors, res?.courses ?? []);
-  const range = hourRange([...results.flatMap((r) => resGroups(r).flatMap((g) => groupIndex(app.data).get(g)?.g.meetings ?? [])), ...state.constraints.blocks]); // both semesters, so the hours don't jump between tabs; busy blocks always show
+  const range = hourRange([...results.flatMap((r) => resGroups(r).flatMap((g) => groupIndex(app.data).get(g)?.g.meetings ?? [])),
+    ...state.constraints.blocks]); // both semesters, so the hours don't jump between tabs; busy blocks always show
   if (ui.mobileDay > range.days) ui.mobileDay = 1;
   // Board header: scope and semester controls first, then the notices that hold for the whole plan (shown once, whichever tab is open).
   const note = (ic, t) => `<p class="notice">${icon(ic)}<span>${esc(t)}</span></p>`;
@@ -105,9 +109,12 @@ export function renderView() {
     const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת לך קורס חדש אחד' : `פותחת לך ${res.unlocks} קורסים חדשים`) : '';
     const infoLine = [blockingText && `קורסי קדם לקורסים אחרים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
 
-    $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar', `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))] : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
+    $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar',
+      `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))]
+      : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
       + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '');
-    live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair && `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
+    live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair
+      && `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed: ui.dashed, pins: state.pins, friends, day: ui.mobileDay, blocks: state.constraints.blocks });

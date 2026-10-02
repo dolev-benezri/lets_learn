@@ -1,7 +1,8 @@
 import { groupIndex } from './ui-grid.js';
 import { toMin } from './solver-core.js';
 
-// Afeka group ids are 9 digits, tutorials and labs add /N ("271001601/1", spaces around the slash allowed); the whole token is classified. A ":" after /N means a time, not an id. (?<!\d)…(?!\d) keeps 10-digit phone numbers out.
+// Afeka group ids are 9 digits, tutorials and labs add /N ("271001601/1", spaces around the slash allowed); the whole token is classified.
+// A ":" after /N means a time, not an id. (?<!\d)…(?!\d) keeps 10-digit phone numbers out.
 export function groupsFromText(text, data) {
   const known = groupIndex(data), found = [], unknown = [];
   for (const [tok] of String(text).matchAll(/(?<!\d)\d{9}(?:\s*\/\s*\d{1,2}(?![\d:]))?(?!\d)/g)) {

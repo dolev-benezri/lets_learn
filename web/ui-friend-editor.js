@@ -113,7 +113,8 @@ function row(g) {
   const on = ed.draft.includes(g.id);
   return `<li class="fe-row${on ? ' on' : ''}"><div class="fe-info"><span>${g.meetings.map(meetingHtml).join(' · ') || 'ללא מועד'}</span>
     <span>${esc(g.lecturer || '—')}${g.full ? ' <span class="tag bad">מלאה</span>' : ''} <bdi dir="ltr" class="gid">${esc(g.id)}</bdi></span></div>
-    <button type="button" class="btn${on ? '' : ' primary'}" data-fe="toggle" data-gid="${esc(g.id)}"><span class="sr">${esc(typeLabel(g.type))} ${esc(groupNumber(g.id))}: </span>${on ? 'משובץ · הסר' : 'שבץ'}</button></li>`;
+    <button type="button" class="btn${on ? '' : ' primary'}" data-fe="toggle" data-gid="${esc(g.id)}"><span
+      class="sr">${esc(typeLabel(g.type))} ${esc(groupNumber(g.id))}: </span>${on ? 'משובץ · הסר' : 'שבץ'}</button></li>`;
 }
 function renderGroups() {
   const c = ed.cid && semData().courses[ed.cid];
@@ -129,7 +130,8 @@ function renderGrid() {
   const clash = clashIds(ids, data), week = $('feWeek');
   week.setAttribute('aria-label', `מערכת סמסטר ${SEM_NAME[ed.sem]}`);
   week.innerHTML = renderWeek({ data, res: { groups: ed.draft }, range, colors: ed.colors, dashed: new Set(), pins: [], friends: [], day: ed.day });
-  $('feDays').innerHTML = Array.from({ length: range.days }, (_, i) => i + 1).map((d) => `<button type="button" data-fe="day" data-day="${d}" aria-pressed="${d === ed.day}">${DAYS[d]}׳</button>`).join('');
+  $('feDays').innerHTML = Array.from({ length: range.days }, (_, i) => i + 1).map((d) => `<button type="button" data-fe="day" data-day="${d}"
+    aria-pressed="${d === ed.day}">${DAYS[d]}׳</button>`).join('');
   for (const b of week.querySelectorAll('.blk')) {
     delete b.dataset.act; // renderWeek's board hook: not ours (ui-plan.js would open the board popover)
     b.removeAttribute('aria-haspopup');
@@ -247,7 +249,8 @@ function applyFound({ found, unknown, ambiguous = 0, weak = 0 }) {
   renderGroups();
   const other = placed.filter((g) => semOfGroup(g) !== ed.sem).length, o = SEM_NAME[otherOf(ed.sem)];
   const skipped = [already && `${already} כבר במערכת`, refused && `${refused} לא שובצו`].filter(Boolean).join(', ');
-  status(`<p>${placed.length === found.length ? `נמצאו ${found.length} קבוצות` : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${other ? ` (${other === placed.length ? 'כולן' : `${other} מהן`} בסמסטר ${o})` : ''}${switched ? `. עברנו לסמסטר ${SEM_NAME[ed.sem]}` : ''}.</p>`
+  status(`<p>${placed.length === found.length ? `נמצאו ${found.length} קבוצות` : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${other
+    ? ` (${other === placed.length ? 'כולן' : `${other} מהן`} בסמסטר ${o})` : ''}${switched ? `. עברנו לסמסטר ${SEM_NAME[ed.sem]}` : ''}.</p>`
     + (ambiguous ? `<p>ב-${ambiguous} קורסים יש כמה קבוצות באותן שעות, נבחרה הראשונה. כדאי לבדוק במערכת.</p>` : '')
     + (weak ? `<p>${weak} קבוצות זוהו לפי יום ושעות בלבד (השם בתמונה לא ברור). כדאי לבדוק אותן במערכת.</p>` : '')
     + (unknown.length ? `<p>לא נמצאו: ${unknown.slice(0, 8).map((id) => `<bdi dir="ltr">${esc(id)}</bdi>`).join(', ')}${unknown.length > 8 ? ` ועוד ${unknown.length - 8}` : ''}</p>` : '')

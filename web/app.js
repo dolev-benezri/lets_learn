@@ -46,7 +46,8 @@ export function normalize(raw) {
   if (isObj(raw.choices)) out.choices = Object.fromEntries(Object.entries(raw.choices).filter(([, v]) => ['must', 'optional', 'no'].includes(v)));
   if (Array.isArray(raw.friends)) {
     out.friends = raw.friends.filter((f) => isObj(f) && typeof f.name === 'string' && f.name.length <= 60 && Array.isArray(f.groups)).slice(0, 20)
-      .map((f) => ({ name: f.name, groups: strs(f.groups, 40, 20), weight: num(f.weight) ? clamp(f.weight, 0, 3) : 1, active: typeof f.active === 'boolean' ? f.active : true, ...(f.manual === true ? { manual: true } : {}) }));
+      .map((f) => ({ name: f.name, groups: strs(f.groups, 40, 20), weight: num(f.weight) ? clamp(f.weight, 0, 3) : 1, active: typeof f.active === 'boolean'
+        ? f.active : true, ...(f.manual === true ? { manual: true } : {}) }));
   }
   out.pins = strs(raw.pins, 40, 20) ?? out.pins;
   out.profile = cleanProfile(raw.profile);
@@ -56,7 +57,8 @@ export function normalize(raw) {
   if (['year', 'א', 'ב', 'קיץ'].includes(raw.scope)) out.scope = raw.scope;
   if (['א', 'even', 'ב'].includes(raw.load)) out.load = raw.load;
   if (isObj(raw.semesterOf)) out.semesterOf = Object.fromEntries(Object.entries(raw.semesterOf).filter(([k, v]) => k.length <= 20 && (v === 'א' || v === 'ב')).slice(0, 200));
-  if (isObj(raw.weights)) for (const k of Object.keys(DEFAULT.weights)) if (num(raw.weights[k])) out.weights[k] = [0, 1, 3, 5].reduce((b, s) => (Math.abs(s - raw.weights[k]) <= Math.abs(b - raw.weights[k]) ? s : b), 0); // snap to the UI scale; ties go up like nearestStep
+  if (isObj(raw.weights)) for (const k of Object.keys(DEFAULT.weights)) if (num(raw.weights[k])) out.weights[k] = [0, 1, 3, 5].reduce((b,
+    s) => (Math.abs(s - raw.weights[k]) <= Math.abs(b - raw.weights[k]) ? s : b), 0); // snap to the UI scale; ties go up like nearestStep
   if (isObj(raw.constraints)) for (const k of Object.keys(CONSTRAINT_OK)) if (CONSTRAINT_OK[k](raw.constraints[k])) out.constraints[k] = raw.constraints[k];
   if (isObj(raw.constraints)) out.constraints.blocks = cleanBlocks(raw.constraints.blocks);
   return out;
@@ -160,7 +162,9 @@ async function init() {
     app.loadFailed = true; // the nav tabs still switch views (ui-plan.js onHash), both showing this message
     for (const id of ['week', 'me']) {
       const el = document.getElementById(id);
-      el.innerHTML = '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b><p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions"><button class="btn" data-retry>נסה שוב</button> <button class="btn" data-reset>אפס נתונים שמורים</button></p></div></div>';
+      el.innerHTML = '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b>' +
+        '<p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions">' +
+        '<button class="btn" data-retry>נסה שוב</button> <button class="btn" data-reset>אפס נתונים שמורים</button></p></div></div>';
       el.querySelector('[data-retry]').onclick = init;
       el.querySelector('[data-reset]').onclick = () => { try { localStorage.removeItem(KEY); } catch { /* storage unavailable */ } location.reload(); };
     }
