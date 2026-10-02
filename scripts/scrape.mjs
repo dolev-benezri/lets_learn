@@ -8,22 +8,12 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs';
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
+import PROGRAMS from './programs.json' with { type: 'json' };
 import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary } from './polite.mjs';
 
+// scripts/programs.json: per program the list codes, department, specializations (hand-maintained, docs/research-degree-rules.md 5.2), degree credits and the anchor course validate() demands.
 const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
 const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolhack/lets_learn)';
-const LISTS = { 30: [30001, 30002, 30003, 30004, 30007, 30010, 30031, 30901, 60004, 30115, 30116, 30117, 30118, 30119, 30120, 30121, 30122, 30123, 30124, 30125, 30126, 30127] };
-// Hand-maintained from the third-year specialization lists (docs/research-degree-rules.md 5.2). `aloneExtra`: the list a student who takes vehicles alone adds.
-const SPECS = [
-  { id: 'solid', name: 'מכניקת מוצק', mandatory: 30115, elective: 30116 },
-  { id: 'flow', name: 'זרימה ואנרגיה', mandatory: 30117, elective: 30118 },
-  { id: 'mech', name: 'מכטרוניקה ורובוטיקה', mandatory: 30119, elective: 30120 },
-  { id: 'vehicle', name: 'מערכות רכב', mandatory: 30121, elective: 30122, aloneExtra: 30127 },
-  { id: 'materials', name: 'חומרים', mandatory: 30123, elective: 30124 },
-  { id: 'aero', name: 'אווירונאוטיקה וחלל', mandatory: 30125, elective: 30126 },
-];
-const DEGREE = { total: 160, specCredits: 27 };
-const DEPARTMENT = { 30: 'מכנית' };
 const SEMESTER_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
 
@@ -128,15 +118,15 @@ export async function writeResults({ results, statusFile, now }) {
   return `data(afeka): ${changes.join('; ') || 'no changes'}`;
 }
 
-export async function run({ opt, request, dataDir = 'web/data/afeka', now = () => new Date().toISOString(), log = console.error, check = validate }) {
-  const program = Number(opt.program);
-  if (!LISTS[program]) throw new Error(`no list codes configured for program ${program}`);
+export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/data/afeka', now = () => new Date().toISOString(), log = console.error, check = validate }) {
+  const program = Number(opt.program), cfg = programs[program];
+  if (!cfg) throw new Error(`no list codes configured for program ${program}`);
 
   await request('prgname=Enter_Search');
   await request(null, { PRGNAME: 'Enter_Search', ARGUMENTS: '-A,,-A,ChangeYear', ChangeYear: opt.year });
 
   const lists = [];
-  for (const code of LISTS[program]) {
+  for (const code of cfg.lists) {
     const p = parseProgram(await request(`prgname=S_SHOW_PROGS&arguments=-N${opt.start},-N${code}`));
     if (!p.courses.length) throw new Error(`list ${code} returned no courses`);
     lists.push({ code, ...p });
@@ -154,7 +144,7 @@ export async function run({ opt, request, dataDir = 'web/data/afeka', now = () =
   }
 
   const exams = parseExams(await request(null, {
-    PRGNAME: 'S_EXAMS', ARGUMENTS: 'R1C28,R1C29,R1C30', R1C28: String(program), R1C29: '0', R1C30: '0',
+    PRGNAME: 'S_EXAMS', ARGUMENTS: 'R1C28,R1C29,R1C30', R1C28: String(cfg.dept), R1C29: '0', R1C30: '0',
   }));
   log(`exams: ${exams.length} rows`);
 
@@ -172,9 +162,9 @@ export async function run({ opt, request, dataDir = 'web/data/afeka', now = () =
     const buildWarnings = [];
     const dataset = buildDataset({
       year: Number(opt.year), startYear: Number(opt.start), program, semester,
-      department: DEPARTMENT[program], lists, raw, exams, fetchedAt, warnings: buildWarnings, specializations: SPECS, degree: DEGREE,
+      department: cfg.deptName, lists, raw, exams, fetchedAt, warnings: buildWarnings, specializations: cfg.specializations, degree: cfg.degree,
     });
-    const { errors, warnings } = check(dataset, prev);
+    const { errors, warnings } = check(dataset, prev, cfg.anchor);
     [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${key}: ${w}`));
     const found = errors.map((e) => `${key}: ${e}`);
     const { errors: comparisonErrors } = compareToPrevious(prev, dataset);
