@@ -1,7 +1,7 @@
 export const normName = (s) => s.replace(/["'׳״]/g, '').replace(/\s+/g, ' ').trim();
 export const normLecturer = (s) => normName(s).replace(/^(דר|פרופ|מר|גב|גברת)\.?\s+/, '');
 
-export function buildDataset({ year, startYear, program, semester, department, lists, raw, exams, fetchedAt, warnings = [], specializations, degree, specRule }) {
+export function buildDataset({ year, startYear, program, semester, department, lists, raw, exams, fetchedAt, warnings = [], specializations, degree, specRule, verified }) {
   const idByName = new Map();
   for (const l of lists) for (const c of l.courses) idByName.set(normName(c.name), c.id);
 
@@ -56,7 +56,7 @@ export function buildDataset({ year, startYear, program, semester, department, l
     fetchedAt, year, startYear, program, semester,
     examsPublished: semExams.length > 0,
     lists: lists.map((l) => ({ code: l.code, name: l.name, minCredits: l.minCredits, courses: [...new Set(l.courses.map((c) => c.id))] })),
-    specializations, ...(specRule && { specRule }), degree,
+    specializations, ...(specRule && { specRule }), ...(verified === false && { verified }), degree,
     courses,
   };
 }

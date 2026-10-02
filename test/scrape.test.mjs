@@ -264,12 +264,14 @@ test('unitsOf: one pair by default, every program and cohort with --all-programs
 
 test('run: programs that share lists and courses fetch each once; exams once per department', async () => {
   const root = join(dirs().status, '..'), { request, seen } = counting();
-  const programs = { 77: cfg({ dept: 8, cohorts: [2026, 2025] }), 78: cfg({ dept: 9 }) };
+  const programs = { 77: cfg({ dept: 8, cohorts: [2026, 2025] }), 78: cfg({ dept: 9, verified: false }) };
   const one = counting();
   await run({ opt: { ...opt, program: '77' }, request: one.request, programs, dataDir: join(dirs().status, '..'), log: () => {}, check: noErrors });
   await run({ opt: multi, request, programs, dataDir: root, log: () => {}, check: noErrors });
   assert.equal(seen.groups, one.seen.groups, 'two programs and two cohorts cost the same course requests as one');
   assert.equal(seen.lists, 2, 'the list is per cohort, not per program');
+  assert.equal(json(join(root, '2027-1', '78-2026.json')).verified, false, 'an unverified program says so in its data');
+  assert.ok(!('verified' in json(join(root, '2027-1', '77-2026.json'))));
   assert.deepEqual(seen.exams.sort(), ['8', '9']);
   assert.deepEqual(readdirSync(join(root, '2027-1')).sort(), ['77-2025.json', '77-2026.json', '78-2026.json']);
   assert.deepEqual(Object.keys(json(join(root, 'status.json')).semesters).filter((k) => k.startsWith('2027-1')).sort(), ['2027-1/77-2025', '2027-1/77-2026', '2027-1/78-2026']);

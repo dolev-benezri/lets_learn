@@ -246,7 +246,7 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
       const buildWarnings = [];
       const dataset = buildDataset({
         year: Number(opt.year), startYear: u.start, program: u.program, semester, department: u.cfg.deptName, lists: u.lists, raw, exams: examsOf.get(u.cfg.dept), fetchedAt,
-        warnings: buildWarnings, specializations: u.cfg.specializations, degree: u.cfg.degree, specRule: u.cfg.specRule,
+        warnings: buildWarnings, specializations: u.cfg.specializations, degree: u.cfg.degree, specRule: u.cfg.specRule, verified: u.cfg.verified,
       });
       const { errors, warnings } = check(dataset, prev, u.cfg.anchor);
       [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${label}: ${w}`));
