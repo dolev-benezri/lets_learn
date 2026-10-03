@@ -173,6 +173,7 @@ export function reconcileSpecs() {
 }
 
 export function refresh() {
+  if (app.state.scope === 'קיץ' && !app.state.profile.summer) app.state.scope = 'year'; // summer switched off; a summer file that failed to load keeps the choice
   pickData();
   reconcileSpecs();
   // Summer assumes the shown year plan is passed (as ב assumes א); elsewhere a course taught only in summer says so.

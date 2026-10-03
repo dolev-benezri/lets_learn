@@ -207,3 +207,14 @@ test('reconcileSpecs: a study year past the program\'s last year is brought back
   reconcileSpecs();
   assert.equal(app.state.profile.year, 2);
 });
+
+test('refresh: the summer tab is not kept once the profile plans no summer (U3)', async () => {
+  const { refresh } = await import('../web/app.js');
+  globalThis.document ??= { activeElement: null }; // keepFocus reads the focused element
+  reset({ ...mine(), scope: 'קיץ', profile: { year: 2, amirnet: null, specs: [], summer: false } });
+  refresh();
+  assert.equal(app.state.scope, 'year');
+  reset({ ...mine(), scope: 'קיץ', profile: { year: 2, amirnet: null, specs: [], summer: true } });
+  refresh();
+  assert.equal(app.state.scope, 'קיץ', 'summer planned but its file did not load: the choice waits, it is not lost');
+});
