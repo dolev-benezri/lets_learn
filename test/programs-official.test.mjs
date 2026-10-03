@@ -15,7 +15,8 @@ test('specialization credits follow each cohort, not one number per program', ()
   for (const [id, want] of Object.entries(SPEC)) {
     [2024, 2025, 2026, 2027].forEach((y, i) => {
       const d = data(id, y);
-      assert.equal(progressInfo(d, {}, new Set(), [d.specializations[0].id]).specLeft, want[i], `${id}-${y}`);
+      // every area at once: the pool is large enough that the derived number shows whole (one area can hold less: medical engineering)
+      assert.equal(progressInfo(d, {}, new Set(), d.specializations.map((s) => s.id)).specLeft, want[i], `${id}-${y}`);
     });
   }
 });

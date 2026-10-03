@@ -162,17 +162,19 @@ export function progressInfo(data, st, plan = new Set(), specs = []) {
     total += min; fill(min, sum(() => true), sum((id) => isDone(st, id)), sum((id) => !isDone(st, id) && plan.has(id)));
   }
   const pool = new Set((specs.length ? [...sp.mandatory, ...sp.elective] : data.lists.filter((x) => sp.all.has(x.code)).flatMap((x) => x.courses)).filter((id) => data.courses[id] && !seen.has(id)));
-  // Unknown specCredits (0) with areas to pick: what the lists leave of the degree total (mechanical: 160 - 133 = 27, the regulations' number).
-  const cap = Number(data.degree?.specCredits) || (data.specializations?.length && degree ? Math.max(0, degree - total) : 0);
+  // No specCredits with areas to pick: what the lists leave of the degree total in this cohort (mechanical 2027: 160 - 133 = 27). A derived number the
+  // area's courses can't reach (medical engineering) is met from the electives instead ("complete to 160 from the electives"), so it counts up to that reach.
+  const known = Number(data.degree?.specCredits), cap = known || (data.specializations?.length && degree ? Math.max(0, degree - total) : 0);
   const pick = (f) => [...pool].filter(f).reduce((s, id) => s + credits(id), 0), sd = Math.min(cap, pick((id) => isDone(st, id)));
+  const need = known ? cap : Math.min(cap, pick(() => true));
   fill(cap, pick(() => true), pick((id) => isDone(st, id)), pick((id) => !isDone(st, id) && plan.has(id)));
   // What the minimums and the specialization leave of the degree (computer science: an electives list with minCredits 0) fills from the extra credits.
-  const rest = Math.max(0, degree - total - cap), rd = Math.min(rest, extra.done);
+  const rest = Math.max(0, degree - total - need), rd = Math.min(rest, extra.done);
   reach += Math.min(rest, extra.reach); done += rd; planned += Math.min(rest - rd, extra.planned);
   const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + credits(id), 0);
   // The bar ends where the data does (all passed = 100%); credits of the degree no list in the data covers are named, not silently unreachable.
   const r = (v) => Math.round(v * 2) / 2;
-  return { total: r(reach), done, planned, adds, specLeft: specs.length ? cap - sd : null, untracked: degree > reach ? r(degree - reach) : 0, degreeTotal: degree || null };
+  return { total: r(reach), done, planned, adds, specLeft: specs.length ? need - sd : null, untracked: degree > reach ? r(degree - reach) : 0, degreeTotal: degree || null };
 }
 // Courses the plan newly opens: blocked now, not blocked once the plan's courses count as passed (the plan's own courses excluded).
 export function newlyUnlocked(data, state, plan) {
