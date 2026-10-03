@@ -28,13 +28,15 @@ export function renderBanner() {
   const L = app.friendLanding;
   const known = allGroupIds();
   const missing = L ? L.groups.filter((g) => !known.has(g)).length : 0;
+  const other = L && L.program !== undefined && L.program !== app.state.program ? app.catalog.programs.find((p) => p.id === L.program)?.name ?? 'לא מוכרת' : null; // groups of another program rarely match
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : []; // with one semester loaded, the other's pins would look gone
   $('banner').innerHTML = (app.hashError ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
       <button type="button" class="btn icon-btn ghost" data-act="dismissError" aria-label="סגור הודעה">${icon('x')}</button></div>` : '')
     + gone.map((p) => `<div class="banner warn">${icon('alert')}<span class="grow">${esc(p.text)}. המערכת תבחר קבוצה אחרת אם תסירו את הנעיצה.</span>
       <button type="button" class="btn" data-act="dropPin" data-gid="${esc(p.gid)}">${icon('pin')} הסר נעיצה</button></div>`).join('')
     + (L ? `<div class="banner"><span class="av lg" aria-hidden="true">${esc(initials(L.name || 'חבר'))}</span>
-      <div class="grow"><b>${esc(L.name || 'חבר')}</b> שיתף/ה איתך מערכת (${L.groups.length} שיעורים)${missing ? ` · <span class="warn-text">${missing} לא נמצאו בהיצע הנוכחי</span>` : ''}</div>
+      <div class="grow"><b>${esc(L.name || 'חבר')}</b> שיתף/ה איתך מערכת (${L.groups.length} שיעורים)${missing ? ` · <span class="warn-text">${missing} לא נמצאו בהיצע הנוכחי</span>` : ''}
+      ${other ? ` · <span class="warn-text">מתוכנית אחרת (${esc(heb(other))})</span>` : ''}</div>
       <button type="button" class="btn primary" data-act="landingAdd" data-k="landingAdd">${icon('user-plus')} הוסף כחבר</button>
       <button type="button" class="btn" data-act="landingDrop">לא עכשיו</button></div>` : '');
 }
