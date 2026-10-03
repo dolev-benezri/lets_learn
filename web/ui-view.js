@@ -98,7 +98,7 @@ export function renderView() {
     const fd = !s.freeDays.length ? 'אין יום פנוי' : s.freeDays.length === 1 ? `יום ${DAYS[s.freeDays[0]]}׳ פנוי` : `ימים ${s.freeDays.map((d) => `${DAYS[d]}׳`).join(', ')} פנויים`;
     const gap = s.gapH >= 10 ? 'יותר מ-10 שעות חלונות' : s.gapH ? `${s.gapH} שעות חלונות` : 'בלי חלונות';
     const exams = !data.examsPublished ? 'לוח הבחינות טרם פורסם' : s.examGap ? `לפחות ${esc(s.examGap)} ימים בין בחינות` : 'פער בין בחינות: לא ידוע';
-    const fr = s.withFriends.map((f) => (f.n === 1 ? `קורס אחד עם ${esc(f.name)}` : `${f.n} קורסים עם ${esc(f.name)}`));
+    const fr = s.withFriends.map((f) => (f.n === 1 ? `קורס אחד עם ${f.name}` : `${f.n} קורסים עם ${f.name}`)); // raw: escaped once in the pill, the live region is text
     const yt = pair ? yearTotals(raw) : null;
     if (pair && !res.courses.length) msg += note('info', `אין קורסים בסמסטר ${ui.sem}׳ בחלופה הזו`);
 

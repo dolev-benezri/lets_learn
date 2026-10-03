@@ -147,3 +147,13 @@ test('a program without specializations shows no specialization picker and no ca
   assert.ok(!progressHtml({ prog, opened: 0, year: 3, specs: [], areas: 0 }).includes('בחרו התמחות'));
   assert.ok(progressHtml({ prog, opened: 0, year: 3, specs: [], areas: 2 }).includes('בחרו התמחות'));
 });
+
+test('a friend name in the summary pills is escaped once, not twice (U1)', () => {
+  const res = current(), saved = app.state.friends[0].groups;
+  app.state.friends[0].groups = [...(res.a?.groups ?? res.groups ?? [])].slice(0, 3); // the friend takes the shown plan's groups
+  run('view-u1', () => { renderView(); });
+  app.state.friends[0].groups = saved;
+  const pills = writes.filter((w) => w.scope === 'view-u1' && w.id === 'pills').map((w) => w.html).join('');
+  assert.ok(pills.includes('class="pill friend"'), 'no friend pill: the plan shares no course with the friend (coverage hole)');
+  assert.ok(!/&amp;(lt|gt|quot|#39|amp);/.test(pills), 'double-escaped entity in the pills');
+});
