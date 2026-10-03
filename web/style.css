@@ -623,3 +623,5 @@ body:has(#friendEd[open]) { overflow:hidden; }
 /* degree checklist (status page) */
 .checklist li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; border-bottom:1px solid var(--border); font-size:14px; }
 .checklist li.ok b { color:var(--ok, #15803D); }
+.btn.sm { min-height:28px; padding:2px 8px; font-size:12px; margin-inline-start:4px; }
+.btn.sm[aria-pressed="true"] { background:var(--primary); color:var(--on-primary); border-color:var(--primary); }

@@ -43,20 +43,26 @@ export function forbiddenMask(c = {}) {
   return m;
 }
 
-export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [] } = {}) {
-  const byId = new Map(course.groups.map((g) => [g.id, g]));
+// Lecturer choices (constraints.lecturers): an avoided lecturer's primary groups never enter; a preferred one, when they teach the course, is the only choice.
+// ponytail: only the primary group's lecturer is matched, linked tutorials are not filtered; widen it if students ask.
+const byLecturer = (prim, lecturers) => {
+  const ok = prim.filter((g) => lecturers[g.lecturer] !== 'avoid'), pref = ok.filter((g) => lecturers[g.lecturer] === 'prefer');
+  return pref.length ? pref : ok;
+};
+export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [], lecturers = {} } = {}) {
+  const byId = new Map(course.groups.map((g) => [g.id, g])), primaries = byLecturer(course.groups.filter((g) => g.primary), lecturers);
   const options = [];
   // Identical primaries (same type, lecturer, meetings, rooms, links, fullness, friends, pin) are one option;
   // the others are listed as registration alternatives instead of producing duplicate schedules (ISSUES 17א#2).
   const sig = (g) => JSON.stringify([g.type, g.lecturer, g.full, g.linked, g.meetings.map((m) => [m.day, m.start, m.end, m.room]),
     friendGroups.map((fg) => fg.includes(g.id)), pins.includes(g.id)]);
   const firstBySig = new Map(), alts = {};
-  for (const p of course.groups.filter((g) => g.primary)) {
+  for (const p of primaries) {
     const k = sig(p);
     if (firstBySig.has(k)) (alts[firstBySig.get(k)] ??= []).push(p.id);
     else firstBySig.set(k, p.id);
   }
-  for (const p of course.groups.filter((g) => g.primary && !Object.values(alts).flat().includes(g.id))) {
+  for (const p of primaries.filter((g) => !Object.values(alts).flat().includes(g.id))) {
     // One linked group of each type, then the same for what was added (course 10013: a tutorial links its lab).
     const grow = (combo, g) => {
       const subsByType = {};
@@ -221,11 +227,11 @@ function explain(info, unlocks) {
 }
 
 // freedByBlocks(id): the course would have options if the busy blocks were ignored.
-function diagnose(items, data, freedByBlocks) {
+function diagnose(items, data, freedByBlocks, avoids = false) {
   const name = (id) => data.courses[id].name;
   const out = [];
   for (const it of items) if (it.mode === 'must' && !it.options.length) out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id)
-    ? 'זמן תפוס, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
+    ? 'זמן תפוס, ' : ''}${avoids ? 'מרצה שנמנעתם ממנו, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
   const must = items.filter((x) => x.mode === 'must' && x.options.length);
   for (let i = 0; i < must.length; i++) for (let j = i + 1; j < must.length; j++) {
     if (must[i].options.every((a) => must[j].options.every((b) => overlaps(a.mask, b.mask)))) {
@@ -250,7 +256,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     const mode = pins.some((p) => c.groups.some((g) => g.id === p)) ? 'must' : m; // a pinned group forces its course in
     value[id] = base[id] + (bias[id] ?? 0);
     maxValue += Math.max(0, value[id]);
-    const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups }).map((o) => ({ ...o, course: id }));
+    const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers }).map((o) => ({ ...o, course: id }));
     return { id, mode, credits: c.credits, options };
   }).sort((a, b) => a.options.length - b.options.length);
 
@@ -359,7 +365,8 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   }
   const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
   return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins,
-    includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups }).length > 0) };
+    includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups, lecturers: constraints.lecturers }).length > 0,
+    Object.values(constraints.lecturers ?? {}).includes('avoid')) };
 }
 
 const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };

@@ -58,6 +58,7 @@ Object.assign(app.state, { name: P, passed: app.sem['א'].lists.find((l) => l.na
 app.state.profile = { ...app.state.profile, year: 2, summer: true, amirnet: 120 };
 app.state.friends = [{ name: P, groups: gids.slice(0, 3), weight: 1, active: true, manual: true }, { name: `${P}2`, groups: [P], weight: 2, active: false }];
 app.state.pins = [P, gids[0]]; // a stale pin with a hostile id, and a live one
+app.state.constraints.lecturers = { [P]: 'avoid' }; // a hostile lecturer name reaches the drawer
 app.friendLanding = { name: P, groups: [P, gids[1]] };
 app.hashError = `${P} error`;
 app.semNotice = `${P} notice`;
@@ -89,7 +90,7 @@ run('pop', () => {
   const res = current();
   const gid = [...(res.a?.groups ?? res.groups ?? [])][0] ?? gids[0];
   openPop({ dataset: { gid }, getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 }) },
-    { data: app.sem['א'], res: res.a ?? res, includeFull: false, pins: app.state.pins, friends: app.state.friends, colors: new Map() });
+    { data: app.sem['א'], res: res.a ?? res, includeFull: false, pins: app.state.pins, friends: app.state.friends, colors: new Map(), lecturers: app.state.constraints.lecturers });
 });
 run('map', () => {
   const L = layoutMap(app.data), html = mapSvg({ data: app.data, st: app.cls.statuses, L, g: geometry(L, (id) => app.data.courses[id]?.credits), year: 2, unlocks: {}, mode: 'all', plan: new Set() });
@@ -184,4 +185,9 @@ test('the status page has the degree checklist, one row per requirement', () => 
 
 test('the preferences drawer offers a campus-day cap', () => {
   assert.ok(writes.filter((w) => w.scope === 'drawer-prefs').some((w) => w.html.includes('data-chg="maxDays"')));
+});
+
+test('lecturer buttons in the popover and the drawer list (hostile names escaped above)', () => {
+  assert.ok(writes.filter((w) => w.scope === 'pop').some((w) => w.html.includes('data-act="lecturer"')));
+  assert.ok(writes.filter((w) => w.scope === 'drawer-prefs').some((w) => w.html.includes('data-act="lecturerDrop"')));
 });

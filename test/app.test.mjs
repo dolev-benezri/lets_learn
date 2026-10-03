@@ -246,3 +246,10 @@ test('normalize: maxDays is null or a whole number of days 1-6', () => {
   assert.equal(normalize({ v: 1, constraints: { maxDays: 3 } }).constraints.maxDays, 3);
   for (const bad of [0, 7, 2.5, '3']) assert.equal(normalize({ v: 1, constraints: { maxDays: bad } }).constraints.maxDays, null, String(bad));
 });
+
+test('normalize: lecturers is { name: prefer|avoid }, at most 30, names up to 60 characters', () => {
+  assert.deepEqual(normalize({ v: 1, constraints: { lecturers: { 'כהן': 'avoid', 'לוי': 'prefer', x: 'maybe', ['y'.repeat(61)]: 'avoid' } } }).constraints.lecturers, { 'כהן': 'avoid', 'לוי': 'prefer' });
+  const many = Object.fromEntries([...Array(40)].map((_, i) => [`m${i}`, 'avoid']));
+  assert.equal(Object.keys(normalize({ v: 1, constraints: { lecturers: many } }).constraints.lecturers).length, 30);
+  assert.deepEqual(normalize({ v: 1 }).constraints.lecturers, {});
+});

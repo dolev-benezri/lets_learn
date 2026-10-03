@@ -12,7 +12,8 @@ export const DEFAULT = {
   scope: 'year', load: 'even', semesterOf: {},
   specDraft: null, yearIds: [], // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
-  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, maxDays: null, examsSameDay: 'forbid', includeFull: false, blocks: [] },
+  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, maxDays: null, examsSameDay: 'forbid', includeFull: false, blocks: [],
+    lecturers: {} },
 };
 
 // The programs and cohorts the site has data for (data/afeka/catalog.json, written by the scraper). Without it: mechanical engineering 2026, the first program.
@@ -73,6 +74,8 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
     s) => (Math.abs(s - raw.weights[k]) <= Math.abs(b - raw.weights[k]) ? s : b), 0); // snap to the UI scale; ties go up like nearestStep
   if (isObj(raw.constraints)) for (const k of Object.keys(CONSTRAINT_OK)) if (CONSTRAINT_OK[k](raw.constraints[k])) out.constraints[k] = raw.constraints[k];
   if (isObj(raw.constraints)) out.constraints.blocks = cleanBlocks(raw.constraints.blocks);
+  if (isObj(raw.constraints?.lecturers)) out.constraints.lecturers = Object.fromEntries(Object.entries(raw.constraints.lecturers)
+    .filter(([k, v]) => k.length <= 60 && (v === 'prefer' || v === 'avoid')).slice(0, 30));
   return out;
 }
 

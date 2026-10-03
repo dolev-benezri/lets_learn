@@ -58,7 +58,8 @@ export const ACT = {
   prev: () => go(-1),
   next: () => go(1),
   day(el) { ui.mobileDay = Number(el.dataset.day); ui.dayScroll = true; keepFocus(renderView); },
-  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors }),
+  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors,
+    lecturers: app.state.constraints.lecturers }),
   more(el) { // the button says it is working until the result replaces it
     if (ui.running) return;
     ui.moreMul *= 2;
@@ -67,6 +68,15 @@ export const ACT = {
     scheduleRun(true);
   },
   popClose: () => $('pop').hidePopover(),
+  lecturer(el) {
+    const L = app.state.constraints.lecturers, { name, mode } = el.dataset, was = L[name] === mode;
+    if (was) delete L[name]; else L[name] = mode;
+    $('pop').hidePopover?.();
+    refresh();
+    focusWeek();
+    toast(was ? `בוטל: ${name}` : mode === 'avoid' ? `החיפוש לא ישבץ קבוצות של ${name}` : `כשאפשר, החיפוש יבחר קבוצות של ${name}`);
+  },
+  lecturerDrop(el) { delete app.state.constraints.lecturers[el.dataset.name]; refresh(); },
   pin(el) {
     const gid = el.dataset.gid, was = app.state.pins.includes(gid);
     const { cid, g } = groupIndex(app.data).get(gid);

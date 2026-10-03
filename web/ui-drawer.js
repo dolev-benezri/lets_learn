@@ -43,6 +43,7 @@ function prefsPanel() {
       <p class="hint">עבודה, אימון: החיפוש לא ישבץ שיעורים בזמנים האלה.</p>
       <div role="group" aria-labelledby="busyH">${c.blocks.map(blockRow).join('')}</div>
       ${c.blocks.length < MAX_BLOCKS ? `<button type="button" class="btn" data-act="blkAdd" data-k="blkAdd">+ הוסף זמן תפוס</button>` : ''}</section>
+    ${lecturerSec(c.lecturers)}
     <section class="dr-sec"><h3>עוד אפשרויות</h3>
       <label class="field">תקרת נ״ז <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="ללא" data-chg="maxCredits" data-k="maxCredits" value="${c.maxCredits ?? ''}"></label>
       <label class="field">לכל היותר ימים בקמפוס <select data-chg="maxDays" data-k="maxDays">${['', 1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}"${(c.maxDays ?? '')
@@ -93,6 +94,11 @@ function friendsPanel() {
 
 // A pair lists each semester under its own heading, each against its own data file; a single result has one untitled part.
 const regParts = (r) => (isPair(r) ? SEMS.map(([s, title]) => ({ title, res: semResult(r, s), data: app.sem[s] })) : [{ title: null, res: r, data: app.data }]);
+
+// Lecturers chosen from a lesson's popover: one row each, with a remove button. Shown only once there is one.
+const lecturerSec = (L) => (Object.keys(L).length ? `<section class="dr-sec"><h3>מרצים</h3><ul class="plain">${Object.entries(L).map(([name, mode]) => `<li>${
+  mode === 'avoid' ? 'להימנע מ' : 'להעדיף את '}<b>${esc(name)}</b> <button type="button" class="btn sm" data-act="lecturerDrop" data-name="${esc(name)}"
+  aria-label="${esc(`הסר את ${name}`)}">הסר</button></li>`).join('')}</ul><p class="hint">בוחרים מתוך חלון השיעור בלוח.</p></section>` : '');
 
 export function registrationText(r) {
   const one = (res, data) => {

@@ -691,3 +691,15 @@ test('maxDays: no plan uses more campus days; too low a cap explains itself', ()
   assert.equal(none.results.length, 0);
   assert.ok(none.diagnosis.some((t) => /תקרת 1 ימים/.test(t)), none.diagnosis.join(' | '));
 });
+
+test('lecturers: avoid drops that lecturer’s groups, prefer keeps only theirs when they teach the course', () => {
+  const c = { groups: [{ ...grp('g1', 1, '09:00', '11:00'), lecturer: 'כהן' }, { ...grp('g2', 2, '09:00', '11:00'), lecturer: 'לוי' }] };
+  assert.deepEqual(buildOptions(c, { lecturers: { 'כהן': 'avoid' } }).map((o) => o.groups[0]), ['g2']);
+  assert.deepEqual(buildOptions(c, { lecturers: { 'לוי': 'prefer' } }).map((o) => o.groups[0]), ['g2']);
+  assert.equal(buildOptions(c, { lecturers: { 'אחר': 'prefer' } }).length, 2, 'a preferred lecturer who does not teach it changes nothing');
+  const data = mini();
+  data.courses.Q0.groups[0].lecturer = 'כהן';
+  const r = run({ data, courses: [{ id: 'Q0', mode: 'must' }], constraints: { lecturers: { 'כהן': 'avoid' } } });
+  assert.equal(r.results.length, 0);
+  assert.ok(r.diagnosis.some((t) => /מרצה שנמנעתם ממנו/.test(t)), r.diagnosis.join(' | '));
+});
