@@ -192,10 +192,8 @@
    ]
   }
  ],
- "verified": false,
  "degree": {
-  "total": 120,
-  "specCredits": 0
+  "total": 120
  },
  "courses": {
   "6000": {

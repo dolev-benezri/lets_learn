@@ -308,13 +308,10 @@
   "pick": 2,
   "alone": [
    "power"
-  ],
-  "verified": false
+  ]
  },
- "verified": false,
  "degree": {
-  "total": 160,
-  "specCredits": 20
+  "total": 160
  },
  "courses": {
   "6000": {

@@ -47,7 +47,7 @@ const specForm = (saved) => {
       data-chg="specPick" data-id="${esc(p.id)}" data-k="spec-${esc(p.id)}"${picks.includes(p.id) ? ' checked' : ''}${!picks.includes(p.id)
       && (full || picks.some((q) => specConflict(rule, q, p.id))) ? ' disabled' : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
       ${saved.length ? '' : `<p class="hint" role="status">בחרו ${esc(word)}</p>`}` : ''}
-    <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה לפי הסבר התמחויות של המחלקה מ-2020. לא אומת.</p>' : ''}`;
+    <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה עוד לא נבדק מול תוכנית הלימודים הרשמית.</p>' : ''}`;
 };
 
 // The two questions that fix who the schedule is for: the track (only when the catalog has more than one) and the study year, which also picks the cohort.
@@ -70,7 +70,7 @@ export function renderMe() {
         <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p></section>`;
     return;
   }
-  const unverified = data.verified === false ? '<p class="hint">הנתונים של התוכנית הזו עוד לא נבדקו מול סטודנט מהמחלקה.</p>' : '';
+  const unverified = data.verified === false ? '<p class="hint">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</p>' : '';
   const pr = progress(data, state);
   const pct = Math.min(100, Math.round(pr.ratio * 100));
   // Years already studied are open; later years and the other lists sit in a collapsed section.

@@ -166,11 +166,20 @@ export function keepFocus(fn) {
 }
 
 // A saved choice must fit the loaded program: another program's area ids (or a different pick count) would mislead the progress map and the lists.
+// An area the program dropped (industrial engineering's old main+secondary pair, mechanical evening's three areas) leaves the others: a whole choice
+// when they still make `pick`, else a draft. One area never becomes a standalone choice by itself (vehicle alone adds a mandatory list).
 export function reconcileSpecs() {
-  const { profile, specDraft } = app.state, ok = validSpecs(app.data, profile.specs);
+  const { profile } = app.state, rule = specRule(app.data), ok = validSpecs(app.data, profile.specs);
+  const known = (ids) => (app.data.specializations ?? []).map((s) => s.id).filter((id) => ids.includes(id));
   if (profile.year > yearsOf(app.data)) profile.year = yearsOf(app.data); // a two-year program has no year ג׳ (the same check as the data: once per load)
-  if (ok.join() !== profile.specs.join()) profile.specs = ok;
-  if (specDraft && !(specDraft.length < specRule(app.data).pick && specDraft.every((id) => app.data.specializations?.some((x) => x.id === id)))) app.state.specDraft = null;
+  if (ok.join() !== profile.specs.join()) {
+    const left = known(profile.specs);
+    profile.specs = left.length === rule.pick ? validSpecs(app.data, left) : [];
+    if (!profile.specs.length && left.length && left.length < rule.pick && !app.state.specDraft) app.state.specDraft = left;
+  }
+  const draft = app.state.specDraft;
+  if (draft && !profile.specs.length && draft.length === rule.pick && validSpecs(app.data, draft).length) { profile.specs = validSpecs(app.data, draft); app.state.specDraft = null; }
+  if (draft && !(draft.length < rule.pick && known(draft).length === draft.length)) app.state.specDraft = null;
 }
 
 export function refresh() {

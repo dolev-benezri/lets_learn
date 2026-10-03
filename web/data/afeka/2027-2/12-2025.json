@@ -377,7 +377,7 @@
   },
   {
    "id": "mobile",
-   "name": "תוכנה למערכות ניידות",
+   "name": "ממשקי משתמש וחוויית שימוש",
    "mandatory": [
     10107,
     10110
@@ -413,13 +413,10 @@
   }
  ],
  "specRule": {
-  "pick": 1,
-  "verified": false
+  "pick": 1
  },
- "verified": false,
  "degree": {
-  "total": 160,
-  "specCredits": 0
+  "total": 160
  },
  "courses": {
   "6000": {

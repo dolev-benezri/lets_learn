@@ -332,9 +332,22 @@ test('progressInfo: everything passed reaches 100%; spec credits default to what
   const all = Object.fromEntries(Object.keys(d.courses).map((id) => [id, { status: 'done' }]));
   const p = progressInfo(d, all, new Set(), ['s']);
   assert.equal(p.done, p.total, 'all done = 100%');
-  assert.deepEqual([p.total, p.untracked, p.specLeft], [15, 5, 2], 'b fills 3 of 6, spec cap 20-10=10 of which 8 exist; 20-15 untracked');
+  assert.deepEqual([p.total, p.untracked, p.specLeft], [15, 5, 0], 'b fills 3 of 6, spec cap 20-10=10 of which the area holds 8 (all done); 20-15 untracked');
   assert.equal(progressInfo({ ...d, degree: { total: 20, specCredits: 9 } }, all, new Set(), ['s']).specLeft, 1, 'a known specCredits wins');
+  // Medical engineering: the area's courses cover less than the derived 17, and "complete to 160 from the electives" (curriculum): general electives fill the gap.
+  const bm = { degree: { total: 20 }, specializations: [{ id: 's', mandatory: 2, elective: 3 }], lists: [
+    { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 10 }, { code: 5, name: 'קורסי בחירה', courses: ['f', 'g'], minCredits: 0 },
+    { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 0 }, { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 0 }],
+  courses: { a: co(10), f: co(3), g: co(3), m: co(5), e: co(2) } };
+  const bmAll = Object.fromEntries(Object.keys(bm.courses).map((id) => [id, { status: 'done' }]));
+  assert.deepEqual(progressInfo(bm, bmAll, new Set(), ['s']), { total: 20, done: 20, planned: 0, adds: 0, specLeft: 0, untracked: 0, degreeTotal: 20 },
+    'area 7 of the derived 10, electives 3: nothing left, nothing untracked');
   assert.equal(progressInfo({ ...d, degree: undefined }, {}).untracked, 0);
+  // Computer science: the electives list has minCredits 0, so what the minimums leave of the degree fills from courses beyond them, up to the total.
+  const cs = { degree: { total: 10 }, lists: [{ code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
+    { code: 9, name: 'קורסי בחירה', courses: ['b', 'c', 'f'], minCredits: 0 }], courses: { a: co(4), b: co(3), c: co(3), f: co(3) } };
+  assert.deepEqual(progressInfo(cs, { a: { status: 'done' }, c: { status: 'done' } }, new Set(['b', 'f'])),
+    { total: 10, done: 7, planned: 3, adds: 6, specLeft: null, untracked: 0, degreeTotal: 10 }, 'electives fill the 6 the minimums leave, no more');
   const html = progressHtml({ prog: { total: 15, done: 15, planned: 0, adds: 0, untracked: 5, degreeTotal: 20 }, opened: 0 });
   assert.ok(html.includes('aria-valuemax="15"') && html.includes('עוד <b><bdi>5</bdi></b> נ״ז'));
 });

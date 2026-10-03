@@ -336,59 +336,40 @@
  "specializations": [
   {
    "id": "mis",
-   "name": "ראשית מערכות מידע ותעשייה חכמה",
+   "name": "מערכות מידע ותעשייה חכמה",
    "mandatory": 40121,
-   "elective": 40122
+   "elective": [
+    40122,
+    40126,
+    40129
+   ]
   },
   {
    "id": "dss",
-   "name": "ראשית ניהול מערכות וקבלת החלטות",
+   "name": "ניהול מערכות וקבלת החלטות",
    "mandatory": 40124,
-   "elective": 40125
+   "elective": [
+    40125,
+    40123,
+    40129
+   ]
   },
   {
    "id": "bi",
-   "name": "ראשית אנליטיקה עסקית וניתוח נתונים",
+   "name": "אנליטיקה עסקית וניתוח נתונים",
    "mandatory": 40127,
-   "elective": 40128
-  },
-  {
-   "id": "smis",
-   "name": "משנית מערכות מידע ותעשייה חכמה",
-   "mandatory": 40123
-  },
-  {
-   "id": "sdss",
-   "name": "משנית ניהול מערכות וקבלת החלטות",
-   "mandatory": 40126
-  },
-  {
-   "id": "sbi",
-   "name": "משנית אנליטיקה עסקית וניתוח נתונים",
-   "mandatory": 40129
+   "elective": [
+    40128,
+    40123,
+    40126
+   ]
   }
  ],
  "specRule": {
-  "pick": 2,
-  "alone": [],
-  "groups": [
-   [
-    "mis",
-    "dss",
-    "bi"
-   ],
-   [
-    "smis",
-    "sdss",
-    "sbi"
-   ]
-  ],
-  "verified": false
+  "pick": 1
  },
- "verified": false,
  "degree": {
-  "total": 160,
-  "specCredits": 0
+  "total": 160
  },
  "courses": {
   "6000": {

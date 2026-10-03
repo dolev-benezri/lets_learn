@@ -191,7 +191,7 @@ export function patient(request, { year, sleep = (ms) => new Promise((r) => setT
   };
 }
 
-// data/afeka/catalog.json: which program x cohort the site has files for. Programs not in this run keep their entry.
+// data/afeka/catalog.json: which program x cohort the site has files for. Programs not in this run keep their entry; programs not in the config lose it.
 // The picker's order: a track and its evening twin side by side (day first), the pairs by their lowest program number.
 export function catalogOrder(programs) {
   const base = (p) => p.name.replace(/ \(ערב\)$/, ''), first = new Map();
@@ -203,7 +203,7 @@ export async function writeCatalog(file, units, programs) {
   const old = (await readJson(file))?.programs ?? [];
   const mine = new Map();
   for (const u of units) mine.set(u.program, { id: u.program, name: programs[u.program].name, startYears: [...(mine.get(u.program)?.startYears ?? []), u.start].sort() });
-  const next = catalogOrder([...old.filter((p) => !mine.has(p.id)), ...mine.values()]);
+  const next = catalogOrder([...old.filter((p) => !mine.has(p.id) && programs[p.id]), ...mine.values()]);
   if (JSON.stringify(old) !== JSON.stringify(next)) { await mkdir(dirname(file), { recursive: true }); await writeFile(file, JSON.stringify({ programs: next }, null, 1)); }
 }
 

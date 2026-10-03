@@ -7,19 +7,19 @@ import { pathToFileURL } from 'node:url';
 import { parseTracks, parseTrackLists } from './parse.mjs';
 import { makeRequester, cachedRequester } from './scrape.mjs';
 
-export const DEPTS = [10, 11, 19, 20, 30, 40, 50, 61, 65];
+export const DEPTS = [10, 11, 19, 20, 30, 40, 50]; // bachelor's departments only (61 and 65 are master's programs)
 
-// What the site does not say, from the department explainers (docs/superpowers/plans/2026-10-02-program-expansion.md section 8; dated 2020, so verified: false).
+// What the site does not say, from the current curricula (תכנית לימודים, page 2; docs/superpowers/plans/2026-10-04-program-config-vs-afeka.md).
+// Specialization credits are not set: the app derives them per cohort from the lists' minCredits. Industrial engineering's draft still lists the
+// secondary ("משנית") tracks as areas: programs.json folds them into each area's electives.
 const RULES = {
-  10: { deptName: 'תוכנה', specRule: { pick: 1, verified: false }, degree: { total: 160, specCredits: 0 } },
-  11: { deptName: 'מדעי המחשב', degree: { total: 120, specCredits: 0 } },
-  19: { deptName: 'מדעי הנתונים', degree: { total: null, specCredits: 0 } },
-  20: { deptName: 'חשמל', specRule: { pick: 2, alone: ['power'], verified: false }, degree: { total: 160, specCredits: 20 } },
-  30: { deptName: 'מכנית', specRule: { pick: 2, alone: ['vehicle'] }, degree: { total: 160, specCredits: 27 } },
-  40: { deptName: 'תעשייה וניהול', specRule: { pick: 2, alone: [], groups: [['mis', 'dss', 'bi'], ['smis', 'sdss', 'sbi']], verified: false }, degree: { total: 160, specCredits: 0 } },
-  50: { deptName: 'רפואית', specRule: { pick: 1, verified: false }, degree: { total: 160, specCredits: 0 } },
-  61: { deptName: 'מערכות', degree: { total: null, specCredits: 0 } },
-  65: { deptName: 'מערכות תבוניות', degree: { total: null, specCredits: 0 } },
+  10: { deptName: 'תוכנה', specRule: { pick: 1 }, degree: { total: 160 } },
+  11: { deptName: 'מדעי המחשב', degree: { total: 120 } },
+  19: { deptName: 'מדעי הנתונים', degree: { total: 120 } },
+  20: { deptName: 'חשמל', specRule: { pick: 2, alone: ['power'] }, degree: { total: 160 } },
+  30: { deptName: 'מכנית', specRule: { pick: 2, alone: ['vehicle'] }, degree: { total: 160 } },
+  40: { deptName: 'תעשייה וניהול', specRule: { pick: 1 }, degree: { total: 160 } },
+  50: { deptName: 'רפואית', specRule: { pick: 1 }, degree: { total: 160 } },
 };
 // Specialization track code -> the id stored in users' saved state (never change one that has shipped).
 export const SPEC_IDS = { 37: 'solid', 31: 'flow', 39: 'mech', 302: 'vehicle', 303: 'materials', 304: 'aero', 21: 'comm', 24: 'signals', 208: 'computers', 23: 'power', 209: 'powerel',
