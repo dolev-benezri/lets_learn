@@ -78,13 +78,24 @@ test('switchTo: going back finds the old progress with the current personal sett
   await switchTo(20, 2026);
   app.state.name = 'שם חדש';
   await switchTo(30, 2026);
-  assert.deepEqual([app.state.passed, app.state.failed, app.state.profile.specs, app.state.profile.year], [['a', 'b'], { b: 1 }, ['solid', 'flow'], 3]);
+  assert.deepEqual([app.state.passed, app.state.failed, app.state.profile.specs], [['a', 'b'], { b: 1 }, ['solid', 'flow']]);
+  assert.equal(app.state.profile.year, 2, 'the study year is the current one (cohort 2026 in 2027), not the stashed 3');
   assert.equal(app.state.name, 'שם חדש');
   assert.ok(store.size > 0);
   store.set('afeka-sched-v1-onboarded', '1'); // erasing everything also starts a first visit again
   sync();
   clearSaved();
   assert.equal(store.size, 0);
+});
+
+test('switchTo: the study year picked (set before the switch, as CHG.pyear does) wins over the one in the stash', async () => {
+  serve(); reset({ ...mine(), startYear: 2027, profile: { year: 1, amirnet: null, specs: [], summer: false } });
+  app.state.program = 30;
+  for (const [y, cohort] of [[2, 2026], [1, 2027], [2, 2026]]) {
+    app.state.profile.year = y;
+    await switchTo(30, cohort);
+    assert.deepEqual([app.state.startYear, app.state.profile.year], [cohort, y], `picked year ${y}`);
+  }
 });
 
 test('switchTo: a newer choice cancels an older one still loading', async () => {
