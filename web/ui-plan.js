@@ -23,6 +23,7 @@ function renderRoute() {
   $('me').hidden = !me && !gate;
   $('layout').hidden = me || gate;
   document.body.dataset.view = view;
+  document.title = `${me ? 'המצב שלי' : gate ? 'התחלה' : 'בניית מערכת'} · המערכת שלי · אפקה`; // a tab title per view (a11y)
   document.body.classList.toggle('gated', gate);
   if (!me && app.cls) markOnboarded(); // reaching the builder any way (tab, link, "סיימתי") ends the first-visit redirect
   for (const a of document.querySelectorAll('.views a')) if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');

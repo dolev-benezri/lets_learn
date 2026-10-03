@@ -7,6 +7,8 @@ export function groupNumber(id) {
   const m = /^\d*?(\d{2})(\/\d+)?$/.exec(id);
   return m ? m[1] + (m[2] ?? '') : String(id);
 }
+// Hebrew geresh and gershayim in place of the ASCII marks the yedion types.
+export const heb = (t) => String(t).replace(/(?<=[א-ת])'/g, '׳').replace(/(?<=[א-ת])"(?=[א-ת])/g, '״');
 export const count = (n, one, many) => (n === 1 ? one : `${n} ${many}`); // Hebrew has no "1 קבוצות"
 export const courseCount = (n) => count(n, 'קורס אחד', 'קורסים');
 export const groupCount = (n) => count(n, 'קבוצה אחת', 'קבוצות');

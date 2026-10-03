@@ -168,3 +168,7 @@ test('a friend link from another program says which one, escaped', () => {
   assert.ok(!writes.filter((w) => w.scope === 'banner-same').at(-1).html.includes('מתוכנית אחרת'));
   app.friendLanding = null;
 });
+
+test('one h1 per page: the views use h2 under the app title (a11y)', () => {
+  for (const s of ['me', 'view', 'side', 'picker']) for (const w of writes.filter((x) => x.scope === s)) assert.ok(!w.html.includes('<h1'), `${s} #${w.id}`);
+});

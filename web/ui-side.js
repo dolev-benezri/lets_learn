@@ -4,7 +4,7 @@ import { englishOptions, specLists } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, isPair, resCourses, placedIn } from './ui-grid.js';
 import { notFitReason } from './ui-text.js';
-import { CAND, SEM_PICK, colors, listIds, status, doneIds, planned, seg, details, heb, listTitle, $, ui } from './ui-common.js';
+import { CAND, SEM_PICK, colors, listIds, status, doneIds, planned, seg, details, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- sidebar ----------
 // Why a planned course is missing from the shown alternative (issue 17א#5).
@@ -44,7 +44,7 @@ function card(id, res, unlocks, musts) {
     out && !dropped ? `<span class="tag">לא נכנס${why ? `: ${esc(why)}` : ''}</span>` : '',
   ].join('');
   return `<article class="course c${colors.get(id) ?? 7}${ui.dashed.has(id) ? ' rep' : ''}${inAlt ? ' in' : ''}${out ? ' out' : ''}">
-    <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${esc(c.name)}</h3><span class="cr">${c.credits} נ״ז</span></div>
+    <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${nameHtml(c.name)}</h3><span class="cr">${c.credits} נ״ז</span></div>
     ${seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`)}
     ${yearPick ? `<div class="sem-row"><span class="sem-lbl" aria-hidden="true">סמסטר:</span>${seg(`sem-${id}`, `באיזה סמסטר ללמוד את ${c.name}`, SEM_PICK,
       app.state.semesterOf[id] ?? '', `data-chg="semOf" data-id="${esc(id)}"`)}</div>` : ''}
@@ -74,7 +74,7 @@ export function renderSide(res) {
   const specN = spec.reduce((n, x) => n + x.ids.length, 0);
   const locked = (st) => ids.filter((id) => status(id) === st);
   const rows = (list) => `<ul
-    class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${esc(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
+    class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
   $('side').innerHTML = `<div class="side-head"><h2>הקורסים שלי</h2><button type="button" class="link-btn" data-act="openStatus" data-k="openStatus">עדכן מצב</button></div>
     <p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
     ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks, musts)).join('')

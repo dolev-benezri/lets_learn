@@ -422,7 +422,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 }
 @media (pointer:coarse) { :root :is(input, select) { font-size:16px; } } /* iOS zooms into a focused field under 16px; :root lifts it over .drawer select */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before { transition:none !important; animation:none !important; }
+  *, *::before, *::after { transition:none !important; animation:none !important; }
 }
 .notice.partial { flex-wrap:wrap; margin-top:0; margin-bottom:12px; }
 .notice.partial span { flex:1 1 16rem; }
@@ -468,8 +468,8 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 #me { --gut:14px; max-width:1200px; margin:0 auto; padding:14px var(--gut) 0; }
 #me { scroll-margin-top:100vh; } /* loading or following #me must not scroll the page past the nav strip: the fragment scroll clamps to 0 */
 .me-head { margin-bottom:14px; }
-.me-head h1 { font-size:20px; font-weight:600; }
-.me-head h1:focus { outline:none; }
+.me-head h2 { font-size:20px; font-weight:600; }
+.me-head h2:focus { outline:none; }
 .me-step { margin-top:4px; color:var(--text-2); }
 .me-step b { color:var(--text); font-weight:600; }
 .me-grid { display:grid; grid-template-columns:minmax(0, 1fr); gap:14px; }

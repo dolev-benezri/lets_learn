@@ -1,7 +1,9 @@
 // Week grid, block popover and the small pure helpers behind them (hour range, pills summary, scale steps).
 import { esc } from './app.js';
 import { toMin, meetingsMask, overlaps, buildOptions } from './solver-core.js';
-import { groupLabel, groupNumber } from './ui-text.js';
+import { groupLabel, groupNumber, heb } from './ui-text.js';
+// A course name as HTML: escaped, with its Latin runs marked lang="en" so a Hebrew screen reader voice says "IOS", not letters. Entities (&lt;) are not words.
+export const nameHtml = (t) => esc(heb(t)).replace(/(?<![&\w])[A-Za-z](?:[A-Za-z0-9 .,+-]*[A-Za-z0-9])?(?![\w;])/g, (m) => `<span lang="en">${m}</span>`);
 
 export const DAYS = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
 export const DAY_FULL = ['', 'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -166,7 +168,7 @@ function block({ cid, c, g }, m, from, cls, pinned, fr) {
   const k = `b-${g.id}-${m.day}-${m.start}`;
   return `<button type="button" class="blk ${cls}${pinned ? ' pinned' : ''}${d < 80 ? ' short' : ''}" data-act="block" data-gid="${esc(g.id)}" data-k="${esc(k)}"
     aria-haspopup="dialog" style="--s:${toMin(m.start) - from * 60};--d:${d}">
-    <span class="sr">יום ${DAYS[m.day]}׳, </span><span class="blk-name">${esc(c.name)}</span>
+    <span class="sr">יום ${DAYS[m.day]}׳, </span><span class="blk-name">${nameHtml(c.name)}</span>
     <span class="blk-meta"><bdi dir="ltr">${esc(m.start)}<span class="blk-end">–${esc(m.end)}</span></bdi></span>
     <span class="blk-room">${esc(typeLabel(g.type))}${m.room ? ` · ${esc(m.room)}` : ''}</span>
     ${pinned ? `<span class="blk-pin">${icon('pin')}<span class="sr">, נעוץ</span></span>` : ''}
@@ -222,7 +224,7 @@ export function openPop(btn, ctx) {
   pop.className = `pop c${ctx.colors.get(cid) ?? 7}`;
   pop.innerHTML = `
     <div class="pop-head"><span class="dot" aria-hidden="true"></span>
-      <div><h3 id="popTitle">${esc(c.name)}</h3><p>${esc(groupLabel(g))} · קורס ${esc(cid)}</p></div>
+      <div><h3 id="popTitle">${nameHtml(c.name)}</h3><p>${esc(groupLabel(g))} · קורס ${esc(cid)}</p></div>
       <button type="button" class="btn icon-btn ghost" data-act="popClose" aria-label="סגור">${icon('x')}</button></div>
     <div class="pop-actions">
       <button type="button" class="btn ${pinned ? '' : 'primary'}" data-act="pin" data-gid="${esc(g.id)}" aria-pressed="${pinned}"
