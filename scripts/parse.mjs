@@ -57,7 +57,7 @@ export function parseGroups(html) {
         primary: type.startsWith('סופי'),
         lecturer: text.match(/מרצה הקורס\s*:\s*(.*?)\s*פרטים נוספים/)?.[1] ?? '',
         full: text.includes('הקורס מלא'),
-        linked: [...linkedText.matchAll(/(\d+)\s*\/\s*(\d+)/g)].map((m) => `${m[1]}/${m[2]}`),
+        linked: [...linkedText.matchAll(/(\d+)(?:\s*\/\s*(\d+))?/g)].map((m) => (m[2] ? `${m[1]}/${m[2]}` : m[1])), // a tutorial can name a lab group: "271001309 , 271001310"
         meetings: tableRows(root)
           .filter((c) => c.length === 6 && TIME.test(c[2]) && TIME.test(c[3]) && c[2] !== c[3])
           .map(([semester, day, start, end, , room]) => ({ semester, day: parseDay(day), start, end, room })),

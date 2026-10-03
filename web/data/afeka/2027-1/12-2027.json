@@ -952,7 +952,9 @@
      "lecturer": "ד\"ר אנדלמן ניר",
      "full": false,
      "semester": "א",
-     "linked": [],
+     "linked": [
+      "271001304"
+     ],
      "meetings": [
       {
        "day": 3,
@@ -970,7 +972,9 @@
      "lecturer": "ד\"ר אנדלמן ניר",
      "full": false,
      "semester": "א",
-     "linked": [],
+     "linked": [
+      "271001304"
+     ],
      "meetings": [
       {
        "day": 1,
@@ -2777,7 +2781,9 @@
      "lecturer": "ד\"ר הוכמן מיכל",
      "full": false,
      "semester": "א",
-     "linked": [],
+     "linked": [
+      "271014708"
+     ],
      "meetings": [
       {
        "day": 4,

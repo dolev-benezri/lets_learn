@@ -56,14 +56,18 @@ export function buildOptions(course, { pins = [], includeFull = false, forbidden
     else firstBySig.set(k, p.id);
   }
   for (const p of course.groups.filter((g) => g.primary && !Object.values(alts).flat().includes(g.id))) {
-    const subsByType = {};
-    for (const id of p.linked) {
-      const s = byId.get(id);
-      if (s) (subsByType[s.type] ??= []).push(s);
-    }
-    let combos = [[p]];
-    for (const subs of Object.values(subsByType)) combos = combos.flatMap((c) => subs.map((s) => [...c, s]));
-    for (const groups of combos) {
+    // One linked group of each type, then the same for what was added (course 10013: a tutorial links its lab).
+    const grow = (combo, g) => {
+      const subsByType = {};
+      for (const id of g.linked) {
+        const s = byId.get(id);
+        if (s && !combo.includes(s)) (subsByType[s.type] ??= []).push(s);
+      }
+      let out = [combo];
+      for (const subs of Object.values(subsByType)) out = out.flatMap((c) => subs.map((s) => [...c, s]));
+      return out.flatMap((c) => c.slice(combo.length).reduce((acc, s) => acc.flatMap((cc) => grow(cc, s)), [c]));
+    };
+    for (const groups of grow([p], p)) {
       const ids = groups.map((g) => g.id);
       if (!includeFull && groups.some((g) => g.full && !pins.includes(g.id))) continue;
       const meetings = groups.flatMap((g) => g.meetings.map((m) => ({ ...m, group: g.id })));

@@ -674,7 +674,10 @@
      "lecturer": "ד\"ר בינסקי הדר",
      "full": false,
      "semester": "ב",
-     "linked": [],
+     "linked": [
+      "271001309",
+      "271001310"
+     ],
      "meetings": [
       {
        "day": 4,
@@ -692,7 +695,9 @@
      "lecturer": "ד\"ר האופטמן עמי (עמיקם)",
      "full": false,
      "semester": "ב",
-     "linked": [],
+     "linked": [
+      "271001314"
+     ],
      "meetings": [
       {
        "day": 5,
@@ -2356,7 +2361,9 @@
      "lecturer": "ד\"ר הוכמן מיכל",
      "full": false,
      "semester": "ב",
-     "linked": [],
+     "linked": [
+      "271014704"
+     ],
      "meetings": [
       {
        "day": 3,
@@ -2374,7 +2381,9 @@
      "lecturer": "ד\"ר הוכמן מיכל",
      "full": true,
      "semester": "ב",
-     "linked": [],
+     "linked": [
+      "271014705"
+     ],
      "meetings": [
       {
        "day": 2,
@@ -2392,7 +2401,9 @@
      "lecturer": "ד\"ר הוכמן מיכל",
      "full": false,
      "semester": "ב",
-     "linked": [],
+     "linked": [
+      "271014706"
+     ],
      "meetings": [
       {
        "day": 3,

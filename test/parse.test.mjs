@@ -14,6 +14,13 @@ test('parseProgram reads list name, min credits and courses', () => {
   assert.ok(p.courses.every((c) => /^\d{4,6}$/.test(c.id)));
 });
 
+test('parseGroups reads links to whole groups too (course 10013: a tutorial names its labs without a /n suffix)', () => {
+  const group = (head) => `<div class="TextAlignRight">קורס מסוג ${head} מרצה הקורס : מר x פרטים נוספים</div>`;
+  const gs = parseGroups(group('תרגול קבוצה : 271001307/ 1 ( קבוצות הקשורות לקורס זה : 271001309 , 271001310 )')
+    + group('סופי-הרצאה+תרגול קבוצה : 271001307 ( קבוצות הקשורות לקורס זה : 271001307 / 1 )'));
+  assert.deepEqual(gs.map((g) => [g.id, g.linked]), [['271001307/1', ['271001309', '271001310']], ['271001307', ['271001307/1']]]);
+});
+
 test('parseDay handles words and letters', () => {
   assert.equal(parseDay('יום שני'), 2);
   assert.equal(parseDay('ה'), 5);

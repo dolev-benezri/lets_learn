@@ -25,6 +25,15 @@ test('buildOptions pairs each primary with one linked tutorial', () => {
   assert.equal(opts[0].meetings.find((m) => m.group === 'A1/1').day, 3);
 });
 
+test('buildOptions follows a tutorial\'s own link to its lab (course 10013: lecture -> tutorial -> one of two labs)', () => {
+  const g = (id, type, linked, day) => ({ id, type, primary: type.startsWith('סופי'), full: false, lecturer: 'L', linked, exams: [],
+    meetings: [{ semester: 'א', day, start: '10:00', end: '11:50', room: 'r' }] });
+  const course = { groups: [g('P', 'סופי-הרצאה+תרגול', ['P/1'], 1), g('P/1', 'תרגול', ['L1', 'L2'], 2), g('L1', 'מעבדה', [], 3), g('L2', 'מעבדה', [], 4)] };
+  const opts = buildOptions(course);
+  assert.deepEqual(opts.map((o) => o.groups), [['P', 'P/1', 'L1'], ['P', 'P/1', 'L2']]);
+  assert.equal(opts[0].meetings.find((m) => m.group === 'L1').day, 3, 'the lab\'s hours are in the mask');
+});
+
 test('primary with no linked sub-groups still yields an option', () => {
   assert.deepEqual(buildOptions(mini().courses.B).map((o) => o.groups), [['B1']]);
 });
