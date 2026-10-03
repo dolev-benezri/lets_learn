@@ -328,11 +328,18 @@ import { createHash } from 'node:crypto';
 import { nightlyTtl, patient } from '../scripts/scrape.mjs';
 
 test('nightlyTtl: groups and exams every run, an unoffered course (no groups) and everything else weekly', () => {
-  const WEEK = 7 * 86400e3;
+  const DAY = 86400e3, weekly = (ms) => [7, 8, 9].includes(ms / DAY);
   assert.equal(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N90903', fx('groups-90903.html')), 0);
-  assert.equal(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>'), WEEK);
+  assert.ok(weekly(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>')));
   assert.equal(nightlyTtl('PRGNAME=S_EXAMS&ARGUMENTS=R1C28', fx('exams-2026.html')), 0);
-  for (const k of ['prgname=S_SHOW_PROGS&arguments=-N2026,-N30001', 'prgname=S_CourseDetails&arguments=x', 'PRGNAME=S_PROG&HUG=30']) assert.equal(nightlyTtl(k, OK), WEEK);
+  for (const k of ['prgname=S_SHOW_PROGS&arguments=-N2026,-N30001', 'prgname=S_CourseDetails&arguments=x', 'PRGNAME=S_PROG&HUG=30']) assert.ok(weekly(nightlyTtl(k, OK)), k);
+});
+
+test('nightlyTtl: weekly answers expire over 7-9 days by key, so a full refresh does not land on one night (P6)', () => {
+  const keys = Array.from({ length: 60 }, (_, i) => `prgname=S_CourseDetails&arguments=-N${30000 + i}`);
+  const days = keys.map((k) => nightlyTtl(k, OK) / 86400e3);
+  assert.deepEqual([...new Set(days)].sort(), [7, 8, 9]);
+  assert.deepEqual(keys.map((k) => nightlyTtl(k, OK) / 86400e3), days, 'the same key always gets the same ttl');
 });
 
 test('cachedRequester with a ttl: a stale answer is fetched again, a fresh one is not', async () => {
