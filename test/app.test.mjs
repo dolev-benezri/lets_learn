@@ -199,3 +199,8 @@ test('the summary pills row scrolls on phones, so it is a named region the keybo
   const tag = readFileSync('web/index.html', 'utf8').match(/<div id="pills"[^>]*>/)[0];
   assert.ok(tag.includes('tabindex="0"') && tag.includes('role="region"') && /aria-label="[^"]+"/.test(tag), tag);
 });
+
+test('both pages declare an icon, so the browser does not fetch a missing /favicon.ico (U5)', () => {
+  for (const f of ['web/index.html', 'web/legal.html']) assert.match(readFileSync(f, 'utf8'), /<link rel="icon" href="icon.svg" type="image\/svg\+xml">/, f);
+  assert.match(readFileSync('web/icon.svg', 'utf8'), /^<svg /);
+});
