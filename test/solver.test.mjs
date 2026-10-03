@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { meetingsMask, overlaps, buildOptions, forbiddenMask, unlockCounts, chainDepth, search, searchYear } from '../web/solver-core.js';
+import { meetingsMask, overlaps, buildOptions, forbiddenMask, unlockCounts, downstream, chainDepth, search, searchYear } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { mini } from './fixtures/mini-data.mjs';
@@ -670,4 +670,11 @@ test('a ב׳ pin the ב׳ search cannot honour is a missing must, and the rest o
   assert.ok(r.results.length > 0);
   for (const p of r.results) assert.ok(!inB(p, 'R') && p.missing.includes('R'), JSON.stringify([p.b?.courses, p.missing]));
   assert.ok(inA(best(r), 'Q') && inB(best(r), 'E'), JSON.stringify([best(r).a.courses, best(r).b?.courses]));
+});
+
+test('downstream is computed once per dataset (the map, the side list and the view all ask on every render)', () => {
+  const d = mini();
+  assert.equal(downstream(d), downstream(d));
+  assert.notEqual(downstream(d), downstream(mini()), 'another dataset gets its own');
+  assert.equal(unlockCounts(d, ['C']).A, 1);
 });

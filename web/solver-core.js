@@ -101,8 +101,10 @@ const dependents = (data) => {
   return rev;
 };
 
-// id -> Set of every course reachable below it
-function downstream(data) {
+// id -> Set of every course reachable below it. Kept per dataset object: the map, the side list and the view each ask on every render.
+const DOWN = new WeakMap();
+export function downstream(data) {
+  if (DOWN.has(data)) return DOWN.get(data);
   const rev = dependents(data), out = {};
   for (const id of Object.keys(data.courses)) {
     const seen = new Set();
@@ -115,11 +117,15 @@ function downstream(data) {
     }
     out[id] = seen;
   }
+  DOWN.set(data, out);
   return out;
 }
 
 // `passed` (ids already done) are not counted: they are not "still ahead".
-export const unlockCounts = (data, passed = []) => Object.fromEntries(Object.entries(downstream(data)).map(([id, s]) => [id, [...s].filter((x) => !passed.includes(x)).length]));
+export const unlockCounts = (data, passed = []) => {
+  const done = new Set(passed);
+  return Object.fromEntries(Object.entries(downstream(data)).map(([id, s]) => [id, [...s].filter((x) => !done.has(x)).length]));
+};
 
 // Length (in semesters) of the longest `קדם` chain below each course; 0 when nothing depends on it.
 export function chainDepth(data) {
