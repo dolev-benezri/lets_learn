@@ -4,7 +4,7 @@ import { progress } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { DAYS, icon, initials, groupIndex, hourRange, summary, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
-import { freshness, stalePins, partialNote, hebYear } from './ui-text.js';
+import { freshness, stalePins, partialNote, hebYear, courseCount } from './ui-text.js';
 import { SEMS, scopes, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -111,12 +111,12 @@ export function renderView() {
     const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת לך קורס חדש אחד' : `פותחת לך ${res.unlocks} קורסים חדשים`) : '';
     const infoLine = [blockingText && `קורסי קדם לקורסים אחרים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
 
-    $('pills').innerHTML = [pill('calendar', `${res.courses.length} קורסים`), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar',
-      `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))]
+    $('pills').innerHTML = [pill('calendar', courseCount(res.courses.length)), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar',
+      `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))]
       : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
       + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '');
-    live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, `${res.courses.length} קורסים`, `${s.credits} נ״ז`, pair
-      && `בכל השנה: ${yt.courses} קורסים, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
+    live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, courseCount(res.courses.length), `${s.credits} נ״ז`, pair
+      && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed: ui.dashed, pins: state.pins, friends, day: ui.mobileDay, blocks: state.constraints.blocks });

@@ -177,7 +177,7 @@ test('friends metric rewards shared groups and ignores unknown ids', () => {
   const r = run({ courses: [{ id: 'A', mode: 'must' }], friends, weights: { ...W0, friends: 1 }, topK: 3 });
   assert.deepEqual(r.results[0].groups, ['A2']);
   assert.equal(r.results[0].breakdown.friends, 1);
-  assert.match(r.results[0].explanation, /1 קורסים עם דני/);
+  assert.match(r.results[0].explanation, /קורס אחד עם דני/);
 });
 
 test('freeDays and pins', () => {

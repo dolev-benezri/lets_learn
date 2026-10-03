@@ -4,7 +4,7 @@ import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specR
 import { icon } from './ui-grid.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
-import { creditsGoal } from './ui-text.js';
+import { creditsGoal, courseCount } from './ui-text.js';
 import { STATUS, FAILS, YEARS, onboarded, gated, status, seg, details, toast, heb, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
@@ -135,7 +135,7 @@ export async function importGrades(file) {
   if (!rows.length) return setGradeMsg(GRADE_NONE);
   const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
   const todo = gradeChanges(found, state);
-  if (!todo.length) return setGradeMsg(`זוהו ${rows.length} קורסים והכול כבר מעודכן.`);
+  if (!todo.length) return setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.`);
   const label = (r) => `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}`;
   const pick = await askRows('ייבוא מגליון ציונים', 'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.', ['קורס', 'ציון', 'שינוי'],
     todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]), { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) });

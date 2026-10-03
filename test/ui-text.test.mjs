@@ -105,3 +105,8 @@ import { hebYear } from '../web/ui-text.js';
 test('hebYear: the Hebrew academic year of a Gregorian end year, with the 15 and 16 exceptions', () => {
   assert.deepEqual([2027, 2026, 2025, 2024, 2023, 2015, 1955, 1956].map(hebYear), ['תשפ״ז', 'תשפ״ו', 'תשפ״ה', 'תשפ״ד', 'תשפ״ג', 'תשע״ה', 'תשט״ו', 'תשט״ז']);
 });
+
+test('courseCount: one course is "קורס אחד", not "1 קורסים"', async () => {
+  const { courseCount } = await import('../web/ui-text.js');
+  assert.deepEqual([courseCount(1), courseCount(0), courseCount(4)], ['קורס אחד', '0 קורסים', '4 קורסים']);
+});
