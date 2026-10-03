@@ -16,7 +16,7 @@ export const SEMS = [['א', 'סמסטר א׳'], ['ב', 'סמסטר ב׳']];
 const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
 export const scopes = () => (summerOn() ? [...SCOPE, ['קיץ', 'קיץ']] : SCOPE); // summer only when the profile plans one
 export const LOAD = [['א', 'יותר בא׳'], ['even', 'מאוזן'], ['ב', 'יותר בב׳']];
-export const YEARS = [[1, 'א׳'], [2, 'ב׳'], [3, 'ג׳'], [4, 'ד׳']];
+export const YEARS = [[1, 'א׳'], [2, 'ב׳'], [3, 'ג׳'], [4, 'ד׳'], [5, 'ה׳']]; // ה׳: evening programs (yearsOf cuts the list per program)
 export const SEM_PICK = [['', 'אוטומטי'], ['א', 'א׳'], ['ב', 'ב׳']];
 export const HARD = [['hard', 'חובה לגמרי'], ['soft', 'רק העדפה']]; // the constraint toggles; the course mode keeps "חובה/אולי/לא"
 export const SHEET = '(max-width: 1079px)'; // below: the drawer is a modal sheet; from here up it is docked and the page reserves its width (index.html)

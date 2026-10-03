@@ -1,5 +1,5 @@
 // Afeka regulations engine (תקנון לימודים תואר ראשון, 5.2.2026). Pure: runs in browser and node.
-const YEAR_LETTERS = { 'א': 1, 'ב': 2, 'ג': 3, 'ד': 4 };
+const YEAR_LETTERS = { 'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5 }; // evening programs run five years
 
 // Afeka english clearance (checked 2026-10-01): Amirnet 85/100/120/134 exempts the first 1/2/3/4 courses; exemption gives no credits.
 const ENGLISH = ['6000', '6001', '6002', '6003'];
@@ -26,7 +26,7 @@ export function validSpecs(data, ids) {
   const paired = ok.length === rule.pick && (!rule.groups || (ok.length === 2 && ok.every(inGroups) && !specConflict(rule, ok[0], ok[1])));
   return ok.length === ids.length && (paired || (ok.length === 1 && rule.alone.includes(ok[0]))) ? ok : [];
 }
-export const cleanProfile = (p) => ({ year: int(p?.year, 1, 4), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
+export const cleanProfile = (p) => ({ year: int(p?.year, 1, 5), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
 
 // Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the standalone extra (aloneExtra) when its area is chosen alone;
 // elective = their בחירה lists minus what is mandatory (a course in several lists counts once). chosen / all = list codes of the chosen areas / of every specialization list.
@@ -58,7 +58,7 @@ export function summerOnly(statuses, summer, on) {
 // ponytail: profile.year only overrides the label; a real different cohort needs its own data file (data.startYear).
 // How many study years the program has: its last mandatory year list ("שנה ב'" in a two-year program). No program is one year long, so fewer than two = partial data: four.
 export const yearsOf = (data) => {
-  const n = Math.max(0, ...(data.lists ?? []).map((l) => ' אבגד'.indexOf(l.name.match(/שנה ([א-ד])'/)?.[1] ?? ' ')));
+  const n = Math.max(0, ...(data.lists ?? []).map((l) => ' אבגדה'.indexOf(l.name.match(/שנה ([א-ה])'/)?.[1] ?? ' ')));
   return n >= 2 ? n : 4;
 };
 export const studyYear = (data, state) => Math.min(yearsOf(data), state.profile?.year ?? data.year - data.startYear + 1);

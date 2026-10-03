@@ -77,7 +77,7 @@ export function renderMe() {
   // A chosen year opens its own list too (and the earlier ones); without a choice only the earlier years are open.
   const open = state.profile.year ?? studyYear(data, state) - 1;
   const lists = data.lists.map((l, i) => ({ ...l, i, year: l.name.match(/חובה שנה (\S)'/)?.[1] }));
-  const past = (l) => l.year && ' אבגד'.indexOf(l.year) <= open;
+  const past = (l) => l.year && ' אבגדה'.indexOf(l.year) <= open;
   const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(listTitle(l)))} <span>${l.minCredits
     ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}"
     data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id,

@@ -245,7 +245,7 @@ export async function switchTo(program, startYear) {
   stash(prev);
   const saved = normalize(unstash(program, startYear), app.catalog);
   const back = saved.program === program && saved.startYear === startYear && !!unstash(program, startYear);
-  const next = back ? saved : { ...structuredClone(DEFAULT), program, startYear, profile: { ...cleanProfile({}), year: prev.profile.year === null ? null : clamp(prev.year - startYear + 1, 1, 4) } };
+  const next = back ? saved : { ...structuredClone(DEFAULT), program, startYear, profile: { ...cleanProfile({}), year: prev.profile.year === null ? null : clamp(prev.year - startYear + 1, 1, 5) } };
   if (back && prev.profile.year !== null) next.profile.year = prev.profile.year; // the year just picked (CHG.pyear sets it first), not the stash's older one
   app.state = withPersonal(next, prev);
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);

@@ -154,8 +154,9 @@ export const CHG = {
   pyear: (el) => {
     const was = gated(), y = cleanProfile({ year: Number(el.value) }).year;
     app.state.profile.year = y;
-    const start = cohortOf(y); // the year picks the cohort that is in it when the catalog has one, else it only relabels
-    if (start && start !== app.state.startYear && app.catalog.programs.find((p) => p.id === app.state.program)?.startYears.includes(start)) changeIdentity(app.state.program, start);
+    const p = app.catalog.programs.find((x) => x.id === app.state.program); // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024)
+    const start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
+    if (start && start !== app.state.startYear) changeIdentity(app.state.program, start);
     if (was) queueMicrotask(focusWeek); // after the refresh: the question is gone, keep focus out of <body>
   },
   amirnet: (el) => {
