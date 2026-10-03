@@ -1,5 +1,5 @@
 // Click (ACT) and change (CHG) handlers, wired to the document in ui-plan.js.
-import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, clearSaved, DEFAULT } from './app.js';
+import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
@@ -122,10 +122,12 @@ const blockEdit = (el, k, v) => {
   const b = app.state.constraints.blocks[el.dataset.i];
   if (cleanBlocks([{ ...b, [k]: v }]).length) b[k] = v;
 };
-// A program or cohort change: the new data is already in; reset what belonged to the old one and redraw.
+// A program or cohort change, or a restored backup: the new data is already in; reset what belonged to the old one and redraw.
+const resetUi = () => { ui.last = null; ui.cur = 0; ui.specPick = null; colors.clear(); };
+setUiReset(resetUi);
 async function changeIdentity(program, startYear) {
   if (!await switchTo(program, startYear)) { refresh(); return; } // refused or failed: the selects go back to the real state
-  ui.last = null; ui.cur = 0; ui.specPick = null; colors.clear();
+  resetUi();
   refresh();
   toast(`עברנו ל${app.catalog.programs.find((p) => p.id === program)?.name ?? ''} ${startYear}`);
 }

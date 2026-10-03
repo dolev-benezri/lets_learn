@@ -167,8 +167,25 @@ test('restoreBackup: another program loads its data before the state is replaced
   assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2027, name: 'מגובה' }), false);
   assert.equal(JSON.stringify(app.state), before);
   assert.equal(app.data, data);
-  assert.equal(await restoreBackup({ v: 1, program: 99, startYear: 2027, name: 'זר' }), true, 'a foreign program falls back to the default one, whose data is already loaded');
-  assert.deepEqual([app.state.program, app.state.startYear, app.state.name], [DEFAULT.program, DEFAULT.startYear, 'זר']);
+  app.hashError = null;
+  assert.equal(await restoreBackup({ v: 1, program: 99, startYear: 2027, name: 'זר' }), false, 'a program the site does not have: refused, not merged into the default one');
+  assert.equal(JSON.stringify(app.state), before);
+  assert.match(app.hashError, /התוכנית של הגיבוי/);
+  app.hashError = null;
+});
+
+test('restoreBackup: a restored backup resets the UI state of the old one (L5)', async () => {
+  const { setUiReset } = await import('../web/app.js');
+  let resets = 0;
+  setUiReset(() => { resets++; });
+  serve(); reset(mine());
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, name: 'אותה תוכנית' }), true);
+  assert.equal(await restoreBackup({ v: 1, program: 20, startYear: 2026, name: 'אחרת' }), true);
+  assert.equal(resets, 2, 'every restore drops the old results, colors and specialization pick');
+  await restoreBackup({ v: 1, program: 99, startYear: 2026 });
+  assert.equal(resets, 2, 'a refused restore changes nothing');
+  setUiReset(() => {});
+  app.hashError = null;
 });
 
 test('switchTo: default hours follow the track (evening: not before 16:00) until the student changes them', async () => {

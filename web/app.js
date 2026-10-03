@@ -155,6 +155,9 @@ export const candidateMode = (id) => modeFor(app.cls.statuses[id]?.status, app.s
 // Rendering lives in ui-plan.js / ui-grid.js; they register here. Focus survives a re-render via data-k keys.
 let renderers = [];
 export function setRenderers(...fns) { renderers = fns; }
+// What the UI keeps for the current program (results, colors, a half-made pick) must go when the state is replaced; ui-actions.js registers it.
+let uiReset = () => {};
+export function setUiReset(fn) { uiReset = fn; }
 export function keepFocus(fn) {
   const k = document.activeElement?.dataset?.k;
   fn();
@@ -267,14 +270,17 @@ async function init() {
 }
 
 // Replace the state with a backup. Another program or cohort loads its data first; if that fails nothing changes and it returns false.
+// A program the catalog lacks is refused (normalize would quietly turn it into the default program); a dropped cohort moves to the nearest one, like a saved state.
 export async function restoreBackup(payload) {
   const p = normalize(payload, app.catalog);
+  if (p.program !== payload?.program) { app.hashError = 'התוכנית של הגיבוי לא קיימת באתר, הגיבוי לא שוחזר.'; return false; }
   if (p.program !== app.state.program || p.startYear !== app.state.startYear) {
     let sem;
     try { sem = await fetchSemesters(p); } catch { return false; }
     setSemesters(sem);
   }
   app.state = p;
+  uiReset();
   return true;
 }
 
@@ -287,7 +293,7 @@ export async function applyHash() {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
     if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
-      if (!await restoreBackup(h.payload)) app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי';
+      if (!await restoreBackup(h.payload)) app.hashError ??= 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי';
     } else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
   }
   ensurePassed();
