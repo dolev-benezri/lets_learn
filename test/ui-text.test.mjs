@@ -132,3 +132,28 @@ test('nameHtml: Latin runs in a course name get lang="en", entities are left alo
   assert.equal(nameHtml('מבוא <b> & "x"'), 'מבוא &lt;<span lang="en">b</span>&gt; &amp; &quot;<span lang="en">x</span>&quot;');
   assert.equal(nameHtml('פיזיקה 1'), 'פיזיקה 1');
 });
+
+test('waUrl: the text and the link, encoded, for wa.me; shareText names the sender', async () => {
+  const { waUrl, shareText } = await import('../web/ui-text.js');
+  assert.equal(waUrl('שלום & "x"', 'https://a.test/#f=AB'), 'https://wa.me/?text=' + encodeURIComponent('שלום & "x" https://a.test/#f=AB'));
+  assert.equal(shareText(''), 'חבר שיתף/ה איתך מערכת שעות:');
+  assert.equal(shareText('דנה'), 'דנה שיתף/ה איתך מערכת שעות:');
+});
+
+test('compareAlts names what changes: free day, friend, gaps, courses, unlocks', async () => {
+  const { compareAlts } = await import('../web/ui-text.js');
+  const data = { courses: { A: { name: 'פיזיקה' }, B: { name: 'כימיה' } } };
+  const best = { courses: ['A'], unlocks: 1, freeDays: [], gapH: 1, withFriends: [{ name: 'נועה', n: 1 }] };
+  const cur = { courses: ['A', 'B'], unlocks: 3, freeDays: [4], gapH: 0, withFriends: [] };
+  assert.deepEqual(compareAlts(cur, best, data), ['יום ד׳ פנוי', 'בלי נועה', 'שעה פחות חלונות', '+ כימיה', 'פותחת 2 קורסים יותר']);
+  assert.deepEqual(compareAlts(best, cur, data), ['בלי יום ד׳ פנוי', 'עם נועה', 'שעה יותר חלונות', '− כימיה', 'פותחת 2 קורסים פחות']);
+  assert.deepEqual(compareAlts({ ...best, gapH: 3.5 }, best, data), ['2.5 שעות יותר חלונות']);
+  assert.deepEqual(compareAlts(best, best, data), ['אותם קורסים, שיבוץ אחר']);
+});
+
+test('compareAlts: the same groups (a year plan whose semester did not change) say so', async () => {
+  const { compareAlts } = await import('../web/ui-text.js');
+  const x = { courses: ['A'], groups: ['g1', 'g2'], unlocks: 1, freeDays: [], gapH: 1, withFriends: [] };
+  assert.deepEqual(compareAlts({ ...x, groups: ['g2', 'g1'] }, x, { courses: { A: { name: 'a' } } }), ['זהה לחלופה 1 בסמסטר הזה']);
+  assert.deepEqual(compareAlts({ ...x, courses: [], groups: [] }, { ...x, courses: [], groups: [] }, { courses: {} }), ['זהה לחלופה 1 בסמסטר הזה']);
+});

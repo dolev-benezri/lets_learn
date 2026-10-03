@@ -2,6 +2,7 @@
 import { app, esc, refresh } from './app.js';
 import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs } from './rules.js';
 import { icon } from './ui-grid.js';
+import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
 import { creditsGoal, courseCount } from './ui-text.js';
@@ -48,6 +49,14 @@ const specForm = (saved) => {
       ${saved.length ? '' : `<p class="hint" role="status">בחרו ${esc(word)}</p>`}` : ''}
     <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה עוד לא נבדק מול תוכנית הלימודים הרשמית.</p>' : ''}`;
 };
+
+// Degree checklist: what each requirement still needs, from the same numbers as the progress bar (progressInfo).
+function checklist(data, state) {
+  const { rows, untracked } = progressInfo(data, app.cls.statuses, new Set(), state.profile.specs);
+  const gap = untracked ? `<p class="hint">עוד ${esc(untracked)} נ״ז של התואר לא מופיעים ברשימות שבנתונים (קורסים שכבר לא נפתחים), ולכן לא נספרים כאן.</p>` : '';
+  const row = (r) => `<li${r.done >= r.need ? ' class="ok"' : ''}><span>${esc(heb(r.name))}</span> <b>${r.done >= r.need ? '✓ ' : ''}${esc(r.done)} מתוך ${esc(r.need)} נ״ז</b></li>`;
+  return details('checklist', 'מה נשאר לסיום התואר', `<ul class="plain checklist">${rows.map(row).join('')}</ul>${gap}`, rows.length);
+}
 
 // The two questions that fix who the schedule is for: the track (only when the catalog has more than one) and the study year, which also picks the cohort.
 export function identityPick(year, visible) {
@@ -101,6 +110,7 @@ export function renderMe() {
             class="hint">יעד 70% (תקנון 11.4.4)</span></div>
           <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i
             style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
+          ${checklist(data, state)}
           <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
           <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button>
           <button type="button" class="btn" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>

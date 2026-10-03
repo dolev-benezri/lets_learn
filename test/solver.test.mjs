@@ -678,3 +678,37 @@ test('downstream is computed once per dataset (the map, the side list and the vi
   assert.notEqual(downstream(d), downstream(mini()), 'another dataset gets its own');
   assert.equal(unlockCounts(d, ['C']).A, 1);
 });
+
+test('maxDays: no plan uses more campus days; too low a cap explains itself', () => {
+  const data = mini(), byId = new Map(Object.values(data.courses).flatMap((c) => c.groups.map((g) => [g.id, g])));
+  const daysOf = (x) => new Set(x.groups.flatMap((id) => byId.get(id).meetings.map((m) => m.day))).size;
+  const courses = [{ id: 'A', mode: 'must' }, { id: 'Q0', mode: 'must' }, { id: 'Q', mode: 'must' }];
+  const r = run({ data, courses, constraints: { maxDays: 2 } });
+  assert.ok(r.results.length > 0);
+  for (const x of r.results) assert.ok(daysOf(x) <= 2, x.groups.join());
+  assert.ok(run({ data, courses }).results.some((x) => daysOf(x) > 2), 'without the cap a wider plan exists');
+  const none = run({ data, courses, constraints: { maxDays: 1 } });
+  assert.equal(none.results.length, 0);
+  assert.ok(none.diagnosis.some((t) => /תקרת 1 ימים/.test(t)), none.diagnosis.join(' | '));
+});
+
+test('lecturers: avoid drops that lecturer’s groups, prefer keeps only theirs when they teach the course', () => {
+  const c = { groups: [{ ...grp('g1', 1, '09:00', '11:00'), lecturer: 'כהן' }, { ...grp('g2', 2, '09:00', '11:00'), lecturer: 'לוי' }] };
+  assert.deepEqual(buildOptions(c, { lecturers: { 'כהן': 'avoid' } }).map((o) => o.groups[0]), ['g2']);
+  assert.deepEqual(buildOptions(c, { lecturers: { 'לוי': 'prefer' } }).map((o) => o.groups[0]), ['g2']);
+  assert.equal(buildOptions(c, { lecturers: { 'אחר': 'prefer' } }).length, 2, 'a preferred lecturer who does not teach it changes nothing');
+  const data = mini();
+  data.courses.Q0.groups[0].lecturer = 'כהן';
+  const r = run({ data, courses: [{ id: 'Q0', mode: 'must' }], constraints: { lecturers: { 'כהן': 'avoid' } } });
+  assert.equal(r.results.length, 0);
+  assert.ok(r.diagnosis.some((t) => /בחירת מרצה/.test(t)), r.diagnosis.join(' | '));
+});
+
+test('lecturers never strand a course: a pinned group survives avoid, prefer falls back when that lecturer’s groups are full', () => {
+  const g1 = { ...grp('g1', 1, '09:00', '11:00'), lecturer: 'כהן' }, g2 = { ...grp('g2', 2, '09:00', '11:00'), lecturer: 'לוי' };
+  assert.deepEqual(buildOptions({ groups: [g1, g2] }, { pins: ['g1'], lecturers: { 'כהן': 'avoid' } }).map((o) => o.groups[0]), ['g1'], 'pin beats avoid');
+  assert.deepEqual(buildOptions({ groups: [g1, g2] }, { pins: ['g2'], lecturers: { 'כהן': 'prefer' } }).map((o) => o.groups[0]), ['g2'], 'pin beats prefer');
+  assert.deepEqual(buildOptions({ groups: [{ ...g1, full: true }, g2] }, { lecturers: { 'כהן': 'prefer' } }).map((o) => o.groups[0]), ['g2'], 'the preferred group is full: the others stay');
+  assert.deepEqual(buildOptions({ groups: [g1, g2] }, { forbidden: meetingsMask([{ day: 1, start: '09:00', end: '11:00' }]), lecturers: { 'כהן': 'prefer' } })
+    .map((o) => o.groups[0]), ['g2'], 'the preferred group is blocked: the others stay');
+});

@@ -1,5 +1,6 @@
 // Drawer panels: preferences, friends, registration list.
 import { app, esc, DEFAULT } from './app.js';
+import { SEMESTER_DATES } from './ics.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, backups, isPair, semResult } from './ui-grid.js';
 import { groupLabel, strictnessHint, defaultNotes, hebYear, groupCount } from './ui-text.js';
 import { WEIGHTS, SCALE, FSCALE, SEMS, scopes, colors, LOAD, HARD, SHEET, current, allGroupIds, seg, $, ui } from './ui-common.js';
@@ -43,8 +44,11 @@ function prefsPanel() {
       <p class="hint">עבודה, אימון: החיפוש לא ישבץ שיעורים בזמנים האלה.</p>
       <div role="group" aria-labelledby="busyH">${c.blocks.map(blockRow).join('')}</div>
       ${c.blocks.length < MAX_BLOCKS ? `<button type="button" class="btn" data-act="blkAdd" data-k="blkAdd">+ הוסף זמן תפוס</button>` : ''}</section>
+    ${lecturerSec(c.lecturers)}
     <section class="dr-sec"><h3>עוד אפשרויות</h3>
       <label class="field">תקרת נ״ז <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="ללא" data-chg="maxCredits" data-k="maxCredits" value="${c.maxCredits ?? ''}"></label>
+      <label class="field">לכל היותר ימים בקמפוס <select data-chg="maxDays" data-k="maxDays">${['', 1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}"${(c.maxDays ?? '')
+        === n ? ' selected' : ''}>${n || 'ללא'}</option>`).join('')}</select></label>
       <label class="check"><input type="checkbox" data-chg="examsAllow" data-k="examsAllow"${c.examsSameDay === 'allow' ? ' checked' : ''}> לאפשר 2 בחינות באותו יום</label>
       <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label></section>
     ${state.pins.length ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length === 1 ? 'קבוצה אחת נעוצה' : `${state.pins.length} קבוצות נעוצות`}:</p><ul
@@ -85,11 +89,17 @@ function friendsPanel() {
     <section class="dr-sec fr-sec"><h3>הקישור שלי</h3>
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
       <button type="button" class="btn fr-wide" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
+      <button type="button" class="btn fr-wide" data-act="shareOut" data-k="shareOut">${icon('share')} שתף (וואטסאפ ועוד)</button>
       <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`];
 }
 
 // A pair lists each semester under its own heading, each against its own data file; a single result has one untitled part.
 const regParts = (r) => (isPair(r) ? SEMS.map(([s, title]) => ({ title, res: semResult(r, s), data: app.sem[s] })) : [{ title: null, res: r, data: app.data }]);
+
+// Lecturers chosen from a lesson's popover: one row each, with a remove button. Shown only once there is one.
+const lecturerSec = (L) => (Object.keys(L).length ? `<section class="dr-sec"><h3>מרצים</h3><ul class="plain">${Object.entries(L).map(([name, mode]) => `<li>${
+  mode === 'avoid' ? 'להימנע מקבוצות של ' : 'להעדיף את '}<b>${esc(name)}</b> <button type="button" class="btn sm" data-act="lecturerDrop" data-name="${esc(name)}"
+  aria-label="${esc(`הסר את ${name}`)}">הסר</button></li>`).join('')}</ul><p class="hint">בוחרים מתוך חלון השיעור בלוח.</p></section>` : '');
 
 export function registrationText(r) {
   const one = (res, data) => {
@@ -118,7 +128,14 @@ function regPanel() {
     <section class="dr-sec"><h3>בחינות</h3>${data.examsPublished
       ? `<ul class="plain">${exams.map((e) => `<li>${esc(data.courses[e.course].name)} · מועד ${esc(e.moed)} · <bdi dir="ltr">${esc(e.date)} ${esc(e.time ?? '')}</bdi></li>`).join('')}</ul>`
       : `<p class="hint">לוח הבחינות של ${hebYear(data.year)} טרם פורסם.</p>`}</section>`,
-  `<button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>`];
+  `<button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>
+  <button type="button" class="btn" data-act="ics" data-k="ics"${icsParts(raw) ? '' : ` disabled aria-describedby="icsNo"`}>${icon('calendar')} הוסף ללוח שנה</button>
+  ${icsParts(raw) ? '' : `<p class="hint" id="icsNo">לוח השנה של ${hebYear(data.year)} עוד לא הוזן באתר.</p>`}`];
+}
+// The calendar file's parts: each semester of the plan with its dates, or null when a semester's dates are not in SEMESTER_DATES (no wrong file).
+export function icsParts(r) {
+  const parts = regParts(r).map((p) => ({ ...p, dates: SEMESTER_DATES[p.data.year]?.[p.data.semester] }));
+  return parts.every((p) => p.dates) ? parts : null;
 }
 
 const PANELS = { prefs: prefsPanel, friends: friendsPanel, reg: regPanel };

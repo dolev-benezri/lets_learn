@@ -21,6 +21,7 @@ export function meetingsMask(meetings) {
 
 export const overlaps = (a, b) => a.some((v, d) => (v & b[d]) !== 0);
 export const merge = (a, b) => a.map((v, d) => v | b[d]);
+const daysUsed = (mask) => mask.filter((m, d) => d >= 1 && m !== 0).length; // campus days of a week mask (index 0 unused)
 
 // Slots strictly after time t. Not meetingsMask(t..23:00): that floors the start, so a lesson ending exactly at t
 // (Afeka lessons end at :50) would share t's slot and count as late.
@@ -42,20 +43,28 @@ export function forbiddenMask(c = {}) {
   return m;
 }
 
-export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [] } = {}) {
-  const byId = new Map(course.groups.map((g) => [g.id, g]));
+// Lecturer choices (constraints.lecturers), applied to the options that are left after full groups, busy time and pins:
+// an avoided lecturer's options go (unless pinned), and of what remains a preferred lecturer's options win when there are any.
+// ponytail: only the primary group's lecturer is matched, linked tutorials are not filtered; widen it if students ask.
+function byLecturer(options, lecturers, byId, pins) {
+  const who = (o) => lecturers[byId.get(o.groups[0])?.lecturer], pinned = (o) => o.groups.some((id) => pins.includes(id));
+  const ok = options.filter((o) => who(o) !== 'avoid' || pinned(o)), pref = ok.filter((o) => who(o) === 'prefer' || pinned(o));
+  return ok.some((o) => who(o) === 'prefer') ? pref : ok;
+}
+export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [], lecturers = {} } = {}) {
+  const byId = new Map(course.groups.map((g) => [g.id, g])), primaries = course.groups.filter((g) => g.primary);
   const options = [];
   // Identical primaries (same type, lecturer, meetings, rooms, links, fullness, friends, pin) are one option;
   // the others are listed as registration alternatives instead of producing duplicate schedules (ISSUES 17א#2).
   const sig = (g) => JSON.stringify([g.type, g.lecturer, g.full, g.linked, g.meetings.map((m) => [m.day, m.start, m.end, m.room]),
     friendGroups.map((fg) => fg.includes(g.id)), pins.includes(g.id)]);
   const firstBySig = new Map(), alts = {};
-  for (const p of course.groups.filter((g) => g.primary)) {
+  for (const p of primaries) {
     const k = sig(p);
     if (firstBySig.has(k)) (alts[firstBySig.get(k)] ??= []).push(p.id);
     else firstBySig.set(k, p.id);
   }
-  for (const p of course.groups.filter((g) => g.primary && !Object.values(alts).flat().includes(g.id))) {
+  for (const p of primaries.filter((g) => !Object.values(alts).flat().includes(g.id))) {
     // One linked group of each type, then the same for what was added (course 10013: a tutorial links its lab).
     const grow = (combo, g) => {
       const subsByType = {};
@@ -88,8 +97,8 @@ export function buildOptions(course, { pins = [], includeFull = false, forbidden
       });
     }
   }
-  const coursePins = pins.filter((id) => byId.has(id));
-  return coursePins.length ? options.filter((o) => coursePins.every((id) => o.groups.includes(id))) : options;
+  const coursePins = pins.filter((id) => byId.has(id)), left = byLecturer(options, lecturers, byId, pins);
+  return coursePins.length ? left.filter((o) => coursePins.every((id) => o.groups.includes(id))) : left;
 }
 
 // Only `קדם` links block: a `מקביל` course can be taken in the same semester.
@@ -220,11 +229,11 @@ function explain(info, unlocks) {
 }
 
 // freedByBlocks(id): the course would have options if the busy blocks were ignored.
-function diagnose(items, data, freedByBlocks) {
+function diagnose(items, data, freedByBlocks, avoids = false) {
   const name = (id) => data.courses[id].name;
   const out = [];
   for (const it of items) if (it.mode === 'must' && !it.options.length) out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id)
-    ? 'זמן תפוס, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
+    ? 'זמן תפוס, ' : ''}${avoids ? 'בחירת מרצה, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
   const must = items.filter((x) => x.mode === 'must' && x.options.length);
   for (let i = 0; i < must.length; i++) for (let j = i + 1; j < must.length; j++) {
     if (must[i].options.every((a) => must[j].options.every((b) => overlaps(a.mask, b.mask)))) {
@@ -249,7 +258,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     const mode = pins.some((p) => c.groups.some((g) => g.id === p)) ? 'must' : m; // a pinned group forces its course in
     value[id] = base[id] + (bias[id] ?? 0);
     maxValue += Math.max(0, value[id]);
-    const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups }).map((o) => ({ ...o, course: id }));
+    const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers }).map((o) => ({ ...o, course: id }));
     return { id, mode, credits: c.credits, options };
   }).sort((a, b) => a.options.length - b.options.length);
 
@@ -341,6 +350,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     for (const o of it.options) {
       if (overlaps(mask, o.mask)) continue;
       if (constraints.maxCredits && credits + it.credits > constraints.maxCredits) continue;
+      if (constraints.maxDays && daysUsed(merge(mask, o.mask)) > constraints.maxDays) continue; // monotone: a course never frees a day
       if (noExamClash && o.exams.some((d) => examDates.has(d))) continue;
       sel.push(o);
       dfs(i + 1, merge(mask, o.mask), credits + it.credits, noExamClash ? new Set([...examDates, ...o.exams]) : examDates, val + value[it.id]);
@@ -350,9 +360,15 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   }
 
   dfs(0, new Array(DAYS).fill(0), 0, new Set(), 0);
+  // No plan under the campus-day cap, but one without it: the cap is the reason (checked with a short, single-result search)
+  if (!top.length && !partial && constraints.maxDays && search({ data, courses, statuses, pins, constraints: { ...constraints, maxDays: null }, weights, friends,
+    topK: 1, timeLimitMs: timeLimitMs / 4, prune, bias }).results.length) {
+    return { results: [], partial: false, diagnosis: [`תקרת ${constraints.maxDays} ימים בקמפוס קטנה מדי לקורסי החובה. העלו אותה או סמנו פחות קורסים כ"חובה".`] };
+  }
   const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
   return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins,
-    includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups }).length > 0) };
+    includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups, lecturers: constraints.lecturers }).length > 0,
+    Object.keys(constraints.lecturers ?? {}).length > 0) };
 }
 
 const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };

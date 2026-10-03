@@ -4,7 +4,7 @@ import { progress } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { DAYS, icon, initials, groupIndex, hourRange, summary, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
-import { freshness, stalePins, partialNote, hebYear, courseCount, count } from './ui-text.js';
+import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts } from './ui-text.js';
 import { SEMS, scopes, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -114,11 +114,13 @@ export function renderView() {
     const blockingText = blockingNames.length ? blockingNames.join(', ') + (blocking.length > 3 ? ` ועוד ${blocking.length - 3}` : '') : '';
     const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת לך קורס חדש אחד' : `פותחת לך ${res.unlocks} קורסים חדשים`) : '';
     const infoLine = [blockingText && `קורסי קדם לקורסים אחרים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
+    const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null; // what this alternative changes against the first one (§14ז)
+    const vs = best ? compareAlts({ ...res, ...s }, { ...best, ...summary(best, data, state.friends) }, data).map(esc).join(' · ') : '';
 
     $('pills').innerHTML = [pill('calendar', courseCount(res.courses.length)), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar',
       `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))]
       : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
-      + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '');
+      + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') + (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
     live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, courseCount(res.courses.length), `${s.credits} נ״ז`, pair
       && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';

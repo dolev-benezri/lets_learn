@@ -214,6 +214,9 @@ export function renderDaySelector(range, res, data, day) {
 
 // Popover: details of one group, friends in it, pin toggle and a Yedion link. Compact: header and actions stay, the rest scrolls inside.
 // The group is named for people (type + short number); the 9-digit registration id stays visible but secondary.
+// Prefer / avoid this lecturer in every search (constraints.lecturers); pressed again, the choice is cleared.
+const lecturerBtns = (name, mine) => [['prefer', 'להעדיף', `להעדיף את ${name}`], ['avoid', 'להימנע', `להימנע מקבוצות של ${name}`]].map(([mode, label, aria]) => ` <button
+  type="button" class="btn sm" data-act="lecturer" data-name="${esc(name)}" data-mode="${mode}" aria-pressed="${mine === mode}" aria-label="${esc(aria)}">${label}</button>`).join('');
 export function openPop(btn, ctx) {
   const pop = document.getElementById('pop');
   const { cid, c, g } = groupIndex(ctx.data).get(btn.dataset.gid);
@@ -234,7 +237,7 @@ export function openPop(btn, ctx) {
     <div class="pop-body">
     ${g.full ? `<p class="tag bad">${icon('alert')} הקבוצה מלאה</p>` : ''}
     <dl>
-      <dt>מרצה</dt><dd>${esc(g.lecturer || '—')}</dd>
+      <dt>מרצה</dt><dd>${esc(g.lecturer || '—')}${g.lecturer && g.primary ? lecturerBtns(g.lecturer, ctx.lecturers?.[g.lecturer]) : ''}</dd>
       <dt>מפגשים</dt><dd>${g.meetings.map((m) => `יום ${DAYS[m.day] ?? '?'}׳ <bdi dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>${m.room ? ` · ${esc(m.room)}` : ''}`).join('<br>')}</dd>
       <dt>בחינות</dt><dd>${!ctx.data.examsPublished ? 'לוח הבחינות טרם פורסם'
         : exams.length ? exams.map((e) => `מועד ${esc(e.moed)}: <bdi dir="ltr">${esc(e.date)}</bdi>`).join('<br>') : '—'}</dd>

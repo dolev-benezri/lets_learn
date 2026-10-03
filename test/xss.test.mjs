@@ -58,6 +58,7 @@ Object.assign(app.state, { name: P, passed: app.sem['א'].lists.find((l) => l.na
 app.state.profile = { ...app.state.profile, year: 2, summer: true, amirnet: 120 };
 app.state.friends = [{ name: P, groups: gids.slice(0, 3), weight: 1, active: true, manual: true }, { name: `${P}2`, groups: [P], weight: 2, active: false }];
 app.state.pins = [P, gids[0]]; // a stale pin with a hostile id, and a live one
+app.state.constraints.lecturers = { [P]: 'avoid' }; // a hostile lecturer name reaches the drawer
 app.friendLanding = { name: P, groups: [P, gids[1]] };
 app.hashError = `${P} error`;
 app.semNotice = `${P} notice`;
@@ -89,7 +90,7 @@ run('pop', () => {
   const res = current();
   const gid = [...(res.a?.groups ?? res.groups ?? [])][0] ?? gids[0];
   openPop({ dataset: { gid }, getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 }) },
-    { data: app.sem['א'], res: res.a ?? res, includeFull: false, pins: app.state.pins, friends: app.state.friends, colors: new Map() });
+    { data: app.sem['א'], res: res.a ?? res, includeFull: false, pins: app.state.pins, friends: app.state.friends, colors: new Map(), lecturers: app.state.constraints.lecturers });
 });
 run('map', () => {
   const L = layoutMap(app.data), html = mapSvg({ data: app.data, st: app.cls.statuses, L, g: geometry(L, (id) => app.data.courses[id]?.credits), year: 2, unlocks: {}, mode: 'all', plan: new Set() });
@@ -171,4 +172,45 @@ test('a friend link from another program says which one, escaped', () => {
 
 test('one h1 per page: the views use h2 under the app title (a11y)', () => {
   for (const s of ['me', 'view', 'side', 'picker']) for (const w of writes.filter((x) => x.scope === s)) assert.ok(!w.html.includes('<h1'), `${s} #${w.id}`);
+});
+
+test('the friends drawer offers a share button next to copy (WhatsApp)', () => {
+  assert.ok(writes.filter((w) => w.scope === 'drawer-friends').some((w) => w.html.includes('data-act="shareOut"')));
+});
+
+test('the status page has the degree checklist, one row per requirement', () => {
+  const me = writes.filter((w) => w.scope === 'me').map((w) => w.html).join('');
+  assert.ok(me.includes('data-key="checklist"') && /מתוך \d/.test(me));
+});
+
+test('the preferences drawer offers a campus-day cap', () => {
+  assert.ok(writes.filter((w) => w.scope === 'drawer-prefs').some((w) => w.html.includes('data-chg="maxDays"')));
+});
+
+test('lecturer buttons in the popover and the drawer list (hostile names escaped above)', () => {
+  assert.ok(writes.filter((w) => w.scope === 'pop').some((w) => w.html.includes('data-act="lecturer"')));
+  assert.ok(writes.filter((w) => w.scope === 'drawer-prefs').some((w) => w.html.includes('data-act="lecturerDrop"')));
+});
+
+test('a later alternative says what changes against the first, escaped', () => {
+  assert.ok(ui.last.results.length >= 2, 'the hostile world finds at least two alternatives');
+  ui.cur = 1;
+  run('view-2', () => { renderView(); });
+  ui.cur = 0;
+  const html = writes.filter((w) => w.scope === 'view-2').map((w) => w.html).join('');
+  assert.ok(html.includes('לעומת חלופה 1:'));
+  assert.equal(parse(html).querySelectorAll('xss-t').length, 0);
+});
+
+test('the registration drawer offers the calendar export (the 2027 semesters have dates)', () => {
+  const reg = writes.filter((w) => w.scope === 'drawer-reg').map((w) => w.html).join('');
+  assert.ok(reg.includes('data-act="ics"') && !/data-act="ics"[^>]*disabled/.test(reg));
+});
+
+test('lecturer buttons only on a primary group: a tutorial’s lecturer is not filtered, so no promise there', () => {
+  const sub = Object.values(app.sem['א'].courses).flatMap((c) => c.groups).find((g) => !g.primary && g.lecturer);
+  assert.ok(sub, 'the data has a tutorial with a lecturer');
+  run('pop-sub', () => openPop({ dataset: { gid: sub.id }, getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 }) },
+    { data: app.sem['א'], res: null, includeFull: false, pins: [], friends: [], colors: new Map(), lecturers: {} }));
+  assert.ok(!writes.filter((w) => w.scope === 'pop-sub').some((w) => w.html.includes('data-act="lecturer"')));
 });

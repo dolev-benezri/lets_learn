@@ -14,6 +14,7 @@ const state = { passed: data.lists[0].courses, failed: { [data.lists[1].courses[
 const statuses = withAfterA(data, state, classify(data, state)).statuses;
 const geo = (keep) => { const L = layoutMap(data, keep), g = geometry(L, (id) => data.courses[id]?.credits); return { L, g }; };
 const mini = (courses) => ({ lists: [{ name: "קורסי חובה שנה א'", courses: Object.keys(courses), minCredits: 0 }], courses });
+const noRows = ({ rows, ...p }) => p; // the checklist rows have their own test
 const mc = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
 
 test('layout: a קדם edge from an earlier study year always flows leftwards, almost every other edge does too', () => {
@@ -276,9 +277,9 @@ test('mapSvg: planned courses get the plan marker and their edges are highlighte
 test('progressInfo: a course counts once, a list never past its minimum; plan credits count only for what is not done', () => {
   const co = (credits) => ({ ...mc('x'), credits });
   const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 7 }, { name: 'בחירה', courses: ['b', 'e1', 'e2'], minCredits: 4 }, { name: 'אנגלית', courses: ['en'], minCredits: 0 }], courses: { a: co(4), b: co(3), e1: co(3), e2: co(3), en: co(2) } };
-  assert.deepEqual(progressInfo(d, {}), { total: 11, done: 0, planned: 0, adds: 0, specLeft: null, untracked: 0, degreeTotal: null });
+  assert.deepEqual(noRows(progressInfo(d, {})), { total: 11, done: 0, planned: 0, adds: 0, specLeft: null, untracked: 0, degreeTotal: null });
   const st = { a: { status: 'done' }, e1: { status: 'exempt' }, en: { status: 'done' } };
-  assert.deepEqual(progressInfo(d, st, new Set(['b', 'e2', 'a'])), { total: 11, done: 7, planned: 3 + 1, adds: 6, specLeft: null, untracked: 0, degreeTotal: null }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
+  assert.deepEqual(noRows(progressInfo(d, st, new Set(['b', 'e2', 'a']))), { total: 11, done: 7, planned: 3 + 1, adds: 6, specLeft: null, untracked: 0, degreeTotal: null }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
 });
 
 test('newlyUnlocked: courses blocked now and open once the plan counts as passed (the plan itself excluded)', () => {
@@ -317,7 +318,7 @@ test('specialization lists are neither required of everyone nor part of the prog
     { code: 4, name: 'חובה רכב לבוחרי ללא התמחות נוספת', courses: ['x'], minCredits: 3 }],
   courses: { a: co(4), m: co(5), e: co(3), x: co(3) } };
   assert.deepEqual(asideIds(d, {}).sort(), ['e', 'm', 'x']);
-  assert.deepEqual(progressInfo(d, { m: { status: 'done' } }, new Set(['e'])), { total: 4, done: 0, planned: 0, adds: 3, specLeft: null, untracked: 0, degreeTotal: null }, 'no data.degree: the specialization part is zero');
+  assert.deepEqual(noRows(progressInfo(d, { m: { status: 'done' } }, new Set(['e']))), { total: 4, done: 0, planned: 0, adds: 3, specLeft: null, untracked: 0, degreeTotal: null }, 'no data.degree: the specialization part is zero');
   assert.deepEqual(asideIds({ ...d, specializations: undefined }, {}), ['e'], 'without specializations the name rule applies as before');
 });
 
@@ -340,13 +341,13 @@ test('progressInfo: everything passed reaches 100%; spec credits default to what
     { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 0 }, { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 0 }],
   courses: { a: co(10), f: co(3), g: co(3), m: co(5), e: co(2) } };
   const bmAll = Object.fromEntries(Object.keys(bm.courses).map((id) => [id, { status: 'done' }]));
-  assert.deepEqual(progressInfo(bm, bmAll, new Set(), ['s']), { total: 20, done: 20, planned: 0, adds: 0, specLeft: 0, untracked: 0, degreeTotal: 20 },
+  assert.deepEqual(noRows(progressInfo(bm, bmAll, new Set(), ['s'])), { total: 20, done: 20, planned: 0, adds: 0, specLeft: 0, untracked: 0, degreeTotal: 20 },
     'area 7 of the derived 10, electives 3: nothing left, nothing untracked');
   assert.equal(progressInfo({ ...d, degree: undefined }, {}).untracked, 0);
   // Computer science: the electives list has minCredits 0, so what the minimums leave of the degree fills from courses beyond them, up to the total.
   const cs = { degree: { total: 10 }, lists: [{ code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
     { code: 9, name: 'קורסי בחירה', courses: ['b', 'c', 'f'], minCredits: 0 }], courses: { a: co(4), b: co(3), c: co(3), f: co(3) } };
-  assert.deepEqual(progressInfo(cs, { a: { status: 'done' }, c: { status: 'done' } }, new Set(['b', 'f'])),
+  assert.deepEqual(noRows(progressInfo(cs, { a: { status: 'done' }, c: { status: 'done' } }, new Set(['b', 'f']))),
     { total: 10, done: 7, planned: 3, adds: 6, specLeft: null, untracked: 0, degreeTotal: 10 }, 'electives fill the 6 the minimums leave, no more');
   const html = progressHtml({ prog: { total: 15, done: 15, planned: 0, adds: 0, untracked: 5, degreeTotal: 20 }, opened: 0 });
   assert.ok(html.includes('aria-valuemax="15"') && html.includes('עוד <b><bdi>5</bdi></b> נ״ז'));
@@ -361,4 +362,25 @@ test('geometry runs without Object.groupBy (Safari before 17.4)', () => {
   const g = Object.groupBy;
   delete Object.groupBy;
   try { assert.ok(geo().g.nodes.length > 0); } finally { Object.groupBy = g; }
+});
+
+test('progressInfo rows: one per list with a minimum, the area, the rest; they add up to the bar', () => {
+  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/11-2027.json', import.meta.url), 'utf8'));
+  const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])), p = progressInfo(d, all);
+  assert.ok(p.rows.length > 2 && p.rows.every((r) => r.need > 0), 'no "0 of 0" rows (English, entrepreneurship)');
+  assert.equal(p.rows.reduce((s, r) => s + r.done, 0), p.done);
+  assert.ok(p.rows.some((r) => r.name === 'בחירה (מעבר למינימום)'), 'computer science fills 120 from surplus');
+  assert.ok(progressInfo(d, {}).rows.every((r) => r.done === 0));
+  const m = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/30-2027.json', import.meta.url), 'utf8'));
+  const pm = progressInfo(m, {}, new Set(), ['solid', 'flow']);
+  assert.equal(pm.rows.filter((r) => r.name === 'התמחות').length, 1);
+  assert.equal(pm.rows.reduce((s, r) => s + r.need, 0), 160);
+});
+
+test('progressInfo rows: an older cohort whose lists hold less than their minimum still completes; the gap is untracked', () => {
+  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/10-2024.json', import.meta.url), 'utf8'));
+  const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])), p = progressInfo(d, all, new Set(), [d.specializations[0].id]);
+  assert.ok(p.rows.every((r) => r.done >= r.need), p.rows.filter((r) => r.done < r.need).map((r) => `${r.name} ${r.done}/${r.need}`).join(', '));
+  assert.equal(p.rows.reduce((s, r) => s + r.need, 0), p.total, 'the rows add up to the bar');
+  assert.ok(p.untracked > 0);
 });

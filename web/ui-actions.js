@@ -2,15 +2,16 @@
 import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
+import { toIcs } from './ics.js';
 import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { friendToast, gradeInput, rangeError } from './ui-text.js';
+import { friendToast, gradeInput, rangeError, shareText, waUrl } from './ui-text.js';
 import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { avgLine, specSave, specView, importGrades } from './ui-me.js';
-import { MAX_BLOCKS, registrationText, renderDrawer, openPanel } from './ui-drawer.js';
+import { MAX_BLOCKS, registrationText, icsParts, renderDrawer, openPanel } from './ui-drawer.js';
 
 // ---------- actions ----------
 export function addFriend(p) {
@@ -31,13 +32,23 @@ function saveManualFriend(p, editing) {
   toast(friendToast(p.name, r.replaced));
   return null;
 }
+const myLink = async () => { const res = current(); return res ? friendLink(location.origin + location.pathname, app.state, resGroups(res)) : null; };
 async function share() {
-  const res = current();
-  if (!res) return toast('אין עדיין מערכת לשתף');
-  copy(await friendLink(location.origin + location.pathname, app.state, resGroups(res)), 'הקישור הועתק. אפשר לשלוח לחברים.');
+  const url = await myLink();
+  if (!url) return toast('אין עדיין מערכת לשתף');
+  copy(url, 'הקישור הועתק. אפשר לשלוח לחברים.');
+}
+// Phones: the system share sheet (WhatsApp is in it); elsewhere wa.me in a new tab. A closed sheet (AbortError) says nothing.
+async function shareOut() {
+  const url = await myLink();
+  if (!url) return toast('אין עדיין מערכת לשתף');
+  const text = shareText(app.state.name);
+  if (navigator.share) { try { await navigator.share({ title: 'המערכת שלי', text, url }); } catch (e) { if (e?.name !== 'AbortError') copy(url, 'הקישור הועתק.'); } return; }
+  open(waUrl(text, url), '_blank', 'noopener');
 }
 
 export const ACT = {
+  shareOut,
   gradeImport() { $('gradeFile').click(); },
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
   statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = ''; },
@@ -48,7 +59,8 @@ export const ACT = {
   prev: () => go(-1),
   next: () => go(1),
   day(el) { ui.mobileDay = Number(el.dataset.day); ui.dayScroll = true; keepFocus(renderView); },
-  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors }),
+  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors,
+    lecturers: app.state.constraints.lecturers }),
   more(el) { // the button says it is working until the result replaces it
     if (ui.running) return;
     ui.moreMul *= 2;
@@ -57,6 +69,15 @@ export const ACT = {
     scheduleRun(true);
   },
   popClose: () => $('pop').hidePopover(),
+  lecturer(el) {
+    const L = app.state.constraints.lecturers, { name, mode } = el.dataset, was = L[name] === mode;
+    if (was) delete L[name]; else L[name] = mode;
+    $('pop').hidePopover?.();
+    refresh();
+    focusWeek();
+    toast(was ? `בוטל: ${name}` : mode === 'avoid' ? `החיפוש לא ישבץ קבוצות של ${name}` : `כשאפשר, החיפוש יבחר קבוצות של ${name}`);
+  },
+  lecturerDrop(el) { delete app.state.constraints.lecturers[el.dataset.name]; refresh(); },
   pin(el) {
     const gid = el.dataset.gid, was = app.state.pins.includes(gid);
     const { cid, g } = groupIndex(app.data).get(gid);
@@ -71,6 +92,16 @@ export const ACT = {
   },
   share,
   copyReg: () => current() && copy(registrationText(current()), 'הרשימה הועתקה'),
+  ics() { // a local file: no server, nothing sent anywhere
+    const parts = current() && icsParts(current());
+    if (!parts) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([toIcs(parts)], { type: 'text/calendar;charset=utf-8' }));
+    a.download = `afeka-${app.data.year}.ics`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('הקובץ ירד. פותחים אותו כדי להוסיף את השיעורים ליומן.');
+  },
   backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),
   landingAdd: () => addFriend(app.friendLanding),
   landingDrop() { app.friendLanding = null; renderBanner(); focusWeek(); },
@@ -198,6 +229,7 @@ export const CHG = {
   includeFull: (el) => { app.state.constraints.includeFull = el.checked; },
   notBefore: (el) => { app.state.constraints.notBefore = time(el.value); return 'quiet'; },
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
+  maxDays: (el) => { app.state.constraints.maxDays = el.value ? Number(el.value) : null; },
   maxCredits: (el) => { const n = parseFloat(el.value); app.state.constraints.maxCredits = Number.isFinite(n) && n >= 0 ? n : null; return 'quiet'; },
   blkDay: (el) => blockEdit(el, 'day', Number(el.value)),
   blkStart: (el) => blockEdit(el, 'start', el.value),
