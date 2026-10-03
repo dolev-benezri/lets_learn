@@ -164,8 +164,9 @@ export function progress(data, state) {
     return m && YEAR_LETTERS[m[1]] < year;
   });
   const required = lists.reduce((a, l) => a + l.minCredits, 0);
-  const earned = lists.flatMap((l) => l.courses).filter((id) => passed.has(id))
-    .reduce((a, id) => a + (data.courses[id]?.credits ?? 0), 0);
+  const seen = new Set(); // a course in two lists counts once; a list counts up to its minimum
+  const earned = lists.reduce((a, l) => a + Math.min(l.minCredits, l.courses.filter((id) => passed.has(id) && !seen.has(id) && seen.add(id))
+    .reduce((s, id) => s + (data.courses[id]?.credits ?? 0), 0)), 0);
   return { earned, required, ratio: required ? earned / required : 1 };
 }
 

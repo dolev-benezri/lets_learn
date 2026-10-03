@@ -306,3 +306,9 @@ test('evening programs have a fifth study year', () => {
   const d = cohort(12), four = d.lists.filter((l) => /חובה שנה [א-ד]'/.test(l.name)).reduce((a, l) => a + l.minCredits, 0);
   assert.equal(progress(d, { passed: [], profile: { year: 5 } }).required, four, 'in year ה the four earlier years are behind');
 });
+
+test('progress counts each year list only up to its minimum (extra courses don’t pass the target)', () => {
+  const c = (credits) => ({ name: 'c', credits, prereqs: [], groups: [] });
+  const d = { year: 2027, startYear: 2025, lists: [{ name: "קורסי חובה שנה א'", minCredits: 5, courses: ['a', 'b'] }], courses: { a: c(3), b: c(3) } };
+  assert.deepEqual(progress(d, { passed: ['a', 'b'] }), { earned: 5, required: 5, ratio: 1 });
+});
