@@ -65,12 +65,14 @@ test('request: a Retry-After longer than 5 minutes stops the run instead of slee
   await assert.rejects(request('a=1'), /Retry-After/);
 });
 
-test('request: network errors and timeouts retry; the whole run has a budget of 10 retries', async () => {
+test('request: network errors and timeouts retry; one request gives up after 6 retries, the whole run after 30', async () => {
   const net = rig([new TypeError('fetch failed'), Object.assign(new Error('t'), { name: 'TimeoutError' }), OK]);
   assert.equal(await net.request('a=1'), OK);
   const down = rig(Array.from({ length: 20 }, () => ({ status: 503 })));
-  await assert.rejects(down.request('a=1'), /budget/);
-  assert.equal(down.calls.length, 11);
+  await assert.rejects(down.request('a=1'), /gave up on a=1 after 6 retries/);
+  assert.equal(down.calls.length, 7);
+  const flaky = rig(Array.from({ length: 30 }, (_, i) => (i % 2 ? OK : { status: 503 })));
+  for (let i = 0; i < 15; i++) assert.equal(await flaky.request(`a=${i}`), OK, 'isolated errors across a long run are retried');
   // the budget is shared by all requests of the run
   const shared = rig([{ status: 503 }, OK, { status: 503 }, OK], { budget: 1 });
   await shared.request('a=1');
@@ -347,6 +349,7 @@ test('cachedRequester with a ttl: a stale answer is fetched again, a fresh one i
   await new Promise((res) => setTimeout(res, 5));
   await r('prgname=S_b&x=fresh');
   assert.equal(calls.length, 4, 'ttl 0 asks every time');
+  assert.ok(readdirSync(dir).every((n) => n.endsWith('.html')), 'written through a temporary file that is renamed, none left behind');
 });
 
 test('patient: waits for the named hour, starts a new session, retries; gives up on a long wait or too many waits', async () => {

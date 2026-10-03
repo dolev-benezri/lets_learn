@@ -4,7 +4,7 @@
 # Needs one masked GitLab CI variable, GH_PUSH_TOKEN: a GitHub fine-grained token, this repo only, Contents read/write.
 # A push with that token triggers .github/workflows/deploy.yml. GitLab emails the owner when a run fails.
 # The site allows about 400 requests per clock hour, a full run is ~1800 the first time: the scraper waits out the limit (--wait-throttle) and every answer is kept in
-# .yedion-cache (next to the clone), which the pipeline cache carries to the next night (also after a failed run), so a first run may need a few nights (a run stopped by the 170 minute `timeout` ends green and commits nothing). Later nights: groups and exams only (~430).
+# .yedion-cache (next to the clone), which the pipeline cache carries to the next night (also after a failed run), so a first run may need a few nights (a run stopped by the 160 minute `timeout` ends green and commits nothing; the 4th such run in a row fails, so a stuck scrape sends the failure mail). Later nights: groups and exams only (~430).
 scrape:
   image: node:24
   timeout: 3h
@@ -19,14 +19,21 @@ scrape:
     GIT_STRATEGY: none # nothing to check out on the GitLab side
   script:
     - git clone --depth 1 "https://x-access-token:${GH_PUSH_TOKEN}@github.com/dolhack/lets_learn.git" repo
-    - cd repo && npm ci --no-audit --no-fund
+    - cd repo && npm ci --no-audit --no-fund --ignore-scripts # no dependency needs an install script, and GH_PUSH_TOKEN is in the environment
     # stdout is one summary line (the commit message); a failed scrape writes nothing and fails the job.
     # The first runs are longer than the job (~1800 requests at 400 an hour): `timeout` stops the scraper before GitLab kills the job, the cache is saved, and the run counts as
-    # partial (exit 0, nothing committed, no failure mail). Any other failure still fails the job.
+    # partial (exit 0, nothing committed, no failure mail) up to 3 in a row; the counter lives in the cache. 160m leaves ~20 min of the 3h for clone, npm ci and the cache upload.
+    # Any other failure still fails the job.
     - |
-      timeout 170m node scripts/scrape.mjs --all-semesters --all-programs --cache ../.yedion-cache --nightly --wait-throttle > ../summary.txt && rc=0 || rc=$?
-      if [ "$rc" = 124 ]; then echo "partial run: the cache keeps what was fetched, the next run continues"; exit 0; fi
+      timeout 160m node scripts/scrape.mjs --all-semesters --all-programs --cache ../.yedion-cache --nightly --wait-throttle > ../summary.txt && rc=0 || rc=$?
+      if [ "$rc" = 124 ]; then
+        n=$(( $(cat ../.yedion-cache/partial-runs 2>/dev/null || echo 0) + 1 )); echo "$n" > ../.yedion-cache/partial-runs
+        echo "partial run $n in a row: the cache keeps what was fetched, the next run continues"
+        if [ "$n" -lt 4 ]; then exit 0; fi
+        echo "4 partial runs in a row: failing so the owner gets the mail"; exit 1
+      fi
       [ "$rc" = 0 ] || exit "$rc"
+      rm -f ../.yedion-cache/partial-runs
     - git add web/data/afeka
     - if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
     - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com commit -q -m "$(cat ../summary.txt)" -- web/data/afeka

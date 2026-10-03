@@ -2,7 +2,7 @@
 // Scrape the public Afeka Yedion into web/data/afeka/{year}-{sem}/{program}-{start}.json (+ status.json).
 // One polite pass fetches everything once; every semester is built from it. Writes nothing if any step or check fails (except summer: a failing summer is skipped with a warning).
 // stdout carries only the one-line change summary (it becomes the commit message); progress goes to stderr.
-import { writeFile, mkdir, readFile, stat } from 'node:fs/promises';
+import { writeFile, mkdir, readFile, stat, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -25,8 +25,10 @@ export class ThrottledError extends Error {
   }
 }
 
-// A request function with run-level state: cookie jar, rejected streak, and a retry budget shared by every request.
-export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), delay = 2500, rnd = Math.random, log = console.error, budget = 10 } = {}) {
+// A request function with run-level state: cookie jar, rejected streak, and a retry budget shared by every request (a full run is ~1800 requests).
+// One request gives up after MAX_TRIES retries (~5 min of backoff): a site that is down fails the run instead of waiting out the whole budget.
+const MAX_TRIES = 6;
+export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), delay = 2500, rnd = Math.random, log = console.error, budget = 30 } = {}) {
   const cookies = new Map();
   let rejectedStreak = 0;
   const spend = (why) => { if (budget-- <= 0) throw new Error(`retry budget exhausted (${why})`); };
@@ -35,6 +37,7 @@ export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r)
     const what = query ?? form.PRGNAME;
     let wait = nextDelay(delay, rnd); // jittered pause before every request; retries replace it with their own wait
     for (let attempt = 0; ; attempt++) {
+      if (attempt > MAX_TRIES) throw new Error(`gave up on ${what} after ${MAX_TRIES} retries; nothing written`);
       await sleep(wait);
       const backoff = 5000 * 2 ** attempt; // 5s, 10s, 20s, ...
       let res;
@@ -154,7 +157,8 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
     if (!replayed) { replayed = true; for (const [q, f] of session) await inner(q, f); }
     const html = await inner(query, form);
     await mkdir(dir, { recursive: true });
-    await writeFile(file, html);
+    await writeFile(`${file}.tmp`, html);
+    await rename(`${file}.tmp`, file); // a run killed mid-write (CI timeout) leaves no truncated answer behind
     return html;
   };
 }
