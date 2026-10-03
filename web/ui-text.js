@@ -19,6 +19,10 @@ export function gradeInput(raw, prev) {
   return Number.isInteger(v) && v >= 0 && v <= 100 ? v : prev;
 }
 
+// A number field entry out of range: said in text (the toast is a live region) instead of a silent revert; null when it is fine or empty.
+export const rangeError = (raw, min, max) => (raw === '' || (Number.isInteger(Number(raw)) && Number(raw) >= min && Number(raw) <= max) ? null
+  : `צריך מספר שלם בין ${min} ל-${max}. הערך לא נשמר.`);
+
 // "X מתוך Y נ״ז הנדרשים עד סוף שנה Z׳": the credits owed from the years before the study year (rules.js progress).
 export const creditsGoal = (earned, required, year) => (year > 1 ? `${earned} מתוך ${required} נ״ז הנדרשים עד סוף שנה ${D[year - 1]}׳` : 'בשנה א׳ אין עדיין יעד נ״ז');
 
