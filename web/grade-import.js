@@ -36,13 +36,23 @@ function parseRow(row, data) {
   if (t.includes('טרם')) return null;
   let e = d;
   while (DEC.test(t[e + 1] ?? '')) e++;
-  const slot = [t[e + 1], d - 1 > c ? t[d - 1] : undefined].find((x) => x && (INT.test(x) && +x <= 100 || /^(פ\.?פנימ|פטור|חייב)$/.test(x))) ?? '';
+  // Before the decimal run only when the code leads the row (the older layout); in the real one (year/sem first) that token is the name or lecturer.
+  const slot = [t[e + 1], c === 0 && d - 1 > c ? t[d - 1] : undefined].find((x) => x && (INT.test(x) && +x <= 100 || /^(פ\.?פנימ|פטור|חייב)$/.test(x))) ?? '';
   const id = t[c], grade = INT.test(slot) ? +slot : null;
   if (t.includes('*')) return { id, grade, result: 'failed' };
   if (grade !== null) return { id, grade, result: 'passed' };
   if (slot !== 'חייב' && slot) return { id, grade: null, result: 'exempt' };
   if (slot === 'חייב') return { id, grade: null, result: 'pending' };
   return null;
+}
+
+// What an import would change, as rows for the confirm dialog: was/to in the app's words; check = pre-checked. A failure on a course marked passed
+// (passed later elsewhere, or by hand) is offered unchecked: the sheet's failure alone must not undo a pass.
+export function gradeChanges(found, state) {
+  const now = (id) => (state.passed.includes(id) ? 'passed' : state.failed[id] ? 'failed' : 'none');
+  return found.filter((r) => r.result !== 'pending').map((r) => ({ ...r, was: now(r.id), to: r.result === 'failed' ? 'failed' : 'passed' }))
+    .filter((r) => r.was !== r.to || (r.to === 'passed' && r.grade !== null && state.grades[r.id] !== r.grade))
+    .map((r) => ({ ...r, check: !(r.to === 'failed' && r.was === 'passed') }));
 }
 
 // rows (from rowsFromItems) -> one result per known course: passed > exempt > failed > pending; the highest passing grade wins.

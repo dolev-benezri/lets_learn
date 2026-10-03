@@ -3,7 +3,7 @@ import { app, esc, refresh } from './app.js';
 import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, specConflict, validSpecs } from './rules.js';
 import { icon } from './ui-grid.js';
 import { askRows } from './ui-dialog.js';
-import { readGradeSheet, parseGradeSheet } from './grade-import.js';
+import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
 import { creditsGoal } from './ui-text.js';
 import { STATUS, FAILS, YEARS, onboarded, gated, status, seg, details, toast, heb, listTitle, $, ui } from './ui-common.js';
 
@@ -133,14 +133,12 @@ export async function importGrades(file) {
   try { found = parseGradeSheet(await readGradeSheet(file), data); } catch (e) { return setGradeMsg(e.user ? e.message : 'לא הצלחנו לקרוא את הקובץ.'); }
   const rows = found.filter((r) => r.result !== 'pending');
   if (!rows.length) return setGradeMsg(GRADE_NONE);
-  const now = (id) => (state.passed.includes(id) ? 'passed' : state.failed[id] ? 'failed' : 'none');
   const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
-  const todo = rows.filter((r) => (r.result === 'failed' ? now(r.id) !== 'failed' : now(r.id) !== 'passed' || (r.grade !== null && r.result === 'passed' && state.grades[r.id] !== r.grade)));
+  const todo = gradeChanges(found, state);
   if (!todo.length) return setGradeMsg(`זוהו ${rows.length} קורסים והכול כבר מעודכן.`);
-  const label = (r) => { const to = r.result === 'failed' ? 'failed' : 'passed', was = now(r.id); return `${r.result === 'exempt' ? 'פטור, נחשב עברתי'
-    : WORD[to]}${was === to ? '' : ` (היה: ${WORD[was]})`}`; };
+  const label = (r) => `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}`;
   const pick = await askRows('ייבוא מגליון ציונים', 'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.', ['קורס', 'ציון', 'שינוי'],
-    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]));
+    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]), { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) });
   if (!pick) return setGradeMsg('');
   for (const i of pick) {
     const r = todo[i];
