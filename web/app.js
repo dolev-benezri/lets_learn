@@ -147,7 +147,7 @@ export function ensurePassed() { if (!app.state.passed) app.state.passed = study
 
 // The study year's mandatory list (e.g. "שנה ב'"): courses in it default to optional. From year 3 the chosen specialization areas' courses (mandatory and elective) join it.
 export function yearCourses() {
-  const y = studyYear(app.data, app.state), list = app.data.lists.find((l) => l.name.includes(`שנה ${['', 'א', 'ב', 'ג', 'ד'][y]}'`))?.courses ?? [];
+  const y = studyYear(app.data, app.state), list = app.data.lists.find((l) => l.name.includes(`שנה ${' אבגדה'[y]}'`))?.courses ?? [];
   if (y < 3) return list;
   const sp = specLists(app.data, app.state.profile.specs);
   return [...list, ...sp.mandatory, ...sp.elective];

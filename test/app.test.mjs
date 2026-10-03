@@ -231,3 +231,13 @@ test('normalize caps failed and choices like grades, and refuses impossible hour
   assert.equal(s.constraints.notBefore, '');
   assert.equal(s.constraints.notAfter, '23:59');
 });
+
+test('yearCourses: a fifth-year evening student gets the year ה list', async () => {
+  const { app: a, yearCourses } = await import('../web/app.js');
+  const d = JSON.parse(readFileSync('web/data/afeka/2027-1/32-2024.json', 'utf8')), was = [a.data, a.state];
+  a.data = d; a.state = { ...normalize({ v: 1 }), program: 32, startYear: 2024, profile: { year: 5, amirnet: null, specs: [], summer: false } };
+  try {
+    const five = d.lists.find((l) => l.name.includes("שנה ה'")).courses;
+    assert.ok(five.length && five.every((id) => yearCourses().includes(id)));
+  } finally { [a.data, a.state] = was; }
+});
