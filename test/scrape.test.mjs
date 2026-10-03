@@ -197,7 +197,7 @@ test('every committed data file carries the specializations, their lists and the
     assert.deepEqual(d.specializations.map((s) => s.id), ['solid', 'flow', 'mech', 'vehicle', 'materials', 'aero'], f);
     assert.ok(d.specializations.every((s) => codes.has(s.mandatory) && codes.has(s.elective)), f);
     assert.equal(d.specializations.find((s) => s.id === 'vehicle').aloneExtra, 30127);
-    assert.deepEqual(d.degree, { total: 160, specCredits: 27 });
+    assert.deepEqual(d.degree, { total: 160 });
   }
 });
 
@@ -229,7 +229,7 @@ test('run: a summer that passes is written to 2027-3 with the specializations', 
   const d = json(join(root, '2027-3', '30-2026.json'));
   assert.equal(d.semester, 'קיץ');
   assert.deepEqual(d.specializations.map((s) => s.id), ['solid', 'flow', 'mech', 'vehicle', 'materials', 'aero']);
-  assert.deepEqual(d.degree, { total: 160, specCredits: 27 });
+  assert.deepEqual(d.degree, { total: 160 });
   assert.deepEqual(d.specializations.find((s) => s.id === 'vehicle'), { id: 'vehicle', name: 'מערכות רכב', mandatory: 30121, elective: 30122, aloneExtra: 30127 });
 });
 
@@ -296,6 +296,8 @@ test('writeCatalog: lists the cohorts of the run, keeps programs that were not i
   const before = readFileSync(file, 'utf8');
   await writeCatalog(file, [{ program: 20, start: 2026 }], programs);
   assert.equal(readFileSync(file, 'utf8'), before);
+  await writeCatalog(file, [{ program: 20, start: 2026 }], { 20: programs[20] });
+  assert.deepEqual(json(file).programs.map((p) => p.id), [20], 'a program taken out of the config leaves the catalog (61, 65)');
 });
 
 test('catalogOrder: a track and its evening twin are neighbours, day first, pairs by lowest program number', () => {

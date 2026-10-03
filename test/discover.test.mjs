@@ -42,7 +42,7 @@ test('draftPrograms: a program per main track, the specializations shared by day
   assert.deepEqual(p[22].cohorts, [2026], 'the evening track only exists from 2026 here');
   assert.deepEqual(p[22].lists[2026], [22001, 20115, 20116, 20111, 20112], 'the evening track uses the same specializations');
   assert.deepEqual(p[20].specializations.map((s) => [s.id, s.mandatory, s.elective]), [['power', 20115, 20116], ['comm', 20111, 20112], ['s99', undefined, undefined]]);
-  assert.deepEqual([p[20].dept, p[20].deptName, p[20].specRule, p[20].degree], [20, 'חשמל', { pick: 2, alone: ['power'], verified: false }, { total: 160, specCredits: 20 }]);
+  assert.deepEqual([p[20].dept, p[20].deptName, p[20].specRule, p[20].degree], [20, 'חשמל', { pick: 2, alone: ['power'] }, { total: 160 }]);
   assert.deepEqual(p[30].specializations, [{ id: 'vehicle', name: 'מערכות רכב', mandatory: 30121, elective: 30122, aloneExtra: 30127 }]);
   assert.equal(p[30].anchor, null, 'the anchor course is chosen by hand');
 });
@@ -62,5 +62,5 @@ test('draftPrograms: industrial engineering main and secondary areas get stable 
     { code: 407, name: 'התמחות משנית מערכות מידע', lists: [L(40123, 'חובה')] },
     { code: 409, name: "התמחות מש' אנליטיקה", lists: [L(40129, 'חובה')] }] } });
   assert.deepEqual(p[40].specializations.map((s) => [s.id, s.name]), [['mis', 'ראשית מערכות מידע'], ['bi', 'ראשית אנליטיקה'], ['smis', 'משנית מערכות מידע'], ['sbi', 'משנית אנליטיקה']]);
-  assert.deepEqual(p[40].specRule.groups, [['mis', 'dss', 'bi'], ['smis', 'sdss', 'sbi']]);
+  assert.deepEqual(p[40].specRule, { pick: 1 }, 'one area; programs.json folds the secondary tracks into its electives');
 });
