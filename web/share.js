@@ -63,7 +63,7 @@ export async function readHash(hash, { year, semester }) {
   if (typeof payload.year !== 'number' || typeof payload.semester !== 'string') return { error: 'הקישור פגום' };
 
   // A friend's groups belong to one semester. A backup outlives the year: its record stays, last year's group ids are dropped (below).
-  const lastYear = type === 'b' && payload.year !== year;
+  const lastYear = type === 'b' && payload.year < year; // a newer backup (the site fell back to an older year) is refused below, not aged backwards
   if (!lastYear && (payload.year !== year || payload.semester !== semester)) {
     return { error: `הקישור שייך לסמסטר אחר (${payload.year} ${payload.semester.slice(0, 10)})` };
   }

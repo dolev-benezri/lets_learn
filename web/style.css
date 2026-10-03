@@ -414,7 +414,9 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .actions .stack .av:nth-child(n+3):not(.plus) { display:none; }
   .toast { bottom:84px; }
   /* sheets: dimmed page that does not scroll behind them; tapping the scrim closes the drawer */
-  body.drawer-open, body:has(.pop:popover-open) { overflow:hidden; }
+  body.drawer-open { overflow:hidden; }
+  body:has(.pop:popover-open) { overflow:hidden; } /* its own rule: Safari 16 drops a whole list with an unknown pseudo-class */
+  body:has(.pop.\:popover-open) { overflow:hidden; } /* the popover polyfill's class (Safari 16) */
   body.drawer-open .scrim { display:block; position:fixed; inset:0; z-index:19; background:rgba(16,24,40,.45); }
   .pop::backdrop { background:rgba(16,24,40,.45); }
   .pop.pop { position:fixed; inset:auto 0 0 0 !important; width:100%; max-width:none; border-radius:16px 16px 0 0; max-height:80dvh; overflow:auto; overscroll-behavior:contain; }
@@ -468,7 +470,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 #me { --gut:14px; max-width:1200px; margin:0 auto; padding:14px var(--gut) 0; }
 #me { scroll-margin-top:100vh; } /* loading or following #me must not scroll the page past the nav strip: the fragment scroll clamps to 0 */
 .me-head { margin-bottom:14px; }
-.me-head h2 { font-size:20px; font-weight:600; }
+#me .me-head h2 { font-size:20px; font-weight:600; }
 .me-head h2:focus { outline:none; }
 .me-step { margin-top:4px; color:var(--text-2); }
 .me-step b { color:var(--text); font-weight:600; }
@@ -510,12 +512,14 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
 /* popover: <= ~360px tall; header and actions stay put, details scroll inside */
 .pop:popover-open { display:flex; flex-direction:column; gap:8px; max-height:min(360px, calc(100dvh - 16px)); overflow:hidden; }
+.pop.\:popover-open { display:flex; flex-direction:column; gap:8px; max-height:min(360px, calc(100dvh - 16px)); overflow:hidden; } /* polyfill (Safari 16) */
 .pop-body { min-height:0; overflow:auto; overscroll-behavior:contain; }
 .pop-body > .tag { margin-bottom:8px; }
 .pop .gid, .pop-alts .gid { color:var(--text-2); font-size:12px; }
 .pop-actions .btn { min-height:var(--tap); }
 @media (max-width:599px) {
   .pop.pop:popover-open { max-height:min(75dvh, 460px); overflow:hidden; padding-bottom:max(12px, env(safe-area-inset-bottom)); }
+  .pop.pop.\:popover-open { max-height:min(75dvh, 460px); overflow:hidden; padding-bottom:max(12px, env(safe-area-inset-bottom)); }
   .pop::backdrop { background:rgba(16,24,40,.45); }
 }
 /* in-page dialog (replaces confirm / prompt) */

@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs';
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
-import { officialDrift } from './audit.mjs';
+import { officialDrift, OFFICIAL } from './audit.mjs';
 import PROGRAMS from './programs.json' with { type: 'json' };
 import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary, msUntil, nextHour } from './polite.mjs';
 
@@ -202,20 +202,20 @@ export function catalogOrder(programs) {
 }
 
 export async function writeCatalog(file, units, programs, year) {
-  const old = (await readJson(file))?.programs ?? [];
+  const was = await readJson(file), old = (was?.year ?? year) === year ? was?.programs ?? [] : []; // another year's programs point at that year's files
   const mine = new Map();
   for (const u of units) mine.set(u.program, { id: u.program, name: programs[u.program].name, startYears: [...(mine.get(u.program)?.startYears ?? []), u.start].sort() });
   const next = catalogOrder([...old.filter((p) => !mine.has(p.id) && programs[p.id]), ...mine.values()]);
-  const was = await readJson(file), out = { ...(Number.isInteger(year) ? { year } : {}), programs: next }; // the site takes the academic year from here
+  const out = { ...(Number.isInteger(year) ? { year } : {}), programs: next }; // the site takes the academic year from here
   if (JSON.stringify(was) !== JSON.stringify(out)) { await mkdir(dirname(file), { recursive: true }); await writeFile(file, JSON.stringify(out, null, 1)); }
 }
 
 // One cache folder per academic year: the requests carry no year (the session picks it), so a flat cache would answer 2028 with 2027 pages.
 // ponytail: the flat cache from before this change is all 2027 and moves into its year on the first run; drop the move after that run.
 export async function yearCache(base, year) {
-  const dir = join(base, String(year));
+  const dir = join(base, String(year)), fresh = !(await stat(dir).catch(() => null));
   await mkdir(dir, { recursive: true });
-  for (const f of (await readdir(base)).filter((f) => f.endsWith('.html'))) await rename(join(base, f), join(dir, f));
+  if (fresh) for (const f of (await readdir(base)).filter((f) => f.endsWith('.html'))) await rename(join(base, f), join(dir, f));
   return dir;
 }
 
@@ -291,7 +291,7 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
   if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs, Number(opt.year));
   // Curriculum numbers that moved: a hint for a human, never a failed run (the deploy must not wait on it)
   const read = (p, y) => JSON.parse(readFileSync(`${dataDir}/${opt.year}-1/${p}-${y}.json`, 'utf8')); // written just above
-  if (opt['all-programs']) officialDrift(read).forEach((w) => log(`WARN official ${w}`));
+  if (opt['all-programs'] && Number(opt.year) === OFFICIAL.year) officialDrift(read).forEach((w) => log(`WARN official ${w}`)); // the table is one year's curricula
   return summary;
 }
 

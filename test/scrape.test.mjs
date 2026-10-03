@@ -410,3 +410,20 @@ test('yearCache: one cache folder per academic year; the old flat cache moves in
   assert.equal(await yearCache(base, 2028), join(base, '2028'), 'a later year starts empty');
   assert.deepEqual(readdirSync(join(base, '2027')), ['a.html']);
 });
+
+test('writeCatalog: a run for a new year keeps no program left over from the old year (its files are the old year’s)', async () => {
+  const file = join(dirs().status, '..', 'catalog-roll.json'), programs = { 20: cfg({ name: 'חשמל' }), 30: cfg({ name: 'מכונות' }) };
+  await writeCatalog(file, [{ program: 20, start: 2026 }, { program: 30, start: 2026 }], programs, 2027);
+  await writeCatalog(file, [{ program: 30, start: 2027 }], programs, 2028);
+  assert.deepEqual(json(file).programs.map((p) => p.id), [30]);
+  await writeCatalog(file, [{ program: 20, start: 2027 }], programs, 2028);
+  assert.deepEqual(json(file).programs.map((p) => p.id), [20, 30], 'the same year: other programs stay');
+});
+
+test('yearCache moves the flat cache only into a year folder it creates, never into an existing one', async () => {
+  const base = join(dirs().status, '..', 'ycache2');
+  mkdirSync(join(base, '2027'), { recursive: true }); writeFileSync(join(base, 'b.html'), 'from discover (another year)');
+  await yearCache(base, 2027);
+  assert.deepEqual(readdirSync(join(base, '2027')), []);
+  assert.ok(readdirSync(base).includes('b.html'));
+});

@@ -93,7 +93,7 @@ export function load() {
     stash(saved);
     app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית, וההתקדמות במחזור הקודם נשמרה בצד.`;
   }
-  if (moved) return withPersonal({ ...structuredClone(DEFAULT), program: s.program, startYear: s.startYear }, s);
+  if (moved) return withPersonal({ ...normalize(null, app.catalog), program: s.program, startYear: s.startYear }, s);
   return s;
 }
 // Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.
@@ -249,7 +249,10 @@ export async function switchTo(program, startYear) {
   stash(prev);
   const saved = normalize(unstash(program, startYear), app.catalog);
   const back = saved.program === program && saved.startYear === startYear && !!unstash(program, startYear);
-  const next = back ? saved : { ...structuredClone(DEFAULT), program, startYear, profile: { ...cleanProfile({}), year: prev.profile.year === null ? null : clamp(prev.year - startYear + 1, 1, 5) } };
+  // The cohort sets the study year, unless the picked year has no cohort here and this is the nearest one (year ה׳ of an evening track: 2024)
+  const want = prev.profile.year, own = want !== null && inCatalog(app.catalog, program, prev.year - want + 1);
+  const year = want === null ? null : own ? clamp(prev.year - startYear + 1, 1, 5) : want;
+  const next = back ? saved : { ...normalize(null, app.catalog), program, startYear, profile: { ...cleanProfile({}), year } }; // normalize: the catalog's year
   if (back && prev.profile.year !== null) next.profile.year = prev.profile.year; // the year just picked (CHG.pyear sets it first), not the stash's older one
   app.state = withPersonal(next, prev);
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);
@@ -290,17 +293,15 @@ async function init() {
 // A program the catalog lacks is refused (normalize would quietly turn it into the default program); a dropped cohort moves to the nearest one, like a saved state.
 export async function restoreBackup(payload) {
   const p = normalize(payload, app.catalog);
-  if (p.program !== payload?.program) {
-    app.hashError = app.catalog === FALLBACK_CATALOG ? 'רשימת התוכניות לא נטענה, הגיבוי לא שוחזר. נסו לרענן את הדף.' : 'התוכנית של הגיבוי לא קיימת באתר, הגיבוי לא שוחזר.';
-    return false;
-  }
+  // Without the real catalog the saved state is protected (noSave): a restore would be saved over it, so none until the list loads
+  if (app.catalog === FALLBACK_CATALOG) { app.hashError = 'רשימת התוכניות לא נטענה, הגיבוי לא שוחזר. נסו לרענן את הדף.'; return false; }
+  if (p.program !== payload?.program) { app.hashError = 'התוכנית של הגיבוי לא קיימת באתר, הגיבוי לא שוחזר.'; return false; }
   if (p.program !== app.state.program || p.startYear !== app.state.startYear) {
     let sem;
-    try { sem = await fetchSemesters(p); } catch { return false; }
+    try { sem = await fetchSemesters(p); } catch { app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי'; return false; }
     setSemesters(sem);
   }
   app.state = p;
-  app.noSave = false; // the student chose this state over the saved one: keep it
   uiReset();
   return true;
 }
@@ -318,7 +319,7 @@ export async function applyHash() {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
     if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
-      if (!await restoreBackup(h.payload)) app.hashError ??= 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי';
+      if (!await restoreBackup(h.payload)) linkError = app.hashError; // its own message, cleared by the next good link like a bad link's
     } else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
   }
   ensurePassed();

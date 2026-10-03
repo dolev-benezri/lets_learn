@@ -169,3 +169,8 @@ test('a backup from last year keeps the record, drops last year’s groups and m
   const f = await friendLink('https://x.test/', old, ['G1']);
   assert.match((await readHash(f.slice(f.indexOf('#')), { year: 2028, semester: 'א' })).error, /סמסטר אחר/);
 });
+
+test('a backup from a newer year than the site shows is refused, not aged backwards', async () => {
+  const b = await backupLink('https://x.test/', { ...state, year: 2028, pins: ['G1'] });
+  assert.ok((await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' })).error);
+});
