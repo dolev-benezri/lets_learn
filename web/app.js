@@ -81,14 +81,15 @@ export function load() {
   const s = normalize(saved, app.catalog);
   app.noSave = false;
   if (!isObj(saved) || saved.v !== 1 || !Number.isInteger(saved.program)) return s;
-  if (s.program !== saved.program) {
-    const fallback = app.catalog === FALLBACK_CATALOG;
-    if (fallback) app.noSave = true; else stash(saved);
-    app.hashError = fallback ? 'רשימת התוכניות לא נטענה. מוצגת הנדסה מכנית, והנתונים השמורים שלכם לא ישתנו עד שהרשימה תיטען.'
-      : 'התוכנית השמורה כבר לא באתר. מוצגת הנדסה מכנית, וההתקדמות בתוכנית הקודמת נשמרה בצד.';
-    return withPersonal({ ...structuredClone(DEFAULT), program: s.program, startYear: s.startYear }, s);
-  }
-  if (s.startYear !== saved.startYear) app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית.`;
+  const fallback = app.catalog === FALLBACK_CATALOG, moved = s.program !== saved.program;
+  if (fallback && (moved || s.startYear !== saved.startYear)) {
+    app.noSave = true;
+    app.hashError = 'רשימת התוכניות לא נטענה. מוצגת הנדסה מכנית, והנתונים השמורים שלכם לא ישתנו עד שהרשימה תיטען.';
+  } else if (moved) {
+    stash(saved);
+    app.hashError = 'התוכנית השמורה כבר לא באתר. מוצגת הנדסה מכנית, וההתקדמות בתוכנית הקודמת נשמרה בצד.';
+  } else if (s.startYear !== saved.startYear) app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית.`;
+  if (moved) return withPersonal({ ...structuredClone(DEFAULT), program: s.program, startYear: s.startYear }, s);
   return s;
 }
 // Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.

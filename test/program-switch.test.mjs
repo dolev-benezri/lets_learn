@@ -60,6 +60,11 @@ test('load: a saved program missing from the catalog is not overwritten', async 
   app.state = load();
   assert.deepEqual([app.state.program, app.state.startYear, app.state.passed], [20, 2026, ['a', 'b']]);
   assert.match(app.hashError, /מחזור 2026/);
+  reset(null); store.set('afeka-sched-v1', JSON.stringify({ ...saved, program: 30, startYear: 2027 })); app.catalog = FALLBACK_CATALOG; app.hashError = null;
+  app.state = load();
+  assert.match(app.hashError, /רשימת התוכניות לא נטענה/, 'the cohort is missing only because the catalog did not load');
+  save();
+  assert.equal(JSON.parse(store.get('afeka-sched-v1')).startYear, 2027, 'the catalog did not load: the saved cohort is not overwritten');
   app.hashError = null;
 });
 
