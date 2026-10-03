@@ -15,6 +15,7 @@ export const waUrl = (text, url) => `https://wa.me/?text=${encodeURIComponent(`$
 // What one alternative changes against another (the best one), as short raw phrases (escaped where rendered).
 // a / b: { courses, unlocks, freeDays, gapH, withFriends: [{ name, n }] } — a result plus its summary() (ui-grid.js).
 export function compareAlts(a, b, data) {
+  if (a.groups && b.groups && a.groups.length === b.groups.length && a.groups.every((g) => b.groups.includes(g))) return ['זהה לחלופה 1 בסמסטר הזה'];
   const out = [], has = (x, name) => x.withFriends.some((f) => f.name === name);
   for (const d of a.freeDays.filter((x) => !b.freeDays.includes(x))) out.push(`יום ${D[d]}׳ פנוי`);
   for (const d of b.freeDays.filter((x) => !a.freeDays.includes(x))) out.push(`בלי יום ${D[d]}׳ פנוי`);

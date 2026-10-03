@@ -43,14 +43,16 @@ export function forbiddenMask(c = {}) {
   return m;
 }
 
-// Lecturer choices (constraints.lecturers): an avoided lecturer's primary groups never enter; a preferred one, when they teach the course, is the only choice.
+// Lecturer choices (constraints.lecturers), applied to the options that are left after full groups, busy time and pins:
+// an avoided lecturer's options go (unless pinned), and of what remains a preferred lecturer's options win when there are any.
 // ponytail: only the primary group's lecturer is matched, linked tutorials are not filtered; widen it if students ask.
-const byLecturer = (prim, lecturers) => {
-  const ok = prim.filter((g) => lecturers[g.lecturer] !== 'avoid'), pref = ok.filter((g) => lecturers[g.lecturer] === 'prefer');
-  return pref.length ? pref : ok;
-};
+function byLecturer(options, lecturers, byId, pins) {
+  const who = (o) => lecturers[byId.get(o.groups[0])?.lecturer], pinned = (o) => o.groups.some((id) => pins.includes(id));
+  const ok = options.filter((o) => who(o) !== 'avoid' || pinned(o)), pref = ok.filter((o) => who(o) === 'prefer' || pinned(o));
+  return ok.some((o) => who(o) === 'prefer') ? pref : ok;
+}
 export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [], lecturers = {} } = {}) {
-  const byId = new Map(course.groups.map((g) => [g.id, g])), primaries = byLecturer(course.groups.filter((g) => g.primary), lecturers);
+  const byId = new Map(course.groups.map((g) => [g.id, g])), primaries = course.groups.filter((g) => g.primary);
   const options = [];
   // Identical primaries (same type, lecturer, meetings, rooms, links, fullness, friends, pin) are one option;
   // the others are listed as registration alternatives instead of producing duplicate schedules (ISSUES 17א#2).
@@ -95,8 +97,8 @@ export function buildOptions(course, { pins = [], includeFull = false, forbidden
       });
     }
   }
-  const coursePins = pins.filter((id) => byId.has(id));
-  return coursePins.length ? options.filter((o) => coursePins.every((id) => o.groups.includes(id))) : options;
+  const coursePins = pins.filter((id) => byId.has(id)), left = byLecturer(options, lecturers, byId, pins);
+  return coursePins.length ? left.filter((o) => coursePins.every((id) => o.groups.includes(id))) : left;
 }
 
 // Only `קדם` links block: a `מקביל` course can be taken in the same semester.
@@ -231,7 +233,7 @@ function diagnose(items, data, freedByBlocks, avoids = false) {
   const name = (id) => data.courses[id].name;
   const out = [];
   for (const it of items) if (it.mode === 'must' && !it.options.length) out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id)
-    ? 'זמן תפוס, ' : ''}${avoids ? 'מרצה שנמנעתם ממנו, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
+    ? 'זמן תפוס, ' : ''}${avoids ? 'בחירת מרצה, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
   const must = items.filter((x) => x.mode === 'must' && x.options.length);
   for (let i = 0; i < must.length; i++) for (let j = i + 1; j < must.length; j++) {
     if (must[i].options.every((a) => must[j].options.every((b) => overlaps(a.mask, b.mask)))) {
@@ -366,7 +368,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
   return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins,
     includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups, lecturers: constraints.lecturers }).length > 0,
-    Object.values(constraints.lecturers ?? {}).includes('avoid')) };
+    Object.keys(constraints.lecturers ?? {}).length > 0) };
 }
 
 const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };

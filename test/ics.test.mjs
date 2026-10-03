@@ -41,3 +41,12 @@ test('firstOn: the start date itself when it is that day', () => {
   assert.equal(firstOn('2026-10-25', 1), '2026-10-25');
   assert.equal(firstOn('2026-10-25', 6), '2026-10-30');
 });
+
+test('toIcs: two exam kinds on one date get two UIDs; a bare CR is escaped; a late exam ends by 23:59', () => {
+  const data = { courses: { 5: course(2, { exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-01' }, { kind: 'בוחן', moed: 1, date: '2027-02-01' },
+    { kind: 'בחינה', moed: 2, date: '2027-02-20', time: '22:00' }], meetings: [{ day: 2, start: '09:00', end: '10:00', room: 'a\rb' }] }) } };
+  const out = toIcs([part(data, SEMESTER_DATES[2027]['א'])], NOW), uids = out.match(/UID:exam[^\r]*/g);
+  assert.equal(new Set(uids).size, uids.length);
+  assert.ok(!/\r(?!\n)/.test(out), 'no bare CR');
+  assert.match(out, /DTEND:20270220T235900/);
+});

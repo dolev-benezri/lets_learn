@@ -21,7 +21,7 @@ const offDates = (off) => off.flatMap((x) => {
   for (let t = utc(a); t <= utc(b); t += DAY_MS) out.push(ymd(t));
   return out;
 });
-const text = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const text = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
 // Lines longer than 75 octets continue on the next line after a space, never splitting a character.
 function fold(line) {
   const enc = new TextEncoder(), out = [];
@@ -33,7 +33,7 @@ function fold(line) {
   }
   return [...out, cur].join('\r\n ');
 }
-const addHours = (time, h) => `${String(Number(time.slice(0, 2)) + h).padStart(2, '0')}${time.slice(2)}`;
+const addHours = (time, h) => (Number(time.slice(0, 2)) + h > 23 ? '23:59' : `${String(Number(time.slice(0, 2)) + h).padStart(2, '0')}${time.slice(2)}`); // same day
 
 // parts: [{ title, res, data, dates }] — one per semester of the shown plan (regParts), dates = SEMESTER_DATES[year][semester].
 export function toIcs(parts, now = new Date()) {
@@ -55,7 +55,7 @@ export function toIcs(parts, now = new Date()) {
           if (seenExam.has(key)) continue;
           seenExam.add(key);
           const when = e.time ? [`DTSTART:${compact(e.date, e.time)}`, `DTEND:${compact(e.date, addHours(e.time, 3))}`] : [`DTSTART;VALUE=DATE:${compact(e.date)}`];
-          event(`exam-${cid}-${e.moed}-${compact(e.date)}`, [...when, `SUMMARY:${text(`${e.kind}: ${c.name} (מועד ${e.moed})`)}`]);
+          event(`exam-${cid}-${seenExam.size}-${e.moed}-${compact(e.date)}`, [...when, `SUMMARY:${text(`${e.kind}: ${c.name} (מועד ${e.moed})`)}`]);
         }
       }
     }

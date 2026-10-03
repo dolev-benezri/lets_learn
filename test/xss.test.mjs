@@ -206,3 +206,11 @@ test('the registration drawer offers the calendar export (the 2027 semesters hav
   const reg = writes.filter((w) => w.scope === 'drawer-reg').map((w) => w.html).join('');
   assert.ok(reg.includes('data-act="ics"') && !/data-act="ics"[^>]*disabled/.test(reg));
 });
+
+test('lecturer buttons only on a primary group: a tutorial’s lecturer is not filtered, so no promise there', () => {
+  const sub = Object.values(app.sem['א'].courses).flatMap((c) => c.groups).find((g) => !g.primary && g.lecturer);
+  assert.ok(sub, 'the data has a tutorial with a lecturer');
+  run('pop-sub', () => openPop({ dataset: { gid: sub.id }, getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 }) },
+    { data: app.sem['א'], res: null, includeFull: false, pins: [], friends: [], colors: new Map(), lecturers: {} }));
+  assert.ok(!writes.filter((w) => w.scope === 'pop-sub').some((w) => w.html.includes('data-act="lecturer"')));
+});

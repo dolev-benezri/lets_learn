@@ -237,7 +237,7 @@ export function openPop(btn, ctx) {
     <div class="pop-body">
     ${g.full ? `<p class="tag bad">${icon('alert')} הקבוצה מלאה</p>` : ''}
     <dl>
-      <dt>מרצה</dt><dd>${esc(g.lecturer || '—')}${g.lecturer ? lecturerBtns(g.lecturer, ctx.lecturers?.[g.lecturer]) : ''}</dd>
+      <dt>מרצה</dt><dd>${esc(g.lecturer || '—')}${g.lecturer && g.primary ? lecturerBtns(g.lecturer, ctx.lecturers?.[g.lecturer]) : ''}</dd>
       <dt>מפגשים</dt><dd>${g.meetings.map((m) => `יום ${DAYS[m.day] ?? '?'}׳ <bdi dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>${m.room ? ` · ${esc(m.room)}` : ''}`).join('<br>')}</dd>
       <dt>בחינות</dt><dd>${!ctx.data.examsPublished ? 'לוח הבחינות טרם פורסם'
         : exams.length ? exams.map((e) => `מועד ${esc(e.moed)}: <bdi dir="ltr">${esc(e.date)}</bdi>`).join('<br>') : '—'}</dd>

@@ -150,3 +150,10 @@ test('compareAlts names what changes: free day, friend, gaps, courses, unlocks',
   assert.deepEqual(compareAlts({ ...best, gapH: 3.5 }, best, data), ['2.5 שעות יותר חלונות']);
   assert.deepEqual(compareAlts(best, best, data), ['אותם קורסים, שיבוץ אחר']);
 });
+
+test('compareAlts: the same groups (a year plan whose semester did not change) say so', async () => {
+  const { compareAlts } = await import('../web/ui-text.js');
+  const x = { courses: ['A'], groups: ['g1', 'g2'], unlocks: 1, freeDays: [], gapH: 1, withFriends: [] };
+  assert.deepEqual(compareAlts({ ...x, groups: ['g2', 'g1'] }, x, { courses: { A: { name: 'a' } } }), ['זהה לחלופה 1 בסמסטר הזה']);
+  assert.deepEqual(compareAlts({ ...x, courses: [], groups: [] }, { ...x, courses: [], groups: [] }, { courses: {} }), ['זהה לחלופה 1 בסמסטר הזה']);
+});

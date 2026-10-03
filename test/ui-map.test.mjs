@@ -376,3 +376,11 @@ test('progressInfo rows: one per list with a minimum, the area, the rest; they a
   assert.equal(pm.rows.filter((r) => r.name === 'התמחות').length, 1);
   assert.equal(pm.rows.reduce((s, r) => s + r.need, 0), 160);
 });
+
+test('progressInfo rows: an older cohort whose lists hold less than their minimum still completes; the gap is untracked', () => {
+  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/10-2024.json', import.meta.url), 'utf8'));
+  const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])), p = progressInfo(d, all, new Set(), [d.specializations[0].id]);
+  assert.ok(p.rows.every((r) => r.done >= r.need), p.rows.filter((r) => r.done < r.need).map((r) => `${r.name} ${r.done}/${r.need}`).join(', '));
+  assert.equal(p.rows.reduce((s, r) => s + r.need, 0), p.total, 'the rows add up to the bar');
+  assert.ok(p.untracked > 0);
+});

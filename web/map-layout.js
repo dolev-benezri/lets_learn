@@ -155,7 +155,7 @@ export function progressInfo(data, st, plan = new Set(), specs = []) {
     const d = Math.min(cap, d0), p = Math.min(cap - d, p0);
     extra.reach += Math.max(0, all - cap); extra.done += d0 - d; extra.planned += p0 - p;
     reach += Math.min(cap, all); done += d; planned += p;
-    if (need > 0) rows.push({ name, need, done: d, planned: p });
+    if (Math.min(need, all) > 0) rows.push({ name, need: Math.min(need, all), done: d, planned: p }); // what the data can reach; the rest is untracked
   };
   for (const l of data.lists.filter((x) => !sp.all.has(x.code))) {
     const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)), min = Number(l.minCredits) || 0;
@@ -173,7 +173,7 @@ export function progressInfo(data, st, plan = new Set(), specs = []) {
   // What the minimums and the specialization leave of the degree (computer science: an electives list with minCredits 0) fills from the extra credits.
   const rest = Math.max(0, degree - total - need), rd = Math.min(rest, extra.done);
   reach += Math.min(rest, extra.reach); done += rd; planned += Math.min(rest - rd, extra.planned);
-  if (rest > 0) rows.push({ name: 'בחירה (מעבר למינימום)', need: rest, done: rd, planned: Math.min(rest - rd, extra.planned) });
+  if (Math.min(rest, extra.reach) > 0) rows.push({ name: 'בחירה (מעבר למינימום)', need: Math.min(rest, extra.reach), done: rd, planned: Math.min(rest - rd, extra.planned) });
   const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + credits(id), 0);
   // The bar ends where the data does (all passed = 100%); credits of the degree no list in the data covers are named, not silently unreachable.
   const r = (v) => Math.round(v * 2) / 2;

@@ -52,9 +52,10 @@ const specForm = (saved) => {
 
 // Degree checklist: what each requirement still needs, from the same numbers as the progress bar (progressInfo).
 function checklist(data, state) {
-  const { rows } = progressInfo(data, app.cls.statuses, new Set(), state.profile.specs);
+  const { rows, untracked } = progressInfo(data, app.cls.statuses, new Set(), state.profile.specs);
+  const gap = untracked ? `<p class="hint">עוד ${esc(untracked)} נ״ז של התואר לא מופיעים ברשימות שבנתונים (קורסים שכבר לא נפתחים), ולכן לא נספרים כאן.</p>` : '';
   const row = (r) => `<li${r.done >= r.need ? ' class="ok"' : ''}><span>${esc(heb(r.name))}</span> <b>${r.done >= r.need ? '✓ ' : ''}${esc(r.done)} מתוך ${esc(r.need)} נ״ז</b></li>`;
-  return details('checklist', 'מה נשאר לסיום התואר', `<ul class="plain checklist">${rows.map(row).join('')}</ul>`, rows.length);
+  return details('checklist', 'מה נשאר לסיום התואר', `<ul class="plain checklist">${rows.map(row).join('')}</ul>${gap}`, rows.length);
 }
 
 // The two questions that fix who the schedule is for: the track (only when the catalog has more than one) and the study year, which also picks the cohort.
