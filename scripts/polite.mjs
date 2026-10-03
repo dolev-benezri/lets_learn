@@ -5,7 +5,7 @@ import { isRejected, isThrottled } from './parse.mjs';
 export const pageKind = (html) => (isThrottled(html) ? 'throttled' : isRejected(html) ? 'rejected' : 'ok');
 
 // "ניתן לנסות שוב החל משעה 19:00" -> "19:00"
-export const throttleUntil = (html) => html.match(/החל משעה (\d{2}:\d{2})/)?.[1] ?? null;
+export const throttleUntil = (html) => html.match(/החל משעה (\d{1,2}):(\d{2})/)?.slice(1).map((x) => x.padStart(2, '0')).join(':') ?? null;
 
 // base ± 500 ms of jitter, never negative.
 export const nextDelay = (base, rnd) => Math.max(0, base - 500 + Math.floor(rnd() * 1000));
@@ -34,6 +34,12 @@ export function changeSummary(prev, next) {
 }
 
 // Milliseconds from `now` until the next HH:MM on the site's clock (Asia/Jerusalem), plus a minute of margin. The runner's own zone does not matter.
+// The top of the next clock hour on Jerusalem time, as HH:00: the limit is per clock hour, so this is when it ends if the page does not say.
+export const nextHour = (now = new Date()) => {
+  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', hour12: false }).format(now)) % 24;
+  return `${String((h + 1) % 24).padStart(2, '0')}:00`;
+};
+
 export function msUntil(hhmm, now = new Date()) {
   const [h, m] = hhmm.split(':').map(Number);
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(now);

@@ -46,3 +46,11 @@ test('msUntil: the next HH:MM on Jerusalem time (UTC+3 in October 2026) plus a m
   assert.equal(at('2026-10-02T20:59:00Z', '00:00'), 60 + 60, '23:59 -> 00:00');
   assert.equal(at('2026-10-02T18:00:00Z', '21:00'), 86400 + 60, 'already 21:00: the next day');
 });
+
+import { nextHour } from '../scripts/polite.mjs';
+test('nextHour: the top of the next hour on Jerusalem time, across midnight; throttleUntil takes a one-digit hour', () => {
+  assert.equal(nextHour(new Date('2026-10-02T22:27:32Z')), '02:00');
+  assert.equal(nextHour(new Date('2026-10-02T20:59:00Z')), '00:00');
+  assert.equal(nextHour(new Date('2026-10-02T17:00:00Z')), '21:00');
+  assert.equal(throttleUntil('החל משעה 7:00'), '07:00');
+});

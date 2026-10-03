@@ -10,7 +10,7 @@ import { parseArgs } from 'node:util';
 import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs';
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
 import PROGRAMS from './programs.json' with { type: 'json' };
-import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary, msUntil } from './polite.mjs';
+import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary, msUntil, nextHour } from './polite.mjs';
 
 // scripts/programs.json: per program the list codes, department, specializations (hand-maintained, docs/research-degree-rules.md 5.2), degree credits and the anchor course validate() demands.
 const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
@@ -173,10 +173,10 @@ export function patient(request, { year, sleep = (ms) => new Promise((r) => setT
   return async (query, form) => {
     for (;;) {
       try { return await request(query, form); } catch (e) {
-        if (!(e instanceof ThrottledError) || !e.until) throw e;
-        const ms = msUntil(e.until, now());
+        if (!(e instanceof ThrottledError)) throw e;
+        const until = e.until ?? nextHour(now()), ms = msUntil(until, now()); // a limit page that names no hour (seen on GitLab's runner): the limit ends with the clock hour
         if (ms > maxWaitMs || ++waits > maxWaits) throw e;
-        log(`hourly limit: waiting ${Math.round(ms / 60000)} min until ${e.until}`);
+        log(`hourly limit: waiting ${Math.round(ms / 60000)} min until ${until}`);
         await sleep(ms);
         await request('prgname=Enter_Search');
         await request(null, { PRGNAME: 'Enter_Search', ARGUMENTS: '-A,,-A,ChangeYear', ChangeYear: year });

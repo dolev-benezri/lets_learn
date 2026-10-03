@@ -373,3 +373,12 @@ test('writeResults: many changed files give a short one-line summary', async () 
   assert.ok(!summary.includes('\n') && summary.length < 400, summary);
   assert.match(summary, /and 14 more of 20 files$/);
 });
+
+test('patient: a limit page that names no hour waits for the next clock hour (Jerusalem time)', async () => {
+  const sleeps = [];
+  let fail = 1;
+  const base = async (q) => { if (!q?.startsWith('prgname=S_')) return ''; if (fail-- > 0) throw new ThrottledError(null); return 'ok'; };
+  const now = () => new Date('2026-10-02T22:27:32Z'); // 01:27:32 in Jerusalem
+  assert.equal(await patient(base, { year: '2027', sleep: async (ms) => { sleeps.push(ms); }, now, log: () => {} })('prgname=S_X'), 'ok');
+  assert.deepEqual(sleeps, [(32 * 60 + 28 + 60) * 1000], 'until 02:00 plus a minute');
+});
