@@ -117,3 +117,18 @@ test('courseCount: one course is "קורס אחד", not "1 קורסים"', async
   const { courseCount } = await import('../web/ui-text.js');
   assert.deepEqual([courseCount(1), courseCount(0), courseCount(4)], ['קורס אחד', '0 קורסים', '4 קורסים']);
 });
+
+test('count: Hebrew singular for one (groups, lessons, days), the number otherwise', async () => {
+  const { count, groupCount } = await import('../web/ui-text.js');
+  assert.deepEqual([groupCount(1), groupCount(3)], ['קבוצה אחת', '3 קבוצות']);
+  assert.equal(count(1, 'יום אחד', 'ימים'), 'יום אחד');
+  assert.equal(count(2, 'יום אחד', 'ימים'), '2 ימים');
+});
+
+test('nameHtml: Latin runs in a course name get lang="en", entities are left alone', async () => {
+  const { nameHtml } = await import('../web/ui-common.js');
+  assert.equal(nameHtml('פיתוח בסביבת IOS'), 'פיתוח בסביבת <span lang="en">IOS</span>');
+  assert.equal(nameHtml('Engineers Go to Market'), '<span lang="en">Engineers Go to Market</span>');
+  assert.equal(nameHtml('מבוא <b> & "x"'), 'מבוא &lt;<span lang="en">b</span>&gt; &amp; &quot;<span lang="en">x</span>&quot;');
+  assert.equal(nameHtml('פיזיקה 1'), 'פיזיקה 1');
+});

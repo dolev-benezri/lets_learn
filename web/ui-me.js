@@ -1,17 +1,17 @@
 // The status page (#me): profile, specialization form, course lists with their states, grade-sheet import.
 import { app, esc, refresh } from './app.js';
-import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, specConflict, validSpecs } from './rules.js';
+import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs } from './rules.js';
 import { icon } from './ui-grid.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
 import { creditsGoal, courseCount } from './ui-text.js';
-import { STATUS, FAILS, YEARS, onboarded, gated, status, seg, details, toast, heb, listTitle, $, ui } from './ui-common.js';
+import { STATUS, FAILS, YEARS, onboarded, gated, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
   const s = app.state, n = s.failed[id] ?? 0, k = `${li}-${id}`, nm = heb(app.data.courses[id].name);
-  if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${esc(nm)}</b> <span class="tag ok">פטור</span></div>`;
+  if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${nameHtml(app.data.courses[id].name)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
   return `<div class="crs" data-st="${st}">${seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
     }${st === 'passed' ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
@@ -37,15 +37,14 @@ export function specView(data, saved) {
   return saved.length === 1 && rule.pick > 1 && rule.alone.includes(saved[0]) ? { mode: 'alone', picks: [] } : saved.length ? { mode: 'pick', picks: saved } : { mode: 'none', picks: [] };
 }
 const PICK_WORD = { 1: 'תחום אחד', 2: 'שני תחומים', 3: 'שלושה תחומים' };
-const PICK_GROUPS = 'ראשית ומשנית (תחומים שונים)';
 const specForm = (saved) => {
   const { specializations: areas = [] } = app.data, rule = specRule(app.data), { mode, picks } = specView(app.data, saved), full = picks.length >= rule.pick;
-  const aloneName = areas.find((s) => s.id === rule.alone[0])?.name, word = rule.groups ? PICK_GROUPS : PICK_WORD[rule.pick] ?? `${rule.pick} תחומים`;
+  const aloneName = areas.find((s) => s.id === rule.alone[0])?.name, word = PICK_WORD[rule.pick] ?? `${rule.pick} תחומים`;
   const modes = [['none', 'עוד לא בחרתי'], ...(rule.pick > 1 && aloneName ? [['alone', `${aloneName} בלבד`]] : []), ['pick', word]].map(([v, t]) => [v, esc(t)]);
   return `${seg('p-spec', 'התמחות', modes, mode, 'data-chg="specMode"', true)}
     ${mode === 'pick' ? `<fieldset class="specs"><legend class="sr">${esc(word)}</legend>${areas.map((p) => `<label class="check"><input type="checkbox"
       data-chg="specPick" data-id="${esc(p.id)}" data-k="spec-${esc(p.id)}"${picks.includes(p.id) ? ' checked' : ''}${!picks.includes(p.id)
-      && (full || picks.some((q) => specConflict(rule, q, p.id))) ? ' disabled' : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
+      && full ? ' disabled' : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
       ${saved.length ? '' : `<p class="hint" role="status">בחרו ${esc(word)}</p>`}` : ''}
     <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה עוד לא נבדק מול תוכנית הלימודים הרשמית.</p>' : ''}`;
 };
@@ -65,7 +64,7 @@ export function renderMe() {
   if (el.hidden) { el.innerHTML = ''; return; }
   const { data, state, cls } = app;
   if (gated() && document.body.dataset.view !== 'me') { // the builder waits for the study year: one question, nothing else
-    el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">${app.catalog.programs.length > 1 ? 'באיזה מסלול ובאיזו שנה את/ה?' : 'באיזו שנה את/ה?'}</h1></div>
+    el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">${app.catalog.programs.length > 1 ? 'באיזה מסלול ובאיזו שנה את/ה?' : 'באיזו שנה את/ה?'}</h2></div>
       <section class="me-card gate">${identityPick(null, true)}
         <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p></section>`;
     return;
@@ -77,7 +76,7 @@ export function renderMe() {
   // A chosen year opens its own list too (and the earlier ones); without a choice only the earlier years are open.
   const open = state.profile.year ?? studyYear(data, state) - 1;
   const lists = data.lists.map((l, i) => ({ ...l, i, year: l.name.match(/חובה שנה (\S)'/)?.[1] }));
-  const past = (l) => l.year && ' אבגד'.indexOf(l.year) <= open;
+  const past = (l) => l.year && ' אבגדה'.indexOf(l.year) <= open;
   const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(listTitle(l)))} <span>${l.minCredits
     ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}"
     data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id,
@@ -87,7 +86,7 @@ export function renderMe() {
   const step = onboarded()
     ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
     : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${studyYear(data, state) > 1 ? ' (שנה א׳ מסומנת מראש)' : ''}, ואז לחצו ״סיימתי״.`;
-  el.innerHTML = `<div class="me-head"><h1 id="meTitle" tabindex="-1">המצב שלי</h1><p class="me-step">${step}</p></div>
+  el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step">${step}</p></div>
     <div class="me-grid">
       <div class="me-side">
         <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>

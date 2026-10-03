@@ -2,7 +2,7 @@
 import { classify, specLists } from './rules.js';
 
 // ---------- layout (pure) ----------
-export const YEAR_LETTERS = 'אבגד';
+export const YEAR_LETTERS = 'אבגדה';
 const yearOf = (l) => l.name.match(/חובה שנה (\S)'/)?.[1];
 const bandName = (y) => (y ? `שנה ${YEAR_LETTERS[y - 1]}׳` : 'חובה כללית ובחירה'); // English, final project and chosen electives
 
@@ -16,7 +16,7 @@ export function makeKeep(mode, data, statuses, year) {
   return () => true;
 }
 
-// Study year (1-4) of every course in a "חובה שנה X'" list (the first one that holds it); anything else is an elective.
+// Study year (1-5) of every course in a "חובה שנה X'" list (the first one that holds it); anything else is an elective.
 export function courseYears(data) {
   const m = new Map();
   for (const l of data.lists) { const y = YEAR_LETTERS.indexOf(yearOf(l) ?? '?'); if (y >= 0) l.courses.forEach((id) => { if (data.courses[id] && !m.has(id)) m.set(id, y + 1); }); }
@@ -44,7 +44,7 @@ const PRE = /מכינה|קורס הכנה/, PRE_BAND = -1, ROWS = 9;
 export const PRE_NAME = 'לפני התואר (מכינה)', PRE_NOTE = 'רק למי שנדרש/ה לפי תנאי הקבלה';
 export function layoutMap(data, keep = () => true) {
   const C = data.courses, yr = courseYears(data);
-  const bandOf = (id) => (yr.get(id) ?? 5) - 1; // electives: 4
+  const bandOf = (id) => (yr.get(id) ?? YEAR_LETTERS.length + 1) - 1; // electives: after the last year (5)
   const order = Object.keys(C).filter((id) => keep(id));
   const K = new Set(order);
 
@@ -96,7 +96,7 @@ export function layoutMap(data, keep = () => true) {
   // Columns in flow order (band, sub-column), an empty one skipped. Rows: depth, then list order (the sort is stable; ext pills come first).
   const list = [...nodes.values()], cols = [], bands = [];
   for (const b of [...new Set(list.map((n) => n.band))].sort((x, y) => x - y)) {
-    const year = b >= 0 && b < 4 ? b + 1 : null;
+    const year = b >= 0 && b < YEAR_LETTERS.length ? b + 1 : null;
     const band = { year, kind: b === PRE_BAND ? 'pre' : year ? 'year' : 'other', name: b === PRE_BAND ? PRE_NAME : bandName(year), note: b === PRE_BAND ? PRE_NOTE : null, first: cols.length, n: 0 };
     for (const s of [...new Set(list.filter((n) => n.band === b).map((n) => n.sub))].sort((x, y) => x - y)) {
       list.filter((n) => n.band === b && n.sub === s).sort((x, y) => x.depth - y.depth).forEach((n, row) => { n.col = cols.length; n.row = row; });
@@ -206,7 +206,8 @@ export function geometry(L, creditsOf = () => 0) {
   }
   // A column's step is at least a row, and enough for what sits between two circles that follow each other: the upper one's name (16px below it)
   // and the lower one's "פותח N" badge (riding 0.85r + 8 above its centre), plus a small gap.
-  const byCol = Object.groupBy(L.nodes, (n) => n.col), step = {};
+  const byCol = {}, step = {}; // not Object.groupBy: Safari before 17.4
+  for (const n of L.nodes) (byCol[n.col] ??= []).push(n);
   for (const [c, col] of Object.entries(byCol)) step[c] = Math.max(G.row, ...col.slice(1).map((n, i) => radius(col[i]) + 22 + 0.85 * radius(n) + 12));
   const H = top + G.padY + Math.max(0, ...Object.entries(byCol).map(([c, col]) => col.length * step[c])), pos = new Map();
   for (const n of L.nodes) { const r = radius(n); pos.set(n.key, { ...n, x: colX[n.col], y: top + (n.row + 0.5) * step[n.col], r, hw: n.type === 'ext' ? G.extHW : r }); }

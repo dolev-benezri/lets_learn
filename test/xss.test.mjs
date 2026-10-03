@@ -157,3 +157,18 @@ test('a friend name in the summary pills is escaped once, not twice (U1)', () =>
   assert.ok(pills.includes('class="pill friend"'), 'no friend pill: the plan shares no course with the friend (coverage hole)');
   assert.ok(!/&amp;(lt|gt|quot|#39|amp);/.test(pills), 'double-escaped entity in the pills');
 });
+
+test('a friend link from another program says which one, escaped', () => {
+  app.friendLanding = { name: 'דנה', program: 20, groups: [] };
+  run('banner-other', () => { renderBanner(); });
+  const html = writes.filter((w) => w.scope === 'banner-other').at(-1).html;
+  assert.match(html, /מתוכנית אחרת \(b&lt;xss-t/);
+  app.friendLanding = { name: 'דנה', program: 30, groups: [] };
+  run('banner-same', () => { renderBanner(); });
+  assert.ok(!writes.filter((w) => w.scope === 'banner-same').at(-1).html.includes('מתוכנית אחרת'));
+  app.friendLanding = null;
+});
+
+test('one h1 per page: the views use h2 under the app title (a11y)', () => {
+  for (const s of ['me', 'view', 'side', 'picker']) for (const w of writes.filter((x) => x.scope === s)) assert.ok(!w.html.includes('<h1'), `${s} #${w.id}`);
+});

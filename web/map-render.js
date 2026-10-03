@@ -74,7 +74,7 @@ export function mapSvg(c) {
   const g = c.g;
   const bands = g.bands.map((b) => `<g class="band${c.year && b.year === c.year ? ' mine' : ''}${b.kind === 'pre' ? ' pre' : ''}" aria-hidden="true"><rect
     x="${num(b.x)}" y="8" width="${b.w}" height="${num(g.H - 16)}" rx="12"/><text class="bt" x="${num(b.x + b.w / 2)}" y="${b.note ? 20 : 30}"
-    text-anchor="middle">${esc(b.name)}</text>${noteLines(b.note).map((t, i) => `<text class="bs" x="${num(b.x + b.w / 2)}" y="${34 + i * 13}"
+    text-anchor="middle">${esc(b.name)}</text>${noteLines(b.note).map((t, i) => `<text class="bs" x="${num(b.x + b.w / 2)}" y="${34 + i * 15}"
     text-anchor="middle">${esc(t)}</text>`).join('')}</g>`).join('');
   const plan = planPaths(c.L.paths, c.plan ?? new Set());
   const edges = g.edges.map((p) => `<path class="e ${p.kind === 'מקביל' ? 'p' : 'k'}${plan.has(p.id) ? ' plan' : ''}" data-p="${p.id}" d="${p.d}"/>`).join('');

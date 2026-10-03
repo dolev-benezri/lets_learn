@@ -4,7 +4,7 @@ import { progress } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { DAYS, icon, initials, groupIndex, hourRange, summary, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
-import { freshness, stalePins, partialNote, hebYear, courseCount } from './ui-text.js';
+import { freshness, stalePins, partialNote, hebYear, courseCount, count } from './ui-text.js';
 import { SEMS, scopes, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -28,13 +28,17 @@ export function renderBanner() {
   const L = app.friendLanding;
   const known = allGroupIds();
   const missing = L ? L.groups.filter((g) => !known.has(g)).length : 0;
+  const other = L && L.program !== undefined && L.program !== app.state.program // groups of another program rarely match
+    ? app.catalog.programs.find((p) => p.id === L.program)?.name ?? 'לא מוכרת' : null;
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : []; // with one semester loaded, the other's pins would look gone
   $('banner').innerHTML = (app.hashError ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
       <button type="button" class="btn icon-btn ghost" data-act="dismissError" aria-label="סגור הודעה">${icon('x')}</button></div>` : '')
     + gone.map((p) => `<div class="banner warn">${icon('alert')}<span class="grow">${esc(p.text)}. המערכת תבחר קבוצה אחרת אם תסירו את הנעיצה.</span>
       <button type="button" class="btn" data-act="dropPin" data-gid="${esc(p.gid)}">${icon('pin')} הסר נעיצה</button></div>`).join('')
     + (L ? `<div class="banner"><span class="av lg" aria-hidden="true">${esc(initials(L.name || 'חבר'))}</span>
-      <div class="grow"><b>${esc(L.name || 'חבר')}</b> שיתף/ה איתך מערכת (${L.groups.length} שיעורים)${missing ? ` · <span class="warn-text">${missing} לא נמצאו בהיצע הנוכחי</span>` : ''}</div>
+      <div class="grow"><b>${esc(L.name || 'חבר')}</b> שיתף/ה איתך מערכת (${count(L.groups.length, 'שיעור אחד', 'שיעורים')})
+      ${missing ? ` · <span class="warn-text">${missing} לא נמצאו בהיצע הנוכחי</span>` : ''}
+      ${other ? ` · <span class="warn-text">מתוכנית אחרת (${esc(heb(other))})</span>` : ''}</div>
       <button type="button" class="btn primary" data-act="landingAdd" data-k="landingAdd">${icon('user-plus')} הוסף כחבר</button>
       <button type="button" class="btn" data-act="landingDrop">לא עכשיו</button></div>` : '');
 }
@@ -96,8 +100,8 @@ export function renderView() {
   if (res) {
     const s = summary(res, data, state.friends);
     const fd = !s.freeDays.length ? 'אין יום פנוי' : s.freeDays.length === 1 ? `יום ${DAYS[s.freeDays[0]]}׳ פנוי` : `ימים ${s.freeDays.map((d) => `${DAYS[d]}׳`).join(', ')} פנויים`;
-    const gap = s.gapH >= 10 ? 'יותר מ-10 שעות חלונות' : s.gapH ? `${s.gapH} שעות חלונות` : 'בלי חלונות';
-    const exams = !data.examsPublished ? 'לוח הבחינות טרם פורסם' : s.examGap ? `לפחות ${esc(s.examGap)} ימים בין בחינות` : 'פער בין בחינות: לא ידוע';
+    const gap = s.gapH >= 10 ? 'יותר מ-10 שעות חלונות' : s.gapH ? `${count(s.gapH, 'שעת חלון אחת', 'שעות חלונות')}` : 'בלי חלונות';
+    const exams = !data.examsPublished ? 'לוח הבחינות טרם פורסם' : s.examGap ? `לפחות ${esc(count(s.examGap, 'יום אחד', 'ימים'))} בין בחינות` : 'פער בין בחינות: לא ידוע';
     const fr = s.withFriends.map((f) => (f.n === 1 ? `קורס אחד עם ${f.name}` : `${f.n} קורסים עם ${f.name}`)); // raw: escaped once in the pill, the live region is text
     const yt = pair ? yearTotals(raw) : null;
     if (pair && !res.courses.length) msg += note('info', `אין קורסים בסמסטר ${ui.sem}׳ בחלופה הזו`);

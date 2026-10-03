@@ -216,3 +216,28 @@ test('the deploy waits for a green test job (P9)', () => {
   assert.match(y, /\n  test:\n[\s\S]*npm ci --ignore-scripts[\s\S]*npm test/);
   assert.match(y, /\n  deploy:\n    needs: test\n/);
 });
+
+test('normalize takes the academic year from the catalog (one place to roll over)', () => {
+  const cat = { year: 2028, programs: [{ id: 30, name: 'מכנית', startYears: [2026] }] };
+  assert.equal(normalize({ v: 1 }, cat).year, 2028);
+  assert.equal(normalize({ v: 1, year: 1999 }, { programs: cat.programs }).year, 2027, 'no year in the catalog: the default; never from input');
+});
+
+test('normalize caps failed and choices like grades, and refuses impossible hours', () => {
+  const many = Object.fromEntries([...Array(500)].map((_, i) => [`c${i}`, 1]));
+  const s = normalize({ v: 1, failed: many, choices: { ['x'.repeat(30)]: 'must', a: 'no' }, constraints: { notBefore: '99:99', notAfter: '23:59' } });
+  assert.equal(Object.keys(s.failed).length, 200);
+  assert.deepEqual(s.choices, { a: 'no' });
+  assert.equal(s.constraints.notBefore, '');
+  assert.equal(s.constraints.notAfter, '23:59');
+});
+
+test('yearCourses: a fifth-year evening student gets the year ה list', async () => {
+  const { app: a, yearCourses } = await import('../web/app.js');
+  const d = JSON.parse(readFileSync('web/data/afeka/2027-1/32-2024.json', 'utf8')), was = [a.data, a.state];
+  a.data = d; a.state = { ...normalize({ v: 1 }), program: 32, startYear: 2024, profile: { year: 5, amirnet: null, specs: [], summer: false } };
+  try {
+    const five = d.lists.find((l) => l.name.includes("שנה ה'")).courses;
+    assert.ok(five.length && five.every((id) => yearCourses().includes(id)));
+  } finally { [a.data, a.state] = was; }
+});

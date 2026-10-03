@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, modeFor, gradeAverage, englishOptions, specRule, specConflict, validSpecs } from '../web/rules.js';
+import { readFileSync } from 'node:fs';
+import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, yearsOf, modeFor, gradeAverage, englishOptions, specRule, validSpecs } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
@@ -135,7 +136,7 @@ test('profile year overrides the cohort-derived study year; cleanProfile drops b
   const d = english();
   assert.equal(studyYear(d, {}), 2);
   assert.equal(studyYear(d, { profile: { year: 3 } }), 3);
-  assert.deepEqual(cleanProfile({ year: 5, amirnet: 49 }), { year: null, amirnet: null, specs: [], summer: false });
+  assert.deepEqual(cleanProfile({ year: 6, amirnet: 49 }), { year: null, amirnet: null, specs: [], summer: false });
   assert.deepEqual(cleanProfile({ year: 4, amirnet: 150.5 }), { year: 4, amirnet: null, specs: [], summer: false });
 });
 
@@ -276,16 +277,6 @@ test('specLists: one list can be elective in a pair and mandatory when its area 
   assert.deepEqual([[...specLists(data, ['p', 'q']).mandatory], [...specLists(data, ['p', 'q']).elective]], [[], ['a', 'b']], 'in a pair: electives');
 });
 
-test('validSpecs with groups: one main and one secondary area, not the same subject; no standalone area', () => {
-  const area = (id) => ({ id, name: id });
-  const ie = { specializations: ['m1', 'm2', 'm3', 's1', 's2', 's3'].map(area), specRule: { pick: 2, alone: [], groups: [['m1', 'm2', 'm3'], ['s1', 's2', 's3']] } };
-  assert.deepEqual(validSpecs(ie, ['m1', 's2']), ['m1', 's2']);
-  assert.deepEqual(validSpecs(ie, ['s3', 'm1']), ['m1', 's3'], 'dataset order');
-  for (const bad of [['m1', 's1'], ['m2', 's2'], ['m1', 'm2'], ['s1', 's2'], ['m1'], ['m1', 's2', 's3'], ['m1', 'nope'], []]) assert.deepEqual(validSpecs(ie, bad), [], String(bad));
-  assert.ok(specConflict(specRule(ie), 'm1', 's1') && specConflict(specRule(ie), 'm1', 'm2') && !specConflict(specRule(ie), 'm1', 's2'));
-  assert.ok(!specConflict(specRule(ie), 'm1', 'm1') && !specConflict({ pick: 2, alone: [] }, 'a', 'b'), 'no groups: nothing conflicts');
-});
-
 test('yearsOf: the study years are the mandatory year lists; studyYear stays inside them (L6)', async () => {
   const { yearsOf } = await import('../web/rules.js');
   const two = { year: 2030, startYear: 2026, lists: [{ name: "קורסי חובה שנה א'" }, { name: "קורסי חובה שנה ב'" }, { name: 'פרויקט גמר' }] };
@@ -294,4 +285,20 @@ test('yearsOf: the study years are the mandatory year lists; studyYear stays ins
   assert.equal(yearsOf({ lists: [] }), 4, 'no year lists: the usual four');
   assert.equal(studyYear(two, {}), 2, 'cohort 2026 in 2030 would be year 5: capped at the last year');
   assert.equal(studyYear(two, { profile: { year: 4 } }), 2);
+});
+
+// Evening programs (12, 22, 32, 42) run five years: their data has a "קורסי חובה שנה ה'" list.
+const cohort = (id) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-1/${id}-2027.json`, import.meta.url), 'utf8'));
+test('evening programs have a fifth study year', () => {
+  for (const id of [12, 22, 32, 42]) assert.equal(yearsOf(cohort(id)), 5, id);
+  assert.equal(yearsOf(cohort(30)), 4);
+  assert.equal(cleanProfile({ year: 5 }).year, 5);
+  const d = cohort(12), four = d.lists.filter((l) => /חובה שנה [א-ד]'/.test(l.name)).reduce((a, l) => a + l.minCredits, 0);
+  assert.equal(progress(d, { passed: [], profile: { year: 5 } }).required, four, 'in year ה the four earlier years are behind');
+});
+
+test('progress counts each year list only up to its minimum (extra courses don’t pass the target)', () => {
+  const c = (credits) => ({ name: 'c', credits, prereqs: [], groups: [] });
+  const d = { year: 2027, startYear: 2025, lists: [{ name: "קורסי חובה שנה א'", minCredits: 5, courses: ['a', 'b'] }], courses: { a: c(3), b: c(3) } };
+  assert.deepEqual(progress(d, { passed: ['a', 'b'] }), { earned: 5, required: 5, ratio: 1 });
 });

@@ -64,7 +64,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .band rect { fill:var(--surface-2); stroke:var(--border); stroke-width:1; }
 .pmap .band.mine rect { stroke:var(--primary); stroke-dasharray:6 4; }
 .pmap .band .bt { fill:var(--text); font-size:16px; font-weight:700; }
-.pmap .band .bs { fill:var(--text-2); font-size:11px; }
+.pmap .band .bs { fill:var(--text-2); font-size:12px; }
 
 /* "לא רלוונטי": a collapsed box over the map's bottom corner (far side from the first year), a plain section in the list view */
 .pmap .pm-aside { position:absolute; inset-block-end:8px; inset-inline-end:8px; z-index:4; max-width:min(340px, calc(100% - 16px)); max-height:min(55%, 420px);
@@ -107,11 +107,11 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 
 /* "פותח N" badge on the ring, "או" circles, outside-the-program pills */
 .pmap .opens rect { fill:var(--primary-soft); stroke:var(--primary); stroke-width:1; }
-.pmap .opens text { fill:var(--primary); font-size:11px; font-weight:600; }
+.pmap .opens text { fill:var(--primary); font-size:12px; font-weight:600; }
 .pmap .or circle { fill:var(--surface); stroke:var(--text-2); stroke-width:1.5; }
-.pmap .or text { fill:var(--text); font-size:11px; font-weight:600; }
+.pmap .or text { fill:var(--text); font-size:12px; font-weight:600; }
 .pmap .ext rect { fill:var(--surface); stroke:var(--text-2); stroke-width:1.5; stroke-dasharray:3 3; }
-.pmap .ext text { fill:var(--text-2); font-size:11px; }
+.pmap .ext text { fill:var(--text-2); font-size:12px; }
 
 /* highlight: dim whatever is not on the hovered / focused / selected chain */
 .pmap .nd, .pmap .e, .pmap .or, .pmap .ext { transition:opacity .15s ease; }
@@ -182,7 +182,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .band.pre .bt { fill:var(--text-2); font-size:14px; }
 .pmap .ext rect { fill:var(--surface-2); stroke-opacity:.8; }
 .pmap .ext text { font-style:italic; }
-.pmap .ext .tg { font-size:10px; font-style:normal; font-weight:600; }
+.pmap .ext .tg { font-size:12px; font-style:normal; font-weight:600; }
 .pmap .ext.pre rect { fill:var(--surface); stroke-dasharray:2 3; }
 .pmap .plan-ring { fill:none; stroke:var(--c2-fg); stroke-width:3; }
 .pmap .nd.plan .ring { fill:var(--c2-bg); }

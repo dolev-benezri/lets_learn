@@ -101,8 +101,10 @@ const dependents = (data) => {
   return rev;
 };
 
-// id -> Set of every course reachable below it
-function downstream(data) {
+// id -> Set of every course reachable below it. Kept per dataset object: the map, the side list and the view each ask on every render.
+const DOWN = new WeakMap();
+export function downstream(data) {
+  if (DOWN.has(data)) return DOWN.get(data);
   const rev = dependents(data), out = {};
   for (const id of Object.keys(data.courses)) {
     const seen = new Set();
@@ -115,11 +117,15 @@ function downstream(data) {
     }
     out[id] = seen;
   }
+  DOWN.set(data, out);
   return out;
 }
 
 // `passed` (ids already done) are not counted: they are not "still ahead".
-export const unlockCounts = (data, passed = []) => Object.fromEntries(Object.entries(downstream(data)).map(([id, s]) => [id, [...s].filter((x) => !passed.includes(x)).length]));
+export const unlockCounts = (data, passed = []) => {
+  const done = new Set(passed);
+  return Object.fromEntries(Object.entries(downstream(data)).map(([id, s]) => [id, [...s].filter((x) => !done.has(x)).length]));
+};
 
 // Length (in semesters) of the longest `קדם` chain below each course; 0 when nothing depends on it.
 export function chainDepth(data) {
@@ -208,7 +214,7 @@ function explain(info, unlocks) {
   const parts = Object.entries(info.shared).filter(([, n]) => n).map(([name, n]) => `${n === 1 ? 'קורס אחד' : `${n} קורסים`} עם ${name}`);
   if (info.freeDays.length) parts.push(`${info.freeDays.map((d) => `יום ${DAY_NAMES[d]}'`).join(', ')} פנוי`);
   parts.push(info.gapMin ? `חלונות: ${Math.round(info.gapMin / 6) / 10} ש'` : 'בלי חלונות');
-  if (info.minGap !== null) parts.push(`לפחות ${info.minGap} ימים בין בחינות`);
+  if (info.minGap !== null) parts.push(`לפחות ${info.minGap === 1 ? 'יום אחד' : `${info.minGap} ימים`} בין בחינות`);
   if (unlocks) parts.push(unlocks === 1 ? 'פותחת קורס אחד להמשך' : `פותחת ${unlocks} קורסים להמשך`);
   return parts.join(' · ');
 }

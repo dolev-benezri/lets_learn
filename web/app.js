@@ -19,7 +19,7 @@ export const DEFAULT = {
 export const FALLBACK_CATALOG = { programs: [{ id: 30, name: 'הנדסה מכנית', startYears: [2026] }] };
 export const inCatalog = (c, program, startYear) => !!c?.programs?.some((p) => p.id === program && p.startYears.includes(startYear));
 const goodCatalog = (c) => isObj(c) && Array.isArray(c.programs) && c.programs.length > 0 && c.programs.every((p) => isObj(p) && Number.isInteger(p.id) && typeof p.name === 'string'
-  && Array.isArray(p.startYears) && p.startYears.every(Number.isInteger));
+  && Array.isArray(p.startYears) && p.startYears.every(Number.isInteger)) && (c.year === undefined || Number.isInteger(c.year));
 const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
 const num = (x) => typeof x === 'number' && Number.isFinite(x);
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -32,16 +32,17 @@ export const cleanBlocks = (a) => Array.isArray(a) ? a.filter((b) => isObj(b) &&
 const CONSTRAINT_OK = {
   dayOff: (v) => Array.isArray(v) && v.every((d) => Number.isInteger(d) && d >= 1 && d <= 6),
   dayOffHard: (v) => typeof v === 'boolean', windowHard: (v) => typeof v === 'boolean', includeFull: (v) => typeof v === 'boolean',
-  notBefore: (v) => v === '' || (typeof v === 'string' && /^\d{2}:\d{2}$/.test(v)),
-  notAfter: (v) => v === '' || (typeof v === 'string' && /^\d{2}:\d{2}$/.test(v)),
+  notBefore: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
+  notAfter: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   maxCredits: (v) => v === null || (num(v) && v >= 0),
   examsSameDay: (v) => v === 'forbid' || v === 'allow',
 };
 
 // The one gate for state from localStorage and from backup links: only valid values get through.
-// year/semester are never taken from input; program/startYear only when the catalog lists them (a foreign program would 404 the data file forever).
+// year/semester are never taken from input (the year is the catalog's); program/startYear only when the catalog lists them (a foreign program would 404 the data file forever).
 export function normalize(raw, catalog = FALLBACK_CATALOG) {
   const out = structuredClone(DEFAULT);
+  if (Number.isInteger(catalog?.year)) out.year = catalog.year; // the academic year comes from the scraper's catalog: one place to roll over
   if (!isObj(raw) || raw.v !== 1) return out;
   const prog = catalog?.programs?.find((p) => p.id === raw.program); // a cohort the catalog dropped: the nearest one of the same program (ties: the later)
   if (prog?.startYears.length && Number.isInteger(raw.startYear)) {
@@ -51,9 +52,9 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   if (typeof raw.name === 'string' && raw.name.length <= 60) out.name = raw.name;
   const passed = strs(raw.passed, 200, 20);
   if (passed) out.passed = passed;
-  if (isObj(raw.failed)) out.failed = Object.fromEntries(Object.entries(raw.failed).filter(([, v]) => Number.isInteger(v) && v >= 1 && v <= 3));
+  if (isObj(raw.failed)) out.failed = Object.fromEntries(Object.entries(raw.failed).filter(([k, v]) => k.length <= 20 && Number.isInteger(v) && v >= 1 && v <= 3).slice(0, 200));
   if (isObj(raw.grades)) out.grades = Object.fromEntries(Object.entries(raw.grades).filter(([k, v]) => k.length <= 20 && Number.isInteger(v) && v >= 0 && v <= 100).slice(0, 200));
-  if (isObj(raw.choices)) out.choices = Object.fromEntries(Object.entries(raw.choices).filter(([, v]) => ['must', 'optional', 'no'].includes(v)));
+  if (isObj(raw.choices)) out.choices = Object.fromEntries(Object.entries(raw.choices).filter(([k, v]) => k.length <= 20 && ['must', 'optional', 'no'].includes(v)).slice(0, 200));
   if (Array.isArray(raw.friends)) {
     out.friends = raw.friends.filter((f) => isObj(f) && typeof f.name === 'string' && f.name.length <= 60 && Array.isArray(f.groups)).slice(0, 20)
       .map((f) => ({ name: f.name, groups: strs(f.groups, 40, 20), weight: num(f.weight) ? clamp(f.weight, 0, 3) : 1, active: typeof f.active === 'boolean'
@@ -88,8 +89,11 @@ export function load() {
   } else if (moved) {
     stash(saved);
     app.hashError = 'התוכנית השמורה כבר לא באתר. מוצגת הנדסה מכנית, וההתקדמות בתוכנית הקודמת נשמרה בצד.';
-  } else if (s.startYear !== saved.startYear) app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית.`;
-  if (moved) return withPersonal({ ...structuredClone(DEFAULT), program: s.program, startYear: s.startYear }, s);
+  } else if (s.startYear !== saved.startYear) {
+    stash(saved);
+    app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית, וההתקדמות במחזור הקודם נשמרה בצד.`;
+  }
+  if (moved) return withPersonal({ ...normalize(null, app.catalog), program: s.program, startYear: s.startYear }, s);
   return s;
 }
 // Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.
@@ -146,7 +150,7 @@ export function ensurePassed() { if (!app.state.passed) app.state.passed = study
 
 // The study year's mandatory list (e.g. "שנה ב'"): courses in it default to optional. From year 3 the chosen specialization areas' courses (mandatory and elective) join it.
 export function yearCourses() {
-  const y = studyYear(app.data, app.state), list = app.data.lists.find((l) => l.name.includes(`שנה ${['', 'א', 'ב', 'ג', 'ד'][y]}'`))?.courses ?? [];
+  const y = studyYear(app.data, app.state), list = app.data.lists.find((l) => l.name.includes(`שנה ${' אבגדה'[y]}'`))?.courses ?? [];
   if (y < 3) return list;
   const sp = specLists(app.data, app.state.profile.specs);
   return [...list, ...sp.mandatory, ...sp.elective];
@@ -245,7 +249,10 @@ export async function switchTo(program, startYear) {
   stash(prev);
   const saved = normalize(unstash(program, startYear), app.catalog);
   const back = saved.program === program && saved.startYear === startYear && !!unstash(program, startYear);
-  const next = back ? saved : { ...structuredClone(DEFAULT), program, startYear, profile: { ...cleanProfile({}), year: prev.profile.year === null ? null : clamp(prev.year - startYear + 1, 1, 4) } };
+  // The cohort sets the study year, unless the picked year has no cohort here and this is the nearest one (year ה׳ of an evening track: 2024)
+  const want = prev.profile.year, own = want !== null && inCatalog(app.catalog, program, prev.year - want + 1);
+  const year = want === null ? null : own ? clamp(prev.year - startYear + 1, 1, 5) : want;
+  const next = back ? saved : { ...normalize(null, app.catalog), program, startYear, profile: { ...cleanProfile({}), year } }; // normalize: the catalog's year
   if (back && prev.profile.year !== null) next.profile.year = prev.profile.year; // the year just picked (CHG.pyear sets it first), not the stash's older one
   app.state = withPersonal(next, prev);
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);
@@ -286,10 +293,12 @@ async function init() {
 // A program the catalog lacks is refused (normalize would quietly turn it into the default program); a dropped cohort moves to the nearest one, like a saved state.
 export async function restoreBackup(payload) {
   const p = normalize(payload, app.catalog);
+  // Without the real catalog the saved state is protected (noSave): a restore would be saved over it, so none until the list loads
+  if (app.catalog === FALLBACK_CATALOG) { app.hashError = 'רשימת התוכניות לא נטענה, הגיבוי לא שוחזר. נסו לרענן את הדף.'; return false; }
   if (p.program !== payload?.program) { app.hashError = 'התוכנית של הגיבוי לא קיימת באתר, הגיבוי לא שוחזר.'; return false; }
   if (p.program !== app.state.program || p.startYear !== app.state.startYear) {
     let sem;
-    try { sem = await fetchSemesters(p); } catch { return false; }
+    try { sem = await fetchSemesters(p); } catch { app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי'; return false; }
     setSemesters(sem);
   }
   app.state = p;
@@ -298,15 +307,19 @@ export async function restoreBackup(payload) {
 }
 
 // Friend (#f=) and backup (#b=) links: read at load, and again when one is pasted into an open tab (hashchange in ui-plan.js).
+let linkError = null;
 export async function applyHash() {
   const h = await readHash(location.hash, app.state);
   let keep = '';
-  if (h) app.hashError = h.error ?? null; // a good link pasted after a bad one clears the old error
+  if (h) { // a good link clears a bad link's error, not the load notice ("the saved program is gone")
+    app.hashError = h.error ?? (app.hashError === linkError ? null : app.hashError);
+    linkError = h.error ?? null;
+  }
   if (h?.type === 'backup') {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
     if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
-      if (!await restoreBackup(h.payload)) app.hashError ??= 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי';
+      if (!await restoreBackup(h.payload)) linkError = app.hashError; // its own message, cleared by the next good link like a bad link's
     } else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
   }
   ensurePassed();

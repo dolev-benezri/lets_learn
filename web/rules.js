@@ -1,5 +1,5 @@
 // Afeka regulations engine (תקנון לימודים תואר ראשון, 5.2.2026). Pure: runs in browser and node.
-const YEAR_LETTERS = { 'א': 1, 'ב': 2, 'ג': 3, 'ד': 4 };
+const YEAR_LETTERS = { 'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5 }; // evening programs run five years
 
 // Afeka english clearance (checked 2026-10-01): Amirnet 85/100/120/134 exempts the first 1/2/3/4 courses; exemption gives no credits.
 const ENGLISH = ['6000', '6001', '6002', '6003'];
@@ -14,19 +14,14 @@ const int = (x, lo, hi) => (Number.isInteger(x) && x >= lo && x <= hi ? x : null
 // cleanProfile only checks the shape (1-2 distinct short ids); validSpecs judges a choice against one dataset. No rule in the data = the mechanical one.
 const specs = (a) => (Array.isArray(a) && a.length >= 1 && a.length <= 2 && a.every((x) => typeof x === 'string' && /^[a-z][a-z0-9]{0,19}$/.test(x)) && new Set(a).size === a.length ? a : []);
 export const specRule = (data) => ({ pick: 2, alone: ['vehicle'], ...data.specRule });
-// rule.groups (industrial engineering: a main and a secondary area): two lists of area ids, one area from each, and not the same subject (same position in both lists).
-const areaPos = (rule, id) => Math.max(...rule.groups.map((g) => g.indexOf(id)));
-export const specConflict = (rule, a, b) => !!rule.groups && a !== b
-  && (rule.groups.some((g) => g.includes(a) && g.includes(b)) || (areaPos(rule, a) >= 0 && areaPos(rule, a) === areaPos(rule, b)));
 // Valid: every id is an area of this dataset, and there are `pick` of them or exactly one standalone area. Returned in the dataset's order, else [].
 export function validSpecs(data, ids) {
   if (!Array.isArray(ids)) return [];
   const rule = specRule(data), ok = (data.specializations ?? []).map((s) => s.id).filter((id) => ids.includes(id));
-  const inGroups = (id) => rule.groups.flat().includes(id);
-  const paired = ok.length === rule.pick && (!rule.groups || (ok.length === 2 && ok.every(inGroups) && !specConflict(rule, ok[0], ok[1])));
+  const paired = ok.length === rule.pick;
   return ok.length === ids.length && (paired || (ok.length === 1 && rule.alone.includes(ok[0]))) ? ok : [];
 }
-export const cleanProfile = (p) => ({ year: int(p?.year, 1, 4), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
+export const cleanProfile = (p) => ({ year: int(p?.year, 1, 5), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
 
 // Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the standalone extra (aloneExtra) when its area is chosen alone;
 // elective = their בחירה lists minus what is mandatory (a course in several lists counts once). chosen / all = list codes of the chosen areas / of every specialization list.
@@ -58,7 +53,7 @@ export function summerOnly(statuses, summer, on) {
 // ponytail: profile.year only overrides the label; a real different cohort needs its own data file (data.startYear).
 // How many study years the program has: its last mandatory year list ("שנה ב'" in a two-year program). No program is one year long, so fewer than two = partial data: four.
 export const yearsOf = (data) => {
-  const n = Math.max(0, ...(data.lists ?? []).map((l) => ' אבגד'.indexOf(l.name.match(/שנה ([א-ד])'/)?.[1] ?? ' ')));
+  const n = Math.max(0, ...(data.lists ?? []).map((l) => ' אבגדה'.indexOf(l.name.match(/שנה ([א-ה])'/)?.[1] ?? ' ')));
   return n >= 2 ? n : 4;
 };
 export const studyYear = (data, state) => Math.min(yearsOf(data), state.profile?.year ?? data.year - data.startYear + 1);
@@ -164,8 +159,9 @@ export function progress(data, state) {
     return m && YEAR_LETTERS[m[1]] < year;
   });
   const required = lists.reduce((a, l) => a + l.minCredits, 0);
-  const earned = lists.flatMap((l) => l.courses).filter((id) => passed.has(id))
-    .reduce((a, id) => a + (data.courses[id]?.credits ?? 0), 0);
+  const seen = new Set(); // a course in two lists counts once; a list counts up to its minimum
+  const earned = lists.reduce((a, l) => a + Math.min(l.minCredits, l.courses.filter((id) => passed.has(id) && !seen.has(id) && seen.add(id))
+    .reduce((s, id) => s + (data.courses[id]?.credits ?? 0), 0)), 0);
   return { earned, required, ratio: required ? earned / required : 1 };
 }
 

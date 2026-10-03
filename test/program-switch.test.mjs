@@ -69,7 +69,7 @@ test('load: a saved program missing from the catalog is not overwritten', async 
 });
 
 test('switchTo: personal state stays, program state resets, the cohort sets the study year', async () => {
-  serve(); reset(mine());
+  serve(); reset({ ...mine(), profile: { ...mine().profile, year: 2 } }); // year 2 = cohort 2026, which program 20 has: the cohort switched to decides
   assert.equal(await switchTo(20, 2027), true);
   const s = app.state;
   assert.deepEqual([s.program, s.startYear, s.name, s.friends.length, s.profile.amirnet, s.profile.summer, s.scope], [20, 2027, 'דנה', 1, 120, true, 'year']);
@@ -105,12 +105,12 @@ test('switchTo: only a missing semester ב is tolerated; a missing א fails', as
 });
 
 test('switchTo: going back finds the old progress with the current personal settings; reset wipes the stashes', async () => {
-  serve(); reset(mine());
+  serve(); reset({ ...mine(), profile: { ...mine().profile, year: 2 } });
   await switchTo(20, 2026);
   app.state.name = 'שם חדש';
   await switchTo(30, 2026);
   assert.deepEqual([app.state.passed, app.state.failed, app.state.profile.specs], [['a', 'b'], { b: 1 }, ['solid', 'flow']]);
-  assert.equal(app.state.profile.year, 2, 'the study year is the current one (cohort 2026 in 2027), not the stashed 3');
+  assert.equal(app.state.profile.year, 2, 'the study year is the current one (cohort 2026 in 2027)');
   assert.equal(app.state.name, 'שם חדש');
   assert.ok(store.size > 0);
   store.set('afeka-sched-v1-onboarded', '1'); // erasing everything also starts a first visit again
@@ -242,4 +242,76 @@ test('refresh: the summer tab is not kept once the profile plans no summer (U3)'
   reset({ ...mine(), scope: 'קיץ', profile: { year: 2, amirnet: null, specs: [], summer: true } });
   refresh();
   assert.equal(app.state.scope, 'קיץ', 'summer planned but its file did not load: the choice waits, it is not lost');
+});
+
+test('load keeps a dropped cohort aside; a backup is refused while the catalog is missing, and says why', async () => {
+  const { load, save, FALLBACK_CATALOG } = await import('../web/app.js');
+  serve();
+  reset(null); store.set('afeka-sched-v1', JSON.stringify({ ...mine(), v: 1, program: 20, startYear: 2025 })); app.hashError = null;
+  app.state = load();
+  assert.deepEqual(JSON.parse(store.get('afeka-sched-v1:20-2025')).passed, ['a', 'b'], 'the dropped cohort is kept aside, not only moved');
+  reset(null); store.set('afeka-sched-v1', JSON.stringify({ ...mine(), v: 1, program: 40, startYear: 2026 })); app.catalog = FALLBACK_CATALOG; app.hashError = null;
+  app.state = load();
+  for (const b of [{ v: 1, program: 20, startYear: 2026 }, { v: 1, program: 30, startYear: 2026, name: 'מגובה' }]) {
+    app.hashError = null;
+    assert.equal(await restoreBackup(b), false, `${b.program}: no restore while the catalog is missing`);
+    assert.match(app.hashError, /רשימת התוכניות לא נטענה/, 'not "the program is not on the site"');
+  }
+  save();
+  assert.equal(JSON.parse(store.get('afeka-sched-v1')).program, 40, 'the real saved program is never overwritten');
+  app.hashError = null;
+});
+
+test('applyHash: a friend link keeps the load notice; a good link clears a bad link’s error', async () => {
+  const { applyHash } = await import('../web/app.js');
+  const { friendLink } = await import('../web/share.js');
+  const g = { location: globalThis.location, history: globalThis.history, document: globalThis.document };
+  globalThis.history = { replaceState() {} };
+  globalThis.document ??= { activeElement: null, body: { dataset: {} }, querySelector: () => null };
+  try {
+    reset({ ...mine(), program: 30, startYear: 2026 });
+    const link = await friendLink('https://x.test/', { ...app.state, year: app.state.year, semester: app.state.semester }, ['g1']);
+    app.hashError = 'התוכנית השמורה כבר לא באתר.';
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    await applyHash();
+    assert.equal(app.hashError, 'התוכנית השמורה כבר לא באתר.');
+    globalThis.location = { hash: '#f=@@@', pathname: '/' };
+    await applyHash();
+    assert.match(app.hashError, /פגום/);
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    await applyHash();
+    assert.equal(app.hashError, null);
+  } finally { Object.assign(globalThis, g); app.friendLanding = null; }
+});
+
+test('switchTo: a year with no cohort of its own (year ה, nearest cohort 2024) stays the picked year', async () => {
+  serve(); reset({ ...mine(), program: 30, startYear: 2026, profile: { year: 5, amirnet: null, specs: [], summer: false } });
+  assert.equal(await switchTo(30, 2025), true); // the nearest cohort the catalog has (2023 is not in it)
+  assert.equal(app.state.profile.year, 5);
+});
+
+test('switchTo and a dropped program take the academic year from the catalog, not the built-in default', async () => {
+  const { load } = await import('../web/app.js');
+  serve(); reset({ ...mine(), year: 2028 }); app.catalog = { ...CATALOG, year: 2028 };
+  assert.equal(await switchTo(20, 2027), true);
+  assert.equal(app.state.year, 2028);
+  reset(null); app.catalog = { ...CATALOG, year: 2028 }; store.set('afeka-sched-v1', JSON.stringify({ ...mine(), v: 1, program: 40, startYear: 2026 }));
+  assert.equal(load().year, 2028);
+  app.hashError = null;
+});
+
+test('applyHash: a backup whose data fails to load says so even when a load notice is up', async () => {
+  const { applyHash } = await import('../web/app.js');
+  const { backupLink } = await import('../web/share.js');
+  const g = { location: globalThis.location, history: globalThis.history, document: globalThis.document };
+  globalThis.history = { replaceState() {} };
+  globalThis.document ??= { activeElement: null, body: { dataset: {} }, querySelector: () => null };
+  try {
+    serve((m) => m[3] === '20'); reset({ ...mine(), program: 30, startYear: 2026 });
+    const link = await backupLink('https://x.test/', { ...app.state, program: 20, startYear: 2026 });
+    app.hashError = 'המחזור השמור כבר לא באתר.';
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    await applyHash();
+    assert.match(app.hashError ?? '', /לא הצלחנו לטעון/);
+  } finally { Object.assign(globalThis, g); app.hashError = null; }
 });

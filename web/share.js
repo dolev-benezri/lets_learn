@@ -62,8 +62,9 @@ export async function readHash(hash, { year, semester }) {
   // Validate year and semester types before interpolating
   if (typeof payload.year !== 'number' || typeof payload.semester !== 'string') return { error: 'הקישור פגום' };
 
-  // Validate semester match
-  if (payload.year !== year || payload.semester !== semester) {
+  // A friend's groups belong to one semester. A backup outlives the year: its record stays, last year's group ids are dropped (below).
+  const lastYear = type === 'b' && payload.year < year; // a newer backup (the site fell back to an older year) is refused below, not aged backwards
+  if (!lastYear && (payload.year !== year || payload.semester !== semester)) {
     return { error: `הקישור שייך לסמסטר אחר (${payload.year} ${payload.semester.slice(0, 10)})` };
   }
 
@@ -106,6 +107,10 @@ export async function readHash(hash, { year, semester }) {
     if (typeof payload.load === 'string') rebuilt.load = payload.load;
     if (payload.semesterOf && typeof payload.semesterOf === 'object' && !Array.isArray(payload.semesterOf)) rebuilt.semesterOf = payload.semesterOf;
     if (payload.profile && typeof payload.profile === 'object' && !Array.isArray(payload.profile)) rebuilt.profile = cleanProfile(payload.profile);
+    if (lastYear) { // group ids don't carry across years; the student is a year further on
+      for (const k of ['pins', 'semesterOf', 'friends']) delete rebuilt[k];
+      if (rebuilt.profile?.year) rebuilt.profile.year = cleanProfile({ year: Math.min(5, rebuilt.profile.year + year - payload.year) }).year;
+    }
 
     return { type: 'backup', payload: rebuilt };
   }
