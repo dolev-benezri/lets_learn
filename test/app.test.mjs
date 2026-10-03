@@ -212,7 +212,7 @@ test('pdf.js and panzoom load from web/vendor with their licenses; only tesserac
 });
 
 test('the deploy waits for a green test job (P9)', () => {
-  const y = readFileSync('.github/workflows/deploy.yml', 'utf8');
+  const y = readFileSync('.github/workflows/deploy.yml', 'utf8').replace(/\r\n/g, '\n'); // a Windows checkout has CRLF
   assert.match(y, /\n  test:\n[\s\S]*npm ci --ignore-scripts[\s\S]*npm test/);
   assert.match(y, /\n  deploy:\n    needs: test\n/);
 });
