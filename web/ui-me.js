@@ -1,6 +1,6 @@
 // The status page (#me): profile, specialization form, course lists with their states, grade-sheet import.
 import { app, esc, refresh } from './app.js';
-import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, specConflict, validSpecs } from './rules.js';
+import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs } from './rules.js';
 import { icon } from './ui-grid.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
@@ -37,15 +37,14 @@ export function specView(data, saved) {
   return saved.length === 1 && rule.pick > 1 && rule.alone.includes(saved[0]) ? { mode: 'alone', picks: [] } : saved.length ? { mode: 'pick', picks: saved } : { mode: 'none', picks: [] };
 }
 const PICK_WORD = { 1: 'תחום אחד', 2: 'שני תחומים', 3: 'שלושה תחומים' };
-const PICK_GROUPS = 'ראשית ומשנית (תחומים שונים)';
 const specForm = (saved) => {
   const { specializations: areas = [] } = app.data, rule = specRule(app.data), { mode, picks } = specView(app.data, saved), full = picks.length >= rule.pick;
-  const aloneName = areas.find((s) => s.id === rule.alone[0])?.name, word = rule.groups ? PICK_GROUPS : PICK_WORD[rule.pick] ?? `${rule.pick} תחומים`;
+  const aloneName = areas.find((s) => s.id === rule.alone[0])?.name, word = PICK_WORD[rule.pick] ?? `${rule.pick} תחומים`;
   const modes = [['none', 'עוד לא בחרתי'], ...(rule.pick > 1 && aloneName ? [['alone', `${aloneName} בלבד`]] : []), ['pick', word]].map(([v, t]) => [v, esc(t)]);
   return `${seg('p-spec', 'התמחות', modes, mode, 'data-chg="specMode"', true)}
     ${mode === 'pick' ? `<fieldset class="specs"><legend class="sr">${esc(word)}</legend>${areas.map((p) => `<label class="check"><input type="checkbox"
       data-chg="specPick" data-id="${esc(p.id)}" data-k="spec-${esc(p.id)}"${picks.includes(p.id) ? ' checked' : ''}${!picks.includes(p.id)
-      && (full || picks.some((q) => specConflict(rule, q, p.id))) ? ' disabled' : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
+      && full ? ' disabled' : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
       ${saved.length ? '' : `<p class="hint" role="status">בחרו ${esc(word)}</p>`}` : ''}
     <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה עוד לא נבדק מול תוכנית הלימודים הרשמית.</p>' : ''}`;
 };

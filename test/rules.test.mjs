@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, yearsOf, modeFor, gradeAverage, englishOptions, specRule, specConflict, validSpecs } from '../web/rules.js';
+import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, yearsOf, modeFor, gradeAverage, englishOptions, specRule, validSpecs } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
@@ -275,16 +275,6 @@ test('specLists: one list can be elective in a pair and mandatory when its area 
     lists: [{ code: 1, courses: ['a', 'b'] }], specializations: [{ id: 'p', name: 'P', elective: 1, aloneExtra: 1 }, { id: 'q', name: 'Q' }] };
   assert.deepEqual([[...specLists(data, ['p']).mandatory], [...specLists(data, ['p']).elective]], [['a', 'b'], []], 'alone: all mandatory');
   assert.deepEqual([[...specLists(data, ['p', 'q']).mandatory], [...specLists(data, ['p', 'q']).elective]], [[], ['a', 'b']], 'in a pair: electives');
-});
-
-test('validSpecs with groups: one main and one secondary area, not the same subject; no standalone area', () => {
-  const area = (id) => ({ id, name: id });
-  const ie = { specializations: ['m1', 'm2', 'm3', 's1', 's2', 's3'].map(area), specRule: { pick: 2, alone: [], groups: [['m1', 'm2', 'm3'], ['s1', 's2', 's3']] } };
-  assert.deepEqual(validSpecs(ie, ['m1', 's2']), ['m1', 's2']);
-  assert.deepEqual(validSpecs(ie, ['s3', 'm1']), ['m1', 's3'], 'dataset order');
-  for (const bad of [['m1', 's1'], ['m2', 's2'], ['m1', 'm2'], ['s1', 's2'], ['m1'], ['m1', 's2', 's3'], ['m1', 'nope'], []]) assert.deepEqual(validSpecs(ie, bad), [], String(bad));
-  assert.ok(specConflict(specRule(ie), 'm1', 's1') && specConflict(specRule(ie), 'm1', 'm2') && !specConflict(specRule(ie), 'm1', 's2'));
-  assert.ok(!specConflict(specRule(ie), 'm1', 'm1') && !specConflict({ pick: 2, alone: [] }, 'a', 'b'), 'no groups: nothing conflicts');
 });
 
 test('yearsOf: the study years are the mandatory year lists; studyYear stays inside them (L6)', async () => {
