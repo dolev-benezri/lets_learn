@@ -141,26 +141,34 @@ export function planPaths(paths, plan) {
 }
 
 // Degree progress in credits. Required = the lists' minCredits (an approximation: the regulations have more rules) with the specialization lists replaced by
-// data.degree.specCredits. A course counts once, for the first list that holds it, and a list never counts past its minimum, so surplus electives don't inflate
-// the bar. The specialization part is the chosen areas' courses (every specialization list while none is chosen), done first, capped. `adds` = the plan's own
-// credits; `specLeft` = specialization credits still missing (null while no area is chosen).
+// the specialization credits: what those minimums leave of the degree in this cohort (data.degree.specCredits wins when set). A course counts once, for the
+// first list that holds it; a list never counts past its minimum, and the surplus only fills what the minimums leave of the degree total. The specialization
+// part is the chosen areas' courses (every specialization list while none is chosen), done first, capped. `adds` = the plan's own credits; `specLeft` =
+// specialization credits still missing (null while no area is chosen).
 export const isDone = (st, id) => ['done', 'exempt'].includes(st[id]?.status);
 export function progressInfo(data, st, plan = new Set(), specs = []) {
   const seen = new Set(), sp = specLists(data, specs), credits = (id) => Number(data.courses[id].credits) || 0, degree = Number(data.degree?.total) || 0;
   let total = 0, reach = 0, done = 0, planned = 0;
+  const extra = { reach: 0, done: 0, planned: 0 }; // credits past a list's minimum (or the specialization cap), which count toward the rest of the degree
+  const fill = (cap, all, d0, p0) => {
+    const d = Math.min(cap, d0), p = Math.min(cap - d, p0);
+    extra.reach += Math.max(0, all - cap); extra.done += d0 - d; extra.planned += p0 - p;
+    reach += Math.min(cap, all); done += d; planned += p;
+  };
   for (const l of data.lists.filter((x) => !sp.all.has(x.code))) {
     const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)), min = Number(l.minCredits) || 0;
     ids.forEach((id) => seen.add(id));
     const sum = (f) => ids.filter(f).reduce((s, id) => s + credits(id), 0);
-    const d = Math.min(min, sum((id) => isDone(st, id)));
-    total += min; reach += Math.min(min, sum(() => true)); done += d; planned += Math.min(min - d, sum((id) => !isDone(st, id) && plan.has(id)));
+    total += min; fill(min, sum(() => true), sum((id) => isDone(st, id)), sum((id) => !isDone(st, id) && plan.has(id)));
   }
   const pool = new Set((specs.length ? [...sp.mandatory, ...sp.elective] : data.lists.filter((x) => sp.all.has(x.code)).flatMap((x) => x.courses)).filter((id) => data.courses[id] && !seen.has(id)));
   // Unknown specCredits (0) with areas to pick: what the lists leave of the degree total (mechanical: 160 - 133 = 27, the regulations' number).
   const cap = Number(data.degree?.specCredits) || (data.specializations?.length && degree ? Math.max(0, degree - total) : 0);
   const pick = (f) => [...pool].filter(f).reduce((s, id) => s + credits(id), 0), sd = Math.min(cap, pick((id) => isDone(st, id)));
-  reach += Math.min(cap, pick(() => true));
-  done += sd; planned += Math.min(cap - sd, pick((id) => !isDone(st, id) && plan.has(id)));
+  fill(cap, pick(() => true), pick((id) => isDone(st, id)), pick((id) => !isDone(st, id) && plan.has(id)));
+  // What the minimums and the specialization leave of the degree (computer science: an electives list with minCredits 0) fills from the extra credits.
+  const rest = Math.max(0, degree - total - cap), rd = Math.min(rest, extra.done);
+  reach += Math.min(rest, extra.reach); done += rd; planned += Math.min(rest - rd, extra.planned);
   const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + credits(id), 0);
   // The bar ends where the data does (all passed = 100%); credits of the degree no list in the data covers are named, not silently unreachable.
   const r = (v) => Math.round(v * 2) / 2;

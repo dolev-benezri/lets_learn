@@ -335,6 +335,11 @@ test('progressInfo: everything passed reaches 100%; spec credits default to what
   assert.deepEqual([p.total, p.untracked, p.specLeft], [15, 5, 2], 'b fills 3 of 6, spec cap 20-10=10 of which 8 exist; 20-15 untracked');
   assert.equal(progressInfo({ ...d, degree: { total: 20, specCredits: 9 } }, all, new Set(), ['s']).specLeft, 1, 'a known specCredits wins');
   assert.equal(progressInfo({ ...d, degree: undefined }, {}).untracked, 0);
+  // Computer science: the electives list has minCredits 0, so what the minimums leave of the degree fills from courses beyond them, up to the total.
+  const cs = { degree: { total: 10 }, lists: [{ code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
+    { code: 9, name: 'קורסי בחירה', courses: ['b', 'c', 'f'], minCredits: 0 }], courses: { a: co(4), b: co(3), c: co(3), f: co(3) } };
+  assert.deepEqual(progressInfo(cs, { a: { status: 'done' }, c: { status: 'done' } }, new Set(['b', 'f'])),
+    { total: 10, done: 7, planned: 3, adds: 6, specLeft: null, untracked: 0, degreeTotal: 10 }, 'electives fill the 6 the minimums leave, no more');
   const html = progressHtml({ prog: { total: 15, done: 15, planned: 0, adds: 0, untracked: 5, degreeTotal: 20 }, opened: 0 });
   assert.ok(html.includes('aria-valuemax="15"') && html.includes('עוד <b><bdi>5</bdi></b> נ״ז'));
 });
