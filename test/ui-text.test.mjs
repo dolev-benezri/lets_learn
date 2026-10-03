@@ -132,3 +132,10 @@ test('nameHtml: Latin runs in a course name get lang="en", entities are left alo
   assert.equal(nameHtml('מבוא <b> & "x"'), 'מבוא &lt;<span lang="en">b</span>&gt; &amp; &quot;<span lang="en">x</span>&quot;');
   assert.equal(nameHtml('פיזיקה 1'), 'פיזיקה 1');
 });
+
+test('waUrl: the text and the link, encoded, for wa.me; shareText names the sender', async () => {
+  const { waUrl, shareText } = await import('../web/ui-text.js');
+  assert.equal(waUrl('שלום & "x"', 'https://a.test/#f=AB'), 'https://wa.me/?text=' + encodeURIComponent('שלום & "x" https://a.test/#f=AB'));
+  assert.equal(shareText(''), 'חבר שיתף/ה איתך מערכת שעות:');
+  assert.equal(shareText('דנה'), 'דנה שיתף/ה איתך מערכת שעות:');
+});

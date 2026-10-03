@@ -172,3 +172,7 @@ test('a friend link from another program says which one, escaped', () => {
 test('one h1 per page: the views use h2 under the app title (a11y)', () => {
   for (const s of ['me', 'view', 'side', 'picker']) for (const w of writes.filter((x) => x.scope === s)) assert.ok(!w.html.includes('<h1'), `${s} #${w.id}`);
 });
+
+test('the friends drawer offers a share button next to copy (WhatsApp)', () => {
+  assert.ok(writes.filter((w) => w.scope === 'drawer-friends').some((w) => w.html.includes('data-act="shareOut"')));
+});

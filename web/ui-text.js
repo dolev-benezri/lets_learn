@@ -9,6 +9,9 @@ export function groupNumber(id) {
 }
 // Hebrew geresh and gershayim in place of the ASCII marks the yedion types.
 export const heb = (t) => String(t).replace(/(?<=[א-ת])'/g, '׳').replace(/(?<=[א-ת])"(?=[א-ת])/g, '״');
+// Sharing my link: the message before it, and the WhatsApp fallback where the native share sheet is missing (desktop).
+export const shareText = (name) => `${name || 'חבר'} שיתף/ה איתך מערכת שעות:`;
+export const waUrl = (text, url) => `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`;
 export const count = (n, one, many) => (n === 1 ? one : `${n} ${many}`); // Hebrew has no "1 קבוצות"
 export const courseCount = (n) => count(n, 'קורס אחד', 'קורסים');
 export const groupCount = (n) => count(n, 'קבוצה אחת', 'קבוצות');

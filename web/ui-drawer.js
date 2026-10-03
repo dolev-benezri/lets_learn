@@ -85,6 +85,7 @@ function friendsPanel() {
     <section class="dr-sec fr-sec"><h3>הקישור שלי</h3>
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
       <button type="button" class="btn fr-wide" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
+      <button type="button" class="btn fr-wide" data-act="shareOut" data-k="shareOut">${icon('share')} שתף (וואטסאפ ועוד)</button>
       <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`];
 }
 

@@ -5,7 +5,7 @@ import { friendLink, backupLink } from './share.js';
 import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { friendToast, gradeInput, rangeError } from './ui-text.js';
+import { friendToast, gradeInput, rangeError, shareText, waUrl } from './ui-text.js';
 import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
@@ -31,13 +31,23 @@ function saveManualFriend(p, editing) {
   toast(friendToast(p.name, r.replaced));
   return null;
 }
+const myLink = async () => { const res = current(); return res ? friendLink(location.origin + location.pathname, app.state, resGroups(res)) : null; };
 async function share() {
-  const res = current();
-  if (!res) return toast('אין עדיין מערכת לשתף');
-  copy(await friendLink(location.origin + location.pathname, app.state, resGroups(res)), 'הקישור הועתק. אפשר לשלוח לחברים.');
+  const url = await myLink();
+  if (!url) return toast('אין עדיין מערכת לשתף');
+  copy(url, 'הקישור הועתק. אפשר לשלוח לחברים.');
+}
+// Phones: the system share sheet (WhatsApp is in it); elsewhere wa.me in a new tab. A closed sheet (AbortError) says nothing.
+async function shareOut() {
+  const url = await myLink();
+  if (!url) return toast('אין עדיין מערכת לשתף');
+  const text = shareText(app.state.name);
+  if (navigator.share) { try { await navigator.share({ title: 'המערכת שלי', text, url }); } catch (e) { if (e?.name !== 'AbortError') copy(url, 'הקישור הועתק.'); } return; }
+  open(waUrl(text, url), '_blank', 'noopener');
 }
 
 export const ACT = {
+  shareOut,
   gradeImport() { $('gradeFile').click(); },
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
   statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = ''; },
