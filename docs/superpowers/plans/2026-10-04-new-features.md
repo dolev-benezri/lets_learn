@@ -235,28 +235,56 @@ test('compareAlts names what changes: free day, friend, gaps, courses, unlocks',
 **הבעיה:** את הרשימה להרשמה אפשר רק להעתיק כטקסט (§14י).
 
 **הפתרון:** כפתור "הוסף ללוח שנה" במגירה "רשימה להרשמה" מוריד קובץ `afeka-<year>.ics`.
-- כל מפגש של כל קבוצה שנבחרה הופך ל-`VEVENT` שבועי (`RRULE:FREQ=WEEKLY;COUNT=<weeks>`), שמתחיל במופע הראשון של היום שלו מתאריך תחילת הסמסטר.
-- בחינות עם `date` הופכות לאירועי יום שלם (`DTSTART;VALUE=DATE`), ואם יש להן `time`, לאירוע של שלוש שעות.
-- **תאריכי הסמסטר לא קיימים בנתונים.** לכן לפני ההורדה נפתח דיאלוג קטן (`askConfirm`-style, `web/ui-dialog.js`) עם `<input type="date">` "תחילת הסמסטר" ומספר שבועות (ברירת מחדל 13), לכל סמסטר בתוצאה. הערכים ממולאים מראש מ-`SEMESTER_DATES[year]?.[sem]` אם הבעלים מילא אותם.
+- **שיעורים:** כל מפגש של כל קבוצה שנבחרה הופך ל-`VEVENT` שבועי, `RRULE:FREQ=WEEKLY;UNTIL=<סוף השיעורים>T235959`. האירוע מתחיל במופע הראשון של היום שלו מתאריך תחילת הסמסטר.
+- **ימים בלי לימודים** מוחרגים ב-`EXDATE`, אחד לכל מופע שנופל עליהם.
+- **בחינות** עם `date` הופכות לאירועי יום שלם (`DTSTART;VALUE=DATE`), ואם יש להן `time`, לאירוע של שלוש שעות.
 
-**שאלה לבעלים בתחילת המשימה:** למלא את `SEMESTER_DATES` לתשפ״ז מלוח השנה האקדמי של אפקה (אני לא פונה לאתר)? אם לא, השדות ריקים והסטודנט ממלא אותם.
+**תאריכי תשפ״ז, מאומתים** ב-2026-10-03 מול [לוח השנה האקדמי של אפקה](https://www.afeka.ac.il/about-afeka/general-information/academic-calendar/). הימים בשבוע חושבו:
+
+| סמסטר | פתיחה | סוף השיעורים | העמודה השלישית בדף* | שבועות |
+|---|---|---|---|---|
+| א׳ | 25.10.26 (א׳) | 22.01.27 (ו׳) | 24.01.27 (א׳) | 13 |
+| ב׳ | 14.03.27 (א׳) | 25.06.27 (ו׳) | 29.06.27 (ג׳) | 15 |
+| קיץ | 08.08.27 (א׳) | 17.09.27 (ו׳) | 19.09.27 (א׳) | 6 |
+
+\*העמודה השלישית נופלת אחרי סוף השיעורים, כנראה תחילת תקופת הבחינות. הייצוא לא משתמש בה: הבחינות באות מ-`exams` בנתונים.
+
+ימים בלי לימודים בתוך הסמסטרים:
+- **א׳:** חנוכה 06.12.26, לסטודנטים בלבד.
+- **ב׳:** פורים 23.03.27; פסח 21.04.27-29.04.27; יום הזיכרון 11.05.27 (לסטודנטים בלבד); יום העצמאות 12.05.27; שבועות 10.06.27-11.06.27.
+- **קיץ:** אין.
+
+(שמחת תורה 03.10.26 וחגי תשרי תשפ״ח נופלים מחוץ לסמסטרים.)
+
+**הקבוע** ב-`web/ics.js` (לעדכן פעם בשנה, יחד עם נוהל מעבר השנה ב-README):
+
+```js
+export const SEMESTER_DATES = { // Afeka academic calendar, checked 2026-10-03
+  2027: {
+    'א': { start: '2026-10-25', end: '2027-01-22', off: ['2026-12-06'] },
+    'ב': { start: '2027-03-14', end: '2027-06-25', off: ['2027-03-23', ['2027-04-21', '2027-04-29'], '2027-05-11', '2027-05-12', ['2027-06-10', '2027-06-11']] },
+    'קיץ': { start: '2027-08-08', end: '2027-09-17', off: [] },
+  },
+};
+```
+
+**שנה בלי תאריכים** (`SEMESTER_DATES[year]` חסר): לא מורידים קובץ שגוי. הכפתור כבוי, וליד יש הודעה "לוח השנה של <שנה> עוד לא הוזן". אין דיאלוג תאריכים, כי YAGNI: מעבר שנה מוסיף את השורה.
 
 **החלטות:**
 - **שעה "צפה"** (בלי TZID): היומן מפרש לפי השעון של המכשיר, ובישראל זה נכון. אין צורך בבלוק `VTIMEZONE`, שאאוטלוק דורש כשיש TZID.
-- **חגים לא מוחרגים** (`ponytail:`). כשיהיו תאריכים, אפשר להוסיף `EXDATE` מאותו קבוע.
 - **`UID`:** `${groupId}-${day}-${start}@afeka-scheduler`, יציב בין ייצואים, כך שייבוא חוזר מעדכן ולא משכפל.
 - **escape לפי RFC 5545:** `\` → `\\`, `;` → `\;`, `,` → `\,`, שורה חדשה → `\n`. שורות של יותר מ-75 octets מקופלות.
 - **הורדה:** `Blob` עם `type: 'text/calendar'` ו-`<a download>`. אין שרת ואין פנייה החוצה.
 
 **Files:**
 - Create: `web/ics.js` (טהור, בלי DOM)
-- Modify: `web/ui-drawer.js:121` (כפתור `data-act="ics"`), `web/ui-actions.js` (`ACT.ics`: דיאלוג, `toIcs`, הורדה), `web/ui-dialog.js` (שדות תאריך בדיאלוג, אם אין עדיין)
+- Modify: `web/ui-drawer.js:121` (כפתור `data-act="ics"`, כבוי בלי תאריכים), `web/ui-actions.js` (`ACT.ics`: `toIcs` והורדה), `README.md` (נוהל מעבר שנה: לעדכן גם את `SEMESTER_DATES`)
 - Test: `test/ics.test.mjs`
 
 **Interfaces — Produces:**
-- `toIcs(parts: Array<{ title: string | null, res, data, start: string /*YYYY-MM-DD*/, weeks: number }>, now: Date) -> string`. `parts` הם `regParts(current())` עם `start` ו-`weeks`.
+- `toIcs(parts: Array<{ title: string | null, res, data, dates: { start: string, end: string, off: Array<string | [string, string]> } }>, now: Date) -> string`. `parts` הם `regParts(current())`, ו-`dates` הוא `SEMESTER_DATES[data.year][data.semester]`.
 - `firstOn(start: string, day: 1-6) -> string`: התאריך הראשון שבו `getUTCDay() + 1 === day`, החל מ-`start`.
-- `SEMESTER_DATES: Record<number, Record<'א'|'ב'|'קיץ', { start: string, weeks: number }>>` (ריק עד שהבעלים ממלא).
+- `SEMESTER_DATES` כמו בקבוע למעלה.
 
 - [ ] **Step 1: בדיקות שנכשלות** (`test/ics.test.mjs`)
 
@@ -264,14 +292,24 @@ test('compareAlts names what changes: free day, friend, gaps, courses, unlocks',
 test('toIcs: one weekly event per meeting from the first matching day, escaped text, stable UID, CRLF', () => {
   const data = { courses: { 101: { name: 'פיזיקה, א; "ב"', groups: [{ id: 'g1', lecturer: 'כהן', primary: true,
     meetings: [{ day: 3, start: '09:00', end: '10:50', room: 'A1' }], exams: [{ kind: 'סופי', moed: 'א', date: '2027-02-01' }] }] } } };
-  const out = toIcs([{ title: null, res: { courses: ['101'], groups: ['g1'] }, data, start: '2026-10-25', weeks: 13 }], new Date('2026-10-01T00:00:00Z'));
+  const dates = SEMESTER_DATES[2027]['א'];
+  const out = toIcs([{ title: null, res: { courses: ['101'], groups: ['g1'] }, data, dates }], new Date('2026-10-01T00:00:00Z'));
   assert.match(out, /^BEGIN:VCALENDAR\r\n/);
   assert.match(out, /DTSTART:20261027T090000\r\n/); // 25.10.2026 is a Sunday: the first Tuesday (day 3) is 27.10
-  assert.match(out, /RRULE:FREQ=WEEKLY;COUNT=13/);
+  assert.match(out, /RRULE:FREQ=WEEKLY;UNTIL=20270122T235959/);
   assert.match(out, /SUMMARY:פיזיקה\\, א\\; "ב"/);
   assert.match(out, /UID:g1-3-0900@afeka-scheduler/);
   assert.match(out, /DTSTART;VALUE=DATE:20270201/);
   assert.ok(out.split('\r\n').every((l) => new TextEncoder().encode(l).length <= 75));
+  assert.doesNotMatch(out, /EXDATE/, 'a Tuesday meeting never falls on Chanukah (Sunday 06.12.26)');
+  const sunday = structuredClone(data);
+  sunday.courses[101].groups[0].meetings[0].day = 1;
+  assert.match(toIcs([{ title: null, res: { courses: ['101'], groups: ['g1'] }, data: sunday, dates }], new Date()), /EXDATE:20261206T090000/);
+});
+test('toIcs: a holiday range skips every meeting inside it (Passover 21-29.04.27, a Wednesday meeting: 21.04 and 28.04)', () => {
+  const data = { courses: { 9: { name: 'x', groups: [{ id: 'g', lecturer: '', primary: true, meetings: [{ day: 4, start: '12:00', end: '13:00', room: '' }], exams: [] }] } } };
+  const out = toIcs([{ title: null, res: { courses: ['9'], groups: ['g'] }, data, dates: SEMESTER_DATES[2027]['ב'] }], new Date());
+  assert.match(out, /EXDATE:20270421T120000/); assert.match(out, /EXDATE:20270428T120000/); assert.match(out, /EXDATE:20270512T120000/); // Independence Day
 });
 test('firstOn: the start date itself when it is that day', () => {
   assert.equal(firstOn('2026-10-25', 1), '2026-10-25');
@@ -281,7 +319,7 @@ test('firstOn: the start date itself when it is that day', () => {
 
 - [ ] **Step 2:** `node --test test/ics.test.mjs` — FAIL (המודול לא קיים).
 - [ ] **Step 3:** ליישם את `web/ics.js`. בתוצאה של שנה מלאה: `parts` לכל סמסטר עם תאריך משלו, ו-`SUMMARY` עם שם הקורס בלבד. `LOCATION` = חדר, `DESCRIPTION` = `קבוצה ${id} · ${lecturer}`.
-- [ ] **Step 4:** PASS. אחר כך UI: דיאלוג, ובלי תאריך הכפתור "הורד" כבוי. בדיקת xss לשם הקורס בתוך הדיאלוג.
+- [ ] **Step 4:** PASS. אחר כך UI: כפתור במגירה, כבוי עם הודעה כשאין `SEMESTER_DATES[year]`. בדיקת xss: המגירה עם שם קורס עוין.
 - [ ] **Step 5:** בדפדפן: הקובץ יורד, ופתיחתו ב-Google Calendar (ייבוא) מציגה את השיעורים ביום ובשעה הנכונים. אם אין גישה, לבדוק את הקובץ מול validator מקומי, למשל קריאה חוזרת של השורות בבדיקה.
 - [ ] **Step 6:** commit `feat: export the plan to a calendar (.ics)`
 
@@ -295,4 +333,3 @@ test('firstOn: the start date itself when it is that day', () => {
 
 - **ניקוד "רך" למרצה מועדף** (מדד נוסף במשקלות): דורש הרחבה של `bound()`. המסנן המחייב מכסה את הבקשה. להוסיף רק אם יבקשו "אם אפשר".
 - **תמונה מקדימה לקישור בוואטסאפ:** דורשת שרת (§17ג).
-- **החרגת חגים ב-`.ics`:** תלויה בתאריכים מהבעלים (ראו Task 6).
