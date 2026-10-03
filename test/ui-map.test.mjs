@@ -356,3 +356,9 @@ test('layout: a fifth-year list (evening programs) gets its own band', () => {
   const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/32-2027.json', import.meta.url), 'utf8'));
   assert.ok(layoutMap(d).bands.some((b) => b.year === 5 && b.name === 'שנה ה׳'));
 });
+
+test('geometry runs without Object.groupBy (Safari before 17.4)', () => {
+  const g = Object.groupBy;
+  delete Object.groupBy;
+  try { assert.ok(geo().g.nodes.length > 0); } finally { Object.groupBy = g; }
+});
