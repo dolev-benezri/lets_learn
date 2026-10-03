@@ -1,4 +1,4 @@
-import { classify, withAfterA, cleanProfile, studyYear, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
+import { classify, withAfterA, cleanProfile, studyYear, yearsOf, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
 
@@ -43,7 +43,11 @@ const CONSTRAINT_OK = {
 export function normalize(raw, catalog = FALLBACK_CATALOG) {
   const out = structuredClone(DEFAULT);
   if (!isObj(raw) || raw.v !== 1) return out;
-  if (inCatalog(catalog, raw.program, raw.startYear)) { out.program = raw.program; out.startYear = raw.startYear; }
+  const prog = catalog?.programs?.find((p) => p.id === raw.program); // a cohort the catalog dropped: the nearest one of the same program (ties: the later)
+  if (prog?.startYears.length && Number.isInteger(raw.startYear)) {
+    out.program = prog.id;
+    out.startYear = prog.startYears.reduce((b, y) => (Math.abs(y - raw.startYear) < Math.abs(b - raw.startYear) || (Math.abs(y - raw.startYear) === Math.abs(b - raw.startYear) && y > b) ? y : b));
+  }
   if (typeof raw.name === 'string' && raw.name.length <= 60) out.name = raw.name;
   const passed = strs(raw.passed, 200, 20);
   if (passed) out.passed = passed;
@@ -70,10 +74,23 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   return out;
 }
 
-function load() {
+// A saved program the catalog lacks is never overwritten: without the real catalog nothing is saved this visit; a program the site dropped is kept aside.
+export function load() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(KEY)); } catch { /* storage unavailable */ }
-  return normalize(saved, app.catalog);
+  const s = normalize(saved, app.catalog);
+  app.noSave = false;
+  if (!isObj(saved) || saved.v !== 1 || !Number.isInteger(saved.program)) return s;
+  const fallback = app.catalog === FALLBACK_CATALOG, moved = s.program !== saved.program;
+  if (fallback && (moved || s.startYear !== saved.startYear)) {
+    app.noSave = true;
+    app.hashError = 'רשימת התוכניות לא נטענה. מוצגת הנדסה מכנית, והנתונים השמורים שלכם לא ישתנו עד שהרשימה תיטען.';
+  } else if (moved) {
+    stash(saved);
+    app.hashError = 'התוכנית השמורה כבר לא באתר. מוצגת הנדסה מכנית, וההתקדמות בתוכנית הקודמת נשמרה בצד.';
+  } else if (s.startYear !== saved.startYear) app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית.`;
+  if (moved) return withPersonal({ ...structuredClone(DEFAULT), program: s.program, startYear: s.startYear }, s);
+  return s;
 }
 // Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.
 const stashKey = (p, y) => `${KEY}:${p}-${y}`;
@@ -93,7 +110,7 @@ export function upsertFriend(friends, p, editing = null) {
 }
 
 export const app = { catalog: FALLBACK_CATALOG, loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), summerIds: [],
-  friendLanding: null, hashError: null };
+  friendLanding: null, hashError: null, noSave: false };
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
 export function yearView(dataA, dataB) {
@@ -121,7 +138,7 @@ export function pickData() {
 // Summer is planned after the school year: on only when the profile asks for it and the summer file loaded.
 export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ']);
 export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
-export function save() { try { localStorage.setItem(KEY, JSON.stringify(app.state)); } catch { /* storage unavailable */ } }
+export function save() { if (app.noSave) return; try { localStorage.setItem(KEY, JSON.stringify(app.state)); } catch { /* storage unavailable */ } }
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
 const yearOneList = () => app.data.lists.find((l) => l.name.includes("שנה א'"));
 // First time: the earlier years are assumed passed; a first-year student has passed nothing.
@@ -139,6 +156,9 @@ export const candidateMode = (id) => modeFor(app.cls.statuses[id]?.status, app.s
 // Rendering lives in ui-plan.js / ui-grid.js; they register here. Focus survives a re-render via data-k keys.
 let renderers = [];
 export function setRenderers(...fns) { renderers = fns; }
+// What the UI keeps for the current program (results, colors, a half-made pick) must go when the state is replaced; ui-actions.js registers it.
+let uiReset = () => {};
+export function setUiReset(fn) { uiReset = fn; }
 export function keepFocus(fn) {
   const k = document.activeElement?.dataset?.k;
   fn();
@@ -148,11 +168,13 @@ export function keepFocus(fn) {
 // A saved choice must fit the loaded program: another program's area ids (or a different pick count) would mislead the progress map and the lists.
 export function reconcileSpecs() {
   const { profile, specDraft } = app.state, ok = validSpecs(app.data, profile.specs);
+  if (profile.year > yearsOf(app.data)) profile.year = yearsOf(app.data); // a two-year program has no year ג׳ (the same check as the data: once per load)
   if (ok.join() !== profile.specs.join()) profile.specs = ok;
   if (specDraft && !(specDraft.length < specRule(app.data).pick && specDraft.every((id) => app.data.specializations?.some((x) => x.id === id)))) app.state.specDraft = null;
 }
 
 export function refresh() {
+  if (app.state.scope === 'קיץ' && !app.state.profile.summer) app.state.scope = 'year'; // summer switched off; a summer file that failed to load keeps the choice
   pickData();
   reconcileSpecs();
   // Summer assumes the shown year plan is passed (as ב assumes א); elsewhere a course taught only in summer says so.
@@ -220,6 +242,7 @@ export async function switchTo(program, startYear) {
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);
   setSemesters(sem);
   ensurePassed();
+  uiReset();
   return true;
 }
 
@@ -251,14 +274,17 @@ async function init() {
 }
 
 // Replace the state with a backup. Another program or cohort loads its data first; if that fails nothing changes and it returns false.
+// A program the catalog lacks is refused (normalize would quietly turn it into the default program); a dropped cohort moves to the nearest one, like a saved state.
 export async function restoreBackup(payload) {
   const p = normalize(payload, app.catalog);
+  if (p.program !== payload?.program) { app.hashError = 'התוכנית של הגיבוי לא קיימת באתר, הגיבוי לא שוחזר.'; return false; }
   if (p.program !== app.state.program || p.startYear !== app.state.startYear) {
     let sem;
     try { sem = await fetchSemesters(p); } catch { return false; }
     setSemesters(sem);
   }
   app.state = p;
+  uiReset();
   return true;
 }
 
@@ -271,7 +297,7 @@ export async function applyHash() {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
     if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
-      if (!await restoreBackup(h.payload)) app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי';
+      if (!await restoreBackup(h.payload)) app.hashError ??= 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי';
     } else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
   }
   ensurePassed();

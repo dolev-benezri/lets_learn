@@ -5,7 +5,7 @@ import { app, esc, yearView, semOfGroup } from './app.js';
 import { DAYS, icon, typeLabel, groupIndex, hourRange, renderWeek, assignColors } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { groupsFromText, placeGroup, findCourse, clashIds } from './friend-import.js';
-import { groupNumber } from './ui-text.js';
+import { groupNumber, courseCount } from './ui-text.js';
 import { imageCanvas, withPdf, pageCanvas, bigPage, scanCanvases } from './friend-scan.js';
 import { rowsFromTable, matchRows } from './friend-schedule.js';
 
@@ -251,7 +251,7 @@ function applyFound({ found, unknown, ambiguous = 0, weak = 0 }) {
   const skipped = [already && `${already} כבר במערכת`, refused && `${refused} לא שובצו`].filter(Boolean).join(', ');
   status(`<p>${placed.length === found.length ? `נמצאו ${found.length} קבוצות` : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${other
     ? ` (${other === placed.length ? 'כולן' : `${other} מהן`} בסמסטר ${o})` : ''}${switched ? `. עברנו לסמסטר ${SEM_NAME[ed.sem]}` : ''}.</p>`
-    + (ambiguous ? `<p>ב-${ambiguous} קורסים יש כמה קבוצות באותן שעות, נבחרה הראשונה. כדאי לבדוק במערכת.</p>` : '')
+    + (ambiguous ? `<p>ב${ambiguous === 1 ? 'קורס אחד' : `-${courseCount(ambiguous)}`} יש כמה קבוצות באותן שעות, נבחרה הראשונה. כדאי לבדוק במערכת.</p>` : '')
     + (weak ? `<p>${weak} קבוצות זוהו לפי יום ושעות בלבד (השם בתמונה לא ברור). כדאי לבדוק אותן במערכת.</p>` : '')
     + (unknown.length ? `<p>לא נמצאו: ${unknown.slice(0, 8).map((id) => `<bdi dir="ltr">${esc(id)}</bdi>`).join(', ')}${unknown.length > 8 ? ` ועוד ${unknown.length - 8}` : ''}</p>` : '')
     + (found.length || unknown.length ? '' : '<p>לא זוהה אף מספר קבוצה (9 ספרות).</p>'));

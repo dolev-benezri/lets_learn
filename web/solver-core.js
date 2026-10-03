@@ -205,7 +205,7 @@ function metrics(sel, mask, ctx) {
 }
 
 function explain(info, unlocks) {
-  const parts = Object.entries(info.shared).filter(([, n]) => n).map(([name, n]) => `${n} קורסים עם ${name}`);
+  const parts = Object.entries(info.shared).filter(([, n]) => n).map(([name, n]) => `${n === 1 ? 'קורס אחד' : `${n} קורסים`} עם ${name}`);
   if (info.freeDays.length) parts.push(`${info.freeDays.map((d) => `יום ${DAY_NAMES[d]}'`).join(', ')} פנוי`);
   parts.push(info.gapMin ? `חלונות: ${Math.round(info.gapMin / 6) / 10} ש'` : 'בלי חלונות');
   if (info.minGap !== null) parts.push(`לפחות ${info.minGap} ימים בין בחינות`);

@@ -165,10 +165,12 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
 
 const DAY = 86400e3;
 // The nightly policy: what changes through the day (a course's groups, the exam table) is fetched every run; lists, course details and track pages weekly; a course with no groups at all weekly too.
+// "Weekly" is 7-9 days by key, so the answers cached by one full pull expire over three nights instead of all on the same one.
+const weekly = (key) => (7 + (createHash('sha1').update(key).digest()[0] % 3)) * DAY;
 export function nightlyTtl(key, html) {
   if (key.includes('S_EXAMS')) return 0;
-  if (key.startsWith('prgname=S_LOOK_FOR_NOSE')) return parseGroups(html).length ? 0 : 7 * DAY;
-  return 7 * DAY;
+  if (key.startsWith('prgname=S_LOOK_FOR_NOSE')) return parseGroups(html).length ? 0 : weekly(key);
+  return weekly(key);
 }
 
 // Wait out the site's hourly limit instead of failing: sleep until the hour it names (Jerusalem time), start a new session, ask again. Gives up past maxWaitMs.

@@ -1,11 +1,11 @@
 // Click (ACT) and change (CHG) handlers, wired to the document in ui-plan.js.
-import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, clearSaved, DEFAULT } from './app.js';
+import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { friendToast, gradeInput } from './ui-text.js';
+import { friendToast, gradeInput, rangeError } from './ui-text.js';
 import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
@@ -122,10 +122,11 @@ const blockEdit = (el, k, v) => {
   const b = app.state.constraints.blocks[el.dataset.i];
   if (cleanBlocks([{ ...b, [k]: v }]).length) b[k] = v;
 };
-// A program or cohort change: the new data is already in; reset what belonged to the old one and redraw.
+// A program or cohort change, or a restored backup, replaces the state: app.js then drops what the UI kept for the old one (results, colors, a half-made pick).
+setUiReset(() => { ui.last = null; ui.cur = 0; ui.specPick = null; colors.clear(); });
+// A program or cohort change: switchTo loads the data and resets; this redraws and says so.
 async function changeIdentity(program, startYear) {
   if (!await switchTo(program, startYear)) { refresh(); return; } // refused or failed: the selects go back to the real state
-  ui.last = null; ui.cur = 0; ui.specPick = null; colors.clear();
   refresh();
   toast(`עברנו ל${app.catalog.programs.find((p) => p.id === program)?.name ?? ''} ${startYear}`);
 }
@@ -157,7 +158,11 @@ export const CHG = {
     if (start && start !== app.state.startYear && app.catalog.programs.find((p) => p.id === app.state.program)?.startYears.includes(start)) changeIdentity(app.state.program, start);
     if (was) queueMicrotask(focusWeek); // after the refresh: the question is gone, keep focus out of <body>
   },
-  amirnet: (el) => { app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet; },
+  amirnet: (el) => {
+    const err = rangeError(el.validity?.badInput ? 'x' : el.value, 50, 150);
+    if (err) toast(err);
+    app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet;
+  },
   specMode: (el) => {
     const mode = el.value, picks = mode === 'pick' ? specView(app.data, app.state.profile.specs).picks : [];
     ui.specPick = { mode, picks };
@@ -172,7 +177,9 @@ export const CHG = {
   },
   summer: (el) => { app.state.profile.summer = el.checked; if (!el.checked && app.state.scope === 'קיץ') app.state.scope = 'year'; },
   grade: (el) => {
-    const g = gradeInput(el.validity?.badInput ? 'x' : el.value, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
+    const raw = el.validity?.badInput ? 'x' : el.value, g = gradeInput(raw, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
+    const err = rangeError(raw, 0, 100);
+    if (err) toast(err);
     if (g === undefined) delete app.state.grades[el.dataset.cid]; else app.state.grades[el.dataset.cid] = g;
     el.value = g ?? ''; // snap an invalid entry back
     const avg = $('gradeAvg');

@@ -49,11 +49,11 @@ export const details = (key, summaryHtml, body, n) => n ? `<details data-key="${
 let toastTimer, toastHide;
 export function toast(text) {
   const t = $('toast');
-  t.textContent = text;
   t.setAttribute('popover', 'manual'); // top layer: stays visible above a modal drawer or dialog
   clearTimeout(toastTimer);
   clearTimeout(toastHide);
-  if (t.showPopover && !t.matches(':popover-open')) t.showPopover();
+  if (t.showPopover && !t.matches(':popover-open')) { t.textContent = ''; t.showPopover(); } // the live region is shown empty first...
+  setTimeout(() => { t.textContent = text; }, 50); // ...then filled, so screen readers announce the change (rAF never fires in a hidden tab)
   t.classList.add('show');
   toastTimer = setTimeout(() => { t.classList.remove('show'); toastHide = setTimeout(() => t.matches(':popover-open') && t.hidePopover(), 250); }, 2500);
 }

@@ -146,20 +146,25 @@ export function planPaths(paths, plan) {
 // credits; `specLeft` = specialization credits still missing (null while no area is chosen).
 export const isDone = (st, id) => ['done', 'exempt'].includes(st[id]?.status);
 export function progressInfo(data, st, plan = new Set(), specs = []) {
-  const seen = new Set(), sp = specLists(data, specs), cap = Number(data.degree?.specCredits) || 0, credits = (id) => Number(data.courses[id].credits) || 0;
-  let total = 0, done = 0, planned = 0;
+  const seen = new Set(), sp = specLists(data, specs), credits = (id) => Number(data.courses[id].credits) || 0, degree = Number(data.degree?.total) || 0;
+  let total = 0, reach = 0, done = 0, planned = 0;
   for (const l of data.lists.filter((x) => !sp.all.has(x.code))) {
     const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)), min = Number(l.minCredits) || 0;
     ids.forEach((id) => seen.add(id));
     const sum = (f) => ids.filter(f).reduce((s, id) => s + credits(id), 0);
     const d = Math.min(min, sum((id) => isDone(st, id)));
-    total += min; done += d; planned += Math.min(min - d, sum((id) => !isDone(st, id) && plan.has(id)));
+    total += min; reach += Math.min(min, sum(() => true)); done += d; planned += Math.min(min - d, sum((id) => !isDone(st, id) && plan.has(id)));
   }
   const pool = new Set((specs.length ? [...sp.mandatory, ...sp.elective] : data.lists.filter((x) => sp.all.has(x.code)).flatMap((x) => x.courses)).filter((id) => data.courses[id] && !seen.has(id)));
+  // Unknown specCredits (0) with areas to pick: what the lists leave of the degree total (mechanical: 160 - 133 = 27, the regulations' number).
+  const cap = Number(data.degree?.specCredits) || (data.specializations?.length && degree ? Math.max(0, degree - total) : 0);
   const pick = (f) => [...pool].filter(f).reduce((s, id) => s + credits(id), 0), sd = Math.min(cap, pick((id) => isDone(st, id)));
+  reach += Math.min(cap, pick(() => true));
   done += sd; planned += Math.min(cap - sd, pick((id) => !isDone(st, id) && plan.has(id)));
   const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + credits(id), 0);
-  return { total: Number(data.degree?.total) || total + cap, done, planned, adds, specLeft: specs.length ? cap - sd : null };
+  // The bar ends where the data does (all passed = 100%); credits of the degree no list in the data covers are named, not silently unreachable.
+  const r = (v) => Math.round(v * 2) / 2;
+  return { total: r(reach), done, planned, adds, specLeft: specs.length ? cap - sd : null, untracked: degree > reach ? r(degree - reach) : 0, degreeTotal: degree || null };
 }
 // Courses the plan newly opens: blocked now, not blocked once the plan's courses count as passed (the plan's own courses excluded).
 export function newlyUnlocked(data, state, plan) {

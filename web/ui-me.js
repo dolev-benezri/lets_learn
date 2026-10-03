@@ -1,10 +1,10 @@
 // The status page (#me): profile, specialization form, course lists with their states, grade-sheet import.
 import { app, esc, refresh } from './app.js';
-import { progress, setStatus, studyYear, gradeAverage, specLists, specRule, specConflict, validSpecs } from './rules.js';
+import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, specConflict, validSpecs } from './rules.js';
 import { icon } from './ui-grid.js';
 import { askRows } from './ui-dialog.js';
-import { readGradeSheet, parseGradeSheet } from './grade-import.js';
-import { creditsGoal } from './ui-text.js';
+import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
+import { creditsGoal, courseCount } from './ui-text.js';
 import { STATUS, FAILS, YEARS, onboarded, gated, status, seg, details, toast, heb, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
@@ -57,7 +57,7 @@ export function identityPick(year, visible) {
   const track = programs.length < 2 ? '' : `<label class="field pick">מסלול <select data-chg="program" data-k="program">${programs.map(opt).join('')}</select></label>`;
   const own = !year || cur.startYears.includes(app.data.year - year + 1); // no data for that cohort: the plan runs on the nearest one, and the page says so
   const note = own ? '' : `<p class="hint" role="status">אין עדיין נתונים למחזור של שנה ${esc(YEARS.find(([n]) => n === year)[1])}. התכנון לפי מחזור ${app.state.startYear}.</p>`;
-  return track + seg('p-year', 'שנת לימודים', YEARS, year, 'data-chg="pyear"', visible) + note;
+  return track + seg('p-year', 'שנת לימודים', YEARS.slice(0, yearsOf(app.data)), year, 'data-chg="pyear"', visible) + note;
 }
 
 export function renderMe() {
@@ -94,7 +94,7 @@ export function renderMe() {
           ${identityPick(state.profile.year, true)}${unverified}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
-          <div class="spec-sec">${specForm(state.profile.specs)}</div>
+          ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
           <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>
         <section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
@@ -133,14 +133,12 @@ export async function importGrades(file) {
   try { found = parseGradeSheet(await readGradeSheet(file), data); } catch (e) { return setGradeMsg(e.user ? e.message : 'לא הצלחנו לקרוא את הקובץ.'); }
   const rows = found.filter((r) => r.result !== 'pending');
   if (!rows.length) return setGradeMsg(GRADE_NONE);
-  const now = (id) => (state.passed.includes(id) ? 'passed' : state.failed[id] ? 'failed' : 'none');
   const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
-  const todo = rows.filter((r) => (r.result === 'failed' ? now(r.id) !== 'failed' : now(r.id) !== 'passed' || (r.grade !== null && r.result === 'passed' && state.grades[r.id] !== r.grade)));
-  if (!todo.length) return setGradeMsg(`זוהו ${rows.length} קורסים והכול כבר מעודכן.`);
-  const label = (r) => { const to = r.result === 'failed' ? 'failed' : 'passed', was = now(r.id); return `${r.result === 'exempt' ? 'פטור, נחשב עברתי'
-    : WORD[to]}${was === to ? '' : ` (היה: ${WORD[was]})`}`; };
+  const todo = gradeChanges(found, state);
+  if (!todo.length) return setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.`);
+  const label = (r) => `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}`;
   const pick = await askRows('ייבוא מגליון ציונים', 'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.', ['קורס', 'ציון', 'שינוי'],
-    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]));
+    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]), { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) });
   if (!pick) return setGradeMsg('');
   for (const i of pick) {
     const r = todo[i];

@@ -115,3 +115,45 @@ test('every renderer got the payload and wrote it escaped (no element or on* att
     }
   }
 });
+
+test('an unverified program says so in the header of both views (L3)', () => {
+  app.data.verified = false;
+  run('top-unverified', () => { renderTop(); });
+  const meta = writes.filter((w) => w.scope === 'top-unverified' && w.id === 'meta');
+  assert.ok(meta.length && meta.at(-1).html.includes('לא נבדקו מול סטודנט מהמחלקה'));
+  delete app.data.verified;
+  run('top-verified', () => { renderTop(); });
+  assert.ok(!writes.filter((w) => w.scope === 'top-verified' && w.id === 'meta').at(-1).html.includes('לא נבדקו'));
+});
+
+test('a two-year program offers study years א׳ and ב׳ only (L6)', () => {
+  const lists = app.data.lists;
+  app.data.lists = lists.filter((l) => !/שנה [גד]'/.test(l.name));
+  const html = identityPick(2, true);
+  app.data.lists = lists;
+  assert.ok(html.includes('ב׳') && !html.includes('ג׳') && !html.includes('ד׳'));
+});
+
+test('a program without specializations shows no specialization picker and no call to choose one (L7)', async () => {
+  const { progressHtml } = await import('../web/map-render.js');
+  const areas = app.data.specializations;
+  app.data.specializations = [];
+  document.body.dataset.view = 'me';
+  run('me-noareas', () => { renderMe(); });
+  app.data.specializations = areas;
+  const html = writes.filter((w) => w.scope === 'me-noareas').map((w) => w.html).join('');
+  assert.ok(html.length && !html.includes('p-spec') && !html.includes('בוחרים התמחות'));
+  const prog = { total: 100, done: 1, planned: 0, adds: 0, specLeft: null };
+  assert.ok(!progressHtml({ prog, opened: 0, year: 3, specs: [], areas: 0 }).includes('בחרו התמחות'));
+  assert.ok(progressHtml({ prog, opened: 0, year: 3, specs: [], areas: 2 }).includes('בחרו התמחות'));
+});
+
+test('a friend name in the summary pills is escaped once, not twice (U1)', () => {
+  const res = current(), saved = app.state.friends[0].groups;
+  app.state.friends[0].groups = [...(res.a?.groups ?? res.groups ?? [])].slice(0, 3); // the friend takes the shown plan's groups
+  run('view-u1', () => { renderView(); });
+  app.state.friends[0].groups = saved;
+  const pills = writes.filter((w) => w.scope === 'view-u1' && w.id === 'pills').map((w) => w.html).join('');
+  assert.ok(pills.includes('class="pill friend"'), 'no friend pill: the plan shares no course with the friend (coverage hole)');
+  assert.ok(!/&amp;(lt|gt|quot|#39|amp);/.test(pills), 'double-escaped entity in the pills');
+});

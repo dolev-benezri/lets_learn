@@ -64,24 +64,24 @@ test('asideIds on the real data: 30343 is aside until vehicle alone is chosen; t
 
 test('progressInfo: no area chosen still reserves the specialization credits; a passed specialization course counts once, up to the cap', () => {
   const d = mk();
-  assert.deepEqual(progressInfo(d, {}), { total: 23, done: 0, planned: 0, adds: 0, specLeft: null });
+  assert.deepEqual(progressInfo(d, {}), { total: 12, untracked: 11, degreeTotal: 23, done: 0, planned: 0, adds: 0, specLeft: null });
   assert.equal(progressInfo(d, done('shared')).done, 3, 'shared is in two lists but counts once');
   assert.equal(progressInfo(d, done('shared', 'am1')).done, 6);
   assert.equal(progressInfo(d, done('shared', 'am1', 'vm', 'bm', 'vx')).done, 9, 'capped at specCredits');
   assert.equal(progressInfo(d, done('y'), new Set(['am1'])).done, 3, 'the year list counts 3 of its 14');
-  assert.deepEqual(progressInfo(d, done('am1'), new Set(['ae1', 'z'])), { total: 23, done: 3, planned: 3, adds: 6, specLeft: null });
+  assert.deepEqual(progressInfo(d, done('am1'), new Set(['ae1', 'z'])), { total: 12, untracked: 11, degreeTotal: 23, done: 3, planned: 3, adds: 6, specLeft: null });
 });
 
 test('progressInfo: two areas count only their own mandatory and elective courses, planned credits fill what the done ones leave', () => {
   const d = mk(), two = ['a', 'b'];
-  assert.deepEqual(progressInfo(d, done('am1', 'shared', 'vm'), new Set(['bm', 'vm', 've']), two), { total: 23, done: 6, planned: 3, adds: 6, specLeft: 3 }, 'vm and ve belong to another area: not counted, bm is');
-  assert.deepEqual(progressInfo(d, done('am1', 'am2', 'ae1', 'bm'), new Set(['be1']), two), { total: 23, done: 9, planned: 0, adds: 3, specLeft: 0 }, 'done 12 capped at 9, nothing left for the plan');
+  assert.deepEqual(progressInfo(d, done('am1', 'shared', 'vm'), new Set(['bm', 'vm', 've']), two), { total: 12, untracked: 11, degreeTotal: 23, done: 6, planned: 3, adds: 6, specLeft: 3 }, 'vm and ve belong to another area: not counted, bm is');
+  assert.deepEqual(progressInfo(d, done('am1', 'am2', 'ae1', 'bm'), new Set(['be1']), two), { total: 12, untracked: 11, degreeTotal: 23, done: 9, planned: 0, adds: 3, specLeft: 0 }, 'done 12 capped at 9, nothing left for the plan');
   assert.equal(progressInfo(d, done('am2'), new Set(), two).specLeft, 6, 'am2 is in two lists of area a: once');
 });
 
 test('progressInfo: vehicle alone counts 30121, the extra and its electives, not another area', () => {
   const d = mk(), v = ['vehicle'];
-  assert.deepEqual(progressInfo(d, done('vx', 've', 'am1'), new Set(['vm']), v), { total: 23, done: 6, planned: 3, adds: 3, specLeft: 3 });
+  assert.deepEqual(progressInfo(d, done('vx', 've', 'am1'), new Set(['vm']), v), { total: 12, untracked: 11, degreeTotal: 23, done: 6, planned: 3, adds: 3, specLeft: 3 });
   assert.equal(progressInfo(d, done('vx'), new Set(), ['a', 'vehicle']).done, 0, 'vx is not part of a pair with vehicle');
 });
 
@@ -98,7 +98,7 @@ test('progressHtml: the remaining specialization credits when areas are chosen, 
   const prog = { total: 160, done: 40, planned: 0, adds: 0, specLeft: 12.5 };
   const withSpec = progressHtml({ prog, opened: 0, year: 3, specs: ['solid', 'flow'] });
   assert.ok(withSpec.includes('נותרו <b><bdi>12.5</bdi></b> נ״ז מקורסי ההתמחות') && !withSpec.includes('href="#me"'));
-  const none = { prog: { ...prog, specLeft: null }, opened: 0, specs: [] };
+  const none = { prog: { ...prog, specLeft: null }, opened: 0, specs: [], areas: 6 };
   assert.ok(progressHtml({ ...none, year: 2 }).includes('href="#me"') && progressHtml({ ...none, year: 2 }).includes('בחרו התמחות ב״המצב שלי״ כדי לראות את קורסי החובה שלה'));
   assert.ok(!progressHtml({ ...none, year: 1 }).includes('href="#me"') && !progressHtml({ ...none, year: 1 }).includes('נותרו'));
 });

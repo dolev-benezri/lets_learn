@@ -4,6 +4,8 @@ import { meetingsMask, overlaps, buildOptions, forbiddenMask, unlockCounts, chai
 import { classify } from '../web/rules.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { mini } from './fixtures/mini-data.mjs';
+// Wall-clock budgets: a shared CI runner (GitHub sets CI) is 2-3x slower than a dev machine, so there the search gets 3x the time and the budgets scale with it.
+const SLACK = process.env.CI ? 3 : 1, LIMIT = 3000 * SLACK;
 
 test('masks: 08:00-09:50 and 10:00-11:50 do not overlap; 09:30 start does', () => {
   const a = meetingsMask([{ day: 2, start: '08:00', end: '09:50' }]);
@@ -175,7 +177,7 @@ test('friends metric rewards shared groups and ignores unknown ids', () => {
   const r = run({ courses: [{ id: 'A', mode: 'must' }], friends, weights: { ...W0, friends: 1 }, topK: 3 });
   assert.deepEqual(r.results[0].groups, ['A2']);
   assert.equal(r.results[0].breakdown.friends, 1);
-  assert.match(r.results[0].explanation, /1 קורסים עם דני/);
+  assert.match(r.results[0].explanation, /קורס אחד עם דני/);
 });
 
 test('freeDays and pins', () => {
@@ -476,8 +478,8 @@ test('searchYear: default state on real data finishes within 3 s', { skip: !exis
   const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
   const t = Date.now();
   const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' }, yearList: y2,
-    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' } });
-  assert.ok(Date.now() - t < 3500);
+    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' }, timeLimitMs: LIMIT });
+  assert.ok(Date.now() - t < 3500 * SLACK);
   assert.ok(r.results.length > 0);
 });
 
@@ -523,8 +525,8 @@ test('searchYear: real data with one friend on an actual alternative finishes wi
   const friends = [{ name: 'f', weight: 2, active: true, groups: [...take(dataA), ...take(dataB)] }];
   const t = Date.now();
   const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' }, yearList: y2, friends,
-    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' } });
-  assert.ok(Date.now() - t < 3000, `took ${Date.now() - t}ms`);
+    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' }, timeLimitMs: LIMIT });
+  assert.ok(Date.now() - t < 3000 * SLACK + 200, `took ${Date.now() - t}ms`);
   assert.equal(r.partial, false);
   assert.ok(r.results.length > 0);
 });
@@ -650,11 +652,11 @@ test('searchYear: 20 random real-data states each finish within 3.5 s, at most 2
     for (const id of [...y2, ...y3].filter(() => rnd() < 0.15)) choices[id] = pick(['must', 'optional']);
     const friends = Array.from({ length: Math.floor(rnd() * 3) }, (_, k) => ({ name: `f${k}`, weight: 1, active: true, groups: groupIds.filter(() => rnd() < 0.2) }));
     const t = Date.now();
-    const r = searchYear({ dataA, dataB, state: { passed, failed: {}, choices, semesterOf: {}, load: 'even' }, yearList, friends, weights, constraints });
+    const r = searchYear({ dataA, dataB, state: { passed, failed: {}, choices, semesterOf: {}, load: 'even' }, yearList, friends, weights, constraints, timeLimitMs: LIMIT });
     const ms = Date.now() - t;
     worst = Math.max(worst, ms);
     if (r.partial) partial++;
-    assert.ok(ms <= 3500, `state ${i}: took ${ms}ms (passed ${passed.length}, choices ${JSON.stringify(choices)}, friends ${friends.length})`);
+    assert.ok(ms <= 3500 * SLACK, `state ${i}: took ${ms}ms (passed ${passed.length}, choices ${JSON.stringify(choices)}, friends ${friends.length})`);
   }
   console.log(`random states: worst ${worst}ms, partial ${partial}/20`);
   assert.ok(partial <= 2, `${partial} of 20 partial`);

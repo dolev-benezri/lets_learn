@@ -79,6 +79,13 @@ test('gradeInput: valid kept, empty clears, invalid keeps the previous grade', (
   assert.equal(gradeInput('900', undefined), undefined);
 });
 
+import { rangeError } from '../web/ui-text.js';
+test('rangeError: an out-of-range number field entry is named in text (WCAG 3.3.1), a valid or empty one is not', () => {
+  for (const ok of ['', '0', '100']) assert.equal(rangeError(ok, 0, 100), null);
+  for (const bad of ['150', '-1', '8.5', 'x']) assert.match(rangeError(bad, 0, 100), /בין 0 ל-100.*לא נשמר/);
+  assert.match(rangeError('900', 50, 150), /בין 50 ל-150/);
+});
+
 test('creditsGoal: credits owed by the end of the previous year; year א׳ has no goal', () => {
   assert.equal(creditsGoal(41, 41, 2), '41 מתוך 41 נ״ז הנדרשים עד סוף שנה א׳');
   assert.equal(creditsGoal(30, 83, 3), '30 מתוך 83 נ״ז הנדרשים עד סוף שנה ב׳');
@@ -104,4 +111,9 @@ test('partialNote: offers "חפש עוד" below the cap, explains instead at the
 import { hebYear } from '../web/ui-text.js';
 test('hebYear: the Hebrew academic year of a Gregorian end year, with the 15 and 16 exceptions', () => {
   assert.deepEqual([2027, 2026, 2025, 2024, 2023, 2015, 1955, 1956].map(hebYear), ['תשפ״ז', 'תשפ״ו', 'תשפ״ה', 'תשפ״ד', 'תשפ״ג', 'תשע״ה', 'תשט״ו', 'תשט״ז']);
+});
+
+test('courseCount: one course is "קורס אחד", not "1 קורסים"', async () => {
+  const { courseCount } = await import('../web/ui-text.js');
+  assert.deepEqual([courseCount(1), courseCount(0), courseCount(4)], ['קורס אחד', '0 קורסים', '4 קורסים']);
 });

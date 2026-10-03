@@ -194,3 +194,25 @@ test('normalize: specDraft keeps one well-formed id (the data check is reconcile
   for (const bad of [['Nope!'], ['solid', 'flow'], [], 'solid', null]) assert.equal(normalize({ v: 1, specDraft: bad }).specDraft, null);
   assert.deepEqual(normalize({ v: 1, yearIds: 'x' }).yearIds, []);
 });
+
+test('the summary pills row scrolls on phones, so it is a named region the keyboard can reach (U2)', () => {
+  const tag = readFileSync('web/index.html', 'utf8').match(/<div id="pills"[^>]*>/)[0];
+  assert.ok(tag.includes('tabindex="0"') && tag.includes('role="region"') && /aria-label="[^"]+"/.test(tag), tag);
+});
+
+test('both pages declare an icon, so the browser does not fetch a missing /favicon.ico (U5)', () => {
+  for (const f of ['web/index.html', 'web/legal.html']) assert.match(readFileSync(f, 'utf8'), /<link rel="icon" href="icon.svg" type="image\/svg\+xml">/, f);
+  assert.match(readFileSync('web/icon.svg', 'utf8'), /^<svg /);
+});
+
+test('pdf.js and panzoom load from web/vendor with their licenses; only tesseract stays on a CDN (S1)', () => {
+  const src = ['grade-import.js', 'ui-map.js', 'friend-scan.js'].map((f) => readFileSync(`web/${f}`, 'utf8')).join('\n');
+  assert.deepEqual([...src.matchAll(/https:\/\/[^'"`\s]+/g)].map((m) => m[0]).filter((u) => !u.includes('tesseract.js@')), []);
+  for (const f of ['pdfjs/pdf.min.mjs', 'pdfjs/pdf.worker.min.mjs', 'pdfjs/LICENSE', 'panzoom/panzoom.es.js', 'panzoom/LICENSE']) assert.ok(readFileSync(`web/vendor/${f}`).length > 500, f);
+});
+
+test('the deploy waits for a green test job (P9)', () => {
+  const y = readFileSync('.github/workflows/deploy.yml', 'utf8').replace(/\r\n/g, '\n'); // a Windows checkout has CRLF
+  assert.match(y, /\n  test:\n[\s\S]*npm ci --ignore-scripts[\s\S]*npm test/);
+  assert.match(y, /\n  deploy:\n    needs: test\n/);
+});

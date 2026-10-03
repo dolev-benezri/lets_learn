@@ -72,3 +72,16 @@ test('a summer row (semester 3) counts like any other', () => {
     cells(1, 680, ['30003', 'תשפ"ו 3/', 'מבוא', 'צוות', '40', '3.0', '3.00', '*'])), data);
   assert.deepEqual(by(r), { 10016: ['passed', 77], 30003: ['failed', 40] });
 });
+
+test('real layout: a row with no grade cell never takes a digit from the course name as the grade (U4)', () => {
+  const r = parseGradeSheet(sheet(cells(1, 700, ['תשפ"ו 1/', '10016', 'פיזיקה 2', '2.50', '3.0'])), data);
+  assert.deepEqual(by(r), {});
+});
+
+test('gradeChanges: a failed row on a course marked passed is offered but not pre-checked (U4)', async () => {
+  const { gradeChanges } = await import('../web/grade-import.js');
+  const state = { passed: ['10016', '30003'], failed: { 30130: 1 }, grades: { 30003: 70 } };
+  const todo = gradeChanges([{ id: '10016', grade: 40, result: 'failed' }, { id: '30003', grade: 80, result: 'passed' }, { id: '30130', grade: 20, result: 'failed' },
+    { id: '30133', grade: 90, result: 'passed' }, { id: '30135', grade: null, result: 'pending' }], state);
+  assert.deepEqual(todo.map((t) => [t.id, t.was, t.to, t.check]), [['10016', 'passed', 'failed', false], ['30003', 'passed', 'passed', true], ['30133', 'none', 'passed', true]]);
+});

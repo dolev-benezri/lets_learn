@@ -7,6 +7,7 @@ export function groupNumber(id) {
   const m = /^\d*?(\d{2})(\/\d+)?$/.exec(id);
   return m ? m[1] + (m[2] ?? '') : String(id);
 }
+export const courseCount = (n) => (n === 1 ? 'קורס אחד' : `${n} קורסים`);
 export const meetingText = (m) => `יום ${D[m.day] ?? '?'}׳ ${m.start}–${m.end}`;
 // "הרצאה · קבוצה 01": the full 9-digit id stays visible elsewhere (registration), this is the human handle.
 export const groupLabel = (g) => `${typeName(g.type)} · קבוצה ${groupNumber(g.id)}`;
@@ -17,6 +18,10 @@ export function gradeInput(raw, prev) {
   const v = Number(raw);
   return Number.isInteger(v) && v >= 0 && v <= 100 ? v : prev;
 }
+
+// A number field entry out of range: said in text (the toast is a live region) instead of a silent revert; null when it is fine or empty.
+export const rangeError = (raw, min, max) => (raw === '' || (Number.isInteger(Number(raw)) && Number(raw) >= min && Number(raw) <= max) ? null
+  : `צריך מספר שלם בין ${min} ל-${max}. הערך לא נשמר.`);
 
 // "X מתוך Y נ״ז הנדרשים עד סוף שנה Z׳": the credits owed from the years before the study year (rules.js progress).
 export const creditsGoal = (earned, required, year) => (year > 1 ? `${earned} מתוך ${required} נ״ז הנדרשים עד סוף שנה ${D[year - 1]}׳` : 'בשנה א׳ אין עדיין יעד נ״ז');

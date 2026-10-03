@@ -42,13 +42,13 @@ export async function askConfirm(text, { ok = 'אישור', cancel = 'ביטול
 
 // A table with a checkbox per row (all checked), apply / cancel. `rows` are arrays of plain strings (set via textContent, never HTML).
 // Resolves the indexes of the checked rows on apply, null on cancel / Escape / backdrop. Without <dialog> support: null.
-export async function askRows(title, note, head, rows, { ok = 'החל', cancel = 'ביטול' } = {}) {
+export async function askRows(title, note, head, rows, { ok = 'החל', cancel = 'ביטול', unchecked = [] } = {}) {
   if (!supported()) return null;
   let form;
   const v = await open((d) => {
     d.classList.add('dlg-rows');
     d.setAttribute('aria-labelledby', 'dlgTitle');
-    const boxes = rows.map((r, i) => node('input', { type: 'checkbox', checked: true, name: 'row', value: String(i) }));
+    const boxes = rows.map((r, i) => node('input', { type: 'checkbox', checked: !unchecked.includes(i), name: 'row', value: String(i) }));
     boxes.forEach((b, i) => b.setAttribute('aria-label', `${rows[i][0]}: ${rows[i].at(-1)}`));
     const apply = node('button', { type: 'submit', className: 'btn primary', value: 'ok', textContent: ok });
     const table = node('table', {},
@@ -62,7 +62,8 @@ export async function askRows(title, note, head, rows, { ok = 'החל', cancel =
     form.querySelector('.dlg-scroll').setAttribute('role', 'region');
     form.querySelector('.dlg-scroll').setAttribute('aria-label', title);
     form.addEventListener('change', () => { apply.disabled = !boxes.some((b) => b.checked); });
-    apply.dataset.first = '';
+    apply.disabled = !boxes.some((b) => b.checked);
+    (apply.disabled ? boxes[0] : apply).dataset.first = ''; // nothing pre-checked: focus the first row, not a disabled button
     d.append(form);
   });
   return v === 'ok' ? [...form.querySelectorAll('input[name=row]:checked')].map((b) => Number(b.value)) : null;
