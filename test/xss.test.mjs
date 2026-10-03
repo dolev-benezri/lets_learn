@@ -120,7 +120,7 @@ test('an unverified program says so in the header of both views (L3)', () => {
   app.data.verified = false;
   run('top-unverified', () => { renderTop(); });
   const meta = writes.filter((w) => w.scope === 'top-unverified' && w.id === 'meta');
-  assert.ok(meta.length && meta.at(-1).html.includes('לא נבדקו מול סטודנט מהמחלקה'));
+  assert.ok(meta.length && meta.at(-1).html.includes('לא נבדקו מול תוכנית הלימודים הרשמית'));
   delete app.data.verified;
   run('top-verified', () => { renderTop(); });
   assert.ok(!writes.filter((w) => w.scope === 'top-verified' && w.id === 'meta').at(-1).html.includes('לא נבדקו'));

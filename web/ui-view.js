@@ -17,7 +17,7 @@ export function renderTop() {
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
   const f = freshness(app.status, app.data.fetchedAt);
   $('meta').innerHTML = (f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text))
-    + (app.data.verified === false ? ' · הנתונים של התוכנית הזו עוד לא נבדקו מול סטודנט מהמחלקה.' : '');
+    + (app.data.verified === false ? ' · הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.' : '');
   const fr = app.state.friends;
   $('friendsBtn').innerHTML = `<span class="stack" aria-hidden="true">${fr.slice(0, 3).map((f) => `<span
     class="av">${esc(initials(f.name))}</span>`).join('')}<span class="av plus">${icon('plus')}</span></span><span class="lbl">חברים${fr.length
