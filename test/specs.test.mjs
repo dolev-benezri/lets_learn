@@ -98,7 +98,7 @@ test('progressHtml: the remaining specialization credits when areas are chosen, 
   const prog = { total: 160, done: 40, planned: 0, adds: 0, specLeft: 12.5 };
   const withSpec = progressHtml({ prog, opened: 0, year: 3, specs: ['solid', 'flow'] });
   assert.ok(withSpec.includes('נותרו <b><bdi>12.5</bdi></b> נ״ז מקורסי ההתמחות') && !withSpec.includes('href="#me"'));
-  const none = { prog: { ...prog, specLeft: null }, opened: 0, specs: [] };
+  const none = { prog: { ...prog, specLeft: null }, opened: 0, specs: [], areas: 6 };
   assert.ok(progressHtml({ ...none, year: 2 }).includes('href="#me"') && progressHtml({ ...none, year: 2 }).includes('בחרו התמחות ב״המצב שלי״ כדי לראות את קורסי החובה שלה'));
   assert.ok(!progressHtml({ ...none, year: 1 }).includes('href="#me"') && !progressHtml({ ...none, year: 1 }).includes('נותרו'));
 });

@@ -133,3 +133,17 @@ test('a two-year program offers study years א׳ and ב׳ only (L6)', () => {
   app.data.lists = lists;
   assert.ok(html.includes('ב׳') && !html.includes('ג׳') && !html.includes('ד׳'));
 });
+
+test('a program without specializations shows no specialization picker and no call to choose one (L7)', async () => {
+  const { progressHtml } = await import('../web/map-render.js');
+  const areas = app.data.specializations;
+  app.data.specializations = [];
+  document.body.dataset.view = 'me';
+  run('me-noareas', () => { renderMe(); });
+  app.data.specializations = areas;
+  const html = writes.filter((w) => w.scope === 'me-noareas').map((w) => w.html).join('');
+  assert.ok(html.length && !html.includes('p-spec') && !html.includes('בוחרים התמחות'));
+  const prog = { total: 100, done: 1, planned: 0, adds: 0, specLeft: null };
+  assert.ok(!progressHtml({ prog, opened: 0, year: 3, specs: [], areas: 0 }).includes('בחרו התמחות'));
+  assert.ok(progressHtml({ prog, opened: 0, year: 3, specs: [], areas: 2 }).includes('בחרו התמחות'));
+});

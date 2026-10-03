@@ -94,7 +94,7 @@ export function renderMe() {
           ${identityPick(state.profile.year, true)}${unverified}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
-          <div class="spec-sec">${specForm(state.profile.specs)}</div>
+          ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
           <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>
         <section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>

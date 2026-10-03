@@ -25,7 +25,7 @@ function ctxOf(mode) {
   const L = layoutMap(data, (id) => base(id) && !off.has(id));
   const doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
   return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits), year, unlocks: unlockCounts(data, doneIds), mode, aside, plan,
-    prog: progressInfo(data, st, plan, state.profile?.specs), specs: state.profile?.specs ?? [], opened: newlyUnlocked(data, state, plan) };
+    prog: progressInfo(data, st, plan, state.profile?.specs), specs: state.profile?.specs ?? [], areas: data.specializations?.length ?? 0, opened: newlyUnlocked(data, state, plan) };
 }
 
 function light() {
