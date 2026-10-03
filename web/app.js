@@ -241,6 +241,7 @@ export async function switchTo(program, startYear) {
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);
   setSemesters(sem);
   ensurePassed();
+  uiReset();
   return true;
 }
 

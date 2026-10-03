@@ -184,6 +184,10 @@ test('restoreBackup: a restored backup resets the UI state of the old one (L5)',
   assert.equal(resets, 2, 'every restore drops the old results, colors and specialization pick');
   await restoreBackup({ v: 1, program: 99, startYear: 2026 });
   assert.equal(resets, 2, 'a refused restore changes nothing');
+  await switchTo(30, 2027);
+  assert.equal(resets, 3, 'a program or cohort switch resets too (the same state replacement)');
+  serve((m) => m[3] === '30'); await switchTo(30, 2025);
+  assert.equal(resets, 3, 'a failed switch does not');
   setUiReset(() => {});
   app.hashError = null;
 });

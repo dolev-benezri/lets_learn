@@ -122,12 +122,11 @@ const blockEdit = (el, k, v) => {
   const b = app.state.constraints.blocks[el.dataset.i];
   if (cleanBlocks([{ ...b, [k]: v }]).length) b[k] = v;
 };
-// A program or cohort change, or a restored backup: the new data is already in; reset what belonged to the old one and redraw.
-const resetUi = () => { ui.last = null; ui.cur = 0; ui.specPick = null; colors.clear(); };
-setUiReset(resetUi);
+// A program or cohort change, or a restored backup, replaces the state: app.js then drops what the UI kept for the old one (results, colors, a half-made pick).
+setUiReset(() => { ui.last = null; ui.cur = 0; ui.specPick = null; colors.clear(); });
+// A program or cohort change: switchTo loads the data and resets; this redraws and says so.
 async function changeIdentity(program, startYear) {
   if (!await switchTo(program, startYear)) { refresh(); return; } // refused or failed: the selects go back to the real state
-  resetUi();
   refresh();
   toast(`עברנו ל${app.catalog.programs.find((p) => p.id === program)?.name ?? ''} ${startYear}`);
 }
