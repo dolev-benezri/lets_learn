@@ -222,3 +222,12 @@ test('normalize takes the academic year from the catalog (one place to roll over
   assert.equal(normalize({ v: 1 }, cat).year, 2028);
   assert.equal(normalize({ v: 1, year: 1999 }, { programs: cat.programs }).year, 2027, 'no year in the catalog: the default; never from input');
 });
+
+test('normalize caps failed and choices like grades, and refuses impossible hours', () => {
+  const many = Object.fromEntries([...Array(500)].map((_, i) => [`c${i}`, 1]));
+  const s = normalize({ v: 1, failed: many, choices: { ['x'.repeat(30)]: 'must', a: 'no' }, constraints: { notBefore: '99:99', notAfter: '23:59' } });
+  assert.equal(Object.keys(s.failed).length, 200);
+  assert.deepEqual(s.choices, { a: 'no' });
+  assert.equal(s.constraints.notBefore, '');
+  assert.equal(s.constraints.notAfter, '23:59');
+});

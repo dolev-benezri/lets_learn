@@ -32,8 +32,8 @@ export const cleanBlocks = (a) => Array.isArray(a) ? a.filter((b) => isObj(b) &&
 const CONSTRAINT_OK = {
   dayOff: (v) => Array.isArray(v) && v.every((d) => Number.isInteger(d) && d >= 1 && d <= 6),
   dayOffHard: (v) => typeof v === 'boolean', windowHard: (v) => typeof v === 'boolean', includeFull: (v) => typeof v === 'boolean',
-  notBefore: (v) => v === '' || (typeof v === 'string' && /^\d{2}:\d{2}$/.test(v)),
-  notAfter: (v) => v === '' || (typeof v === 'string' && /^\d{2}:\d{2}$/.test(v)),
+  notBefore: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
+  notAfter: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   maxCredits: (v) => v === null || (num(v) && v >= 0),
   examsSameDay: (v) => v === 'forbid' || v === 'allow',
 };
@@ -52,9 +52,9 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   if (typeof raw.name === 'string' && raw.name.length <= 60) out.name = raw.name;
   const passed = strs(raw.passed, 200, 20);
   if (passed) out.passed = passed;
-  if (isObj(raw.failed)) out.failed = Object.fromEntries(Object.entries(raw.failed).filter(([, v]) => Number.isInteger(v) && v >= 1 && v <= 3));
+  if (isObj(raw.failed)) out.failed = Object.fromEntries(Object.entries(raw.failed).filter(([k, v]) => k.length <= 20 && Number.isInteger(v) && v >= 1 && v <= 3).slice(0, 200));
   if (isObj(raw.grades)) out.grades = Object.fromEntries(Object.entries(raw.grades).filter(([k, v]) => k.length <= 20 && Number.isInteger(v) && v >= 0 && v <= 100).slice(0, 200));
-  if (isObj(raw.choices)) out.choices = Object.fromEntries(Object.entries(raw.choices).filter(([, v]) => ['must', 'optional', 'no'].includes(v)));
+  if (isObj(raw.choices)) out.choices = Object.fromEntries(Object.entries(raw.choices).filter(([k, v]) => k.length <= 20 && ['must', 'optional', 'no'].includes(v)).slice(0, 200));
   if (Array.isArray(raw.friends)) {
     out.friends = raw.friends.filter((f) => isObj(f) && typeof f.name === 'string' && f.name.length <= 60 && Array.isArray(f.groups)).slice(0, 20)
       .map((f) => ({ name: f.name, groups: strs(f.groups, 40, 20), weight: num(f.weight) ? clamp(f.weight, 0, 3) : 1, active: typeof f.active === 'boolean'
