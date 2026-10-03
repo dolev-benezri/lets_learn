@@ -204,3 +204,9 @@ test('both pages declare an icon, so the browser does not fetch a missing /favic
   for (const f of ['web/index.html', 'web/legal.html']) assert.match(readFileSync(f, 'utf8'), /<link rel="icon" href="icon.svg" type="image\/svg\+xml">/, f);
   assert.match(readFileSync('web/icon.svg', 'utf8'), /^<svg /);
 });
+
+test('pdf.js and panzoom load from web/vendor with their licenses; only tesseract stays on a CDN (S1)', () => {
+  const src = ['grade-import.js', 'ui-map.js', 'friend-scan.js'].map((f) => readFileSync(`web/${f}`, 'utf8')).join('\n');
+  assert.deepEqual([...src.matchAll(/https:\/\/[^'"`\s]+/g)].map((m) => m[0]).filter((u) => !u.includes('tesseract.js@')), []);
+  for (const f of ['pdfjs/pdf.min.mjs', 'pdfjs/pdf.worker.min.mjs', 'pdfjs/LICENSE', 'panzoom/panzoom.es.js', 'panzoom/LICENSE']) assert.ok(readFileSync(`web/vendor/${f}`).length > 500, f);
+});

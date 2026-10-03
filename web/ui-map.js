@@ -12,7 +12,7 @@ import { svg, ICONS, MODES, LEGEND, mapSvg, legendSw, legendEdge, listHtml, asid
 const M = { mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null };
 let dlg = null;
 const q = (s) => dlg.querySelector(s);
-const PZ_URL = 'https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.6.0/dist/panzoom.es.js';
+const PZ_URL = new URL('./vendor/panzoom/panzoom.es.js', import.meta.url).href; // 4.6.0, a copy (no third-party request)
 let pzLib = null;
 // Lazy so node tests (which import this file) never touch the network; a failed or slow load falls back to the list view.
 const loadPanzoom = () => (pzLib ??= Promise.race([import(PZ_URL).then((m) => m.default), new Promise((_, no) => setTimeout(no, 8000,

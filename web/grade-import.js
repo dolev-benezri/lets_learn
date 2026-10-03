@@ -1,6 +1,6 @@
 // Reads the Afeka portal grade sheet (PDF) into per-course results. The file never leaves the device: pdf.js runs in the page.
-// rowsFromItems / parseGradeSheet are pure (node-tested); readGradeSheet is the only part that touches the network (pdf.js CDN, lazily).
-const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.3.289/';
+// rowsFromItems / parseGradeSheet are pure (node-tested); readGradeSheet loads pdf.js lazily (6.3.289, a copy in web/vendor: no third-party request).
+const PDFJS = new URL('./vendor/pdfjs/', import.meta.url).href;
 const BIDI = /[‎‏‪-‮⁦-⁩]/g; // direction marks the portal wraps around tokens
 const MAX_BYTES = 5 * 1024 * 1024, MAX_PAGES = 10, ROW_TOL = 5; // rows sit ~15pt apart; the failure `*` is drawn ~3.5pt below its row
 
