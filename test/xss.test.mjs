@@ -191,3 +191,13 @@ test('lecturer buttons in the popover and the drawer list (hostile names escaped
   assert.ok(writes.filter((w) => w.scope === 'pop').some((w) => w.html.includes('data-act="lecturer"')));
   assert.ok(writes.filter((w) => w.scope === 'drawer-prefs').some((w) => w.html.includes('data-act="lecturerDrop"')));
 });
+
+test('a later alternative says what changes against the first, escaped', () => {
+  assert.ok(ui.last.results.length >= 2, 'the hostile world finds at least two alternatives');
+  ui.cur = 1;
+  run('view-2', () => { renderView(); });
+  ui.cur = 0;
+  const html = writes.filter((w) => w.scope === 'view-2').map((w) => w.html).join('');
+  assert.ok(html.includes('לעומת חלופה 1:'));
+  assert.equal(parse(html).querySelectorAll('xss-t').length, 0);
+});

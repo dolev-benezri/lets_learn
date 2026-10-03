@@ -12,6 +12,22 @@ export const heb = (t) => String(t).replace(/(?<=[א-ת])'/g, '׳').replace(/(?<
 // Sharing my link: the message before it, and the WhatsApp fallback where the native share sheet is missing (desktop).
 export const shareText = (name) => `${name || 'חבר'} שיתף/ה איתך מערכת שעות:`;
 export const waUrl = (text, url) => `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`;
+// What one alternative changes against another (the best one), as short raw phrases (escaped where rendered).
+// a / b: { courses, unlocks, freeDays, gapH, withFriends: [{ name, n }] } — a result plus its summary() (ui-grid.js).
+export function compareAlts(a, b, data) {
+  const out = [], has = (x, name) => x.withFriends.some((f) => f.name === name);
+  for (const d of a.freeDays.filter((x) => !b.freeDays.includes(x))) out.push(`יום ${D[d]}׳ פנוי`);
+  for (const d of b.freeDays.filter((x) => !a.freeDays.includes(x))) out.push(`בלי יום ${D[d]}׳ פנוי`);
+  for (const f of b.withFriends.filter((f) => !has(a, f.name))) out.push(`בלי ${f.name}`);
+  for (const f of a.withFriends.filter((f) => !has(b, f.name))) out.push(`עם ${f.name}`);
+  const gap = Math.round((a.gapH - b.gapH) * 2) / 2, h = Math.abs(gap);
+  if (gap) out.push(`${h === 1 ? 'שעה' : h === 0.5 ? 'חצי שעה' : `${h} שעות`} ${gap > 0 ? 'יותר' : 'פחות'} חלונות`);
+  for (const c of a.courses.filter((x) => !b.courses.includes(x))) out.push(`+ ${data.courses[c].name}`);
+  for (const c of b.courses.filter((x) => !a.courses.includes(x))) out.push(`− ${data.courses[c].name}`);
+  const u = (a.unlocks ?? 0) - (b.unlocks ?? 0);
+  if (u) out.push(`פותחת ${count(Math.abs(u), 'קורס אחד', 'קורסים')} ${u > 0 ? 'יותר' : 'פחות'}`);
+  return out.length ? out : ['אותם קורסים, שיבוץ אחר'];
+}
 export const count = (n, one, many) => (n === 1 ? one : `${n} ${many}`); // Hebrew has no "1 קבוצות"
 export const courseCount = (n) => count(n, 'קורס אחד', 'קורסים');
 export const groupCount = (n) => count(n, 'קבוצה אחת', 'קבוצות');
