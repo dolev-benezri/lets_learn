@@ -117,3 +117,10 @@ test('courseCount: one course is "קורס אחד", not "1 קורסים"', async
   const { courseCount } = await import('../web/ui-text.js');
   assert.deepEqual([courseCount(1), courseCount(0), courseCount(4)], ['קורס אחד', '0 קורסים', '4 קורסים']);
 });
+
+test('count: Hebrew singular for one (groups, lessons, days), the number otherwise', async () => {
+  const { count, groupCount } = await import('../web/ui-text.js');
+  assert.deepEqual([groupCount(1), groupCount(3)], ['קבוצה אחת', '3 קבוצות']);
+  assert.equal(count(1, 'יום אחד', 'ימים'), 'יום אחד');
+  assert.equal(count(2, 'יום אחד', 'ימים'), '2 ימים');
+});

@@ -249,10 +249,10 @@ function applyFound({ found, unknown, ambiguous = 0, weak = 0 }) {
   renderGroups();
   const other = placed.filter((g) => semOfGroup(g) !== ed.sem).length, o = SEM_NAME[otherOf(ed.sem)];
   const skipped = [already && `${already} כבר במערכת`, refused && `${refused} לא שובצו`].filter(Boolean).join(', ');
-  status(`<p>${placed.length === found.length ? `נמצאו ${found.length} קבוצות` : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${other
+  status(`<p>${placed.length === found.length ? (found.length === 1 ? 'נמצאה קבוצה אחת' : `נמצאו ${found.length} קבוצות`) : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${other
     ? ` (${other === placed.length ? 'כולן' : `${other} מהן`} בסמסטר ${o})` : ''}${switched ? `. עברנו לסמסטר ${SEM_NAME[ed.sem]}` : ''}.</p>`
     + (ambiguous ? `<p>ב${ambiguous === 1 ? 'קורס אחד' : `-${courseCount(ambiguous)}`} יש כמה קבוצות באותן שעות, נבחרה הראשונה. כדאי לבדוק במערכת.</p>` : '')
-    + (weak ? `<p>${weak} קבוצות זוהו לפי יום ושעות בלבד (השם בתמונה לא ברור). כדאי לבדוק אותן במערכת.</p>` : '')
+    + (weak ? `<p>${weak === 1 ? 'קבוצה אחת זוהתה' : `${weak} קבוצות זוהו`} לפי יום ושעות בלבד (השם בתמונה לא ברור). כדאי לבדוק אותן במערכת.</p>` : '')
     + (unknown.length ? `<p>לא נמצאו: ${unknown.slice(0, 8).map((id) => `<bdi dir="ltr">${esc(id)}</bdi>`).join(', ')}${unknown.length > 8 ? ` ועוד ${unknown.length - 8}` : ''}</p>` : '')
     + (found.length || unknown.length ? '' : '<p>לא זוהה אף מספר קבוצה (9 ספרות).</p>'));
 }

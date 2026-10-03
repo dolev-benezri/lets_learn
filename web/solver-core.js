@@ -214,7 +214,7 @@ function explain(info, unlocks) {
   const parts = Object.entries(info.shared).filter(([, n]) => n).map(([name, n]) => `${n === 1 ? 'קורס אחד' : `${n} קורסים`} עם ${name}`);
   if (info.freeDays.length) parts.push(`${info.freeDays.map((d) => `יום ${DAY_NAMES[d]}'`).join(', ')} פנוי`);
   parts.push(info.gapMin ? `חלונות: ${Math.round(info.gapMin / 6) / 10} ש'` : 'בלי חלונות');
-  if (info.minGap !== null) parts.push(`לפחות ${info.minGap} ימים בין בחינות`);
+  if (info.minGap !== null) parts.push(`לפחות ${info.minGap === 1 ? 'יום אחד' : `${info.minGap} ימים`} בין בחינות`);
   if (unlocks) parts.push(unlocks === 1 ? 'פותחת קורס אחד להמשך' : `פותחת ${unlocks} קורסים להמשך`);
   return parts.join(' · ');
 }

@@ -7,7 +7,9 @@ export function groupNumber(id) {
   const m = /^\d*?(\d{2})(\/\d+)?$/.exec(id);
   return m ? m[1] + (m[2] ?? '') : String(id);
 }
-export const courseCount = (n) => (n === 1 ? 'קורס אחד' : `${n} קורסים`);
+export const count = (n, one, many) => (n === 1 ? one : `${n} ${many}`); // Hebrew has no "1 קבוצות"
+export const courseCount = (n) => count(n, 'קורס אחד', 'קורסים');
+export const groupCount = (n) => count(n, 'קבוצה אחת', 'קבוצות');
 export const meetingText = (m) => `יום ${D[m.day] ?? '?'}׳ ${m.start}–${m.end}`;
 // "הרצאה · קבוצה 01": the full 9-digit id stays visible elsewhere (registration), this is the human handle.
 export const groupLabel = (g) => `${typeName(g.type)} · קבוצה ${groupNumber(g.id)}`;

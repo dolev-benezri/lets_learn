@@ -1,7 +1,7 @@
 // Drawer panels: preferences, friends, registration list.
 import { app, esc, DEFAULT } from './app.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, backups, isPair, semResult } from './ui-grid.js';
-import { groupLabel, strictnessHint, defaultNotes, hebYear } from './ui-text.js';
+import { groupLabel, strictnessHint, defaultNotes, hebYear, groupCount } from './ui-text.js';
 import { WEIGHTS, SCALE, FSCALE, SEMS, scopes, colors, LOAD, HARD, SHEET, current, allGroupIds, seg, $, ui } from './ui-common.js';
 
 // ---------- drawer panels ----------
@@ -47,7 +47,7 @@ function prefsPanel() {
       <label class="field">תקרת נ״ז <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="ללא" data-chg="maxCredits" data-k="maxCredits" value="${c.maxCredits ?? ''}"></label>
       <label class="check"><input type="checkbox" data-chg="examsAllow" data-k="examsAllow"${c.examsSameDay === 'allow' ? ' checked' : ''}> לאפשר 2 בחינות באותו יום</label>
       <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label></section>
-    ${state.pins.length ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length} קבוצות נעוצות:</p><ul
+    ${state.pins.length ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length === 1 ? 'קבוצה אחת נעוצה' : `${state.pins.length} קבוצות נעוצות`}:</p><ul
       class="plain">${state.pins.map((p) => `<li>${pinName(p)}</li>`).join('')}</ul>
       <button type="button" class="btn" data-act="clearPins" data-k="clearPins">${icon('pin')} נקה נעיצות</button></section>` : ''}
     <section class="dr-sec"><button type="button" class="btn" data-act="resetPrefs" data-k="resetPrefs">איפוס העדפות</button>
@@ -63,7 +63,7 @@ function friendsPanel() {
   const row = (f, i) => {
     const miss = f.groups.filter((g) => !known.has(g)).length;
     return `<div class="frow"><span class="av lg" aria-hidden="true">${esc(initials(f.name))}</span>
-      <div class="grow"><b>${esc(f.name)}</b><p class="hint">${f.groups.length - miss} קבוצות${miss ? ` · <span class="warn-text">${miss} לא נמצאו</span>` : ''}</p></div>
+      <div class="grow"><b>${esc(f.name)}</b><p class="hint">${groupCount(f.groups.length - miss)}${miss ? ` · <span class="warn-text">${miss} לא נמצאו</span>` : ''}</p></div>
       <div class="frow-acts">${f.manual ? `<button type="button" class="btn icon-btn ghost" id="editFriend-${i}" data-act="editFriend" data-i="${i}"
         aria-label="ערוך את ${esc(f.name)}">${icon('pencil')}</button>` : ''}
       <button type="button" class="btn icon-btn ghost" data-act="removeFriend" data-i="${i}" aria-label="הסר את ${esc(f.name)}">${icon('x')}</button></div>
