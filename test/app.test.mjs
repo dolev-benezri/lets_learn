@@ -216,3 +216,9 @@ test('the deploy waits for a green test job (P9)', () => {
   assert.match(y, /\n  test:\n[\s\S]*npm ci --ignore-scripts[\s\S]*npm test/);
   assert.match(y, /\n  deploy:\n    needs: test\n/);
 });
+
+test('normalize takes the academic year from the catalog (one place to roll over)', () => {
+  const cat = { year: 2028, programs: [{ id: 30, name: 'מכנית', startYears: [2026] }] };
+  assert.equal(normalize({ v: 1 }, cat).year, 2028);
+  assert.equal(normalize({ v: 1, year: 1999 }, { programs: cat.programs }).year, 2027, 'no year in the catalog: the default; never from input');
+});

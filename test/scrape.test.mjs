@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, readdirSync } from 'node:fs';
+import { readFileSync, mkdtempSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { makeRequester, ThrottledError, semestersIn, writeResults, run, unitsOf, cachedRequester, writeCatalog, catalogOrder } from '../scripts/scrape.mjs';
+import { makeRequester, ThrottledError, semestersIn, writeResults, run, unitsOf, cachedRequester, writeCatalog, catalogOrder, yearCache } from '../scripts/scrape.mjs';
 
 const throttled = readFileSync('scripts/fixtures/throttled.html', 'utf8');
 const rejected = readFileSync('scripts/fixtures/rejected.html', 'utf8');
@@ -290,7 +290,7 @@ test('writeCatalog: lists the cohorts of the run, keeps programs that were not i
   const root = join(dirs().status, '..'), file = join(root, 'catalog.json');
   const programs = { 20: cfg({ name: 'חשמל' }), 30: cfg({ name: 'מכונות' }) };
   await writeCatalog(file, [{ program: 30, start: 2026 }, { program: 30, start: 2025 }], programs);
-  assert.deepEqual(json(file), { programs: [{ id: 30, name: 'מכונות', startYears: [2025, 2026] }] });
+  assert.deepEqual(json(file).programs, [{ id: 30, name: 'מכונות', startYears: [2025, 2026] }]);
   await writeCatalog(file, [{ program: 20, start: 2026 }], programs);
   assert.deepEqual(json(file).programs.map((p) => [p.id, p.startYears]), [[20, [2026]], [30, [2025, 2026]]]);
   const before = readFileSync(file, 'utf8');
@@ -393,4 +393,20 @@ test('patient: a limit page that names no hour waits for the next clock hour (Je
   const now = () => new Date('2026-10-02T22:27:32Z'); // 01:27:32 in Jerusalem
   assert.equal(await patient(base, { year: '2027', sleep: async (ms) => { sleeps.push(ms); }, now, log: () => {} })('prgname=S_X'), 'ok');
   assert.deepEqual(sleeps, [(32 * 60 + 28 + 60) * 1000], 'until 02:00 plus a minute');
+});
+
+test('writeCatalog records the academic year (the site reads it from there)', async () => {
+  const file = join(dirs().status, '..', 'catalog-year.json');
+  await writeCatalog(file, [{ program: 30, start: 2026 }], { 30: cfg({ name: 'מכונות' }) }, 2028);
+  assert.equal(json(file).year, 2028);
+});
+
+test('yearCache: one cache folder per academic year; the old flat cache moves into its year once', async () => {
+  const base = join(dirs().status, '..', 'ycache');
+  mkdirSync(base, { recursive: true }); writeFileSync(join(base, 'a.html'), 'x');
+  assert.equal(await yearCache(base, 2027), join(base, '2027'));
+  assert.deepEqual(readdirSync(base).sort(), ['2027']);
+  assert.deepEqual(readdirSync(join(base, '2027')), ['a.html']);
+  assert.equal(await yearCache(base, 2028), join(base, '2028'), 'a later year starts empty');
+  assert.deepEqual(readdirSync(join(base, '2027')), ['a.html']);
 });

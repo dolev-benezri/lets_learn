@@ -157,3 +157,15 @@ test('backup keeps blocks through normalize; friend link never carries them', as
   const f = await friendLink('https://x.test/', s, ['G1']);
   assert.ok(!JSON.stringify((await readHash(f.slice(f.indexOf('#')), at)).payload).includes('blocks'));
 });
+
+test('a backup from last year keeps the record, drops last year’s groups and moves the study year on; a friend link from last year is refused', async () => {
+  const old = { ...state, year: 2027, pins: ['G1'], semesterOf: { 90903: 'ב' }, friends: [{ name: 'דנה', groups: ['G1'] }], profile: { year: 2 } };
+  const b = await backupLink('https://x.test/', old);
+  const r = await readHash(b.slice(b.indexOf('#')), { year: 2028, semester: 'א' });
+  assert.equal(r.type, 'backup');
+  assert.deepEqual(r.payload.failed, { 90903: 1 });
+  assert.equal(r.payload.pins, undefined); assert.equal(r.payload.semesterOf, undefined); assert.equal(r.payload.friends, undefined);
+  assert.equal(r.payload.profile.year, 3);
+  const f = await friendLink('https://x.test/', old, ['G1']);
+  assert.match((await readHash(f.slice(f.indexOf('#')), { year: 2028, semester: 'א' })).error, /סמסטר אחר/);
+});

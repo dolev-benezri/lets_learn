@@ -2,9 +2,9 @@
 // Scrape the public Afeka Yedion into web/data/afeka/{year}-{sem}/{program}-{start}.json (+ status.json).
 // One polite pass fetches everything once; every semester is built from it. Writes nothing if any step or check fails (except summer: a failing summer is skipped with a warning).
 // stdout carries only the one-line change summary (it becomes the commit message); progress goes to stderr.
-import { writeFile, mkdir, readFile, stat, rename } from 'node:fs/promises';
+import { writeFile, mkdir, readFile, readdir, stat, rename } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -201,12 +201,22 @@ export function catalogOrder(programs) {
   return [...programs].sort((x, y) => first.get(base(x)) - first.get(base(y)) || x.id - y.id);
 }
 
-export async function writeCatalog(file, units, programs) {
+export async function writeCatalog(file, units, programs, year) {
   const old = (await readJson(file))?.programs ?? [];
   const mine = new Map();
   for (const u of units) mine.set(u.program, { id: u.program, name: programs[u.program].name, startYears: [...(mine.get(u.program)?.startYears ?? []), u.start].sort() });
   const next = catalogOrder([...old.filter((p) => !mine.has(p.id) && programs[p.id]), ...mine.values()]);
-  if (JSON.stringify(old) !== JSON.stringify(next)) { await mkdir(dirname(file), { recursive: true }); await writeFile(file, JSON.stringify({ programs: next }, null, 1)); }
+  const was = await readJson(file), out = { ...(Number.isInteger(year) ? { year } : {}), programs: next }; // the site takes the academic year from here
+  if (JSON.stringify(was) !== JSON.stringify(out)) { await mkdir(dirname(file), { recursive: true }); await writeFile(file, JSON.stringify(out, null, 1)); }
+}
+
+// One cache folder per academic year: the requests carry no year (the session picks it), so a flat cache would answer 2028 with 2027 pages.
+// ponytail: the flat cache from before this change is all 2027 and moves into its year on the first run; drop the move after that run.
+export async function yearCache(base, year) {
+  const dir = join(base, String(year));
+  await mkdir(dir, { recursive: true });
+  for (const f of (await readdir(base)).filter((f) => f.endsWith('.html'))) await rename(join(base, f), join(dir, f));
+  return dir;
 }
 
 export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/data/afeka', now = () => new Date().toISOString(), log = console.error, check = validate }) {
@@ -278,7 +288,7 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
   if (failures.length) throw new Error(`checks failed, nothing written:\n${failures.join('\n')}`);
 
   const summary = await writeResults({ results, statusFile: `${dataDir}/status.json`, now: fetchedAt });
-  if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs);
+  if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs, Number(opt.year));
   // Curriculum numbers that moved: a hint for a human, never a failed run (the deploy must not wait on it)
   const read = (p, y) => JSON.parse(readFileSync(`${dataDir}/${opt.year}-1/${p}-${y}.json`, 'utf8')); // written just above
   if (opt['all-programs']) officialDrift(read).forEach((w) => log(`WARN official ${w}`));
@@ -303,7 +313,7 @@ async function main() {
   } });
   const made = makeRequester({ delay: Number(opt.delay) });
   const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
-  const request = opt.cache ? cachedRequester(live, opt.cache, { offline: opt.offline, ttl: opt.nightly ? nightlyTtl : undefined }) : live;
+  const request = opt.cache ? cachedRequester(live, await yearCache(opt.cache, opt.year), { offline: opt.offline, ttl: opt.nightly ? nightlyTtl : undefined }) : live;
   console.log(await run({ opt, request }));
 }
 

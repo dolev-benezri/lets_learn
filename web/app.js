@@ -19,7 +19,7 @@ export const DEFAULT = {
 export const FALLBACK_CATALOG = { programs: [{ id: 30, name: 'הנדסה מכנית', startYears: [2026] }] };
 export const inCatalog = (c, program, startYear) => !!c?.programs?.some((p) => p.id === program && p.startYears.includes(startYear));
 const goodCatalog = (c) => isObj(c) && Array.isArray(c.programs) && c.programs.length > 0 && c.programs.every((p) => isObj(p) && Number.isInteger(p.id) && typeof p.name === 'string'
-  && Array.isArray(p.startYears) && p.startYears.every(Number.isInteger));
+  && Array.isArray(p.startYears) && p.startYears.every(Number.isInteger)) && (c.year === undefined || Number.isInteger(c.year));
 const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
 const num = (x) => typeof x === 'number' && Number.isFinite(x);
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -39,9 +39,10 @@ const CONSTRAINT_OK = {
 };
 
 // The one gate for state from localStorage and from backup links: only valid values get through.
-// year/semester are never taken from input; program/startYear only when the catalog lists them (a foreign program would 404 the data file forever).
+// year/semester are never taken from input (the year is the catalog's); program/startYear only when the catalog lists them (a foreign program would 404 the data file forever).
 export function normalize(raw, catalog = FALLBACK_CATALOG) {
   const out = structuredClone(DEFAULT);
+  if (Number.isInteger(catalog?.year)) out.year = catalog.year; // the academic year comes from the scraper's catalog: one place to roll over
   if (!isObj(raw) || raw.v !== 1) return out;
   const prog = catalog?.programs?.find((p) => p.id === raw.program); // a cohort the catalog dropped: the nearest one of the same program (ties: the later)
   if (prog?.startYears.length && Number.isInteger(raw.startYear)) {
