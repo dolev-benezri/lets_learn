@@ -125,3 +125,11 @@ test('an unverified program says so in the header of both views (L3)', () => {
   run('top-verified', () => { renderTop(); });
   assert.ok(!writes.filter((w) => w.scope === 'top-verified' && w.id === 'meta').at(-1).html.includes('לא נבדקו'));
 });
+
+test('a two-year program offers study years א׳ and ב׳ only (L6)', () => {
+  const lists = app.data.lists;
+  app.data.lists = lists.filter((l) => !/שנה [גד]'/.test(l.name));
+  const html = identityPick(2, true);
+  app.data.lists = lists;
+  assert.ok(html.includes('ב׳') && !html.includes('ג׳') && !html.includes('ד׳'));
+});

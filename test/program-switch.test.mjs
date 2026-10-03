@@ -200,3 +200,10 @@ test('switchTo: default hours follow the track (evening: not before 16:00) until
   await switchTo(22, 2026);
   assert.deepEqual([app.state.constraints.notBefore, app.state.constraints.notAfter], ['', '18:00'], 'hours the student set are kept');
 });
+
+test('reconcileSpecs: a study year past the program\'s last year is brought back to it (L6)', () => {
+  reset({ ...mine(), profile: { year: 4, amirnet: null, specs: [], summer: false } });
+  app.data = dataset(61, 2026, { lists: [{ code: 1, name: "קורסי חובה שנה א'", minCredits: 3, courses: ['a'] }, { code: 2, name: "קורסי חובה שנה ב'", minCredits: 0, courses: [] }] });
+  reconcileSpecs();
+  assert.equal(app.state.profile.year, 2);
+});

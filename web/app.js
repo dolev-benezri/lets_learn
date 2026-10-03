@@ -1,4 +1,4 @@
-import { classify, withAfterA, cleanProfile, studyYear, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
+import { classify, withAfterA, cleanProfile, studyYear, yearsOf, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
 
@@ -167,6 +167,7 @@ export function keepFocus(fn) {
 // A saved choice must fit the loaded program: another program's area ids (or a different pick count) would mislead the progress map and the lists.
 export function reconcileSpecs() {
   const { profile, specDraft } = app.state, ok = validSpecs(app.data, profile.specs);
+  if (profile.year > yearsOf(app.data)) profile.year = yearsOf(app.data); // a two-year program has no year ג׳ (the same check as the data: once per load)
   if (ok.join() !== profile.specs.join()) profile.specs = ok;
   if (specDraft && !(specDraft.length < specRule(app.data).pick && specDraft.every((id) => app.data.specializations?.some((x) => x.id === id)))) app.state.specDraft = null;
 }

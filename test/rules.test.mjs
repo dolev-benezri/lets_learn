@@ -285,3 +285,13 @@ test('validSpecs with groups: one main and one secondary area, not the same subj
   assert.ok(specConflict(specRule(ie), 'm1', 's1') && specConflict(specRule(ie), 'm1', 'm2') && !specConflict(specRule(ie), 'm1', 's2'));
   assert.ok(!specConflict(specRule(ie), 'm1', 'm1') && !specConflict({ pick: 2, alone: [] }, 'a', 'b'), 'no groups: nothing conflicts');
 });
+
+test('yearsOf: the study years are the mandatory year lists; studyYear stays inside them (L6)', async () => {
+  const { yearsOf } = await import('../web/rules.js');
+  const two = { year: 2030, startYear: 2026, lists: [{ name: "קורסי חובה שנה א'" }, { name: "קורסי חובה שנה ב'" }, { name: 'פרויקט גמר' }] };
+  assert.equal(yearsOf(two), 2);
+  assert.equal(yearsOf({ lists: [{ name: "קורסי חובה שנה ד'" }] }), 4);
+  assert.equal(yearsOf({ lists: [] }), 4, 'no year lists: the usual four');
+  assert.equal(studyYear(two, {}), 2, 'cohort 2026 in 2030 would be year 5: capped at the last year');
+  assert.equal(studyYear(two, { profile: { year: 4 } }), 2);
+});
