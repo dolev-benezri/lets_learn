@@ -82,6 +82,7 @@ document.addEventListener('change', (e) => {
     (cards[Math.min(idx, cards.length - 1)]?.querySelector('input:checked') ?? $('side').querySelector('summary'))?.focus();
   }
 });
+document.addEventListener('input', (e) => { if (e.target.id === 'friendUrl') ui.friendUrl = e.target.value; }); // a drawer redraw keeps the typed link
 document.addEventListener('submit', async (e) => {
   if (e.target.id !== 'addFriendForm') return;
   e.preventDefault();

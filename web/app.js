@@ -106,6 +106,16 @@ const stash = (s) => { try { localStorage.setItem(stashKey(s.program, s.startYea
 const unstash = (p, y) => { try { return JSON.parse(localStorage.getItem(stashKey(p, y))); } catch { return null; } };
 export function clearSaved() { try { for (const k of Object.keys(localStorage)) if (k.startsWith(KEY)) localStorage.removeItem(k); } catch { /* storage unavailable */ } }
 // One add/replace/rename path for friends. `editing` is the NAME of the friend being edited (names, not indexes, survive deletes mid-edit).
+// A link without a name: the friend with the same groups (the same link pasted again), else the first free "חבר N".
+export function friendName(friends, p) {
+  if (p.name) return p.name;
+  const key = (g) => [...g].sort().join();
+  const same = friends.find((f) => key(f.groups) === key(p.groups));
+  if (same) return same.name;
+  let n = 1;
+  while (friends.some((f) => f.name === `חבר ${n}`)) n++;
+  return `חבר ${n}`;
+}
 export function upsertFriend(friends, p, editing = null) {
   const at = (n) => friends.findIndex((f) => f.name === n);
   let ti = editing == null ? -1 : at(editing);

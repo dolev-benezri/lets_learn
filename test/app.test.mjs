@@ -122,7 +122,7 @@ test('pickData: year view, single-semester scopes, and fallback when ב is missi
   for (const scope of ['year', 'ב']) { app.state.scope = scope; pickData(); assert.equal(app.data, A); }
 });
 
-import { upsertFriend } from '../web/app.js';
+import { upsertFriend, friendName } from '../web/app.js';
 const F = (name, groups = ['1'], extra = {}) => ({ name, groups, weight: 1, active: true, ...extra });
 test('upsertFriend replaces by name instead of duplicating', () => {
   const r = upsertFriend([F('דנה', ['1', '2', '3'], { weight: 3 })], { name: 'דנה', groups: ['9'], manual: true });
@@ -136,6 +136,13 @@ test('upsertFriend edits by name, so deleting another friend mid-edit cannot ret
 test('upsertFriend rename onto an existing name leaves one friend', () => {
   const r = upsertFriend([F('א'), F('ב')], { name: 'ב', groups: ['7'] }, 'א');
   assert.deepEqual(r.friends.map((f) => [f.name, f.groups[0]]), [['ב', '7']]);
+});
+test('friendName: a nameless link takes the first free "חבר N", or the name of the friend with the same groups', () => {
+  assert.equal(friendName([], { groups: ['1'] }), 'חבר 1');
+  assert.equal(friendName([F('חבר 2', ['5'])], { groups: ['1'] }), 'חבר 1'); // חבר 1 was removed: no overwrite of חבר 2
+  assert.equal(friendName([F('חבר 1', ['5']), F('דנה', ['6'])], { groups: ['1'] }), 'חבר 2');
+  assert.equal(friendName([F('חבר 1', ['2', '1'])], { groups: ['1', '2'] }), 'חבר 1'); // the same link again replaces, not duplicates
+  assert.equal(friendName([F('חבר 1', ['1'])], { name: 'דנה', groups: ['1'] }), 'דנה');
 });
 test('upsertFriend refuses a 21st friend', () => {
   const many = Array.from({ length: 20 }, (_, i) => F(`f${i}`));
