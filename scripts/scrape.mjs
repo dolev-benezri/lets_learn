@@ -3,12 +3,14 @@
 // One polite pass fetches everything once; every semester is built from it. Writes nothing if any step or check fails (except summer: a failing summer is skipped with a warning).
 // stdout carries only the one-line change summary (it becomes the commit message); progress goes to stderr.
 import { writeFile, mkdir, readFile, stat, rename } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs';
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
+import { officialDrift } from './audit.mjs';
 import PROGRAMS from './programs.json' with { type: 'json' };
 import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary, msUntil, nextHour } from './polite.mjs';
 
@@ -277,6 +279,9 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
 
   const summary = await writeResults({ results, statusFile: `${dataDir}/status.json`, now: fetchedAt });
   if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs);
+  // Curriculum numbers that moved: a hint for a human, never a failed run (the deploy must not wait on it)
+  const read = (p, y) => JSON.parse(readFileSync(`${dataDir}/${opt.year}-1/${p}-${y}.json`, 'utf8')); // written just above
+  if (opt['all-programs']) officialDrift(read).forEach((w) => log(`WARN official ${w}`));
   return summary;
 }
 
