@@ -276,9 +276,9 @@ test('mapSvg: planned courses get the plan marker and their edges are highlighte
 test('progressInfo: a course counts once, a list never past its minimum; plan credits count only for what is not done', () => {
   const co = (credits) => ({ ...mc('x'), credits });
   const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 7 }, { name: 'בחירה', courses: ['b', 'e1', 'e2'], minCredits: 4 }, { name: 'אנגלית', courses: ['en'], minCredits: 0 }], courses: { a: co(4), b: co(3), e1: co(3), e2: co(3), en: co(2) } };
-  assert.deepEqual(progressInfo(d, {}), { total: 11, done: 0, planned: 0, adds: 0, specLeft: null });
+  assert.deepEqual(progressInfo(d, {}), { total: 11, done: 0, planned: 0, adds: 0, specLeft: null, untracked: 0, degreeTotal: null });
   const st = { a: { status: 'done' }, e1: { status: 'exempt' }, en: { status: 'done' } };
-  assert.deepEqual(progressInfo(d, st, new Set(['b', 'e2', 'a'])), { total: 11, done: 7, planned: 3 + 1, adds: 6, specLeft: null }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
+  assert.deepEqual(progressInfo(d, st, new Set(['b', 'e2', 'a'])), { total: 11, done: 7, planned: 3 + 1, adds: 6, specLeft: null, untracked: 0, degreeTotal: null }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
 });
 
 test('newlyUnlocked: courses blocked now and open once the plan counts as passed (the plan itself excluded)', () => {
@@ -317,6 +317,24 @@ test('specialization lists are neither required of everyone nor part of the prog
     { code: 4, name: 'חובה רכב לבוחרי ללא התמחות נוספת', courses: ['x'], minCredits: 3 }],
   courses: { a: co(4), m: co(5), e: co(3), x: co(3) } };
   assert.deepEqual(asideIds(d, {}).sort(), ['e', 'm', 'x']);
-  assert.deepEqual(progressInfo(d, { m: { status: 'done' } }, new Set(['e'])), { total: 4, done: 0, planned: 0, adds: 3, specLeft: null }, 'no data.degree: the specialization part is zero');
+  assert.deepEqual(progressInfo(d, { m: { status: 'done' } }, new Set(['e'])), { total: 4, done: 0, planned: 0, adds: 3, specLeft: null, untracked: 0, degreeTotal: null }, 'no data.degree: the specialization part is zero');
   assert.deepEqual(asideIds({ ...d, specializations: undefined }, {}), ['e'], 'without specializations the name rule applies as before');
+});
+
+test('progressInfo: everything passed reaches 100%; spec credits default to what the lists leave of the degree; untracked credits are named (L4)', () => {
+  const co = (credits) => ({ ...mc('x'), credits });
+  const d = { degree: { total: 20, specCredits: 0 }, specializations: [{ id: 's', mandatory: 2, elective: 3 }], lists: [
+    { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
+    { code: 5, name: 'בחירה', courses: ['b'], minCredits: 6 },
+    { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 10 },
+    { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 8 }],
+  courses: { a: co(4), b: co(3), m: co(5), e: co(3) } };
+  const all = Object.fromEntries(Object.keys(d.courses).map((id) => [id, { status: 'done' }]));
+  const p = progressInfo(d, all, new Set(), ['s']);
+  assert.equal(p.done, p.total, 'all done = 100%');
+  assert.deepEqual([p.total, p.untracked, p.specLeft], [15, 5, 2], 'b fills 3 of 6, spec cap 20-10=10 of which 8 exist; 20-15 untracked');
+  assert.equal(progressInfo({ ...d, degree: { total: 20, specCredits: 9 } }, all, new Set(), ['s']).specLeft, 1, 'a known specCredits wins');
+  assert.equal(progressInfo({ ...d, degree: undefined }, {}).untracked, 0);
+  const html = progressHtml({ prog: { total: 15, done: 15, planned: 0, adds: 0, untracked: 5, degreeTotal: 20 }, opened: 0 });
+  assert.ok(html.includes('aria-valuemax="15"') && html.includes('עוד <b><bdi>5</bdi></b> נ״ז'));
 });

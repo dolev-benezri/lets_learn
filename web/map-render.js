@@ -136,5 +136,6 @@ export function progressHtml(c) {
       + planned}" aria-valuetext="${esc(ext ? `${txt}, ${ext}` : txt)}"><i class="d" style="width:${pct(done)}%"></i><i class="p"
       style="width:${pct(planned)}%"></i></div>${specLeft != null ? `<p
       class="pm-prog-spec">נותרו <b><bdi>${+specLeft.toFixed(1)}</bdi></b> נ״ז מקורסי ההתמחות</p>` : c.year >= 2 && !c.specs?.length
-      ? '<p class="pm-prog-spec"><a href="#me" data-pm="spec" data-k="pm-spec">בחרו התמחות ב״המצב שלי״ כדי לראות את קורסי החובה שלה</a></p>' : ''}</div>`;
+      ? '<p class="pm-prog-spec"><a href="#me" data-pm="spec" data-k="pm-spec">בחרו התמחות ב״המצב שלי״ כדי לראות את קורסי החובה שלה</a></p>' : ''}${c.prog.untracked
+      ? `<p class="pm-prog-spec">עוד <b><bdi>${c.prog.untracked}</bdi></b> נ״ז עד ${c.prog.degreeTotal} בתואר לא מופיעים ברשימות שבידיעון ולא נספרים כאן</p>` : ''}</div>`;
 }
