@@ -201,3 +201,8 @@ test('a later alternative says what changes against the first, escaped', () => {
   assert.ok(html.includes('לעומת חלופה 1:'));
   assert.equal(parse(html).querySelectorAll('xss-t').length, 0);
 });
+
+test('the registration drawer offers the calendar export (the 2027 semesters have dates)', () => {
+  const reg = writes.filter((w) => w.scope === 'drawer-reg').map((w) => w.html).join('');
+  assert.ok(reg.includes('data-act="ics"') && !/data-act="ics"[^>]*disabled/.test(reg));
+});

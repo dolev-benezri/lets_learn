@@ -2,6 +2,7 @@
 import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
+import { toIcs } from './ics.js';
 import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
@@ -10,7 +11,7 @@ import { colors, markOnboarded, gated, current, shown, shownData, status, toast,
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { avgLine, specSave, specView, importGrades } from './ui-me.js';
-import { MAX_BLOCKS, registrationText, renderDrawer, openPanel } from './ui-drawer.js';
+import { MAX_BLOCKS, registrationText, icsParts, renderDrawer, openPanel } from './ui-drawer.js';
 
 // ---------- actions ----------
 export function addFriend(p) {
@@ -91,6 +92,16 @@ export const ACT = {
   },
   share,
   copyReg: () => current() && copy(registrationText(current()), 'הרשימה הועתקה'),
+  ics() { // a local file: no server, nothing sent anywhere
+    const parts = current() && icsParts(current());
+    if (!parts) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([toIcs(parts)], { type: 'text/calendar;charset=utf-8' }));
+    a.download = `afeka-${app.data.year}.ics`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('הקובץ ירד. פותחים אותו כדי להוסיף את השיעורים ליומן.');
+  },
   backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),
   landingAdd: () => addFriend(app.friendLanding),
   landingDrop() { app.friendLanding = null; renderBanner(); focusWeek(); },

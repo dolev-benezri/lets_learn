@@ -1,5 +1,6 @@
 // Drawer panels: preferences, friends, registration list.
 import { app, esc, DEFAULT } from './app.js';
+import { SEMESTER_DATES } from './ics.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, backups, isPair, semResult } from './ui-grid.js';
 import { groupLabel, strictnessHint, defaultNotes, hebYear, groupCount } from './ui-text.js';
 import { WEIGHTS, SCALE, FSCALE, SEMS, scopes, colors, LOAD, HARD, SHEET, current, allGroupIds, seg, $, ui } from './ui-common.js';
@@ -127,7 +128,14 @@ function regPanel() {
     <section class="dr-sec"><h3>בחינות</h3>${data.examsPublished
       ? `<ul class="plain">${exams.map((e) => `<li>${esc(data.courses[e.course].name)} · מועד ${esc(e.moed)} · <bdi dir="ltr">${esc(e.date)} ${esc(e.time ?? '')}</bdi></li>`).join('')}</ul>`
       : `<p class="hint">לוח הבחינות של ${hebYear(data.year)} טרם פורסם.</p>`}</section>`,
-  `<button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>`];
+  `<button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>
+  <button type="button" class="btn" data-act="ics" data-k="ics"${icsParts(raw) ? '' : ` disabled aria-describedby="icsNo"`}>${icon('calendar')} הוסף ללוח שנה</button>
+  ${icsParts(raw) ? '' : `<p class="hint" id="icsNo">לוח השנה של ${hebYear(data.year)} עוד לא הוזן באתר.</p>`}`];
+}
+// The calendar file's parts: each semester of the plan with its dates, or null when a semester's dates are not in SEMESTER_DATES (no wrong file).
+export function icsParts(r) {
+  const parts = regParts(r).map((p) => ({ ...p, dates: SEMESTER_DATES[p.data.year]?.[p.data.semester] }));
+  return parts.every((p) => p.dates) ? parts : null;
 }
 
 const PANELS = { prefs: prefsPanel, friends: friendsPanel, reg: regPanel };
