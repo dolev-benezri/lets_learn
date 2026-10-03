@@ -101,6 +101,7 @@ aside { grid-area:side; min-width:0; padding:2px; }
 .banner { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 14px; margin-bottom:14px; border-radius:var(--radius); background:var(--primary-soft); border:1px solid #C9DAFB; }
 .banner.err { background:var(--danger-soft); border-color:#F6C7C9; color:var(--danger); }
 .banner.warn { background:var(--warning-soft); border-color:#F9DBAF; color:var(--warning); }
+.banner > .grow { flex-basis:12rem; } /* text keeps a readable width; the buttons wrap to the next line on a phone */
 .progress { margin:14px 0 6px; }
 .progress-top { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:6px; }
 .bar { position:relative; height:8px; background:var(--surface-2); border-radius:999px; }

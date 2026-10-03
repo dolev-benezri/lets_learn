@@ -1,5 +1,5 @@
 // Click (ACT) and change (CHG) handlers, wired to the document in ui-plan.js.
-import { app, cleanBlocks, upsertFriend, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
+import { app, cleanBlocks, upsertFriend, friendName, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { toIcs } from './ics.js';
@@ -15,7 +15,7 @@ import { MAX_BLOCKS, registrationText, icsParts, renderDrawer, openPanel } from 
 
 // ---------- actions ----------
 export function addFriend(p) {
-  const name = p.name || `חבר ${app.state.friends.length + 1}`;
+  const name = friendName(app.state.friends, p);
   const r = upsertFriend(app.state.friends, { name, groups: p.groups });
   if (r.error) { ui.friendMsg = r.error; toast(ui.friendMsg); keepFocus(renderDrawer); return; }
   app.state.friends = r.friends;
