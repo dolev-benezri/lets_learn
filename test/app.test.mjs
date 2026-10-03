@@ -194,3 +194,8 @@ test('normalize: specDraft keeps one well-formed id (the data check is reconcile
   for (const bad of [['Nope!'], ['solid', 'flow'], [], 'solid', null]) assert.equal(normalize({ v: 1, specDraft: bad }).specDraft, null);
   assert.deepEqual(normalize({ v: 1, yearIds: 'x' }).yearIds, []);
 });
+
+test('the summary pills row scrolls on phones, so it is a named region the keyboard can reach (U2)', () => {
+  const tag = readFileSync('web/index.html', 'utf8').match(/<div id="pills"[^>]*>/)[0];
+  assert.ok(tag.includes('tabindex="0"') && tag.includes('role="region"') && /aria-label="[^"]+"/.test(tag), tag);
+});
