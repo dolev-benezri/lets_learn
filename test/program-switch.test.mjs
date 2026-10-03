@@ -30,11 +30,37 @@ test('normalize: program and cohort are taken only when the catalog lists them',
   assert.ok(inCatalog(CATALOG, 20, 2027) && !inCatalog(CATALOG, 20, 2025) && !inCatalog(CATALOG, 99, 2026) && !inCatalog(null, 30, 2026));
   const s = normalize({ v: 1, program: 20, startYear: 2027 }, CATALOG);
   assert.deepEqual([s.program, s.startYear], [20, 2027]);
-  for (const bad of [{ program: 20, startYear: 2025 }, { program: '20', startYear: 2027 }, { program: 99, startYear: 2026 }, { program: 20 }]) {
+  for (const bad of [{ program: '20', startYear: 2027 }, { program: 99, startYear: 2026 }, { program: 20 }]) {
     const t = normalize({ v: 1, ...bad }, CATALOG);
     assert.deepEqual([t.program, t.startYear], [DEFAULT.program, DEFAULT.startYear], JSON.stringify(bad));
   }
   assert.equal(normalize({ v: 1, program: 20, startYear: 2027 }).program, 30, 'without a catalog only the built-in program counts');
+  const moved = normalize({ v: 1, program: 20, startYear: 2025, passed: ['x'] }, CATALOG);
+  assert.deepEqual([moved.program, moved.startYear, moved.passed], [20, 2026, ['x']], 'a cohort the catalog dropped: the nearest cohort of the same program');
+  assert.equal(normalize({ v: 1, program: 30, startYear: 2030 }, CATALOG).startYear, 2027);
+});
+
+test('load: a saved program missing from the catalog is not overwritten', async () => {
+  const { load, save, FALLBACK_CATALOG } = await import('../web/app.js');
+  const saved = { ...mine(), program: 40, startYear: 2026, v: 1 };
+  reset(null); store.set('afeka-sched-v1', JSON.stringify(saved)); app.catalog = FALLBACK_CATALOG; app.hashError = null;
+  app.state = load();
+  assert.deepEqual([app.state.program, app.state.name, app.state.passed], [30, 'דנה', null], 'shown: the built-in program with the personal part only');
+  assert.match(app.hashError, /רשימת התוכניות לא נטענה/);
+  save();
+  assert.equal(JSON.parse(store.get('afeka-sched-v1')).program, 40, 'the catalog did not load: nothing is saved over the real state');
+  reset(null); store.set('afeka-sched-v1', JSON.stringify(saved)); app.hashError = null;
+  app.state = load();
+  assert.equal(app.state.program, 30);
+  assert.match(app.hashError, /כבר לא באתר/);
+  assert.deepEqual(JSON.parse(store.get('afeka-sched-v1:40-2026')).passed, ['a', 'b'], 'a program the catalog dropped: its progress is kept aside');
+  save();
+  assert.equal(JSON.parse(store.get('afeka-sched-v1')).program, 30, 'with a real catalog saving works as usual');
+  reset(null); store.set('afeka-sched-v1', JSON.stringify({ ...saved, program: 20, startYear: 2025 })); app.hashError = null;
+  app.state = load();
+  assert.deepEqual([app.state.program, app.state.startYear, app.state.passed], [20, 2026, ['a', 'b']]);
+  assert.match(app.hashError, /מחזור 2026/);
+  app.hashError = null;
 });
 
 test('switchTo: personal state stays, program state resets, the cohort sets the study year', async () => {
