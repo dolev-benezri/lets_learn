@@ -620,3 +620,6 @@ body:has(#friendEd[open]) { overflow:hidden; }
 .dlg-scroll th { position:sticky; top:0; background:var(--surface-2); font-weight:600; }
 .dlg-scroll input[type=checkbox] { width:20px; height:20px; }
 #gradeMsg:empty { display:none; }
+/* degree checklist (status page) */
+.checklist li { display:flex; justify-content:space-between; gap:8px; padding:4px 0; border-bottom:1px solid var(--border); font-size:14px; }
+.checklist li.ok b { color:var(--ok, #15803D); }

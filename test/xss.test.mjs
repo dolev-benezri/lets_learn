@@ -176,3 +176,8 @@ test('one h1 per page: the views use h2 under the app title (a11y)', () => {
 test('the friends drawer offers a share button next to copy (WhatsApp)', () => {
   assert.ok(writes.filter((w) => w.scope === 'drawer-friends').some((w) => w.html.includes('data-act="shareOut"')));
 });
+
+test('the status page has the degree checklist, one row per requirement', () => {
+  const me = writes.filter((w) => w.scope === 'me').map((w) => w.html).join('');
+  assert.ok(me.includes('data-key="checklist"') && /מתוך \d/.test(me));
+});
