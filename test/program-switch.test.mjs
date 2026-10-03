@@ -150,6 +150,22 @@ test('reconcileSpecs: a choice or draft from another program is dropped, a valid
   assert.equal(app.state.specDraft, null);
 });
 
+test('reconcileSpecs: a saved choice that lost an area keeps the areas still offered (industrial engineering pair, mechanical evening)', () => {
+  const IE = { specializations: ['mis', 'dss', 'bi'].map(area), specRule: { pick: 1 } }, ME = { specializations: ['solid', 'flow', 'vehicle'].map(area), specRule: { pick: 2, alone: ['vehicle'] } };
+  reset({ ...mine(), specDraft: null, profile: { year: 3, amirnet: null, specs: ['mis', 'sdss'], summer: false } });
+  app.data = dataset(40, 2026, IE);
+  reconcileSpecs();
+  assert.deepEqual(app.state.profile.specs, ['mis'], 'the old main area is a whole choice now');
+  app.state.profile.specs = []; app.state.specDraft = ['bi'];
+  reconcileSpecs();
+  assert.deepEqual([app.state.profile.specs, app.state.specDraft], [['bi'], null], 'a half-picked old pair is a whole choice too');
+  for (const [saved, draft] of [[['solid', 'mech'], ['solid']], [['vehicle', 'aero'], ['vehicle']]]) {
+    app.data = dataset(32, 2026, ME); app.state.profile.specs = saved; app.state.specDraft = null;
+    reconcileSpecs();
+    assert.deepEqual([app.state.profile.specs, app.state.specDraft], [[], draft], `${saved}: half a pair waits as a draft (never promoted to vehicle alone)`);
+  }
+});
+
 test('ensurePassed: nothing for year 1, the year-1 list from year 2, and a saved list is kept', () => {
   reset({ ...mine(), passed: null, profile: { year: null, amirnet: null, specs: [], summer: false } });
   app.data = dataset(30, 2027);
