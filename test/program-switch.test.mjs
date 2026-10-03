@@ -243,3 +243,41 @@ test('refresh: the summer tab is not kept once the profile plans no summer (U3)'
   refresh();
   assert.equal(app.state.scope, 'קיץ', 'summer planned but its file did not load: the choice waits, it is not lost');
 });
+
+test('load keeps a dropped cohort aside; a backup refused because the catalog failed says so, and a restored one saves again', async () => {
+  const { load, save, FALLBACK_CATALOG } = await import('../web/app.js');
+  serve();
+  reset(null); store.set('afeka-sched-v1', JSON.stringify({ ...mine(), v: 1, program: 20, startYear: 2025 })); app.hashError = null;
+  app.state = load();
+  assert.deepEqual(JSON.parse(store.get('afeka-sched-v1:20-2025')).passed, ['a', 'b'], 'the dropped cohort is kept aside, not only moved');
+  reset(null); store.set('afeka-sched-v1', JSON.stringify({ ...mine(), v: 1, program: 40, startYear: 2026 })); app.catalog = FALLBACK_CATALOG; app.hashError = null;
+  app.state = load();
+  assert.equal(await restoreBackup({ v: 1, program: 20, startYear: 2026 }), false);
+  assert.match(app.hashError, /רשימת התוכניות לא נטענה/, 'not "the program is not on the site"');
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, name: 'מגובה' }), true);
+  save();
+  assert.equal(JSON.parse(store.get('afeka-sched-v1')).name, 'מגובה', 'a backup the student chose to restore is saved');
+  app.hashError = null;
+});
+
+test('applyHash: a friend link keeps the load notice; a good link clears a bad link’s error', async () => {
+  const { applyHash } = await import('../web/app.js');
+  const { friendLink } = await import('../web/share.js');
+  const g = { location: globalThis.location, history: globalThis.history, document: globalThis.document };
+  globalThis.history = { replaceState() {} };
+  globalThis.document ??= { activeElement: null, body: { dataset: {} }, querySelector: () => null };
+  try {
+    reset({ ...mine(), program: 30, startYear: 2026 });
+    const link = await friendLink('https://x.test/', { ...app.state, year: app.state.year, semester: app.state.semester }, ['g1']);
+    app.hashError = 'התוכנית השמורה כבר לא באתר.';
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    await applyHash();
+    assert.equal(app.hashError, 'התוכנית השמורה כבר לא באתר.');
+    globalThis.location = { hash: '#f=@@@', pathname: '/' };
+    await applyHash();
+    assert.match(app.hashError, /פגום/);
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    await applyHash();
+    assert.equal(app.hashError, null);
+  } finally { Object.assign(globalThis, g); app.friendLanding = null; }
+});

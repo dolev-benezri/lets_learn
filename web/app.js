@@ -89,7 +89,10 @@ export function load() {
   } else if (moved) {
     stash(saved);
     app.hashError = 'התוכנית השמורה כבר לא באתר. מוצגת הנדסה מכנית, וההתקדמות בתוכנית הקודמת נשמרה בצד.';
-  } else if (s.startYear !== saved.startYear) app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית.`;
+  } else if (s.startYear !== saved.startYear) {
+    stash(saved);
+    app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית, וההתקדמות במחזור הקודם נשמרה בצד.`;
+  }
   if (moved) return withPersonal({ ...structuredClone(DEFAULT), program: s.program, startYear: s.startYear }, s);
   return s;
 }
@@ -287,22 +290,30 @@ async function init() {
 // A program the catalog lacks is refused (normalize would quietly turn it into the default program); a dropped cohort moves to the nearest one, like a saved state.
 export async function restoreBackup(payload) {
   const p = normalize(payload, app.catalog);
-  if (p.program !== payload?.program) { app.hashError = 'התוכנית של הגיבוי לא קיימת באתר, הגיבוי לא שוחזר.'; return false; }
+  if (p.program !== payload?.program) {
+    app.hashError = app.catalog === FALLBACK_CATALOG ? 'רשימת התוכניות לא נטענה, הגיבוי לא שוחזר. נסו לרענן את הדף.' : 'התוכנית של הגיבוי לא קיימת באתר, הגיבוי לא שוחזר.';
+    return false;
+  }
   if (p.program !== app.state.program || p.startYear !== app.state.startYear) {
     let sem;
     try { sem = await fetchSemesters(p); } catch { return false; }
     setSemesters(sem);
   }
   app.state = p;
+  app.noSave = false; // the student chose this state over the saved one: keep it
   uiReset();
   return true;
 }
 
 // Friend (#f=) and backup (#b=) links: read at load, and again when one is pasted into an open tab (hashchange in ui-plan.js).
+let linkError = null;
 export async function applyHash() {
   const h = await readHash(location.hash, app.state);
   let keep = '';
-  if (h) app.hashError = h.error ?? null; // a good link pasted after a bad one clears the old error
+  if (h) { // a good link clears a bad link's error, not the load notice ("the saved program is gone")
+    app.hashError = h.error ?? (app.hashError === linkError ? null : app.hashError);
+    linkError = h.error ?? null;
+  }
   if (h?.type === 'backup') {
     let hadSaved = false;
     try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
