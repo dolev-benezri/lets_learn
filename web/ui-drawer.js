@@ -98,7 +98,7 @@ const regParts = (r) => (isPair(r) ? SEMS.map(([s, title]) => ({ title, res: sem
 
 // Lecturers chosen from a lesson's popover: one row each, with a remove button. Shown only once there is one.
 const lecturerSec = (L) => (Object.keys(L).length ? `<section class="dr-sec"><h3>מרצים</h3><ul class="plain">${Object.entries(L).map(([name, mode]) => `<li>${
-  mode === 'avoid' ? 'להימנע מ' : 'להעדיף את '}<b>${esc(name)}</b> <button type="button" class="btn sm" data-act="lecturerDrop" data-name="${esc(name)}"
+  mode === 'avoid' ? 'להימנע מקבוצות של ' : 'להעדיף את '}<b>${esc(name)}</b> <button type="button" class="btn sm" data-act="lecturerDrop" data-name="${esc(name)}"
   aria-label="${esc(`הסר את ${name}`)}">הסר</button></li>`).join('')}</ul><p class="hint">בוחרים מתוך חלון השיעור בלוח.</p></section>` : '');
 
 export function registrationText(r) {
