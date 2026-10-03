@@ -12,7 +12,7 @@ export const DEFAULT = {
   scope: 'year', load: 'even', semesterOf: {},
   specDraft: null, yearIds: [], // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
-  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, examsSameDay: 'forbid', includeFull: false, blocks: [] },
+  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, maxDays: null, examsSameDay: 'forbid', includeFull: false, blocks: [] },
 };
 
 // The programs and cohorts the site has data for (data/afeka/catalog.json, written by the scraper). Without it: mechanical engineering 2026, the first program.
@@ -35,6 +35,7 @@ const CONSTRAINT_OK = {
   notBefore: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   notAfter: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   maxCredits: (v) => v === null || (num(v) && v >= 0),
+  maxDays: (v) => v === null || (Number.isInteger(v) && v >= 1 && v <= 6),
   examsSameDay: (v) => v === 'forbid' || v === 'allow',
 };
 

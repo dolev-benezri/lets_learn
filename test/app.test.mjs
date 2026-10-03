@@ -241,3 +241,8 @@ test('yearCourses: a fifth-year evening student gets the year ה list', async ()
     assert.ok(five.length && five.every((id) => yearCourses().includes(id)));
   } finally { [a.data, a.state] = was; }
 });
+
+test('normalize: maxDays is null or a whole number of days 1-6', () => {
+  assert.equal(normalize({ v: 1, constraints: { maxDays: 3 } }).constraints.maxDays, 3);
+  for (const bad of [0, 7, 2.5, '3']) assert.equal(normalize({ v: 1, constraints: { maxDays: bad } }).constraints.maxDays, null, String(bad));
+});

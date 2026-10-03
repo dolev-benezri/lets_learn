@@ -181,3 +181,7 @@ test('the status page has the degree checklist, one row per requirement', () => 
   const me = writes.filter((w) => w.scope === 'me').map((w) => w.html).join('');
   assert.ok(me.includes('data-key="checklist"') && /מתוך \d/.test(me));
 });
+
+test('the preferences drawer offers a campus-day cap', () => {
+  assert.ok(writes.filter((w) => w.scope === 'drawer-prefs').some((w) => w.html.includes('data-chg="maxDays"')));
+});

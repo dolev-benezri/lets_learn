@@ -21,6 +21,7 @@ export function meetingsMask(meetings) {
 
 export const overlaps = (a, b) => a.some((v, d) => (v & b[d]) !== 0);
 export const merge = (a, b) => a.map((v, d) => v | b[d]);
+const daysUsed = (mask) => mask.filter((m, d) => d >= 1 && m !== 0).length; // campus days of a week mask (index 0 unused)
 
 // Slots strictly after time t. Not meetingsMask(t..23:00): that floors the start, so a lesson ending exactly at t
 // (Afeka lessons end at :50) would share t's slot and count as late.
@@ -341,6 +342,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     for (const o of it.options) {
       if (overlaps(mask, o.mask)) continue;
       if (constraints.maxCredits && credits + it.credits > constraints.maxCredits) continue;
+      if (constraints.maxDays && daysUsed(merge(mask, o.mask)) > constraints.maxDays) continue; // monotone: a course never frees a day
       if (noExamClash && o.exams.some((d) => examDates.has(d))) continue;
       sel.push(o);
       dfs(i + 1, merge(mask, o.mask), credits + it.credits, noExamClash ? new Set([...examDates, ...o.exams]) : examDates, val + value[it.id]);
@@ -350,6 +352,11 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   }
 
   dfs(0, new Array(DAYS).fill(0), 0, new Set(), 0);
+  // No plan under the campus-day cap, but one without it: the cap is the reason (checked with a short, single-result search)
+  if (!top.length && !partial && constraints.maxDays && search({ data, courses, statuses, pins, constraints: { ...constraints, maxDays: null }, weights, friends,
+    topK: 1, timeLimitMs: timeLimitMs / 4, prune, bias }).results.length) {
+    return { results: [], partial: false, diagnosis: [`תקרת ${constraints.maxDays} ימים בקמפוס קטנה מדי לקורסי החובה. העלו אותה או סמנו פחות קורסים כ"חובה".`] };
+  }
   const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
   return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins,
     includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups }).length > 0) };

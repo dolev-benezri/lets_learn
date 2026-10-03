@@ -208,6 +208,7 @@ export const CHG = {
   includeFull: (el) => { app.state.constraints.includeFull = el.checked; },
   notBefore: (el) => { app.state.constraints.notBefore = time(el.value); return 'quiet'; },
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
+  maxDays: (el) => { app.state.constraints.maxDays = el.value ? Number(el.value) : null; },
   maxCredits: (el) => { const n = parseFloat(el.value); app.state.constraints.maxCredits = Number.isFinite(n) && n >= 0 ? n : null; return 'quiet'; },
   blkDay: (el) => blockEdit(el, 'day', Number(el.value)),
   blkStart: (el) => blockEdit(el, 'start', el.value),
