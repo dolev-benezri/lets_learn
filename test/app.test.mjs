@@ -160,6 +160,17 @@ test('index.html has a description and og/twitter tags with an absolute og:image
   assert.ok(existsSync('web/og.png'));
 });
 
+test('both pages carry a CSP: self by default, no plugins or base override, scripts only from self and jsdelivr', () => {
+  for (const page of ['web/index.html', 'web/legal.html']) {
+    const csp = readFileSync(page, 'utf8').match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
+    const dir = Object.fromEntries(csp.split(';').map((d) => d.trim().split(/\s+/)).filter((d) => d[0]).map(([k, ...v]) => [k, v]));
+    assert.deepEqual(dir['default-src'], ["'self'"], page);
+    assert.deepEqual(dir['object-src'], ["'none'"], page);
+    assert.deepEqual(dir['base-uri'], ["'none'"], page);
+    assert.ok(dir['script-src']?.every((s) => ["'self'", 'https://cdn.jsdelivr.net', "'wasm-unsafe-eval'"].includes(s)), `${page}: ${dir['script-src']}`);
+  }
+});
+
 test('the unofficial-tool line lives once, inside the page footer', () => {
   const html = readFileSync('web/index.html', 'utf8');
   const foot = html.match(/<footer class="site-foot"[\s\S]*?<\/footer>/)?.[0] ?? '';
