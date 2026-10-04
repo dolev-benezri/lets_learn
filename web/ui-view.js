@@ -91,7 +91,9 @@ export function renderView() {
     live = 'לא נבחרו קורסים';
   } else if (noRes) { // partial and empty: only this message, with the "search more" button (no second notice)
     const why = ui.last.diagnosis?.length ? ui.last.diagnosis : ['ההעדפות, האילוצים והנעיצות הנוכחיים לא משאירים אף קורס אפשרי.'];
-    msg += `<div class="msg bad">${icon('alert')}<div><b>${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${why.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
+    const blocked = Object.values(app.cls.statuses).filter((s) => s.status === 'blocked').length; // usually: earlier years not marked as passed
+    const prereqs = blocked >= 5 ? `<p>${blocked} קורסים מחכים לדרישות קדם שלא סומנו כ״עברתי״. עדכנו ב<a href="#me">״המצב שלי״</a>.</p>` : '';
+    msg += `<div class="msg bad">${icon('alert')}<div><b>${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${why.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>${prereqs}
       <p class="msg-actions">${more}<button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
       ${state.pins.length ? `<button type="button" class="btn" data-act="clearPins">${icon('pin')} נקה נעיצות</button>` : ''}</p></div></div>`;
     live = ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת';
