@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-02T21:21:58.236Z",
+ "fetchedAt": "2026-10-04T23:01:17.230Z",
  "year": 2027,
  "startYear": 2027,
  "program": 22,
@@ -510,7 +510,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' בללוב נינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2108,7 +2108,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "272013203/1"
@@ -2136,7 +2136,7 @@
        "day": 1,
        "start": "17:00",
        "end": "18:50",
-       "room": "251 פיקוס"
+       "room": "102 פיקוס"
       }
      ],
      "exams": []
@@ -2164,7 +2164,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4496,7 +4496,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר חצקלביץ רון חיים",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4915,12 +4915,30 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
       {
        "day": 3,
+       "start": "09:00",
+       "end": "11:50",
+       "room": "053 מעב' המרת אנרגיה"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272037705",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
        "start": "09:00",
        "end": "11:50",
        "room": "053 מעב' המרת אנרגיה"
@@ -5097,7 +5115,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גורפינקל משה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "272038601/1"
@@ -5107,7 +5125,7 @@
        "day": 1,
        "start": "17:00",
        "end": "19:50",
-       "room": "102 פיקוס"
+       "room": "251 פיקוס"
       }
      ],
      "exams": []
@@ -5117,7 +5135,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר גורפינקל משה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -5125,7 +5143,7 @@
        "day": 1,
        "start": "20:00",
        "end": "20:50",
-       "room": "102 פיקוס"
+       "room": "251 פיקוס"
       }
      ],
      "exams": []
@@ -6389,7 +6407,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7039,7 +7057,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר דרורי אלון",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090307/1",
@@ -7505,7 +7523,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אפרת אבישי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090403/1",
@@ -7657,7 +7675,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' אליהו דנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9530,7 +9548,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092503/1"
@@ -9686,7 +9704,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

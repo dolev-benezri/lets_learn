@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-02T21:21:58.236Z",
+ "fetchedAt": "2026-10-04T23:01:17.230Z",
  "year": 2027,
  "startYear": 2025,
  "program": 112,
@@ -307,7 +307,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' קלף לואיז",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -343,7 +343,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גרוסו פאולה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -415,7 +415,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -4111,7 +4111,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר עבד אלחלים הישאם",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271026102/1"
@@ -4131,7 +4131,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר עבד אלחלים הישאם",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -4963,7 +4963,7 @@
        "day": 5,
        "start": "17:00",
        "end": "18:50",
-       "room": "קריה ה'5"
+       "room": "קריה ה'13"
       }
      ],
      "exams": []
@@ -4981,7 +4981,7 @@
        "day": 5,
        "start": "19:00",
        "end": "19:50",
-       "room": "קריה ה'5"
+       "room": "קריה ה'13"
       }
      ],
      "exams": []
@@ -7079,7 +7079,7 @@
        "day": 5,
        "start": "16:00",
        "end": "17:50",
-       "room": "208 פיקוס"
+       "room": "קריה ה'5"
       }
      ],
      "exams": []
@@ -7133,7 +7133,7 @@
        "day": 5,
        "start": "13:00",
        "end": "14:50",
-       "room": "203 פיקוס"
+       "room": "קריה ה'5"
       }
      ],
      "exams": []
@@ -7223,7 +7223,7 @@
        "day": 2,
        "start": "17:00",
        "end": "18:50",
-       "room": "115 פיקוס"
+       "room": "מפ\"ט תאנה"
       }
      ],
      "exams": []
@@ -7403,7 +7403,7 @@
        "day": 2,
        "start": "13:00",
        "end": "14:50",
-       "room": "מפ\"ט זית"
+       "room": "מפ\"ט יעד"
       }
      ],
      "exams": []
@@ -7539,7 +7539,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7547,7 +7547,7 @@
        "day": 2,
        "start": "10:00",
        "end": "11:50",
-       "room": "203 פיקוס"
+       "room": "ז'2 קריה - עגלת תחשבים"
       }
      ],
      "exams": []
@@ -7849,7 +7849,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר רוזנצוייג ליאור",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090512/1",
@@ -8239,7 +8239,7 @@
        "day": 5,
        "start": "14:00",
        "end": "15:50",
-       "room": "קריה ה'5"
+       "room": "201 פיקוס"
       }
      ],
      "exams": []

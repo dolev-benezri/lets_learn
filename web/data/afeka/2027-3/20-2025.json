@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-02T21:21:58.236Z",
+ "fetchedAt": "2026-10-04T23:01:17.230Z",
  "year": 2027,
  "startYear": 2025,
  "program": 20,
@@ -1015,7 +1015,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' מדינה דורית",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [
       "272012909/1"
@@ -1041,7 +1041,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' מדינה דורית",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
@@ -1156,7 +1156,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר חצקלביץ רון חיים",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
