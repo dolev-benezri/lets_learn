@@ -179,6 +179,16 @@ test('ensurePassed: nothing for year 1, the year-1 list from year 2, and a saved
   assert.deepEqual(app.state.passed, ['z']);
 });
 
+test('ensurePassed: every earlier year\'s mandatory list is passed (year 3 = years א and ב)', () => {
+  const lists = [["קורסי חובה שנה א'", 'a'], ["קורסי חובה שנה ב'", 'b'], ["קורסי חובה שנה ג'", 'c']].map(([name, id], i) => ({ code: i + 1, name, minCredits: 3, courses: [id] }));
+  for (const [start, want] of [[2025, ['a', 'b']], [2026, ['a']], [2027, []]]) {
+    reset({ ...mine(), passed: null, profile: { year: null, amirnet: null, specs: [], summer: false } });
+    app.data = dataset(30, start, { lists });
+    ensurePassed();
+    assert.deepEqual(app.state.passed, want, `cohort ${start}`);
+  }
+});
+
 test('restoreBackup: another program loads its data before the state is replaced; a failed load changes nothing', async () => {
   serve(); reset(mine());
   assert.equal(await restoreBackup({ v: 1, program: 20, startYear: 2026, name: 'מגובה', passed: ['x1'] }), true);

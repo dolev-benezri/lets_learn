@@ -137,6 +137,18 @@ node scripts/scrape.mjs --all-semesters --all-programs --cache cache --offline  
 
 **הריצה הלילית הראשונה:** המטמון של GitLab ריק בהתחלה, ומשיכה מלאה ארוכה מריצה אחת. `timeout 160m` עוצר את הסורק לפני ש-GitLab הורג את ה-job, המטמון נשמר (`when: always`), והריצה נחשבת חלקית: ירוקה, בלי commit. הריצה הבאה ממשיכה מהמטמון, ולכן משיכה ראשונה לוקחת 2-3 לילות. הריצה החלקית הרביעית ברצף נכשלת, כדי שסריקה תקועה תשלח מייל.
 
+**פרויקט GitLab ציבורי:** בחשבון החינמי, פרויקט פרטי מקבל 400 דקות CI בחודש, והמתנה למגבלת השעה של האתר נספרת כזמן ריצה. לילה רגיל לוקח 60-90 דקות, ולכן הפרויקט `lets_learn-group/lets_learn-scrape` (והקבוצה שלו) ציבוריים. בפרויקט ציבורי כל דקה נספרת כ-0.008. משתני ה-CI נשארים סודיים, והטוקן מוסתר בלוגים.
+
+### חידוש GH_PUSH_TOKEN
+
+הסריקה דוחפת ל-GitHub עם טוקן fine-grained שיש לו תאריך תפוגה. ה-job `token-expiry` ב-[ci/gitlab-scrape.yml](ci/gitlab-scrape.yml) נכשל, ושולח מייל, כשנשארים פחות מ-14 יום. הסריקה עצמה ממשיכה לרוץ. כדי לחדש:
+
+1. ב-GitHub: Settings → Developer settings → Fine-grained tokens → Generate new token.
+2. Repository access: רק `dolhack/lets_learn`. Permissions: Contents, Read and write. לבחור תאריך תפוגה.
+3. ב-GitLab, בפרויקט `lets_learn-scrape`: Settings → CI/CD → Variables → `GH_PUSH_TOKEN` → להדביק את הטוקן החדש (Masked, Protected).
+4. Build → Pipeline schedules → ▶ כדי להריץ פעם אחת. ב-log של `token-expiry` מופיע התאריך החדש.
+5. למחוק ב-GitHub את הטוקן הישן.
+
 ### מעבר שנת לימודים
 
 האתר לוקח את השנה האקדמית מ-`catalog.json`, שהסורק כותב, והמטמון נשמר בתיקייה נפרדת לכל שנה (`.yedion-cache/2028`). כשהידיעון של השנה הבאה מתפרסם:

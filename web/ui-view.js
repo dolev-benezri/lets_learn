@@ -1,6 +1,6 @@
 // The builder board: top bar, banners, the shown alternative (pills, notices, week grid) and the alternative switcher.
-import { app, esc, save, refresh, candidateMode, keepFocus, summerOn, summerScope } from './app.js';
-import { progress } from './rules.js';
+import { app, esc, save, refresh, candidateMode, keepFocus, summerOn, summerScope, yearCourses } from './app.js';
+import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { DAYS, icon, initials, groupIndex, hourRange, summary, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
@@ -87,11 +87,15 @@ export function renderView() {
   let msg = pn && !noRes ? `<p class="notice partial" aria-live="polite">${icon('info')}<span>${pn.text}</span>${more}</p>` : '', live = '';
   if (ui.runError) msg = `<div class="msg bad" role="alert">${icon('alert')}<div><b>שגיאה בחיפוש</b><p>${esc(ui.runError)}</p></div></div>`;
   else if (!Object.keys(app.data.courses).some(planned)) {
-    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>סמנו "חובה" או "אולי" ליד קורסים ב"הקורסים שלי", והמערכת תיבנה לבד.</p></div></div>`;
+    const pickSpec = studyYear(app.data, state) >= 3 && app.data.specializations?.length && !state.profile.specs.length; // from year 3 the specialization fills the plan
+    const how = pickSpec ? 'בחרו התמחות ב<a href="#me">״המצב שלי״</a>: משנה ג׳ קורסי ההתמחות נכנסים לבד. אפשר גם לסמן' : 'סמנו';
+    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב"הקורסים שלי", והמערכת תיבנה לבד.</p></div></div>`;
     live = 'לא נבחרו קורסים';
   } else if (noRes) { // partial and empty: only this message, with the "search more" button (no second notice)
     const why = ui.last.diagnosis?.length ? ui.last.diagnosis : ['ההעדפות, האילוצים והנעיצות הנוכחיים לא משאירים אף קורס אפשרי.'];
-    msg += `<div class="msg bad">${icon('alert')}<div><b>${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${why.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>
+    const blocked = yearCourses().filter((id) => app.cls.statuses[id]?.status === 'blocked').length; // this year's own courses: earlier years not marked as passed
+    const prereqs = blocked >= 2 ? `<p>${blocked} קורסים של השנה מחכים לדרישות קדם שלא סומנו כ״עברתי״. עדכנו ב<a href="#me">״המצב שלי״</a>.</p>` : '';
+    msg += `<div class="msg bad">${icon('alert')}<div><b>${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${why.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>${prereqs}
       <p class="msg-actions">${more}<button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
       ${state.pins.length ? `<button type="button" class="btn" data-act="clearPins">${icon('pin')} נקה נעיצות</button>` : ''}</p></div></div>`;
     live = ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת';

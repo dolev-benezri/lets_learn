@@ -2,9 +2,25 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
+<!-- CSP: everything from this site; only the picture import's OCR (tesseract.js: script, blob worker, wasm, language data) comes from jsdelivr. Inline style attributes are drawn by the UI. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval';
+  worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:;
+  style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <title>המערכת שלי · אפקה</title>
+<meta name="description" content="כלי עזר לא רשמי לבניית מערכת שעות באפקה: חלופות בלי התנגשויות, חברים, דרישות קדם וייצוא ליומן.">
+<!-- link preview (WhatsApp, Telegram, social): the share links (#f=, #b=) keep this page's tags, the hash never reaches the preview fetch -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:url" content="https://dolhack.github.io/lets_learn/">
+<meta property="og:title" content="המערכת שלי · מערכת שעות לאפקה">
+<meta property="og:description" content="כלי עזר לא רשמי לבניית מערכת שעות באפקה: חלופות בלי התנגשויות, חברים, דרישות קדם וייצוא ליומן.">
+<meta property="og:image" content="https://dolhack.github.io/lets_learn/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="לוח שבועי צבעוני ולידו: המערכת שלי, מערכת שעות לאפקה, בדקה">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="fonts/rubik-hebrew-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="map.css">
 <link rel="icon" href="icon.svg" type="image/svg+xml">

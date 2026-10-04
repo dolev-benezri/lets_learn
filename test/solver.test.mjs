@@ -253,6 +253,17 @@ test('examSpread: two moed-1 exams 3 days apart = 3/7', () => {
   assert.ok(Math.abs(r.results[0].breakdown.examSpread - 3 / 7) < 0.01);
 });
 
+test('examSpread: one exam (nothing to crowd) scores 1, like the bound, never below two crowded exams', () => {
+  const data = mini();
+  data.courses.Y = { name: 'Test', credits: 1, offered: true, prereqs: [], groups: [
+    { id: 'Y1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
+      meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
+      exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time: '09:00' }] },
+  ] };
+  const r = run({ data, courses: [{ id: 'Y', mode: 'must' }], weights: { ...W0, examSpread: 1 } });
+  assert.equal(r.results[0].breakdown.examSpread, 1);
+});
+
 test('timeLimitMs: 0 → partial true on large search space', () => {
   const data = mini();
   // Add many optional courses to create a large search space
@@ -689,7 +700,7 @@ test('maxDays: no plan uses more campus days; too low a cap explains itself', ()
   assert.ok(run({ data, courses }).results.some((x) => daysOf(x) > 2), 'without the cap a wider plan exists');
   const none = run({ data, courses, constraints: { maxDays: 1 } });
   assert.equal(none.results.length, 0);
-  assert.ok(none.diagnosis.some((t) => /תקרת 1 ימים/.test(t)), none.diagnosis.join(' | '));
+  assert.ok(none.diagnosis.some((t) => /תקרת יום אחד בקמפוס/.test(t)), none.diagnosis.join(' | '));
 });
 
 test('lecturers: avoid drops that lecturer’s groups, prefer keeps only theirs when they teach the course', () => {

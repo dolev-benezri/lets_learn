@@ -38,3 +38,21 @@ scrape:
     - if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
     - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com commit -q -m "$(cat ../summary.txt)" -- web/data/afeka
     - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com pull --rebase -q && git push # main may move during the scrape; only web/data/afeka changes here, so the rebase is clean
+
+# Two weeks' notice before GH_PUSH_TOKEN expires (README, "חידוש GH_PUSH_TOKEN"): a separate job, so a failure here only sends the mail and
+# never stops a scrape or a data push. GitHub names a fine-grained token's expiry in a response header; a token without one passes.
+token-expiry:
+  image: node:24
+  stage: deploy # after the scrape, whatever its result
+  rules:
+    - if: $CI_PIPELINE_SOURCE =~ /^(schedule|web|api)$/
+      when: always
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - |
+      exp=$(curl -sI -H "Authorization: Bearer ${GH_PUSH_TOKEN}" https://api.github.com/rate_limit | tr -d '\r' | sed -n 's/^github-authentication-token-expiration: *//Ip')
+      if [ -z "$exp" ]; then echo "GH_PUSH_TOKEN: no expiry date in the response"; exit 0; fi
+      left=$(( ($(date -d "$exp" +%s) - $(date +%s)) / 86400 ))
+      echo "GH_PUSH_TOKEN expires $exp ($left days)"
+      if [ "$left" -lt 14 ]; then echo "renew GH_PUSH_TOKEN: README, 'חידוש GH_PUSH_TOKEN'"; exit 1; fi

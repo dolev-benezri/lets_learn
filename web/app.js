@@ -158,9 +158,12 @@ export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ'
 export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
 export function save() { if (app.noSave) return; try { localStorage.setItem(KEY, JSON.stringify(app.state)); } catch { /* storage unavailable */ } }
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
-const yearOneList = () => app.data.lists.find((l) => l.name.includes("שנה א'"));
-// First time: the earlier years are assumed passed; a first-year student has passed nothing.
-export function ensurePassed() { if (!app.state.passed) app.state.passed = studyYear(app.data, app.state) > 1 ? [...(yearOneList()?.courses ?? [])] : []; }
+// First time: the earlier years' mandatory lists are assumed passed (a year-3 student starts with years א and ב); a first-year student has passed nothing.
+export function ensurePassed() {
+  if (app.state.passed) return;
+  const before = 'אבגדה'.slice(0, studyYear(app.data, app.state) - 1);
+  app.state.passed = [...new Set(app.data.lists.filter((l) => [...before].some((y) => l.name.includes(`שנה ${y}'`))).flatMap((l) => l.courses))];
+}
 
 // The study year's mandatory list (e.g. "שנה ב'"): courses in it default to optional. From year 3 the chosen specialization areas' courses (mandatory and elective) join it.
 export function yearCourses() {

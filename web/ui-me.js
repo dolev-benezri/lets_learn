@@ -92,9 +92,10 @@ export function renderMe() {
     l.i)).join('')}</div></div>`;
   const sp = specLists(data, state.profile.specs), isSpec = (l) => sp.all.has(l.code);
   const others = lists.filter((l) => !past(l) && !isSpec(l)), specOthers = lists.filter((l) => isSpec(l) && !sp.chosen.has(l.code));
+  const premarked = (y) => (y < 2 ? '' : y === 2 ? ' (שנה א׳ מסומנת מראש)' : ` (שנים א׳–${'אבגד'[y - 2]}׳ מסומנות מראש)`); // ensurePassed (app.js)
   const step = onboarded()
     ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
-    : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${studyYear(data, state) > 1 ? ' (שנה א׳ מסומנת מראש)' : ''}, ואז לחצו ״סיימתי״.`;
+    : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${premarked(studyYear(data, state))}, ואז לחצו ״סיימתי״.`;
   el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step">${step}</p></div>
     <div class="me-grid">
       <div class="me-side">

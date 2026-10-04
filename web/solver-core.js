@@ -213,7 +213,7 @@ function metrics(sel, mask, ctx) {
       freeDays: freeDays.length / 5,
       compact: 1 - Math.min(gapMin / 600, 1),
       timeWindow: 1 - Math.min(outside / 600, 1),
-      examSpread: ctx.examsPublished && minGap !== null ? Math.min(minGap, 7) / 7 : 0,
+      examSpread: !ctx.examsPublished ? 0 : minGap === null ? 1 : Math.min(minGap, 7) / 7, // fewer than two exams: nothing to crowd (the bound in dfs says the same)
     },
     info: { shared, freeDays, gapMin, minGap },
   };
@@ -363,7 +363,8 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   // No plan under the campus-day cap, but one without it: the cap is the reason (checked with a short, single-result search)
   if (!top.length && !partial && constraints.maxDays && search({ data, courses, statuses, pins, constraints: { ...constraints, maxDays: null }, weights, friends,
     topK: 1, timeLimitMs: timeLimitMs / 4, prune, bias }).results.length) {
-    return { results: [], partial: false, diagnosis: [`תקרת ${constraints.maxDays} ימים בקמפוס קטנה מדי לקורסי החובה. העלו אותה או סמנו פחות קורסים כ"חובה".`] };
+    const cap = constraints.maxDays === 1 ? 'יום אחד' : `${constraints.maxDays} ימים`;
+    return { results: [], partial: false, diagnosis: [`תקרת ${cap} בקמפוס קטנה מדי לקורסי החובה. העלו אותה או סמנו פחות קורסים כ"חובה".`] };
   }
   const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
   return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins,

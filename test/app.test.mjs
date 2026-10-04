@@ -106,7 +106,7 @@ test('yearView: offered in either semester, groups merged, semesters listed', ()
 });
 
 import { app, pickData, semOfGroup } from '../web/app.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 const real = (n) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${n}/30-2026.json`, import.meta.url)));
 test('pickData: year view, single-semester scopes, and fallback when ב is missing', () => {
   const A = real(1), B = real(2);
@@ -150,13 +150,34 @@ test('upsertFriend refuses a 21st friend', () => {
   assert.equal(r.friends.length, 20); assert.match(r.error, /עד 20/);
 });
 
+test('index.html has a description and og/twitter tags with an absolute og:image that exists', () => {
+  const html = readFileSync('web/index.html', 'utf8');
+  const meta = (attr, key) => html.match(new RegExp(`<meta ${attr}="${key}" content="([^"]+)"`))?.[1];
+  assert.match(meta('name', 'description'), /כלי עזר לא רשמי/);
+  for (const k of ['og:title', 'og:description', 'og:type', 'og:url', 'og:locale']) assert.ok(meta('property', k), k);
+  assert.equal(meta('property', 'og:image'), 'https://dolhack.github.io/lets_learn/og.png');
+  assert.equal(meta('name', 'twitter:card'), 'summary_large_image');
+  assert.ok(existsSync('web/og.png'));
+});
+
+test('both pages carry a CSP: self by default, no plugins or base override, scripts only from self and jsdelivr', () => {
+  for (const page of ['web/index.html', 'web/legal.html']) {
+    const csp = readFileSync(page, 'utf8').match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
+    const dir = Object.fromEntries(csp.split(';').map((d) => d.trim().split(/\s+/)).filter((d) => d[0]).map(([k, ...v]) => [k, v]));
+    assert.deepEqual(dir['default-src'], ["'self'"], page);
+    assert.deepEqual(dir['object-src'], ["'none'"], page);
+    assert.deepEqual(dir['base-uri'], ["'none'"], page);
+    assert.ok(dir['script-src']?.every((s) => ["'self'", 'https://cdn.jsdelivr.net', "'wasm-unsafe-eval'"].includes(s)), `${page}: ${dir['script-src']}`);
+  }
+});
+
 test('the unofficial-tool line lives once, inside the page footer', () => {
   const html = readFileSync('web/index.html', 'utf8');
   const foot = html.match(/<footer class="site-foot"[\s\S]*?<\/footer>/)?.[0] ?? '';
   assert.match(foot, /כלי עזר לא רשמי/);
   assert.match(foot, /legal\.html#terms/);
   assert.match(foot, /legal\.html#accessibility/);
-  assert.equal(html.split('כלי עזר לא רשמי').length, 2);
+  assert.equal(html.slice(html.indexOf('<body')).split('כלי עזר לא רשמי').length, 2); // the visible page; the meta description repeats it for link previews
 });
 
 import { routeOf, hashOf } from '../web/app.js';
