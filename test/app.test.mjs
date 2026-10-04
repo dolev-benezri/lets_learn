@@ -166,7 +166,7 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
   assert.match(foot, /כלי עזר לא רשמי/);
   assert.match(foot, /legal\.html#terms/);
   assert.match(foot, /legal\.html#accessibility/);
-  assert.equal(html.split('כלי עזר לא רשמי').length, 2);
+  assert.equal(html.slice(html.indexOf('<body')).split('כלי עזר לא רשמי').length, 2); // the visible page; the meta description repeats it for link previews
 });
 
 import { routeOf, hashOf } from '../web/app.js';
