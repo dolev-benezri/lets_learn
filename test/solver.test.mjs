@@ -700,7 +700,7 @@ test('maxDays: no plan uses more campus days; too low a cap explains itself', ()
   assert.ok(run({ data, courses }).results.some((x) => daysOf(x) > 2), 'without the cap a wider plan exists');
   const none = run({ data, courses, constraints: { maxDays: 1 } });
   assert.equal(none.results.length, 0);
-  assert.ok(none.diagnosis.some((t) => /תקרת 1 ימים/.test(t)), none.diagnosis.join(' | '));
+  assert.ok(none.diagnosis.some((t) => /תקרת יום אחד בקמפוס/.test(t)), none.diagnosis.join(' | '));
 });
 
 test('lecturers: avoid drops that lecturer’s groups, prefer keeps only theirs when they teach the course', () => {
