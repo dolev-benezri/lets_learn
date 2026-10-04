@@ -213,7 +213,7 @@ function metrics(sel, mask, ctx) {
       freeDays: freeDays.length / 5,
       compact: 1 - Math.min(gapMin / 600, 1),
       timeWindow: 1 - Math.min(outside / 600, 1),
-      examSpread: ctx.examsPublished && minGap !== null ? Math.min(minGap, 7) / 7 : 0,
+      examSpread: !ctx.examsPublished ? 0 : minGap === null ? 1 : Math.min(minGap, 7) / 7, // fewer than two exams: nothing to crowd (the bound in dfs says the same)
     },
     info: { shared, freeDays, gapMin, minGap },
   };
