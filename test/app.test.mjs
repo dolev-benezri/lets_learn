@@ -106,7 +106,7 @@ test('yearView: offered in either semester, groups merged, semesters listed', ()
 });
 
 import { app, pickData, semOfGroup } from '../web/app.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 const real = (n) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${n}/30-2026.json`, import.meta.url)));
 test('pickData: year view, single-semester scopes, and fallback when ב is missing', () => {
   const A = real(1), B = real(2);
@@ -148,6 +148,16 @@ test('upsertFriend refuses a 21st friend', () => {
   const many = Array.from({ length: 20 }, (_, i) => F(`f${i}`));
   const r = upsertFriend(many, { name: 'new', groups: ['1'] });
   assert.equal(r.friends.length, 20); assert.match(r.error, /עד 20/);
+});
+
+test('index.html has a description and og/twitter tags with an absolute og:image that exists', () => {
+  const html = readFileSync('web/index.html', 'utf8');
+  const meta = (attr, key) => html.match(new RegExp(`<meta ${attr}="${key}" content="([^"]+)"`))?.[1];
+  assert.match(meta('name', 'description'), /כלי עזר לא רשמי/);
+  for (const k of ['og:title', 'og:description', 'og:type', 'og:url', 'og:locale']) assert.ok(meta('property', k), k);
+  assert.equal(meta('property', 'og:image'), 'https://dolhack.github.io/lets_learn/og.png');
+  assert.equal(meta('name', 'twitter:card'), 'summary_large_image');
+  assert.ok(existsSync('web/og.png'));
 });
 
 test('the unofficial-tool line lives once, inside the page footer', () => {
