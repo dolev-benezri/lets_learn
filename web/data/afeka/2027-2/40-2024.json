@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-04T23:01:17.230Z",
+ "fetchedAt": "2026-10-05T23:01:19.459Z",
  "year": 2027,
  "startYear": 2024,
  "program": 40,
@@ -1775,7 +1775,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר גולומב שחר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274010601/1"
@@ -1855,7 +1855,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גולומב שחר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2536,7 +2536,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר לוזון יוסף",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "274012303/1"
@@ -2576,7 +2576,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר לוזון יוסף",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274012305/1"
@@ -2596,7 +2596,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר לוזון יוסף",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2632,7 +2632,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר לוזון יוסף",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6359,7 +6359,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8030,7 +8030,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279092503/1"
@@ -8186,7 +8186,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

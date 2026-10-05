@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-04T23:01:17.230Z",
+ "fetchedAt": "2026-10-05T23:01:19.459Z",
  "year": 2027,
  "startYear": 2025,
  "program": 50,
@@ -1471,7 +1471,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר צימר יאיר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "275012002/1"
@@ -1509,7 +1509,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר צימר יאיר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4436,7 +4436,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -5552,7 +5552,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אפרת אבישי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090403/1",
@@ -5668,7 +5668,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שפירא יובל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -5704,7 +5704,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' אליהו דנה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7202,7 +7202,7 @@
   "90916": {
    "name": "אנליזה הרמונית",
    "credits": 2.5,
-   "offered": true,
+   "offered": false,
    "prereqs": [
     {
      "kind": "קדם",
@@ -7223,26 +7223,7 @@
      ]
     }
    ],
-   "groups": [
-    {
-     "id": "279091614",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "ד\"ר סגל אלכסנדר",
-     "full": false,
-     "semester": "ב",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 3,
-       "start": "19:00",
-       "end": "20:50",
-       "room": "קריה ה'9"
-      }
-     ],
-     "exams": []
-    }
-   ]
+   "groups": []
   },
   "90917": {
    "name": "פונקציות מרוכבות",
@@ -7276,24 +7257,6 @@
        "start": "20:00",
        "end": "21:50",
        "room": "204 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "279091714",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "ד\"ר סגל אלכסנדר",
-     "full": false,
-     "semester": "ב",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 5,
-       "start": "19:00",
-       "end": "20:50",
-       "room": "קריה ז'1"
       }
      ],
      "exams": []
@@ -7802,7 +7765,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279092503/1"
@@ -7958,7 +7921,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
