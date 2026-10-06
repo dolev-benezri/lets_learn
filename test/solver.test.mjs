@@ -575,7 +575,8 @@ test('S1 year score: the א׳ choice that unlocks a heavier ב׳ course wins (no
   // P + N = 7 credits beats Q + E = 6, but a per-search ב׳ denominator made Q's lonely E look "complete" (progress 1).
   const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), Q: yc('Q', 3, [grp('QA', 1)]), N: yc('N', 4, [], pre('P')), E: yc('E', 3, []) });
   const dataB = semData('ב', { P: yc('P', 3, []), Q: yc('Q', 3, []), N: yc('N', 4, [grp('NB', 3)], pre('P')), E: yc('E', 3, [grp('EB', 3)]) });
-  const p = best(searchYear({ dataA, dataB, state: yState({ choices: opt('P', 'Q', 'N', 'E') }), yearList: new Set(), weights: W }));
+  // Progress weight 10: progress decides here, not the credit balance (P + E is the even 3 + 3, and the pair score now sees that).
+  const p = best(searchYear({ dataA, dataB, state: yState({ choices: opt('P', 'Q', 'N', 'E') }), yearList: new Set(), weights: { ...W, progress: 10 } }));
   assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses]));
 });
 
@@ -783,4 +784,54 @@ test('a lecture that overlaps its own linked tutorial gives no option', () => {
   const t = { ...grp('T', 1, '09:00', '10:00'), type: 'תרגול', primary: false };
   assert.deepEqual(buildOptions({ groups: [{ ...grp('L', 1, '08:00', '10:00'), linked: ['T'] }, t] }), []);
   assert.equal(buildOptions({ groups: [{ ...grp('L', 1, '08:00', '09:00'), linked: ['T'] }, t] }).length, 1, 'back to back is fine');
+});
+
+// ---- stage 5 (issue #5): year plan ----
+test('searchYear chooses the ב׳ plan by the pair score, not by the ב׳ score alone', () => {
+  // E is worth more than F in ב׳ alone, but P (3) + F (3) balances the year better than P + E (4); with a small progress weight the balance decides.
+  const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), E: yc('E', 4, []), F: yc('F', 3, []) });
+  const dataB = semData('ב', { P: yc('P', 3, []), E: yc('E', 4, [grp('EB', 2)]), F: yc('F', 3, [grp('FB', 2)]) });
+  const r = searchYear({ dataA, dataB, state: yState({ choices: { P: 'must', E: 'optional', F: 'optional' } }), yearList: new Set(), weights: { ...W, progress: 0.3 } });
+  assert.deepEqual(best(r).b.courses, ['F']);
+  assert.ok(r.results.every((p, i) => !i || p.score <= r.results[i - 1].score));
+});
+
+// test S5's instance: seven electives outrank {P} in א׳ alone (2^7 course sets, {P} ~121st), only P (or P2) opens the must N in ב׳.
+const s5 = (prereqs, { pFull = false, p2 = false } = {}) => {
+  const A = {}, B = {};
+  for (let i = 0; i < 7; i++) { A[`E${i}`] = yc(`E${i}`, 3, [grp(`E${i}A`, (i % 6) + 1, i < 6 ? '08:00' : '12:00', i < 6 ? '10:00' : '14:00')]); B[`E${i}`] = yc(`E${i}`, 3, []); }
+  const allDay = (id, full) => ({ ...grp(id, 1), full, meetings: [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '08:00', end: '20:00' })) });
+  A.P = yc('P', 1, [allDay('PA', pFull)]); B.P = yc('P', 1, []);
+  if (p2) { A.P2 = yc('P2', 1, [allDay('P2A', false)]); B.P2 = yc('P2', 1, []); }
+  A.N = yc('N', 4, [], prereqs); B.N = yc('N', 4, [grp('NB', 1)], prereqs);
+  const choices = { ...opt(...Object.keys(A).filter((id) => id !== 'N')), N: 'must' };
+  return best(searchYear({ dataA: semData('א', A), dataB: semData('ב', B), state: yState({ choices }), yearList: new Set(), weights: W }));
+};
+
+test('searchYear seeds every candidate of an either-or prerequisite: the first one is full, the second opens the must course', () => {
+  const p = s5(anyOf('P', 'P2'), { pFull: true, p2: true });
+  assert.ok(inA(p, 'P2') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses, p.missing]));
+  assert.deepEqual(p.missing, []);
+});
+
+test('searchYear seeds a must course whose prerequisites include one outside the program', () => {
+  const p = s5([{ kind: 'קדם', anyOf: [{ id: null, name: 'outside' }] }, ...pre('P')]);
+  assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses, p.missing]));
+  assert.deepEqual(p.missing, []);
+});
+
+test('searchYear warns when a ב׳ pin was lifted and its course placed in another group', () => {
+  // The pinned ZB1 clashes with both must courses; relaxing one of them is not enough, so the pin goes and Z moves to ZB2.
+  const none = { Y1: yc('Y1', 3, []), Y2: yc('Y2', 3, []), Z: yc('Z', 3, []) };
+  const zb1 = { ...grp('ZB1', 1), meetings: [{ day: 1, start: '08:00', end: '10:00' }, { day: 2, start: '08:00', end: '10:00' }] };
+  const dataB = semData('ב', { Y1: yc('Y1', 3, [grp('Y1B', 1)]), Y2: yc('Y2', 3, [grp('Y2B', 2)]), Z: yc('Z', 3, [zb1, grp('ZB2', 3)]) });
+  const p = best(searchYear({ dataA: semData('א', none), dataB, state: yState({ choices: { Y1: 'must', Y2: 'must', Z: 'optional' } }), pins: ['ZB1'], yearList: new Set(), weights: W }));
+  assert.deepEqual([...p.b.courses].sort(), ['Y1', 'Y2', 'Z']);
+  assert.ok(p.warnings.includes('הנעיצה של Z (ב׳) לא נשמרה: הקורס בקבוצה אחרת'), JSON.stringify(p.warnings));
+});
+
+test('search({ distinct }) keeps one plan per course set, the best group variant', () => {
+  const d = set({ A: one([grp('A1', 1), grp('A2', 2, '10:00', '12:00')]), B: one([grp('B1', 3)]) });
+  const r = search({ data: d, courses: [{ id: 'A', mode: 'must' }, { id: 'B', mode: 'optional' }], weights: W0, topK: 10, distinct: true });
+  assert.deepEqual(r.results.map((x) => [...x.courses].sort().join()), ['A,B', 'A']);
 });
