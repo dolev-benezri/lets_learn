@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- Served at the old address, dolhack.github.io/lets_learn (an organization `dolhack` holds the old name after the account became dolev-benezri).
-     Published as index.html and as 404.html of the repo dolhack/lets_learn, so every old path (legal.html too) lands here. -->
+     Published in the repo dolhack.github.io (GitHub retired the name dolhack/lets_learn) as lets_learn/index.html and as the root 404.html, so every old path (legal.html too) lands here. -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -27,7 +27,7 @@ const encode = async (obj) => {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 (async () => {
-  let url = NEW + location.pathname.replace(/^\/lets_learn\/?/, '') + location.search + location.hash;
+  let url = NEW + location.pathname.replace(/^\/(lets_learn\/?)?/, '') + location.search + location.hash;
   try {
     const saved = localStorage.getItem(KEY);
     if (saved && !localStorage.getItem(MOVED)) { url = `${NEW}#b=${await encode({ ...JSON.parse(saved), v: 1 })}`; localStorage.setItem(MOVED, '1'); }

@@ -4,7 +4,7 @@
 
 **האתר: https://dolev-benezri.github.io/lets_learn/**
 
-הכתובת הקודמת, `dolhack.github.io/lets_learn`, מפנה לכאן ומעבירה פעם אחת את המצב השמור בדפדפן (קישור גיבוי). הדף: [redirect/index.html](redirect/index.html), בריפו `dolhack/lets_learn` של ארגון שמחזיק את השם הישן.
+הכתובת הקודמת, `dolhack.github.io/lets_learn`, מפנה לכאן ומעבירה פעם אחת את המצב השמור בדפדפן (קישור גיבוי). הדף: [redirect/index.html](redirect/index.html), בריפו `dolhack.github.io` של ארגון שמחזיק את השם הישן (בתור `lets_learn/index.html` ו-`404.html`; GitHub חסם את השם `dolhack/lets_learn`).
 
 כלי שבונה מערכת שעות לסמסטר מנתונים אמיתיים של מכללת אפקה. הוא מתחשב בתקנון הלימודים, בכישלונות ובחזרות על קורסים, ובמערכות של החברים שלך.
 
