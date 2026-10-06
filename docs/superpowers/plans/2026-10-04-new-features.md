@@ -21,7 +21,7 @@
 - בלי תלות חדשה. ספריות שכבר קיימות: panzoom, pdf.js, tesseract.
 - ריבוי בעברית עם `count()` / `groupCount()` מ-`web/ui-text.js`.
 - שדה חדש במצב: מאומת ב-`normalize` (`web/app.js`), נבנה מחדש ב-`readHash` לגיבוי (`web/share.js`), ומתאפס ב"איפוס העדפות" אם הוא העדפה.
-- זהות git `dolhack`; כל commit מסתיים ב-`Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- זהות git `dolev-benezri`; כל commit מסתיים ב-`Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - בדיקה ממוקדת אחרי כל שינוי; `npm test` מלא לפני merge.
 
 ## Review Focus

@@ -11,7 +11,7 @@
 **Spec:** user bug map item 4 in `.superpowers/next-session.md` + research report `origin/claude/cool-hawking-xhinen:docs/research/refresh-deploy/report.md` (sections "הנימוס נקבע אצלנו" and "24 KB של נתונים").
 
 ## Global Constraints
-- No personal data in the repo: no name, no email. Contact means "פתחו issue ב-GitHub" plus the link `https://github.com/dolhack/lets_learn/issues`.
+- No personal data in the repo: no name, no email. Contact means "פתחו issue ב-GitHub" plus the link `https://github.com/dolev-benezri/lets_learn/issues`.
 - Hebrew, RTL, contrast ≥ 4.5:1, links ≥ 44px tap height on phones.
 - On phones a fixed bottom bar exists (`--bar-h`). The footer must not hide behind it: `padding-bottom: calc(var(--bar-h) + 16px)` under `@media (max-width:599px)`.
 
@@ -46,7 +46,7 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
 ```html
 <footer class="site-foot">
   <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.</p>
-  <p><a href="https://github.com/dolhack/lets_learn/blob/main/TERMS.md" target="_blank" rel="noopener">תנאי שימוש ופרטיות</a> · <a href="https://github.com/dolhack/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a></p>
+  <p><a href="https://github.com/dolev-benezri/lets_learn/blob/main/TERMS.md" target="_blank" rel="noopener">תנאי שימוש ופרטיות</a> · <a href="https://github.com/dolev-benezri/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a></p>
 </footer>
 ```
 
@@ -77,6 +77,6 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
   6. `## אחריות` — AS IS, no warranty. No liability for any damage, including missed registration, a wrong course or academic standing. Check everything against official sources.
   7. `## רישיון` — code under MIT (`LICENSE`). Yedion data belongs to its owners.
   8. `## שינויים ויצירת קשר` — the terms may change, and the version in the repo is the binding one. Contact via GitHub issues.
-- [ ] **Step 2: README** — replace the disclaimer blockquote with a 2-line summary of sections 1, 2 and 6, plus a link to TERMS.md. In "רישיון ותנאי שימוש", keep the credit line "נבנה על ידי dolhack…" and add a link to the issues page for removal requests.
+- [ ] **Step 2: README** — replace the disclaimer blockquote with a 2-line summary of sections 1, 2 and 6, plus a link to TERMS.md. In "רישיון ותנאי שימוש", keep the credit line "נבנה על ידי dolev-benezri…" and add a link to the issues page for removal requests.
 - [ ] **Step 3: Grep check:** `grep -rniE "@gmail|dolev" TERMS.md README.md web/` → expect no output.
 - [ ] **Step 4: Commit** `docs: terms and README cover data source, scraping, lecturer names, privacy`

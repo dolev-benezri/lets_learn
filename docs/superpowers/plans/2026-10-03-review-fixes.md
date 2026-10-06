@@ -17,7 +17,7 @@
 - `הסבר התמחויות - חשמל.pdf` נשאר מחוץ ל-git.
 - שורה ב-`web/` עד 200 תווים (`test/line-length.test.mjs`).
 - כל טקסט מהנתונים עובר `esc()` (`test/xss.test.mjs`).
-- זהות git `dolhack`; כל commit מסתיים ב-`Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- זהות git `dolev-benezri`; כל commit מסתיים ב-`Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - בדיקה ממוקדת אחרי כל שינוי; כל הסוויטה (`npm test`) לפני merge.
 
 ## Review Focus

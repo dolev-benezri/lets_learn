@@ -14,7 +14,7 @@
 
 - No requests to the Afeka site or the yedion.
 - Copy in Hebrew, same voice as the site; the site stays "כלי עזר לא רשמי" (no wording that suggests an official Afeka tool).
-- Git identity dolhack; commits end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Git identity dolev-benezri; commits end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Focused tests per task, full `npm test` (also `CI=1`) before merge.
 - Out of scope: the minor items already listed in ISSUES §17ב, §18, §22 and the new-features deferred list.
 
@@ -57,7 +57,7 @@
 
 **Files:** Modify `web/index.html`, add `web/og.png` (1200×630). Test `test/app.test.mjs`.
 
-- [ ] Test `index.html has a description and og/twitter tags with an absolute og:image that exists`: `meta name="description"`, `og:title`, `og:description`, `og:type`, `og:url`, `og:image` = `https://dolhack.github.io/lets_learn/og.png`, `twitter:card` = `summary_large_image`; `web/og.png` exists. Fail first.
+- [ ] Test `index.html has a description and og/twitter tags with an absolute og:image that exists`: `meta name="description"`, `og:title`, `og:description`, `og:type`, `og:url`, `og:image` = `https://dolev-benezri.github.io/lets_learn/og.png`, `twitter:card` = `summary_large_image`; `web/og.png` exists. Fail first.
 - [ ] Tags in `index.html`; description: `כלי עזר לא רשמי לבניית מערכת שעות באפקה: חלופות בלי התנגשויות, חברים, דרישות קדם וייצוא ליומן.`
 - [ ] `og.png`: drawn on a canvas in the browser (site colors, title, the description), saved from its data URL.
 - [ ] Commit `feat(M1): link preview tags and image`.

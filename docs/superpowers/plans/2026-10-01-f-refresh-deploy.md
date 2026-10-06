@@ -37,7 +37,7 @@
 
 ### Task 0: Owner decisions + runner probe (no code in the repo yet)
 
-- **Owner decisions so far (2026-10-01):** no domain; host = GitHub Pages on the free `dolhack.github.io/lets_learn`. That origin is shared by every `dolhack.github.io/*` project, so localStorage keys must stay prefixed (`afeka-sched-v1…`). Task 2 uses only the Pages deploy job (no Cloudflare).
+- **Owner decisions so far (2026-10-01):** no domain; host = GitHub Pages on the free `dolev-benezri.github.io/lets_learn`. That origin is shared by every `dolev-benezri.github.io/*` project, so localStorage keys must stay prefixed (`afeka-sched-v1…`). Task 2 uses only the Pages deploy job (no Cloudflare).
 - [ ] Ask the owner, one decision at a time:
   1. **Domain:** buy one, and which? Not "afeka" alone in the name.
   2. **Host:** with a domain, GitHub Pages; without one, Cloudflare.
@@ -87,7 +87,7 @@ test('stableJson drops fetchedAt and is deterministic', () => {
 - [ ] **Step 2:** `node --test test/polite.test.mjs` → FAIL (module missing). **Step 3:** implement `polite.mjs`. **Step 4:** PASS. Commit `feat(scrape): polite helpers`.
 - [ ] **Step 5: Wire into `request()`.**
   - Set `default: '2500'`.
-  - Use `fetch(url, { signal: AbortSignal.timeout(25000), headers: { 'User-Agent': 'afeka-scheduler/1.1 (+https://github.com/dolhack/lets_learn)' } })`.
+  - Use `fetch(url, { signal: AbortSignal.timeout(25000), headers: { 'User-Agent': 'afeka-scheduler/1.1 (+https://github.com/dolev-benezri/lets_learn)' } })`.
   - On `429`/`503`, honour `Retry-After`.
   - Check `pageKind`: `'throttled'` throws `ThrottledError(throttleUntil)`. `'rejected'` counts toward a run-level streak, and 3 in a row throw.
   - Keep a run-level retry budget of 10.
