@@ -16,7 +16,7 @@ import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash,
 
 // scripts/programs.json: per program the list codes, department, specializations (hand-maintained, docs/research-degree-rules.md 5.2), degree credits and the anchor course validate() demands.
 const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
-const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolhack/lets_learn)';
+const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolev-benezri/lets_learn)';
 const SEMESTER_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
 

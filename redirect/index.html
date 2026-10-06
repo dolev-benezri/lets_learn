@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- Served at the old address, dolhack.github.io/lets_learn (an organization `dolhack` holds the old name after the account became dolev-benezri).
+     Published as index.html and as 404.html of the repo dolhack/lets_learn, so every old path (legal.html too) lands here. -->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>המערכת שלי עברה כתובת</title>
+<link rel="canonical" href="https://dolev-benezri.github.io/lets_learn/">
+<noscript><meta http-equiv="refresh" content="0; url=https://dolev-benezri.github.io/lets_learn/"></noscript>
+<style>body { font: 16px/1.6 system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 16px; background: #fff; color: #1a1a1a; }</style>
+</head>
+<body>
+<p>האתר עבר לכתובת <a id="go" href="https://dolev-benezri.github.io/lets_learn/">dolev-benezri.github.io/lets_learn</a>. מעבירים אתכם…</p>
+<script>
+// Old links keep working: the path and the hash (#f= friend link, #b= backup link) are carried over.
+// The saved state lives in this origin's localStorage, which the new address cannot read: the first visit hands it over once, as a backup link
+// in the site's own format (share.js: deflate + base64url of the state). The new site asks before replacing a state it already has.
+// ponytail: an unmoved state wins over a friend link in the same visit (the data matters more; the friend link works on the next click).
+// Other programs' stashes and the onboarding flag stay behind.
+const NEW = 'https://dolev-benezri.github.io/lets_learn/', KEY = 'afeka-sched-v1', MOVED = KEY + '-moved';
+const encode = async (obj) => {
+  const bytes = new Uint8Array(await new Response(new Blob([new TextEncoder().encode(JSON.stringify(obj))]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+(async () => {
+  let url = NEW + location.pathname.replace(/^\/lets_learn\/?/, '') + location.search + location.hash;
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved && !localStorage.getItem(MOVED)) { url = `${NEW}#b=${await encode({ ...JSON.parse(saved), v: 1 })}`; localStorage.setItem(MOVED, '1'); }
+  } catch { /* storage unavailable or unreadable: a plain redirect */ }
+  document.getElementById('go').href = url;
+  location.replace(url);
+})();
+</script>
+</body>
+</html>
