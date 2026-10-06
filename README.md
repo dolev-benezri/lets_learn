@@ -141,7 +141,7 @@ node scripts/scrape.mjs --all-semesters --all-programs --cache cache --offline  
 
 ### חידוש GH_PUSH_TOKEN
 
-הסריקה דוחפת ל-GitHub עם טוקן fine-grained שיש לו תאריך תפוגה. ה-job `token-expiry` ב-[ci/gitlab-scrape.yml](ci/gitlab-scrape.yml) נכשל, ושולח מייל, כשנשארים פחות מ-14 יום. הסריקה עצמה ממשיכה לרוץ. כדי לחדש:
+הסריקה דוחפת ל-GitHub עם טוקן fine-grained שיש לו תאריך תפוגה. ה-job `token-expiry` ב-[ci/gitlab-scrape.yml](ci/gitlab-scrape.yml) נכשל, ושולח מייל, כשנשארים פחות מ-14 יום, וגם כש-GitHub דוחה את הטוקן (פג או בוטל). הסריקה עצמה ממשיכה לרוץ. כדי לחדש:
 
 1. ב-GitHub: Settings → Developer settings → Fine-grained tokens → Generate new token.
 2. Repository access: רק `dolhack/lets_learn`. Permissions: Contents, Read and write. לבחור תאריך תפוגה.

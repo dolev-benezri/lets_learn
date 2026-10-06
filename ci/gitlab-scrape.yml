@@ -40,7 +40,7 @@ scrape:
     - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com pull --rebase -q && git push # main may move during the scrape; only web/data/afeka changes here, so the rebase is clean
 
 # Two weeks' notice before GH_PUSH_TOKEN expires (README, "חידוש GH_PUSH_TOKEN"): a separate job, so a failure here only sends the mail and
-# never stops a scrape or a data push. GitHub names a fine-grained token's expiry in a response header; a token without one passes.
+# never stops a scrape or a data push. GitHub names a fine-grained token's expiry in a response header; a token without one passes. A GET, not HEAD: an edge answered HEAD with 404.
 token-expiry:
   image: node:24
   stage: deploy # after the scrape, whatever its result
@@ -51,7 +51,10 @@ token-expiry:
     GIT_STRATEGY: none
   script:
     - |
-      exp=$(curl -sI -H "Authorization: Bearer ${GH_PUSH_TOKEN}" https://api.github.com/rate_limit | tr -d '\r' | sed -n 's/^github-authentication-token-expiration: *//Ip')
+      hdr=$(curl -s -D - -o /dev/null -H "Authorization: Bearer ${GH_PUSH_TOKEN}" https://api.github.com/rate_limit | tr -d '\r')
+      code=$(printf '%s\n' "$hdr" | sed -n '1s/^HTTP[^ ]* \([0-9]*\).*/\1/p')
+      if [ "$code" != 200 ]; then echo "GH_PUSH_TOKEN rejected or GitHub unreachable (HTTP ${code:-none}): README, 'חידוש GH_PUSH_TOKEN'"; exit 1; fi # an expired or revoked token answers 401 with no expiry header
+      exp=$(printf '%s\n' "$hdr" | sed -n 's/^github-authentication-token-expiration: *//Ip')
       if [ -z "$exp" ]; then echo "GH_PUSH_TOKEN: no expiry date in the response"; exit 0; fi
       left=$(( ($(date -d "$exp" +%s) - $(date +%s)) / 86400 ))
       echo "GH_PUSH_TOKEN expires $exp ($left days)"
