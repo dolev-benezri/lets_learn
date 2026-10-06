@@ -1,5 +1,5 @@
 // The builder board: top bar, banners, the shown alternative (pills, notices, week grid) and the alternative switcher.
-import { app, esc, save, refresh, candidateMode, keepFocus, summerOn, summerScope, yearCourses } from './app.js';
+import { app, esc, save, refresh, candidateMode, keepFocus, summerOn, summerScope, waitingOnEarlier } from './app.js';
 import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { DAYS, icon, initials, groupIndex, hourRange, summary, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
@@ -93,8 +93,8 @@ export function renderView() {
     live = 'לא נבחרו קורסים';
   } else if (noRes) { // partial and empty: only this message, with the "search more" button (no second notice)
     const why = ui.last.diagnosis?.length ? ui.last.diagnosis : ['ההעדפות, האילוצים והנעיצות הנוכחיים לא משאירים אף קורס אפשרי.'];
-    const blocked = yearCourses().filter((id) => app.cls.statuses[id]?.status === 'blocked').length; // this year's own courses: earlier years not marked as passed
-    const prereqs = blocked >= 2 ? `<p>${blocked} קורסים של השנה מחכים לדרישות קדם שלא סומנו כ״עברתי״. עדכנו ב<a href="#me">״המצב שלי״</a>.</p>` : '';
+    const blocked = waitingOnEarlier().length, who = blocked === 1 ? 'קורס אחד של השנה מחכה' : `${blocked} קורסים של השנה מחכים`;
+    const prereqs = blocked ? `<p>${who} לדרישות קדם משנים קודמות שלא סומנו כ״עברתי״. עדכנו ב<a href="#me">״המצב שלי״</a>.</p>` : '';
     msg += `<div class="msg bad">${icon('alert')}<div><b>${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${why.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>${prereqs}
       <p class="msg-actions">${more}<button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
       ${state.pins.length ? `<button type="button" class="btn" data-act="clearPins">${icon('pin')} נקה נעיצות</button>` : ''}</p></div></div>`;

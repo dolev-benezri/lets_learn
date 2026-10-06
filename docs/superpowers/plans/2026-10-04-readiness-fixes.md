@@ -35,7 +35,7 @@
 - [ ] Test: `ensurePassed: every earlier year's mandatory list is passed (year 3 = years א and ב)`: dataset with lists "קורסי חובה שנה א'" ['a'], "קורסי חובה שנה ב'" ['b'], "קורסי חובה שנה ג'" ['c']; startYear 2025 (year 3) gives `['a','b']`; 2026 gives `['a']`; 2027 gives `[]`. Run, see it fail.
 - [ ] `ensurePassed`: union of the lists whose name has `שנה X'` for every X before the study year. The existing year-2 test keeps passing.
 - [ ] Onboarding line: "(שנה א׳ מסומנת מראש)" for year 2, "(שנים א׳–ב׳ מסומנות מראש)" from year 3 (last letter = the year before).
-- [ ] No-result message: when at least 5 courses of the program are `blocked`, add the line `N קורסים מחכים לדרישות קדם שלא סומנו כ״עברתי״. עדכנו ב״המצב שלי״.` with a link to `#me`.
+- [ ] No-result message: when at least one of this year's courses is blocked by a course of an earlier year's mandatory list (`waitingOnEarlier` in app.js), add the line `N קורסים של השנה מחכים לדרישות קדם משנים קודמות שלא סומנו כ״עברתי״. עדכנו ב״המצב שלי״.` with a link to `#me`. (First drafted as "at least 5 blocked courses of the program", a noise filter for a count that also caught prereqs of the same year; the exact count needs no threshold. Review 2026-10-06.)
 - [ ] Commit `fix(H1): earlier study years start as passed; the no-result message names blocked courses`.
 
 ### Task 2 (M3): examSpread for plans with fewer than two exams
