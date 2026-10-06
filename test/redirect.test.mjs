@@ -19,6 +19,8 @@ test('redirect: path and hash carry over to the new address', async () => {
   assert.equal((await visit('https://dolhack.github.io/lets_learn/')).to, NEW);
   assert.equal((await visit('https://dolhack.github.io/lets_learn/legal.html#terms')).to, `${NEW}legal.html#terms`);
   assert.equal((await visit('https://dolhack.github.io/lets_learn/#f=abc')).to, `${NEW}#f=abc`);
+  assert.equal((await visit('https://dolhack.github.io/lets_learn')).to, NEW, 'no trailing slash');
+  assert.equal((await visit('https://dolhack.github.io/')).to, NEW, 'the org site root (the root 404.html) too');
 });
 
 test('redirect: a saved state moves once, as a backup link the site can read', async () => {
