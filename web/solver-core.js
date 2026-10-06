@@ -240,7 +240,7 @@ function diagnose(items, data, freedByBlocks, avoids = false) {
 }
 
 const KNOWN = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'];
-export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {} }) {
+export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {}, distinct = false }) {
   if (!(topK > 0)) return { results: [], partial: false, diagnosis: [] };
   const forbidden = forbiddenBy(constraints);
   const down = downstream(data), base = courseValue(data, down);
@@ -315,6 +315,9 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     const { m, info } = metrics(sel, mask, ctx);
     const score = Object.entries(weights).reduce((a, [k, w]) => a + w * (m[k] ?? 0), 0);
     if (top.length === topK && score <= top[top.length - 1].score) return;
+    // distinct: one plan per course set (its best group variant), so the list shows different courses, not the same ones in other groups
+    const same = distinct ? top.findIndex((t) => t.courses.length === chosen.size && t.courses.every((id) => chosen.has(id))) : -1;
+    if (same >= 0) { if (score <= top[same].score) return; top.splice(same, 1); }
     const unlocks = new Set([...chosen].flatMap((id) => [...down[id]]).filter((x) => !chosen.has(x) && statuses[x]?.status !== 'done')).size; // only what is still ahead
     top.push({
       score, breakdown: m, groups: sel.flatMap((o) => o.groups), courses: [...chosen], unlocks, explanation: explain(info, unlocks),
@@ -348,7 +351,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   const prefer = Object.entries(constraints.lecturers ?? {}).filter(([, v]) => v === 'prefer');
   if (!top.length && !partial && prefer.length) {
     const lecturers = Object.fromEntries(Object.entries(constraints.lecturers).filter(([, v]) => v !== 'prefer'));
-    return search({ data, courses, statuses, pins, constraints: { ...constraints, lecturers }, weights, friends, topK, timeLimitMs, prune, bias });
+    return search({ data, courses, statuses, pins, constraints: { ...constraints, lecturers }, weights, friends, topK, timeLimitMs, prune, bias, distinct });
   }
   // No plan under the campus-day cap, but one without it: the cap is the reason (checked with a short, single-result search)
   if (!top.length && !partial && constraints.maxDays && search({ data, courses, statuses, pins, constraints: { ...constraints, maxDays: null }, weights, friends,
@@ -366,7 +369,7 @@ const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };
 const LOAD_W = 3, MISSING_W = 5, A_TOP = 50;
 // Phase A gets most of the budget (B is usually cheap and hands its unused time forward); each B search has a floor,
 // and once the budget is spent by more than half again the remaining alternatives are skipped (they are the lowest ranked).
-const A_SHARE = 0.6, B_FLOOR = 100;
+const A_SHARE = 0.6, B_FLOOR = 100, B_K = 5; // B_K: ב׳ plans tried per א׳ alternative; the pair score picks one
 
 // Year plan: top א׳ alternatives, each completed by the best ב׳ alternative with the א׳ courses counted as passed.
 export function searchYear({ dataA, dataB, state, yearList, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000 }) {
@@ -407,24 +410,30 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   const Wp = weights.progress ?? 0;
 
   const argsA = { data: dataA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, bias };
-  const ra = search({ ...argsA, courses: coursesA, topK: A_TOP, timeLimitMs: timeLimitMs * A_SHARE });
+  const ra = search({ ...argsA, courses: coursesA, topK: A_TOP, distinct: true, timeLimitMs: timeLimitMs * A_SHARE });
   const credits = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
   const name = (id) => dataA.courses[id]?.name ?? id;
   const settled = (x) => (state.passed ?? []).includes(x.id) || stA[x.id]?.status === 'exempt';
   const pairs = [];
   let partial = ra.partial;
-  // The top-A_TOP cut ranks א׳ alone, so it can drop the only א׳ plans that open a ב׳ must course. Seed one per such
-  // course: the best א׳ plan that takes its open prerequisites (the first א׳ candidate of each open anyOf).
+  // The top-A_TOP cut ranks א׳ alone, so it can drop the only א׳ plans that open a ב׳ must course. Seed such courses:
+  // the best א׳ plan for each way to take their open prerequisites (one א׳ candidate of each open anyOf; a prerequisite
+  // entirely outside the program counts as met, as in classify).
+  // ponytail: one search per combination; real anyOf groups have 1-3 candidates, cap it if a course ever lists many.
   const key = (a) => [...a.courses].sort().join();
   const seen = new Set(ra.results.map(key)), seeds = [];
   for (const m of must) {
-    const need = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled)).map((p) => p.anyOf.find((x) => inA.has(x.id))?.id);
-    if (!need.length || need.includes(undefined)) continue;
-    const r = search({ ...argsA, courses: coursesA.map((c) => (need.includes(c.id) ? { ...c, mode: 'must' } : c)), topK: 1, timeLimitMs: Math.max(B_FLOOR,
-      (deadline - Date.now()) / (must.size + 1)) });
-    partial ||= r.partial;
-    const s = r.results[0];
-    if (s && !seen.has(key(s))) { seen.add(key(s)); seeds.push(s); }
+    const open = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled) && !p.anyOf.every((x) => x.id === null));
+    const cands = open.map((p) => p.anyOf.filter((x) => inA.has(x.id)).map((x) => x.id));
+    if (!cands.length || cands.some((c) => !c.length)) continue;
+    const combos = cands.reduce((acc, c) => acc.flatMap((done) => c.map((x) => [...done, x])), [[]]);
+    for (const need of combos) {
+      const r = search({ ...argsA, courses: coursesA.map((c) => (need.includes(c.id) ? { ...c, mode: 'must' } : c)), topK: 1, timeLimitMs: Math.max(B_FLOOR,
+        (deadline - Date.now()) / (must.size * combos.length + 1)) });
+      partial ||= r.partial;
+      const s = r.results[0];
+      if (s && !seen.has(key(s))) { seen.add(key(s)); seeds.push(s); }
+    }
   }
   // search() never returns an empty selection; when nothing is must in א׳, "take nothing in א׳" is a valid year plan.
   const aList = [...seeds, ...ra.results];
@@ -439,7 +448,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
       .filter((c) => c.mode === 'must' || c.mode === 'optional')
       .map((c) => (pinnedB(c.id) ? { ...c, mode: 'must' } : c));
     const left = Math.max(B_FLOOR, (deadline - Date.now()) / (aList.length - i));
-    const args = { data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends, topK: 1, timeLimitMs: left };
+    const args = { data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends, topK: B_K, timeLimitMs: left };
     let rb = search({ ...args, courses: coursesB });
     partial ||= rb.partial;
     if (!rb.results.length) {
@@ -467,8 +476,19 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
       rb ??= relax(() => false);
       partial ||= rb.partial;
     }
-    const b = rb.results[0] ?? null;
-    if (!a.courses.length && !b?.courses.length) continue; // an empty plan is not an answer: let the UI say why nothing fits
+    // The best ב׳ plan alone is not always the best pair (credit balance, year progress): score each and keep the best.
+    let bestPair = null;
+    for (const b of rb.results.length ? rb.results : [null]) {
+      const p = pairOf(a, b, takenA);
+      if (p && (!bestPair || p.score > bestPair.score)) bestPair = p;
+    }
+    if (bestPair) pairs.push(bestPair);
+  }
+  pairs.sort((x, y) => y.score - x.score);
+  return { results: pairs.slice(0, topK), partial, diagnosis: pairs.length ? [] : ra.diagnosis };
+
+  function pairOf(a, b, takenA) {
+    if (!a.courses.length && !b?.courses.length) return null; // an empty plan is not an answer: let the UI say why nothing fits
     const all = new Set([...a.courses, ...(b?.courses ?? [])]);
     const missing = [...must].filter((id) => !all.has(id));
     const ca = credits(dataA, a.courses), cb = credits(dataB, b?.courses ?? []), total = ca + cb;
@@ -480,12 +500,13 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     // year term keeps the old scale against LOAD_W and MISSING_W.
     const yearProgress = (sumV(vA, a.courses) + sumV(vB, b?.courses ?? [])) / (yearMax || 1);
     const progressFix = Wp * (2 * yearProgress - (a.breakdown.progress ?? 0) - (b?.breakdown.progress ?? 0));
-    pairs.push({
+    // A relaxed ב׳ search may lift a pin and still place the course, in another group: say so.
+    const regrouped = (b?.courses ?? []).filter((id) => pinnedB(id) && !dataB.courses[id].groups.some((g) => pins.includes(g.id) && b.groups.includes(g.id)))
+      .map((id) => `הנעיצה של ${dataB.courses[id].name} (ב׳) לא נשמרה: הקורס בקבוצה אחרת`);
+    return {
       score: a.score + (b?.score ?? 0) + progressFix + LOAD_W * loadScore - MISSING_W * missing.length,
       a, b, credits: { a: ca, b: cb }, missing,
-      warnings: needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : [],
-    });
+      warnings: [...(needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : []), ...regrouped],
+    };
   }
-  pairs.sort((x, y) => y.score - x.score);
-  return { results: pairs.slice(0, topK), partial, diagnosis: pairs.length ? [] : ra.diagnosis };
 }
