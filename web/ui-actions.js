@@ -235,5 +235,5 @@ export const CHG = {
   blkStart: (el) => blockEdit(el, 'start', el.value),
   blkEnd: (el) => blockEdit(el, 'end', el.value),
   blkLabel: (el) => { app.state.constraints.blocks[el.dataset.i].label = el.value.slice(0, 30); save(); return 'view'; }, // the label never changes the search
-  myName: (el) => { app.state.name = el.value.trim().slice(0, 60); return 'quiet'; },
+  myName: (el) => { app.state.name = el.value.trim().slice(0, 60); return 'save'; },
 };
