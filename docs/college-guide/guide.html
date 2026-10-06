@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>המערכת שלי · מדריך הפעלה</title>
+<style>
+@font-face { font-family:"Rubik"; font-weight:300 900; src:url(../../web/fonts/rubik-hebrew-wght-normal.woff2) format("woff2");
+  unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F; }
+@font-face { font-family:"Rubik"; font-weight:300 900; src:url(../../web/fonts/rubik-latin-wght-normal.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+:root {
+  --bg:#FFFFFF; --surface:#F6F7FB; --border:#E3E7EF; --text:#101828; --text-2:#475467; --text-3:#667085;
+  --accent:#2563EB; --accent-soft:#EAF1FE; --ok:#0B6E4F; --ok-soft:#E7F6EF; --warn:#B54708; --warn-soft:#FEF4E6;
+}
+* { box-sizing:border-box; }
+html { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:"Rubik", "Segoe UI", Arial, sans-serif; font-size:11pt; line-height:1.6; }
+.page { max-width:820px; margin:0 auto; padding:0 16px; }
+h1, h2, h3 { line-height:1.25; margin:0; }
+h2 { font-size:20pt; color:var(--text); margin:0 0 6px; padding-top:4px; }
+h2 .n { color:var(--accent); margin-inline-end:6px; }
+h3 { font-size:13pt; margin:18px 0 6px; }
+p { margin:0 0 10px; }
+ul, ol { margin:0 0 10px; padding-inline-start:22px; }
+li { margin-bottom:4px; }
+a { color:var(--accent); text-decoration:none; }
+b { font-weight:600; }
+.lead { font-size:12pt; color:var(--text-2); margin-bottom:14px; }
+section.chapter { padding:26px 0 10px; break-before:page; }
+section.chapter.first { break-before:auto; }
+.kicker { font-size:9.5pt; font-weight:600; letter-spacing:.02em; color:var(--accent); margin-bottom:2px; }
+
+/* cover */
+.cover { min-height:262mm; display:flex; flex-direction:column; justify-content:space-between; padding:40px 0 10px; }
+.cover .brand { display:flex; align-items:center; gap:12px; color:var(--text-2); font-weight:500; }
+.cover .brand img { width:44px; height:44px; }
+.cover h1 { font-size:34pt; font-weight:700; margin:28px 0 8px; }
+.cover .sub { font-size:15pt; color:var(--text-2); margin-bottom:26px; }
+.cover .hero { border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:0 6px 24px rgba(16,24,40,.08); }
+.cover .hero img { display:block; width:100%; }
+.cover .meta { display:grid; grid-template-columns:auto 1fr; gap:4px 16px; font-size:10.5pt; color:var(--text-2); margin-top:24px; }
+.cover .meta b { color:var(--text); }
+.cover .note { font-size:9.5pt; color:var(--text-3); border-top:1px solid var(--border); padding-top:10px; }
+
+/* toc */
+.toc ol { list-style:none; padding:0; margin:12px 0 0; columns:2; column-gap:28px; }
+.toc li { break-inside:avoid; display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); }
+.toc li span { color:var(--accent); font-weight:600; min-width:22px; }
+
+/* figures */
+figure { margin:12px 0 16px; break-inside:avoid; }
+figure .frame { border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; box-shadow:0 2px 10px rgba(16,24,40,.06); }
+figure img { display:block; width:100%; height:auto; }
+figcaption { font-size:9.5pt; color:var(--text-3); margin-top:6px; }
+figcaption b { color:var(--text-2); }
+.row { display:flex; gap:16px; align-items:flex-start; }
+.row > * { flex:1; min-width:0; }
+.row .narrow { flex:0 0 36%; }
+.row .narrow-s { flex:0 0 30%; }
+.row.prefs { justify-content:center; gap:24px; }
+.row.prefs > figure { flex:0 0 255px; }
+h3 { break-after:avoid; }
+.keep { break-inside:avoid; }
+figure.fit .frame { max-width:var(--w); }
+
+/* boxes */
+.box { border-radius:10px; padding:12px 14px; margin:12px 0; break-inside:avoid; }
+.box.tip { background:var(--accent-soft); }
+.box.ok { background:var(--ok-soft); }
+.box.warn { background:var(--warn-soft); }
+.box .t { font-weight:600; display:block; margin-bottom:4px; }
+.box p:last-child, .box ul:last-child { margin-bottom:0; }
+
+/* steps */
+.steps { list-style:none; padding:0; counter-reset:s; margin:10px 0 14px; }
+.steps li { counter-increment:s; position:relative; padding:10px 46px 10px 0; border-bottom:1px solid var(--border); break-inside:avoid; }
+.steps li::before { content:counter(s); position:absolute; right:0; top:9px; width:30px; height:30px; border-radius:50%; background:var(--accent);
+  color:#fff; font-weight:600; display:flex; align-items:center; justify-content:center; font-size:11pt; }
+
+/* tables */
+table { width:100%; border-collapse:collapse; margin:10px 0 14px; font-size:10pt; break-inside:avoid; }
+th, td { text-align:start; padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+th { background:var(--surface); font-weight:600; color:var(--text-2); }
+td.c { white-space:nowrap; }
+
+.tags { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 12px; }
+.tag { font-size:9.5pt; padding:2px 10px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--text-2); }
+.tag.green { background:var(--ok-soft); color:var(--ok); border-color:transparent; }
+.tag.orange { background:var(--warn-soft); color:var(--warn); border-color:transparent; }
+.tag.blue { background:var(--accent-soft); color:var(--accent); border-color:transparent; }
+
+.contact { display:grid; grid-template-columns:auto 1fr; gap:4px 16px; font-size:11pt; margin-top:6px; }
+.ltr { direction:ltr; unicode-bidi:isolate; }
+.contact > .ltr, .cover .meta > .ltr { justify-self:right; }
+.small { font-size:9.5pt; color:var(--text-3); }
+@page { size:A4; margin:16mm 14mm 16mm; }
+@media print { .page { padding:0; max-width:none; } }
+@media (max-width:640px) { .row { flex-direction:column; } .row .narrow, .row .narrow-s { flex-basis:auto; width:100%; } .toc ol { columns:1; } .cover h1 { font-size:26pt; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ===================== COVER ===================== -->
+<header class="cover">
+  <div>
+    <div class="brand"><img src="../../web/icon.svg" alt=""> המערכת שלי · מערכת שעות לאפקה</div>
+    <h1>מדריך הפעלה והסבר על הכלי</h1>
+    <p class="sub">כלי חינמי לבניית מערכת שעות לפי הידיעון ותקנון הלימודים</p>
+    <div class="hero"><img src="images/04-builder.jpg" alt="מסך בניית המערכת: לוח שבועי עם הקורסים, ולידו רשימת הקורסים שלי"></div>
+    <div class="meta">
+      <b>כתובת הכלי</b><a class="ltr" href="https://dolev-benezri.github.io/lets_learn/">https://dolev-benezri.github.io/lets_learn/</a>
+      <b>קוד פתוח</b><a class="ltr" href="https://github.com/dolev-benezri/lets_learn">https://github.com/dolev-benezri/lets_learn</a>
+      <b>הוכן על ידי</b><span>דולב בנזרי, סטודנט להנדסה מכנית, שנה ב׳</span>
+      <b>תאריך</b><span>אוקטובר 2026 · שנת הלימודים תשפ״ז</span>
+    </div>
+  </div>
+  <p class="note">כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.
+    כל צילומי המסך במסמך צולמו מהמערכת עצמה, עם הנתונים האמיתיים של תשפ״ז. הדוגמה היא סטודנט בשנה ב׳ בהנדסה מכנית שנכשל בקורס אחד.</p>
+</header>
+
+<!-- ===================== TOC ===================== -->
+<section class="chapter toc">
+  <div class="kicker">תוכן העניינים</div>
+  <h2>מה במסמך</h2>
+  <ol>
+    <li><span>1</span>הבעיה והפתרון</li>
+    <li><span>2</span>תוכניות ומחזורים נתמכים</li>
+    <li><span>3</span>התחלה מהירה ב-6 צעדים</li>
+    <li><span>4</span>המצב שלי: ציונים, התקדמות ותקנון</li>
+    <li><span>5</span>בניית המערכת</li>
+    <li><span>6</span>כישלון בקורס ודרישות קדם</li>
+    <li><span>7</span>העדפות ואילוצים</li>
+    <li><span>8</span>שנה מלאה, קיץ והתמחות</li>
+    <li><span>9</span>תיאום עם חברים</li>
+    <li><span>10</span>סיום: רשימה להרשמה ולוח שנה</li>
+    <li><span>11</span>מפת ההתקדמות בתואר</li>
+    <li><span>12</span>שימוש בטלפון</li>
+    <li><span>13</span>מקור הנתונים ועדכונם</li>
+    <li><span>14</span>פרטיות ואבטחה</li>
+    <li><span>15</span>סעיפי התקנון שהכלי מיישם</li>
+    <li><span>16</span>ההצעה למכללה ופרטי קשר</li>
+  </ol>
+
+  <div class="box tip" style="margin-top:22px">
+    <span class="t">בשורה אחת</span>
+    <p>הסטודנט מסמן מה עבר ובמה נכשל, והכלי בונה לבד עד 10 מערכות שעות חוקיות לסמסטר או לשנה, לפי דרישות הקדם, התקנון, האילוצים האישיים והחברים,
+      ומפיק רשימה מוכנה להרשמה באפקה-נט.</p>
+  </div>
+</section>
+
+<!-- ===================== 1 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 1</div>
+  <h2><span class="n">1</span>הבעיה והפתרון</h2>
+  <p class="lead">בניית מערכת שעות באפקה-נט היא עבודה ידנית: מצליבים קבוצות, דרישות קדם, נקודות זכות ותקנון. כישלון בקורס משנה את כל השרשרת שאחריו.</p>
+
+  <h3>הבעיה</h3>
+  <ul>
+    <li>הסטודנט צריך לבדוק לבד אילו קורסים פתוחים לו, אילו קבוצות לא מתנגשות, וכמה נ״ז חסרים לו בכל דרישה של התואר.</li>
+    <li>אחרי כישלון, הקורס חוזר, וכל קורס שהוא דרישת קדם שלו נחסם. קשה לראות את ההשפעה על השנה כולה.</li>
+    <li>הרבה סטודנטים פונים בגלל זה למזכירות ולרכזים, בעיקר בתקופת ההרשמה.</li>
+  </ul>
+
+  <h3>מה הכלי עושה</h3>
+  <table>
+    <tr><th style="width:24%">תחום</th><th>מה זה נותן לסטודנט</th></tr>
+    <tr><td><b>תוכניות</b></td><td>הנדסת חשמל, מכונות, תוכנה, תעשייה וניהול והנדסה רפואית, וגם מדעי המחשב ומדעי הנתונים, ביום ובערב.</td></tr>
+    <tr><td><b>מצב אישי</b></td><td>מסמנים אילו קורסים עברת ובאילו נכשלת. הכלי חוסם קורסים לפי דרישות קדם, מראה כמה נ״ז נשארו לכל דרישה בתואר, ומזהיר ממצב של לימודים על תנאי.</td></tr>
+    <tr><td><b>חיפוש</b></td><td>הכלי מחפש לבד מערכות שמתאימות לאילוצים, כמו ימים פנויים, שעות, בלי חלונות ופיזור בחינות, ומציג עד 10 חלופות מדורגות.</td></tr>
+    <tr><td><b>תכנון</b></td><td>שנה שלמה, סמסטר א׳ וב׳ יחד, כולל סמסטר קיץ, ובחירת התמחות לפי כללי המחלקה.</td></tr>
+    <tr><td><b>חברים</b></td><td>תיאום מערכת עם חברים. החיפוש מעדיף מערכות עם שיעורים משותפים.</td></tr>
+    <tr><td><b>בסוף</b></td><td>רשימת הרשמה עם מספרי קבוצות וקישורים לידיעון, וקובץ ללוח השנה.</td></tr>
+  </table>
+
+  <div class="box ok">
+    <span class="t">בלי התקנה ובלי הרשמה</span>
+    <p>נכנסים לכתובת מכל דפדפן, במחשב או בטלפון. אין חשבון ואין סיסמה, והכול נשמר בדפדפן של הסטודנט בלבד.</p>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 2</div>
+  <h2><span class="n">2</span>תוכניות ומחזורים נתמכים</h2>
+  <p class="lead">סמסטרים א׳, ב׳ וקיץ של תשפ״ז, לכל תוכנית בארבעה מחזורים (תחילת לימודים 2024 עד 2027).</p>
+  <table>
+    <tr><th>תוכנית</th><th>מסלולים</th><th>נבדק מול</th></tr>
+    <tr><td>הנדסה מכנית</td><td>יום, ערב</td><td>תוכנית הלימודים הרשמית תשפ״ז</td></tr>
+    <tr><td>הנדסת חשמל</td><td>יום, ערב</td><td>תוכנית הלימודים הרשמית תשפ״ז</td></tr>
+    <tr><td>הנדסת תוכנה</td><td>יום, ערב</td><td>תוכנית הלימודים הרשמית תשפ״ז</td></tr>
+    <tr><td>מדעי המחשב</td><td>יום, ערב</td><td>תוכנית הלימודים הרשמית תשפ״ז</td></tr>
+    <tr><td>מדעי הנתונים</td><td>יום</td><td>תוכנית הלימודים הרשמית תשפ״ו (האחרונה שפורסמה)</td></tr>
+    <tr><td>הנדסת תעשייה וניהול</td><td>יום, ערב</td><td>תוכנית הלימודים הרשמית תשפ״ז</td></tr>
+    <tr><td>הנדסה רפואית</td><td>יום</td><td>תוכנית הלימודים הרשמית תשפ״ז</td></tr>
+  </table>
+  <ul>
+    <li><b>מה נמשך מהידיעון:</b> הקורסים, הקבוצות, המפגשים, המרצים, דרישות הקדם ונ״ז המינימום של כל רשימה.</li>
+    <li><b>מה נבדק ידנית:</b> סך הנ״ז לתואר, תחומי ההתמחות וכלל הבחירה, מול תוכניות הלימודים הרשמיות של תשפ״ז. כשתוכנית הלימודים והידיעון סותרים, הכלי הולך לפי הידיעון, והסתירות מתועדות בקוד הפתוח.</li>
+    <li><b>מסלולי ערב:</b> משתמשים באותם קורסים וקבוצות כמו מסלולי היום, וברירת המחדל שלהם היא שיעורים מ-16:00 ואילך (העדפה שאפשר לשנות).</li>
+    <li><b>בחינות:</b> לוח הבחינות של תשפ״ז עוד לא פורסם, והכלי מציג "טרם פורסם". הוא יתמלא אוטומטית כשיפורסם בידיעון.</li>
+    <li><b>לא נכללות:</b> תוכניות תואר שני, כי הכלי מחשב לפי תקנון של תואר ראשון.</li>
+  </ul>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 3</div>
+  <h2><span class="n">3</span>התחלה מהירה ב-6 צעדים</h2>
+  <p class="lead">כך נראה שימוש טיפוסי מהכניסה הראשונה ועד רשימה מוכנה להרשמה. בדרך כלל זה לוקח כמה דקות.</p>
+  <ol class="steps">
+    <li><b>בוחרים מסלול ושנת לימודים.</b> בעמוד "המצב שלי" בוחרים תוכנית (למשל הנדסה מכנית) ושנה (למשל ב׳). אפשר להוסיף ציון אמירנט, וקורסי האנגלית יסומנו "פטור" לפיו.</li>
+    <li><b>מסמנים מה עברתם ובמה נכשלתם.</b> השנים הקודמות מסומנות מראש כ"עברתי", ומתקנים רק את מה ששונה. אפשר גם לייבא את גליון הציונים מהפורטל כקובץ PDF.</li>
+    <li><b>לוחצים "סיימתי, לבניית המערכת".</b> הכלי עובר למסך הבנייה ומציג מיד את החלופה הטובה ביותר.</li>
+    <li><b>בוחרים לכל קורס חובה, אולי או לא.</b> "חובה" נכנס לכל מערכת, "אולי" נכנס רק אם הוא משתלב טוב, ו"לא" לא בתכנון. המערכות מתעדכנות בכל שינוי.</li>
+    <li><b>מדפדפים בין החלופות</b> בחצים ‹ › (או בחצי המקלדת). לחיצה על שיעור פותחת פרטים, ואפשר לנעוץ קבוצה.</li>
+    <li><b>פותחים "רשימה להרשמה"</b> ומעתיקים את מספרי הקבוצות לאפקה-נט. אפשר גם להוסיף את המערכת ללוח השנה בטלפון.</li>
+  </ol>
+  <div class="box tip">
+    <span class="t">שמירה אוטומטית</span>
+    <p>כל שינוי נשמר מיד בדפדפן. סוגרים את האתר וחוזרים אליו מאוחר יותר, והכול נשאר במקום.</p>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 4</div>
+  <h2><span class="n">4</span>המצב שלי: ציונים, התקדמות ותקנון</h2>
+  <p class="lead">העמוד הראשון שהסטודנט רואה. הוא קובע למי המערכת נבנית: איזו תוכנית, איזה מחזור, ומה כבר נעשה.</p>
+
+  <figure>
+    <div class="frame"><img src="images/01-status-page.jpg" alt="עמוד המצב שלי: פרופיל, התקדמות וקורסי שנה א׳ עם הסטטוס של כל אחד"></div>
+    <figcaption><b>איור 1.</b> עמוד "המצב שלי". מימין הפרופיל וההתקדמות, משמאל הקורסים לפי שנה. "חשבון דיפרנציאלי אינטגרלי 2" מסומן "נכשלתי" (באדום), ושאר קורסי שנה א׳ "עברתי" (בירוק), חלקם עם ציון.</figcaption>
+  </figure>
+
+  <h3>הפרופיל</h3>
+  <ul>
+    <li><b>מסלול ושנת לימודים:</b> קובעים את התוכנית, את המחזור ואת רשימות הקורסים שלו. מחזור בלי נתונים עדיין מתוכנן לפי המחזור הקרוב, והעמוד אומר זאת.</li>
+    <li><b>ציון אמירנט:</b> אופציונלי. קובע אילו קורסי אנגלית נדרשים ואילו מסומנים "פטור".</li>
+    <li><b>התמחות:</b> בוחרים בשנה ג׳, לפי כלל המחלקה (ראו פרק 8).</li>
+    <li><b>סמסטר קיץ:</b> סימון "אני מתכנן/ת סמסטר קיץ השנה" מוסיף את הקיץ לתכנון.</li>
+  </ul>
+
+  <h3>סטטוס לכל קורס</h3>
+  <p>לכל קורס שלוש אפשרויות: <span class="tag">לא לקחתי</span> <span class="tag green">עברתי</span> <span class="tag orange">נכשלתי</span>.
+    לקורס שעברתם אפשר להוסיף ציון, והכלי מחשב ממוצע משוקלל. לקורס שנכשלתם בו בוחרים כמה פעמים (פעם, פעמיים, 3 פעמים).
+    הכישלון נשמר גם אחרי שעוברים את הקורס, כי התקנון סופר אותו.</p>
+
+  <div class="row">
+    <figure class="narrow">
+      <div class="frame"><img src="images/02-progress-checklist.png" alt="כרטיס ההתקדמות עם רשימת מה נשאר לסיום התואר"></div>
+      <figcaption><b>איור 2.</b> ההתקדמות מול יעד 70% (תקנון 11.4.4), ו"מה נשאר לסיום התואר" לכל דרישה.</figcaption>
+    </figure>
+    <div>
+      <h3 style="margin-top:12px">התקדמות ורשימת סיום התואר</h3>
+      <ul>
+        <li><b>מד התקדמות:</b> כמה נ״ז נצברו מתוך הנדרשים עד סוף השנה הנוכחית, עם קו יעד של 70% לפי סעיף 11.4.4 בתקנון.</li>
+        <li><b>מה נשאר לסיום התואר:</b> לכל דרישה (חובה לכל שנה, פרויקט גמר, לימודי חברה ורוח, התמחות) כמה נ״ז נצברו מתוך כמה. דרישה שהושלמה מסומנת ב-✓.</li>
+        <li><b>ממוצע:</b> ממוצע משוקלל לפי נ״ז, מהציונים שהוזנו.</li>
+        <li><b>ייבוא מגליון ציונים (PDF):</b> מעלים את הגליון מהפורטל, הכלי מזהה את הקורסים והציונים ומציג מה ישתנה לפני שמחילים. הקובץ נקרא רק במחשב של הסטודנט ולא נשמר.</li>
+        <li><b>אזהרות תקנון:</b> הכלי מזהיר ממעמד "על תנאי" אחרי 3 כישלונות מצטברים (11.4.1), ומהרחקה אחרי 4 כישלונות מצטברים (11.5.1) או 3 כישלונות באותו קורס (11.5.2).</li>
+        <li><b>מחיקת הנתונים:</b> כפתור אחד מוחק את כל מה שנשמר בדפדפן.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 5 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 5</div>
+  <h2><span class="n">5</span>בניית המערכת</h2>
+  <p class="lead">המסך המרכזי. הכלי מחפש ברקע את כל השילובים החוקיים של קבוצות, מדרג אותם ומציג את 10 הטובים ביותר על לוח שבועי.</p>
+
+  <figure>
+    <div class="frame"><img src="images/04-builder.jpg" alt="מסך בניית המערכת"></div>
+    <figcaption><b>איור 3.</b> מסך "בניית מערכת" לשנה מלאה, סמסטר א׳. למעלה: החלופה המוצגת (1 מתוך 10) ופס הסיכום. במרכז: הלוח השבועי. מימין: "הקורסים שלי", עם חובה, אולי או לא לכל קורס.</figcaption>
+  </figure>
+
+  <h3>חלקי המסך</h3>
+  <ul>
+    <li><b>מעבר בין חלופות:</b> "חלופה 1 מתוך 10" עם חצים. החלופות מדורגות לפי ההעדפות (פרק 7).</li>
+    <li><b>לתכנן:</b> שנה, רק א׳, רק ב׳ או קיץ. בתכנון שנה מחליפים בין סמסטר א׳ לב׳ בלשוניות.</li>
+    <li><b>הודעת הנחה:</b> בתכנון שנה, הכלי אומר על מה מבוסס סמסטר ב׳, למשל "התכנון של ב׳ מניח שעוברים את חוזק חומרים 1…".</li>
+    <li><b>הלוח השבועי:</b> כל שיעור עם שם הקורס, שעות, סוג (הרצאה, תרגול, מעבדה) וחדר. לכל קורס צבע משלו.</li>
+    <li><b>הקורסים שלי:</b> לכל קורס נ״ז, חובה/אולי/לא, ובאיזה סמסטר ללמוד אותו (אוטומטי, א׳ או ב׳). תגיות מסבירות את המצב: <span class="tag orange">חזרה</span> <span class="tag">רק בסמסטר ב׳</span> <span class="tag">פותח 10 קורסים</span> <span class="tag green">✓ במערכת · סמסטר ב׳</span> <span class="tag orange">זמין בתנאי</span>.</li>
+  </ul>
+
+  <figure>
+    <div class="frame"><img src="images/08-summary-pills.png" alt="פס הסיכום של החלופה"></div>
+    <figcaption><b>איור 4.</b> פס הסיכום: מספר קורסים ונ״ז בסמסטר ובשנה, ימים פנויים, שעות חלונות, האם החלופה מקדמת בתואר, ומצב לוח הבחינות. מתחתיו: אילו קורסי קדם יש בחלופה וכמה קורסים חדשים היא פותחת.</figcaption>
+  </figure>
+
+  <div class="row">
+    <figure class="narrow">
+      <div class="frame"><img src="images/07-lesson-popover.png" alt="חלון פרטי שיעור"></div>
+      <figcaption><b>איור 5.</b> לחיצה על שיעור: פרטי הקבוצה, מספר להרשמה, נעיצה, קישור לידיעון, והקבוצות האחרות בקורס.</figcaption>
+    </figure>
+    <div>
+      <h3 style="margin-top:12px">פרטי שיעור ונעיצה</h3>
+      <ul>
+        <li>לחיצה על שיעור בלוח פותחת את פרטי הקבוצה: מרצה, מפגשים, בחינות ומספר הקבוצה להרשמה.</li>
+        <li><b>נעץ קבוצה:</b> שומר את הקבוצה הזו בכל החלופות, למשל כשכבר נרשמתם אליה או שהיא מתאימה במיוחד.</li>
+        <li><b>ראה בידיעון:</b> קישור ישיר לדף הקורס בידיעון הרשמי.</li>
+        <li><b>מרצה:</b> אפשר לבחור "להעדיף" או "להימנע" ממרצה, והחיפוש מתחשב בזה.</li>
+        <li><b>קבוצות אחרות:</b> רשימת כל הקבוצות בקורס, עם סימון <span class="tag orange">מלאה</span> ו<span class="tag orange">מתנגשת</span>, כדי לראות מה האפשרויות אם הקבוצה הנבחרת תתמלא.</li>
+      </ul>
+      <h3>השוואה בין חלופות</h3>
+      <p>מחלופה 2 והלאה מופיעה שורה "לעומת חלופה 1" שמסכמת את ההבדלים: ימים פנויים, חברים, חלונות וקורסים. למשל: "אותם קורסים, שיבוץ אחר".</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 6 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 6</div>
+  <h2><span class="n">6</span>כישלון בקורס ודרישות קדם</h2>
+  <p class="lead">כאן הכלי חוסך הכי הרבה עבודה. כישלון אחד משפיע על שרשרת של קורסים, והכלי מחשב אותה לבד ומסביר כל חסימה.</p>
+
+  <div class="row">
+    <div>
+      <h3 style="margin-top:4px">מה קורה אחרי כישלון</h3>
+      <ul>
+        <li><b>הקורס מוצע שוב כחזרה</b> (תקנון 11.6.1), ומקבל עדיפות במערכת. בדוגמה, "חשבון דיפרנציאלי אינטגרלי 2" נכנס למערכת בסמסטר ב׳, כי הוא נפתח רק בו.</li>
+        <li><b>כל קורס שתלוי בו נחסם</b> (תקנון 7.4). הכלי מראה את השרשרת המלאה, למשל: "תורת הבקרה ← מערכות ליניאריות ← אנליזה הרמונית ← חשבון דיפרנציאלי אינטגרלי 2 (נכשלת)".</li>
+        <li><b>קורס מקביל</b> מותר באותו סמסטר (תקנון 6.2.3), ומסומן "זמין בתנאי", למשל "רק יחד עם פיזיקה חשמל ומגנטיות".</li>
+        <li><b>שנה מלאה:</b> קורס בסמסטר א׳ יכול לפתוח את ההמשך שלו בסמסטר ב׳, והכלי מתכנן את שניהם יחד.</li>
+      </ul>
+      <figure class="fit" style="--w:276px">
+        <div class="frame"><img src="images/05-failed-course.png" alt="כרטיס של קורס שנכשלו בו"></div>
+        <figcaption><b>איור 6.</b> קורס שנכשלו בו: מסומן "חזרה", "פותח 10 קורסים", ונכנס למערכת בסמסטר ב׳.</figcaption>
+      </figure>
+    </div>
+    <figure class="narrow">
+      <div class="frame"><img src="images/06-blocked.png" alt="רשימת הקורסים החסומים עם הסיבה לכל חסימה"></div>
+      <figcaption><b>איור 7.</b> "חסומים": כל קורס שעוד אי אפשר לקחת, עם דרישת הקדם החסרה וסעיף התקנון.</figcaption>
+    </figure>
+  </div>
+
+  <div class="box tip">
+    <span class="t">למה זה חשוב למכללה</span>
+    <p>השאלה "מה אני יכול לקחת אחרי שנכשלתי ב-X?" היא אחת הפניות הנפוצות למזכירות ולרכזים. הכלי עונה עליה לבד, עם הפניה לסעיף בתקנון.</p>
+  </div>
+</section>
+
+<!-- ===================== 7 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 7</div>
+  <h2><span class="n">7</span>העדפות ואילוצים</h2>
+  <p class="lead">כפתור "העדפות" בראש המסך. כל שינוי מריץ את החיפוש מחדש ברקע, והחלופות מתעדכנות תוך שניות.</p>
+
+  <div class="row prefs">
+    <figure>
+      <div class="frame"><img src="images/09-prefs-a.png" alt="חלון ההעדפות, חלק עליון"></div>
+      <figcaption><b>איור 8א.</b> משקלי ההעדפות, ימים פנויים ומידת המחויבות.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame"><img src="images/09-prefs-b.png" alt="חלון ההעדפות, חלק תחתון"></div>
+      <figcaption><b>איור 8ב.</b> שעות, זמן תפוס ואפשרויות נוספות.</figcaption>
+    </figure>
+  </div>
+
+  <div class="row">
+    <div>
+      <h3>מה חשוב לך?</h3>
+      <p>חמש העדפות, כל אחת בסולם של 4 דרגות (לא חשוב, קצת, חשוב, מאוד): להיות עם החברים, להתקדם בתואר, ימים פנויים, בלי חלונות ושעות נוחות.
+        החלופות מדורגות לפי השקלול שלהן.</p>
+      <h3>העדפה או חובה</h3>
+      <p>יום פנוי וטווח שעות אפשר להגדיר כ<b>רק העדפה</b> (המערכת תעדיף, אבל לא תפסול בגלל זה) או כ<b>חובה לגמרי</b> (כל מערכת חייבת לעמוד בזה).</p>
+    </div>
+    <div>
+      <h3>אילוצים נוספים</h3>
+      <ul>
+        <li><b>זמן תפוס:</b> עבודה או אימון. החיפוש לא ישבץ שיעורים בזמנים האלה.</li>
+        <li><b>תקרת נ״ז</b> לסמסטר, ו<b>לכל היותר N ימים בקמפוס</b>.</li>
+        <li><b>איפה להעמיס:</b> יותר בא׳, מאוזן או יותר בב׳.</li>
+        <li>לאפשר 2 בחינות באותו יום, ולכלול קבוצות מלאות.</li>
+        <li><b>איפוס העדפות</b> וקישור גיבוי מלא.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="keep">
+  <h3>כשאין פתרון</h3>
+  <p>אם האילוצים סותרים, הכלי לא נשאר ריק: הוא מסביר למה אין מערכת ומציע מה לרכך. בדוגמה, כל ימי השבוע סומנו כ"חובה פנוי":</p>
+  <figure>
+    <div class="frame"><img src="images/10-no-solution.jpg" alt="הודעת לא נמצאה מערכת עם הסבר"></div>
+    <figcaption><b>איור 9.</b> "לא נמצאה מערכת": הסבר, קישור לעדכון ב"המצב שלי", וכפתור לפתיחת ההעדפות.</figcaption>
+  </figure>
+  </div>
+</section>
+
+<!-- ===================== 8 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 8</div>
+  <h2><span class="n">8</span>שנה מלאה, קיץ והתמחות</h2>
+  <p class="lead">אפשר לתכנן סמסטר אחד, או שנה שלמה שבה סמסטר א׳ וב׳ נבנים יחד, ועוד סמסטר קיץ.</p>
+
+  <div class="row">
+    <div>
+      <h3 style="margin-top:4px">תכנון שנה</h3>
+      <ul>
+        <li>"לתכנן: שנה" בונה זוג מערכות, א׳ וב׳, כשקורס מא׳ פותח את ההמשך שלו בב׳.</li>
+        <li>לכל קורס אפשר לקבוע סמסטר (אוטומטי, א׳ או ב׳), ובהעדפות לבחור איפה להעמיס.</li>
+        <li>פס הסיכום מציג גם את סך השנה, למשל "בכל השנה: 15 קורסים, 42 נ״ז".</li>
+      </ul>
+      <h3>סמסטר קיץ</h3>
+      <ul>
+        <li>מסמנים ב"המצב שלי" שמתכננים קיץ, ומופיעה לשונית "קיץ".</li>
+        <li>הקיץ מתוכנן אחרי שנת הלימודים, בהנחה שעוברים את הקורסים שבמערכת השנה, והנ״ז שלו נספרים.</li>
+      </ul>
+      <h3>התמחות</h3>
+      <ul>
+        <li>בוחרים התמחות לפי הכלל של כל מחלקה: תחום אחד, שני תחומים, או תחום שעומד לבד (למשל "מערכות רכב בלבד" במכנית).</li>
+        <li>אחרי שמגיעים למספר התחומים, השאר ננעלים, כדי שלא תיבחר התמחות שלא קיימת.</li>
+        <li>קורסי החובה והבחירה של ההתמחות נכנסים לתכנון ולרשימת סיום התואר.</li>
+      </ul>
+    </div>
+    <figure class="narrow">
+      <div class="frame"><img src="images/03-specialization.png" alt="בחירת התמחות בפרופיל"></div>
+      <figcaption><b>איור 10.</b> בחירת שני תחומי התמחות בהנדסה מכנית, וסימון סמסטר קיץ.</figcaption>
+    </figure>
+  </div>
+  <figure>
+    <div class="frame"><img src="images/14-summer.jpg" alt="מערכת לסמסטר קיץ"></div>
+    <figcaption><b>איור 11.</b> לשונית "קיץ": מערכת לסמסטר הקיץ, עם ההנחה שעליה היא מבוססת ורשימת הקורסים שאפשר להוסיף.</figcaption>
+  </figure>
+</section>
+
+<!-- ===================== 9 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 9</div>
+  <h2><span class="n">9</span>תיאום עם חברים</h2>
+  <p class="lead">סטודנטים רוצים ללמוד עם החברים שלהם. הכלי מאפשר לשתף מערכת בקישור, והחיפוש מעדיף מערכות עם שיעורים משותפים.</p>
+
+  <div class="row">
+    <figure class="narrow">
+      <div class="frame"><img src="images/11-friends-panel.png" alt="חלון החברים"></div>
+      <figcaption><b>איור 12.</b> חלון "חברים": הוספת חבר מקישור, החברים שלי, והקישור שלי.</figcaption>
+    </figure>
+    <div>
+      <h3 style="margin-top:4px">איך זה עובד</h3>
+      <ol>
+        <li>החבר לוחץ "שתף" ושולח את הקישור שלו (למשל בוואטסאפ).</li>
+        <li>מדביקים את הקישור בחלון "חברים" ולוחצים "הוסף".</li>
+        <li>בוחרים כמה חשוב להיות עם החבר הזה (4 דרגות), והאם להציג אותו במערכת.</li>
+      </ol>
+      <p>השיעורים המשותפים מסומנים בלוח בשם החבר, ופס הסיכום מראה כמה קורסים משותפים, למשל "8 קורסים עם נועה".</p>
+      <h3>דרכים נוספות להוסיף חבר</h3>
+      <ul>
+        <li><b>עורך מסך מלא:</b> מחפשים קורס ומשבצים את הקבוצות של החבר (איור 14).</li>
+        <li><b>הדבקת טקסט</b> עם מספרי קבוצות, או העלאת <b>קובץ PDF או תמונה</b> של המערכת שלו. התמונה מפוענחת בדפדפן ולא נשלחת לשום מקום.</li>
+      </ul>
+      <div class="box ok">
+        <span class="t">מה הקישור כולל</span>
+        <p>רק את השם ואת הקבוצות של החלופה המוצגת. בלי ציונים, בלי כישלונות ובלי שום מידע אישי אחר.</p>
+      </div>
+    </div>
+  </div>
+
+  <figure>
+    <div class="frame"><img src="images/12-board-with-friend.jpg" alt="הלוח עם שיעורים משותפים לחברה"></div>
+    <figcaption><b>איור 13.</b> אחרי הוספת החברה "נועה", החיפוש בחר קבוצות משותפות. כל שיעור משותף מסומן בשמה, ובפס הסיכום: "8 קורסים עם נועה".</figcaption>
+  </figure>
+  <figure>
+    <div class="frame"><img src="images/13-friend-editor.jpg" alt="עורך מערכת של חבר"></div>
+    <figcaption><b>איור 14.</b> עורך המערכת של חבר: חיפוש קורס, כל הקבוצות שלו (כולל "מלאה"), ושיבוץ בלחיצה.</figcaption>
+  </figure>
+</section>
+
+<!-- ===================== 10 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 10</div>
+  <h2><span class="n">10</span>סיום: רשימה להרשמה ולוח שנה</h2>
+  <p class="lead">התוצר הסופי: כל מה שצריך כדי להירשם באפקה-נט, מסודר לפי סמסטר.</p>
+  <div class="row">
+    <figure class="narrow">
+      <div class="frame"><img src="images/15-registration-list.png" alt="הרשימה להרשמה"></div>
+      <figcaption><b>איור 15.</b> "רשימה להרשמה": לכל קורס מספר הקבוצה והתרגול, קבוצות גיבוי וקישור לידיעון.</figcaption>
+    </figure>
+    <div>
+      <h3 style="margin-top:4px">רשימה להרשמה</h3>
+      <ul>
+        <li>לכל קורס: שם, מספר קורס, נ״ז, ומספר הקבוצה להרשמה, כולל התרגול או המעבדה.</li>
+        <li><b>קבוצות גיבוי:</b> קבוצות חלופיות שמשתלבות באותה מערכת, למקרה שהקבוצה הראשונה תתמלא בזמן ההרשמה.</li>
+        <li>קישור לכל קורס בידיעון הרשמי.</li>
+        <li><b>העתק הכל:</b> מעתיק את הרשימה כטקסט.</li>
+        <li>הרשימה מזכירה שההרשמה עצמה נעשית באפקה-נט.</li>
+      </ul>
+      <h3>הוספה ללוח שנה</h3>
+      <p>"הוסף ללוח שנה" מוריד קובץ <span class="ltr">.ics</span> שנפתח ביומן של גוגל, אפל או אאוטלוק. השיעורים חוזרים כל שבוע בתאריכי הסמסטר, והחגים וימים בלי לימודים מלוח השנה האקדמי לא נכללים.</p>
+      <h3>שיתוף וגיבוי</h3>
+      <ul>
+        <li><b>שתף:</b> קישור למערכת לשליחה לחברים (פרק 9).</li>
+        <li><b>קישור גיבוי מלא:</b> קישור פרטי שכולל את כל המצב, כדי להעביר אותו למכשיר אחר של אותו סטודנט.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 11 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 11</div>
+  <h2><span class="n">11</span>מפת ההתקדמות בתואר</h2>
+  <p class="lead">"הראה התקדמות" בעמוד "המצב שלי" פותח מפה של כל התואר: כל הקורסים לפי שנה, והקשרים של דרישות הקדם ביניהם.</p>
+  <figure>
+    <div class="frame"><img src="images/16-progress-map.jpg" alt="מפת ההתקדמות בתואר"></div>
+    <figcaption><b>איור 16.</b> "המסע שלי בתואר": קורסים שהושלמו (✓ ירוק), קורס שנכשלו בו (אדום), קורסים במערכת שנבחרה (סגול), וקורסים נעולים (מנעול). כל קורס מראה כמה קורסים הוא פותח.</figcaption>
+  </figure>
+  <ul>
+    <li><b>פס עליון:</b> כמה נ״ז הושלמו מתוך כל התואר, וכמה המערכת שנבחרה מוסיפה.</li>
+    <li><b>סינון:</b> הכל, מה שנשאר לי, או רק השנה שלי. יש גם תצוגת רשימה, זום ומסך מלא.</li>
+    <li><b>לחיצה על קורס</b> מראה מה צריך כדי להגיע אליו ומה הוא פותח.</li>
+  </ul>
+</section>
+
+<!-- ===================== 12 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 12</div>
+  <h2><span class="n">12</span>שימוש בטלפון</h2>
+  <div class="row">
+    <div>
+      <p class="lead">רוב הסטודנטים בונים מערכת מהטלפון. הכלי מותאם למסך קטן, בלי אפליקציה ובלי התקנה.</p>
+      <ul>
+        <li>הלוח מוצג יום אחד בכל פעם, עם בורר ימים למעלה. יום פנוי מסומן "פנוי".</li>
+        <li>הכפתורים הראשיים (חברים, העדפות, רשימה להרשמה, שתף) עוברים לפס תחתון.</li>
+        <li>אותם נתונים ואותן יכולות כמו במחשב.</li>
+        <li>"שתף (וואטסאפ ועוד)" פותח את תפריט השיתוף של הטלפון.</li>
+      </ul>
+      <h3>נגישות</h3>
+      <p>האתר נבנה עם ניווט מקלדת, תוויות לקוראי מסך וניגודיות צבעים, ויש בו הצהרת נגישות. פניות בנושא נגישות אפשר לשלוח דרך דף הדיווח באתר.</p>
+    </div>
+    <figure class="narrow-s">
+      <div class="frame"><img src="images/17-mobile.png" alt="הכלי בטלפון"></div>
+      <figcaption><b>איור 17.</b> הכלי בטלפון: יום א׳, עם בורר ימים ופס כפתורים תחתון.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== 13 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 13</div>
+  <h2><span class="n">13</span>מקור הנתונים ועדכונם</h2>
+  <p class="lead">הנתונים נלקחים מהידיעון הציבורי של המכללה (yedionpub.afeka.ac.il), בלי התחברות ובלי גישה למידע אישי.</p>
+  <ul>
+    <li><b>עדכון אוטומטי:</b> סריקה לילית מעדכנת את הקבוצות, המקומות הפנויים והבחינות. כל קורס מתעדכן לפחות פעם ביומיים, והבחינות בכל לילה. בראש המסך מופיע מתי הנתונים נבדקו לאחרונה ("נבדק לפני…").</li>
+    <li><b>סריקה מנומסת:</b> בקשה אחת בכל פעם, עם השהיה של כ-2.5 שניות בין בקשות, מתחת למגבלה של הידיעון. הסורק מזדהה בשם הכלי ובכתובת הקוד, מכבד בקשות האטה, ועוצר אחרי שלוש דחיות ברצף.</li>
+    <li><b>בדיקות לפני פרסום:</b> נתונים נכתבים רק אם כל הבדיקות האוטומטיות עוברות (מספר מינימלי של קורסים, קורס עוגן בכל מחזור ובכל סמסטר). נתונים שלא השתנו לא נכתבים מחדש.</li>
+    <li><b>בדיקה מול המקור הרשמי:</b> התקנון וסך הנ״ז נבדקו מול תוכניות הלימודים הרשמיות של תשפ״ז, ותקנון הלימודים בעדכון 5.2.2026.</li>
+  </ul>
+  <div class="box warn">
+    <span class="t">מגבלה ידועה</span>
+    <p>הנתונים טובים כמו הידיעון הציבורי ועשויים לפגר ביום או יומיים אחריו. ייצוא רשמי מהמכללה (קובץ או API) יפתור את זה, ראו פרק 16.</p>
+  </div>
+</section>
+
+<!-- ===================== 14 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 14</div>
+  <h2><span class="n">14</span>פרטיות ואבטחה</h2>
+  <p class="lead">הכלי נבנה כך שאין לו שום מידע על הסטודנטים, ולכן גם אין מה לדלוף.</p>
+  <table>
+    <tr><th style="width:30%">עיקרון</th><th>בפועל</th></tr>
+    <tr><td><b>הכול בדפדפן</b></td><td>הכלי רץ כולו בדפדפן של הסטודנט. אין שרת, אין הרשמה, אין חשבון ואין מאגר נתונים.</td></tr>
+    <tr><td><b>המידע לא יוצא מהמחשב</b></td><td>הציונים, הכישלונות והקבצים שהסטודנט מעלה (גליון ציונים, מערכת של חבר) נקראים במחשב שלו ולא נשלחים לשום מקום.</td></tr>
+    <tr><td><b>בלי מעקב</b></td><td>אין עוגיות, אין כלי אנליטיקה ואין פרסומות. הפונט מתארח באתר עצמו.</td></tr>
+    <tr><td><b>מדיניות אבטחה (CSP)</b></td><td>הדפדפן מורשה לטעון קוד רק מהאתר עצמו. החריג היחיד הוא ספריית זיהוי טקסט בתמונה, שנטענת רק כשמעלים תמונה של מערכת חבר, ורק מנתיב קבוע.</td></tr>
+    <tr><td><b>קישורים נבדקים</b></td><td>קישורי חבר וגיבוי נחשבים קלט לא מהימן: בדיקת מבנה, מגבלות גודל ובנייה מחדש שדה אחרי שדה לפני שימוש.</td></tr>
+    <tr><td><b>קוד פתוח</b></td><td>כל הקוד פתוח לבדיקה ב-GitHub, ברישיון MIT. נבדק שאין בקוד ובהיסטוריה שלו מפתחות או סודות.</td></tr>
+    <tr><td><b>בדיקות אוטומטיות</b></td><td>חבילת בדיקות שרצה לפני כל פרסום של האתר: פרסור הנתונים, התקנון, החיפוש, השיתוף ומדיניות האבטחה.</td></tr>
+  </table>
+  <p>תנאי השימוש, מדיניות הפרטיות והצהרת הנגישות המלאים נמצאים באתר, בקישורים שבתחתית כל עמוד.</p>
+</section>
+
+<!-- ===================== 15 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 15</div>
+  <h2><span class="n">15</span>סעיפי התקנון שהכלי מיישם</h2>
+  <p class="lead">לפי תקנון הלימודים בעדכון 5.2.2026. כל חסימה ואזהרה בכלי מציינת את הסעיף שלה.</p>
+  <table>
+    <tr><th style="width:16%">סעיף</th><th style="width:34%">נושא</th><th>מה הכלי עושה</th></tr>
+    <tr><td class="c">6.2.3</td><td>קורס מקביל</td><td>מאפשר לקחת קורס יחד עם הקורס המקביל שלו באותו סמסטר, ומסמן "זמין בתנאי".</td></tr>
+    <tr><td class="c">7.3</td><td>חפיפה בין שיעורים</td><td>אף מערכת לא כוללת שני שיעורים באותה שעה.</td></tr>
+    <tr><td class="c">7.4</td><td>דרישות קדם</td><td>חוסם קורס כשדרישת קדם חסרה, לאורך כל השרשרת, ומסביר מה חסר.</td></tr>
+    <tr><td class="c">11.4.1</td><td>לימודים על תנאי</td><td>מזהיר ממעמד "על תנאי" כשמצטברים 3 כישלונות.</td></tr>
+    <tr><td class="c">11.4.4</td><td>התקדמות מינימלית</td><td>מד התקדמות מול יעד של 70% מהנ״ז הנדרשים.</td></tr>
+    <tr><td class="c">11.5.1</td><td>הרחקה: כישלונות מצטברים</td><td>מזהיר מהרחקה כשמצטברים 4 כישלונות ומעלה.</td></tr>
+    <tr><td class="c">11.5.2</td><td>הרחקה: כישלון חוזר באותו קורס</td><td>מזהיר מהרחקה אחרי 3 כישלונות באותו קורס.</td></tr>
+    <tr><td class="c">11.6.1</td><td>חזרה על קורס</td><td>קורס שנכשלו בו מוצע שוב כחזרה, בסמסטר שבו הוא נפתח.</td></tr>
+  </table>
+  <div class="box tip">
+    <span class="t">אם משהו לא מדויק</span>
+    <p>אשמח לקבל מהמכללה הערות על פרשנות התקנון או על כללי ההתמחות, ולעדכן את הכלי בהתאם.</p>
+  </div>
+</section>
+
+<!-- ===================== 16 ===================== -->
+<section class="chapter">
+  <div class="kicker">פרק 16</div>
+  <h2><span class="n">16</span>ההצעה למכללה ופרטי קשר</h2>
+  <ol class="steps">
+    <li><b>קישור מאתר המכללה או מאפקה-נט</b> לכלי, כעזר לסטודנטים בתקופת ההרשמה.</li>
+    <li><b>ייצוא רשמי של נתוני הקורסים והקבוצות</b> (קובץ או API). כך הנתונים יהיו מדויקים ומעודכנים, ולא יהיה צורך לסרוק את הידיעון.</li>
+    <li><b>פגישת הצגה.</b> אשמח להציג את הכלי, לקבל הערות ולהתאים אותו לצרכים של המכללה.</li>
+  </ol>
+
+  <div class="box ok">
+    <span class="t">מה המכללה מרוויחה</span>
+    <ul>
+      <li>פחות פניות למזכירות ולרכזים בשאלות של "מה אני יכול לקחת".</li>
+      <li>סטודנטים שמגיעים להרשמה עם מערכת חוקית ורשימת קבוצות גיבוי.</li>
+      <li>בלי עלות, בלי שרת ובלי אחריות על מידע אישי של סטודנטים.</li>
+    </ul>
+  </div>
+
+  <h3>פרטי קשר</h3>
+  <div class="contact">
+    <b>שם</b><span>דולב בנזרי</span>
+    <b>טלפון</b><span class="ltr">052-5128228</span>
+    <b>דוא״ל</b><a class="ltr" href="mailto:dolevface@gmail.com">dolevface@gmail.com</a>
+    <b>הכלי</b><a class="ltr" href="https://dolev-benezri.github.io/lets_learn/">https://dolev-benezri.github.io/lets_learn/</a>
+    <b>הקוד</b><a class="ltr" href="https://github.com/dolev-benezri/lets_learn">https://github.com/dolev-benezri/lets_learn</a>
+  </div>
+
+  <p class="small" style="margin-top:28px">הכלי אינו רשמי ואינו קשור למכללת אפקה. ההרשמה באפקה-נט היא הקובעת.</p>
+</section>
+
+</div>
+</body>
+</html>
