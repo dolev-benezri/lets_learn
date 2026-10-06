@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-05T23:01:19.459Z",
+ "fetchedAt": "2026-10-06T10:16:11.191Z",
  "year": 2027,
  "startYear": 2026,
  "program": 30,
@@ -2581,7 +2581,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "ד\"ר אביב מורן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5099,7 +5099,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "ד\"ר אלון טל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "273032104/1"
@@ -5157,7 +5157,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "ד\"ר אלון טל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5636,7 +5636,7 @@
        "day": 3,
        "start": "17:00",
        "end": "18:50",
-       "room": "301 פיקוס"
+       "room": "103 מעב' דואלי פיקוס"
       }
      ],
      "exams": []
@@ -5654,7 +5654,7 @@
        "day": 3,
        "start": "19:00",
        "end": "19:50",
-       "room": "301 פיקוס"
+       "room": "103 מעב' דואלי פיקוס"
       }
      ],
      "exams": []
@@ -6865,7 +6865,7 @@
        "day": 3,
        "start": "20:00",
        "end": "21:50",
-       "room": "301 פיקוס"
+       "room": "200 פיקוס"
       }
      ],
      "exams": []
@@ -7855,7 +7855,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר כהן אלישבע",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090304/1",
@@ -8329,7 +8329,7 @@
        "day": 2,
        "start": "15:00",
        "end": "16:50",
-       "room": "קריה ה'13"
+       "room": "101 פיקוס"
       }
      ],
      "exams": []

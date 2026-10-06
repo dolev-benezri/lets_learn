@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-05T23:01:19.459Z",
+ "fetchedAt": "2026-10-06T10:16:11.191Z",
  "year": 2027,
  "startYear": 2026,
  "program": 10,
@@ -2589,7 +2589,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בוסני רם",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271014505/1"
@@ -7375,7 +7375,7 @@
        "day": 3,
        "start": "20:00",
        "end": "21:50",
-       "room": "301 פיקוס"
+       "room": "200 פיקוס"
       }
      ],
      "exams": []

@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-04T23:01:17.230Z",
+ "fetchedAt": "2026-10-06T10:16:11.191Z",
  "year": 2027,
  "startYear": 2027,
  "program": 20,
@@ -992,7 +992,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' מדינה דורית",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [
       "272012909/1"
@@ -1018,7 +1018,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' מדינה דורית",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
