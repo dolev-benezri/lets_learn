@@ -271,7 +271,7 @@ Opus סקר את כל הענף, בדגש על החיבורים בין החלקי
 המספרים וה"פתוח" שלמעלה הם תמונת מצב של סוף ה-MVP ולא עודכנו. המצב היום:
 
 - **בדיקות:** 225 בדיקות אוטומטיות עוברות (`npm test`).
-- **באוויר:** האתר חי ב-https://dolhack.github.io/lets_learn/ ומתפרסם ב-GitHub Pages.
+- **באוויר:** האתר חי ב-https://dolev-benezri.github.io/lets_learn/ ומתפרסם ב-GitHub Pages.
 - **רענון נתונים:** סריקה לילית אוטומטית ב-GitLab CI (`ci/gitlab-scrape.yml`) שדוחפת ל-`main`.
 - **ייבוא מצילום:** ייבוא מערכת של חבר מטקסט, PDF או תמונה קיים (`web/ui-friend-editor.js`).
 - **פונט:** Rubik מתארח מקומית, בלי Google Fonts.
