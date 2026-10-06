@@ -1,12 +1,14 @@
 # בונה מערכת שעות לאפקה
 
-[![deploy](https://github.com/dolhack/lets_learn/actions/workflows/deploy.yml/badge.svg)](https://github.com/dolhack/lets_learn/actions/workflows/deploy.yml)
+[![deploy](https://github.com/dolev-benezri/lets_learn/actions/workflows/deploy.yml/badge.svg)](https://github.com/dolev-benezri/lets_learn/actions/workflows/deploy.yml)
 
-**האתר: https://dolhack.github.io/lets_learn/**
+**האתר: https://dolev-benezri.github.io/lets_learn/**
+
+הכתובת הקודמת, `dolhack.github.io/lets_learn`, מפנה לכאן ומעבירה פעם אחת את המצב השמור בדפדפן (קישור גיבוי). הדף: [redirect/index.html](redirect/index.html), בריפו `dolhack/lets_learn` של ארגון שמחזיק את השם הישן.
 
 כלי שבונה מערכת שעות לסמסטר מנתונים אמיתיים של מכללת אפקה. הוא מתחשב בתקנון הלימודים, בכישלונות ובחזרות על קורסים, ובמערכות של החברים שלך.
 
-> **כלי עזר לא רשמי, שאינו קשור למכללת אפקה.** הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים, וההרשמה באפקה-נט היא הקובעת. הכלי ניתן כמות שהוא, בלי שום אחריות. ראו [תנאי השימוש](https://dolhack.github.io/lets_learn/legal.html).
+> **כלי עזר לא רשמי, שאינו קשור למכללת אפקה.** הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים, וההרשמה באפקה-נט היא הקובעת. הכלי ניתן כמות שהוא, בלי שום אחריות. ראו [תנאי השימוש](https://dolev-benezri.github.io/lets_learn/legal.html).
 
 ---
 
@@ -73,7 +75,7 @@
 דרישות: Node.js 22 ומעלה (נבדק על 24) ו-Git. אין שלב build, האתר הוא קבצים סטטיים.
 
 ```bash
-git clone https://github.com/dolhack/lets_learn.git
+git clone https://github.com/dolev-benezri/lets_learn.git
 cd lets_learn
 npm ci
 npx http-server web -p 8080 -c-1
@@ -133,7 +135,7 @@ node scripts/scrape.mjs --all-semesters --all-programs --cache cache --offline  
 
 אין `--help`: דגל לא מוכר גורם לשגיאה.
 
-**נימוס כלפי האתר:** בקשה אחת בכל פעם, וההגבלה של האתר היא כ-400 בקשות בשעה. משיכה ראשונה של כל התוכניות היא כ-1,800 בקשות, ולכן היא נמשכת כמה שעות, וכל תשובה נשמרת במטמון. אחר כך הריצה הלילית היא כ-450 בקשות (קבוצות ובחינות). ה-User-Agent הוא `afeka-scheduler/1.1 (+https://github.com/dolhack/lets_learn)`. שלוש דחיות ברצף עוצרות את הריצה, `Retry-After` מכובד, ואז שום קובץ לא נכתב. פרטים ב-[התנאים](https://dolhack.github.io/lets_learn/legal.html).
+**נימוס כלפי האתר:** בקשה אחת בכל פעם, וההגבלה של האתר היא כ-400 בקשות בשעה. משיכה ראשונה של כל התוכניות היא כ-1,800 בקשות, ולכן היא נמשכת כמה שעות, וכל תשובה נשמרת במטמון. אחר כך הריצה הלילית היא כ-450 בקשות (קבוצות ובחינות). ה-User-Agent הוא `afeka-scheduler/1.1 (+https://github.com/dolev-benezri/lets_learn)`. שלוש דחיות ברצף עוצרות את הריצה, `Retry-After` מכובד, ואז שום קובץ לא נכתב. פרטים ב-[התנאים](https://dolev-benezri.github.io/lets_learn/legal.html).
 
 **הריצה הלילית הראשונה:** המטמון של GitLab ריק בהתחלה, ומשיכה מלאה ארוכה מריצה אחת. `timeout 160m` עוצר את הסורק לפני ש-GitLab הורג את ה-job, המטמון נשמר (`when: always`), והריצה נחשבת חלקית: ירוקה, בלי commit. הריצה הבאה ממשיכה מהמטמון, ולכן משיכה ראשונה לוקחת 2-3 לילות. הריצה החלקית הרביעית ברצף נכשלת, כדי שסריקה תקועה תשלח מייל.
 
@@ -144,7 +146,7 @@ node scripts/scrape.mjs --all-semesters --all-programs --cache cache --offline  
 הסריקה דוחפת ל-GitHub עם טוקן fine-grained שיש לו תאריך תפוגה. ה-job `token-expiry` ב-[ci/gitlab-scrape.yml](ci/gitlab-scrape.yml) נכשל, ושולח מייל, כשנשארים פחות מ-14 יום, וגם כש-GitHub דוחה את הטוקן (פג או בוטל). הסריקה עצמה ממשיכה לרוץ. כדי לחדש:
 
 1. ב-GitHub: Settings → Developer settings → Fine-grained tokens → Generate new token.
-2. Repository access: רק `dolhack/lets_learn`. Permissions: Contents, Read and write. לבחור תאריך תפוגה.
+2. Repository access: רק `dolev-benezri/lets_learn`. Permissions: Contents, Read and write. לבחור תאריך תפוגה.
 3. ב-GitLab, בפרויקט `lets_learn-scrape`: Settings → CI/CD → Variables → `GH_PUSH_TOKEN` → להדביק את הטוקן החדש (Masked, Protected).
 4. Build → Pipeline schedules → ▶ כדי להריץ פעם אחת. ב-log של `token-expiry` מופיע התאריך החדש.
 5. למחוק ב-GitHub את הטוקן הישן.
@@ -207,7 +209,7 @@ design-system/  מערכת העיצוב
 - לפני merge: `npm test` ירוק, וסקירה.
 - קבצי האתר (`web/`) לא עוברים 200 תווים בשורה, ובדיקה אוטומטית אוכפת זאת.
 - לא מכניסים לריפו פרטים אישיים, מפתחות או סודות. הסריקה הלילית משתמשת ב-GH_PUSH_TOKEN של GitLab, שלא נשמר בקוד.
-- באגים, בקשות והסרת מידע: [issues](https://github.com/dolhack/lets_learn/issues). רשימת בעיות פתוחות: [docs/ISSUES.md](docs/ISSUES.md).
+- באגים, בקשות והסרת מידע: [issues](https://github.com/dolev-benezri/lets_learn/issues). רשימת בעיות פתוחות: [docs/ISSUES.md](docs/ISSUES.md).
 
 ### תיעוד נוסף
 
@@ -228,6 +230,6 @@ design-system/  מערכת העיצוב
 
 ## משפטי
 
-- **לא רשמי:** אין קשר למכללה האקדמית להנדסה אפקה. [תנאי שימוש ופרטיות](https://dolhack.github.io/lets_learn/legal.html). בקשות הסרה ודיווח על טעויות דרך [issues](https://github.com/dolhack/lets_learn/issues).
-- **קוד:** [רישיון MIT](LICENSE), נבנה על ידי [dolhack](https://github.com/dolhack). מותר להשתמש ולשנות, בתנאי ששומרים על הודעת זכויות היוצרים והרישיון.
+- **לא רשמי:** אין קשר למכללה האקדמית להנדסה אפקה. [תנאי שימוש ופרטיות](https://dolev-benezri.github.io/lets_learn/legal.html). בקשות הסרה ודיווח על טעויות דרך [issues](https://github.com/dolev-benezri/lets_learn/issues).
+- **קוד:** [רישיון MIT](LICENSE), נבנה על ידי [dolev-benezri](https://github.com/dolev-benezri). מותר להשתמש ולשנות, בתנאי ששומרים על הודעת זכויות היוצרים והרישיון.
 - **פונט:** Rubik, ברישיון SIL OFL: [web/fonts/OFL.txt](web/fonts/OFL.txt).

@@ -18,7 +18,7 @@ scrape:
   variables:
     GIT_STRATEGY: none # nothing to check out on the GitLab side
   script:
-    - git clone --depth 1 "https://x-access-token:${GH_PUSH_TOKEN}@github.com/dolhack/lets_learn.git" repo
+    - git clone --depth 1 "https://x-access-token:${GH_PUSH_TOKEN}@github.com/dolev-benezri/lets_learn.git" repo
     - cd repo && npm ci --no-audit --no-fund --ignore-scripts # no dependency needs an install script, and GH_PUSH_TOKEN is in the environment
     # stdout is one summary line (the commit message); a failed scrape writes nothing and fails the job.
     # The first runs are longer than the job (~1800 requests at 400 an hour): `timeout` stops the scraper before GitLab kills the job, the cache is saved, and the run counts as
@@ -36,8 +36,8 @@ scrape:
       rm -f ../.yedion-cache/partial-runs
     - git add web/data/afeka
     - if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
-    - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com commit -q -m "$(cat ../summary.txt)" -- web/data/afeka
-    - git -c user.name=dolhack -c user.email=64908772+dolhack@users.noreply.github.com pull --rebase -q && git push # main may move during the scrape; only web/data/afeka changes here, so the rebase is clean
+    - git -c user.name=dolev-benezri -c user.email=64908772+dolev-benezri@users.noreply.github.com commit -q -m "$(cat ../summary.txt)" -- web/data/afeka
+    - git -c user.name=dolev-benezri -c user.email=64908772+dolev-benezri@users.noreply.github.com pull --rebase -q && git push # main may move during the scrape; only web/data/afeka changes here, so the rebase is clean
 
 # Two weeks' notice before GH_PUSH_TOKEN expires (README, "חידוש GH_PUSH_TOKEN"): a separate job, so a failure here only sends the mail and
 # never stops a scrape or a data push. GitHub names a fine-grained token's expiry in a response header; a token without one passes. A GET, not HEAD: an edge answered HEAD with 404.

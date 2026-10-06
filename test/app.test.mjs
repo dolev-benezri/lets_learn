@@ -155,7 +155,7 @@ test('index.html has a description and og/twitter tags with an absolute og:image
   const meta = (attr, key) => html.match(new RegExp(`<meta ${attr}="${key}" content="([^"]+)"`))?.[1];
   assert.match(meta('name', 'description'), /כלי עזר לא רשמי/);
   for (const k of ['og:title', 'og:description', 'og:type', 'og:url', 'og:locale']) assert.ok(meta('property', k), k);
-  assert.equal(meta('property', 'og:image'), 'https://dolhack.github.io/lets_learn/og.png');
+  assert.equal(meta('property', 'og:image'), 'https://dolev-benezri.github.io/lets_learn/og.png');
   assert.equal(meta('name', 'twitter:card'), 'summary_large_image');
   assert.ok(existsSync('web/og.png'));
 });
