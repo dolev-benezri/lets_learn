@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { meetingsMask, overlaps, buildOptions, forbiddenMask, unlockCounts, downstream, chainDepth, search, searchYear } from '../web/solver-core.js';
+import { meetingsMask, overlaps, buildOptions, forbiddenBy, unlockCounts, downstream, chainDepth, search, searchYear } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { mini } from './fixtures/mini-data.mjs';
@@ -54,16 +54,15 @@ test('full-group exemption only for the pinned group itself', () => {
   assert.deepEqual(buildOptions(A, { pins: ['A1'] }).map((o) => o.groups), [['A1', 'A1/2']]);
 });
 
-test('forbidden mask removes options (hard day off / window)', () => {
+test('forbiddenBy removes options (hard day off / window)', () => {
   const A = mini().courses.A;
-  const f = forbiddenMask({ dayOff: [1], dayOffHard: true });
-  assert.deepEqual(buildOptions(A, { forbidden: f }).map((o) => o.groups), [['A1', 'A1/1'], ['A1', 'A1/2']]);
-  const w = forbiddenMask({ notBefore: '10:00', windowHard: true });
-  assert.deepEqual(buildOptions(A, { forbidden: w }).map((o) => o.groups), [['A2']]);
+  assert.deepEqual(buildOptions(A, { forbidden: forbiddenBy({ dayOff: [1], dayOffHard: true }) }).map((o) => o.groups), [['A1', 'A1/1'], ['A1', 'A1/2']]);
+  assert.deepEqual(buildOptions(A, { forbidden: forbiddenBy({ notBefore: '10:00', windowHard: true }) }).map((o) => o.groups), [['A2']]);
 });
 
-test('hard time window edges: lessons end at :50, "not after 17:50" allows one ending 17:50; "not before 08:00" allows a start at 08:00', () => {
-  const hit = (c, start, end) => overlaps(forbiddenMask({ ...c, windowHard: true }), meetingsMask([{ day: 2, start, end }]));
+test('hard time window edges in real minutes: "not after 17:50" allows a lesson ending 17:50, "not after 17:45" does not', () => {
+  const hit = (c, start, end) => forbiddenBy({ ...c, windowHard: true })({ day: 2, start, end });
+  assert.equal(hit({ notAfter: '17:45' }, '16:00', '17:50'), true);
   assert.equal(hit({ notAfter: '17:50' }, '16:00', '17:50'), false);
   assert.equal(hit({ notAfter: '17:50' }, '18:00', '19:50'), true);
   assert.equal(hit({ notAfter: '17:30' }, '16:00', '17:50'), true);
@@ -71,16 +70,17 @@ test('hard time window edges: lessons end at :50, "not after 17:50" allows one e
   assert.equal(hit({ notBefore: '08:00' }, '07:30', '08:50'), true);
 });
 
-test('busy blocks: always hard, edges floor/ceil the safe way (18:00 block vs lesson ending 17:50, 07:00-08:00 block vs lesson starting 08:00)', () => {
-  const hit = (b, start, end, c = {}) => overlaps(forbiddenMask({ ...c, blocks: [{ day: 2, label: '', ...b }] }), meetingsMask([{ day: 2, start, end }]));
+test('busy blocks: always hard, in real minutes (a block may start when a lesson ends, or end when it starts)', () => {
+  const hit = (b, start, end, c = {}) => forbiddenBy({ ...c, blocks: [{ day: 2, label: '', ...b }] })({ day: 2, start, end });
+  assert.equal(hit({ start: '20:50', end: '22:00' }, '19:00', '20:50'), false);
   assert.equal(hit({ start: '18:00', end: '20:00' }, '16:00', '17:50'), false);
   assert.equal(hit({ start: '18:00', end: '20:00' }, '19:00', '20:50'), true);
   assert.equal(hit({ start: '18:00', end: '20:00' }, '20:00', '21:50'), false);
   assert.equal(hit({ start: '07:00', end: '08:00' }, '08:00', '09:50'), false);
   assert.equal(hit({ start: '07:00', end: '08:00' }, '07:00', '08:50'), true);
-  assert.equal(hit({ start: '17:45', end: '19:00' }, '16:00', '17:50'), true); // starts inside the lesson's last slot: conservative
+  assert.equal(hit({ start: '17:45', end: '19:00' }, '16:00', '17:50'), true); // five minutes inside the lesson
   assert.equal(hit({ start: '18:00', end: '20:00' }, '18:00', '18:50', { dayOffHard: false, windowHard: false }), true); // independent of the hardness flags
-  assert.equal(overlaps(forbiddenMask({ blocks: [{ day: 3, start: '18:00', end: '20:00', label: '' }] }), meetingsMask([{ day: 2, start: '18:00', end: '19:50' }])), false); // other day
+  assert.equal(forbiddenBy({ blocks: [{ day: 3, start: '18:00', end: '20:00', label: '' }] })({ day: 2, start: '18:00', end: '19:50' }), false); // other day
 });
 
 test('search: a busy block excludes the only option that overlaps it; diagnosis names the block when it empties a course', () => {
@@ -226,7 +226,7 @@ test('consecutive late slots 21:00–21:50 and 22:00–22:50: no gap', () => {
   assert.ok(Math.abs(r.results[0].breakdown.compact - 1) < 0.01);
 });
 
-test('soft time window (notBefore not hard): 08:00–09:50 before 10:00 = 120 outside minutes', () => {
+test('soft time window (notBefore not hard): 08:00–09:50 before 10:00 = 110 outside minutes', () => {
   const data = mini();
   data.courses.Y = { name: 'Test', credits: 1, offered: true, prereqs: [], groups: [
     { id: 'Y1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
@@ -234,7 +234,7 @@ test('soft time window (notBefore not hard): 08:00–09:50 before 10:00 = 120 ou
       exams: [] },
   ] };
   const r = run({ data, courses: [{ id: 'Y', mode: 'must' }], constraints: { notBefore: '10:00' }, weights: { ...W0, timeWindow: 1 } });
-  assert.equal(r.results[0].breakdown.timeWindow, 1 - 120 / 600);
+  assert.equal(r.results[0].breakdown.timeWindow, 1 - 110 / 600);
 });
 
 test('examSpread: two moed-1 exams 3 days apart = 3/7', () => {
@@ -720,7 +720,7 @@ test('lecturers never strand a course: a pinned group survives avoid, prefer fal
   assert.deepEqual(buildOptions({ groups: [g1, g2] }, { pins: ['g1'], lecturers: { 'כהן': 'avoid' } }).map((o) => o.groups[0]), ['g1'], 'pin beats avoid');
   assert.deepEqual(buildOptions({ groups: [g1, g2] }, { pins: ['g2'], lecturers: { 'כהן': 'prefer' } }).map((o) => o.groups[0]), ['g2'], 'pin beats prefer');
   assert.deepEqual(buildOptions({ groups: [{ ...g1, full: true }, g2] }, { lecturers: { 'כהן': 'prefer' } }).map((o) => o.groups[0]), ['g2'], 'the preferred group is full: the others stay');
-  assert.deepEqual(buildOptions({ groups: [g1, g2] }, { forbidden: meetingsMask([{ day: 1, start: '09:00', end: '11:00' }]), lecturers: { 'כהן': 'prefer' } })
+  assert.deepEqual(buildOptions({ groups: [g1, g2] }, { forbidden: forbiddenBy({ blocks: [{ day: 1, start: '09:00', end: '11:00' }] }), lecturers: { 'כהן': 'prefer' } })
     .map((o) => o.groups[0]), ['g2'], 'the preferred group is blocked: the others stay');
 });
 
@@ -758,4 +758,29 @@ test('identical groups with different exam dates are two options, not registrati
   const ex = (date) => [{ kind: 'בחינה', moed: 1, date, time: null }];
   const o = buildOptions({ groups: [{ ...grp('A', 1), exams: ex('2027-02-01') }, { ...grp('B', 1), exams: ex('2027-02-20') }] });
   assert.deepEqual(o.map((x) => [x.groups, x.exams]), [[['A'], ['2027-02-01']], [['B'], ['2027-02-20']]]);
+});
+
+// ---- stage 4 (issue #4): busy time and time limits in real minutes ----
+const at = (start, end, day = 2) => set({ Y: one([{ ...grp('Y1', day, start, end), lecturer: 'L' }]) });
+const plans = (data, constraints, weights = W0) => search({ data, courses: musts('Y'), weights, constraints });
+
+test('a busy block from 20:50 keeps a lesson that ends at 20:50', () => {
+  assert.equal(plans(at('19:00', '20:50'), { blocks: [{ day: 2, start: '20:50', end: '22:00', label: '' }] }).results.length, 1);
+  assert.equal(plans(at('19:00', '20:50'), { blocks: [{ day: 2, start: '20:40', end: '22:00', label: '' }] }).results.length, 0, 'ten minutes inside the lesson');
+});
+
+test('a hard "not after 17:45" drops a lesson that ends at 17:50', () => {
+  assert.equal(plans(at('16:00', '17:50'), { notAfter: '17:45', windowHard: true }).results.length, 0);
+  assert.equal(plans(at('16:00', '17:50'), { notAfter: '17:50', windowHard: true }).results.length, 1);
+});
+
+test('a soft "not after 20:00" counts a 20:00-20:50 lesson as 50 outside minutes', () => {
+  const r = plans(at('20:00', '20:50'), { notAfter: '20:00' }, { ...W0, timeWindow: 1 });
+  assert.equal(r.results[0].breakdown.timeWindow, 1 - 50 / 600);
+});
+
+test('a lecture that overlaps its own linked tutorial gives no option', () => {
+  const t = { ...grp('T', 1, '09:00', '10:00'), type: 'תרגול', primary: false };
+  assert.deepEqual(buildOptions({ groups: [{ ...grp('L', 1, '08:00', '10:00'), linked: ['T'] }, t] }), []);
+  assert.equal(buildOptions({ groups: [{ ...grp('L', 1, '08:00', '09:00'), linked: ['T'] }, t] }).length, 1, 'back to back is fine');
 });

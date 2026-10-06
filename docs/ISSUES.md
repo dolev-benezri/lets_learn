@@ -37,6 +37,7 @@
 | `fix/search-lifecycle` | בדיקת הפותר [#1](https://github.com/dolev-benezri/lets_learn/issues/1): תשובה או שגיאה של חיפוש ישן לא מחליפה את התוצאות (אחרי החלפת תוכנית היא הפילה את הלוח), ועריכת השם בקישור לא מפעילה חיפוש חדש |
 | `fix/prereq-parse` | בדיקת הפותר [#2](https://github.com/dolev-benezri/lets_learn/issues/2): שורות תנאי |
 | `fix/search-preferences` | בדיקת הפותר [#3](https://github.com/dolev-benezri/lets_learn/issues/3): תקרת 0 נ״ז היא תקרה; מעדיף מרצה הוא משאלה (אין מערכת איתו: מחפשים בלעדיו); נעיצה של תרגול לא מבטלת הימנע/מעדיף של ההרצאות; קבוצות שנבדלות רק במועד הבחינה הן שתי חלופות |
+| `fix/minute-precision` | בדיקת הפותר [#4](https://github.com/dolev-benezri/lets_learn/issues/4): זמן תפוס, יום חופש קשיח ושעות קשיחות נבדקים בדקות אמיתיות ולא ברשת של חצי שעה (חסימה מ-20:50 כבר לא מוחקת שיעור שנגמר ב-20:50, לא |
 
 ## סיכום
 
