@@ -23,25 +23,18 @@ export const overlaps = (a, b) => a.some((v, d) => (v & b[d]) !== 0);
 export const merge = (a, b) => a.map((v, d) => v | b[d]);
 const daysUsed = (mask) => mask.filter((m, d) => d >= 1 && m !== 0).length; // campus days of a week mask (index 0 unused)
 
-// Slots strictly after time t. Not meetingsMask(t..23:00): that floors the start, so a lesson ending exactly at t
-// (Afeka lessons end at :50) would share t's slot and count as late.
-export const lateMask = (t) => {
-  const a = Math.max(0, Math.ceil((toMin(t) - SLOT_START) / SLOT));
-  return a > 31 ? 0 : ~0 << a;
-};
+// Busy blocks, a hard day off and hard hours, tested on ONE meeting in real minutes (the 30-minute slots are for lesson-vs-lesson clashes only).
+// A lesson [s, e) hits a busy block [a, b) when s < b && a < e, 'not before T' when s < T, 'not after T' when e > T.
+export const forbiddenBy = (c = {}) => (m) => !!(m.day && ((c.blocks ?? []).some((b) => b.day === m.day && toMin(m.start) < toMin(b.end) && toMin(b.start) < toMin(m.end))
+  || (c.dayOffHard && c.dayOff?.includes(m.day)) || (c.windowHard && outsideMin(m, { ...c, dayOff: [] }) > 0)));
 
-export function forbiddenMask(c = {}) {
-  const m = new Array(DAYS).fill(0);
-  const span = (d, from, to) => meetingsMask([{ day: d, start: from, end: to }])[d];
-  const busy = meetingsMask(c.blocks ?? []); // always hard; floor/ceil in meetingsMask is the safe side for busy time
-  for (let d = 1; d <= 6; d++) {
-    m[d] |= busy[d];
-    if (c.dayOffHard && c.dayOff?.includes(d)) m[d] = ~0;
-    if (c.windowHard && c.notBefore) m[d] |= span(d, '07:00', c.notBefore);
-    if (c.windowHard && c.notAfter) m[d] |= lateMask(c.notAfter);
-  }
-  return m;
-}
+// Minutes of a lesson outside what the student wished: all of it on a wished day off, else what lies before notBefore or after notAfter.
+export const outsideMin = (m, c = {}) => {
+  if (!m.day) return 0;
+  const s = toMin(m.start), e = toMin(m.end);
+  if (c.dayOff?.includes(m.day)) return e - s;
+  return e - s - Math.max(0, Math.min(e, c.notAfter ? toMin(c.notAfter) : 1440) - Math.max(s, c.notBefore ? toMin(c.notBefore) : 0));
+};
 
 // Lecturer choices (constraints.lecturers), applied to the options that are left after full groups, busy time and pins:
 // an avoided lecturer's options go, and of what remains a preferred lecturer's options win when there are any.
@@ -81,7 +74,9 @@ export function buildOptions(course, { pins = [], includeFull = false, forbidden
       if (!includeFull && groups.some((g) => g.full && !pins.includes(g.id))) continue;
       const meetings = groups.flatMap((g) => g.meetings.map((m) => ({ ...m, group: g.id })));
       const mask = meetingsMask(meetings);
-      if (forbidden && overlaps(mask, forbidden)) continue;
+      if (forbidden && meetings.some(forbidden)) continue;
+      const own = groups.map((g) => meetingsMask(g.meetings));
+      if (own.some((a, i) => own.slice(0, i).some((b) => overlaps(a, b)))) continue; // a lecture and its own tutorial or lab at the same time
       const minutes = meetings.reduce((a, m) => a + dur(m), 0);
       const sharedMin = friendGroups.map((fg) => {
         const set = new Set(fg);
@@ -197,10 +192,7 @@ function metrics(sel, mask, ctx) {
     gapMin += ((hi - lo + 1) - popcount(bits)) * 30;
   }
 
-  let outside = 0;
-  for (let d = 1; d <= 6; d++) {
-    outside += popcount(mask[d] & ctx.prefMask[d]) * 30;
-  }
+  const outside = sel.reduce((a, o) => a + o.out, 0);
 
   const dates = sel.flatMap((o) => o.exams).sort();
   let minGap = null;
@@ -250,7 +242,7 @@ function diagnose(items, data, freedByBlocks, avoids = false) {
 const KNOWN = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'];
 export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {} }) {
   if (!(topK > 0)) return { results: [], partial: false, diagnosis: [] };
-  const forbidden = forbiddenMask(constraints);
+  const forbidden = forbiddenBy(constraints);
   const down = downstream(data), base = courseValue(data, down);
   const value = {};
   let maxValue = 0;
@@ -261,21 +253,12 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     const mode = pins.some((p) => c.groups.some((g) => g.id === p)) ? 'must' : m; // a pinned group forces its course in
     value[id] = base[id] + (bias[id] ?? 0);
     maxValue += Math.max(0, value[id]);
-    const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers }).map((o) => ({ ...o, course: id }));
+    const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers })
+      .map((o) => ({ ...o, course: id, out: o.meetings.reduce((a, m) => a + outsideMin(m, constraints), 0) }));
     return { id, mode, credits: c.credits, options };
   }).sort((a, b) => a.options.length - b.options.length);
 
-  const prefMask = new Array(DAYS).fill(0);
-  const c = constraints;
-  for (let d = 1; d <= 6; d++) {
-    let mask = 0;
-    if (c.dayOff?.includes(d)) mask = ~0;
-    if (c.notBefore) mask |= meetingsMask([{ day: d, start: '07:00', end: c.notBefore }])[d];
-    if (c.notAfter) mask |= lateMask(c.notAfter);
-    prefMask[d] = mask;
-  }
-
-  const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished, prefMask };
+  const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished };
   const noExamClash = data.examsPublished && constraints.examsSameDay !== 'allow';
   const conditional = courses.filter(({ id }) => statuses[id]?.missingParallel).map(({ id }) => ({ id, needs: statuses[id].missingParallel }));
   const top = [];
@@ -309,11 +292,9 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     return up / fw;
   }
   function bound(i, mask, val) {
-    let free = 0, outside = 0;
-    for (let d = 1; d <= 6; d++) {
-      if (d <= 5 && mask[d] === 0) free++;
-      outside += popcount(mask[d] & prefMask[d]) * 30;
-    }
+    let free = 0;
+    for (let d = 1; d <= 5; d++) if (mask[d] === 0) free++;
+    const outside = sel.reduce((a, o) => a + o.out, 0); // outside minutes only grow as courses are added
     let b = fixedUp + W('friends') * friendsUp(i) + W('progress') * ((val + restValue[i]) / ctx.maxValue) + W('freeDays') * (free / 5) + W('timeWindow') * (1 - Math.min(outside / 600, 1));
     if (ctx.examsPublished && W('examSpread')) {
       const dates = sel.flatMap((o) => o.exams).sort();
@@ -377,7 +358,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   }
   const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
   return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins,
-    includeFull: constraints.includeFull, forbidden: forbiddenMask({ ...constraints, blocks: [] }), friendGroups, lecturers: constraints.lecturers }).length > 0,
+    includeFull: constraints.includeFull, forbidden: forbiddenBy({ ...constraints, blocks: [] }), friendGroups, lecturers: constraints.lecturers }).length > 0,
     Object.keys(constraints.lecturers ?? {}).length > 0) };
 }
 
