@@ -723,3 +723,39 @@ test('lecturers never strand a course: a pinned group survives avoid, prefer fal
   assert.deepEqual(buildOptions({ groups: [g1, g2] }, { forbidden: meetingsMask([{ day: 1, start: '09:00', end: '11:00' }]), lecturers: { 'כהן': 'prefer' } })
     .map((o) => o.groups[0]), ['g2'], 'the preferred group is blocked: the others stay');
 });
+
+// ---- 2026-10-06 solver audit, stage 3 (issue #3) ----
+const one = (groups, credits = 3) => ({ name: 'c', credits, offered: true, prereqs: [], groups });
+const set = (courses) => ({ year: 2027, startYear: 2026, semester: 'א', examsPublished: false, courses });
+const musts = (...ids) => ids.map((id) => ({ id, mode: 'must' }));
+
+test('a credit cap of 0 is a cap, not "no cap"', () => {
+  const d = set({ A: one([grp('A1', 1)]) });
+  const r = search({ data: d, courses: musts('A'), weights: W0, constraints: { maxCredits: 0 } });
+  assert.equal(r.results.length, 0);
+  assert.ok(r.diagnosis.some((t) => t.includes('תקרת נ"ז')), r.diagnosis.join(' | '));
+  assert.equal(search({ data: d, courses: musts('A'), weights: W0, constraints: { maxCredits: 3 } }).results.length, 1, 'a cap equal to the credits is fine');
+});
+
+test('a preferred lecturer is a wish: when their group clashes with another must course, the plan is found without them', () => {
+  const d = set({ X: one([{ ...grp('X1', 1), lecturer: 'P' }, { ...grp('X2', 2), lecturer: 'Q' }]), Y: one([{ ...grp('Y1', 1), lecturer: 'R' }]) });
+  const groups = (data) => search({ data, courses: musts('X', 'Y'), weights: W0, constraints: { lecturers: { P: 'prefer' } }, topK: 5 }).results.map((p) => [...p.groups].sort());
+  assert.deepEqual(groups(d), [['X2', 'Y1']]);
+  assert.deepEqual(groups(set({ X: d.courses.X, Y: one([{ ...grp('Y1', 3), lecturer: 'R' }]) })), [['X1', 'Y1']], 'when it fits, prefer still narrows');
+});
+
+test('a pinned tutorial keeps the lecturer choices of the lectures that reach it, and a pin still beats avoid', () => {
+  const sub = { ...grp('S', 3), type: 'תרגול', primary: false, lecturer: 'Z' };
+  const c = { groups: [{ ...grp('A', 1), lecturer: 'X', linked: ['S'] }, { ...grp('B', 2), lecturer: 'Y', linked: ['S'] }, sub] };
+  const names = (course, opt) => buildOptions(course, opt).map((o) => o.groups.join('+'));
+  assert.deepEqual(names(c, { pins: ['S'], lecturers: { X: 'avoid' } }), ['B+S']);
+  assert.deepEqual(names(c, { pins: ['S'], lecturers: { X: 'prefer' } }), ['A+S']);
+  assert.deepEqual(names({ groups: [c.groups[0], sub] }, { pins: ['S'], lecturers: { X: 'avoid' } }), ['A+S'], 'only an avoided lecture reaches the pin: the pin wins');
+  assert.deepEqual(names(c, { pins: ['S'], lecturers: { Z: 'avoid' } }), ['A+S', 'B+S'], 'the pinned tutorial\'s own lecturer is not matched');
+});
+
+test('identical groups with different exam dates are two options, not registration alternatives', () => {
+  const ex = (date) => [{ kind: 'בחינה', moed: 1, date, time: null }];
+  const o = buildOptions({ groups: [{ ...grp('A', 1), exams: ex('2027-02-01') }, { ...grp('B', 1), exams: ex('2027-02-20') }] });
+  assert.deepEqual(o.map((x) => [x.groups, x.exams]), [[['A'], ['2027-02-01']], [['B'], ['2027-02-20']]]);
+});

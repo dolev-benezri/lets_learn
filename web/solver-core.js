@@ -44,19 +44,19 @@ export function forbiddenMask(c = {}) {
 }
 
 // Lecturer choices (constraints.lecturers), applied to the options that are left after full groups, busy time and pins:
-// an avoided lecturer's options go (unless pinned), and of what remains a preferred lecturer's options win when there are any.
+// an avoided lecturer's options go, and of what remains a preferred lecturer's options win when there are any.
 // ponytail: only the primary group's lecturer is matched, linked tutorials are not filtered; widen it if students ask.
-function byLecturer(options, lecturers, byId, pins) {
-  const who = (o) => lecturers[byId.get(o.groups[0])?.lecturer], pinned = (o) => o.groups.some((id) => pins.includes(id));
-  const ok = options.filter((o) => who(o) !== 'avoid' || pinned(o)), pref = ok.filter((o) => who(o) === 'prefer' || pinned(o));
-  return ok.some((o) => who(o) === 'prefer') ? pref : ok;
+function byLecturer(options, lecturers, byId) {
+  const who = (o) => lecturers[byId.get(o.groups[0])?.lecturer];
+  const ok = options.filter((o) => who(o) !== 'avoid'), pref = ok.filter((o) => who(o) === 'prefer');
+  return pref.length ? pref : ok;
 }
 export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [], lecturers = {} } = {}) {
   const byId = new Map(course.groups.map((g) => [g.id, g])), primaries = course.groups.filter((g) => g.primary);
   const options = [];
   // Identical primaries (same type, lecturer, meetings, rooms, links, fullness, friends, pin) are one option;
   // the others are listed as registration alternatives instead of producing duplicate schedules (ISSUES 17א#2).
-  const sig = (g) => JSON.stringify([g.type, g.lecturer, g.full, g.linked, g.meetings.map((m) => [m.day, m.start, m.end, m.room]),
+  const sig = (g) => JSON.stringify([g.type, g.lecturer, g.full, g.linked, g.meetings.map((m) => [m.day, m.start, m.end, m.room]), g.exams,
     friendGroups.map((fg) => fg.includes(g.id)), pins.includes(g.id)]);
   const firstBySig = new Map(), alts = {};
   for (const p of primaries) {
@@ -97,8 +97,11 @@ export function buildOptions(course, { pins = [], includeFull = false, forbidden
       });
     }
   }
-  const coursePins = pins.filter((id) => byId.has(id)), left = byLecturer(options, lecturers, byId, pins);
-  return coursePins.length ? left.filter((o) => coursePins.every((id) => o.groups.includes(id))) : left;
+  // Pins first, then lecturer choices; a pin beats avoid and prefer when they would leave nothing of it.
+  const coursePins = pins.filter((id) => byId.has(id));
+  const pinned = coursePins.length ? options.filter((o) => coursePins.every((id) => o.groups.includes(id))) : options;
+  const left = byLecturer(pinned, lecturers, byId);
+  return coursePins.length && !left.length ? pinned : left;
 }
 
 // Only `קדם` links block: a `מקביל` course can be taken in the same semester.
@@ -349,7 +352,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     const it = items[i];
     for (const o of it.options) {
       if (overlaps(mask, o.mask)) continue;
-      if (constraints.maxCredits && credits + it.credits > constraints.maxCredits) continue;
+      if (constraints.maxCredits != null && credits + it.credits > constraints.maxCredits) continue;
       if (constraints.maxDays && daysUsed(merge(mask, o.mask)) > constraints.maxDays) continue; // monotone: a course never frees a day
       if (noExamClash && o.exams.some((d) => examDates.has(d))) continue;
       sel.push(o);
@@ -360,6 +363,12 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   }
 
   dfs(0, new Array(DAYS).fill(0), 0, new Set(), 0);
+  // "prefer" is a wish ("when possible"): no plan with it, so search again without it
+  const prefer = Object.entries(constraints.lecturers ?? {}).filter(([, v]) => v === 'prefer');
+  if (!top.length && !partial && prefer.length) {
+    const lecturers = Object.fromEntries(Object.entries(constraints.lecturers).filter(([, v]) => v !== 'prefer'));
+    return search({ data, courses, statuses, pins, constraints: { ...constraints, lecturers }, weights, friends, topK, timeLimitMs, prune, bias });
+  }
   // No plan under the campus-day cap, but one without it: the cap is the reason (checked with a short, single-result search)
   if (!top.length && !partial && constraints.maxDays && search({ data, courses, statuses, pins, constraints: { ...constraints, maxDays: null }, weights, friends,
     topK: 1, timeLimitMs: timeLimitMs / 4, prune, bias }).results.length) {
