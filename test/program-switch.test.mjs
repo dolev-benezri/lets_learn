@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { app, normalize, switchTo, restoreBackup, ensurePassed, reconcileSpecs, inCatalog, clearSaved, DEFAULT } from '../web/app.js';
+import { app, normalize, switchTo, restoreBackup, ensurePassed, waitingOnEarlier, reconcileSpecs, inCatalog, clearSaved, DEFAULT } from '../web/app.js';
 
 const CATALOG = { programs: [{ id: 30, name: 'מכונות', startYears: [2025, 2026, 2027] }, { id: 20, name: 'חשמל', startYears: [2026, 2027] }] };
 const area = (id) => ({ id, name: id });
@@ -187,6 +187,16 @@ test('ensurePassed: every earlier year\'s mandatory list is passed (year 3 = yea
     ensurePassed();
     assert.deepEqual(app.state.passed, want, `cohort ${start}`);
   }
+});
+
+test('waitingOnEarlier: only this year\'s courses blocked by an earlier year\'s course, not by one of this year', () => {
+  const lists = [["קורסי חובה שנה א'", ['a']], ["קורסי חובה שנה ב'", ['b', 'c', 'd']]].map(([name, courses], i) => ({ code: i + 1, name, minCredits: 3, courses }));
+  reset({ ...mine(), passed: [], profile: { year: null, amirnet: null, specs: [], summer: false } });
+  app.data = dataset(30, 2026, { lists }); // year 2
+  app.cls = { statuses: { b: { status: 'blocked', blockedBy: ['a'] }, c: { status: 'blocked', blockedBy: ['b'] }, d: { status: 'available' } } };
+  assert.deepEqual(waitingOnEarlier(), ['b']);
+  app.cls.statuses.b = { status: 'available' };
+  assert.deepEqual(waitingOnEarlier(), [], 'a chain inside this year is normal, not a missed mark');
 });
 
 test('restoreBackup: another program loads its data before the state is replaced; a failed load changes nothing', async () => {
