@@ -32,8 +32,8 @@ function run() {
   try {
     ui.worker = new Worker(new URL('./solver-worker.js', import.meta.url), { type: 'module' });
   } catch (err) { ui.runError = err.message || 'לא ניתן להפעיל את החיפוש'; ui.last = null; done(); return; }
-  ui.worker.onmessage = (e) => { ui.last = { ...e.data, ms }; ui.cur = 0; done(); };
-  ui.worker.onerror = (e) => { ui.runError = e.message || 'שגיאה לא ידועה'; ui.last = null; done(); }; // the old plan no longer matches the settings
+  ui.worker.onmessage = (e) => { if (my !== ui.gen) return; ui.last = { ...e.data, ms }; ui.cur = 0; done(); };
+  ui.worker.onerror = (e) => { if (my !== ui.gen) return; ui.runError = e.message || 'שגיאה לא ידועה'; ui.last = null; done(); }; // the old plan no longer matches the settings
   const pins = state.pins.filter((p) => courses.some((c) => data.courses[c.id].groups.some((g) => g.id === p))); // stale pins stay in state
   if (yearSearch()) ui.worker.postMessage({ year: { dataA: app.sem['א'], dataB: app.sem['ב'], state, yearList: new Set(yearCourses()), pins: state.pins,
     constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: ms } });
