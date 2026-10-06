@@ -4365,15 +4365,6 @@
        "name": "תקשורת ספרתית"
       }
      ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "20348",
-       "name": "אנטנות בתקשורת"
-      }
-     ]
     }
    ],
    "groups": [
@@ -5354,17 +5345,7 @@
    "name": "Ethics in Engineering",
    "credits": 2,
    "offered": true,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "אתיקה בהנדסה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": [
     {
      "id": "278091901",

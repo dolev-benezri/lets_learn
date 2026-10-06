@@ -1786,15 +1786,6 @@
      "kind": "קדם",
      "anyOf": [
       {
-       "id": null,
-       "name": "למידה חישובית"
-      }
-     ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
        "id": "90902",
        "name": "חשבון דיפרנציאלי אינטגרלי2"
       }
@@ -2158,17 +2149,7 @@
    "name": "Ethics in Engineering",
    "credits": 2,
    "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "אתיקה בהנדסה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": []
   },
   "80926": {

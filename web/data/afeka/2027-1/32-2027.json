@@ -2696,17 +2696,7 @@
    "name": "כלכלה הנדסית להנדסה מכנית",
    "credits": 1.5,
    "offered": true,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "כלכלה הנדסית"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": [
     {
      "id": "273013402",
@@ -5377,17 +5367,7 @@
    "name": "Ethics in Engineering",
    "credits": 2,
    "offered": true,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "אתיקה בהנדסה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": [
     {
      "id": "278091901",
