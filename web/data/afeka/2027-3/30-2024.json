@@ -1178,17 +1178,7 @@
    "name": "כלכלה הנדסית להנדסה מכנית",
    "credits": 1.5,
    "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "כלכלה הנדסית"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": []
   },
   "30135": {
@@ -1342,24 +1332,6 @@
       {
        "id": null,
        "name": "הנדסת חשמל 1"
-      }
-     ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "30150",
-       "name": "אלקטרוניקה"
-      }
-     ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "30150",
-       "name": "אלקטרוניקה"
       }
      ]
     }
@@ -3350,17 +3322,7 @@
    "name": "Ethics in Engineering",
    "credits": 2,
    "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "אתיקה בהנדסה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": []
   },
   "80926": {

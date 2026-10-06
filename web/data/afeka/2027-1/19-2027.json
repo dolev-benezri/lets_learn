@@ -2039,15 +2039,6 @@
      "kind": "קדם",
      "anyOf": [
       {
-       "id": null,
-       "name": "סטטיסטיקה"
-      }
-     ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
        "id": "90911",
        "name": "מבוא להסתברות"
       }
@@ -3325,17 +3316,7 @@
    "name": "Ethics in Engineering",
    "credits": 2,
    "offered": true,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "אתיקה בהנדסה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": [
     {
      "id": "278091901",

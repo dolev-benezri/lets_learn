@@ -848,15 +848,6 @@
        "name": "מבוא לעיבוד תמונה"
       }
      ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "30356",
-       "name": "מבוא לראייה ממוחשבת"
-      }
-     ]
     }
    ],
    "groups": []
@@ -1201,15 +1192,6 @@
    "credits": 4,
    "offered": false,
    "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "סטטיסטיקה"
-      }
-     ]
-    },
     {
      "kind": "קדם",
      "anyOf": [
@@ -1562,17 +1544,7 @@
    "name": "Ethics in Engineering",
    "credits": 2,
    "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": null,
-       "name": "אתיקה בהנדסה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": []
   },
   "80926": {
