@@ -166,12 +166,15 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
 }
 
 const DAY = 86400e3;
-// The nightly policy: what changes through the day (a course's groups, the exam table) is fetched every run; lists, course details and track pages weekly; a course with no groups at all weekly too.
+// The nightly policy: the exam table is fetched every run, an offered course's groups every other night (below); lists, course details and track pages weekly; a course with no groups at all weekly too.
 // "Weekly" is 7-9 days by key, so the answers cached by one full pull expire over three nights instead of all on the same one.
 const weekly = (key) => (7 + (createHash('sha1').update(key).digest()[0] % 3)) * DAY;
-export function nightlyTtl(key, html) {
+// An offered course's groups: half the courses (by key) one night, the other half the next. A night of ~400 group requests at 2.5 s is ~20 CI minutes, and
+// GitLab Free gives 400 a month (cost factor 1, public projects too). Off its night an answer is good for 1.5 days, so after a missed run it is fetched anyway.
+const otherNight = (key, now) => (Math.floor(now / DAY) + createHash('sha1').update(key).digest()[1]) % 2 === 1;
+export function nightlyTtl(key, html, now = Date.now()) {
   if (key.includes('S_EXAMS')) return 0;
-  if (key.startsWith('prgname=S_LOOK_FOR_NOSE')) return parseGroups(html).length ? 0 : weekly(key);
+  if (key.startsWith('prgname=S_LOOK_FOR_NOSE')) return !parseGroups(html).length ? weekly(key) : otherNight(key, now) ? 1.5 * DAY : 0;
   return weekly(key);
 }
 

@@ -329,9 +329,14 @@ import { utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { nightlyTtl, patient } from '../scripts/scrape.mjs';
 
-test('nightlyTtl: groups and exams every run, an unoffered course (no groups) and everything else weekly', () => {
-  const DAY = 86400e3, weekly = (ms) => [7, 8, 9].includes(ms / DAY);
-  assert.equal(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N90903', fx('groups-90903.html')), 0);
+test('nightlyTtl: exams every run, an offered course\'s groups every other night, an unoffered course (no groups) and everything else weekly', () => {
+  const DAY = 86400e3, weekly = (ms) => [7, 8, 9].includes(ms / DAY), key = 'prgname=S_LOOK_FOR_NOSE&arguments=-N90903', groups = fx('groups-90903.html');
+  const nights = [0, 1, 2, 3].map((d) => nightlyTtl(key, groups, 20000 * DAY + d * DAY + 3 * 36e5));
+  assert.deepEqual(nights.filter((t) => t === 0).length, 2, 'fetched on two of four nights');
+  assert.ok(nights.every((t, i) => t !== nights[i + 1]), 'alternating, never two nights in a row');
+  assert.ok(nights.every((t) => t === 0 || t === 1.5 * DAY), 'off night: a day-old answer is kept, a two-day-old one (missed run) is not');
+  const half = Array.from({ length: 200 }, (_, i) => nightlyTtl(`prgname=S_LOOK_FOR_NOSE&arguments=-N${10000 + i}`, groups, 20000 * DAY)).filter((t) => t === 0).length;
+  assert.ok(half > 70 && half < 130, `about half the courses each night (${half}/200)`);
   assert.ok(weekly(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>')));
   assert.equal(nightlyTtl('PRGNAME=S_EXAMS&ARGUMENTS=R1C28', fx('exams-2026.html')), 0);
   for (const k of ['prgname=S_SHOW_PROGS&arguments=-N2026,-N30001', 'prgname=S_CourseDetails&arguments=x', 'PRGNAME=S_PROG&HUG=30']) assert.ok(weekly(nightlyTtl(k, OK)), k);
