@@ -79,6 +79,12 @@ test('parseDetails separates קדם and מקביל', () => {
   ]);
 });
 
+test('parseDetails keeps only prerequisite and corequisite rows', () => {
+  const d = parseDetails(fx('details-10825.html')); // its only row is "תנאי אקסקלוסיבי", naming the course itself
+  assert.equal(d.credits, 2);
+  assert.deepEqual(d.prereqs, []);
+});
+
 test('toIsoDate', () => {
   assert.equal(toIsoDate('04/02/2026'), '2026-02-04');
   assert.equal(toIsoDate(''), null);

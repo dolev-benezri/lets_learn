@@ -277,7 +277,21 @@ test('validate: exam dates outside the academic year are an error', () => {
 });
 
 // ---- anomaly guards: a changed page layout that still parses must not overwrite good data ----
-test('validate: a meeting that ends before it starts, or sits outside 07:00-23:30, is an error', () => {
+test('validate: a course that requires itself is an error', () => {
+  const d = healthy();
+  d.courses['20001'].prereqs = [{ kind: 'קדם', anyOf: [{ id: '20001', name: '20001' }] }];
+  assert.ok(validate(d).errors.some((e) => e.startsWith('20001: a prerequisite names the course itself')));
+});
+
+test('validate: a meeting that ends after 23:00 or starts off the half hour is an error (the solver grid is 30 minutes)', () => {
+  for (const [start, end, bad] of [['21:00', '23:10', true], ['08:15', '09:50', true], ['08:30', '09:50', false], ['21:00', '23:00', false]]) {
+    const d = healthy();
+    Object.assign(d.courses['20001'].groups[0].meetings[0], { start, end });
+    assert.equal(validate(d).errors.some((e) => e.includes('implausible hours')), bad, `${start}-${end}`);
+  }
+});
+
+test('validate: a meeting that ends before it starts, or sits outside 07:00-23:00, is an error', () => {
   for (const [start, end] of [['10:00', '09:00'], ['05:00', '06:50'], ['21:00', '23:50']]) {
     const d = healthy();
     Object.assign(d.courses['20001'].groups[0].meetings[0], { start, end });

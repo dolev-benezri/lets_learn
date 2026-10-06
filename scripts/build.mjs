@@ -80,6 +80,7 @@ export function validate(d, prev = null, anchor = null, minCourses = 40) {
   for (const s of d.specializations ?? []) for (const code of [s.mandatory, s.elective, s.aloneExtra].flat()) if (code && !listed.has(code)) errors.push(`specialization ${s.id}: list ${code} not scraped`);
   for (const [id, c] of Object.entries(d.courses)) {
     if (c.offered && c.credits === 0) warnings.push(`${id}: offered course with 0 credits (check parseDetails)`);
+    if (c.prereqs.some((p) => p.anyOf.some((x) => x.id === id))) errors.push(`${id}: a prerequisite names the course itself (check parseDetails)`);
     const linked = new Set(c.groups.flatMap((g) => g.linked));
     for (const g of c.groups) if (!g.primary && !linked.has(g.id)) warnings.push(`${id}: sub-group ${g.id} not linked to any primary`);
     if (d.examsPublished && c.offered && d.lists.some((l) => /חובה/.test(l.name) && l.courses.includes(id))
@@ -97,7 +98,8 @@ function fieldHealth(d, prev, errors) {
   const meetings = courses.flatMap((c) => c.groups).flatMap((g) => g.meetings);
   const noDay = meetings.filter((m) => m.day === null).length;
   if (noDay) errors.push(`${noDay} meeting(s) without a day (check parseDay)`);
-  const oddHours = meetings.filter((m) => !(m.start < m.end && m.start >= '07:00' && m.end <= '23:30')).length;
+  // The solver draws on a 30-minute grid: a lesson starts on :00 or :30 (real data: all on :00, the latest end 22:50).
+  const oddHours = meetings.filter((m) => !(m.start < m.end && m.start >= '07:00' && m.end <= '23:00' && /:[03]0$/.test(m.start))).length;
   if (oddHours) errors.push(`${oddHours} meeting(s) with implausible hours (check parseTime)`);
 
   const offered = courses.filter((c) => c.offered);

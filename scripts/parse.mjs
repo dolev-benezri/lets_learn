@@ -72,7 +72,7 @@ export function parseDetails(html) {
   const card = root.querySelectorAll('.card').find((c) => c.querySelector('h2')?.text.includes('תנאי קדם לנושא'));
   const prereqs = card
     ? tableRows(card)
-        .filter((c) => c.length === 4 && c[0].startsWith('תנאי'))
+        .filter((c) => c.length === 4 && /^תנאי (קדם|מקביל)/.test(c[0])) // not "תנאי אקסקלוסיבי": a course you may not also take
         .map(([kindText, population, name, alt]) => ({
           kind: kindText.includes('מקביל') ? 'מקביל' : 'קדם',
           population,
