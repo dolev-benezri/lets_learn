@@ -4,7 +4,7 @@
 # Needs one masked GitLab CI variable, GH_PUSH_TOKEN: a GitHub fine-grained token, this repo only, Contents read/write.
 # A push with that token triggers .github/workflows/deploy.yml. GitLab emails the owner when a run fails.
 # The site allows about 400 requests per clock hour, a full run is ~1800 the first time: the scraper waits out the limit (--wait-throttle) and every answer is kept in
-# .yedion-cache (next to the clone), which the pipeline cache carries to the next night (also after a failed run), so a first run may need a few nights (a run stopped by the 160 minute `timeout` ends green and commits nothing; the 4th such run in a row fails, so a stuck scrape sends the failure mail). Later nights: groups and exams only (~430).
+# .yedion-cache (next to the clone), which the pipeline cache carries to the next night (also after a failed run), so a first run may need a few nights (a run stopped by the 160 minute `timeout` ends green and commits nothing; the 4th such run in a row fails, so a stuck scrape sends the failure mail). Later nights: exams, half the courses' groups (each course every other night) and the weekly pages that expired (~250 requests, ~11 CI minutes; GitLab Free gives 400 a month, public projects too).
 scrape:
   image: node:24
   timeout: 3h
