@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-06T10:16:11.191Z",
+ "fetchedAt": "2026-10-06T22:18:14.020Z",
  "year": 2027,
  "startYear": 2024,
  "program": 20,
@@ -2514,7 +2514,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר ברק אורי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -2568,7 +2568,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר נמני יגאל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5217,7 +5217,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר עבד אלחלים הישאם",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7443,16 +7443,16 @@
      ],
      "meetings": [
       {
-       "day": 1,
-       "start": "17:00",
-       "end": "18:50",
-       "room": "114-פיקוס סיסקו וגם פרונטלי"
-      },
-      {
        "day": 2,
        "start": "19:00",
        "end": "20:50",
        "room": "204 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "251 פיקוס"
       }
      ],
      "exams": []

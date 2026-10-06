@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-06T10:16:11.191Z",
+ "fetchedAt": "2026-10-06T22:18:14.020Z",
  "year": 2027,
  "startYear": 2027,
  "program": 22,
@@ -2965,7 +2965,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר אברמוב בנימין",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-06T10:16:11.191Z",
+ "fetchedAt": "2026-10-06T22:18:14.020Z",
  "year": 2027,
  "startYear": 2026,
  "program": 10,
@@ -2200,7 +2200,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר איזנשטיין איל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271014303/1"
@@ -2258,7 +2258,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר איזנשטיין איל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4994,7 +4994,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271032401/1"
@@ -5054,7 +5054,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שלומי פיני",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6000,7 +6000,7 @@
      "id": "271910103",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "",
+     "lecturer": "ד\"ר עבד אלחלים הישאם",
      "full": false,
      "semester": "ב",
      "linked": [
@@ -6020,7 +6020,7 @@
      "id": "271910107",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "ד\"ר עבד אלחלים הישאם",
+     "lecturer": "",
      "full": false,
      "semester": "ב",
      "linked": [
@@ -6058,7 +6058,7 @@
      "id": "271910103/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "",
+     "lecturer": "ד\"ר עבד אלחלים הישאם",
      "full": false,
      "semester": "ב",
      "linked": [],
@@ -6076,7 +6076,7 @@
      "id": "271910107/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "ד\"ר עבד אלחלים הישאם",
+     "lecturer": "",
      "full": false,
      "semester": "ב",
      "linked": [],
