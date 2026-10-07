@@ -223,24 +223,34 @@ function explain(info, unlocks) {
   return parts.join(' · ');
 }
 
-// freedByBlocks(id): the course would have options if the busy blocks were ignored.
-function diagnose(items, data, freedByBlocks, avoids = false) {
+// freedByBlocks(id): the course would have options if the busy blocks were ignored; freedByFull(id): ... if full groups were allowed.
+function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () => false) {
   const name = (id) => data.courses[id].name;
   const out = [];
-  for (const it of items) if (it.mode === 'must' && !it.options.length) out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id)
-    ? 'זמן תפוס, ' : ''}${avoids ? 'בחירת מרצה, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
+  for (const it of items) if (it.mode === 'must' && !it.options.length) {
+    out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id)
+      ? 'זמן תפוס, ' : ''}${avoids ? 'בחירת מרצה, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
+    // Course 10013: every tutorial links the one lab that is full, and the free lab is linked from nothing (the source page is the same).
+    const c = data.courses[it.id], linked = new Set(c.groups.flatMap((g) => g.linked));
+    const lone = c.groups.filter((g) => !g.primary && !g.full && !linked.has(g.id) && c.groups.some((f) => f.full && f.type === g.type));
+    if (lone.length && freedByFull(it.id)) {
+      out.push(`${name(it.id)}: כל הצירופים כוללים קבוצה מלאה, והקבוצה הפנויה ${lone.map((g) => `${g.id} (${g.type})`).join(', ')} לא מקושרת באתר אפקה`
+        + ' לאף הרצאה או תרגול, ולכן אי אפשר לשבץ אותה. אפשר לסמן "לכלול קבוצות מלאות" או לפנות למזכירות.');
+    }
+  }
   const must = items.filter((x) => x.mode === 'must' && x.options.length);
   for (let i = 0; i < must.length; i++) for (let j = i + 1; j < must.length; j++) {
     if (must[i].options.every((a) => must[j].options.every((b) => overlaps(a.mask, b.mask)))) {
       out.push(`${name(must[i].id)} ו-${name(must[j].id)} מתנגשים בכל צירוף אפשרי`);
     }
   }
-  if (!out.length) out.push('אין מערכת שעומדת בכל האילוצים יחד (בחינות באותו יום, תקרת נ"ז או קורס מקביל). נסה לרכך אילוץ.');
   return out;
 }
 
 const KNOWN = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'];
-export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {}, distinct = false }) {
+// distinct: one plan per course set; why: when there is no plan, relax one constraint at a time to name the reason.
+export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {},
+  distinct = false, why = true }) {
   if (!(topK > 0)) return { results: [], partial: false, diagnosis: [] };
   const forbidden = forbiddenBy(constraints);
   const down = downstream(data), base = courseValue(data, down);
@@ -351,19 +361,49 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   const prefer = Object.entries(constraints.lecturers ?? {}).filter(([, v]) => v === 'prefer');
   if (!top.length && !partial && prefer.length) {
     const lecturers = Object.fromEntries(Object.entries(constraints.lecturers).filter(([, v]) => v !== 'prefer'));
-    return search({ data, courses, statuses, pins, constraints: { ...constraints, lecturers }, weights, friends, topK, timeLimitMs, prune, bias, distinct });
+    return search({ data, courses, statuses, pins, constraints: { ...constraints, lecturers }, weights, friends, topK, timeLimitMs, prune, bias, distinct, why });
   }
-  // No plan under the campus-day cap, but one without it: the cap is the reason (checked with a short, single-result search)
-  if (!top.length && !partial && constraints.maxDays && search({ data, courses, statuses, pins, constraints: { ...constraints, maxDays: null }, weights, friends,
-    topK: 1, timeLimitMs: timeLimitMs / 4, prune, bias }).results.length) {
+  if (top.length) return { results: top, partial, diagnosis: [] };
+  if (partial) return { results: top, partial, diagnosis: ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'] };
+  // A short single-result search with some constraints relaxed (why: false, so it does not explain itself in turn)
+  const relaxed = (over, st = statuses) => search({ data, courses, statuses: st, pins, constraints: { ...constraints, ...over }, weights, friends, topK: 1,
+    timeLimitMs: timeLimitMs / 8, prune, bias, why: false });
+  const anyMust = items.some((it) => it.mode === 'must');
+  // No plan under the campus-day cap, but one without it: the cap is the reason
+  if (why && constraints.maxDays && relaxed({ maxDays: null }).results.length) {
     const cap = constraints.maxDays === 1 ? 'יום אחד' : `${constraints.maxDays} ימים`;
-    return { results: [], partial: false, diagnosis: [`תקרת ${cap} בקמפוס קטנה מדי לקורסי החובה. העלו אותה או סמנו פחות קורסים כ"חובה".`] };
+    return { results: [], partial: false, diagnosis: [anyMust ? `תקרת ${cap} בקמפוס קטנה מדי לקורסי החובה. העלו אותה או סמנו פחות קורסים כ"חובה".`
+      : `תקרת ${cap} בקמפוס קטנה מדי: כל קורס שבחרתם צריך יותר ימים. העלו אותה.`] };
   }
-  const timedOut = ['החיפוש נעצר בגלל מגבלת הזמן לפני שנמצאה מערכת, כך שלא בטוח שאין פתרון. נסו לסמן פחות קורסים כ"אולי".'];
-  return { results: top, partial, diagnosis: top.length ? [] : partial ? timedOut : diagnose(items, data, (id) => buildOptions(data.courses[id], { pins,
-    includeFull: constraints.includeFull, forbidden: forbiddenBy({ ...constraints, blocks: [] }), friendGroups, lecturers: constraints.lecturers }).length > 0,
-    Object.keys(constraints.lecturers ?? {}).length > 0) };
+  const optionsIf = (id, over) => buildOptions(data.courses[id], { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers, ...over }).length > 0;
+  const found = diagnose(items, data, (id) => optionsIf(id, { forbidden: forbiddenBy({ ...constraints, blocks: [] }) }), Object.keys(constraints.lecturers ?? {}).length > 0,
+    (id) => optionsIf(id, { includeFull: true }));
+  return { results: [], partial: false, diagnosis: found.length ? found : [why ? whyNot() : GENERIC] };
+
+  // Nothing to blame on one course or one pair: relax one constraint at a time and name the first that alone lets a plan through.
+  function whyNot() {
+    const c = constraints;
+    const tries = [
+      [!c.includeFull, { includeFull: true }, 'כל מערכת אפשרית כוללת קבוצה מלאה. סמנו "לכלול קבוצות מלאות" כדי לראות אותן.'],
+      [c.dayOffHard || c.windowHard, { dayOffHard: false, windowHard: false }, 'יום החופש או השעות שסימנתם כ"חובה" פוסלים כל מערכת. הפכו אותם להעדפה כדי לראות מערכות.'],
+      [c.blocks?.length, { blocks: [] }, 'הזמן התפוס פוסל כל מערכת. קצרו אותו או סמנו פחות קורסים.'],
+      [c.maxCredits != null, { maxCredits: null }, 'תקרת נ"ז נמוכה מדי לקורסים שסימנתם. העלו אותה או סמנו פחות קורסים כ"חובה".'],
+      [noExamClash, { examsSameDay: 'allow' }, 'בכל מערכת יש שתי בחינות באותו יום. אפשרו בחינות באותו יום או סמנו פחות קורסים.'],
+      [conditional.length, null, 'קורס שבחרתם דורש קורס מקביל שלא נכנס למערכת. סמנו גם את הקורס המקביל.'],
+    ];
+    let unsure = false;
+    for (const [when, over, text] of tries) {
+      if (!when) continue;
+      const r = over ? relaxed(over) : relaxed({}, {});
+      if (r.results.length) return text;
+      unsure ||= r.partial;
+    }
+    if (unsure) return GENERIC;
+    return anyMust ? 'קורסי החובה לא נכנסים יחד לשבוע אחד עם האילוצים שבחרתם. סמנו פחות קורסים כ"חובה" או רככו כמה אילוצים יחד.'
+      : 'שום צירוף של הקורסים שבחרתם לא עומד בכל האילוצים יחד. רככו כמה אילוצים יחד.';
+  }
 }
+const GENERIC = 'אין מערכת שעומדת בכל האילוצים יחד (בחינות באותו יום, תקרת נ"ז או קורס מקביל). נסה לרכך אילוץ.';
 
 const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };
 const LOAD_W = 3, MISSING_W = 5, A_TOP = 50;

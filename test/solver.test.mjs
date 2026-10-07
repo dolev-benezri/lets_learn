@@ -835,3 +835,43 @@ test('search({ distinct }) keeps one plan per course set, the best group variant
   const r = search({ data: d, courses: [{ id: 'A', mode: 'must' }, { id: 'B', mode: 'optional' }], weights: W0, topK: 10, distinct: true });
   assert.deepEqual(r.results.map((x) => [...x.courses].sort().join()), ['A,B', 'A']);
 });
+
+// ---- stage 6 (issue #6): messages ----
+test('a must course whose free lab is linked from nothing: the message names that lab (course 10013)', () => {
+  const g = (id, type, linked, full, day) => ({ ...grp(id, day, '10:00', '11:50'), type, primary: type.startsWith('סופי'), full, linked });
+  const X = { ...one([g('P', 'סופי-הרצאה', ['P/1'], false, 1), g('P/1', 'תרגול', ['L1'], false, 2), g('L1', 'מעבדה', [], true, 3), g('L2', 'מעבדה', [], false, 4)]), name: 'תקשורת' };
+  const r = search({ data: set({ X }), courses: musts('X'), weights: W0 });
+  assert.equal(r.results.length, 0);
+  assert.ok(r.diagnosis.some((l) => l.includes('L2 (מעבדה)') && l.includes('לא מקושרת')), r.diagnosis.join(' | '));
+  const blocked = search({ data: set({ X }), courses: musts('X'), weights: W0, constraints: { blocks: [{ day: 1, start: '09:00', end: '13:00', label: '' }] } });
+  assert.ok(!blocked.diagnosis.some((l) => l.includes('לא מקושרת')), 'busy time is the reason there, not the link');
+});
+
+const opts = (...ids) => ids.map((id) => ({ id, mode: 'optional' }));
+const why = (data, courses, constraints = {}) => { const r = search({ data, courses, weights: W0, constraints }); assert.equal(r.results.length, 0); return r.diagnosis.join(' | '); };
+const GENERIC = 'אין מערכת שעומדת בכל האילוצים יחד';
+
+test('no plan, all optional, the campus-day cap is too small: the message does not talk about must courses', () => {
+  const two = (id, d1, d2) => ({ ...grp(id, d1), meetings: [{ day: d1, start: '09:00', end: '09:50' }, { day: d2, start: '09:00', end: '09:50' }] });
+  const t = why(set({ A: one([two('a1', 1, 3)]), B: one([two('b1', 2, 4)]) }), opts('A', 'B'), { maxDays: 1 });
+  assert.ok(t.includes('תקרת יום אחד') && !t.includes('החובה'), t);
+});
+
+test('no plan: the first constraint that alone blocks every plan is named', () => {
+  const d = set({ A: one([grp('a1', 1, '09:00', '09:50')]), B: one([grp('b1', 1, '11:00', '11:50')]) });
+  let t = why(d, opts('A', 'B'), { dayOff: [1], dayOffHard: true });
+  assert.ok(t.includes('יום החופש') && !t.startsWith(GENERIC), t);
+  t = why(d, opts('A', 'B'), { blocks: [{ day: 1, start: '08:00', end: '13:00', label: '' }] });
+  assert.ok(t.includes('הזמן התפוס'), t);
+  const full = set({ A: one([{ ...grp('a1', 1), full: true }]), B: one([{ ...grp('b1', 2), full: true }]) });
+  t = why(full, opts('A', 'B'));
+  assert.ok(t.includes('קבוצה מלאה') && !t.startsWith(GENERIC), t);
+  t = why(set({ A: one([grp('a1', 1)]), B: one([grp('b1', 2)]) }), musts('A', 'B'), { maxCredits: 4 });
+  assert.ok(t.includes('תקרת נ"ז'), t);
+});
+
+test('no plan although any two must courses fit and no single constraint is to blame: the message says the musts do not fit together', () => {
+  const two = (id) => one([grp(`${id}1`, 1, '09:00', '09:50'), grp(`${id}2`, 1, '10:00', '10:50')]);
+  const t = why(set({ A: two('a'), B: two('b'), C: two('c') }), musts('A', 'B', 'C'));
+  assert.ok(t.includes('קורסי החובה לא נכנסים יחד') && !t.startsWith(GENERIC), t);
+});

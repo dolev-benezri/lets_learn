@@ -148,7 +148,7 @@ export function summary(res, data, friends) {
       name: f.name,
       n: res.courses.filter((cid) => data.courses[cid].groups.some((g) => res.groups.includes(g.id) && f.groups.includes(g.id))).length,
     })).filter((x) => x.n),
-    examGap: res.explanation.match(/לפחות (\S+) ימים בין בחינות/)?.[1] ?? null,
+    examGap: res.explanation.match(/לפחות (\S+) ימים בין בחינות/)?.[1] ?? (res.explanation.includes('לפחות יום אחד בין בחינות') ? '1' : null),
   };
 }
 
