@@ -1,0 +1,46 @@
+/* Style "בהיר" (clarity): the approved v2 direction, polished. Same blue and course tints; calmer chrome, more air, a real brand mark,
+   cards instead of boxes, and motion on every state change (drawer, popover, tabs, blocks). The lowest-risk upgrade. */
+:root {
+  --bg:#F3F5FA; --border:#E6E9F0; --border-strong:#CDD4E0; --text:#0F172A; --text-2:#475569; --text-3:#64748B;
+  --primary:#2457E6; --primary-hover:#1D47C4; --primary-soft:#EAF0FE;
+  --radius:12px; --radius-sm:10px; --radius-lg:20px;
+  --shadow-card:0 1px 2px rgba(15,23,42,.04), 0 2px 8px rgba(15,23,42,.05);
+  --shadow-pop:0 16px 40px rgba(15,23,42,.14), 0 3px 8px rgba(15,23,42,.06);
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+@media (min-width:600px) { :root { --fs:15px; } }
+/* brand mark: a small week tile before the title */
+.top h1::before { content:""; display:inline-block; width:22px; height:22px; margin-inline-end:9px; vertical-align:-5px; border-radius:7px;
+  background:linear-gradient(135deg, #2457E6 0 50%, #7C5CF2 50%); box-shadow:inset 0 0 0 2px rgba(255,255,255,.35); }
+.top { box-shadow:0 1px 0 var(--border), 0 4px 16px rgba(15,23,42,.04); border-bottom:0; }
+.top h1 { font-weight:700; letter-spacing:-.01em; }
+/* view tabs: a segmented pill instead of an underline */
+.views { padding-block:8px; border-bottom:0; background:transparent; }
+.views a { min-height:36px; margin:0; padding:0 16px; border:0; border-radius:999px; }
+.views a[aria-current="page"] { background:var(--surface); color:var(--primary); box-shadow:var(--shadow-card); }
+/* surfaces: soft shadow, no hard frame */
+.board, .me-card, .me-main { border-color:transparent; box-shadow:var(--shadow-card); }
+.course, .crs, .frow, .reglist li { box-shadow:0 1px 2px rgba(15,23,42,.04); }
+.switcher { background:var(--primary-soft); }
+.alt-label { font-weight:600; color:var(--primary-hover); }
+.pill { background:var(--surface); box-shadow:inset 0 0 0 1px var(--border); }
+.pill.friend { box-shadow:none; }
+/* lessons: rounder, the course colour as a 4px edge, name in bold, a lift on hover */
+.blk { border-inline-start-width:4px; border-radius:10px; padding:4px 7px; transition:transform .18s var(--ease), box-shadow .18s var(--ease); }
+.blk-name { font-weight:600; }
+.blk:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(15,23,42,.12), inset 0 0 0 1px var(--cfg); }
+.dh b { font-size:16px; }
+.daysel button { border-radius:999px; transition:background-color .18s var(--ease), color .18s var(--ease); }
+/* motion: drawers and the popover enter instead of appearing (style.css already turns all of this off under reduced motion) */
+@keyframes in-side { from { opacity:0; transform:translateX(-18px); } }
+@keyframes in-up { from { opacity:0; transform:translateY(24px); } }
+@keyframes in-pop { from { opacity:0; transform:scale(.96); } }
+.drawer[open] { animation:in-side .24s var(--ease); }
+.pop:popover-open { animation:in-pop .16s var(--ease); }
+.dlg[open], .pmap[open] { animation:in-pop .2s var(--ease); }
+.views a, .seg span, .btn { transition:background-color .18s var(--ease), color .18s var(--ease), box-shadow .18s var(--ease); }
+@media (max-width:599px) {
+  .drawer[open], .pop:popover-open { animation:in-up .26s var(--ease); }
+  .actions { box-shadow:0 -6px 20px rgba(15,23,42,.08); border-top:0; }
+  .views { padding:6px 14px; }
+}

@@ -1,0 +1,51 @@
+/* Style "קמפוס" (campus): warm, playful, student-made. Warm paper background, violet accent, round shapes, bold headings,
+   and lessons as solid colour tiles with white text (every course fg passes 4.5:1 against white; see check-contrast.mjs).
+   On the phone the bottom bar floats as a rounded dock. */
+:root {
+  --bg:#FFF6EC; --surface:#FFFFFF; --surface-2:#FCEEDD; --border:#F1DFC9; --border-strong:#E2C7A6;
+  --text:#22180F; --text-2:#5E4E40; --text-3:#776655;
+  --primary:#6D28D9; --primary-hover:#5B21B6; --primary-soft:#F2EAFE; --on-primary:#FFFFFF;
+  --friend:#C0267A; --friend-soft:#FDE8F3;
+  --radius:16px; --radius-sm:12px; --radius-lg:24px;
+  --shadow-pop:0 18px 44px rgba(76,42,10,.18), 0 3px 10px rgba(76,42,10,.08);
+  --c4-fg:#9A5306; --c6-fg:#B93D0A; /* a shade darker: white text on the tile keeps 4.5:1 */
+}
+h1, h2, h3 { letter-spacing:-.01em; }
+.top h1 { font-weight:800; background:linear-gradient(90deg, #6D28D9, #C0267A); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.top h1 small { -webkit-text-fill-color:var(--text-2); }
+.top { border-bottom:2px solid var(--border); }
+#me .me-head h2 { font-size:26px; font-weight:800; }
+.side-head h2, #me h2, .dr-head h2 { font-weight:700; }
+.views a[aria-current="page"] { border-bottom-width:3px; font-weight:700; }
+/* surfaces */
+.board, .me-card, .me-main { border:2px solid var(--border); }
+.course { border-width:2px; border-inline-start-width:6px; }
+.course.in { background:var(--surface); }
+.pill { background:var(--surface); border:2px solid var(--border); font-weight:500; }
+.pill.friend { border-color:#F7C6E0; }
+.btn { border-width:2px; font-weight:600; border-radius:999px; }
+.btn.primary { box-shadow:0 4px 0 #4C1D95; }
+.btn.primary:active:not(:disabled) { transform:translateY(2px); box-shadow:0 2px 0 #4C1D95; }
+.switcher { background:var(--primary-soft); }
+.alt-label { font-weight:700; color:var(--primary); }
+.seg-opts { border-radius:999px; }
+.seg span { border-radius:999px; }
+.daysel button { border-radius:999px; border-width:2px; }
+/* lessons: solid tiles */
+.day { background:repeating-linear-gradient(to bottom, transparent 0 calc(60 * var(--ppm) - 1px), var(--border) calc(60 * var(--ppm) - 1px) calc(60 * var(--ppm))),
+  var(--surface); }
+.blk { background:var(--cfg); color:#fff; border:0; border-radius:12px; padding:5px 8px; box-shadow:0 3px 0 rgba(0,0,0,.18); transition:transform .15s ease; }
+.blk:hover { transform:translateY(-2px); box-shadow:0 5px 0 rgba(0,0,0,.18); }
+.blk-name { color:#fff; font-weight:700; }
+.blk-meta, .blk-room { color:#fff; opacity:.92; }
+.blk.pinned { outline-color:#22180F; }
+.blk-pin { color:#fff; }
+.fr { background:#fff; }
+.dot { box-shadow:0 0 0 2px #fff, 0 0 0 3px var(--cfg); }
+/* phone: the action bar floats as a dock */
+@media (max-width:599px) {
+  .actions { inset:auto 10px calc(10px + env(safe-area-inset-bottom)) 10px; padding:6px; border:2px solid var(--border); border-radius:22px;
+    box-shadow:0 10px 30px rgba(76,42,10,.18); }
+  .actions .btn.primary { border-radius:16px; box-shadow:none; }
+  body { padding-bottom:calc(var(--tap) + 48px + env(safe-area-inset-bottom)); }
+}

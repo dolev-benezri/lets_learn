@@ -1,0 +1,46 @@
+/* Style "זכוכית" (glass): iOS-like. A soft colour wash behind everything, frosted bars and cards (backdrop-filter),
+   large radii, and depth from blur instead of borders. Feels native on iPhone. Cost: backdrop-filter on low-end Android phones;
+   the fallback (no support) is a near-opaque white, so text contrast never depends on the blur. */
+:root {
+  --bg:#EEF2FB; --surface:rgba(255,255,255,.78); --surface-2:rgba(241,244,252,.85); --border:rgba(15,23,42,.08); --border-strong:rgba(15,23,42,.16);
+  --text:#0B1324; --text-2:#3E4A63; --text-3:#56627A;
+  --primary:#3B5BFD; --primary-hover:#2A47E0; --primary-soft:rgba(59,91,253,.12); --on-primary:#FFFFFF;
+  --radius:14px; --radius-sm:11px; --radius-lg:22px;
+  --shadow-pop:0 20px 50px rgba(30,41,90,.18), 0 2px 8px rgba(30,41,90,.08);
+  --glass:saturate(180%) blur(18px);
+}
+body { background:
+  radial-gradient(60vmax 50vmax at 100% 0%, rgba(124,92,242,.22), transparent 60%),
+  radial-gradient(50vmax 45vmax at 0% 30%, rgba(56,189,248,.20), transparent 60%),
+  radial-gradient(55vmax 50vmax at 60% 100%, rgba(236,72,153,.14), transparent 60%), #EEF2FB; background-attachment:fixed; }
+.views, .actions, .wk-head > *, #daysel, #semtabs:not(:empty), .me-foot, .dr-top { background:rgba(255,255,255,.62); -webkit-backdrop-filter:var(--glass); backdrop-filter:var(--glass); }
+/* the bar's blur sits on a pseudo-element: a filter on .top itself would become the containing block of the fixed phone action bar inside it */
+.top { background:transparent; border-bottom:1px solid rgba(255,255,255,.7); box-shadow:0 1px 0 var(--border); }
+.top::before { content:""; position:absolute; inset:0; z-index:-1; background:rgba(255,255,255,.62); -webkit-backdrop-filter:var(--glass); backdrop-filter:var(--glass); }
+.views { border-bottom:0; }
+.top h1 { font-weight:700; }
+.board, .me-card, .me-main, .course, .crs, .frow, .pop, .drawer, .dlg { -webkit-backdrop-filter:var(--glass); backdrop-filter:var(--glass);
+  border:1px solid rgba(255,255,255,.75); box-shadow:0 8px 30px rgba(30,41,90,.08); }
+.drawer { background:rgba(255,255,255,.86); }
+.pop, .dlg { background:rgba(255,255,255,.9); }
+.switcher { background:rgba(255,255,255,.7); box-shadow:inset 0 0 0 1px var(--border); }
+.alt-label { font-weight:600; }
+.pill { background:rgba(255,255,255,.7); }
+.btn { background:rgba(255,255,255,.7); }
+.btn.primary { background:linear-gradient(135deg, #3B5BFD, #7C5CF2); border-color:transparent; box-shadow:0 6px 16px rgba(59,91,253,.35); }
+.daysel button { background:rgba(255,255,255,.7); border-color:rgba(255,255,255,.8); border-radius:999px; }
+.daysel button[aria-pressed="true"] { background:linear-gradient(135deg, #3B5BFD, #7C5CF2); }
+.day { background:repeating-linear-gradient(to bottom, transparent 0 calc(60 * var(--ppm) - 1px), var(--border) calc(60 * var(--ppm) - 1px) calc(60 * var(--ppm))); }
+.blk { border-radius:12px; border-inline-start-width:0; box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--cfg) 25%, transparent), 0 4px 14px rgba(30,41,90,.08); }
+.blk::before { content:""; position:absolute; inset-block:6px; inset-inline-start:4px; width:3px; border-radius:3px; background:var(--cfg); }
+.blk { padding-inline-start:11px; }
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  :root { --surface:#FFFFFF; --surface-2:#F3F5FB; }
+  .top::before, .views, .actions, .wk-head > *, .me-foot, .dr-top { background:#FFFFFF; }
+}
+@media (max-width:599px) {
+  .actions { inset:auto 10px calc(10px + env(safe-area-inset-bottom)) 10px; border-radius:24px; border:1px solid rgba(255,255,255,.8); box-shadow:0 12px 34px rgba(30,41,90,.18); }
+  .actions .btn, .actions .btn:not(.avatars) { background:transparent; }
+  .actions .btn.primary { background:linear-gradient(135deg, #3B5BFD, #7C5CF2); border-radius:18px; }
+  body { padding-bottom:calc(var(--tap) + 48px + env(safe-area-inset-bottom)); }
+}

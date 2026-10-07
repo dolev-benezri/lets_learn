@@ -1,0 +1,39 @@
+/* Style "לילה" (night): a dark theme for evening planning. Loaded after style.css; tokens first, then the few hardcoded colours.
+   Text pairs are checked for 4.5:1 by check-contrast.mjs. In production this would sit under @media (prefers-color-scheme: dark)
+   plus a manual toggle; here it is forced so it can be compared. */
+:root {
+  color-scheme: dark;
+  --bg:#0B1120; --surface:#131B2E; --surface-2:#1B2540; --border:#26314D; --border-strong:#3A4870;
+  --text:#E8ECF4; --text-2:#A9B4C8; --text-3:#8C99B2;
+  --primary:#7AB0FF; --primary-hover:#9CC3FF; --primary-soft:#192A4A; --on-primary:#0B1120;
+  --success:#55DDA5; --success-soft:#0F2E25; --warning:#F8C06A; --warning-soft:#33250E; --danger:#FF8F95; --danger-soft:#3A161B;
+  --friend:#EBA6DF; --friend-soft:#38193A;
+  --shadow-pop:0 14px 36px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.4);
+  --c0-bg:#172A4D; --c0-fg:#93BCFF;  --c1-bg:#0F3328; --c1-fg:#62E2AD;  --c2-bg:#281D4A; --c2-fg:#BCA6FF;
+  --c3-bg:#3B1A2D; --c3-fg:#FFA1CA;  --c4-bg:#382911; --c4-fg:#F5C46E;  --c5-bg:#0E3038; --c5-fg:#66D6E8;
+  --c6-bg:#3B2116; --c6-fg:#FFA984;  --c7-bg:#232C3F; --c7-fg:#C6CEDC;
+}
+/* grid: hour bands without the light stripe */
+.day { background:repeating-linear-gradient(to bottom, transparent 0 calc(60 * var(--ppm) - 1px), var(--border) calc(60 * var(--ppm) - 1px) calc(60 * var(--ppm))),
+  repeating-linear-gradient(to bottom, var(--surface) 0 calc(60 * var(--ppm)), #161F35 calc(60 * var(--ppm)) calc(120 * var(--ppm))); }
+.blk { box-shadow:inset 0 0 0 1px rgba(255,255,255,.04); }
+.blk:hover { box-shadow:inset 0 0 0 1px var(--cfg); }
+.blk-meta, .blk-room { color:var(--text-2); }
+/* hardcoded light borders and states in style.css */
+.banner { border-color:#294172; }
+.banner.err, .crs[data-st="failed"] { border-color:#5A2329; }
+.banner.warn { border-color:#5A4216; }
+.crs[data-st="passed"] { border-color:#1E5A45; }
+.fe-page:has(input:checked), .fe-rows li.on { border-color:#294172; }
+.seg label:hover span { background:rgba(255,255,255,.06); }
+.seg input:checked + span { box-shadow:0 1px 2px rgba(0,0,0,.5); background:var(--border-strong); }
+.seg input[value="must"]:checked + span { background:var(--primary-soft); color:var(--primary-hover); }
+.btn.primary:active:not(:disabled), .actions .btn.primary:active:not(:disabled) { background:#5A93E8; border-color:#5A93E8; }
+.btn:active:not(:disabled) { background:var(--border-strong); }
+.top, .views, .actions { background:#0F1627; }
+.wk-head > * { background:var(--surface); }
+.toast { background:#E8ECF4; color:#0B1120; }
+body.drawer-open .scrim, .pop::backdrop, .drawer.modal::backdrop, .dlg::backdrop { background:rgba(0,0,0,.6); }
+.checklist li.ok b { color:var(--success); }
+/* inputs and selects follow color-scheme; give them the surface explicitly so they match the cards */
+input, select, textarea { background-color:var(--surface-2) !important; color:var(--text); border-color:var(--border-strong) !important; }

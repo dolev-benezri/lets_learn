@@ -5,7 +5,9 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "test": "node --test",
-    "scrape": "node scripts/scrape.mjs"
+    "scrape": "node scripts/scrape.mjs",
+    "ui:serve": "python docs/superpowers/design-review/styles/serve.py",
+    "ui:shots": "node docs/superpowers/design-review/styles/shoot.mjs"
   },
   "dependencies": {
     "node-html-parser": "^6.1.13"

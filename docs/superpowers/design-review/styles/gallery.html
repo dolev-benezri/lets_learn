@@ -1,0 +1,189 @@
+<title>סגנונות להמערכת שלי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: a style picker on top, then the chosen style's card (story, swatches, verdict) and its screenshots;
+   a second mode puts one screen of every style side by side. A neutral frame so the screenshots carry the colour. */
+:root {
+  --bg:#F4F5F8; --panel:#FFFFFF; --ink:#141824; --ink-2:#4A5163; --ink-3:#5F6678; --line:#E2E5EC;
+  --accent:#2457E6; --accent-soft:#E8EEFD; --good:#0B6E4F; --good-soft:#E5F5EE; --bad:#B42318; --bad-soft:#FDECEA;
+  --font:"Rubik", system-ui, "Segoe UI", Arial, sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0E121B; --panel:#161B27; --ink:#E9ECF3; --ink-2:#AEB5C5; --ink-3:#959DB0; --line:#283043;
+  --accent:#86AEFF; --accent-soft:#1B2848; --good:#5ADBA6; --good-soft:#12302A; --bad:#FF9A92; --bad-soft:#3A1A1A; color-scheme:dark; } }
+:root[data-theme="dark"] {
+  --bg:#0E121B; --panel:#161B27; --ink:#E9ECF3; --ink-2:#AEB5C5; --ink-3:#959DB0; --line:#283043;
+  --accent:#86AEFF; --accent-soft:#1B2848; --good:#5ADBA6; --good-soft:#12302A; --bad:#FF9A92; --bad-soft:#3A1A1A; color-scheme:dark; }
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 var(--font); }
+.wrap { max-width:1180px; margin:0 auto; padding-inline:16px; padding-block:28px 56px; display:grid; gap:24px; }
+h1, h2, h3 { margin:0; line-height:1.25; text-wrap:balance; }
+h1 { font-size:clamp(26px, 4vw, 36px); font-weight:800; letter-spacing:-.01em; }
+h2 { font-size:20px; font-weight:700; }
+h3 { font-size:15px; font-weight:600; }
+p { margin:0; }
+.lead { max-width:68ch; color:var(--ink-2); }
+.meta { color:var(--ink-3); font-size:13px; }
+.bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.chip { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 14px; border:1px solid var(--line); border-radius:999px; background:var(--panel);
+  color:var(--ink); font:inherit; font-weight:500; cursor:pointer; transition:background-color .15s ease, border-color .15s ease; }
+.chip:hover { border-color:var(--ink-3); }
+.chip[aria-pressed="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.chip .sw { width:14px; height:14px; border-radius:50%; box-shadow:0 0 0 1px rgba(127,127,127,.35); }
+.chip:focus-visible, .shot:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.rec { font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:var(--good-soft); color:var(--good); }
+.chip[aria-pressed="true"] .rec { background:var(--good); color:var(--bg); }
+.card { display:grid; grid-template-columns:minmax(0, 1.2fr) minmax(0, 1fr); gap:24px; padding:22px; background:var(--panel); border:1px solid var(--line); border-radius:var(--r); }
+.card > div { display:grid; gap:12px; align-content:start; min-width:0; }
+.swatches { display:flex; flex-wrap:wrap; gap:6px; }
+.swatches span { width:34px; height:34px; border-radius:9px; box-shadow:inset 0 0 0 1px rgba(127,127,127,.3); }
+dl { display:grid; grid-template-columns:auto minmax(0, 1fr); gap:6px 14px; margin:0; font-size:14px; }
+dt { color:var(--ink-3); }
+dd { margin:0; }
+ul { margin:0; padding-inline-start:18px; display:grid; gap:4px; }
+.pro li::marker { content:"+  "; color:var(--good); font-weight:700; }
+.con li::marker { content:"−  "; color:var(--bad); font-weight:700; }
+.verdict { padding:10px 12px; border-radius:10px; background:var(--accent-soft); font-size:14px; }
+.shots { display:grid; gap:10px; }
+.row { display:flex; gap:14px; overflow-x:auto; padding-bottom:8px; scroll-snap-type:x proximity; }
+.shot { flex:none; display:grid; gap:6px; margin:0; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:start; cursor:zoom-in; scroll-snap-align:start; }
+.shot img { display:block; height:auto; border-radius:12px; border:1px solid var(--line); background:var(--panel); }
+.phone img { width:200px; aspect-ratio:375 / 812; object-fit:cover; object-position:top; }
+.desk img { width:min(520px, 80vw); aspect-ratio:1280 / 800; object-fit:cover; object-position:top; }
+.shot span { font-size:13px; color:var(--ink-2); }
+.cmp { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:16px; }
+.cmp.wide { grid-template-columns:repeat(auto-fill, minmax(min(100%, 420px), 1fr)); }
+.cmp .shot img { width:100%; aspect-ratio:375 / 812; object-fit:cover; object-position:top; }
+.cmp.wide .shot img { aspect-ratio:1280 / 800; }
+.section { display:grid; gap:12px; padding:22px; background:var(--panel); border:1px solid var(--line); border-radius:var(--r); }
+.steps { display:grid; gap:8px; counter-reset:s; padding:0; list-style:none; }
+.steps li { display:grid; grid-template-columns:28px minmax(0, 1fr); gap:10px; }
+.steps li::before { counter-increment:s; content:counter(s); display:grid; place-items:center; width:26px; height:26px; border-radius:50%; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:13px; }
+code { font-size:13px; padding:1px 5px; border-radius:5px; background:var(--accent-soft); direction:ltr; unicode-bidi:isolate; }
+dialog { max-width:min(96vw, 1300px); max-height:94vh; padding:0; border:0; border-radius:14px; background:var(--panel); }
+dialog::backdrop { background:rgba(0,0,0,.6); }
+dialog img { display:block; max-width:100%; max-height:88vh; }
+dialog p { padding:8px 14px; font-size:14px; color:var(--ink-2); }
+@media (max-width:760px) { .card { grid-template-columns:minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+
+<div class="wrap" dir="rtl" lang="he">
+  <header style="display:grid; gap:10px">
+    <p class="meta">המערכת שלי · הצעות עיצוב · 8 באוקטובר 2026</p>
+    <h1>חמישה סגנונות לאותה מערכת שעות</h1>
+    <p class="lead">כל סגנון הוא קובץ CSS אחד שנטען מעל הקוד הקיים, בלי לגעת בלוגיקה. כל הצילומים מאותו מצב הדגמה: הנדסת מכונות, מחזור 2026, שנה ב׳, עם שני חברים (נועה ואיתי). הצילומים נלקחו בדפדפן אמיתי ברוחב 375 (טלפון) ו־1280 (מחשב). בכל הסגנונות כל טקסט שנבדק עבר ניגודיות 4.5:1.</p>
+  </header>
+
+  <div class="bar" role="group" aria-label="מצב תצוגה">
+    <button class="chip" id="m-one" aria-pressed="true">סגנון אחד מקרוב</button>
+    <button class="chip" id="m-cmp" aria-pressed="false">כל הסגנונות זה לצד זה</button>
+  </div>
+
+  <section id="one" style="display:grid; gap:16px">
+    <div class="bar" id="picker" role="group" aria-label="בחירת סגנון"></div>
+    <article class="card" id="card"></article>
+    <div class="shots">
+      <h3>בטלפון (375)</h3><div class="row" id="phone"></div>
+      <h3>במחשב (1280)</h3><div class="row" id="desk"></div>
+    </div>
+  </section>
+
+  <section id="cmp" hidden style="display:grid; gap:16px">
+    <div class="bar" id="screens" role="group" aria-label="בחירת מסך"></div>
+    <div class="bar" role="group" aria-label="רוחב"><button class="chip" id="w375" aria-pressed="true">טלפון</button><button class="chip" id="w1280" aria-pressed="false">מחשב</button></div>
+    <div class="cmp" id="grid"></div>
+  </section>
+
+  <section class="section">
+    <h2>ההחלטה שלי</h2>
+    <p><b>"בהיר" כבסיס, ו"לילה" כמצב כהה אוטומטי.</b> שניהם בנויים על אותם צבעי קורסים ואותו מבנה, ולכן הם משתלבים: מצב כהה לפי הגדרת הטלפון, עם מתג ידני בהעדפות. זה השיפור עם הסיכון הנמוך ביותר, שומר על עיצוב v2 שאושר, ומוסיף את מה שחסר באמת: תנועה בכל מעבר (מגירה, חלונית, לשוניות) ומצב לילה לתכנון בערב.</p>
+    <p class="meta">אם בא לך אופי חזק יותר: "קמפוס" הוא החלופה. "זכוכית" יפה באייפון אבל כבד בטלפונים חלשים, ו"נקי" מתאים יותר לכלי עבודה מאשר לסטודנטים.</p>
+    <ol class="steps">
+      <li><span>שלב 1: טוקנים. 13 הצבעים הקשיחים שנשארו בקוד הופכים למשתנים, כדי ששני הסגנונות יוכלו לעבוד מאותו מקור.</span></li>
+      <li><span>שלב 2: "בהיר" נכנס לקוד הראשי: צללים רכים, סימן מותג, לשוניות כגלולה, תנועה במגירה ובחלונית.</span></li>
+      <li><span>שלב 3: "לילה" מתחת ל־<code>prefers-color-scheme: dark</code>, עם מתג בהעדפות ומטא <code>color-scheme</code> מעודכן.</span></li>
+      <li><span>שלב 4: בדיקה בכל רוחב (320, 375, 768, 1280), צילומים חוזרים וניגודיות אוטומטית, ואז מיזוג.</span></li>
+    </ol>
+    <p class="meta">התוכנית המלאה, עם סדר הביצוע, הקבצים והבדיקות: <code>docs/superpowers/plans/2026-10-08-design-and-readme.md</code>. אפשר להריץ כל סגנון חי מקומית: <code>python docs/superpowers/design-review/styles/serve.py</code> ואז <code>localhost:8150/t/campus/</code>.</p>
+  </section>
+</div>
+
+<dialog id="zoom"><img id="zimg" alt=""><p id="zcap"></p></dialog>
+
+<script>
+const T = [
+  { id:'base', name:'הנוכחי', tag:'v2 כפי שהוא היום', sw:['#F6F7FB','#FFFFFF','#2563EB','#101828','#E7F6EF','#8E2A7E'],
+    idea:'העיצוב שבאתר עכשיו, לנקודת השוואה.', font:'Rubik', shape:'פינות 12, מסגרות דקות', motion:'כמעט בלי תנועה: מגירה וחלונית מופיעות בבת אחת',
+    pro:['מאושר ועובד','ניגודיות נבדקה'], con:['שטוח מעט ו"טכני"','אין מצב כהה','אין תנועה במעברים'], verdict:'בסיס טוב, אבל מרגיש כמו טיוטה של מוצר.' },
+  { id:'clarity', name:'בהיר', tag:'ליטוש של הקיים', rec:true, sw:['#F3F5FA','#FFFFFF','#2457E6','#7C5CF2','#0F172A','#EAF0FE'],
+    idea:'אותו כחול ואותם צבעי קורסים, עם יותר אוויר: כרטיסים בצל רך במקום מסגרות, סימן מותג קטן ליד השם, לשוניות בצורת גלולה, גופן 15 במחשב, ותנועה בכל שינוי מצב.',
+    font:'Rubik, כותרות במשקל 700', shape:'פינות 10–20, צל רך', motion:'מגירה נכנסת מהצד, בטלפון גיליון עולה מלמטה, חלונית מתרחבת, שיעור מתרומם במעבר עכבר',
+    pro:['סיכון נמוך: כמעט רק טוקנים','משאיר את מה שאושר','התנועה עונה על מה שחשוב לך'], con:['שינוי עדין, פחות "וואו"'],
+    verdict:'המומלץ. מתאים לכולם ומשתלב עם "לילה".' },
+  { id:'night', name:'לילה', tag:'מצב כהה', rec:true, sw:['#0B1120','#131B2E','#7AB0FF','#E8ECF4','#62E2AD','#EBA6DF'],
+    idea:'מצב כהה מלא: רקע כחול־לילה, משטחים מדורגים, צבעי קורסים כהים עם טקסט בהיר. כולל את מפת ההתקדמות, הטפסים והחלוניות.',
+    font:'Rubik', shape:'כמו הנוכחי', motion:'כמו הבסיס שעליו הוא יושב',
+    pro:['נעים לתכנון בערב','סטודנטים מצפים לזה','רוב העבודה היא טוקנים'], con:['13 צבעים קשיחים בקוד צריכים להפוך לטוקנים','צריך לבדוק כל מסך פעמיים'],
+    verdict:'מומלץ כתוספת אוטומטית לפי הגדרת הטלפון, לא כסגנון יחיד.' },
+  { id:'campus', name:'קמפוס', tag:'צבעוני ושמח', sw:['#FFF6EC','#6D28D9','#C0267A','#22180F','#0B6E4F','#9A5306'],
+    idea:'חם ושובב: רקע נייר חם, סגול כצבע ראשי, כותרת בשיפוע סגול־ורוד, צורות עגולות, ושיעורים כאריחים בצבע מלא עם טקסט לבן. בטלפון סרגל הפעולות צף כמו דוק.',
+    font:'Rubik, כותרות 800', shape:'פינות 16–24, מסגרות 2px, צל "כפתור"', motion:'אריח קופץ מעט במעבר עכבר, כפתור ראשי נלחץ פנימה',
+    pro:['אישיות ברורה, זכיר','השיעורים בולטים מאוד בלוח'], con:['אריחים מלאים מכבידים כשיש הרבה שיעורים','פחות "רשמי"'],
+    verdict:'החלופה אם רוצים אופי. כדאי לבדוק עם כמה חברים.' },
+  { id:'glass', name:'זכוכית', tag:'בסגנון iOS', sw:['#EEF2FB','#3B5BFD','#7C5CF2','#EC4899','#0B1324','#FFFFFF'],
+    idea:'רקע של כתמי צבע רכים, סרגלים וכרטיסים חלביים עם טשטוש, פינות גדולות, כפתור ראשי בשיפוע. מרגיש כמו אפליקציה של אייפון.',
+    font:'Rubik', shape:'פינות 14–24, זכוכית מטושטשת', motion:'סרגל פעולות צף, עומק מטשטוש',
+    pro:['נראה הכי "אפליקציה"','מרשים בצילומי מסך ובשיתוף'], con:['טשטוש כבד בטלפונים חלשים','טשטוש על סרגל עליון שובר מיקום fixed (נמצא ותוקן בדרך)','קשה לשמור ניגודיות'],
+    verdict:'יפה, אבל עלות ביצועים וסיכון. לא כבסיס.' },
+  { id:'mono', name:'נקי', tag:'מינימלי ועורכי', sw:['#FFFFFF','#0C0A09','#57534E','#E7E5E4','#F5F5F4','#2563EB'],
+    idea:'בהשראת Linear ו־Notion: לבן, שחור כצבע הפעולה, קווים דקים במקום קופסאות, פינות קטנות, גופן המערכת. הצבע היחיד במסך הוא צבעי הקורסים.',
+    font:'גופן המערכת (SF בעברית באייפון, Segoe במחשב)', shape:'פינות 5–10, בלי צללים', motion:'מינימלית',
+    pro:['הלוח הוא הדבר הצבעוני היחיד','צפוף וקריא','מהיר'], con:['קר ומקצועי מדי לקהל סטודנטים','מאבד את Rubik ואת המותג'],
+    verdict:'מתאים לכלי עבודה, פחות לכאן.' },
+];
+const V = [['plan','בניית מערכת'],['me','המצב שלי'],['prefs','העדפות'],['lesson','פרטי שיעור'],['map','מפת התקדמות']];
+const $ = (id) => document.getElementById(id);
+const src = (t, v, w) => `shots/${t}-${v}-${w}.webp`;
+let cur = 'clarity', screen = 'plan', width = 375;
+try { cur = localStorage.getItem('gal-style') || cur; } catch {}
+const shot = (t, v, w, label, cls) => `<button class="shot ${cls}" data-src="${src(t, v, w)}" data-cap="${label}"><img loading="lazy" src="${src(t, v, w)}" alt="${label}" width="${w === 375 ? 375 : 1280}" height="${w === 375 ? 812 : 800}"><span>${label}</span></button>`;
+function renderPicker() {
+  $('picker').innerHTML = T.map((t) => `<button class="chip" data-t="${t.id}" aria-pressed="${t.id === cur}"><span class="sw" style="background:${t.sw[2]}"></span>${t.name}${t.rec ? '<span class="rec">מומלץ</span>' : ''}</button>`).join('');
+}
+function renderOne() {
+  const t = T.find((x) => x.id === cur);
+  $('card').innerHTML = `<div><p class="meta">${t.tag}</p><h2>${t.name}</h2><p>${t.idea}</p>
+    <div class="swatches" aria-hidden="true">${t.sw.map((c) => `<span style="background:${c}"></span>`).join('')}</div>
+    <dl><dt>גופן</dt><dd>${t.font}</dd><dt>צורה</dt><dd>${t.shape}</dd><dt>תנועה</dt><dd>${t.motion}</dd></dl></div>
+    <div><h3>בעד</h3><ul class="pro">${t.pro.map((x) => `<li>${x}</li>`).join('')}</ul>
+    <h3>נגד</h3><ul class="con">${t.con.map((x) => `<li>${x}</li>`).join('')}</ul><p class="verdict">${t.verdict}</p></div>`;
+  $('phone').innerHTML = V.map(([v, l]) => shot(t.id, v, 375, `${t.name} · ${l}`, 'phone')).join('');
+  $('desk').innerHTML = V.map(([v, l]) => shot(t.id, v, 1280, `${t.name} · ${l}`, 'desk')).join('');
+}
+function renderCmp() {
+  $('screens').innerHTML = V.map(([v, l]) => `<button class="chip" data-v="${v}" aria-pressed="${v === screen}">${l}</button>`).join('');
+  $('grid').className = 'cmp' + (width === 1280 ? ' wide' : '');
+  $('grid').innerHTML = T.map((t) => shot(t.id, screen, width, t.name + (t.rec ? ' · מומלץ' : ''), '')).join('');
+}
+function mode(cmp) {
+  $('one').hidden = cmp; $('cmp').hidden = !cmp;
+  $('m-one').setAttribute('aria-pressed', !cmp); $('m-cmp').setAttribute('aria-pressed', cmp);
+  if (cmp) renderCmp();
+}
+$('picker').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (!b) return; cur = b.dataset.t;
+  try { localStorage.setItem('gal-style', cur); } catch {} renderPicker(); renderOne(); });
+$('screens').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (b) { screen = b.dataset.v; renderCmp(); } });
+$('w375').onclick = () => { width = 375; $('w375').setAttribute('aria-pressed', true); $('w1280').setAttribute('aria-pressed', false); renderCmp(); };
+$('w1280').onclick = () => { width = 1280; $('w1280').setAttribute('aria-pressed', true); $('w375').setAttribute('aria-pressed', false); renderCmp(); };
+$('m-one').onclick = () => mode(false); $('m-cmp').onclick = () => mode(true);
+document.addEventListener('click', (e) => { const s = e.target.closest('.shot'); if (!s) return;
+  $('zimg').src = s.dataset.src; $('zimg').alt = s.dataset.cap; $('zcap').textContent = s.dataset.cap; $('zoom').showModal(); });
+$('zoom').addEventListener('click', () => $('zoom').close());
+if (!T.some((t) => t.id === cur)) cur = 'clarity';
+renderPicker(); renderOne();
+</script>

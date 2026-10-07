@@ -1,0 +1,53 @@
+/* Style "נקי" (mono): editorial and dense, in the spirit of Linear / Notion. White page, ink-black accent, hairlines instead of boxes,
+   small radii, no shadows, the system font (SF Hebrew on iPhone, Segoe UI on Windows). Colour is kept for the courses only,
+   as a thin edge and a pale tint, so the timetable is the only colourful thing on screen. */
+:root {
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F5F5F4; --border:#E7E5E4; --border-strong:#D6D3D1;
+  --text:#0C0A09; --text-2:#57534E; --text-3:#6B6560;
+  --primary:#0C0A09; --primary-hover:#292524; --primary-soft:#F5F5F4; --on-primary:#FFFFFF;
+  --radius:8px; --radius-sm:5px; --radius-lg:10px;
+  --shadow-pop:0 0 0 1px var(--border), 0 12px 32px rgba(12,10,9,.10);
+  --font:system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+:focus-visible { outline-color:#2563EB; }
+a { color:var(--text); text-underline-offset:3px; }
+.top { border-bottom:1px solid var(--border); }
+.top h1 { font-weight:700; letter-spacing:-.02em; }
+.views { border-bottom:1px solid var(--border); }
+.views a[aria-current="page"] { color:var(--text); border-bottom-color:var(--text); }
+.views a { font-weight:500; }
+/* no boxes: sections are separated by hairlines and space */
+.board { border:0; border-radius:0; padding:8px 0; }
+.me-card, .me-main { border:1px solid var(--border); border-radius:var(--radius-lg); }
+.course { border-radius:var(--radius); border-inline-start-width:3px; }
+.course.in { background:var(--surface); }
+.pill { background:transparent; border:1px solid var(--border); border-radius:6px; }
+.pill .icon { color:var(--text-3); }
+.pill.friend { background:transparent; border-color:#E9C6E3; }
+.msg, .notice, .banner { background:var(--surface-2); border-color:var(--border); }
+.switcher { background:transparent; border:1px solid var(--border); border-radius:8px; }
+.switcher .btn { border-radius:6px; }
+.alt-label { font-variant-numeric:tabular-nums; font-weight:600; }
+.btn { border-radius:6px; }
+.btn.primary { background:var(--text); border-color:var(--text); }
+.seg-opts { background:transparent; box-shadow:inset 0 0 0 1px var(--border); border-radius:6px; }
+.seg span { border-radius:4px; }
+.seg input:checked + span { background:var(--text); color:#fff; box-shadow:none; }
+.seg input[value="must"]:checked + span { background:var(--text); color:#fff; }
+.daysel button { border-radius:6px; }
+.daysel button[aria-pressed="true"] { background:var(--text); border-color:var(--text); }
+.daypill[aria-pressed="true"] { background:var(--text); border-color:var(--text); }
+/* grid: plain hour lines, no alternating bands; lessons are white cards with a course edge */
+.day { background:repeating-linear-gradient(to bottom, transparent 0 calc(60 * var(--ppm) - 1px), var(--border) calc(60 * var(--ppm) - 1px) calc(60 * var(--ppm))), var(--surface); }
+.dh b { font-weight:700; }
+.blk { background:color-mix(in srgb, var(--cbg) 55%, #fff); border:1px solid color-mix(in srgb, var(--cfg) 22%, #fff); border-inline-start:3px solid var(--cfg);
+  border-radius:var(--radius-sm); }
+.blk-name { color:var(--text); font-weight:600; }
+.blk:hover { box-shadow:none; border-color:var(--cfg); }
+.tag { border-radius:4px; }
+.av { box-shadow:0 0 0 1.5px var(--friend); }
+.bar i { background:var(--text); }
+@media (max-width:599px) {
+  .actions .btn.primary { background:var(--text); }
+  .board { padding:4px 0; }
+}
