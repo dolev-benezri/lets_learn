@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-06T10:16:11.191Z",
+ "fetchedAt": "2026-10-07T22:18:39.347Z",
  "year": 2027,
  "startYear": 2025,
  "program": 42,
@@ -2708,7 +2708,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר לוזון יוסף",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274012303/1"
@@ -2768,7 +2768,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר לוזון יוסף",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3017,7 +3017,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' כהנא דפנה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274013002/1"
@@ -3075,7 +3075,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' כהנא דפנה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4171,7 +4171,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר בן יעקב יואב",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274022001/1"
@@ -4191,7 +4191,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר בן יעקב יואב",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6061,9 +6061,9 @@
      "meetings": [
       {
        "day": 1,
-       "start": "10:00",
-       "end": "11:50",
-       "room": "מפ\"ט יעד"
+       "start": "15:00",
+       "end": "16:50",
+       "room": "מפ\"ט אתרוג"
       }
      ],
      "exams": []
@@ -6909,7 +6909,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

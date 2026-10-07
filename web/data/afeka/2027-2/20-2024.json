@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-06T22:18:14.020Z",
+ "fetchedAt": "2026-10-07T22:18:39.347Z",
  "year": 2027,
  "startYear": 2024,
  "program": 20,
@@ -1564,7 +1564,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר קלמרו נצח",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272012805/1"
@@ -1584,7 +1584,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר קלמרו נצח",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1696,7 +1696,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272013202/1"
@@ -1716,7 +1716,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272013203/1"
@@ -1754,7 +1754,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1772,7 +1772,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4302,7 +4302,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "ד\"ר עמר ניסים, מר ארנפלד יוסף",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -5206,9 +5206,9 @@
      "meetings": [
       {
        "day": 1,
-       "start": "10:00",
-       "end": "11:50",
-       "room": "מפ\"ט יעד"
+       "start": "15:00",
+       "end": "16:50",
+       "room": "מפ\"ט אתרוג"
       }
      ],
      "exams": []
@@ -6054,7 +6054,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

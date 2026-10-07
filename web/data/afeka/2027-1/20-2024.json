@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-06T22:18:14.020Z",
+ "fetchedAt": "2026-10-07T22:18:39.347Z",
  "year": 2027,
  "startYear": 2024,
  "program": 20,
@@ -5473,7 +5473,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' סטאנצ'סקו יוני",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090110/1",
@@ -5499,7 +5499,7 @@
      "id": "279090111",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "ד\"ר שרייבר ניר",
+     "lecturer": "ד\"ר לה בלנק אן",
      "full": false,
      "semester": "א",
      "linked": [
@@ -5508,15 +5508,15 @@
      "meetings": [
       {
        "day": 1,
-       "start": "19:00",
-       "end": "20:50",
+       "start": "17:00",
+       "end": "18:50",
        "room": "114-פיקוס סיסקו וגם פרונטלי"
       },
       {
-       "day": 3,
+       "day": 1,
        "start": "19:00",
        "end": "20:50",
-       "room": "202 פיקוס"
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
       }
      ],
      "exams": []
@@ -5595,7 +5595,7 @@
        "day": 3,
        "start": "20:00",
        "end": "21:50",
-       "room": "200 פיקוס"
+       "room": "205 פיקוס"
       }
      ],
      "exams": []
@@ -6034,7 +6034,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -6484,7 +6484,7 @@
   "90902": {
    "name": "חשבון דיפרנציאלי אינטגרלי2",
    "credits": 5,
-   "offered": false,
+   "offered": true,
    "prereqs": [
     {
      "kind": "קדם",
@@ -6505,7 +6505,71 @@
      ]
     }
    ],
-   "groups": []
+   "groups": [
+    {
+     "id": "279090224",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר שרייבר ניר",
+     "full": false,
+     "semester": "א",
+     "linked": [
+      "279090224/1",
+      "279090224/2"
+     ],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "18:00",
+       "end": "19:50",
+       "room": "202 פיקוס"
+      },
+      {
+       "day": 3,
+       "start": "20:00",
+       "end": "21:50",
+       "room": "202 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090224/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כהן יונתן",
+     "full": true,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "קריה ז'1"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "279090224/2",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר כהן יונתן",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "19:00",
+       "end": "20:50",
+       "room": "251 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
   },
   "90903": {
    "name": "פיזיקה-מכניקה",
@@ -6558,7 +6622,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090303/1",
@@ -6612,7 +6676,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090305/1",
@@ -6683,7 +6747,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אבישר עמיחי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -6755,7 +6819,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שפירא יובל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8587,7 +8651,7 @@
        "day": 3,
        "start": "14:00",
        "end": "14:50",
-       "room": "202 פיקוס"
+       "room": "203 פיקוס"
       }
      ],
      "exams": []
