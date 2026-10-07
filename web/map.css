@@ -188,8 +188,8 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .ext text { font-style:italic; }
 .pmap .ext .tg { font-size:12px; font-style:normal; font-weight:600; }
 .pmap .ext.pre rect { fill:var(--surface); stroke-dasharray:2 3; }
-.pmap .plan-ring { fill:none; stroke:var(--c2-fg); stroke-width:3; opacity:0; } /* on every course node, shown by .plan */
-.pmap .nd.plan .plan-ring { opacity:1; }
+.pmap .plan-ring { fill:none; stroke:var(--c2-fg); stroke-width:3; }
+.pmap .nd:not(.plan) .plan-ring { opacity:0; } /* every course node has one, .plan shows it; the legend sample keeps its ring */
 .pmap .nd.plan .ring { fill:var(--c2-bg); }
 .pmap .e.plan { stroke:var(--c2-fg); stroke-opacity:.5; stroke-width:1.75; marker-end:url(#pmArrP); } /* many edges leave a plan: kept light so the map stays readable */
 .pmap .ar.plan { fill:var(--c2-fg); fill-opacity:.6; }

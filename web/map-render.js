@@ -188,14 +188,17 @@ export function miniHtml({ raw, sem, data, colors, k, open, abbr = false }) {
       ${nameHtml(x.name)}</li>`).join('')}</ul></details>`;
 }
 
-// Course abbreviations for the mini pane: word initials with gershayim before the last letter ("מבוא למדעי המחשב" -> מל״ה), a trailing number or
-// roman/Hebrew ordinal kept ("פיזיקה 1" -> פיז 1), one word -> its first 3 letters, Latin -> capitals. `extra` lengthens the last word on a clash.
-const SUFFIX = /^(\d+|[IVX]+|[א-ת]['׳])$/;
+// Course abbreviations for the mini pane: word initials with gershayim before the last letter ("מבוא למדעי המחשב" -> מל״ה), numbers and
+// roman/Hebrew ordinals kept at the end ("פיזיקה 1" -> פיז 1, "פיזיקה1 לתעו"נ" -> פ״ל 1), one word -> its first 3 letters or, when it already is
+// an acronym (תיב"ם), itself; Latin -> capitals. Punctuation is no word. `extra` lengthens the last word on a clash.
+const ORD = /^(\d+|[IVX]+|[א-ת]['׳])$/;
 function abbrOf(name, extra = 0) {
-  const w = String(name).split(/[\s\-–,()]+/).filter(Boolean);
-  const suf = w.length > 1 && SUFFIX.test(w.at(-1)) ? ` ${w.pop()}` : '';
-  if (w.length < 2) return Array.from(w[0] ?? '').slice(0, 3 + extra).join('') + suf;
-  const ws = w.slice(0, 3), l = [...ws.map((x) => Array.from(x)[0]), ...Array.from(ws.at(-1)).slice(1, 1 + extra)];
+  const tok = String(name ?? '').match(/[\p{L}"'׳״]+|\d+/gu) ?? [];
+  const nums = tok.filter((t) => ORD.test(t)), suf = nums.length ? ` ${nums.join(' ')}` : '';
+  const w = tok.filter((t) => !ORD.test(t)).map((t) => t.replace(/^["'׳״]+|["'׳״]+$/g, '')).filter(Boolean);
+  if (!w.length) return suf.trim();
+  if (w.length === 1) return (/["״]/.test(w[0]) ? w[0].replace(/"/g, '״') : Array.from(w[0]).slice(0, 3 + extra).join('')) + suf;
+  const ws = w.slice(0, 3), l = [...ws.map((x) => Array.from(x)[0]), ...Array.from(ws.at(-1)).filter((ch) => /\p{L}/u.test(ch)).slice(1, 1 + extra)];
   if (/^[A-Za-z]/.test(ws[0])) return l.join('').toUpperCase() + suf;
   return (/[א-ת]/.test(l.at(-1)) ? `${l.slice(0, -1).join('')}״${l.at(-1)}` : l.join('')) + suf;
 }

@@ -445,6 +445,16 @@ test('courseAbbr: word initials with gershayim, a trailing number kept, one word
   assert.equal(courseAbbr('חשבון דיפרנציאלי ואינטגרלי 2'), 'חד״ו 2');
   assert.equal(courseAbbr('Machine Learning'), 'ML');
 });
+test('courseAbbr on real names: punctuation is no word, an existing acronym stays, a number stuck to a word is kept', () => {
+  assert.equal(courseAbbr('תרבות ותודעה : מי אנחנו'), 'תו״מ');
+  assert.equal(courseAbbr('Gender Sexuality & Society'), 'GSS');
+  assert.equal(courseAbbr('תיב"ם'), 'תיב״ם');
+  assert.equal(courseAbbr('מד"ח 1'), 'מד״ח 1');
+  assert.equal(courseAbbr('פיזיקה1 לתעו"נ'), 'פ״ל 1');
+  assert.notEqual(courseAbbr('פיזיקה1 לתעו"נ'), courseAbbr('פיזיקה2 לתעו"נ'));
+  assert.equal(courseAbbr("חשבון אינפיניטסימלי א'"), "ח״א א'");
+  for (const n of ['', '   ', ':', null, undefined]) assert.equal(typeof courseAbbr(n), 'string');
+});
 test('uniqueAbbrs: two names with the same initials get different abbreviations, the first keeps its own', () => {
   const [a, b] = uniqueAbbrs(['מבוא למדעי המחשב', 'מבוא לתורת המחשבים']);
   assert.equal(a, 'מל״ה'); assert.notEqual(a, b);

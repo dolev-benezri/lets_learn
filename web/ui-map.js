@@ -171,7 +171,7 @@ function restyle(c) {
     el.querySelector('title').textContent = lbl;
   }
   M.els.paths.forEach((el, id) => el.classList.toggle('plan', paths.has(id)));
-  const was = [...q('.pm-meter').children].map((i) => i.style.width);
+  const was = [...q('.pm-meter').children].map((i) => getComputedStyle(i).width); // mid-transition when switches follow each other
   q('.pm-prog').outerHTML = prog;
   const bars = [...q('.pm-meter').children], now = bars.map((i) => i.style.width);
   bars.forEach((i, k) => { i.style.width = was[k] ?? '0%'; });
@@ -187,7 +187,7 @@ function restyle(c) {
 let spotT = 0;
 function spot() {
   const r = q('.pm-svg');
-  if (!r) return;
+  if (!r || (M.hover ?? M.focus ?? M.sel)) return; // a hovered, focused or opened course keeps its own highlight (one at a time)
   clearTimeout(spotT);
   r.classList.remove('spot');
   void r.getBoundingClientRect(); // restart the transition when switches follow each other
