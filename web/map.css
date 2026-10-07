@@ -115,7 +115,10 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .ext text { fill:var(--text-2); font-size:12px; }
 
 /* highlight: dim whatever is not on the hovered / focused / selected chain */
-.pmap .nd, .pmap .e, .pmap .or, .pmap .ext { transition:opacity .15s ease; }
+.pmap .nd, .pmap .e, .pmap .or, .pmap .ext { transition:opacity .3s ease; }
+/* a switched alternative moves only classes (ui-map.js restyle): rings, fills and edge colours ease into place */
+.pmap .e { transition:opacity .3s ease, stroke .35s ease, stroke-opacity .35s ease, stroke-width .35s ease; }
+.pmap .nd .ring, .pmap .plan-ring { transition:fill .35s ease, stroke .35s ease, opacity .35s ease; }
 .pmap .pm-svg.dim .nd:not(.lit), .pmap .pm-svg.dim .or:not(.lit), .pmap .pm-svg.dim .ext:not(.lit), .pmap .pm-svg.dim .e:not(.lit) { opacity:.14; }
 
 /* side / bottom card */
@@ -185,7 +188,8 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .ext text { font-style:italic; }
 .pmap .ext .tg { font-size:12px; font-style:normal; font-weight:600; }
 .pmap .ext.pre rect { fill:var(--surface); stroke-dasharray:2 3; }
-.pmap .plan-ring { fill:none; stroke:var(--c2-fg); stroke-width:3; }
+.pmap .plan-ring { fill:none; stroke:var(--c2-fg); stroke-width:3; opacity:0; } /* on every course node, shown by .plan */
+.pmap .nd.plan .plan-ring { opacity:1; }
 .pmap .nd.plan .ring { fill:var(--c2-bg); }
 .pmap .e.plan { stroke:var(--c2-fg); stroke-opacity:.5; stroke-width:1.75; marker-end:url(#pmArrP); } /* many edges leave a plan: kept light so the map stays readable */
 .pmap .ar.plan { fill:var(--c2-fg); fill-opacity:.6; }
@@ -197,7 +201,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-prog-plan { color:var(--c2-fg); font-weight:600; }
 .pmap .pm-prog-spec { margin:4px 0 0; font-size:var(--fs-xs); color:var(--text-2); }
 .pmap .pm-meter { display:flex; height:10px; overflow:hidden; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; } /* RTL: fills from the right */
-.pmap .pm-meter i { display:block; height:100%; }
+.pmap .pm-meter i { display:block; height:100%; transition:width .5s ease; }
 .pmap .pm-meter .d { background:var(--success); }
 .pmap .pm-meter .p { background:var(--c2-fg); }
 @media (max-width:599px) { .pmap .pm-prog { padding:4px 12px 6px; } .pmap .pm-prog-t { margin-bottom:3px; font-size:var(--fs-xs); } .pmap .pm-meter { height:8px; } }
@@ -230,6 +234,26 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
   .pmap .pm-mini[open] { inset-inline:0; inset-block-end:0; width:auto; max-width:none; max-height:50%; border-radius:var(--radius) var(--radius) 0 0; }
 }
 @media (max-width:359px) { .pmap .pm-alt .long { display:none; } .pmap .pm-alt .short { display:inline; } }
+/* The switch flash (1.8 s, ui-map.js spot): the shown plan and the edges it opens in the primary colour, the rest faded, then all eases back. */
+.pmap .pm-svg.spot .nd:not(.plan), .pmap .pm-svg.spot .or, .pmap .pm-svg.spot .ext, .pmap .pm-svg.spot .e:not(.plan) { opacity:.14; }
+.pmap .pm-svg.spot .e.plan { stroke:var(--primary); stroke-opacity:1; stroke-width:2.5; marker-end:url(#pmArrL); }
+.pmap .pm-svg.spot .nd.plan .plan-ring { stroke:var(--primary); }
+/* Mini pane, round 2: the identify line, the abbreviations toggle and its legend. Blocks are divs: hover (mouse) or a tap names them. */
+.pmap .pm-mini-top { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-inline-end:8px; }
+.pmap .pm-mini-top .pm-mini-s { padding-bottom:0; }
+.pmap .pm-ab { min-height:32px; padding:0 10px; font-size:var(--fs-xs); white-space:nowrap; }
+.pmap .pm-ab[aria-pressed="true"] { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
+.pmap .pm-mini-c { margin:0; padding:4px 14px 6px; min-height:1.5em; font-size:var(--fs-xs); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pmap .pm-mini .blk { cursor:pointer; }
+.pmap .pm-mini .blk.on { outline:2px solid var(--text); outline-offset:0; z-index:2; }
+.pmap .pm-mini.ab .wk { --ppm:.24px; }
+.pmap .pm-mini.ab .blk > .blk-ab { display:block; padding-top:1px; font-size:9px; line-height:1; font-weight:600; color:var(--cfg); text-align:center; white-space:nowrap;
+  overflow:hidden; }
+@container (max-height:10px) { .pmap .pm-mini.ab .blk > .blk-ab { display:none; } } /* too short for a letter */
+.pmap .pm-mini-l { list-style:none; margin:0; padding:0 14px 10px; display:grid; gap:3px; font-size:var(--fs-xs); }
+.pmap .pm-mini-l li { display:flex; align-items:baseline; gap:6px; }
+.pmap .pm-mini-l .sw { flex:none; width:10px; height:10px; border-radius:3px; background:var(--cbg); border-inline-start:3px solid var(--cfg); }
+.pmap .pm-mini-l b { flex:none; min-width:3.5em; }
 @media (prefers-reduced-motion: reduce) {
   .pmap *, .pmap *::before, .pmap *::after { transition:none !important; scroll-behavior:auto !important; }
 }

@@ -55,7 +55,7 @@ function nodeSvg(c, n) {
       20))}</text></g>`;
   }
   const yr = n.year, mine = c.year && yr === c.year; // the student's study year: dotted halo, also named in the label and the card
-  const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, bw = o > 9 ? 52 : 46, planned = inPlan(c, n.id), lbl = nodeLabel(c, n.id, yr) + (planned ? ', בתכנון' : '');
+  const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, bw = o > 9 ? 52 : 46, planned = inPlan(c, n.id), lbl = nodeAria(c, n);
   return `<g class="nd st-${s}${mine ? ' mine' : ''}${planned ? ' plan' : ''}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}"
     aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
     ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}<circle class="plan-ring" cx="${x}" cy="${y}" r="${n.r + 4}"/>
@@ -65,8 +65,9 @@ function nodeSvg(c, n) {
       x="${num(x - n.r * 0.8 - bw / 2)}" y="${num(y - n.r * 0.85 - 8)}" width="${bw}" height="16" rx="8"/><text x="${num(x - n.r * 0.8)}"
       y="${num(y - n.r * 0.85)}" text-anchor="middle" dominant-baseline="central">פותח ${o}</text></g>` : ''}</g>`;
 }
-// A planned course not yet passed (a passed one has nothing left to plan).
-const inPlan = (c, id) => !!c.plan?.has(id) && !['done', 'exempt'].includes(statusOf(c, id));
+// A planned course not yet passed (a passed one has nothing left to plan). nodeAria: a course node's label, also set in place by ui-map's restyle.
+export const nodeAria = (c, n) => nodeLabel(c, n.id, n.year) + (inPlan(c, n.id) ? ', בתכנון' : '');
+export const inPlan = (c, id) => !!c.plan?.has(id) && !['done', 'exempt'].includes(statusOf(c, id));
 
 // A caption under a band title, broken in two at the middle word so it fits one column.
 export const noteLines = (t) => { if (!t) return []; const w = t.split(' '), k = Math.ceil(w.length / 2); return [w.slice(0, k).join(' '), w.slice(k).join(' ')].filter(Boolean); };
@@ -159,6 +160,7 @@ export const miniTotals = (raw, data) => (isPair(raw) ? yearTotals(raw) : { cour
 
 // Mini week pane: the board's grid (renderWeek), shrunk by CSS and inert. The board's hooks (data-act, data-k) are stripped so a click opens
 // nothing behind the modal and keepFocus never finds a twin of a board key. Colours: a copy per grid, the board's sticky map is not touched.
+export const MINI_HINT = 'רחפו או הקישו על קורס כדי לראות מה הוא';
 export function miniHtml({ raw, sem, data, colors, k, open, abbr = false }) {
   if (!raw || !resCourses(raw).length) return '';
   const parts = (isPair(raw) ? [['א', sem['א']], ['ב', sem['ב']]].map(([s, d]) => ({ s, d, res: semResult(raw, s) })) : [{ d: data, res: raw }])
@@ -179,7 +181,7 @@ export function miniHtml({ raw, sem, data, colors, k, open, abbr = false }) {
   return `<details class="pm-mini${abbr ? ' ab' : ''}"${open ? ' open' : ''}><summary data-k="pm-mini">המערכת הנבחרת</summary>
     <div class="pm-mini-top"><p class="pm-mini-s">חלופה ${k + 1} · ${courseCount(t.courses)} · <bdi>${t.credits}</bdi> נ״ז</p><button type="button"
       class="pm-btn pm-ab" data-pm="abbr" data-k="pm-abbr" aria-pressed="${abbr}">ראשי תיבות</button></div>
-    <p class="pm-mini-c" aria-hidden="true">רחפו או הקישו על קורס כדי לראות מה הוא</p>
+    <p class="pm-mini-c" aria-hidden="true">${MINI_HINT}</p>
     <div class="pm-mini-g" aria-hidden="true">${parts.map((p) => (p.s ? `<figure class="pm-mini-w"><figcaption>סמסטר ${p.s}׳</figcaption>${grid(p)}</figure>`
     : grid(p))).join('')}</div>
     <ul class="pm-mini-l${abbr ? '' : ' sr'}">${legend.map(([cid, x]) => `<li data-c="${esc(cid)}"><i class="sw c${x.col ?? 7}" aria-hidden="true"></i><b>${esc(abbrs.get(cid))}</b>
