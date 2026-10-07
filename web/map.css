@@ -70,6 +70,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-aside { position:absolute; inset-block-end:8px; inset-inline-end:8px; z-index:4; max-width:min(340px, calc(100% - 16px)); max-height:min(55%, 420px);
   overflow:auto; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:var(--shadow-pop);
   font-size:var(--fs-sm); }
+.pmap .pm-aside[open] { z-index:5; } /* opened, it reaches the mini pane's chip (both float at the bottom): it goes on top */
 .pmap .pm-aside summary { cursor:pointer; min-height:36px; padding:0 14px; display:flex; align-items:center; font-weight:600; }
 .pmap .pm-aside p { margin:0; padding:0 14px 4px; color:var(--text-2); font-size:var(--fs-xs); }
 .pmap .pm-aside ul { padding:0 14px 10px; }

@@ -412,6 +412,12 @@ test('altBarHtml: hidden under two alternatives, disabled while searching, summe
   assert.equal(r.match(/ disabled/g).length, 2); assert.ok(r.includes('מחפש חלופות…'));
   assert.ok(altBarHtml({ k: 0, n: 2, running: false, summer: true }).includes('קיץ'));
 });
+test('altBarHtml fits a phone header: summer says "קיץ:" instead of a suffix, the searching label has a short form', () => {
+  const s = altBarHtml({ k: 2, n: 10, running: false, summer: true });
+  assert.ok(s.includes('קיץ: ') && !s.includes('(קיץ)') && !s.includes('"long">חלופה'));
+  const r = altBarHtml({ k: 0, n: 10, running: true, summer: false });
+  assert.match(r, /<span class="long">מחפש חלופות…<\/span><span class="short">מחפש…<\/span>/);
+});
 test('miniHtml: a year pair draws both semesters, inert, with no board hooks', () => {
   const colors = new Map([[xa.cid, 3]]), before = [...colors];
   const h = miniHtml({ raw: pair, sem: { 'א': A, 'ב': B }, data: A, colors, k: 1, open: true });

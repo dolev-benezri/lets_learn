@@ -147,8 +147,9 @@ export function altBarHtml({ k, n, running, summer }) {
   if (n < 2) return '';
   const dis = running ? ' disabled' : '';
   const btn = (d, k2, label, ic) => `<button type="button" class="pm-ibtn" data-pm="alt" data-d="${d}" data-k="${k2}" aria-label="${label}"${dis}>${icon(ic)}</button>`;
-  const label = running ? 'מחפש חלופות…' : `<span class="long">חלופה </span><b>${k + 1}</b><span class="long"> מתוך </span><span class="short"
-    aria-hidden="true">/</span><b>${n}</b>${summer ? '<span class="long"> (קיץ)</span>' : ''}`;
+  // Phone header: "קיץ:" is shorter than "חלופה", and below 360px only "3/10" (or "מחפש…") is left, so the title never wraps.
+  const label = running ? '<span class="long">מחפש חלופות…</span><span class="short">מחפש…</span>' : `<span class="long">${summer ? 'קיץ:' : 'חלופה'} </span><b>${k
+    + 1}</b><span class="long"> מתוך </span><span class="short" aria-hidden="true">/</span><b>${n}</b>`;
   return `<div class="pm-alt" role="group" aria-label="מעבר בין חלופות">${btn(-1, 'pm-prev', 'החלופה הקודמת', 'chevron-right')}<span
     class="pm-alt-l">${label}</span>${btn(1, 'pm-next', 'החלופה הבאה', 'chevron-left')}</div>`;
 }

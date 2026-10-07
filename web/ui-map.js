@@ -225,7 +225,10 @@ function setup() {
     keepFocus(render);
     mount(keep);
     const n = alts().length, raw = current();
-    if (n > 1 && raw) { const t = miniTotals(raw, app.data); M.live.textContent = `חלופה ${ui.cur + 1} מתוך ${n}, ${courseCount(t.courses)}, ${t.credits} נ״ז`; }
+    if (!(n > 1 && raw)) return;
+    const t = miniTotals(raw, app.data), text = `חלופה ${ui.cur + 1} מתוך ${n}, ${courseCount(t.courses)}, ${t.credits} נ״ז`;
+    M.live.textContent = ''; // render() re-attached the region: fill it a moment later, so screen readers hear a change (as toast() does)
+    setTimeout(() => { if (M.live.isConnected) M.live.textContent = text; }, 50);
   };
   addEventListener('resize', onResize);
   addEventListener('orientationchange', onResize);
