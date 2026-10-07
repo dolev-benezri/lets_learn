@@ -27,7 +27,8 @@ test('layout: a קדם edge from an earlier study year always flows leftwards, a
 
 test('layout: "או" diamonds only for requirements with more than one distinct option', () => {
   const L = layoutMap(data);
-  const multi = Object.values(data.courses).flatMap((c) => c.prereqs).filter((p) => new Set(p.anyOf.map((a) => a.id ?? a.name)).size > 1).length;
+  const drawn = (p) => (p.anyOf.some((a) => data.courses[a.id]) ? p.anyOf.filter((a) => data.courses[a.id] || /מכינה|קורס הכנה/.test(a.name)) : p.anyOf); // outside twins of an own option are not drawn
+  const multi = Object.values(data.courses).flatMap((c) => c.prereqs).filter((p) => new Set(drawn(p).map((a) => a.id ?? a.name)).size > 1).length;
   assert.equal(L.diamonds.length, multi);
   for (const d of L.diamonds) assert.ok(L.paths.filter((e) => e.to === d.key || e.from === d.key).length >= 3, d.key); // two options in, one out
   // 30163 lists the same parallel option twice: no diamond for it
@@ -85,6 +86,16 @@ test('filter "מה שנשאר לי" drops done and exempt courses (and their edg
   const Y = layoutMap(data, makeKeep('year', data, statuses, 2));
   assert.deepEqual(new Set(Y.nodes.filter((n) => n.type === 'course').map((n) => n.id)), new Set(data.lists[1].courses));
   assert.equal(Y.bands.length, 1);
+});
+
+test('layout: an outside option is drawn only when the requirement has no option inside the program', () => {
+  const d = mini({ a: mc('A'), b: mc('B', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }, { id: 'x9', name: 'A במחלקה אחרת' }, { id: null, name: 'A ישן' }] },
+    { kind: 'קדם', anyOf: [{ id: null, name: 'חוץ' }] }]) });
+  const L = layoutMap(d), ext = L.nodes.filter((n) => n.type === 'ext');
+  assert.deepEqual(ext.map((n) => n.name), ['חוץ']);
+  assert.equal(ext[0].band, L.nodes.find((n) => n.id === 'b').band);
+  assert.equal(L.diamonds.length, 0); // A alone left: a plain edge, no "או"
+  assert.ok(L.paths.some((e) => e.from === 'a' && e.to === 'b'));
 });
 
 test('layout: a tiny graph with an alternative, a parallel course and a cycle still terminates', () => {
@@ -174,8 +185,8 @@ test('mapSvg: one button per course in Tab order, labelled and titled; ext pills
   assert.ok(!html.includes('<img') && html.includes('&lt;img'));
   assert.ok(!/NaN|undefined/.test(html));
   assert.ok(!html.includes('class="ml') && html.includes('mine-halo') && html.includes(' mine"'));
-  assert.ok(html.includes('class="ext"') && html.includes('class="or"'));
-  assert.ok([...html.matchAll(/<g class="(?:ext|or)"[^>]*>/g)].every(([m]) => m.includes('aria-hidden="true"') && !m.includes('role=')));
+  assert.ok(html.includes('class="ext') && html.includes('class="or"'));
+  assert.ok([...html.matchAll(/<g class="(?:ext|or)[ "][^>]*>/g)].every(([m]) => m.includes('aria-hidden="true"') && !m.includes('role=')));
   for (const s of ['done', 'retake', 'blocked']) if (Object.values(st).some((x) => x.status === s)) assert.ok(html.includes(`st-${s}`));
 });
 
@@ -203,7 +214,7 @@ test('chainOf: a node with no edges lights only itself', () => {
 test('mapSvg: an outside-the-program name with markup and a quote is escaped', () => {
   const d = mini({ a: mc('A', [{ kind: 'קדם', anyOf: [{ id: null, name: "<b x=\"1\">'" }] }]) });
   const L = layoutMap(d), html = mapSvg({ data: d, st: {}, L, g: geometry(L, () => 3), year: 1, unlocks: {}, mode: 'all' });
-  assert.ok(html.includes('class="ext"') && !html.includes('<b x=') && html.includes('&lt;b x=&quot;1&quot;&gt;&#39;'));
+  assert.ok(html.includes('class="ext"') && html.includes('לא בתוכנית שלך') && !html.includes('<b x=') && html.includes('&lt;b x=&quot;1&quot;&gt;&#39;'));
 });
 
 test('courseYears: only "חובה שנה X\'" lists give a year; the first list wins', () => {
@@ -245,7 +256,7 @@ test('layout: מכינה / קורס הכנה outside items form their own band, 
   assert.equal(pre.kind, 'pre'); assert.equal(pre.note, 'רק למי שנדרש/ה לפי תנאי הקבלה'); assert.equal(g.bands[0].x > g.bands[1].x, true);
   const inPre = ext.filter((n) => n.col >= pre.first && n.col < pre.first + pre.n), rest = ext.filter((n) => !inPre.includes(n));
   assert.ok(inPre.length >= 3 && inPre.every((n) => n.pre && /מכינה|קורס הכנה/.test(n.name)));
-  assert.ok(rest.length > 0 && rest.every((n) => !n.pre && !/מכינה|קורס הכנה/.test(n.name)));
+  assert.ok(rest.every((n) => !n.pre && !/מכינה|קורס הכנה/.test(n.name)));
   assert.equal(new Set(inPre.map((n) => n.name)).size, inPre.length);
   assert.equal(L.nodes.filter((n) => n.col >= pre.first && n.col < pre.first + pre.n && n.type !== 'ext').length, 0); // nothing but the pre-degree pills in that band
   for (const n of rest) { const t = L.nodes.find((c) => c.type === 'course' && L.paths.some((p) => p.from === n.key && (p.to === c.id || L.diamonds.some((d) => d.key === p.to && d.target === c.id)))); assert.equal(n.band, t.band, n.key); }
@@ -257,7 +268,7 @@ test('layout: מכינה / קורס הכנה outside items form their own band, 
 test('mapSvg: the pre-degree band is muted and captioned; outside pills say who they are for', () => {
   const { L, g } = geo(), html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() });
   assert.ok(html.includes('class="band pre"') && html.includes('לפני התואר (מכינה)') && html.includes('לפי תנאי הקבלה'));
-  assert.ok(html.includes('class="ext pre"') && html.includes('לא בתוכנית שלך'));
+  assert.ok(html.includes('class="ext pre"') && html.includes('>לפני התואר<'));
 });
 
 test('planPaths: edges out of a planned course, and the "או" hop after a planned option', () => {

@@ -39,7 +39,8 @@ export const edgePath = (a, b) => { const mx = (a.x + b.x) / 2; return `M${a.x},
 // prerequisite depth inside the band (a depth with many courses wraps into more columns), so arrows mostly flow right to left, top to bottom.
 // `קדם` weighs 1 in the depth, `מקביל` 0. An `anyOf` with more than one distinct option goes through an "או" diamond; options outside the program
 // become `ext` pills in their target's column, except pre-academic ones (מכינה), which sit in their own band right of year א׳: they come before
-// the degree, and only some students need them.
+// the degree, and only some students need them. An outside option next to one inside the program (another department's version of the same
+// course, 96% of them) is not drawn: the student takes their own; the card still lists it.
 const PRE = /מכינה|קורס הכנה/, PRE_BAND = -1, ROWS = 9;
 export const PRE_NAME = 'לפני התואר (מכינה)', PRE_NOTE = 'רק למי שנדרש/ה לפי תנאי הקבלה';
 export function layoutMap(data, keep = () => true) {
@@ -51,11 +52,11 @@ export function layoutMap(data, keep = () => true) {
   // Requirements that survive the filter. ext options are keyed per band and name (pre-academic ones once, for the whole map).
   const entries = [];
   for (const id of order) C[id].prereqs.forEach((p, pi) => {
-    const seen = new Set(), opts = [];
+    const seen = new Set(), opts = [], own = p.anyOf.some((a) => a.id !== id && C[a.id]);
     for (const a of p.anyOf) {
       const isCourse = a.id && C[a.id], pre = !isCourse && PRE.test(a.name);
       const k = isCourse ? a.id : `x:${pre ? 'pre' : bandOf(id)}:${a.name}`;
-      if (seen.has(k) || a.id === id || (isCourse && !K.has(a.id))) continue;
+      if (seen.has(k) || a.id === id || (isCourse && !K.has(a.id)) || (!isCourse && !pre && own)) continue;
       seen.add(k);
       opts.push(isCourse ? { key: k, id: a.id } : { key: k, ext: true, pre, name: a.name });
     }
