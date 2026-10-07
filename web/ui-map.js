@@ -1,16 +1,24 @@
 // Interactive progress map ("הראה התקדמות"): every course and its prerequisites as a neural-network style graph (round nodes, curved edges),
 // arranged by study year (one band per year, right to left, two semester columns each, electives last) and coloured by the student's real status
 // (app.cls.statuses, from rules.js). Layout and geometry are pure functions so they can be unit-tested.
-import { app, esc, keepFocus } from './app.js';
-import { icon } from './ui-grid.js';
+import { app, esc, keepFocus, summerScope } from './app.js';
+import { icon, resCourses } from './ui-grid.js';
+import { ui, current, colors } from './ui-common.js';
+import { showAlt } from './ui-view.js';
+import { courseCount } from './ui-text.js';
 import { unlockCounts } from './solver-core.js';
 import { studyYear } from './rules.js';
-import { makeKeep, asideIds, layoutMap, chainOf, isDone, progressInfo, newlyUnlocked, G, geometry, wheelStep, fitScale } from './map-layout.js';
-import { svg, ICONS, MODES, LEGEND, mapSvg, legendSw, legendEdge, listHtml, asideHtml, cardHtml, progressHtml } from './map-render.js';
+import { makeKeep, asideIds, layoutMap, chainOf, isDone, progressInfo, newlyUnlocked, G, geometry, wheelStep, fitScale,
+  planPaths } from './map-layout.js';
+import { svg, ICONS, MODES, LEGEND, mapSvg, legendSw, legendEdge, listHtml, asideHtml, cardHtml, progressHtml, altBarHtml, miniHtml,
+  miniTotals, nodeAria, inPlan, MINI_HINT } from './map-render.js';
 
 // ---------- dialog ----------
-const M = { mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null };
+const M = { mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null,
+  miniOpen: null, live: null, abbr: false, switched: false };
 let dlg = null;
+// The search's alternatives, none when every one is empty (renderView's rule); the shown one is ui.cur.
+const alts = () => { const r = ui.last?.results ?? []; return r.some((x) => resCourses(x).length) ? r : []; };
 const q = (s) => dlg.querySelector(s);
 const PZ_URL = new URL('./vendor/panzoom/panzoom.es.js', import.meta.url).href; // 4.6.0, a copy (no third-party request)
 let pzLib = null;
@@ -21,7 +29,9 @@ function ctxOf(mode) {
   const { data, state, cls } = app, st = cls.statuses;
   const year = studyYear(data, state), base = makeKeep(mode, data, st, year);
   const plan = new Set([...(app.planIds ?? [])].filter((id) => data.courses[id] && !isDone(st, id))); // what the shown schedule alternative takes
-  const aside = asideIds(data, st, state.choices, state.profile?.specs).filter((id) => base(id) && !plan.has(id)), off = new Set(aside); // a planned course is always drawn
+  // Drawn: every course of every alternative (not only the shown one), so a switch never moves a node between the map and the electives box.
+  const drawn = new Set([...plan, ...alts().flatMap(resCourses)].filter((id) => data.courses[id] && !isDone(st, id)));
+  const aside = asideIds(data, st, state.choices, state.profile?.specs).filter((id) => base(id) && !drawn.has(id)), off = new Set(aside);
   const L = layoutMap(data, (id) => base(id) && !off.has(id));
   const doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
   return { data, st, L, g: geometry(L, (id) => data.courses[id]?.credits), year, unlocks: unlockCounts(data, doneIds), mode, aside, plan,
@@ -31,6 +41,7 @@ function ctxOf(mode) {
 function light() {
   const root = dlg && q('.pm-svg'), key = M.hover ?? M.focus ?? M.sel;
   if (!root || !M.els) return;
+  if (key) root.classList.remove('spot'); // one highlight at a time: a hovered or focused course ends the switch flash
   const ch = key ? chainOf(M.c.L.paths, key) : null; // a node with no edges: only itself lights
   root.classList.toggle('dim', !!ch);
   M.els.nodes.forEach((el, k) => el.classList.toggle('lit', !!ch && ch.nodes.has(k)));
@@ -57,7 +68,10 @@ function render() {
   if (M.sel && !c.L.nodes.some((n) => n.key === M.sel)) M.sel = null;
   const emptyMsg = M.mode === 'remaining' ? 'אין קורסים להצגה: עברתם או קיבלתם פטור מכל הקורסים.' : 'אין קורסים להצגה.';
   const zbtn = (act, label, ic) => `<button type="button" class="pm-ibtn" data-pm="${act}" data-k="pm-${act}" aria-label="${label}"${empty ? ' disabled' : ''}>${ic}</button>`;
+  const mini = map && !empty && alts().length && current() ? miniHtml({ raw: current(), sem: app.sem, data: app.data, colors, k: ui.cur,
+    open: M.miniOpen ?? matchMedia('(min-width: 900px) and (min-height: 700px)').matches, abbr: M.abbr }) : '';
   dlg.innerHTML = `<header class="pm-head"><h2 id="pmTitle" class="pm-title">המסע שלי בתואר</h2>
+      ${altBarHtml({ k: ui.cur, n: alts().length, running: ui.running, summer: summerScope() })}
       <button type="button" class="pm-ibtn pm-close" data-pm="close" data-k="pm-close" aria-label="סגור את המפה">${icon('x')}</button></header>
     <p class="pm-band">עברתם או קיבלתם פטור ב-<b><bdi>${done}</bdi></b> מתוך <b><bdi>${total}</bdi></b> קורסים. לחצו על קורס כדי לראות מה צריך כדי להגיע אליו ומה הוא פותח.</p>
     ${progressHtml(c)}
@@ -84,9 +98,11 @@ function render() {
         rx="8"/><text x="26" y="10" text-anchor="middle" dominant-baseline="central">פותח 3</text></g></svg>כמה קורסים הוא פותח</span></div></details>` : ''}
     <div class="pm-body">${map
     ? `<div class="pm-view" role="region" aria-label="מפת הקורסים לפי שנות לימוד. אפשר לגרור, לגלגל או לצבוט כדי להתקרב, ולהשתמש בכפתורי הזום">${empty ? `<p
-      class="pm-empty">${emptyMsg}</p>` : `${mapSvg(c)}<p class="pm-loading" role="status">טוען מפה…</p>`}${asideHtml(c)}</div>`
+      class="pm-empty">${emptyMsg}</p>` : `${mapSvg(c)}<p class="pm-loading" role="status">טוען מפה…</p>`}${asideHtml(c)}${mini}</div>`
     : `<div class="pm-view pm-listview" tabindex="0" role="region" aria-label="רשימת הקורסים">${listHtml(c)}</div>`}
       <aside class="pm-card" aria-label="פרטי הקורס" aria-live="polite" hidden></aside></div>`;
+  if (!M.live) { M.live = document.createElement('p'); M.live.className = 'sr'; M.live.setAttribute('role', 'status'); }
+  dlg.appendChild(M.live); // one live region kept across redraws, so a switched alternative is announced
   M.hover = M.focus = null;
   M.els = null;
   if (map && !empty) {
@@ -99,7 +115,7 @@ function render() {
 }
 
 // Pan/zoom/pinch come from @panzoom/panzoom, applied to the <g class="pz"> inside the svg; the svg itself is the drag surface.
-async function mount() {
+async function mount(keep = null) { // keep: { s, x, y } of the previous Panzoom (a switched alternative keeps the zoom), else fit
   const tok = ++M.tok;
   M.pz?.destroy(); M.pz = null; M.fit = null;
   if (M.view !== 'map' || !M.els) return;
@@ -124,7 +140,7 @@ async function mount() {
   };
   setTimeout(() => {
     if (tok !== M.tok) return;
-    M.fit();
+    if (keep) { pz.zoom(keep.s, { animate: false, force: true }); pz.pan(keep.x, keep.y, { animate: false, force: true }); ends(); } else M.fit();
     if (M.sel) requestAnimationFrame(() => tok === M.tok && ensureVisible(M.els.nodes.get(M.sel))); // after Panzoom applied the fit; a card left open across a filter change must not cover its node
     root.classList.add('ready');
   }); // after Panzoom's own start-position timeout
@@ -140,6 +156,56 @@ function ensureVisible(el, pre = 0) { // pre: a horizontal pan (screen px) alrea
   if (dx || dy) M.pz.pan(dx / s, dy / s, { relative: true, animate: false });
 }
 
+// A switch with the same drawn nodes (the usual case): move the plan classes and labels in place, CSS transitions animate them. Nothing is
+// replaced in the svg, so zoom, pan and focus stay. Returns false when the header, progress or mini pane would change shape (render instead).
+function restyle(c) {
+  const prog = progressHtml(c), mini = q('.pm-mini');
+  if (!M.els || !q('.pm-alt') || !mini || !q('.pm-meter') || !prog.includes('pm-meter')) return false;
+  const paths = planPaths(c.L.paths, c.plan);
+  for (const n of c.L.nodes) {
+    const el = M.els.nodes.get(n.key);
+    if (!el?.matches('.nd')) continue;
+    const lbl = nodeAria(c, n);
+    el.classList.toggle('plan', inPlan(c, n.id));
+    el.setAttribute('aria-label', lbl);
+    el.querySelector('title').textContent = lbl;
+  }
+  M.els.paths.forEach((el, id) => el.classList.toggle('plan', paths.has(id)));
+  const was = [...q('.pm-meter').children].map((i) => getComputedStyle(i).width); // mid-transition when switches follow each other
+  q('.pm-prog').outerHTML = prog;
+  const bars = [...q('.pm-meter').children], now = bars.map((i) => i.style.width);
+  bars.forEach((i, k) => { i.style.width = was[k] ?? '0%'; });
+  void q('.pm-meter').offsetWidth; // start from the old widths, then grow or shrink to the new ones
+  bars.forEach((i, k) => { i.style.width = now[k]; });
+  keepFocus(() => { q('.pm-alt').outerHTML = altBarHtml({ k: ui.cur, n: alts().length, running: ui.running, summer: summerScope() }); });
+  mini.outerHTML = miniHtml({ raw: current(), sem: app.sem, data: app.data, colors, k: ui.cur, open: M.miniOpen ?? mini.open, abbr: M.abbr });
+  M.c = c;
+  return true;
+}
+
+// The switch flash: the shown alternative's courses and the edges they open light up, the rest fades, then all eases back (map.css .spot).
+let spotT = 0;
+function spot() {
+  const r = q('.pm-svg');
+  if (!r || (M.hover ?? M.focus ?? M.sel)) return; // a hovered, focused or opened course keeps its own highlight (one at a time)
+  clearTimeout(spotT);
+  r.classList.remove('spot');
+  void r.getBoundingClientRect(); // restart the transition when switches follow each other
+  r.classList.add('spot');
+  spotT = setTimeout(() => r.classList.remove('spot'), 1800);
+}
+
+// Mini pane: which course is this block? Mouse hover or a tap writes the block's own name, day, hours and type into the line above the grid.
+function ident(b) {
+  const cap = q('.pm-mini-c');
+  if (!cap) return;
+  q('.pm-mini-g .blk.on')?.classList.remove('on');
+  if (!b) { cap.textContent = MINI_HINT; return; }
+  b.classList.add('on');
+  const t = (sel) => b.querySelector(sel)?.textContent.replace(/\s+/g, ' ').trim() ?? '';
+  cap.textContent = [t('.blk-name'), `${t('.sr').replace(/,$/, '')} ${t('.blk-meta')}`.trim(), t('.blk-room')].filter(Boolean).join(' · ');
+}
+
 function hoverTo(key, kind) {
   if (M[kind] === key) return;
   M[kind] = key;
@@ -152,16 +218,24 @@ function openMap(from) {
     dlg = Object.assign(document.body.appendChild(document.createElement('dialog')), { id: 'pmap', className: 'pmap' });
     dlg.addEventListener('click', onClick);
     dlg.addEventListener('keydown', onKey);
-    dlg.addEventListener('pointerover', (e) => hoverTo(e.target.closest?.('.nd')?.dataset.key ?? null, 'hover'));
-    dlg.addEventListener('pointerout', () => hoverTo(null, 'hover'));
+    dlg.addEventListener('pointerover', (e) => {
+      hoverTo(e.target.closest?.('.nd')?.dataset.key ?? null, 'hover');
+      const b = e.pointerType === 'mouse' && e.target.closest?.('.pm-mini-g .blk');
+      if (b) ident(b);
+    });
+    dlg.addEventListener('pointerout', (e) => {
+      hoverTo(null, 'hover');
+      if (e.pointerType === 'mouse' && e.target.closest?.('.pm-mini-g') && !e.relatedTarget?.closest?.('.pm-mini-g')) ident(null); // left the grid
+    });
     dlg.addEventListener('focusin', (e) => { const n = e.target.closest?.('.nd'); hoverTo(n?.dataset.key ?? null,
       'focus'); if (n?.matches(':focus-visible')) ensureVisible(n); }); // keyboard focus only: a mouse press must not move the node under the cursor
     dlg.addEventListener('focusout', () => hoverTo(null, 'focus'));
+    dlg.addEventListener('toggle', (e) => { if (e.target.classList?.contains('pm-mini')) M.miniOpen = e.target.open; }, true); // toggle does not bubble
     dlg.addEventListener('close', () => { M.tok++; M.pz?.destroy(); M.pz = null; });
   }
   dlg.setAttribute('aria-labelledby', 'pmTitle');
   dlg.setAttribute('dir', 'rtl');
-  M.opener = from; M.sel = null; M.mode = 'all'; M.view = 'map'; M.notice = '';
+  M.opener = from; M.sel = null; M.mode = 'all'; M.view = 'map'; M.notice = ''; M.miniOpen = null; M.abbr = false;
   render();
   dlg.showModal();
   mount();
@@ -178,6 +252,8 @@ function onKey(e) {
   }
 }
 function onClick(e) {
+  const mb = e.target.closest('.pm-mini-g .blk');
+  if (mb) { ident(mb); return; } // a tap names the course (phones have no hover)
   const node = e.target.closest('.nd');
   const dragged = M.down && Math.hypot(e.clientX - M.down.x, e.clientY - M.down.y) > 4; // a click that ends a drag-pan opens nothing
   M.down = null;
@@ -194,6 +270,15 @@ function onClick(e) {
   else if (act === 'zout') zoomBy(0.8);
   else if (act === 'fit') M.fit?.();
   else if (act === 'mode') { M.mode = b.dataset.v; M.notice = ''; redraw(); }
+  else if (act === 'alt') { // renderView calls ui.onShown
+    const n = alts().length;
+    if (n > 1 && !ui.running) { M.switched = true; showAlt((ui.cur + Number(b.dataset.d) + n) % n); }
+  } else if (act === 'abbr') { // no redraw: the abbreviations are in the markup, the class shows them and the legend
+    M.abbr = !M.abbr;
+    q('.pm-mini')?.classList.toggle('ab', M.abbr);
+    q('.pm-mini-l')?.classList.toggle('sr', !M.abbr);
+    b.setAttribute('aria-pressed', String(M.abbr));
+  }
   else if (act === 'view') { M.view = M.view === 'map' ? 'list' : 'map'; M.notice = ''; redraw(); }
 }
 
@@ -204,6 +289,23 @@ function setup() {
     rz = setTimeout(() => {
       if (dlg?.open && M.view === 'map') M.fit?.();
     }, 150);
+  };
+  // After every renderView (an alternative picked here or on the board, a search result landing while the map is open): redraw, keep the zoom.
+  ui.onShown = () => {
+    if (!dlg?.open) return;
+    const c = ctxOf(M.mode), keys = (x) => x.L.nodes.map((nd) => nd.key).join();
+    // In place only for the same nodes and the same statuses (restyle moves the plan, not st-* classes); else a full redraw (list view too).
+    if (!(M.view === 'map' && M.pz && c.st === M.c.st && keys(c) === keys(M.c) && restyle(c))) {
+      const keep = M.pz ? { s: M.pz.getScale(), ...M.pz.getPan() } : null;
+      keepFocus(render);
+      mount(keep);
+    }
+    if (M.switched) { M.switched = false; spot(); }
+    const n = alts().length, raw = current();
+    if (!(n > 1 && raw)) return;
+    const t = miniTotals(raw, app.data), text = `חלופה ${ui.cur + 1} מתוך ${n}, ${courseCount(t.courses)}, ${t.credits} נ״ז`;
+    M.live.textContent = ''; // render() re-attached the region: fill it a moment later, so screen readers hear a change (as toast() does)
+    setTimeout(() => { if (M.live.isConnected) M.live.textContent = text; }, 50);
   };
   addEventListener('resize', onResize);
   addEventListener('orientationchange', onResize);

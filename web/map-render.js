@@ -1,6 +1,7 @@
 // Progress map, markup: the SVG graph and the list view as strings (all data escaped), from a context built by ui-map.js. No DOM, unit-tested.
 import { esc } from './app.js';
-import { icon, yedion } from './ui-grid.js';
+import { icon, yedion, nameHtml, renderWeek, hourRange, groupIndex, assignColors, repeatIds, isPair, semResult, resCourses, yearTotals } from './ui-grid.js';
+import { courseCount } from './ui-text.js';
 import { YEAR_LETTERS, planPaths, G, truncate } from './map-layout.js';
 
 // ---------- text helpers ----------
@@ -54,18 +55,19 @@ function nodeSvg(c, n) {
       20))}</text></g>`;
   }
   const yr = n.year, mine = c.year && yr === c.year; // the student's study year: dotted halo, also named in the label and the card
-  const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, bw = o > 9 ? 52 : 46, planned = inPlan(c, n.id), lbl = nodeLabel(c, n.id, yr) + (planned ? ', בתכנון' : '');
+  const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, bw = o > 9 ? 52 : 46, planned = inPlan(c, n.id), lbl = nodeAria(c, n);
   return `<g class="nd st-${s}${mine ? ' mine' : ''}${planned ? ' plan' : ''}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}"
     aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
-    ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}${planned ? `<circle class="plan-ring" cx="${x}" cy="${y}" r="${n.r + 4}"/>`
-      : ''}<circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring"
+    ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}<circle class="plan-ring" cx="${x}" cy="${y}" r="${n.r + 4}"/>
+    <circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring"
       cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
     <text class="nm" x="${x}" y="${num(y + n.r + 16)}" text-anchor="middle">${esc(truncate(co.name))}</text>${o ? `<g class="opens" aria-hidden="true"><rect
       x="${num(x - n.r * 0.8 - bw / 2)}" y="${num(y - n.r * 0.85 - 8)}" width="${bw}" height="16" rx="8"/><text x="${num(x - n.r * 0.8)}"
       y="${num(y - n.r * 0.85)}" text-anchor="middle" dominant-baseline="central">פותח ${o}</text></g>` : ''}</g>`;
 }
-// A planned course not yet passed (a passed one has nothing left to plan).
-const inPlan = (c, id) => !!c.plan?.has(id) && !['done', 'exempt'].includes(statusOf(c, id));
+// A planned course not yet passed (a passed one has nothing left to plan). nodeAria: a course node's label, also set in place by ui-map's restyle.
+export const nodeAria = (c, n) => nodeLabel(c, n.id, n.year) + (inPlan(c, n.id) ? ', בתכנון' : '');
+export const inPlan = (c, id) => !!c.plan?.has(id) && !['done', 'exempt'].includes(statusOf(c, id));
 
 // A caption under a band title, broken in two at the middle word so it fits one column.
 export const noteLines = (t) => { if (!t) return []; const w = t.split(' '), k = Math.ceil(w.length / 2); return [w.slice(0, k).join(' '), w.slice(k).join(' ')].filter(Boolean); };
@@ -138,4 +140,70 @@ export function progressHtml(c) {
       class="pm-prog-spec">נותרו <b><bdi>${+specLeft.toFixed(1)}</bdi></b> נ״ז מקורסי ההתמחות</p>` : c.areas && c.year >= 2 && !c.specs?.length
       ? '<p class="pm-prog-spec"><a href="#me" data-pm="spec" data-k="pm-spec">בחרו התמחות ב״המצב שלי״ כדי לראות את קורסי החובה שלה</a></p>' : ''}${c.prog.untracked
       ? `<p class="pm-prog-spec">עוד <b><bdi>${c.prog.untracked}</bdi></b> נ״ז עד ${c.prog.degreeTotal} בתואר לא מופיעים ברשימות שבידיעון ולא נספרים כאן</p>` : ''}</div>`;
+}
+
+// ---------- the shown schedule alternative (header switcher + mini week pane) ----------
+// Switcher in the map header: the same choice as the board's arrows (ui.cur). Disabled while a search runs (its result resets ui.cur).
+export function altBarHtml({ k, n, running, summer }) {
+  if (n < 2) return '';
+  const dis = running ? ' disabled' : '';
+  const btn = (d, k2, label, ic) => `<button type="button" class="pm-ibtn" data-pm="alt" data-d="${d}" data-k="${k2}" aria-label="${label}"${dis}>${icon(ic)}</button>`;
+  // Phone header: "קיץ:" is shorter than "חלופה", and below 360px only "3/10" (or "מחפש…") is left, so the title never wraps.
+  const label = running ? '<span class="long">מחפש חלופות…</span><span class="short">מחפש…</span>' : `<span class="long">${summer ? 'קיץ:' : 'חלופה'} </span><b>${k
+    + 1}</b><span class="long"> מתוך </span><span class="short" aria-hidden="true">/</span><b>${n}</b>`;
+  return `<div class="pm-alt" role="group" aria-label="מעבר בין חלופות">${btn(-1, 'pm-prev', 'החלופה הקודמת', 'chevron-right')}<span
+    class="pm-alt-l">${label}</span>${btn(1, 'pm-next', 'החלופה הבאה', 'chevron-left')}</div>`;
+}
+
+export const miniTotals = (raw, data) => (isPair(raw) ? yearTotals(raw) : { courses: raw.courses.length, credits: raw.courses.reduce((a, c) => a
+  + (data.courses[c]?.credits ?? 0), 0) });
+
+// Mini week pane: the board's grid (renderWeek), shrunk by CSS and inert. The board's hooks (data-act, data-k) are stripped so a click opens
+// nothing behind the modal and keepFocus never finds a twin of a board key. Colours: a copy per grid, the board's sticky map is not touched.
+export const MINI_HINT = 'רחפו או הקישו על קורס כדי לראות מה הוא';
+export function miniHtml({ raw, sem, data, colors, k, open, abbr = false }) {
+  if (!raw || !resCourses(raw).length) return '';
+  const parts = (isPair(raw) ? [['א', sem['א']], ['ב', sem['ב']]].map(([s, d]) => ({ s, d, res: semResult(raw, s) })) : [{ d: data, res: raw }])
+    .map((p) => ({ ...p, copy: assignColors(new Map(colors), p.res.courses) }));
+  const range = hourRange(parts.flatMap(({ d, res }) => res.groups.flatMap((g) => groupIndex(d).get(g)?.g.meetings ?? [])));
+  const legend = [...new Map(parts.flatMap((p) => p.res.courses.map((cid) => [cid, { name: p.d.courses[cid]?.name ?? cid, col: p.copy.get(cid) }]))).entries()];
+  const abbrs = new Map(uniqueAbbrs(legend.map(([, x]) => x.name)).map((a, i) => [legend[i][0], a]));
+  // The board's block buttons become plain divs: no data-act / data-k (a click opens nothing behind the modal, keepFocus finds no twin of a board
+  // key), no tab stop; each carries its abbreviation, shown by CSS while the toggle is on. Hover and tap read the block's own text (ui-map.js).
+  const grid = ({ d, res, copy }) => {
+    const cidOf = new Map([...groupIndex(d)].map(([gid, x]) => [esc(gid), x.cid]));
+    return renderWeek({ data: d, res, range, colors: copy, dashed: repeatIds(copy, res.courses), pins: [], friends: [], day: 0 })
+      .replace(/ data-(?:act|k)="[^"]*"/g, '').replace(/ aria-haspopup="dialog"/g, '')
+      .replace(/<button type="button" class="blk([^"]*)" data-gid="([^"]*)"([^>]*)>/g, (m, cls, gid, rest) => `<div class="blk${cls}" data-gid="${gid}"${rest}>${
+        `<span class="blk-ab" aria-hidden="true">${esc(abbrs.get(cidOf.get(gid)) ?? '')}</span>`}`).replace(/<\/button>/g, '</div>');
+  };
+  const t = miniTotals(raw, data);
+  return `<details class="pm-mini${abbr ? ' ab' : ''}"${open ? ' open' : ''}><summary data-k="pm-mini">המערכת הנבחרת</summary>
+    <div class="pm-mini-top"><p class="pm-mini-s">חלופה ${k + 1} · ${courseCount(t.courses)} · <bdi>${t.credits}</bdi> נ״ז</p><button type="button"
+      class="pm-btn pm-ab" data-pm="abbr" data-k="pm-abbr" aria-pressed="${abbr}">ראשי תיבות</button></div>
+    <p class="pm-mini-c" aria-hidden="true">${MINI_HINT}</p>
+    <div class="pm-mini-g" aria-hidden="true">${parts.map((p) => (p.s ? `<figure class="pm-mini-w"><figcaption>סמסטר ${p.s}׳</figcaption>${grid(p)}</figure>`
+    : grid(p))).join('')}</div>
+    <ul class="pm-mini-l${abbr ? '' : ' sr'}">${legend.map(([cid, x]) => `<li data-c="${esc(cid)}"><i class="sw c${x.col ?? 7}" aria-hidden="true"></i><b>${esc(abbrs.get(cid))}</b>
+      ${nameHtml(x.name)}</li>`).join('')}</ul></details>`;
+}
+
+// Course abbreviations for the mini pane: word initials with gershayim before the last letter ("מבוא למדעי המחשב" -> מל״ה), numbers and
+// roman/Hebrew ordinals kept at the end ("פיזיקה 1" -> פיז 1, "פיזיקה1 לתעו"נ" -> פ״ל 1), one word -> its first 3 letters or, when it already is
+// an acronym (תיב"ם), itself; Latin -> capitals. Punctuation is no word. `extra` lengthens the last word on a clash.
+const ORD = /^(\d+|[IVX]+|[א-ת]['׳])$/;
+function abbrOf(name, extra = 0) {
+  const tok = String(name ?? '').match(/[\p{L}"'׳״]+|\d+/gu) ?? [];
+  const nums = tok.filter((t) => ORD.test(t)), suf = nums.length ? ` ${nums.join(' ')}` : '';
+  const w = tok.filter((t) => !ORD.test(t)).map((t) => t.replace(/^["'׳״]+|["'׳״]+$/g, '')).filter(Boolean);
+  if (!w.length) return suf.trim();
+  if (w.length === 1) return (/["״]/.test(w[0]) ? w[0].replace(/"/g, '״') : Array.from(w[0]).slice(0, 3 + extra).join('')) + suf;
+  const ws = w.slice(0, 3), l = [...ws.map((x) => Array.from(x)[0]), ...Array.from(ws.at(-1)).filter((ch) => /\p{L}/u.test(ch)).slice(1, 1 + extra)];
+  if (/^[A-Za-z]/.test(ws[0])) return l.join('').toUpperCase() + suf;
+  return (/[א-ת]/.test(l.at(-1)) ? `${l.slice(0, -1).join('')}״${l.at(-1)}` : l.join('')) + suf;
+}
+export const courseAbbr = (name) => abbrOf(name);
+export function uniqueAbbrs(names) {
+  const seen = new Set();
+  return names.map((n) => { let a = abbrOf(n), e = 0; while (seen.has(a) && e < 6) a = abbrOf(n, ++e); seen.add(a); return a; });
 }

@@ -76,4 +76,5 @@ export const focusWeek = () => $('week').focus({ preventScroll: false });
 
 // state shared by the modules (sem: the shown semester of a year result)
 export const ui = { worker: null, timer: null, last: null, cur: 0, running: false, runError: null, gen: 0, moreMul: 1, sem: 'א', gradeMsg: '', panel: null,
-  opener: null, mobileDay: 1, friendMsg: '', friendUrl: '', liveText: '', dashed: new Set(), dayScroll: true, specPick: null };
+  opener: null, mobileDay: 1, friendMsg: '', friendUrl: '', liveText: '', dashed: new Set(), dayScroll: true, specPick: null,
+  onShown: null }; // onShown: set by the progress map, called after every renderView (a switched alternative or a search result)
