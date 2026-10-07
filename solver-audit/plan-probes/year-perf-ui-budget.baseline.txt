@@ -1,0 +1,17 @@
+INFO 10-2027 y1: candidates=4 | semA 13ms partial=false results=10 | year 93ms partial=false pairs=10 clash=false
+INFO 12-2027 y1: candidates=4 | semA 5ms partial=false results=10 | year 45ms partial=false pairs=10 clash=false
+INFO 11-2027 y1: candidates=4 | semA 5ms partial=false results=10 | year 88ms partial=false pairs=10 clash=false
+INFO 112-2027 y1: candidates=4 | semA 3ms partial=false results=10 | year 32ms partial=false pairs=10 clash=false
+INFO 19-2027 y1: candidates=5 | semA 4ms partial=false results=10 | year 73ms partial=false pairs=10 clash=false
+INFO 20-2027 y1: candidates=5 | semA 3ms partial=false results=10 | year 85ms partial=false pairs=10 clash=false
+INFO 22-2027 y1: candidates=5 | semA 2ms partial=false results=10 | year 59ms partial=false pairs=10 clash=false
+INFO 30-2027 y1: candidates=7 | semA 5ms partial=false results=10 | year 171ms partial=false pairs=10 clash=false
+INFO 32-2027 y1: candidates=4 | semA 1ms partial=false results=10 | year 120ms partial=false pairs=10 clash=false
+INFO 40-2027 y1: candidates=10 | semA 14ms partial=false results=10 | year 74ms partial=false pairs=10 clash=false
+INFO 42-2027 y1: candidates=6 | semA 2ms partial=false results=10 | year 56ms partial=false pairs=10 clash=false
+INFO 50-2027 y1: candidates=6 | semA 3ms partial=false results=10 | year 87ms partial=false pairs=10 clash=false
+INFO 30-2025 y3: candidates=9 | semA 2ms partial=false results=10 | year 53ms partial=false pairs=10 clash=false
+INFO 10-2025 y3: candidates=7 | semA 1ms partial=false results=10 | year 29ms partial=false pairs=10 clash=false
+INFO 20-2025 y3: candidates=8 | semA 2ms partial=false results=10 | year 64ms partial=false pairs=10 clash=false
+CHECK P-1 PASS no crash and no time clash in any returned plan
+done

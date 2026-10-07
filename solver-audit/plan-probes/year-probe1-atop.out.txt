@@ -1,0 +1,144 @@
+## 10-2027-y1
+  orig-shape K5 flat50      89ms partial=false A-alts=51 sets=4 best=12.5610 pairs=10
+  flat50+dedup              10ms partial=false A-alts=4 sets=4 best=12.5610 pairs=4
+  flat200+dedup             17ms partial=false A-alts=8 sets=8 best=12.5610 pairs=8
+  flat1000+dedup            51ms partial=false A-alts=10 sets=10 best=12.5610 pairs=10
+  distinct20                17ms partial=false A-alts=16 sets=16 best=12.5610 pairs=10
+  distinct50                16ms partial=false A-alts=16 sets=16 best=12.5610 pairs=10
+  distinct100               16ms partial=false A-alts=16 sets=16 best=12.5610 pairs=10
+  distinct200               18ms partial=false A-alts=16 sets=16 best=12.5610 pairs=10
+## 12-2027-y1
+  orig-shape K5 flat50      42ms partial=false A-alts=51 sets=3 best=11.9200 (-0.800 vs best config) pairs=10
+  flat50+dedup               9ms partial=false A-alts=3 sets=3 best=11.9200 (-0.800 vs best config) pairs=3
+  flat200+dedup             22ms partial=false A-alts=4 sets=4 best=12.7200 pairs=4
+  flat1000+dedup            76ms partial=false A-alts=8 sets=8 best=12.7200 pairs=8
+  distinct20                16ms partial=false A-alts=12 sets=12 best=12.7200 pairs=10
+  distinct50                15ms partial=false A-alts=12 sets=12 best=12.7200 pairs=10
+  distinct100               16ms partial=false A-alts=12 sets=12 best=12.7200 pairs=10
+  distinct200               18ms partial=false A-alts=12 sets=12 best=12.7200 pairs=10
+## 11-2027-y1
+  orig-shape K5 flat50      85ms partial=false A-alts=51 sets=3 best=13.0800 pairs=10
+  flat50+dedup               9ms partial=false A-alts=3 sets=3 best=13.0800 pairs=3
+  flat200+dedup             15ms partial=false A-alts=4 sets=4 best=13.0800 pairs=4
+  flat1000+dedup            75ms partial=false A-alts=8 sets=8 best=13.0800 pairs=8
+  distinct20                15ms partial=false A-alts=12 sets=12 best=13.0800 pairs=10
+  distinct50                14ms partial=false A-alts=12 sets=12 best=13.0800 pairs=10
+  distinct100               18ms partial=false A-alts=12 sets=12 best=13.0800 pairs=10
+  distinct200               22ms partial=false A-alts=12 sets=12 best=13.0800 pairs=10
+## 112-2027-y1
+  orig-shape K5 flat50      35ms partial=false A-alts=51 sets=3 best=12.6750 pairs=10
+  flat50+dedup               9ms partial=false A-alts=3 sets=3 best=12.6750 pairs=3
+  flat200+dedup             21ms partial=false A-alts=4 sets=4 best=12.6750 pairs=4
+  flat1000+dedup            63ms partial=false A-alts=8 sets=8 best=12.6750 pairs=8
+  distinct20                12ms partial=false A-alts=12 sets=12 best=12.6750 pairs=10
+  distinct50                13ms partial=false A-alts=12 sets=12 best=12.6750 pairs=10
+  distinct100               10ms partial=false A-alts=12 sets=12 best=12.6750 pairs=10
+  distinct200               10ms partial=false A-alts=12 sets=12 best=12.6750 pairs=10
+## 19-2027-y1
+  orig-shape K5 flat50     123ms partial=false A-alts=51 sets=4 best=12.8218 pairs=10
+  flat50+dedup              14ms partial=false A-alts=4 sets=4 best=12.8218 pairs=4
+  flat200+dedup             22ms partial=false A-alts=4 sets=4 best=12.8218 pairs=4
+  flat1000+dedup           102ms partial=false A-alts=11 sets=11 best=12.8218 pairs=10
+  distinct20                37ms partial=false A-alts=21 sets=21 best=12.8218 pairs=10
+  distinct50                36ms partial=false A-alts=24 sets=24 best=12.8218 pairs=10
+  distinct100               36ms partial=false A-alts=24 sets=24 best=12.8218 pairs=10
+  distinct200               42ms partial=false A-alts=24 sets=24 best=12.8218 pairs=10
+## 20-2027-y1
+  orig-shape K5 flat50      93ms partial=false A-alts=51 sets=5 best=12.4626 pairs=10
+  flat50+dedup              12ms partial=false A-alts=5 sets=5 best=12.4626 pairs=5
+  flat200+dedup             19ms partial=false A-alts=7 sets=7 best=12.4626 pairs=7
+  flat1000+dedup            48ms partial=false A-alts=16 sets=16 best=12.4626 pairs=10
+  distinct20                18ms partial=false A-alts=16 sets=16 best=12.4626 pairs=10
+  distinct50                16ms partial=false A-alts=16 sets=16 best=12.4626 pairs=10
+  distinct100               16ms partial=false A-alts=16 sets=16 best=12.4626 pairs=10
+  distinct200               17ms partial=false A-alts=16 sets=16 best=12.4626 pairs=10
+## 22-2027-y1
+  orig-shape K5 flat50      61ms partial=false A-alts=51 sets=5 best=12.5552 pairs=10
+  flat50+dedup              13ms partial=false A-alts=5 sets=5 best=12.5552 pairs=5
+  flat200+dedup             21ms partial=false A-alts=7 sets=7 best=12.5552 pairs=7
+  flat1000+dedup            44ms partial=false A-alts=16 sets=16 best=12.5552 pairs=10
+  distinct20                14ms partial=false A-alts=16 sets=16 best=12.5552 pairs=10
+  distinct50                14ms partial=false A-alts=16 sets=16 best=12.5552 pairs=10
+  distinct100               15ms partial=false A-alts=16 sets=16 best=12.5552 pairs=10
+  distinct200               14ms partial=false A-alts=16 sets=16 best=12.5552 pairs=10
+## 30-2027-y1
+  orig-shape K5 flat50     182ms partial=false A-alts=51 sets=6 best=13.2000 pairs=10
+  flat50+dedup              30ms partial=false A-alts=6 sets=6 best=13.2000 pairs=6
+  flat200+dedup             86ms partial=false A-alts=16 sets=16 best=13.2000 pairs=10
+  flat1000+dedup           195ms partial=false A-alts=27 sets=27 best=13.2000 pairs=10
+  distinct20                84ms partial=false A-alts=21 sets=21 best=13.2000 pairs=10
+  distinct50               146ms partial=false A-alts=51 sets=51 best=13.2000 pairs=10
+  distinct100              160ms partial=false A-alts=64 sets=64 best=13.2000 pairs=10
+  distinct200              160ms partial=false A-alts=64 sets=64 best=13.2000 pairs=10
+## 32-2027-y1
+  orig-shape K5 flat50     134ms partial=false A-alts=51 sets=4 best=13.3508 pairs=10
+  flat50+dedup              11ms partial=false A-alts=4 sets=4 best=13.3508 pairs=4
+  flat200+dedup             13ms partial=false A-alts=5 sets=5 best=13.3508 pairs=5
+  flat1000+dedup            16ms partial=false A-alts=8 sets=8 best=13.3508 pairs=8
+  distinct20                11ms partial=false A-alts=8 sets=8 best=13.3508 pairs=8
+  distinct50                11ms partial=false A-alts=8 sets=8 best=13.3508 pairs=8
+  distinct100               12ms partial=false A-alts=8 sets=8 best=13.3508 pairs=8
+  distinct200               11ms partial=false A-alts=8 sets=8 best=13.3508 pairs=8
+## 40-2027-y1
+  orig-shape K5 flat50      75ms partial=false A-alts=51 sets=18 best=12.3899 (-0.046 vs best config) pairs=10
+  flat50+dedup              60ms partial=false A-alts=18 sets=18 best=12.3899 (-0.046 vs best config) pairs=10
+  flat200+dedup             89ms partial=false A-alts=25 sets=25 best=12.3899 (-0.046 vs best config) pairs=10
+  flat1000+dedup           300ms partial=false A-alts=39 sets=39 best=12.4360 pairs=10
+  distinct20                49ms partial=false A-alts=21 sets=21 best=12.3899 (-0.046 vs best config) pairs=10
+  distinct50                92ms partial=false A-alts=51 sets=51 best=12.4360 pairs=10
+  distinct100              146ms partial=false A-alts=101 sets=101 best=12.4360 pairs=10
+  distinct200              225ms partial=false A-alts=192 sets=192 best=12.4360 pairs=10
+## 42-2027-y1
+  orig-shape K5 flat50      55ms partial=false A-alts=51 sets=7 best=12.9288 pairs=10
+  flat50+dedup               9ms partial=false A-alts=7 sets=7 best=12.9288 pairs=7
+  flat200+dedup             15ms partial=false A-alts=9 sets=9 best=12.9288 pairs=9
+  flat1000+dedup            23ms partial=false A-alts=16 sets=16 best=12.9288 pairs=10
+  distinct20                12ms partial=false A-alts=16 sets=16 best=12.9288 pairs=10
+  distinct50                13ms partial=false A-alts=16 sets=16 best=12.9288 pairs=10
+  distinct100               13ms partial=false A-alts=16 sets=16 best=12.9288 pairs=10
+  distinct200               14ms partial=false A-alts=16 sets=16 best=12.9288 pairs=10
+## 50-2027-y1
+  orig-shape K5 flat50      77ms partial=false A-alts=51 sets=6 best=12.2857 pairs=10
+  flat50+dedup              13ms partial=false A-alts=6 sets=6 best=12.2857 pairs=6
+  flat200+dedup             24ms partial=false A-alts=12 sets=12 best=12.2857 pairs=10
+  flat1000+dedup            80ms partial=false A-alts=23 sets=23 best=12.2857 pairs=10
+  distinct20                27ms partial=false A-alts=21 sets=21 best=12.2857 pairs=10
+  distinct50                35ms partial=false A-alts=32 sets=32 best=12.2857 pairs=10
+  distinct100               39ms partial=false A-alts=32 sets=32 best=12.2857 pairs=10
+  distinct200               35ms partial=false A-alts=32 sets=32 best=12.2857 pairs=10
+## 30-2025-y3
+  orig-shape K5 flat50      61ms partial=false A-alts=51 sets=22 best=13.0250 pairs=10
+  flat50+dedup              33ms partial=false A-alts=22 sets=22 best=13.0250 pairs=10
+  flat200+dedup             54ms partial=false A-alts=43 sets=43 best=13.0250 pairs=10
+  flat1000+dedup           125ms partial=false A-alts=94 sets=94 best=13.0250 pairs=10
+  distinct20                31ms partial=false A-alts=21 sets=21 best=13.0250 pairs=10
+  distinct50                62ms partial=false A-alts=51 sets=51 best=13.0250 pairs=10
+  distinct100               95ms partial=false A-alts=96 sets=96 best=13.0250 pairs=10
+  distinct200               96ms partial=false A-alts=96 sets=96 best=13.0250 pairs=10
+## 10-2025-y3
+  orig-shape K5 flat50      29ms partial=false A-alts=51 sets=14 best=12.8167 pairs=10
+  flat50+dedup               9ms partial=false A-alts=14 sets=14 best=12.8167 pairs=10
+  flat200+dedup             23ms partial=false A-alts=39 sets=39 best=12.8167 pairs=10
+  flat1000+dedup            35ms partial=false A-alts=64 sets=64 best=12.8167 pairs=10
+  distinct20                12ms partial=false A-alts=21 sets=21 best=12.8167 pairs=10
+  distinct50                27ms partial=false A-alts=51 sets=51 best=12.8167 pairs=10
+  distinct100               34ms partial=false A-alts=64 sets=64 best=12.8167 pairs=10
+  distinct200               35ms partial=false A-alts=64 sets=64 best=12.8167 pairs=10
+## 20-2025-y3
+  orig-shape K5 flat50      67ms partial=false A-alts=51 sets=10 best=12.8566 pairs=10
+  flat50+dedup              16ms partial=false A-alts=10 sets=10 best=12.8566 pairs=10
+  flat200+dedup             37ms partial=false A-alts=26 sets=26 best=12.8566 pairs=10
+  flat1000+dedup           128ms partial=false A-alts=81 sets=81 best=12.8566 pairs=10
+  distinct20                25ms partial=false A-alts=21 sets=21 best=12.8566 pairs=10
+  distinct50                48ms partial=false A-alts=51 sets=51 best=12.8566 pairs=10
+  distinct100               93ms partial=false A-alts=101 sets=101 best=12.8566 pairs=10
+  distinct200              108ms partial=false A-alts=128 sets=128 best=12.8566 pairs=10
+SUMMARY (total ms over cases | max ms | partial cases | sum of score shortfall vs best config)
+  orig-shape K5 flat50   1208 | 182 | 0 | 0.846
+  flat50+dedup           258 | 60 | 0 | 0.846
+  flat200+dedup          476 | 89 | 0 | 0.046
+  flat1000+dedup         1361 | 300 | 0 | 0.000
+  distinct20             380 | 84 | 0 | 0.046
+  distinct50             556 | 146 | 0 | 0.000
+  distinct100            716 | 160 | 0 | 0.000
+  distinct200            823 | 225 | 0 | 0.000

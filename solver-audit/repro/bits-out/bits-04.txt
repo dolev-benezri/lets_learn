@@ -1,0 +1,31 @@
+55 real lesson shapes x 1440 limit values x (notBefore, notAfter) x (hard via forbiddenMask, soft via search) in 10.9 s (wall clock, informational)
+CHECK bits-04a PASS hard notBefore == (start < T) for every real shape and every T 00:00-23:59 (79200 pairs; wrongly forbidden=0, wrongly allowed=0); a lesson starting exactly at T is allowed
+CHECK bits-04b PASS soft notBefore flags a lesson (outside>0) exactly when the hard one forbids it (differences=0)
+CHECK bits-04c PASS hard notAfter never forbids a lesson that ends at or before T (wrongly forbidden=0 of 79200)
+CHECK bits-04d PASS every wrongly allowed lesson (end > T) has its end in the same half-hour cell as T: ceil((end-07:00)/30) == ceil((T-07:00)/30) (exceptions=0)
+CHECK bits-04e PASS soft notAfter flags a lesson exactly when the hard one forbids it (differences=0)
+lesson 08:00-08:50 ends after notAfter but is NOT flagged for notAfter in 08:31-08:49
+lesson 17:00-17:50 ends after notAfter but is NOT flagged for notAfter in 17:31-17:49
+lesson 20:00-20:50 ends after notAfter but is NOT flagged for notAfter in 20:31-20:49
+lesson 22:00-22:50 ends after notAfter but is NOT flagged for notAfter in 22:31-22:49
+BUG bits-04f REPRODUCED notAfter: 1075 (real shape, T) pairs where the lesson ends AFTER the limit but lateMask() does not flag it (55 of 55 shapes affected; for a :50 end the unflagged limits are HH:31-HH:49)
+notBefore soft error histogram (solver outside minutes - true outside minutes): {"0":48651,"1":209,"2":209,"3":209,"4":209,"5":209,"6":209,"7":209,"8":209,"9":209,"10":23709,"11":261,"12":261,"13":261,"14":261,"15":261,"16":261,"17":261,"18":261,"19":261,"20":261,"21":261,"22":261,"23":261,"24":261,"25":261,"26":261,"27":261,"28":261,"29":261}
+notAfter  soft error histogram (solver outside minutes - true outside minutes): {"0":27759,"1":200,"2":200,"3":200,"4":200,"5":200,"6":200,"7":200,"8":200,"9":200,"10":44592,"-29":9,"-28":9,"-27":9,"-26":9,"-25":9,"-24":9,"-23":9,"-22":9,"-21":9,"-20":9,"-19":261,"-18":261,"-17":261,"-16":261,"-15":261,"-14":261,"-13":261,"-12":261,"-11":261,"-10":261,"-9":261,"-8":261,"-7":261,"-6":261,"-5":261,"-4":261,"-3":261,"-2":261,"-1":261}
+BUG bits-04g REPRODUCED DEFAULT notAfter 20:00: a lesson 20:00-20:50 (50 real minutes outside) is counted as 60 outside minutes (two whole 30-min slots)
+BUG bits-04h REPRODUCED soft outside minutes are wrong in BOTH directions for notAfter: overcounted in 46392 pairs, undercounted in 5049 pairs (of 79200)
+CHECK bits-04i PASS a lesson that ends exactly at notAfter (19:00-19:50 vs 20:00, 20:00-20:50 vs 20:50, 21:00-21:50 vs 21:50) counts as 0 outside minutes
+CHECK bits-04j1 PASS notBefore 08:15, lesson 08:00-08:50: solver says forbidden/outside, truth violates
+CHECK bits-04j2 PASS notBefore 08:20, lesson 09:00-09:50: solver says allowed/inside, truth fine
+CHECK bits-04j3 PASS notBefore 08:45, lesson 08:00-08:50: solver says forbidden/outside, truth violates
+CHECK bits-04j4 PASS notBefore 08:45, lesson 09:00-09:50: solver says allowed/inside, truth fine
+CHECK bits-04j5 PASS notBefore 09:00, lesson 09:00-09:50 (starts exactly at T): solver says allowed/inside, truth fine
+CHECK bits-04j6 PASS notAfter 20:15, lesson 20:00-20:50 (ends after T): solver says forbidden/outside, truth violates
+CHECK bits-04j7 PASS notAfter 20:50, lesson 20:00-20:50 (ends exactly at T): solver says allowed/inside, truth fine
+CHECK bits-04j8 PASS notAfter 20:00, lesson 19:00-19:50: solver says allowed/inside, truth fine
+BUG  bits-04j9 REPRODUCED notAfter 20:45, lesson 20:00-20:50 (5 min after T): solver says allowed/inside, truth violates
+BUG  bits-04j10 REPRODUCED notAfter 17:45, lesson 17:00-17:50 (5 min after T): solver says allowed/inside, truth violates
+end-to-end (2027-1/30-2026.json, course 30112 "תרמודינמיקה 1", groups 273011204+273011204/1, latest lesson ends 17:50):
+  windowHard + notAfter 17:30 -> results=0; notAfter 17:45 -> results=1 (latest end 17:50); notAfter 17:50 -> results=1
+CHECK bits-04k PASS hard notAfter 17:30 forbids the 17:50 lesson, hard notAfter 17:50 allows it (aligned limits behave)
+BUG bits-04l REPRODUCED HARD notAfter 17:45 (UI text: "a system that violates this will not be shown") returns a schedule whose lesson ends 17:50
+CHECK bits-04m PASS normalize() (app.js:36-37, the gate for saved state and share links) keeps notAfter 17:45 and windowHard true, so the value reaches search() unchanged

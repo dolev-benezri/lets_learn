@@ -1,0 +1,66 @@
+OK   bits-00-survey.mjs                 exit=0 claims-as-documented=4 0.4s
+OK   bits-01-overlap-exhaustive.mjs     exit=0 claims-as-documented=13 0.7s
+OK   bits-02-real-data-overlap.mjs      exit=0 claims-as-documented=5 3.6s
+OK   bits-03-blocks.mjs                 exit=0 claims-as-documented=9 2.1s
+OK   bits-04-window.mjs                 exit=0 claims-as-documented=22 11.2s
+FAIL bits-05-edges.mjs                  exit=1 claims-as-documented=16 1.3s
+     CHECK bits-05c FAIL info.freeDays == days 1..5 with empty mask, daysUsed == days 1..6 with non-empty mask (mismatches 5375/0)
+     CHECK bits-05p FAIL a schedule whose only lesson is on Friday has breakdown.freeDays=0.8333333333333334 (5 of 5 "free" days): freeDays ranges over days 1..5 (solver-core.js:185, :311) and Friday is ne
+     BUG bits-05r NOT-REPRODUCED with the default preferences (Friday = preferred day off, soft; weights freeDays 1, timeWindow 1) the solver ranks the FRIDAY group first (C-sun): freeDays gains 0.2 for sp
+     CHECK bits-05s FAIL soft day-off Sunday with timeWindow weight 0: the result does not depend on group order; Friday wins through freeDays (Sunday counts as a used day, Friday never does), the soft day
+OK   caller-01-worker-protocol.mjs      exit=0 claims-as-documented=45 4.4s
+FAIL caller-02-search-lifecycle.mjs     exit=1 claims-as-documented=16 9.9s
+     BUG 02-stale-reply-accepted NOT-REPRODUCED after setting day 1 as a HARD day off, the OLD plan (computed without it) is accepted into ui.last and drawn: 0 lesson blocks on day 1; ui.running=true (gen 
+     CHECK 02-program-switched FAIL state.program=10, ui.last holds the old program's 10 results (uiReset set it to null, the late reply restored it)
+     BUG 02-stale-reply-after-switch-throws NOT-REPRODUCED renderView threw: undefined: undefined
+     BUG 02-board-stays-broken-until-next-reply NOT-REPRODUCED a second renderView() (any later UI action) throws too: undefined; ui.last still the old program's results until the new worker answers
+     BUG 02-name-edit-researches-and-resets-cur NOT-REPRODUCED after editing only the display name: workers 1 -> 1 (a new search ran), ui.cur 3 -> 3; state.name is not read by search()/searchYear()
+OK   data-assumptions.mjs               exit=0 claims-as-documented=10 0.9s
+OK   meta-deps.mjs                      exit=0 claims-as-documented=3 0.1s
+FAIL meta-flow.mjs                      exit=1 claims-as-documented=0 0.1s
+FAIL metric-freedays.mjs                exit=1 claims-as-documented=3 0.3s
+     CHECK freedays-1 FAIL a plan whose only lesson is on Friday (day 6): breakdown.freeDays = 0.8333333333333334 (5/5) and explanation "יום א', יום ב', יום ג', יום ד', יום ה' פנוי · בלי חלונות" lists Sun.
+     BUG metric-friday-dump NOT-REPRODUCED with Friday marked as a day the student wants free, the solver picks the Friday group when: . Cause: Friday never counts as a day used, so moving the lesson there
+     BUG metric-friday-inconsistent NOT-REPRODUCED ...but the same Sunday+Friday plan has freeDays = 0.6666666666666666 (= 4/5): two campus days, one "used" day; maxDays (web/solver-core.js:24 counts d>=1,
+     BUG metric-friday-pill NOT-REPRODUCED classes Sunday..Thursday, Friday untouched and requested free: summary().freeDays = [6] -> web/ui-view.js:106 prints 'אין יום פנוי' ("no free day"); breakdown.fre
+     BUG metric-friday-dump-real NOT-REPRODUCED on committed data, raising the free-days weight (UI scale 3 or 5) increases how many single courses are put on Friday although Friday is the stock day-off
+OK   metric-graph.mjs                   exit=0 claims-as-documented=13 1.8s
+FAIL metric-oracle.mjs                  exit=1 claims-as-documented=10 0.6s
+     CHECK oracle-freeDays-aligned FAIL 5567 plans of 60 random datasets (times on the 30-min grid, 3-4 courses, 0-2 friends, bias on/off, exams published): max |solver - oracle| = 1.67e-1
+     CHECK oracle-others-afeka FAIL with real-shaped times friends/progress/freeDays/examSpread still match exactly over 6032 plans
+     CHECK oracle-offgrid-others FAIL friends/progress/freeDays/examSpread do not depend on the grid: exact for off-grid times too
+     CHECK oracle-real-others FAIL 226 real-data plans (6 files, UI default weights/constraints, 2 friends): friends/progress/freeDays/examSpread match the oracle (max diff 1.7e-1)
+OK   metric-selfloop-source.mjs         exit=0 claims-as-documented=8 0.4s
+OK   opts-01-oracle-all-data.mjs        exit=0 claims-as-documented=13 1.9s
+OK   opts-02-unlinked-groups.mjs        exit=0 claims-as-documented=17 0.6s
+FAIL opts-03-dedup-signature.mjs        exit=1 claims-as-documented=16 0.4s
+     BUG opts-3 NOT-REPRODUCED two primaries with different exam dates are merged: options=A,B, option.exams=["2027-02-01"] (B's 2027-02-20 is invisible; solver-core.js:59-60 sig has no exams, :93-94 reads
+     BUG opts-3b NOT-REPRODUCED search(X,Y) offers ONE plan C,A with alts {}: registering the "alternative" B puts X's exam on 2027-02-20 = Y's exam day, the plan says nothing
+FAIL opts-04-pins-lecturers.mjs         exit=1 claims-as-documented=32 0.7s
+     BUG opts-2 NOT-REPRODUCED synthetic: no choice -> 1 plan (Y1,X2); "prefer P" -> 1 plans, diagnosis "undefined" (a soft preference should still return X2+Y1)
+     BUG opts-2b NOT-REPRODUCED real data 10-2024.json: courses 10016 "מבוא למדעי המחשב" + 10128 "תכנות מונחה עצמים" (both in one mandatory list): without a choice 3 plan(s); after "prefer מר שלומי פיני" 0
+     BUG opts-7 NOT-REPRODUCED pin S + avoid X -> B+S (an avoided lecturer's lecture A is still offered); pin S + prefer X -> A+S (preference not applied); expected after "pins first": B+S / A+S
+OK   perf-ui-budget.mjs                 exit=0 claims-as-documented=1 1.4s
+OK   rules-classify-ref.mjs             exit=0 claims-as-documented=10 1.0s
+OK   rules-regulations.mjs              exit=0 claims-as-documented=10 0.1s
+FAIL search-bound-admissible.mjs        exit=1 claims-as-documented=0 0.1s
+OK   search-diagnosis.mjs               exit=0 claims-as-documented=17 1.7s
+FAIL search-maxcredits.mjs              exit=1 claims-as-documented=6 0.3s
+     BUG SMC-5 maxCredits=0 is treated as "no cap" (expected: only 0-credit plans) NOT-REPRODUCED plans returned with cap 0: [{"courses":["Z"],"credits":0}]; with cap null the same: 3 plans
+     BUG SMC-5b a must 3-credit course under cap 0 is still scheduled (expected: no plan + a diagnosis) NOT-REPRODUCED results=0, credits of plan=-
+     BUG SMC-6 real data: 2027-1/10-2024.json must course 10016 (4.5 credits) planned under maxCredits=0 NOT-REPRODUCED results=0, groups=undefined
+FAIL search-negative-duration.mjs       exit=1 claims-as-documented=2 0.3s
+     CHECK SN-2 prune:false equals the exhaustive reference on the malformed instance FAIL prune:false score 5.5, reference 5.5
+     BUG SN-4 generator seed 408 (malformed:true): search() with prune differs from the reference NOT-REPRODUCED prune:true -> rank 0 score 14.464285714285715 != ref 15.44761904761905; result C0:G0|C2:G8|C
+FAIL search-ref-random.mjs              exit=1 claims-as-documented=0 0.9s
+     CHECK SR-1 search() == exhaustive reference top-K on random instances (scores, metrics, plans) FAIL 450 mismatching instances; first: {"seed":1,"problems":["result C2:G7|C3:G14|C4:G16|C5:G20 metric fr
+FAIL search-ref-real.mjs                exit=1 claims-as-documented=1 2.1s
+     CHECK SRR-1 search() == exhaustive reference on real-data subsets FAIL 332/500 mismatches; first {"seed":1,"key":"2027-2/22-2026.json","problems":["result 20123:272012305|20123:272012305/1|20125:27201
+FAIL year-exhaustive.mjs                exit=1 claims-as-documented=4 0.6s
+     CHECK YEAR-SCORE-FORMULA FAIL returned pairs whose score or missing list differ from the first-principles formula: 202/300 seed 2: solver 10.4810 ref 10.4143 missing / ; seed 3: solver 11.4500 ref 10.
+OK   year-heuristics.mjs                exit=0 claims-as-documented=3 0.8s
+FAIL year-real.mjs                      exit=1 claims-as-documented=7 1.3s
+     CHECK YEAR-REAL-SCORE FAIL score differs from the first-principles formula: 130/130 30-2026/y1: solver 12.7671 ref 12.5338 ; 30-2026/y1: solver 12.7671 ref 12.5338 ; 30-2026/y1: solver 12.7671 ref 12.
+OK   year-seeds.mjs                     exit=0 claims-as-documented=5 0.2s
+18/32 scripts as documented
+exit 1

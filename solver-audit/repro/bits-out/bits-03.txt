@@ -1,0 +1,13 @@
+CHECK bits-03a PASS all 461280 minute-level blocks (07:00<=start<end<=23:00) pass cleanBlocks, i.e. the UI/share link can produce every one (461280/461280)
+CHECK bits-03b PASS no missed conflict: a block that really overlaps a real lesson is always forbidden (25370400 block x lesson-shape pairs, missed=0)
+CHECK bits-03c PASS the end side is exact: a block ending at or before a lesson start never conflicts (false conflicts on the end side=0), because every real lesson starts on a slot boundary
+CHECK bits-03d PASS every false conflict has the form "block starts in [lesson end, next :00/:30 boundary)" (violations of that form=0)
+CHECK bits-03e PASS false conflicts only occur for block start minutes 50,51,52,53,54,55,56,57,58,59 (all in :50-:59, the 10 minutes after a :50 lesson end)
+BUG bits-03f REPRODUCED block vs real lesson: 201460 false conflicts of 25370400 pairs (a block that starts when a lesson ends, or up to 9 min later, is treated as overlapping it)
+aggregate: 7036 course instances x 70 blocks (Sun-Thu x 14 start times HH:50, 1 h long); options killed by solver=85772, by true minute overlap=60882; (course,block) cases where the solver leaves the course NO option although a real option fits=5015
+BUG bits-03g REPRODUCED real data: solver kills 24890 more options than minute truth (85772 vs 60882); 5015 course/block cases lose every option although a fitting option exists
+example: 2027-1/10-2024.json course 6002 "אנגלית מתקדמים א' (בינוניים)"; block day 1 20:50-21:50; the course's lessons that day end at 20:50
+  block 20:50: results=0 diagnosis=["אנגלית מתקדמים א' (בינוניים): אין קבוצה שמתאימה לאילוצים (זמן תפוס, חסימות אישיות, קבוצות מלאות או נעיצה)"]
+  block 21:00 (10 min later): results=1
+BUG bits-03h REPRODUCED search() finds no schedule for a single must-course when the block starts at 20:50, but finds 1 when the same block starts at 21:00; the lesson ends 20:50, so the first block never overlaps it
+CHECK bits-03i PASS a Monday 08:00-09:00 block forbids a Monday 08:00-09:50 lesson and not the same hours on Tuesday
