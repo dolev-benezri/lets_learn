@@ -200,6 +200,35 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-meter .d { background:var(--success); }
 .pmap .pm-meter .p { background:var(--c2-fg); }
 @media (max-width:599px) { .pmap .pm-prog { padding:4px 12px 6px; } .pmap .pm-prog-t { margin-bottom:3px; font-size:var(--fs-xs); } .pmap .pm-meter { height:8px; } }
+/* The shown schedule alternative: switcher in the header (no extra height on phones), mini week pane floating opposite the electives box. */
+.pmap .pm-alt { display:flex; align-items:center; gap:4px; margin-inline-start:auto; }
+.pmap .pm-alt + .pm-close { margin-inline-start:8px; }
+.pmap .pm-alt-l { font-size:var(--fs-sm); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.pmap .pm-alt .short { display:none; }
+.pmap .pm-mini { position:absolute; inset-block-end:8px; inset-inline-start:8px; z-index:4; max-width:min(360px, calc(100% - 16px)); max-height:min(60%, 360px);
+  overflow:auto; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius); box-shadow:var(--shadow-pop); font-size:var(--fs-sm); }
+.pmap .pm-mini[open] { width:min(360px, calc(100% - 16px)); } /* absolute boxes shrink to their content; the grids need the width */
+.pmap .pm-mini summary { cursor:pointer; min-height:36px; padding:0 14px; display:flex; align-items:center; font-weight:600; }
+.pmap .pm-mini-s { margin:0; padding:0 14px 6px; color:var(--text-2); font-size:var(--fs-xs); }
+.pmap .pm-mini-g { display:flex; gap:6px; padding:0 8px 8px; }
+.pmap .pm-mini-g > .wk, .pmap .pm-mini-w { flex:1; min-width:0; margin:0; }
+.pmap .pm-mini figcaption { font-size:var(--fs-xs); color:var(--text-2); text-align:center; }
+/* the board's grid, shrunk: all days (the phone rule shows one), no hours column, no text in the blocks */
+.pmap .pm-mini .wk { --ppm:.16px; grid-template-columns:0 repeat(var(--cols), minmax(0, 1fr)); }
+.pmap .pm-mini .wk-head { display:contents; }
+.pmap .pm-mini .day { display:block; }
+.pmap .pm-mini .wk-head > * { position:static; box-shadow:none; padding:2px 0; }
+.pmap .pm-mini .dh b { font-size:var(--fs-xs); }
+.pmap .pm-mini .dh span { display:none; }
+.pmap .pm-mini .hours { visibility:hidden; }
+.pmap .pm-mini .blk { padding:0; border-inline-start-width:2px; cursor:default; }
+.pmap .pm-mini .blk > * { display:none; }
+@media (max-width:599px) {
+  .pmap .pm-alt .pm-ibtn { width:36px; min-height:36px; }
+  .pmap .pm-mini:not([open]) { max-width:calc(100% - 182px); } /* 182 = the electives chip (150) + both gutters (16) + a gap (16) */
+  .pmap .pm-mini[open] { inset-inline:0; inset-block-end:0; width:auto; max-width:none; max-height:50%; border-radius:var(--radius) var(--radius) 0 0; }
+}
+@media (max-width:359px) { .pmap .pm-alt .long { display:none; } .pmap .pm-alt .short { display:inline; } }
 @media (prefers-reduced-motion: reduce) {
   .pmap *, .pmap *::before, .pmap *::after { transition:none !important; scroll-behavior:auto !important; }
 }
