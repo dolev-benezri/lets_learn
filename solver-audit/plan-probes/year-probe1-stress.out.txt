@@ -1,0 +1,150 @@
+## 10-2027-y1 all-optional
+  orig: 4571ms partial=true best=10.970 n=10
+  distinct50 K1: 4559ms partial=true best=10.970 n=10
+  distinct50 K5: 4562ms partial=true best=11.032 n=10
+  distinct50 K10: 4516ms partial=true best=11.032 n=10
+## 10-2027-y1 year-list-must
+  orig: 68ms partial=false best=12.561 n=10
+  distinct50 K1: 16ms partial=false best=12.561 n=8
+  distinct50 K5: 13ms partial=false best=12.561 n=8
+  distinct50 K10: 14ms partial=false best=12.561 n=8
+## 12-2027-y1 all-optional
+  orig: 4563ms partial=true best=10.923 n=10
+  distinct50 K1: 4557ms partial=true best=11.020 n=10
+  distinct50 K5: 4556ms partial=true best=11.011 n=10
+  distinct50 K10: 4558ms partial=true best=11.020 n=10
+## 12-2027-y1 year-list-must
+  orig: 33ms partial=false best=11.920 n=10
+  distinct50 K1: 8ms partial=false best=12.720 n=4
+  distinct50 K5: 7ms partial=false best=12.720 n=4
+  distinct50 K10: 8ms partial=false best=12.720 n=4
+## 11-2027-y1 all-optional
+  orig: 4636ms partial=true best=4.514 n=10
+  distinct50 K1: 4594ms partial=true best=4.514 n=10
+  distinct50 K5: 4590ms partial=true best=4.514 n=10
+  distinct50 K10: 4623ms partial=true best=4.514 n=10
+## 11-2027-y1 year-list-must
+  orig: 86ms partial=false best=13.080 n=10
+  distinct50 K1: 13ms partial=false best=13.080 n=4
+  distinct50 K5: 13ms partial=false best=13.080 n=4
+  distinct50 K10: 13ms partial=false best=13.080 n=4
+## 112-2027-y1 all-optional
+  orig: 4648ms partial=true best=4.514 n=10
+  distinct50 K1: 4588ms partial=true best=4.514 n=10
+  distinct50 K5: 4581ms partial=true best=4.514 n=10
+  distinct50 K10: 4565ms partial=true best=4.514 n=10
+## 112-2027-y1 year-list-must
+  orig: 25ms partial=false best=12.675 n=10
+  distinct50 K1: 8ms partial=false best=12.675 n=4
+  distinct50 K5: 9ms partial=false best=12.675 n=4
+  distinct50 K10: 8ms partial=false best=12.675 n=4
+## 19-2027-y1 all-optional
+  orig: 4542ms partial=true best=4.602 n=10
+  distinct50 K1: 4621ms partial=true best=4.602 n=10
+  distinct50 K5: 4639ms partial=true best=4.602 n=10
+  distinct50 K10: 4625ms partial=true best=4.602 n=10
+## 19-2027-y1 year-list-must
+  orig: 62ms partial=false best=12.799 n=10
+  distinct50 K1: 12ms partial=false best=12.799 n=4
+  distinct50 K5: 15ms partial=false best=12.822 n=4
+  distinct50 K10: 17ms partial=false best=12.822 n=4
+## 20-2027-y1 all-optional
+  orig: 4547ms partial=true best=9.962 n=10
+  distinct50 K1: 4572ms partial=true best=9.962 n=10
+  distinct50 K5: 4579ms partial=true best=10.207 n=10
+  distinct50 K10: 4583ms partial=true best=10.042 n=10
+## 20-2027-y1 year-list-must
+  orig: 97ms partial=false best=11.645 n=10
+  distinct50 K1: 15ms partial=false best=11.645 n=8
+  distinct50 K5: 19ms partial=false best=11.645 n=8
+  distinct50 K10: 20ms partial=false best=11.645 n=8
+## 22-2027-y1 all-optional
+  orig: 4597ms partial=true best=9.962 n=10
+  distinct50 K1: 4564ms partial=true best=9.962 n=10
+  distinct50 K5: 4566ms partial=true best=10.207 n=10
+  distinct50 K10: 4598ms partial=true best=10.042 n=10
+## 22-2027-y1 year-list-must
+  orig: 44ms partial=false best=11.798 n=10
+  distinct50 K1: 10ms partial=false best=11.798 n=8
+  distinct50 K5: 10ms partial=false best=11.798 n=8
+  distinct50 K10: 12ms partial=false best=11.798 n=8
+## 30-2027-y1 all-optional
+  orig: 4559ms partial=true best=9.409 n=10
+  distinct50 K1: 4561ms partial=true best=9.143 n=10
+  distinct50 K5: 4563ms partial=true best=8.555 n=10
+  distinct50 K10: 4561ms partial=true best=8.667 n=10
+## 30-2027-y1 year-list-must
+  orig: 91ms partial=false best=13.200 n=10
+  distinct50 K1: 106ms partial=false best=13.200 n=10
+  distinct50 K5: 212ms partial=false best=13.200 n=10
+  distinct50 K10: 157ms partial=false best=13.200 n=10
+## 32-2027-y1 all-optional
+  orig: 4561ms partial=true best=9.134 n=10
+  distinct50 K1: 4566ms partial=true best=8.995 n=10
+  distinct50 K5: 4561ms partial=true best=9.023 n=10
+  distinct50 K10: 4566ms partial=true best=9.023 n=10
+## 32-2027-y1 year-list-must
+  orig: 104ms partial=false best=13.351 n=10
+  distinct50 K1: 8ms partial=false best=13.351 n=4
+  distinct50 K5: 9ms partial=false best=13.351 n=4
+  distinct50 K10: 10ms partial=false best=13.351 n=4
+## 40-2027-y1 all-optional
+  orig: 4585ms partial=true best=10.888 n=10
+  distinct50 K1: 4515ms partial=true best=10.678 n=10
+  distinct50 K5: 4648ms partial=true best=11.033 n=10
+  distinct50 K10: 4644ms partial=true best=11.246 n=10
+## 40-2027-y1 year-list-must
+  orig: 2ms partial=false best=undefined n=0
+  distinct50 K1: 2ms partial=false best=undefined n=0
+  distinct50 K5: 2ms partial=false best=undefined n=0
+  distinct50 K10: 2ms partial=false best=undefined n=0
+## 42-2027-y1 all-optional
+  orig: 4629ms partial=true best=10.678 n=10
+  distinct50 K1: 4652ms partial=true best=10.678 n=10
+  distinct50 K5: 4641ms partial=true best=11.104 n=10
+  distinct50 K10: 4605ms partial=true best=11.246 n=10
+## 42-2027-y1 year-list-must
+  orig: 2ms partial=false best=undefined n=0
+  distinct50 K1: 2ms partial=false best=undefined n=0
+  distinct50 K5: 4ms partial=false best=undefined n=0
+  distinct50 K10: 3ms partial=false best=undefined n=0
+## 50-2027-y1 all-optional
+  orig: 4602ms partial=true best=10.549 n=10
+  distinct50 K1: 4560ms partial=true best=10.549 n=10
+  distinct50 K5: 4593ms partial=true best=10.549 n=10
+  distinct50 K10: 4535ms partial=true best=10.549 n=10
+## 50-2027-y1 year-list-must
+  orig: 1ms partial=false best=undefined n=0
+  distinct50 K1: 1ms partial=false best=undefined n=0
+  distinct50 K5: 1ms partial=false best=undefined n=0
+  distinct50 K10: 1ms partial=false best=undefined n=0
+## 30-2025-y3 all-optional
+  orig: 4556ms partial=true best=8.161 n=10
+  distinct50 K1: 4554ms partial=true best=8.161 n=10
+  distinct50 K5: 4557ms partial=true best=8.200 n=10
+  distinct50 K10: 4559ms partial=true best=8.200 n=10
+## 30-2025-y3 year-list-must
+  orig: 55ms partial=false best=13.025 n=10
+  distinct50 K1: 43ms partial=false best=13.025 n=10
+  distinct50 K5: 61ms partial=false best=13.025 n=10
+  distinct50 K10: 71ms partial=false best=13.025 n=10
+## 10-2025-y3 all-optional
+  orig: 4547ms partial=true best=8.826 n=10
+  distinct50 K1: 4546ms partial=true best=8.782 n=10
+  distinct50 K5: 4544ms partial=true best=8.994 n=10
+  distinct50 K10: 4548ms partial=true best=8.850 n=10
+## 10-2025-y3 year-list-must
+  orig: 27ms partial=false best=12.600 n=10
+  distinct50 K1: 42ms partial=false best=12.600 n=10
+  distinct50 K5: 43ms partial=false best=12.817 n=10
+  distinct50 K10: 44ms partial=false best=12.817 n=10
+## 20-2025-y3 all-optional
+  orig: 4544ms partial=true best=8.722 n=10
+  distinct50 K1: 4582ms partial=true best=8.971 n=10
+  distinct50 K5: 4635ms partial=true best=9.144 n=10
+  distinct50 K10: 4549ms partial=true best=9.144 n=10
+## 20-2025-y3 year-list-must
+  orig: 49ms partial=false best=12.721 n=10
+  distinct50 K1: 24ms partial=false best=12.721 n=10
+  distinct50 K5: 29ms partial=false best=12.857 n=10
+  distinct50 K10: 36ms partial=false best=12.857 n=10

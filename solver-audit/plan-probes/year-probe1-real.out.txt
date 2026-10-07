@@ -1,0 +1,120 @@
+## 10-2027-y1
+  original        63ms partial=false best=12.5110 pairs=10 distinctASetsInTop10=1 A-alternatives=- distinctSets=-
+  K=1 (proto)     62ms partial=false best=12.5110 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=3             57ms partial=false best=12.5610 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=5             54ms partial=false best=12.5610 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=10            62ms partial=false best=12.5610 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=1 dedup        8ms partial=false best=12.5110 pairs=4 distinctASetsInTop10=4 A-alternatives=4 distinctSets=4
+  K=5 dedup        8ms partial=false best=12.5610 pairs=4 distinctASetsInTop10=4 A-alternatives=4 distinctSets=4
+## 12-2027-y1
+  original        32ms partial=false best=11.9200 pairs=10 distinctASetsInTop10=1 A-alternatives=- distinctSets=-
+  K=1 (proto)     32ms partial=false best=11.9200 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=3
+  K=3             30ms partial=false best=11.9200 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=3
+  K=5             32ms partial=false best=11.9200 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=3
+  K=10            32ms partial=false best=11.9200 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=3
+  K=1 dedup        8ms partial=false best=11.9200 pairs=3 distinctASetsInTop10=3 A-alternatives=3 distinctSets=3
+  K=5 dedup        7ms partial=false best=11.9200 pairs=3 distinctASetsInTop10=3 A-alternatives=3 distinctSets=3
+## 11-2027-y1
+  original        67ms partial=false best=13.0800 pairs=10 distinctASetsInTop10=1 A-alternatives=- distinctSets=-
+  K=1 (proto)     69ms partial=false best=13.0800 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=3
+  K=3             67ms partial=false best=13.0800 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=3
+  K=5             70ms partial=false best=13.0800 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=3
+  K=10            86ms partial=false best=13.0800 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=3
+  K=1 dedup        8ms partial=false best=13.0800 pairs=3 distinctASetsInTop10=3 A-alternatives=3 distinctSets=3
+  K=5 dedup        9ms partial=false best=13.0800 pairs=3 distinctASetsInTop10=3 A-alternatives=3 distinctSets=3
+## 112-2027-y1
+  original        25ms partial=false best=12.6750 pairs=10 distinctASetsInTop10=2 A-alternatives=- distinctSets=-
+  K=1 (proto)     25ms partial=false best=12.6750 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=3
+  K=3             26ms partial=false best=12.6750 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=3
+  K=5             26ms partial=false best=12.6750 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=3
+  K=10            26ms partial=false best=12.6750 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=3
+  K=1 dedup        7ms partial=false best=12.6750 pairs=3 distinctASetsInTop10=3 A-alternatives=3 distinctSets=3
+  K=5 dedup        7ms partial=false best=12.6750 pairs=3 distinctASetsInTop10=3 A-alternatives=3 distinctSets=3
+## 19-2027-y1
+  original        68ms partial=false best=12.7989 pairs=10 distinctASetsInTop10=1 A-alternatives=- distinctSets=-
+  K=1 (proto)     77ms partial=false best=12.7989 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=3            111ms partial=false best=12.8218 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=5            121ms partial=false best=12.8218 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=10           158ms partial=false best=12.8218 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=1 dedup       10ms partial=false best=12.7989 pairs=4 distinctASetsInTop10=4 A-alternatives=4 distinctSets=4
+  K=5 dedup       14ms partial=false best=12.8218 pairs=4 distinctASetsInTop10=4 A-alternatives=4 distinctSets=4
+## 20-2027-y1
+  original        66ms partial=false best=12.4626 pairs=10 distinctASetsInTop10=2 A-alternatives=- distinctSets=-
+  K=1 (proto)     67ms partial=false best=12.4626 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=5
+  K=3             83ms partial=false best=12.4626 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=5
+  K=5             89ms partial=false best=12.4626 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=5
+  K=10           114ms partial=false best=12.4626 pairs=10 distinctASetsInTop10=3 A-alternatives=51 distinctSets=5
+  K=1 dedup       10ms partial=false best=12.4626 pairs=5 distinctASetsInTop10=5 A-alternatives=5 distinctSets=5
+  K=5 dedup       14ms partial=false best=12.4626 pairs=5 distinctASetsInTop10=5 A-alternatives=5 distinctSets=5
+## 22-2027-y1
+  original        48ms partial=false best=12.5552 pairs=10 distinctASetsInTop10=2 A-alternatives=- distinctSets=-
+  K=1 (proto)     51ms partial=false best=12.5552 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=5
+  K=3             55ms partial=false best=12.5552 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=5
+  K=5             62ms partial=false best=12.5552 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=5
+  K=10            69ms partial=false best=12.5552 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=5
+  K=1 dedup        8ms partial=false best=12.5552 pairs=5 distinctASetsInTop10=5 A-alternatives=5 distinctSets=5
+  K=5 dedup        9ms partial=false best=12.5552 pairs=5 distinctASetsInTop10=5 A-alternatives=5 distinctSets=5
+## 30-2027-y1
+  original       154ms partial=false best=13.2000 pairs=10 distinctASetsInTop10=4 A-alternatives=- distinctSets=-
+  K=1 (proto)    144ms partial=false best=13.2000 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=6
+  K=3            164ms partial=false best=13.2000 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=6
+  K=5            182ms partial=false best=13.2000 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=6
+  K=10           196ms partial=false best=13.2000 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=6
+  K=1 dedup       26ms partial=false best=13.2000 pairs=6 distinctASetsInTop10=6 A-alternatives=6 distinctSets=6
+  K=5 dedup       30ms partial=false best=13.2000 pairs=6 distinctASetsInTop10=6 A-alternatives=6 distinctSets=6
+## 32-2027-y1
+  original        98ms partial=false best=13.3508 pairs=10 distinctASetsInTop10=1 A-alternatives=- distinctSets=-
+  K=1 (proto)     96ms partial=false best=13.3508 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=3            112ms partial=false best=13.3508 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=5            120ms partial=false best=13.3508 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=10           140ms partial=false best=13.3508 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=4
+  K=1 dedup        8ms partial=false best=13.3508 pairs=4 distinctASetsInTop10=4 A-alternatives=4 distinctSets=4
+  K=5 dedup       10ms partial=false best=13.3508 pairs=4 distinctASetsInTop10=4 A-alternatives=4 distinctSets=4
+## 40-2027-y1
+  original        65ms partial=false best=12.2057 pairs=10 distinctASetsInTop10=5 A-alternatives=- distinctSets=-
+  K=1 (proto)     65ms partial=false best=12.2057 pairs=10 distinctASetsInTop10=5 A-alternatives=51 distinctSets=18
+  K=3             71ms partial=false best=12.3899 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=18
+  K=5             78ms partial=false best=12.3899 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=18
+  K=10            87ms partial=false best=12.3899 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=18
+  K=1 dedup       36ms partial=false best=12.2057 pairs=10 distinctASetsInTop10=10 A-alternatives=18 distinctSets=18
+  K=5 dedup       41ms partial=false best=12.3899 pairs=10 distinctASetsInTop10=10 A-alternatives=18 distinctSets=18
+## 42-2027-y1
+  original        47ms partial=false best=12.9288 pairs=10 distinctASetsInTop10=1 A-alternatives=- distinctSets=-
+  K=1 (proto)     45ms partial=false best=12.9288 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=7
+  K=3             52ms partial=false best=12.9288 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=7
+  K=5             57ms partial=false best=12.9288 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=7
+  K=10            68ms partial=false best=12.9288 pairs=10 distinctASetsInTop10=1 A-alternatives=51 distinctSets=7
+  K=1 dedup        9ms partial=false best=12.9288 pairs=7 distinctASetsInTop10=7 A-alternatives=7 distinctSets=7
+  K=5 dedup       10ms partial=false best=12.9288 pairs=7 distinctASetsInTop10=7 A-alternatives=7 distinctSets=7
+## 50-2027-y1
+  original        75ms partial=false best=12.2857 pairs=10 distinctASetsInTop10=2 A-alternatives=- distinctSets=-
+  K=1 (proto)     74ms partial=false best=12.2857 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=6
+  K=3             81ms partial=false best=12.2857 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=6
+  K=5             80ms partial=false best=12.2857 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=6
+  K=10            94ms partial=false best=12.2857 pairs=10 distinctASetsInTop10=2 A-alternatives=51 distinctSets=6
+  K=1 dedup       12ms partial=false best=12.2857 pairs=6 distinctASetsInTop10=6 A-alternatives=6 distinctSets=6
+  K=5 dedup       13ms partial=false best=12.2857 pairs=6 distinctASetsInTop10=6 A-alternatives=6 distinctSets=6
+## 30-2025-y3
+  original        47ms partial=false best=13.0250 pairs=10 distinctASetsInTop10=4 A-alternatives=- distinctSets=-
+  K=1 (proto)     46ms partial=false best=13.0250 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=22
+  K=3             56ms partial=false best=13.0250 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=22
+  K=5             63ms partial=false best=13.0250 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=22
+  K=10            67ms partial=false best=13.0250 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=22
+  K=1 dedup       22ms partial=false best=13.0250 pairs=10 distinctASetsInTop10=10 A-alternatives=22 distinctSets=22
+  K=5 dedup       28ms partial=false best=13.0250 pairs=10 distinctASetsInTop10=10 A-alternatives=22 distinctSets=22
+## 10-2025-y3
+  original        27ms partial=false best=12.6809 pairs=10 distinctASetsInTop10=4 A-alternatives=- distinctSets=-
+  K=1 (proto)     28ms partial=false best=12.6809 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=14
+  K=3             28ms partial=false best=12.6809 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=14
+  K=5             31ms partial=false best=12.8167 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=14
+  K=10            34ms partial=false best=12.8167 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=14
+  K=1 dedup        9ms partial=false best=12.6809 pairs=10 distinctASetsInTop10=10 A-alternatives=14 distinctSets=14
+  K=5 dedup       11ms partial=false best=12.8167 pairs=10 distinctASetsInTop10=10 A-alternatives=14 distinctSets=14
+## 20-2025-y3
+  original        49ms partial=false best=12.8297 pairs=10 distinctASetsInTop10=4 A-alternatives=- distinctSets=-
+  K=1 (proto)     48ms partial=false best=12.8297 pairs=10 distinctASetsInTop10=4 A-alternatives=51 distinctSets=10
+  K=3             57ms partial=false best=12.8566 pairs=10 distinctASetsInTop10=3 A-alternatives=51 distinctSets=10
+  K=5             63ms partial=false best=12.8566 pairs=10 distinctASetsInTop10=3 A-alternatives=51 distinctSets=10
+  K=10            73ms partial=false best=12.8566 pairs=10 distinctASetsInTop10=3 A-alternatives=51 distinctSets=10
+  K=1 dedup       12ms partial=false best=12.8297 pairs=10 distinctASetsInTop10=10 A-alternatives=10 distinctSets=10
+  K=5 dedup       15ms partial=false best=12.8566 pairs=10 distinctASetsInTop10=10 A-alternatives=10 distinctSets=10

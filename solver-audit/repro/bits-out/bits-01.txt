@@ -1,0 +1,15 @@
+-- 10-min grid 07:00-23:00: 4656 intervals, 10836840 pairs; agree=10690856 falseConflicts=145984 missedConflicts=0; false-conflict gap histogram (minutes between the two) {"0":98336,"10":47648}; examples [07:00,07:10) vs [07:10,07:20) ; [07:00,07:10) vs [07:10,07:30) ; [07:00,07:10) vs [07:10,07:40)
+CHECK bits-01a PASS no missed conflict on the 10-minute grid inside 07:00-23:00 (missed=0 of 10836840 pairs)
+CHECK bits-01b PASS overlaps() is exactly "both intervals touch one common 30-min slot" for all 10836840 pairs (mismatches=0)
+CHECK bits-01c PASS false conflicts == closed form {earlier end E not on a :00/:30 boundary, later start in [E, ceil30(E))} for all pairs (mismatches=0)
+CHECK bits-01d PASS every interval overlaps itself (4656/4656)
+BUG bits-01e REPRODUCED slot model says "conflict" for 145984 of 10836840 interval pairs that share no minute (1.347 %)
+-- 1-min grid 08:10-09:40: 4095 intervals, 8382465 pairs; agree=7091535 falseConflicts=1290930 missedConflicts=0; false-conflict gap histogram (minutes between the two) {"0":117285,"1":109350,"2":101771,"3":94544,"4":87665,"5":81130,"6":74935,"7":69076,"8":63549,"9":58350,"10":53475,"11":48840,"12":44442,"13":40278,"14":36345,"15":32640,"16":29160,"17":25902,"18":22863,"19":20040,"20":17430,"21":14960,"22":12628,"23":10432,"24":8370,"25":6440,"26":4640,"27":2968,"28":1422}; examples [08:10,08:11) vs [08:11,08:12) ; [08:10,08:11) vs [08:11,08:13) ; [08:10,08:11) vs [08:11,08:14)
+CHECK bits-01f PASS no missed conflict on the 1-minute grid 08:10-09:40 (missed=0 of 8382465)
+CHECK bits-01g PASS 1-minute grid: slot semantics and closed-form false-conflict predicate hold for all 8382465 pairs (mismatches 0/0)
+BUG bits-01h REPRODUCED 1-minute grid: 1290930 false conflicts of 8382465 pairs
+CHECK bits-01i PASS lesson 08:00-09:50 and lesson 10:00-11:50 do not conflict (consecutive real lessons)
+CHECK bits-01j PASS lesson 08:00-09:50 and 09:30-10:20 conflict (true overlap 20 min)
+BUG bits-01m REPRODUCED interval [09:50,10:30) touches but does not overlap [08:00,09:50): solver reports a conflict
+BUG bits-01n REPRODUCED interval [09:55,10:30) starts 5 min AFTER [08:00,09:50) ended: solver reports a conflict
+CHECK bits-01o PASS interval starting at the next slot boundary 10:00 is free (no false conflict from the :50 end)

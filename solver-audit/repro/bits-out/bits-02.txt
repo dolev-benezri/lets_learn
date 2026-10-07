@@ -1,0 +1,7 @@
+files=144; group pairs of different courses=5672404; distinct lesson shapes (start,end)=55; option-pair files=24, option pairs=328678; options built=21670 (wall 3.7 s)
+CHECK bits-02a PASS all 5672404 cross-course group pairs: slot overlap == minute overlap (false conflicts=0, missed=0)
+CHECK bits-02b PASS 55 distinct real lesson shapes: all 1540 pairs (incl. self) agree with minute overlap (disagreements=0); every start is :00 and a :50 end never shares a slot with a :00 start
+CHECK bits-02c PASS 328678 option-vs-option pairs of different courses in 24 sampled files: slot overlap == minute overlap (false=0, missed=0)
+options with two of their own groups overlapping in real minutes: 0 of 21670; single groups whose own meetings overlap: 0; examples: none
+CHECK bits-02e PASS no real option has two of its own lessons overlapping and no group has self-overlapping meetings (options=0/21670, groups=0)
+BUG bits-02f REPRODUCED synthetic lecture 10:00-11:50 + linked tutorial 11:00-12:50 same day -> buildOptions returns 1 option, its two lessons really overlap, nothing flags it
