@@ -201,3 +201,10 @@ test('summary reads a one-day exam gap ("לפחות יום אחד") as "1"', () 
   const res = { courses: ['A'], groups: ['a1'], breakdown: { compact: 1 }, explanation: 'בלי חלונות · לפחות יום אחד בין בחינות' };
   assert.equal(summary(res, data, []).examGap, '1');
 });
+
+test('summary lists Friday as free when the student wished it off', () => {
+  const data = { courses: { A: { credits: 3, groups: [{ id: 'a1', meetings: [m(1, '08:00', '10:00')] }] } } };
+  const res = { courses: ['A'], groups: ['a1'], breakdown: { compact: 1 }, explanation: '' };
+  assert.deepEqual(summary(res, data, [], { dayOff: [6] }).freeDays, [2, 3, 4, 5, 6]);
+  assert.deepEqual(summary(res, data, []).freeDays, [2, 3, 4, 5]);
+});

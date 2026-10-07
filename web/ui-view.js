@@ -102,7 +102,7 @@ export function renderView() {
   }
 
   if (res) {
-    const s = summary(res, data, state.friends);
+    const s = summary(res, data, state.friends, state.constraints);
     const fd = !s.freeDays.length ? 'אין יום פנוי' : s.freeDays.length === 1 ? `יום ${DAYS[s.freeDays[0]]}׳ פנוי` : `ימים ${s.freeDays.map((d) => `${DAYS[d]}׳`).join(', ')} פנויים`;
     const gap = s.gapH >= 10 ? 'יותר מ-10 שעות חלונות' : s.gapH ? `${count(s.gapH, 'שעת חלון אחת', 'שעות חלונות')}` : 'בלי חלונות';
     const exams = !data.examsPublished ? 'לוח הבחינות טרם פורסם' : s.examGap ? `לפחות ${esc(count(Number(s.examGap), 'יום אחד', 'ימים'))} בין בחינות` : 'פער בין בחינות: לא ידוע';
@@ -119,7 +119,7 @@ export function renderView() {
     const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת לך קורס חדש אחד' : `פותחת לך ${res.unlocks} קורסים חדשים`) : '';
     const infoLine = [blockingText && `קורסי קדם לקורסים אחרים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
     const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null; // what this alternative changes against the first one (§14ז)
-    const vs = best ? compareAlts({ ...res, ...s }, { ...best, ...summary(best, data, state.friends) }, data).map(esc).join(' · ') : '';
+    const vs = best ? compareAlts({ ...res, ...s }, { ...best, ...summary(best, data, state.friends, state.constraints) }, data).map(esc).join(' · ') : '';
 
     $('pills').innerHTML = [pill('calendar', courseCount(res.courses.length)), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar',
       `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))]
