@@ -892,3 +892,13 @@ test('with default settings the solver does not move a lesson to Friday to free 
   const r = search({ data: d, courses: musts('A', 'B'), weights: DEF_W, constraints: DEF_C });
   assert.ok(r.results[0].groups.includes('A1'), JSON.stringify(r.results.map((x) => [x.groups, x.score])));
 });
+
+test('searchYear warns when a lifted ב׳ pin kept the lecture but moved the pinned tutorial', () => {
+  const none = { Y1: yc('Y1', 3, []), Y2: yc('Y2', 3, []), Z: yc('Z', 3, []) };
+  const zt = (id, days) => ({ ...grp(id, days[0]), type: 'תרגול', primary: false, meetings: days.map((day) => ({ day, start: '08:00', end: '10:00' })) });
+  const dataB = semData('ב', { Y1: yc('Y1', 3, [grp('Y1B', 1)]), Y2: yc('Y2', 3, [grp('Y2B', 2)]),
+    Z: yc('Z', 3, [{ ...grp('ZL', 4), linked: ['ZT1', 'ZT2'] }, zt('ZT1', [1, 2]), zt('ZT2', [3])]) });
+  const p = best(searchYear({ dataA: semData('א', none), dataB, state: yState({ choices: { Y1: 'must', Y2: 'must', Z: 'optional' } }), pins: ['ZL', 'ZT1'], yearList: new Set(), weights: W }));
+  assert.ok(p.b.groups.includes('ZT2'), JSON.stringify(p.b.groups));
+  assert.ok(p.warnings.includes('הנעיצה של Z (ב׳) לא נשמרה: הקורס בקבוצה אחרת'), JSON.stringify(p.warnings));
+});

@@ -472,7 +472,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     if (!cands.length || cands.some((c) => !c.length)) continue;
     const combos = cands.reduce((acc, c) => acc.flatMap((done) => c.map((x) => [...done, x])), [[]]);
     for (const need of combos) {
-      const r = search({ ...argsA, courses: coursesA.map((c) => (need.includes(c.id) ? { ...c, mode: 'must' } : c)), topK: 1, timeLimitMs: Math.max(B_FLOOR,
+      const r = search({ ...argsA, courses: coursesA.map((c) => (need.includes(c.id) ? { ...c, mode: 'must' } : c)), topK: 1, why: false, timeLimitMs: Math.max(B_FLOOR,
         (deadline - Date.now()) / (must.size * combos.length + 1)) });
       partial ||= r.partial;
       const s = r.results[0];
@@ -492,7 +492,8 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
       .filter((c) => c.mode === 'must' || c.mode === 'optional')
       .map((c) => (pinnedB(c.id) ? { ...c, mode: 'must' } : c));
     const left = Math.max(B_FLOOR, (deadline - Date.now()) / (aList.length - i));
-    const args = { data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends, topK: B_K, timeLimitMs: left };
+    // why: false: the year search never shows a ב׳ search's own explanation, so it must not spend the budget on one
+    const args = { data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends, topK: B_K, timeLimitMs: left, why: false };
     let rb = search({ ...args, courses: coursesB });
     partial ||= rb.partial;
     if (!rb.results.length) {
@@ -545,7 +546,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     const yearProgress = (sumV(vA, a.courses) + sumV(vB, b?.courses ?? [])) / (yearMax || 1);
     const progressFix = Wp * (2 * yearProgress - (a.breakdown.progress ?? 0) - (b?.breakdown.progress ?? 0));
     // A relaxed ב׳ search may lift a pin and still place the course, in another group: say so.
-    const regrouped = (b?.courses ?? []).filter((id) => pinnedB(id) && !dataB.courses[id].groups.some((g) => pins.includes(g.id) && b.groups.includes(g.id)))
+    const regrouped = (b?.courses ?? []).filter((id) => pinnedB(id) && !dataB.courses[id].groups.every((g) => !pins.includes(g.id) || b.groups.includes(g.id)))
       .map((id) => `הנעיצה של ${dataB.courses[id].name} (ב׳) לא נשמרה: הקורס בקבוצה אחרת`);
     return {
       score: a.score + (b?.score ?? 0) + progressFix + LOAD_W * loadScore - MISSING_W * missing.length,
