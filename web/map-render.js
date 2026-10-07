@@ -1,6 +1,7 @@
 // Progress map, markup: the SVG graph and the list view as strings (all data escaped), from a context built by ui-map.js. No DOM, unit-tested.
 import { esc } from './app.js';
-import { icon, yedion } from './ui-grid.js';
+import { icon, yedion, renderWeek, hourRange, groupIndex, assignColors, repeatIds, isPair, semResult, resCourses, yearTotals } from './ui-grid.js';
+import { courseCount } from './ui-text.js';
 import { YEAR_LETTERS, planPaths, G, truncate } from './map-layout.js';
 
 // ---------- text helpers ----------
@@ -138,4 +139,36 @@ export function progressHtml(c) {
       class="pm-prog-spec">נותרו <b><bdi>${+specLeft.toFixed(1)}</bdi></b> נ״ז מקורסי ההתמחות</p>` : c.areas && c.year >= 2 && !c.specs?.length
       ? '<p class="pm-prog-spec"><a href="#me" data-pm="spec" data-k="pm-spec">בחרו התמחות ב״המצב שלי״ כדי לראות את קורסי החובה שלה</a></p>' : ''}${c.prog.untracked
       ? `<p class="pm-prog-spec">עוד <b><bdi>${c.prog.untracked}</bdi></b> נ״ז עד ${c.prog.degreeTotal} בתואר לא מופיעים ברשימות שבידיעון ולא נספרים כאן</p>` : ''}</div>`;
+}
+
+// ---------- the shown schedule alternative (header switcher + mini week pane) ----------
+// Switcher in the map header: the same choice as the board's arrows (ui.cur). Disabled while a search runs (its result resets ui.cur).
+export function altBarHtml({ k, n, running, summer }) {
+  if (n < 2) return '';
+  const dis = running ? ' disabled' : '';
+  const btn = (d, k2, label, ic) => `<button type="button" class="pm-ibtn" data-pm="alt" data-d="${d}" data-k="${k2}" aria-label="${label}"${dis}>${icon(ic)}</button>`;
+  const label = running ? 'מחפש חלופות…' : `<span class="long">חלופה </span><b>${k + 1}</b><span class="long"> מתוך </span><span class="short"
+    aria-hidden="true">/</span><b>${n}</b>${summer ? '<span class="long"> (קיץ)</span>' : ''}`;
+  return `<div class="pm-alt" role="group" aria-label="מעבר בין חלופות">${btn(-1, 'pm-prev', 'החלופה הקודמת', 'chevron-right')}<span
+    class="pm-alt-l">${label}</span>${btn(1, 'pm-next', 'החלופה הבאה', 'chevron-left')}</div>`;
+}
+
+export const miniTotals = (raw, data) => (isPair(raw) ? yearTotals(raw) : { courses: raw.courses.length, credits: raw.courses.reduce((a, c) => a
+  + (data.courses[c]?.credits ?? 0), 0) });
+
+// Mini week pane: the board's grid (renderWeek), shrunk by CSS and inert. The board's hooks (data-act, data-k) are stripped so a click opens
+// nothing behind the modal and keepFocus never finds a twin of a board key. Colours: a copy per grid, the board's sticky map is not touched.
+export function miniHtml({ raw, sem, data, colors, k, open }) {
+  if (!raw || !resCourses(raw).length) return '';
+  const parts = isPair(raw) ? [['א', sem['א']], ['ב', sem['ב']]].map(([s, d]) => ({ s, d, res: semResult(raw, s) })) : [{ d: data, res: raw }];
+  const range = hourRange(parts.flatMap(({ d, res }) => res.groups.flatMap((g) => groupIndex(d).get(g)?.g.meetings ?? [])));
+  const grid = ({ d, res }) => {
+    const copy = assignColors(new Map(colors), res.courses);
+    return renderWeek({ data: d, res, range, colors: copy, dashed: repeatIds(copy, res.courses), pins: [], friends: [], day: 0 }).replace(/ data-(?:act|k)="[^"]*"/g, '');
+  };
+  const t = miniTotals(raw, data);
+  return `<details class="pm-mini"${open ? ' open' : ''}><summary data-k="pm-mini">המערכת הנבחרת</summary>
+    <p class="pm-mini-s">חלופה ${k + 1} · ${courseCount(t.courses)} · <bdi>${t.credits}</bdi> נ״ז</p>
+    <div class="pm-mini-g" inert>${parts.map((p) => (p.s ? `<figure class="pm-mini-w"><figcaption>סמסטר ${p.s}׳</figcaption>${grid(p)}</figure>`
+    : grid(p))).join('')}</div></details>`;
 }

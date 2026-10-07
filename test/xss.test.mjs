@@ -43,7 +43,7 @@ const { renderDrawer } = await import('../web/ui-drawer.js');
 const { openPop, groupIndex } = await import('../web/ui-grid.js');
 const { openFriendEditor } = await import('../web/ui-friend-editor.js');
 const { layoutMap, geometry } = await import('../web/map-layout.js');
-const { mapSvg } = await import('../web/map-render.js');
+const { mapSvg, miniHtml } = await import('../web/map-render.js');
 await import('../web/ui-map.js'); // the dialog module loads without a browser too
 const { searchYear } = await import('../web/solver-core.js');
 
@@ -96,6 +96,7 @@ run('map', () => {
   const L = layoutMap(app.data), html = mapSvg({ data: app.data, st: app.cls.statuses, L, g: geometry(L, (id) => app.data.courses[id]?.credits), year: 2, unlocks: {}, mode: 'all', plan: new Set() });
   writes.push({ scope: 'map', id: 'svg', html });
 });
+run('map-mini', () => { writes.push({ scope: 'map-mini', id: 'mini', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true }) }); });
 run('friend-editor', () => { openFriendEditor({ friend: app.state.friends[0], onSave: () => null, returnFocusId: 'x' }); });
 
 test('the search found plans, so the board and the registration list render real data', () => {
@@ -103,7 +104,7 @@ test('the search found plans, so the board and the registration list render real
 });
 
 test('every renderer got the payload and wrote it escaped (no element or on* attribute created from data)', () => {
-  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'drawer-prefs', 'drawer-friends', 'drawer-reg', 'pop', 'map', 'friend-editor'];
+  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'drawer-prefs', 'drawer-friends', 'drawer-reg', 'pop', 'map', 'map-mini', 'friend-editor'];
   for (const s of scopes) {
     const mine = writes.filter((w) => w.scope === s);
     assert.ok(mine.length, `${s}: nothing written`);
