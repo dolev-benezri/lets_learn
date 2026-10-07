@@ -1,6 +1,6 @@
 // Progress map, markup: the SVG graph and the list view as strings (all data escaped), from a context built by ui-map.js. No DOM, unit-tested.
 import { esc } from './app.js';
-import { icon, yedion, renderWeek, hourRange, groupIndex, assignColors, repeatIds, isPair, semResult, resCourses, yearTotals } from './ui-grid.js';
+import { icon, yedion, nameHtml, renderWeek, hourRange, groupIndex, assignColors, repeatIds, isPair, semResult, resCourses, yearTotals } from './ui-grid.js';
 import { courseCount } from './ui-text.js';
 import { YEAR_LETTERS, planPaths, G, truncate } from './map-layout.js';
 
@@ -58,8 +58,8 @@ function nodeSvg(c, n) {
   const co = c.data.courses[n.id], s = statusOf(c, n.id), o = c.unlocks[n.id] ?? 0, bw = o > 9 ? 52 : 46, planned = inPlan(c, n.id), lbl = nodeLabel(c, n.id, yr) + (planned ? ', בתכנון' : '');
   return `<g class="nd st-${s}${mine ? ' mine' : ''}${planned ? ' plan' : ''}" role="button" tabindex="0" data-key="${esc(n.key)}" data-k="mn-${esc(n.id)}"
     aria-pressed="false" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
-    ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}${planned ? `<circle class="plan-ring" cx="${x}" cy="${y}" r="${n.r + 4}"/>`
-      : ''}<circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring"
+    ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}<circle class="plan-ring" cx="${x}" cy="${y}" r="${n.r + 4}"/>
+    <circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring"
       cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
     <text class="nm" x="${x}" y="${num(y + n.r + 16)}" text-anchor="middle">${esc(truncate(co.name))}</text>${o ? `<g class="opens" aria-hidden="true"><rect
       x="${num(x - n.r * 0.8 - bw / 2)}" y="${num(y - n.r * 0.85 - 8)}" width="${bw}" height="16" rx="8"/><text x="${num(x - n.r * 0.8)}"
@@ -159,17 +159,46 @@ export const miniTotals = (raw, data) => (isPair(raw) ? yearTotals(raw) : { cour
 
 // Mini week pane: the board's grid (renderWeek), shrunk by CSS and inert. The board's hooks (data-act, data-k) are stripped so a click opens
 // nothing behind the modal and keepFocus never finds a twin of a board key. Colours: a copy per grid, the board's sticky map is not touched.
-export function miniHtml({ raw, sem, data, colors, k, open }) {
+export function miniHtml({ raw, sem, data, colors, k, open, abbr = false }) {
   if (!raw || !resCourses(raw).length) return '';
-  const parts = isPair(raw) ? [['א', sem['א']], ['ב', sem['ב']]].map(([s, d]) => ({ s, d, res: semResult(raw, s) })) : [{ d: data, res: raw }];
+  const parts = (isPair(raw) ? [['א', sem['א']], ['ב', sem['ב']]].map(([s, d]) => ({ s, d, res: semResult(raw, s) })) : [{ d: data, res: raw }])
+    .map((p) => ({ ...p, copy: assignColors(new Map(colors), p.res.courses) }));
   const range = hourRange(parts.flatMap(({ d, res }) => res.groups.flatMap((g) => groupIndex(d).get(g)?.g.meetings ?? [])));
-  const grid = ({ d, res }) => {
-    const copy = assignColors(new Map(colors), res.courses);
-    return renderWeek({ data: d, res, range, colors: copy, dashed: repeatIds(copy, res.courses), pins: [], friends: [], day: 0 }).replace(/ data-(?:act|k)="[^"]*"/g, '');
+  const legend = [...new Map(parts.flatMap((p) => p.res.courses.map((cid) => [cid, { name: p.d.courses[cid]?.name ?? cid, col: p.copy.get(cid) }]))).entries()];
+  const abbrs = new Map(uniqueAbbrs(legend.map(([, x]) => x.name)).map((a, i) => [legend[i][0], a]));
+  // The board's block buttons become plain divs: no data-act / data-k (a click opens nothing behind the modal, keepFocus finds no twin of a board
+  // key), no tab stop; each carries its abbreviation, shown by CSS while the toggle is on. Hover and tap read the block's own text (ui-map.js).
+  const grid = ({ d, res, copy }) => {
+    const cidOf = new Map([...groupIndex(d)].map(([gid, x]) => [esc(gid), x.cid]));
+    return renderWeek({ data: d, res, range, colors: copy, dashed: repeatIds(copy, res.courses), pins: [], friends: [], day: 0 })
+      .replace(/ data-(?:act|k)="[^"]*"/g, '').replace(/ aria-haspopup="dialog"/g, '')
+      .replace(/<button type="button" class="blk([^"]*)" data-gid="([^"]*)"([^>]*)>/g, (m, cls, gid, rest) => `<div class="blk${cls}" data-gid="${gid}"${rest}>${
+        `<span class="blk-ab" aria-hidden="true">${esc(abbrs.get(cidOf.get(gid)) ?? '')}</span>`}`).replace(/<\/button>/g, '</div>');
   };
   const t = miniTotals(raw, data);
-  return `<details class="pm-mini"${open ? ' open' : ''}><summary data-k="pm-mini">המערכת הנבחרת</summary>
-    <p class="pm-mini-s">חלופה ${k + 1} · ${courseCount(t.courses)} · <bdi>${t.credits}</bdi> נ״ז</p>
-    <div class="pm-mini-g" inert>${parts.map((p) => (p.s ? `<figure class="pm-mini-w"><figcaption>סמסטר ${p.s}׳</figcaption>${grid(p)}</figure>`
-    : grid(p))).join('')}</div></details>`;
+  return `<details class="pm-mini${abbr ? ' ab' : ''}"${open ? ' open' : ''}><summary data-k="pm-mini">המערכת הנבחרת</summary>
+    <div class="pm-mini-top"><p class="pm-mini-s">חלופה ${k + 1} · ${courseCount(t.courses)} · <bdi>${t.credits}</bdi> נ״ז</p><button type="button"
+      class="pm-btn pm-ab" data-pm="abbr" data-k="pm-abbr" aria-pressed="${abbr}">ראשי תיבות</button></div>
+    <p class="pm-mini-c" aria-hidden="true">רחפו או הקישו על קורס כדי לראות מה הוא</p>
+    <div class="pm-mini-g" aria-hidden="true">${parts.map((p) => (p.s ? `<figure class="pm-mini-w"><figcaption>סמסטר ${p.s}׳</figcaption>${grid(p)}</figure>`
+    : grid(p))).join('')}</div>
+    <ul class="pm-mini-l${abbr ? '' : ' sr'}">${legend.map(([cid, x]) => `<li data-c="${esc(cid)}"><i class="sw c${x.col ?? 7}" aria-hidden="true"></i><b>${esc(abbrs.get(cid))}</b>
+      ${nameHtml(x.name)}</li>`).join('')}</ul></details>`;
+}
+
+// Course abbreviations for the mini pane: word initials with gershayim before the last letter ("מבוא למדעי המחשב" -> מל״ה), a trailing number or
+// roman/Hebrew ordinal kept ("פיזיקה 1" -> פיז 1), one word -> its first 3 letters, Latin -> capitals. `extra` lengthens the last word on a clash.
+const SUFFIX = /^(\d+|[IVX]+|[א-ת]['׳])$/;
+function abbrOf(name, extra = 0) {
+  const w = String(name).split(/[\s\-–,()]+/).filter(Boolean);
+  const suf = w.length > 1 && SUFFIX.test(w.at(-1)) ? ` ${w.pop()}` : '';
+  if (w.length < 2) return Array.from(w[0] ?? '').slice(0, 3 + extra).join('') + suf;
+  const ws = w.slice(0, 3), l = [...ws.map((x) => Array.from(x)[0]), ...Array.from(ws.at(-1)).slice(1, 1 + extra)];
+  if (/^[A-Za-z]/.test(ws[0])) return l.join('').toUpperCase() + suf;
+  return (/[א-ת]/.test(l.at(-1)) ? `${l.slice(0, -1).join('')}״${l.at(-1)}` : l.join('')) + suf;
+}
+export const courseAbbr = (name) => abbrOf(name);
+export function uniqueAbbrs(names) {
+  const seen = new Set();
+  return names.map((n) => { let a = abbrOf(n), e = 0; while (seen.has(a) && e < 6) a = abbrOf(n, ++e); seen.add(a); return a; });
 }

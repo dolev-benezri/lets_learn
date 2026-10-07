@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { layoutMap, planPaths, progressInfo, newlyUnlocked, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, wheelStep, courseYears, asideIds } from '../web/map-layout.js';
-import { progressHtml, mapSvg, altBarHtml, miniHtml, miniTotals } from '../web/map-render.js';
+import { progressHtml, mapSvg, altBarHtml, miniHtml, miniTotals, courseAbbr, uniqueAbbrs } from '../web/map-render.js';
 import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
@@ -280,9 +280,9 @@ test('planPaths: edges out of a planned course, and the "או" hop after a plann
 test('mapSvg: planned courses get the plan marker and their edges are highlighted; a passed course is never marked', () => {
   const d = mini({ a: mc('A'), b: mc('B', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }] }]), c: mc('C') }), L = layoutMap(d), g = geometry(L, () => 3);
   const html = mapSvg({ data: d, st: { c: { status: 'done' } }, L, g, year: 1, unlocks: {}, mode: 'all', plan: new Set(['a', 'c']) });
-  assert.equal((html.match(/class="plan-ring"/g) ?? []).length, 1); // a only
+  assert.equal((html.match(/<g class="nd [^"]* plan"/g) ?? []).length, 1); // a only (every node has a ring; the class shows it)
   assert.ok(html.includes('בתכנון') && html.includes('class="e k plan"'));
-  assert.ok(!mapSvg({ data: d, st: {}, L, g, year: 1, unlocks: {}, mode: 'all' }).includes('plan-ring'));
+  assert.ok(!/<g class="nd [^"]* plan"/.test(mapSvg({ data: d, st: {}, L, g, year: 1, unlocks: {}, mode: 'all' })));
 });
 
 test('progressInfo: a course counts once, a list never past its minimum; plan credits count only for what is not done', () => {
@@ -418,10 +418,11 @@ test('altBarHtml fits a phone header: summer says "קיץ:" instead of a suffix,
   const r = altBarHtml({ k: 0, n: 10, running: true, summer: false });
   assert.match(r, /<span class="long">מחפש חלופות…<\/span><span class="short">מחפש…<\/span>/);
 });
-test('miniHtml: a year pair draws both semesters, inert, with no board hooks', () => {
+test('miniHtml: a year pair draws both semesters, hidden from screen readers, with no board hooks', () => {
   const colors = new Map([[xa.cid, 3]]), before = [...colors];
   const h = miniHtml({ raw: pair, sem: { 'א': A, 'ב': B }, data: A, colors, k: 1, open: true });
-  assert.ok(h.includes('סמסטר א׳') && h.includes('סמסטר ב׳') && h.includes(' inert') && h.includes('<details class="pm-mini" open'));
+  assert.ok(h.includes('סמסטר א׳') && h.includes('סמסטר ב׳') && h.includes('<details class="pm-mini" open'));
+  assert.ok(h.includes('class="pm-mini-g" aria-hidden="true"') && !h.includes(' inert') && !h.includes('<button type="button" class="blk'));
   assert.ok(!/data-act=/.test(h) && !/data-k="b-/.test(h));
   assert.ok(h.includes('חלופה 2'));
   assert.deepEqual([...colors], before); // the board's sticky colours are untouched
@@ -434,4 +435,30 @@ test('miniHtml: nothing without a result; one grid for a one-semester result', (
 test('miniTotals: year pair sums both semesters, a single result sums its credits', () => {
   assert.deepEqual(miniTotals(pair, A), { courses: 2, credits: xa.cr + xb.cr });
   assert.deepEqual(miniTotals(half(xa), A), { courses: 1, credits: xa.cr });
+});
+
+// ---------- round 2: course names in the mini pane, a plan ring on every course node ----------
+test('courseAbbr: word initials with gershayim, a trailing number kept, one word = 3 letters, Latin in capitals', () => {
+  assert.equal(courseAbbr('מבוא למדעי המחשב'), 'מל״ה');
+  assert.equal(courseAbbr('פיזיקה 1'), 'פיז 1');
+  assert.equal(courseAbbr('סטטיקה'), 'סטט');
+  assert.equal(courseAbbr('חשבון דיפרנציאלי ואינטגרלי 2'), 'חד״ו 2');
+  assert.equal(courseAbbr('Machine Learning'), 'ML');
+});
+test('uniqueAbbrs: two names with the same initials get different abbreviations, the first keeps its own', () => {
+  const [a, b] = uniqueAbbrs(['מבוא למדעי המחשב', 'מבוא לתורת המחשבים']);
+  assert.equal(a, 'מל״ה'); assert.notEqual(a, b);
+});
+test('miniHtml: an identify line, the abbreviation toggle, a legend with each course once', () => {
+  const off = miniHtml({ raw: pair, sem: { 'א': A, 'ב': B }, data: A, colors: new Map(), k: 0, open: true, abbr: false });
+  assert.ok(off.includes('class="pm-mini-c"') && off.includes('data-pm="abbr"') && off.includes('aria-pressed="false"'));
+  assert.ok(off.includes('<ul class="pm-mini-l sr">') && !off.includes('class="pm-mini ab"'));
+  for (const id of [xa.cid, xb.cid]) assert.equal(off.split(`<li data-c="${id}">`).length - 1, 1, id);
+  const on = miniHtml({ raw: pair, sem: { 'א': A, 'ב': B }, data: A, colors: new Map(), k: 0, open: true, abbr: true });
+  assert.ok(on.includes('<details class="pm-mini ab" open') && on.includes('aria-pressed="true"') && on.includes('<ul class="pm-mini-l">'));
+  assert.ok(on.includes(`<span class="blk-ab" aria-hidden="true">${courseAbbr(A.courses[xa.cid].name)}`));
+});
+test('mapSvg: every course node carries a plan ring (hidden off-plan), so a switch only changes classes', () => {
+  const { L, g } = geo(), html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() });
+  assert.equal((html.match(/class="plan-ring"/g) ?? []).length, (html.match(/<g class="nd /g) ?? []).length);
 });

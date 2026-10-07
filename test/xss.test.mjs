@@ -96,7 +96,8 @@ run('map', () => {
   const L = layoutMap(app.data), html = mapSvg({ data: app.data, st: app.cls.statuses, L, g: geometry(L, (id) => app.data.courses[id]?.credits), year: 2, unlocks: {}, mode: 'all', plan: new Set() });
   writes.push({ scope: 'map', id: 'svg', html });
 });
-run('map-mini', () => { writes.push({ scope: 'map-mini', id: 'mini', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true }) }); });
+run('map-mini', () => { writes.push({ scope: 'map-mini', id: 'mini', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true }) });
+  writes.push({ scope: 'map-mini', id: 'mini-ab', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true, abbr: true }) }); });
 run('friend-editor', () => { openFriendEditor({ friend: app.state.friends[0], onSave: () => null, returnFocusId: 'x' }); });
 
 test('the search found plans, so the board and the registration list render real data', () => {
