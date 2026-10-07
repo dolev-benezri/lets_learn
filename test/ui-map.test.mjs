@@ -464,8 +464,9 @@ test('miniHtml: an identify line, the abbreviation toggle, a legend with each co
   assert.ok(off.includes('class="pm-mini-c"') && off.includes('data-pm="abbr"') && off.includes('aria-pressed="false"'));
   assert.ok(off.includes('<ul class="pm-mini-l sr">') && !off.includes('class="pm-mini ab"'));
   for (const id of [xa.cid, xb.cid]) assert.equal(off.split(`<li data-c="${id}">`).length - 1, 1, id);
+  assert.ok(off.includes('<b aria-hidden="true">')); // a hidden legend does not read its abbreviations to a screen reader
   const on = miniHtml({ raw: pair, sem: { 'א': A, 'ב': B }, data: A, colors: new Map(), k: 0, open: true, abbr: true });
-  assert.ok(on.includes('<details class="pm-mini ab" open') && on.includes('aria-pressed="true"') && on.includes('<ul class="pm-mini-l">'));
+  assert.ok(on.includes('<details class="pm-mini ab" open') && on.includes('aria-pressed="true"') && on.includes('<ul class="pm-mini-l">') && !/<li[^>]*><i[^>]*><\/i><b aria-hidden/.test(on));
   assert.ok(on.includes(`<span class="blk-ab" aria-hidden="true">${courseAbbr(A.courses[xa.cid].name)}`));
 });
 test('mapSvg: every course node carries a plan ring (hidden off-plan), so a switch only changes classes', () => {

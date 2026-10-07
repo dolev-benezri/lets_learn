@@ -62,8 +62,8 @@ function select(key) {
   light();
 }
 
-function render() {
-  const c = M.c = ctxOf(M.mode), map = M.view === 'map', empty = !c.L.nodes.length;
+function render(ctx = ctxOf(M.mode)) {
+  const c = M.c = ctx, map = M.view === 'map', empty = !c.L.nodes.length;
   const total = Object.keys(c.data.courses).length, done = Object.values(c.st).filter((s) => ['done', 'exempt'].includes(s.status)).length;
   if (M.sel && !c.L.nodes.some((n) => n.key === M.sel)) M.sel = null;
   const emptyMsg = M.mode === 'remaining' ? 'אין קורסים להצגה: עברתם או קיבלתם פטור מכל הקורסים.' : 'אין קורסים להצגה.';
@@ -277,6 +277,7 @@ function onClick(e) {
     M.abbr = !M.abbr;
     q('.pm-mini')?.classList.toggle('ab', M.abbr);
     q('.pm-mini-l')?.classList.toggle('sr', !M.abbr);
+    q('.pm-mini-l')?.querySelectorAll('b').forEach((x) => (M.abbr ? x.removeAttribute('aria-hidden') : x.setAttribute('aria-hidden', 'true')));
     b.setAttribute('aria-pressed', String(M.abbr));
   }
   else if (act === 'view') { M.view = M.view === 'map' ? 'list' : 'map'; M.notice = ''; redraw(); }
@@ -297,7 +298,7 @@ function setup() {
     // In place only for the same nodes and the same statuses (restyle moves the plan, not st-* classes); else a full redraw (list view too).
     if (!(M.view === 'map' && M.pz && c.st === M.c.st && keys(c) === keys(M.c) && restyle(c))) {
       const keep = M.pz ? { s: M.pz.getScale(), ...M.pz.getPan() } : null;
-      keepFocus(render);
+      keepFocus(() => render(c));
       mount(keep);
     }
     if (M.switched) { M.switched = false; spot(); }

@@ -249,7 +249,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-mini.ab .wk { --ppm:.24px; }
 .pmap .pm-mini.ab .blk > .blk-ab { display:block; padding-top:1px; font-size:9px; line-height:1; font-weight:600; color:var(--cfg); text-align:center; white-space:nowrap;
   overflow:hidden; }
-@container (max-height:10px) { .pmap .pm-mini.ab .blk > .blk-ab { display:none; } } /* too short for a letter */
+@container (height < 11px) { .pmap .pm-mini.ab .blk > .blk-ab { display:none; } } /* too short for a letter */
 .pmap .pm-mini-l { list-style:none; margin:0; padding:0 14px 10px; display:grid; gap:3px; font-size:var(--fs-xs); }
 .pmap .pm-mini-l li { display:flex; align-items:baseline; gap:6px; }
 .pmap .pm-mini-l .sw { flex:none; width:10px; height:10px; border-radius:3px; background:var(--cbg); border-inline-start:3px solid var(--cfg); }

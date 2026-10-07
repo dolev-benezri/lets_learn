@@ -107,7 +107,7 @@ export function listHtml(c) {
 
 // Electives the student did not choose: listed, not drawn.
 export const asideHtml = (c) => (c.aside.length ? `<details
-  class="pm-aside"><summary>לא רלוונטי (<bdi>${c.aside.length}</bdi>)</summary><p>קורסי בחירה
+  class="pm-aside"><summary><span>לא רלוונטי (<bdi>${c.aside.length}</bdi>)</span></summary><p>קורסי בחירה
     שלא סימנתם ״חובה״ או ״אולי״.</p><ul>${c.aside.map((id) => `<li>${esc(c.data.courses[id].name)} <bdi>${esc(id)}</bdi></li>`).join('')}</ul></details>`
   : '');
 
@@ -184,7 +184,8 @@ export function miniHtml({ raw, sem, data, colors, k, open, abbr = false }) {
     <p class="pm-mini-c" aria-hidden="true">${MINI_HINT}</p>
     <div class="pm-mini-g" aria-hidden="true">${parts.map((p) => (p.s ? `<figure class="pm-mini-w"><figcaption>סמסטר ${p.s}׳</figcaption>${grid(p)}</figure>`
     : grid(p))).join('')}</div>
-    <ul class="pm-mini-l${abbr ? '' : ' sr'}">${legend.map(([cid, x]) => `<li data-c="${esc(cid)}"><i class="sw c${x.col ?? 7}" aria-hidden="true"></i><b>${esc(abbrs.get(cid))}</b>
+    <ul class="pm-mini-l${abbr ? '' : ' sr'}">${legend.map(([cid, x]) => `<li data-c="${esc(cid)}"><i class="sw c${x.col ?? 7}" aria-hidden="true"></i>
+      <b${abbr ? '' : ' aria-hidden="true"'}>${esc(abbrs.get(cid))}</b>
       ${nameHtml(x.name)}</li>`).join('')}</ul></details>`;
 }
 
