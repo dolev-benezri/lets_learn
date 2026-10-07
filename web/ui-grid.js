@@ -1,6 +1,6 @@
 // Week grid, block popover and the small pure helpers behind them (hour range, pills summary, scale steps).
 import { esc } from './app.js';
-import { toMin, meetingsMask, overlaps, buildOptions } from './solver-core.js';
+import { toMin, meetingsMask, overlaps, buildOptions, freeDayCandidates } from './solver-core.js';
 import { groupLabel, groupNumber, heb } from './ui-text.js';
 // A course name as HTML: escaped, with its Latin runs marked lang="en" so a Hebrew screen reader voice says "IOS", not letters. Entities (&lt;) are not words.
 export const nameHtml = (t) => esc(heb(t)).replace(/(?<![&\w])[A-Za-z](?:[A-Za-z0-9 .,+-]*[A-Za-z0-9])?(?![\w;])/g, (m) => `<span lang="en">${m}</span>`);
@@ -137,12 +137,12 @@ export function hourRange(meetings) {
 }
 
 // Summary pills for one alternative: credits and free days from its groups, gaps from breakdown, exam gap from explanation.
-export function summary(res, data, friends) {
+export function summary(res, data, friends, constraints = {}) {
   const byId = groupIndex(data);
   const busy = new Set(res.groups.flatMap((g) => byId.get(g)?.g.meetings.map((m) => m.day) ?? []));
   return {
     credits: res.courses.reduce((a, c) => a + data.courses[c].credits, 0),
-    freeDays: [1, 2, 3, 4, 5].filter((d) => !busy.has(d)),
+    freeDays: freeDayCandidates(constraints).filter((d) => !busy.has(d)),
     gapH: Math.round((1 - res.breakdown.compact) * 100) / 10,
     withFriends: friends.filter((f) => f.active).map((f) => ({
       name: f.name,

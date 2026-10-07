@@ -875,3 +875,20 @@ test('no plan although any two must courses fit and no single constraint is to b
   const t = why(set({ A: two('a'), B: two('b'), C: two('c') }), musts('A', 'B', 'C'));
   assert.ok(t.includes('קורסי החובה לא נכנסים יחד') && !t.startsWith(GENERIC), t);
 });
+
+// ---- stage 7 (issue #7): Friday is a free day when the student wished it off (D1) ----
+const DEF_W = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, DEF_C = { dayOff: [6], notAfter: '20:00' };
+
+test('with the default wished day off, a free Friday counts as a free day', () => {
+  const r = search({ data: set({ A: one([grp('A1', 1)]) }), courses: musts('A'), weights: DEF_W, constraints: DEF_C });
+  assert.equal(r.results[0].breakdown.freeDays, 1); // Monday-Thursday and Friday: 5 free days
+  assert.match(r.results[0].explanation, /יום ו' פנוי/);
+  const plain = search({ data: set({ A: one([grp('A1', 1)]) }), courses: musts('A'), weights: DEF_W, constraints: { dayOff: [] } });
+  assert.equal(plain.results[0].breakdown.freeDays, 4 / 5, 'a student who studies on Friday: Sunday-Thursday only');
+});
+
+test('with default settings the solver does not move a lesson to Friday to free a weekday', () => {
+  const d = set({ A: one([grp('A1', 2, '08:00', '08:50'), grp('A2', 6, '08:00', '08:50')]), B: one([grp('B1', 1)]) });
+  const r = search({ data: d, courses: musts('A', 'B'), weights: DEF_W, constraints: DEF_C });
+  assert.ok(r.results[0].groups.includes('A1'), JSON.stringify(r.results.map((x) => [x.groups, x.score])));
+});

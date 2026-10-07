@@ -28,6 +28,10 @@ const daysUsed = (mask) => mask.filter((m, d) => d >= 1 && m !== 0).length; // c
 export const forbiddenBy = (c = {}) => (m) => !!(m.day && ((c.blocks ?? []).some((b) => b.day === m.day && toMin(m.start) < toMin(b.end) && toMin(b.start) < toMin(m.end))
   || (c.dayOffHard && c.dayOff?.includes(m.day)) || (c.windowHard && outsideMin(m, { ...c, dayOff: [] }) > 0)));
 
+// Days that count as free when they have no lesson: Sunday-Thursday, and Friday when the student wished it off (the default),
+// so a lesson is never pushed to Friday to free a weekday. The score keeps /5: a plan has a lesson on at least one of these days.
+export const freeDayCandidates = (c = {}) => [1, 2, 3, 4, 5, 6].filter((d) => d <= 5 || c.dayOff?.includes(d));
+
 // Minutes of a lesson outside what the student wished: all of it on a wished day off, else what lies before notBefore or after notAfter.
 export const outsideMin = (m, c = {}) => {
   if (!m.day) return 0;
@@ -180,7 +184,7 @@ function metrics(sel, mask, ctx) {
   }
 
   const value = sel.reduce((a, o) => a + ctx.value[o.course], 0);
-  const freeDays = [1, 2, 3, 4, 5].filter((d) => mask[d] === 0);
+  const freeDays = ctx.freeCand.filter((d) => mask[d] === 0);
 
   // ponytail: gaps measured at 30-min slot granularity
   let gapMin = 0;
@@ -268,7 +272,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     return { id, mode, credits: c.credits, options };
   }).sort((a, b) => a.options.length - b.options.length);
 
-  const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished };
+  const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished, freeCand: freeDayCandidates(constraints) };
   const noExamClash = data.examsPublished && constraints.examsSameDay !== 'allow';
   const conditional = courses.filter(({ id }) => statuses[id]?.missingParallel).map(({ id }) => ({ id, needs: statuses[id].missingParallel }));
   const top = [];
@@ -303,7 +307,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   }
   function bound(i, mask, val) {
     let free = 0;
-    for (let d = 1; d <= 5; d++) if (mask[d] === 0) free++;
+    for (const d of ctx.freeCand) if (mask[d] === 0) free++;
     const outside = sel.reduce((a, o) => a + o.out, 0); // outside minutes only grow as courses are added
     let b = fixedUp + W('friends') * friendsUp(i) + W('progress') * ((val + restValue[i]) / ctx.maxValue) + W('freeDays') * (free / 5) + W('timeWindow') * (1 - Math.min(outside / 600, 1));
     if (ctx.examsPublished && W('examSpread')) {
