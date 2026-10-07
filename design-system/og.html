@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<!-- Source of web/og.png (1200x630). Render: chrome --headless=new --hide-scrollbars --allow-file-access-from-files --window-size=1200,630 --screenshot=og.png design-system/og.html -->
+<style>
+@font-face { font-family:"Rubik"; font-weight:300 900; src:url(../web/fonts/rubik-hebrew-wght-normal.woff2) format("woff2"); unicode-range:U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family:"Rubik"; font-weight:300 900; src:url(../web/fonts/rubik-latin-wght-normal.woff2) format("woff2"); }
+:root {
+  --bg:#F6F7FB; --surface:#fff; --border:#E3E7EF; --text:#101828; --text-2:#475467; --text-3:#667085;
+  --primary:#2563EB; --primary-hover:#1D4ED8; --primary-soft:#EAF1FE; --friend:#F79009;
+  --c0-bg:#EAF1FE; --c0-fg:#1D4ED8; --c1-bg:#E7F6EF; --c1-fg:#0B6E4F; --c2-bg:#F3EEFE; --c2-fg:#6D28D9;
+  --c3-bg:#FDEEF4; --c3-fg:#BE185D; --c4-bg:#FEF4E6; --c4-fg:#A15C07; --c5-bg:#E6F6F8; --c5-fg:#0E7490;
+}
+* { box-sizing:border-box; margin:0; }
+html, body { width:1200px; height:630px; overflow:hidden; }
+body { font-family:"Rubik", system-ui, sans-serif; color:var(--text); position:relative;
+  background:
+    radial-gradient(700px 420px at 100% 0%, #DCE7FD 0%, transparent 70%),
+    radial-gradient(520px 380px at 0% 100%, #EFE8FE 0%, transparent 70%),
+    var(--bg); }
+body::before { content:""; position:absolute; inset:0;
+  background-image:radial-gradient(#C9D3E3 1.2px, transparent 1.2px); background-size:24px 24px; opacity:.45;
+  -webkit-mask-image:linear-gradient(90deg, #000 0%, transparent 55%); mask-image:linear-gradient(90deg, #000 0%, transparent 55%); }
+.top { position:absolute; inset:0 0 auto; height:8px; background:linear-gradient(90deg, #6D28D9, var(--primary) 60%, #0E7490); }
+
+/* text column (right side in RTL) */
+.copy { position:absolute; top:78px; right:68px; width:520px; }
+.tag { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:999px; background:var(--surface);
+  border:1px solid var(--border); font-size:17px; font-weight:500; color:var(--text-2); box-shadow:0 1px 2px rgba(16,24,40,.05); }
+.tag i { width:8px; height:8px; border-radius:50%; background:#12B76A; box-shadow:0 0 0 3px #D1FADF; }
+h1 { margin-top:24px; white-space:nowrap; font-size:88px; line-height:1; font-weight:800; letter-spacing:-1px; }
+h2 { margin-top:14px; font-size:40px; line-height:1.15; font-weight:600; color:var(--primary); }
+ul { list-style:none; padding:0; margin-top:34px; display:grid; gap:16px; }
+li { display:flex; align-items:center; gap:14px; font-size:24px; font-weight:500; color:var(--text-2); }
+li .ic { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:12px; background:var(--surface);
+  border:1px solid var(--border); box-shadow:0 1px 2px rgba(16,24,40,.06); }
+li svg { width:24px; height:24px; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.url { position:absolute; bottom:44px; right:72px; display:flex; align-items:center; gap:10px; font-size:20px; color:var(--text-3); }
+.url b { font-weight:600; color:var(--text); direction:ltr; }
+.url svg { width:20px; height:20px; stroke:var(--primary); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* week card (left side) */
+.card { position:absolute; top:62px; left:60px; width:540px; height:470px; background:var(--surface); border:1px solid var(--border);
+  border-radius:20px; box-shadow:0 24px 48px -12px rgba(16,24,40,.18), 0 4px 10px rgba(16,24,40,.05); padding:18px 18px 16px; }
+.bar { display:flex; align-items:center; justify-content:space-between; }
+.alt { display:flex; align-items:center; gap:8px; font-size:16px; color:var(--text-2); }
+.alt b { color:var(--text); font-weight:700; }
+.chev { width:28px; height:28px; display:grid; place-items:center; border:1px solid var(--border); border-radius:8px; }
+.chev svg { width:16px; height:16px; stroke:var(--text-2); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.stack { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text-2); }
+.avs { display:flex; }
+.av { width:28px; height:28px; display:grid; place-items:center; border-radius:50%; background:var(--surface); border:2px solid var(--surface);
+  box-shadow:0 0 0 2px var(--friend); font-size:13px; font-weight:600; }
+.av + .av { margin-inline-start:-6px; }
+.grid { position:relative; margin-top:14px; display:grid; grid-template-columns:38px repeat(5, 1fr); grid-template-rows:26px repeat(8, 45px); }
+.d { font-size:14px; font-weight:600; color:var(--text-2); text-align:center; }
+.h { font-size:12px; color:var(--text-3); text-align:center; transform:translateY(-7px); }
+.cell { border-top:1px solid #EEF1F6; border-inline-start:1px solid #EEF1F6; }
+.blk { position:absolute; display:flex; flex-direction:column; gap:2px; padding:5px 7px; border-radius:8px; border-inline-start:3px solid var(--cfg);
+  background:var(--cbg); font-size:13px; line-height:1.25; overflow:hidden; }
+.blk b { font-weight:600; }
+.blk span { color:var(--text-2); font-size:12px; }
+.blk.fr::after { content:""; position:absolute; top:6px; left:6px; width:8px; height:8px; border-radius:50%; background:var(--friend); }
+.c0{--cbg:var(--c0-bg);--cfg:var(--c0-fg)} .c1{--cbg:var(--c1-bg);--cfg:var(--c1-fg)} .c2{--cbg:var(--c2-bg);--cfg:var(--c2-fg)}
+.c3{--cbg:var(--c3-bg);--cfg:var(--c3-fg)} .c4{--cbg:var(--c4-bg);--cfg:var(--c4-fg)} .c5{--cbg:var(--c5-bg);--cfg:var(--c5-fg)}
+
+/* floating progress-map chip */
+.map { position:absolute; left:28px; bottom:32px; width:250px; padding:12px 14px 10px; background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; box-shadow:0 18px 36px -10px rgba(16,24,40,.22); }
+.map p { font-size:13px; font-weight:600; color:var(--text-2); display:flex; justify-content:space-between; }
+.map p em { font-style:normal; color:var(--primary); }
+.map svg { display:block; margin-top:6px; }
+.meter { margin-top:8px; height:6px; border-radius:999px; background:#EEF1F6; overflow:hidden; }
+.meter i { display:block; width:62%; height:100%; border-radius:999px; background:linear-gradient(90deg, var(--primary), #6D28D9); margin-inline-start:auto; }
+</style>
+</head>
+<body>
+<div class="top"></div>
+
+<div class="copy">
+  <span class="tag"><i></i>לסטודנטים באפקה · חינם, בלי הרשמה</span>
+  <h1>המערכת שלי</h1>
+  <h2>מערכת שעות לאפקה, בדקה</h2>
+  <ul>
+    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#2563EB"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg></span>חלופות בלי התנגשויות, לפי התקנון</li>
+    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#F79009"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.2A5.5 5.5 0 0 1 21.5 20"/></svg></span>לומדים יחד עם החברים</li>
+    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#6D28D9"><circle cx="5" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 6.5 16.6 11M7.5 17.5l9.1-4.5"/></svg></span>מפת התקדמות ודרישות קדם</li>
+  </ul>
+</div>
+<div class="url"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><b>dolev-benezri.github.io/lets_learn</b></div>
+
+<div class="card">
+  <div class="bar">
+    <div class="alt">
+      <span class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></span>
+      חלופה <b>1</b> מתוך <b>10</b>
+      <span class="chev"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></span>
+    </div>
+    <div class="stack"><span>3 שיעורים משותפים</span><span class="avs"><span class="av">נ</span><span class="av">ר</span><span class="av">ד</span></span></div>
+  </div>
+  <div class="grid" id="g"></div>
+</div>
+
+<div class="map">
+  <p>מפת התקדמות <em>62%</em></p>
+  <svg width="222" height="64" viewBox="0 0 222 64">
+    <defs><marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="#2563EB"/></marker>
+      <marker id="b" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="#CBD2DE"/></marker></defs>
+    <g fill="none" stroke-width="2">
+      <path d="M200 16 C170 16 160 32 132 32" stroke="#2563EB" marker-end="url(#a)"/>
+      <path d="M200 50 C170 50 160 34 132 32" stroke="#CBD2DE" marker-end="url(#b)"/>
+      <path d="M100 32 H62" stroke="#2563EB" marker-end="url(#a)"/>
+      <path d="M100 32 C80 32 70 54 44 54" stroke="#CBD2DE" marker-end="url(#b)"/>
+    </g>
+    <circle cx="210" cy="16" r="9" fill="#E7F6EF" stroke="#0B6E4F" stroke-width="2"/>
+    <circle cx="210" cy="50" r="9" fill="#E7F6EF" stroke="#0B6E4F" stroke-width="2"/>
+    <circle cx="116" cy="32" r="11" fill="#EAF1FE" stroke="#2563EB" stroke-width="3"/>
+    <circle cx="46" cy="32" r="11" fill="#fff" stroke="#2563EB" stroke-width="3"/>
+    <circle cx="30" cy="54" r="8" fill="#fff" stroke="#CBD2DE" stroke-width="2"/>
+  </svg>
+  <div class="meter"><i></i></div>
+</div>
+
+<script>
+// Week: days א-ה, hours 08-16, 45px per hour. Blocks: [day 0-4, start hour, length in hours, colour, name, meta, friend]
+const g = document.getElementById('g'), days = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳'];
+g.insertAdjacentHTML('beforeend', '<div></div>' + days.map((d) => `<div class="d">${d}</div>`).join(''));
+for (let r = 0; r < 8; r++) g.insertAdjacentHTML('beforeend', `<div class="h">${String(8 + r).padStart(2, '0')}:00</div>` + '<div class="cell"></div>'.repeat(5));
+const B = [
+  [0, 8, 3, 'c0', 'חדו״א 1', 'הרצאה', 1], [0, 12, 2, 'c3', 'אנגלית', 'תרגול'],
+  [1, 9, 3, 'c1', 'פיזיקה 1', 'הרצאה', 1], [1, 13.5, 1.5, 'c0', 'חדו״א 1', 'תרגול'],
+  [2, 8, 2, 'c2', 'מבוא למדמ״ח', 'הרצאה'], [2, 10.5, 2.5, 'c4', 'אלגברה לינארית', 'הרצאה', 1], [2, 13.5, 1.5, 'c2', 'מבוא למדמ״ח', 'מעבדה'],
+  [3, 10, 2, 'c1', 'פיזיקה 1', 'תרגול'], [3, 12.5, 1.5, 'c4', 'אלגברה לינארית', 'תרגול'],
+  [4, 9, 3, 'c5', 'מעבדה בפיזיקה', 'מעבדה'],
+];
+const x0 = 38, y0 = 26, hp = 45, col = (g.clientWidth - x0) / 5;
+for (const [d, s, l, c, n, m, f] of B) {
+  const right = x0 + d * col + 3, top = y0 + (s - 8) * hp + 2;
+  g.insertAdjacentHTML('beforeend', `<div class="blk ${c}${f ? ' fr' : ''}" style="right:${right}px;top:${top}px;width:${col - 6}px;height:${l * hp - 4}px"><b>${n}</b><span>${m}</span></div>`);
+}
+</script>
+</body>
+</html>

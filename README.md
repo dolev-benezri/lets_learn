@@ -11,6 +11,8 @@
 ![no sign-up](https://img.shields.io/badge/sign--up-not%20needed-success)
 ![data](https://img.shields.io/badge/data-stays%20in%20your%20browser-success)
 
+<img src="web/og.png" alt="המערכת שלי: לוח שבועי עם חלופה 1 מתוך 10, חברים ומפת התקדמות" width="800">
+
 ## [לפתיחת האתר ←](https://dolev-benezri.github.io/lets_learn/)
 
 </div>
