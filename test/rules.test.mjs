@@ -302,3 +302,14 @@ test('progress counts each year list only up to its minimum (extra courses don�
   const d = { year: 2027, startYear: 2025, lists: [{ name: "קורסי חובה שנה א'", minCredits: 5, courses: ['a', 'b'] }], courses: { a: c(3), b: c(3) } };
   assert.deepEqual(progress(d, { passed: ['a', 'b'] }), { earned: 5, required: 5, ratio: 1 });
 });
+
+test('a course passed in summer counts the next year: its credits in progress, and what it opens is available', () => {
+  // S is taught only in summer (not offered in א), as 482 summer-only course records are in the 2027 data, with their credits.
+  const course = (credits, offered, prereqs = []) => ({ name: 'x', credits, offered, prereqs, groups: [] });
+  const d = { semester: 'א', lists: [{ code: 1, name: "קורסי חובה שנה א'", minCredits: 6, courses: ['S', 'A'] }],
+    courses: { S: course(3, false), A: course(3, true), N: course(3, true, [{ kind: 'קדם', anyOf: [{ id: 'S', name: 'S' }] }]) } };
+  const state = { passed: ['S', 'A'], failed: {}, profile: { year: 2 } };
+  assert.deepEqual(progress(d, state), { earned: 6, required: 6, ratio: 1 });
+  assert.equal(classify(d, state).statuses.N.status, 'available');
+  assert.equal(classify(d, { ...state, passed: ['A'] }).statuses.N.status, 'blocked', 'control: without the summer course N waits');
+});
