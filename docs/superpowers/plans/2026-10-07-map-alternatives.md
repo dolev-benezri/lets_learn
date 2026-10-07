@@ -312,3 +312,41 @@ Expected: כל הטסטים עוברים. היום 436, ועוד בערך 4 חד
   - סיכום, שני צילומי המסך, ובקשת אישור למיזוג.
   - אחרי האישור: `git switch main && git pull --rebase && git merge --no-ff feat/map-alternatives && npm test && git push`.
   - אחרי הפריסה: בדיקה באתר החי, טאב חדש, 375 ומחשב.
+
+---
+
+## סבב 2 (spec: "סבב 2")
+
+### Task 5: `courseAbbr` / `uniqueAbbrs`, `miniHtml` עם שורת זיהוי, מקרא וראשי תיבות, `plan-ring` תמיד
+- Modify: `web/map-render.js`
+- Test: `test/ui-map.test.mjs`, `test/xss.test.mjs`
+- Produces:
+  - `courseAbbr(name) -> string`
+  - `uniqueAbbrs(names[]) -> string[]`
+  - `miniHtml({ ..., abbr })` (פרמטר חדש)
+- טסטים (RED קודם):
+  - `courseAbbr('מבוא למדעי המחשב') === 'מל״ה'`
+  - `courseAbbr('פיזיקה 1') === 'פיז 1'`
+  - `courseAbbr('סטטיקה') === 'סטט'`
+  - בשם באנגלית `ML` בהתאם
+  - `uniqueAbbrs` נותן קיצורים שונים לשני שמות עם אותה תוצאה
+  - `miniHtml` בלי `<button`, עם `pm-mini-c`, ‏`aria-hidden="true"` ובלי `inert`
+  - המקרא עם כל קורס פעם אחת
+  - `blk-ab` רק עם `abbr:true`
+  - `mapSvg`: לצומת שלא בתכנון יש `plan-ring`
+  - XSS עם `abbr:true`
+
+### Task 6: עדכון במקום, הבזק, אינטראקציה בחלונית
+- Modify: `web/ui-map.js`, `web/map.css`
+- Consumes: Task 5.
+- בדיקה בדפדפן, ב-1280 וב-375:
+  - אותו `.pm-svg` לפני ואחרי מעבר, ה-transform לא משתנה.
+  - `plan` שווה ל-`planIds`.
+  - `spot` מופיע ונעלם תוך 2 שניות.
+  - ל-`.pm-meter i` יש transition.
+  - מעבר עכבר והקשה ממלאים את `.pm-mini-c`.
+  - ראשי תיבות והמקרא בתוך הגיליון ב-375.
+  - תוצאת חיפוש עוברת לציור מלא.
+  - בקונסול אין שגיאות.
+
+### Task 7: `npm test`, מיזוג ל-main, push, בדיקה באתר החי (אושר על ידי הבעלים)
