@@ -216,6 +216,6 @@ Each fix has a regression test in `test/` that failed before it. Commits are on 
 - F-16 fixed, stage 6 (#6): one constraint relaxed at a time; 177 named causes and 59 "do not fit together" messages checked true on 516 infeasible instances.
 - F-17 fixed, stage 1 (#1).
 - F-18 fixed, stage 4 (#4).
-- F-19 OPEN: waits for D2 (issue #8).
+- F-19 closed (2026-10-07, issue #8): D2 settled from the official text (11.4.1/11.5.1 count failed courses; 11.4.2 cumulative average below 65; 11.4.4 under 70% of the cumulative program at the end of each of years א'-ג'). 11.4.4 is skipped when a list's courses carry fewer known credits than its minimum (program 20, cohort 2024).
 - F-20 closed: the data gate already existed.
 - Stage 8 (#9): summer matches the reference (48 files, 576 instances); a summer pass counts (test); the year time slack (1.5x) is kept as designed. Still open: exams after the first nightly that publishes them, a manual pass in Firefox and Safari/iOS, and a look at the first nightly diff after stage 2.

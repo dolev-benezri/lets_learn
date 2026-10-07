@@ -38,10 +38,21 @@ test('done and notOffered', () => {
 });
 
 test('failure warnings follow the regulations', () => {
-  assert.deepEqual(classify(mini(), me).warnings, []);
-  assert.match(classify(mini(), { passed: [], failed: { A: 1, B: 1, C: 1 } }).warnings.join(), /על תנאי/);
-  assert.match(classify(mini(), { passed: [], failed: { A: 2, B: 2 } }).warnings.join(), /הרחקה/);
-  assert.match(classify(mini(), { passed: [], failed: { A: 3 } }).warnings.join(), /11\.5\.2/);
+  const w = (state) => classify(mini(), { passed: ['A', 'Q0'], failed: {}, ...state }).warnings.join(); // year ב׳, year א׳ done
+  assert.equal(w({}), '');
+  assert.equal(w({ failed: { A: 2, B: 1 } }), '', '11.4.1 counts courses, not attempts');
+  assert.match(w({ failed: { A: 1, B: 1, C: 1 } }), /על תנאי.*11\.4\.1/);
+  assert.doesNotMatch(w({ failed: { A: 2, B: 2 } }), /הרחקה/, '11.5.1 counts courses, not attempts');
+  assert.match(w({ failed: { A: 1, B: 1, C: 1, P: 1 } }), /הרחקה.*11\.5\.1/);
+  assert.doesNotMatch(w({ failed: { A: 1, B: 1, C: 1, P: 1 } }), /על תנאי/, 'expulsion outranks probation');
+  assert.match(w({ failed: { A: 3 } }), /11\.5\.2/);
+  assert.match(w({ grades: { A: 60, Q0: 62 } }), /על תנאי.*ממוצע מצטבר 61\.0.*11\.4\.2/);
+  assert.equal(w({ grades: { A: 60, Q0: 70 } }), '', 'average 65 is not below 65');
+  assert.match(w({ passed: ['Q0'] }), /על תנאי.*50%.*11\.4\.4/, 'half of year א׳ done at the start of year ב׳');
+  assert.equal(w({ passed: ['Q0'], profile: { year: 1 } }), '', 'no earlier year in year א׳');
+  const d = mini(); d.courses.A.credits = undefined; // a year א׳ course without credits in the data: 70% can't be judged
+  assert.equal(classify(d, { passed: ['Q0'], failed: {} }).warnings.join(), '');
+  assert.match(w({ grades: { A: 50, Q0: 50 }, failed: { A: 1, B: 1, C: 1 } }), /11\.4\.1\); .*11\.4\.2/, 'one probation line names every cause');
 });
 
 test('mixed prerequisite alternatives: resolved blocks, unresolved-only satisfies', () => {
@@ -104,7 +115,7 @@ test('passing a course keeps its failures and they still count toward the regula
 
 test('expulsion replaces probation instead of showing both', () => {
   assert.equal(classify(mini(), { passed: [], failed: { A: 3 } }).warnings.length, 1);
-  const w = classify(mini(), { passed: [], failed: { A: 2, B: 2 } }).warnings;
+  const w = classify(mini(), { passed: [], failed: { A: 1, B: 1, C: 1, P: 1 } }).warnings;
   assert.equal(w.length, 1);
   assert.match(w[0], /11\.5\.1/);
 });

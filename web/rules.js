@@ -116,12 +116,19 @@ export function classify(data, state) {
     if (noScore && ENGLISH.includes(id)) s.reasons.push(`הזינו ציון אמירנט ב"המצב שלי" כדי לדעת מאיזו רמה מתחילים (${AMIRNET[0]} ומעלה פוטר מהמכינה)`);
   }
 
-  const counts = Object.values(failed);
-  const total = counts.reduce((a, b) => a + b, 0);
+  const counts = Object.values(failed).filter((n) => n > 0);
   const warnings = [];
   if (counts.some((n) => n >= 3)) warnings.push('3 כישלונות באותו קורס: הרחקה (תקנון 11.5.2)');
-  if (total >= 4) warnings.push('4 כישלונות מצטברים ומעלה: הרחקה (תקנון 11.5.1)');
-  else if (total >= 3 && !warnings.length) warnings.push('3 כישלונות מצטברים: מעמד "על תנאי" (תקנון 11.4.1)'); // expulsion outranks probation
+  if (counts.length >= 4) warnings.push('ציון נכשל ב-4 קורסים ומעלה במצטבר: הרחקה (תקנון 11.5.1)'); // 11.4.1/11.5.1 count courses, not attempts
+  if (!warnings.length) { // expulsion outranks probation
+    const avg = gradeAverage(data, state).avg, year = studyYear(data, state), prog = progress(data, state);
+    const why = [];
+    if (counts.length >= 3) why.push('ציון נכשל ב-3 קורסים במצטבר (11.4.1)');
+    if (avg !== null && avg < 65) why.push(`ממוצע מצטבר ${avg.toFixed(1)}, מתחת ל-65 (11.4.2)`); // grades of passed courses only: never too low
+    // 11.4.4: checked at the end of each of years א'-ג'; progress counts the required lists of the years behind
+    if (year >= 2 && year <= 4 && prog.required && !prog.short && prog.ratio < 0.7) why.push(`הושלמו ${Math.round(prog.ratio * 100)}% מתוכנית השנים הקודמות, פחות מ-70% (11.4.4)`);
+    if (why.length) warnings.push(`מעמד "על תנאי" (תקנון 11.4): ${why.join('; ')}`);
+  }
   return { statuses, warnings };
 }
 
@@ -154,7 +161,7 @@ export function setStatus(state, id, st) {
 export function progress(data, state) {
   const passed = new Set(state.passed);
   const year = studyYear(data, state);
-  const lists = data.lists.filter((l) => {
+  const lists = (data.lists ?? []).filter((l) => {
     const m = l.name.match(/חובה שנה (\S)'/);
     return m && YEAR_LETTERS[m[1]] < year;
   });
@@ -162,7 +169,9 @@ export function progress(data, state) {
   const seen = new Set(); // a course in two lists counts once; a list counts up to its minimum
   const earned = lists.reduce((a, l) => a + Math.min(l.minCredits, l.courses.filter((id) => passed.has(id) && !seen.has(id) && seen.add(id))
     .reduce((s, id) => s + (data.courses[id]?.credits ?? 0), 0)), 0);
-  return { earned, required, ratio: required ? earned / required : 1 };
+  // short: a list's courses carry fewer known credits than its minimum (courses without credits in the data), so the ratio can't reach 1
+  const short = lists.some((l) => l.courses.reduce((s, id) => s + (data.courses[id]?.credits ?? 0), 0) < l.minCredits);
+  return { earned, required, ratio: required ? earned / required : 1, ...(short && { short }) };
 }
 
 // Credit-weighted average over passed courses that have a grade (courses without credits in the data don't count).

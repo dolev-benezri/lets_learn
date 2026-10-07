@@ -8,7 +8,7 @@
 
 **Tech Stack:** vanilla JS modules, `node --test` (`npm test` = `node --test` at the repo root), GitHub Pages (`web/`), GitLab nightly scrape (`ci/gitlab-scrape.yml`).
 
-**Status 2026-10-07:** executed. Stages 1-6, 7 (F-13 only) and 8 are merged to `main`, plus a final review pass (`fix/review-pass`). Issues #1-#7 are closed. Still open: #8 (F-19, waits for decision D2) and #9 (exams after the first nightly that publishes them, a manual Firefox/Safari pass, and checking that the first nightly after stage 2 brings no prerequisite churn).
+**Status 2026-10-07:** executed. Stages 1-6, 7 (F-13 only) and 8 are merged to `main`, plus a final review pass (`fix/review-pass`). Issues #1-#7 are closed. F-19 closed 2026-10-07 (#8, D2 read from the regulations). Still open: #9 (exams after the first nightly that publishes them, a manual Firefox/Safari pass, and checking that the first nightly after stage 2 brings no prerequisite churn).
 
 **Spec:** `solver-audit/findings.md` (local, not committed; every finding names the script that proves it). Proof scripts: `solver-audit/repro/` (`README.md` there). Design probes for this plan: `solver-audit/plan-probes/` (local). GitHub issues: see "Issues" at the end.
 
@@ -62,7 +62,7 @@ Stages 1 and 2 touch different files and can run in parallel. Stages 3-7 all edi
 - **D1 (F-13), decided 2026-10-07:** a free day is Sunday-Thursday plus the days the student marked as wished days off. The default marks Friday, so Friday counts for most students, and a student who studies on Friday is not pushed there.
   - Rejected: always Sunday-Friday (it changes the scale of every score; prototype `solver-audit/plan-probes/up-apply-f13.mjs`).
   - Rejected: only fixing the "אין יום פנוי" pill.
-- **D2 (F-19), still open:** count failed *courses* for 11.4.1 / 11.5.1 (what the text says), and add 11.4.2 (average below 65) and 11.4.4 (less than 70% of credits) as warnings only when grades are entered. The owner confirms this reading of the regulations in issue #8 before stage 7's F-19 task.
+- **D2 (F-19), settled 2026-10-07 from the regulations text (11.4.4 applies at the end of each of years א'-ג'):** count failed *courses* for 11.4.1 / 11.5.1 (what the text says), and add 11.4.2 (average below 65) and 11.4.4 (less than 70% of credits) as warnings only when grades are entered. The owner confirms this reading of the regulations in issue #8 before stage 7's F-19 task.
 - **D3 (F-11), decided 2026-10-07:** accept distinct alternatives. Year-1 programs then show 3-8 alternatives instead of 10, because today's 10 are group variants of only 1-2 course sets. The best plan improves (12-2027 year 1: 11.92 to 12.72). Filling up to 10 with group variants can follow if students ask.
 
 ---
@@ -250,7 +250,7 @@ Stages 1 and 2 touch different files and can run in parallel. Stages 3-7 all edi
   - with default weights, the solver no longer moves a lesson to Friday (`bits-05r` and `metric-friday-*` flip).
 
   The prototype for (b) is `up-apply-f13.mjs`.
-- [ ] **F-19, per D2** (`web/rules.js:119-124`):
+- [x] **F-19, per D2** (`web/rules.js:119-124`):
   - for 11.4.1 and 11.5.1, count `Object.keys(failed).length`, and keep the per-course count for 11.5.2;
   - 11.4.2 uses `gradeAverage` (`:169-177`), and 11.4.4 uses `progress` (`:154-166`), only when grades and credits are known.
 
