@@ -1,16 +1,22 @@
 // Interactive progress map ("הראה התקדמות"): every course and its prerequisites as a neural-network style graph (round nodes, curved edges),
 // arranged by study year (one band per year, right to left, two semester columns each, electives last) and coloured by the student's real status
 // (app.cls.statuses, from rules.js). Layout and geometry are pure functions so they can be unit-tested.
-import { app, esc, keepFocus } from './app.js';
-import { icon } from './ui-grid.js';
+import { app, esc, keepFocus, summerScope } from './app.js';
+import { icon, resCourses } from './ui-grid.js';
+import { ui, current, colors } from './ui-common.js';
+import { showAlt } from './ui-view.js';
+import { courseCount } from './ui-text.js';
 import { unlockCounts } from './solver-core.js';
 import { studyYear } from './rules.js';
 import { makeKeep, asideIds, layoutMap, chainOf, isDone, progressInfo, newlyUnlocked, G, geometry, wheelStep, fitScale } from './map-layout.js';
-import { svg, ICONS, MODES, LEGEND, mapSvg, legendSw, legendEdge, listHtml, asideHtml, cardHtml, progressHtml } from './map-render.js';
+import { svg, ICONS, MODES, LEGEND, mapSvg, legendSw, legendEdge, listHtml, asideHtml, cardHtml, progressHtml, altBarHtml, miniHtml,
+  miniTotals } from './map-render.js';
 
 // ---------- dialog ----------
-const M = { mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null };
+const M = { mode: 'all', view: 'map', sel: null, hover: null, focus: null, c: null, opener: null, pz: null, tok: 0, notice: '', els: null, down: null, fit: null, miniOpen: null, live: null };
 let dlg = null;
+// The search's alternatives, none when every one is empty (renderView's rule); the shown one is ui.cur.
+const alts = () => { const r = ui.last?.results ?? []; return r.some((x) => resCourses(x).length) ? r : []; };
 const q = (s) => dlg.querySelector(s);
 const PZ_URL = new URL('./vendor/panzoom/panzoom.es.js', import.meta.url).href; // 4.6.0, a copy (no third-party request)
 let pzLib = null;
@@ -57,7 +63,10 @@ function render() {
   if (M.sel && !c.L.nodes.some((n) => n.key === M.sel)) M.sel = null;
   const emptyMsg = M.mode === 'remaining' ? 'אין קורסים להצגה: עברתם או קיבלתם פטור מכל הקורסים.' : 'אין קורסים להצגה.';
   const zbtn = (act, label, ic) => `<button type="button" class="pm-ibtn" data-pm="${act}" data-k="pm-${act}" aria-label="${label}"${empty ? ' disabled' : ''}>${ic}</button>`;
+  const mini = map && !empty && alts().length && current() ? miniHtml({ raw: current(), sem: app.sem, data: app.data, colors, k: ui.cur,
+    open: M.miniOpen ?? matchMedia('(min-width: 900px) and (min-height: 700px)').matches }) : '';
   dlg.innerHTML = `<header class="pm-head"><h2 id="pmTitle" class="pm-title">המסע שלי בתואר</h2>
+      ${altBarHtml({ k: ui.cur, n: alts().length, running: ui.running, summer: summerScope() })}
       <button type="button" class="pm-ibtn pm-close" data-pm="close" data-k="pm-close" aria-label="סגור את המפה">${icon('x')}</button></header>
     <p class="pm-band">עברתם או קיבלתם פטור ב-<b><bdi>${done}</bdi></b> מתוך <b><bdi>${total}</bdi></b> קורסים. לחצו על קורס כדי לראות מה צריך כדי להגיע אליו ומה הוא פותח.</p>
     ${progressHtml(c)}
@@ -84,9 +93,11 @@ function render() {
         rx="8"/><text x="26" y="10" text-anchor="middle" dominant-baseline="central">פותח 3</text></g></svg>כמה קורסים הוא פותח</span></div></details>` : ''}
     <div class="pm-body">${map
     ? `<div class="pm-view" role="region" aria-label="מפת הקורסים לפי שנות לימוד. אפשר לגרור, לגלגל או לצבוט כדי להתקרב, ולהשתמש בכפתורי הזום">${empty ? `<p
-      class="pm-empty">${emptyMsg}</p>` : `${mapSvg(c)}<p class="pm-loading" role="status">טוען מפה…</p>`}${asideHtml(c)}</div>`
+      class="pm-empty">${emptyMsg}</p>` : `${mapSvg(c)}<p class="pm-loading" role="status">טוען מפה…</p>`}${asideHtml(c)}${mini}</div>`
     : `<div class="pm-view pm-listview" tabindex="0" role="region" aria-label="רשימת הקורסים">${listHtml(c)}</div>`}
       <aside class="pm-card" aria-label="פרטי הקורס" aria-live="polite" hidden></aside></div>`;
+  if (!M.live) { M.live = document.createElement('p'); M.live.className = 'sr'; M.live.setAttribute('role', 'status'); }
+  dlg.appendChild(M.live); // one live region kept across redraws, so a switched alternative is announced
   M.hover = M.focus = null;
   M.els = null;
   if (map && !empty) {
@@ -99,7 +110,7 @@ function render() {
 }
 
 // Pan/zoom/pinch come from @panzoom/panzoom, applied to the <g class="pz"> inside the svg; the svg itself is the drag surface.
-async function mount() {
+async function mount(keep = null) { // keep: { s, x, y } of the previous Panzoom (a switched alternative keeps the zoom), else fit
   const tok = ++M.tok;
   M.pz?.destroy(); M.pz = null; M.fit = null;
   if (M.view !== 'map' || !M.els) return;
@@ -124,7 +135,7 @@ async function mount() {
   };
   setTimeout(() => {
     if (tok !== M.tok) return;
-    M.fit();
+    if (keep) { pz.zoom(keep.s, { animate: false, force: true }); pz.pan(keep.x, keep.y, { animate: false, force: true }); ends(); } else M.fit();
     if (M.sel) requestAnimationFrame(() => tok === M.tok && ensureVisible(M.els.nodes.get(M.sel))); // after Panzoom applied the fit; a card left open across a filter change must not cover its node
     root.classList.add('ready');
   }); // after Panzoom's own start-position timeout
@@ -157,11 +168,12 @@ function openMap(from) {
     dlg.addEventListener('focusin', (e) => { const n = e.target.closest?.('.nd'); hoverTo(n?.dataset.key ?? null,
       'focus'); if (n?.matches(':focus-visible')) ensureVisible(n); }); // keyboard focus only: a mouse press must not move the node under the cursor
     dlg.addEventListener('focusout', () => hoverTo(null, 'focus'));
+    dlg.addEventListener('toggle', (e) => { if (e.target.classList?.contains('pm-mini')) M.miniOpen = e.target.open; }, true); // toggle does not bubble
     dlg.addEventListener('close', () => { M.tok++; M.pz?.destroy(); M.pz = null; });
   }
   dlg.setAttribute('aria-labelledby', 'pmTitle');
   dlg.setAttribute('dir', 'rtl');
-  M.opener = from; M.sel = null; M.mode = 'all'; M.view = 'map'; M.notice = '';
+  M.opener = from; M.sel = null; M.mode = 'all'; M.view = 'map'; M.notice = ''; M.miniOpen = null;
   render();
   dlg.showModal();
   mount();
@@ -194,6 +206,7 @@ function onClick(e) {
   else if (act === 'zout') zoomBy(0.8);
   else if (act === 'fit') M.fit?.();
   else if (act === 'mode') { M.mode = b.dataset.v; M.notice = ''; redraw(); }
+  else if (act === 'alt') { const n = alts().length; if (n > 1 && !ui.running) showAlt((ui.cur + Number(b.dataset.d) + n) % n); } // renderView calls ui.onShown
   else if (act === 'view') { M.view = M.view === 'map' ? 'list' : 'map'; M.notice = ''; redraw(); }
 }
 
@@ -204,6 +217,15 @@ function setup() {
     rz = setTimeout(() => {
       if (dlg?.open && M.view === 'map') M.fit?.();
     }, 150);
+  };
+  // After every renderView (an alternative picked here or on the board, a search result landing while the map is open): redraw, keep the zoom.
+  ui.onShown = () => {
+    if (!dlg?.open) return;
+    const keep = M.pz ? { s: M.pz.getScale(), ...M.pz.getPan() } : null;
+    keepFocus(render);
+    mount(keep);
+    const n = alts().length, raw = current();
+    if (n > 1 && raw) { const t = miniTotals(raw, app.data); M.live.textContent = `חלופה ${ui.cur + 1} מתוך ${n}, ${courseCount(t.courses)}, ${t.credits} נ״ז`; }
   };
   addEventListener('resize', onResize);
   addEventListener('orientationchange', onResize);

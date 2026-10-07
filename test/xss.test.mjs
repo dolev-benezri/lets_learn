@@ -36,11 +36,11 @@ globalThis.location = { hash: '', origin: 'https://x', pathname: '/' };
 
 const { app, normalize, refresh, yearCourses } = app_;
 const { ui, current } = await import('../web/ui-common.js');
-const { renderTop, renderBanner, renderView } = await import('../web/ui-view.js');
+const { renderTop, renderBanner, renderView, showAlt } = await import('../web/ui-view.js');
 const { renderMe, identityPick } = await import('../web/ui-me.js');
 const { renderSide } = await import('../web/ui-side.js');
 const { renderDrawer } = await import('../web/ui-drawer.js');
-const { openPop, groupIndex } = await import('../web/ui-grid.js');
+const { openPop, groupIndex, resCourses } = await import('../web/ui-grid.js');
 const { openFriendEditor } = await import('../web/ui-friend-editor.js');
 const { layoutMap, geometry } = await import('../web/map-layout.js');
 const { mapSvg, miniHtml } = await import('../web/map-render.js');
@@ -214,4 +214,15 @@ test('lecturer buttons only on a primary group: a tutorial’s lecturer is not f
   run('pop-sub', () => openPop({ dataset: { gid: sub.id }, getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 }) },
     { data: app.sem['א'], res: null, includeFull: false, pins: [], friends: [], colors: new Map(), lecturers: {} }));
   assert.ok(!writes.filter((w) => w.scope === 'pop-sub').some((w) => w.html.includes('data-act="lecturer"')));
+});
+
+test('showAlt picks an alternative for the board and the map: planIds follow it and the map hook runs once', () => {
+  assert.ok(ui.last.results.length > 1, 'the search found two alternatives');
+  let calls = 0;
+  ui.onShown = () => { calls++; };
+  showAlt(1);
+  assert.equal(ui.cur, 1);
+  assert.deepEqual([...app.planIds].sort(), [...new Set(resCourses(ui.last.results[1]))].sort());
+  assert.equal(calls, 1);
+  ui.onShown = null; showAlt(0);
 });

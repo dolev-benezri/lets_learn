@@ -136,6 +136,7 @@ export function renderView() {
   if (ui.panel === 'reg') renderDrawer();
   setBusy();
   scrollToDay();
+  ui.onShown?.();
 }
 
 // Phone: the day column starts at the earliest hour of any day, so a later-starting day opens on empty hours.
@@ -155,6 +156,10 @@ export function scrollToDay() {
 export function go(d) {
   const n = ui.last?.results.length ?? 0;
   if (n < 2) return;
-  ui.cur = (ui.cur + d + n) % n;
+  showAlt((ui.cur + d + n) % n);
+}
+// The one way to pick an alternative (the board's arrows and the progress map): renderView moves planIds and the saved year plan with it.
+export function showAlt(k) {
+  ui.cur = k;
   keepFocus(renderView);
 }
