@@ -195,3 +195,9 @@ test('renderWeek: a busy block is a non-interactive div with escaped label and s
   assert.ok(!html.includes('<b>עבודה'));
   assert.ok(!/<button[^>]*class="off/.test(html));
 });
+
+test('summary reads a one-day exam gap ("לפחות יום אחד") as "1"', () => {
+  const data = { courses: { A: { credits: 3, groups: [{ id: 'a1', meetings: [m(1, '08:00', '10:00')] }] } } };
+  const res = { courses: ['A'], groups: ['a1'], breakdown: { compact: 1 }, explanation: 'בלי חלונות · לפחות יום אחד בין בחינות' };
+  assert.equal(summary(res, data, []).examGap, '1');
+});
