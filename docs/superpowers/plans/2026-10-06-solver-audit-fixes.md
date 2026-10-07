@@ -8,6 +8,8 @@
 
 **Tech Stack:** vanilla JS modules, `node --test` (`npm test` = `node --test` at the repo root), GitHub Pages (`web/`), GitLab nightly scrape (`ci/gitlab-scrape.yml`).
 
+**Status 2026-10-07:** executed. Stages 1-6, 7 (F-13 only) and 8 are merged to `main`, plus a final review pass (`fix/review-pass`). Issues #1-#7 are closed. Still open: #8 (F-19, waits for decision D2) and #9 (exams after the first nightly that publishes them, a manual Firefox/Safari pass, and checking that the first nightly after stage 2 brings no prerequisite churn).
+
 **Spec:** `solver-audit/findings.md` (local, not committed; every finding names the script that proves it). Proof scripts: `solver-audit/repro/` (`README.md` there). Design probes for this plan: `solver-audit/plan-probes/` (local). GitHub issues: see "Issues" at the end.
 
 ---
