@@ -1,0 +1,11 @@
+name: בקשה
+description: רעיון ליכולת חדשה או לשיפור.
+title: "בקשה: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: מה הייתם רוצים, ולמה
+    validations:
+      required: true

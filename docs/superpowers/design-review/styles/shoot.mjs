@@ -1,7 +1,7 @@
 // Screenshots of every style at fixed widths, through Chrome's DevTools protocol (no dependencies; Node 22+ has WebSocket).
 //   python docs/superpowers/design-review/styles/serve.py 8150      (in another terminal)
 //   node docs/superpowers/design-review/styles/shoot.mjs [--dark] [theme ...]  (default: every *.css next to this file, plus base;
-//   --dark emulates a device in dark mode, files get a -dark suffix)
+//   --dark emulates a device in dark mode, files get a -dark suffix; --views=plan,map limits the screens)
 // Writes shots/<theme>-<view>-<width>.webp and a contrast report per run. Headless Chrome's own --window-size cannot go under ~500px; device emulation can.
 import { spawn } from 'node:child_process';
 import { readdirSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -11,7 +11,8 @@ import path from 'node:path';
 const HERE = path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const BASE = 'http://127.0.0.1:8150';
-const args = process.argv.slice(2), DARK = args.includes('--dark'), names = args.filter((a) => a !== '--dark');
+const args = process.argv.slice(2), DARK = args.includes('--dark'), only = args.find((a) => a.startsWith('--views='))?.slice(8).split(',');
+const names = args.filter((a) => !a.startsWith('--'));
 const themes = names.length ? names
   : ['base', ...readdirSync(HERE).filter((f) => f.endsWith('.css')).map((f) => f.slice(0, -4))];
 const SIZES = [{ w: 375, h: 812, dpr: 2, touch: true }, { w: 1280, h: 800, dpr: 1, touch: false }];
@@ -22,6 +23,7 @@ const VIEWS = {
   prefs: ['', `document.querySelector('[data-panel="prefs"]').click()`],
   lesson: ['', `document.querySelector('.blk')?.click()`],
   map: ['#me', `document.querySelector('[data-act="openMap"]')?.click()`],
+  friends: ['', `document.querySelector('[data-panel="friends"]').click()`],
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // WCAG contrast of every visible text node's element against its composited background (semi-transparent layers blended upward).
@@ -70,7 +72,7 @@ for (const s of SIZES) {
   await send('Emulation.setDeviceMetricsOverride', { width: s.w, height: s.h, deviceScaleFactor: s.dpr, mobile: s.touch });
   await send('Emulation.setTouchEmulationEnabled', { enabled: s.touch, maxTouchPoints: s.touch ? 5 : 0 });
   for (const theme of themes) {
-    for (const [view, [hash, act]] of Object.entries(VIEWS)) {
+    for (const [view, [hash, act]] of Object.entries(VIEWS).filter(([v]) => !only || only.includes(v))) {
       await send('Page.navigate', { url: `${BASE}/t/${theme}/${hash}` });
       await sleep(400);
       const ready = await until(hash === '#me' ? `!!document.querySelector('#me .me-head')` : `!!document.querySelector('#week .blk')`);

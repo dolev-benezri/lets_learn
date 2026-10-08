@@ -1,0 +1,25 @@
+name: טעות בנתונים
+description: קורס, קבוצה, שעה או דרישת קדם שמופיעים באתר אחרת מבידיעון.
+title: "טעות בנתונים: "
+labels: [data-error]
+body:
+  - type: input
+    id: program
+    attributes:
+      label: תוכנית, מסלול ומחזור
+      placeholder: הנדסה מכנית, יום, מחזור 2026
+    validations:
+      required: true
+  - type: input
+    id: course
+    attributes:
+      label: קורס או קבוצה
+      placeholder: מספר קורס או מספר קבוצה, וסמסטר
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: מה האתר מראה, ומה כתוב בידיעון
+    validations:
+      required: true

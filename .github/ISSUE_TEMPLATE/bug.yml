@@ -1,0 +1,24 @@
+name: באג
+description: משהו באתר לא עובד כמו שצריך.
+title: "באג: "
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: מה קרה, ומה ציפיתם שיקרה
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: איך לשחזר
+      placeholder: "1. נכנסתי ל... 2. לחצתי על..."
+  - type: input
+    id: device
+    attributes:
+      label: מכשיר ודפדפן
+      placeholder: אייפון 13, ספארי
+  - type: markdown
+    attributes:
+      value: "בלי קישור גיבוי ובלי ציונים: קישור גיבוי כולל את כל הנתונים שלכם, וכל מה שכותבים כאן גלוי לכולם."
