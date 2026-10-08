@@ -1,6 +1,10 @@
 # Plan: site design and README (2026-10-08)
 
-**Status:** planned, not started. Written overnight at the owner's request ("decide the design yourself; in the morning I want at least 4 styles").
+**Status (2026-10-08, later):** the owner approved D-A with one change: dark mode needs a **visible button**, not only a switch in העדפות.
+Done on branch `style/theme`: stage 0; stage 1 colours (every colour a token, `--border-input`; the spacing scale is still open); stage 3 (clarity);
+stage 4 (night, `web/theme.js`, a "מצב כהה"/"מצב בהיר" button at the end of the view strip, following the device until clicked);
+stage 2 entry motion (sheets, popover, dialogs, scrims; exit motion, `details` height and FLIP still open). Repo About, website, topics and social preview are set.
+Written overnight at the owner's request ("decide the design yourself; in the morning I want at least 4 styles").
 Inputs, all in `docs/superpowers/design-review/`:
 - `ui-audit.md`: 32 findings U-01..U-32 with measurements at 320/375/768/1280 and landscape. Spot-checked: U-17 re-measured (358 vs 320), U-01 and U-26 confirmed in the code.
 - `readme-review.md`: R-01..R-18, a new outline, a visual-assets plan, copy rewrites and owner settings. Spot-checked: About empty (`gh repo view`), `<div dir="rtl">` survives GitHub's sanitizer, the PDF is not ignored.

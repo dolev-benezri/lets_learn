@@ -1,6 +1,7 @@
 // Screenshots of every style at fixed widths, through Chrome's DevTools protocol (no dependencies; Node 22+ has WebSocket).
 //   python docs/superpowers/design-review/styles/serve.py 8150      (in another terminal)
-//   node docs/superpowers/design-review/styles/shoot.mjs [theme ...]  (default: every *.css next to this file, plus base)
+//   node docs/superpowers/design-review/styles/shoot.mjs [--dark] [theme ...]  (default: every *.css next to this file, plus base;
+//   --dark emulates a device in dark mode, files get a -dark suffix)
 // Writes shots/<theme>-<view>-<width>.webp and a contrast report per run. Headless Chrome's own --window-size cannot go under ~500px; device emulation can.
 import { spawn } from 'node:child_process';
 import { readdirSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -10,7 +11,8 @@ import path from 'node:path';
 const HERE = path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1'));
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const BASE = 'http://127.0.0.1:8150';
-const themes = process.argv.slice(2).length ? process.argv.slice(2)
+const args = process.argv.slice(2), DARK = args.includes('--dark'), names = args.filter((a) => a !== '--dark');
+const themes = names.length ? names
   : ['base', ...readdirSync(HERE).filter((f) => f.endsWith('.css')).map((f) => f.slice(0, -4))];
 const SIZES = [{ w: 375, h: 812, dpr: 2, touch: true }, { w: 1280, h: 800, dpr: 1, touch: false }];
 // view: [hash, action run after the page settles]
@@ -61,6 +63,7 @@ const evaluate = async (expression) => (await send('Runtime.evaluate', { express
 const until = async (expr, ms = 15000) => { for (let t = 0; t < ms; t += 250) { if (await evaluate(expr)) return true; await sleep(250); } return false; };
 
 await send('Page.enable'); await send('Runtime.enable');
+if (DARK) await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });
 mkdirSync(path.join(HERE, 'shots'), { recursive: true });
 const report = [];
 for (const s of SIZES) {
@@ -74,7 +77,7 @@ for (const s of SIZES) {
       await sleep(700);
       if (act) { await evaluate(act); await sleep(1200); }
       const shot = await send('Page.captureScreenshot', { format: 'webp', quality: 86 });
-      const file = path.join(HERE, 'shots', `${theme}-${view}-${s.w}.webp`);
+      const file = path.join(HERE, 'shots', `${theme}-${view}-${s.w}${DARK ? '-dark' : ''}.webp`);
       writeFileSync(file, Buffer.from(shot.result.data, 'base64'));
       const c = await evaluate(CONTRAST);
       report.push({ theme, view, width: s.w, ...c });
@@ -82,5 +85,5 @@ for (const s of SIZES) {
     }
   }
 }
-writeFileSync(path.join(HERE, 'shots', `contrast-${themes.join('-')}.json`), JSON.stringify(report, null, 1));
+writeFileSync(path.join(HERE, 'shots', `contrast-${themes.join('-')}${DARK ? '-dark' : ''}.json`), JSON.stringify(report, null, 1));
 ws.close(); chrome.kill();

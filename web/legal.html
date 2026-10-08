@@ -2,10 +2,11 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<!-- CSP: a static page, everything from this site (the stylesheet, its fonts, the icon); no script. The page's own <style> block below needs 'unsafe-inline'. -->
+<!-- CSP: a static page, everything from this site (the stylesheet, its fonts, the icon); only theme.js. The page's own <style> block below needs 'unsafe-inline'. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
+<script src="theme.js"></script><!-- the light or dark choice made on the main page -->
 <title>תנאי שימוש, פרטיות ונגישות · מערכת שעות אפקה</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">

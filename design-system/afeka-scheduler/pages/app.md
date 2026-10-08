@@ -10,8 +10,10 @@
 3. **Instant feedback.** The search re-runs automatically, debounced by 300ms, on every change: status, course mode, pin, friend, or preference. There is no "search" button. While it runs, a subtle progress indicator shows on the grid, and the grid never blanks.
 4. **Light, calm, modern.** White surfaces on a very light grey page. Soft course tints, one blue accent, 12–16px radii, and subtle shadows only on floating layers (popover, drawer).
 
-## Theme (light only, no dark mode)
-Remove every `prefers-color-scheme: dark` block. Set `<meta name="color-scheme" content="light">`.
+## Theme (light and dark, both from tokens)
+> Amended 2026-10-08 (owner): light ("clarity") is the base, dark ("night") follows the device, and a visible "מצב כהה" button in the view strip overrides it
+> (`web/theme.js`, stored as `afeka-sched-v1-theme`). Components use tokens only; the dark set is `:root[data-theme="dark"]` in `web/style.css`.
+> The token table below is the original v2 light set; `web/style.css` is the source of truth.
 
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap');
@@ -96,12 +98,13 @@ Both open an in-flow panel:
 - Hit areas are ≥ 44px. Segmented controls use `role="radiogroup"` / `radio` with arrow keys.
 - Status tags, chips, friend and pinned states always pair colour with text or an icon.
 - The results area has `aria-live="polite"` with a short text summary of the current alternative.
-- Transitions are 150–200ms ease on hover/background/opacity only. `prefers-reduced-motion` disables them.
+- Transitions are 150–200ms ease on hover/background/opacity. Overlays and sheets may enter with transform and opacity, 150-240ms ease-out
+  (amended 2026-10-08, U-01), only under `prefers-reduced-motion: no-preference`; reduced motion removes all of it.
 - No emoji. Icons are inline Lucide SVG (`stroke="currentColor"`, `aria-hidden`), reused from `ui-plan.js` `ICON`, adding: `chevron-left`, `chevron-right`, `lock`, `check`, `x`, `plus`, `sliders`, `clipboard-list`, `user-plus`, `external-link`.
 - No horizontal page scroll at 375px.
 
 ## Pre-delivery checklist
-- [ ] Light theme only. No dark-mode CSS remains
+- [ ] Light and dark from the same tokens; 0 contrast fails in both (`shoot.mjs` and `shoot.mjs --dark`)
 - [ ] Grid is the dominant element at 1440px and first at 375px
 - [ ] No `<select>` tables and no raw sliders for weights (segmented scales instead)
 - [ ] Auto re-run on every change (debounced), with no search button and no blank flashes

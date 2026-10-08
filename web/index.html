@@ -10,7 +10,8 @@
   worker-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net/npm/tesseract.js-core@v7.0.0/ https://cdn.jsdelivr.net/npm/@tesseract.js-data/; img-src 'self' data: blob:;
   style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#FFFFFF">
 <title>המערכת שלי · אפקה</title>
 <meta name="description" content="כלי עזר לא רשמי לבניית מערכת שעות באפקה: חלופות בלי התנגשויות, חברים, דרישות קדם וייצוא ליומן.">
 <!-- link preview (WhatsApp, Telegram, social): the share links (#f=, #b=) keep this page's tags, the hash never reaches the preview fetch -->
@@ -24,6 +25,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="לוח שבועי עם חלופה 1 מתוך 10, חברים ומפת התקדמות, ולידו: המערכת שלי, מערכת שעות לאפקה, בדקה">
 <meta name="twitter:card" content="summary_large_image">
+<script src="theme.js"></script><!-- light or dark before the first paint -->
 <link rel="preload" href="fonts/rubik-hebrew-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="map.css">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -46,7 +48,11 @@
     <button type="button" class="btn primary" data-act="share" data-icon="share"><span class="lbl">שתף</span></button>
   </div>
 </header>
-<nav class="views" aria-label="מסכים"><a href="#me" data-view="me">המצב שלי</a><a href="#" data-view="plan">בניית מערכת</a></nav>
+<nav class="views" aria-label="מסכים"><a href="#me" data-view="me">המצב שלי</a><a href="#" data-view="plan">בניית מערכת</a>
+  <button type="button" class="btn ghost theme-btn"><span class="to-dark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span
+    class="lbl">מצב כהה</span></span><span class="to-light"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path
+    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="lbl">מצב בהיר</span></span></button>
+</nav>
 <div id="layout" class="layout">
   <main>
     <div id="banner"></div>
