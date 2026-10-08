@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-07T22:18:39.347Z",
+ "fetchedAt": "2026-10-08T22:18:32.495Z",
  "year": 2027,
  "startYear": 2027,
  "program": 30,
@@ -593,7 +593,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3910,7 +3910,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שוולב איילת",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "273021801/1"
@@ -3930,7 +3930,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר שוולב איילת",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4987,7 +4987,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר עלפי ישראל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "273030204/1"
@@ -5043,7 +5043,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר עלפי ישראל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8595,7 +8595,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' בלובשטיין הראל אילנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

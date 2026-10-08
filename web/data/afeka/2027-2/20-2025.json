@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-07T22:18:39.347Z",
+ "fetchedAt": "2026-10-08T22:18:32.495Z",
  "year": 2027,
  "startYear": 2025,
  "program": 20,
@@ -522,7 +522,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2779,7 +2779,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר אברמוב בנימין",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4355,7 +4355,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר חצקלביץ רון חיים",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7416,7 +7416,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' בלובשטיין הראל אילנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

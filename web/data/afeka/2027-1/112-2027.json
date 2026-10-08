@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-07T22:18:39.347Z",
+ "fetchedAt": "2026-10-08T22:18:32.495Z",
  "year": 2027,
  "startYear": 2027,
  "program": 112,
@@ -248,13 +248,13 @@
        "day": 1,
        "start": "17:00",
        "end": "19:50",
-       "room": "מפ\"ט אתרוג"
+       "room": "115 פיקוס"
       },
       {
        "day": 5,
        "start": "17:00",
        "end": "19:50",
-       "room": "מפ\"ט תאנה"
+       "room": "208 פיקוס"
       }
      ],
      "exams": []
@@ -8208,7 +8208,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' בילצ'ינסקי דינה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
