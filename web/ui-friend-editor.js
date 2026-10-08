@@ -44,7 +44,7 @@ phone.addEventListener('change', () => { if (ed) setTab($('feRoot').dataset.tab)
 
 const shell = () => `<div class="fe" id="feRoot">
   <header class="fe-head">
-    <h2 id="feTitle">${ed.friend ? 'עריכת חבר' : 'הזנת מערכת של חבר'}</h2>
+    <h2 id="feTitle">${ed.friend ? 'עריכת חבר' : 'מערכת של חבר'}</h2>
     <div class="fe-name"><label for="feName">שם החבר</label>
       <input id="feName" type="text" maxlength="60" autocomplete="off" aria-required="true" value="${esc(ed.friend?.name ?? '')}">
       <p class="err-text" id="feNameErr" role="alert"></p></div>

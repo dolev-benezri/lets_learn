@@ -78,7 +78,7 @@ function friendsPanel() {
     <section class="dr-sec fr-sec"><h3>הוספת חבר</h3>
       <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
       <form id="addFriendForm" class="row"><label for="friendUrl" class="sr">קישור שחבר שלח</label>
-        <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו כאן קישור שחבר שלח" value="${esc(ui.friendUrl)}"
+        <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו קישור" value="${esc(ui.friendUrl)}"
           aria-describedby="friendHow${ui.friendMsg ? ' friendErr' : ''}"${ui.friendMsg ? ' aria-invalid="true"' : ''}>
         <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
       ${ui.friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(ui.friendMsg)}</p>` : ''}
@@ -114,7 +114,8 @@ function regPanel() {
   if (!raw) return ['רשימה להרשמה', '<p class="hint">עוד אין מערכת. בחרו קורסים, והרשימה תופיע כאן.</p>'];
   const rowsOf = (res, data) => res.courses.map((cid) => {
     const c = data.courses[cid], gs = c.groups.filter((g) => res.groups.includes(g.id));
-    return `<li class="c${colors.get(cid) ?? 7}"><span class="dot" aria-hidden="true"></span><div class="grow"><b>${esc(c.name)}</b> <span class="hint">${esc(cid)} · ${c.credits} נ״ז</span>
+    return `<li class="c${colors.get(cid) ?? 7}"><span class="dot" aria-hidden="true"></span><div class="grow"><b>${esc(c.name)}</b>
+      <span class="hint">${esc(cid)} · <span class="nw">${c.credits} נ״ז</span></span>
       <p>${gs.map((g) => `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>${res.alts?.[g.id] ? ` <span class="hint">(או <bdi
         dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>` : ''}${backups(data, res, g.id).length ? ` <span class="hint">(גיבוי: <bdi
         dir="ltr">${backups(data, res, g.id).map(esc).join(', ')}</bdi>)</span>` : ''}`).join(' · ')}</p></div>

@@ -27,6 +27,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <script src="theme.js"></script><!-- light or dark before the first paint -->
 <link rel="preload" href="fonts/rubik-hebrew-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/rubik-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin><!-- digits and times -->
 <link rel="stylesheet" href="map.css">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
@@ -42,10 +43,10 @@
     <button type="button" id="next" class="btn icon-btn" data-act="next" data-icon="chevron-left" aria-label="החלופה הבאה" aria-keyshortcuts="ArrowLeft"></button>
   </div>
   <div class="actions">
-    <button type="button" id="friendsBtn" class="btn avatars" data-act="panel" data-panel="friends" aria-haspopup="dialog"><span class="lbl">חברים</span></button>
-    <button type="button" class="btn" data-act="panel" data-panel="prefs" data-icon="sliders" aria-haspopup="dialog"><span class="lbl">העדפות</span></button>
-    <button type="button" class="btn" data-act="panel" data-panel="reg" data-icon="clipboard-list" aria-haspopup="dialog"><span class="lbl">רשימה להרשמה</span></button>
-    <button type="button" class="btn primary" data-act="share" data-icon="share"><span class="lbl">שתף</span></button>
+    <button type="button" id="friendsBtn" class="btn avatars" data-act="panel" data-panel="friends" aria-haspopup="dialog" title="חברים"><span class="lbl">חברים</span></button>
+    <button type="button" class="btn" data-act="panel" data-panel="prefs" data-icon="sliders" aria-haspopup="dialog" title="העדפות"><span class="lbl">העדפות</span></button>
+    <button type="button" class="btn" data-act="panel" data-panel="reg" data-icon="clipboard-list" aria-haspopup="dialog" title="רשימה להרשמה"><span class="lbl">רשימה להרשמה</span></button>
+    <button type="button" class="btn primary" data-act="share" data-icon="share" title="שתף"><span class="lbl">שתף</span></button>
   </div>
 </header>
 <nav class="views" aria-label="מסכים"><a href="#me" data-view="me">המצב שלי</a><a href="#" data-view="plan">בניית מערכת</a>

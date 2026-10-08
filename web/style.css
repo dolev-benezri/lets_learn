@@ -456,6 +456,8 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 @media (pointer:coarse) { :root :is(input, select) { font-size:16px; } } /* iOS zooms into a focused field under 16px; :root lifts it over .drawer select */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition:none !important; animation:none !important; }
+  .busy::before { display:none; } /* a frozen ring reads as stuck; the word stays */
+  .board.is-busy::before { background:var(--primary-soft); }
 }
 .notice.partial { flex-wrap:wrap; margin-top:0; margin-bottom:12px; }
 .notice.partial span { flex:1 1 16rem; }
@@ -522,7 +524,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .year-head h3 { margin:0; }
 .me-foot { position:sticky; bottom:0; z-index:4; display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px 16px;
   margin:14px calc(-1 * var(--gut)) 0; padding:10px var(--gut); background:var(--surface); border-top:1px solid var(--border); box-shadow:var(--shadow-up); }
-@media (min-width:900px) {
+@media (min-width:720px) {
   #me { --gut:20px; padding-top:20px; }
   .me-grid { grid-template-columns:280px minmax(0, 1fr); gap:18px; align-items:start; }
   .me-side { position:sticky; top:calc(var(--bar-h) + 14px); }
@@ -588,9 +590,9 @@ body:has(#friendEd[open]) { overflow:hidden; }
 .fe-err { margin:0; padding:8px 20px; background:var(--danger-soft); }
 .fe-body { flex:1; min-height:0; display:grid; grid-template-columns:minmax(280px, 360px) minmax(0, 1fr); }
 .fe-pick { min-height:0; overflow:auto; overscroll-behavior:contain; padding:14px; background:var(--surface); border-inline-end:1px solid var(--border); }
-.fe-pick-body { display:grid; gap:12px; }
+.fe-pick-body { display:grid; grid-template-columns:minmax(0, 1fr); gap:12px; } /* minmax: the picker never grows past 320px (U-17) */
 .fe-tabs, #fePickSem, .fe-actions [data-fe="cancel"] .icon { display:none; } /* phone only (below) */
-.fe-sec { display:grid; gap:6px; }
+.fe-sec { display:grid; grid-template-columns:minmax(0, 1fr); gap:6px; min-width:0; }
 .fe-sec h3 { font-size:14px; font-weight:600; }
 .fe-pages-box { display:grid; gap:8px; }
 .fe-pages-box[hidden] { display:none; }
@@ -601,7 +603,9 @@ body:has(#friendEd[open]) { overflow:hidden; }
 #friendEd .seg { margin:0; }
 #friendEd input[type=text], #friendEd textarea { width:100%; min-height:var(--tap); padding:0 10px; border:1px solid var(--border-input); border-radius:10px; background:var(--surface); }
 #friendEd textarea { padding:10px; font:inherit; font-size:13px; resize:vertical; }
-#friendEd input[type=file] { min-height:var(--tap); max-width:100%; }
+#friendEd input[type=file] { width:100%; min-height:var(--tap); color:var(--text-2); font-size:var(--fs-sm); }
+#friendEd input[type=file]::file-selector-button { min-height:var(--tap); margin-inline-end:10px; padding:0 14px; border:1px solid var(--border-input);
+  border-radius:var(--radius); background:var(--surface); color:var(--text); font:inherit; font-weight:500; cursor:pointer; } /* U-18: the import looks like the app */
 #friendEd input[aria-invalid="true"] { border-color:var(--danger); }
 #friendEd .row .btn { flex:none; }
 .fe-course { font-size:14px; font-weight:600; }
@@ -633,7 +637,7 @@ body:has(#friendEd[open]) { overflow:hidden; }
   .fe-actions [data-fe="save"] { grid-area:1 / 3; }
   .fe-actions [data-fe="cancel"] .icon { display:block; }
   .fe-actions .fe-lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } /* icon-only close, the word stays for screen readers */
-  .fe-name { grid-area:2 / 1 / 3 / -1; max-width:none; padding-bottom:6px; }
+  .fe-name { grid-area:2 / 1 / 3 / -1; max-width:none; padding-block:8px; }
   .fe-err { padding:8px 12px; }
   .fe-tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--border); }
   .fe-tabs [role="tab"] { flex:1; min-height:var(--tap); padding:0 8px; border:0; border-bottom:3px solid transparent; background:none; font:inherit;
@@ -680,4 +684,22 @@ body:has(#friendEd[open]) { overflow:hidden; }
   .drawer[open] { animation-name:in-up; }
   .pop:popover-open { animation:in-up var(--dur-2) var(--ease-out); }
   .pop.\:popover-open { animation:in-up var(--dur-2) var(--ease-out); }
+}
+/* phone polish (U-10, U-11, U-14, U-16) */
+.nw, .reglist bdi { white-space:nowrap; }
+@media (pointer:coarse) { .btn.sm { min-height:var(--tap); } }
+@media (max-width:599px) {
+  .actions .lbl { white-space:normal; line-height:1.1; text-align:center; } /* "רשימה להרשמה" takes two lines at 320 instead of spilling */
+  .times { display:grid; }
+  .times .field { display:grid; grid-template-columns:5em auto; }
+}
+@media (max-width:359px) { .top { padding:0 10px; column-gap:4px; } .alt-label { padding:0; } .top h1::before { display:none; } }
+/* a landscape phone gets the whole week: five columns fit, one day plus a day selector would leave no grid on screen (U-08) */
+@media (max-width:759px) and (max-height:480px) and (orientation:landscape) {
+  #daysel { display:none; }
+  .wk { grid-template-columns:48px repeat(var(--cols), minmax(0, 1fr)); }
+  .wk-head { display:contents; }
+  .day:not(.on) { display:block; }
+  .day.on:not(:last-child) { border-inline-end:0; }
+  #semnote, .pill-info { display:none; }
 }

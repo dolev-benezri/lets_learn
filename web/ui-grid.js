@@ -215,7 +215,7 @@ export function renderDaySelector(range, res, data, day) {
 // Popover: details of one group, friends in it, pin toggle and a Yedion link. Compact: header and actions stay, the rest scrolls inside.
 // The group is named for people (type + short number); the 9-digit registration id stays visible but secondary.
 // Prefer / avoid this lecturer in every search (constraints.lecturers); pressed again, the choice is cleared.
-const lecturerBtns = (name, mine) => [['prefer', 'להעדיף', `להעדיף את ${name}`], ['avoid', 'להימנע', `להימנע מקבוצות של ${name}`]].map(([mode, label, aria]) => ` <button
+const lecturerBtns = (name, mine) => [['prefer', 'העדף מרצה', `להעדיף את ${name}`], ['avoid', 'הימנע ממרצה', `להימנע מקבוצות של ${name}`]].map(([mode, label, aria]) => ` <button
   type="button" class="btn sm" data-act="lecturer" data-name="${esc(name)}" data-mode="${mode}" aria-pressed="${mine === mode}" aria-label="${esc(aria)}">${label}</button>`).join('');
 export function openPop(btn, ctx) {
   const pop = document.getElementById('pop');
@@ -246,11 +246,14 @@ export function openPop(btn, ctx) {
     </dl>
     <p class="pop-hint" id="popHint">נעיצה שומרת את הקבוצה הזו בכל החלופות.</p>
     ${alts.length > 1 ? `<h4 class="pop-alt-h">קבוצות ${esc(typeLabel(g.type))} אחרות בקורס</h4><ul class="pop-alts">${alts.map(({ g: x, clash, ok }) => {
+      // one red tag per row, the strongest reason; the others as plain text (a list of red reads as an error screen)
+      const why = [x.full && 'מלאה', clash && 'מתנגשת', !ok && x.id !== g.id && 'לא זמינה'].filter(Boolean);
       const body = `<b>קבוצה ${esc(groupNumber(x.id))}</b> · ${x.meetings.map((m) => `${DAYS[m.day] ?? '?'}׳ <bdi
         dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>`).join(', ')} · ${esc(x.lecturer || '—')}`
-        + `${x.full ? ' <span class="tag bad">מלאה</span>' : ''}${clash ? ' <span class="tag bad">מתנגשת</span>' : ''} <bdi dir="ltr" class="gid">${esc(x.id)}</bdi>`;
+        + `${why.length ? ` <span class="tag bad">${why[0]}</span>${why.length > 1 ? ` <span class="gid">(${why.slice(1).join(', ')})</span>` : ''}` : ''}`
+        + ` <bdi dir="ltr" class="gid">${esc(x.id)}</bdi>`;
       return x.id === g.id ? `<li class="cur" aria-current="true">${body} <span class="tag ok">נוכחית</span></li>`
-        : !ok ? `<li class="na">${body} <span class="tag bad">לא זמינה</span></li>`
+        : !ok ? `<li class="na">${body}</li>`
         : `<li><button type="button" class="btn" data-act="pin" data-gid="${esc(x.id)}" data-k="alt-${esc(x.id)}">${body}</button></li>`;
     }).join('')}</ul>` : ''}
     </div>`;

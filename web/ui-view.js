@@ -20,7 +20,7 @@ export function renderTop() {
     + (app.data.verified === false ? ' · הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.' : '');
   const fr = app.state.friends;
   $('friendsBtn').innerHTML = `<span class="stack" aria-hidden="true">${fr.slice(0, 3).map((f) => `<span
-    class="av">${esc(initials(f.name))}</span>`).join('')}<span class="av plus">${icon('plus')}</span></span><span class="lbl">חברים${fr.length
+    class="av">${esc(initials(f.name))}</span>`).join('')}${fr.length ? '' : `<span class="av plus">${icon('plus')}</span>`}</span><span class="lbl">חברים${fr.length
     ? ` (${fr.length})` : ''}</span>`;
 }
 

@@ -79,9 +79,9 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 
 /* edges: soft neutral curves; prerequisites solid, parallel dashed */
 .pmap .edges { pointer-events:none; }
-.pmap .e { fill:none; stroke:var(--text-2); stroke-width:1.5; stroke-opacity:.45; marker-end:url(#pmArr); }
+.pmap .e { fill:none; stroke:var(--text-2); stroke-width:1.5; stroke-opacity:.65; marker-end:url(#pmArr); } /* .65: 3:1 on the surface (WCAG 1.4.11) */
 .pmap .e.p { stroke-dasharray:6 5; }
-.pmap .ar { fill:var(--text-2); fill-opacity:.55; }
+.pmap .ar { fill:var(--text-2); fill-opacity:.65; }
 .pmap .ar.lit { fill:var(--primary); fill-opacity:1; }
 .pmap .e.lit { stroke:var(--primary); stroke-opacity:1; stroke-width:2.5; marker-end:url(#pmArrL); }
 
