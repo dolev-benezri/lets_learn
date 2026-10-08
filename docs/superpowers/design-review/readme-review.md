@@ -81,7 +81,7 @@ Fix: see "Visual assets plan". Keep og.png as the social preview, not as the REA
 - "How to report a wrong course/time": only at the very bottom (241, 262) and requires a GitHub account, which many students do not have. No issue template, so reports will lack program/semester/course.
 Fix: one "פרטיות ונתונים" block high on the page (6 bullets), freshness badge in the header, report link with a prefilled issue form, plus an optional non-GitHub channel (owner's decision).
 
-### R-09 M, lines 9-12, S: badge row is English, one badge is cryptic, and none tells a student what they care about
+### R-09 M, lines 9-12, S: badge row is English (2026-10-08: tried Hebrew labels; shields stretches each glyph with textLength and Hebrew comes out reversed, so the labels stay English), one badge is cryptic, and none tells a student what they care about
 `deploy` (9) is the Actions status of a workflow that also runs the whole test suite, so it is really "tests passing", but the label says deploy; `sign-up not needed` / `data stays in your
 browser` (11-12) are English inside a Hebrew page; the license badge is useful for developers only. No freshness badge.
 Fix (all shields.io, Hebrew labels need URL encoding): tests `https://img.shields.io/github/actions/workflow/status/dolev-benezri/lets_learn/deploy.yml?label=בדיקות`;

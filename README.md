@@ -7,9 +7,9 @@
 
 **[לפתיחת האתר ←](https://dolev-benezri.github.io/lets_learn/)**
 
-[![בדיקות](https://img.shields.io/github/actions/workflow/status/dolev-benezri/lets_learn/deploy.yml?label=%D7%91%D7%93%D7%99%D7%A7%D7%95%D7%AA)](https://github.com/dolev-benezri/lets_learn/actions/workflows/deploy.yml)
-[![נתונים עודכנו](https://img.shields.io/github/last-commit/dolev-benezri/lets_learn?path=web%2Fdata%2Fafeka%2Fstatus.json&label=%D7%A0%D7%AA%D7%95%D7%A0%D7%99%D7%9D%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95)](https://dolev-benezri.github.io/lets_learn/)
-![פרטיות](https://img.shields.io/badge/%D7%A4%D7%A8%D7%98%D7%99%D7%95%D7%AA-%D7%94%D7%9B%D7%95%D7%9C%20%D7%91%D7%93%D7%A4%D7%93%D7%A4%D7%9F-success)
+[![tests](https://img.shields.io/github/actions/workflow/status/dolev-benezri/lets_learn/deploy.yml?label=tests)](https://github.com/dolev-benezri/lets_learn/actions/workflows/deploy.yml)
+[![data updated](https://img.shields.io/github/last-commit/dolev-benezri/lets_learn?path=web%2Fdata%2Fafeka%2Fstatus.json&label=data%20updated)](https://dolev-benezri.github.io/lets_learn/)
+![privacy: stays in your browser](https://img.shields.io/badge/privacy-stays%20in%20your%20browser-success)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/01-week-desktop-dark.webp">
