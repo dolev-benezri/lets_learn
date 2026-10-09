@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-08T22:18:32.495Z",
+ "fetchedAt": "2026-10-09T22:18:29.701Z",
  "year": 2027,
  "startYear": 2025,
  "program": 112,
@@ -687,7 +687,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "מר לבנת מיקי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -3667,7 +3667,7 @@
        "day": 2,
        "start": "13:00",
        "end": "14:50",
-       "room": "200 פיקוס"
+       "room": "מפ\"ט תמר"
       }
      ],
      "exams": []
@@ -6561,7 +6561,7 @@
        "day": 4,
        "start": "11:00",
        "end": "12:50",
-       "room": "202 פיקוס"
+       "room": "מפ\"ט אולם כנסים"
       }
      ],
      "exams": []
@@ -7329,7 +7329,7 @@
        "day": 2,
        "start": "13:00",
        "end": "14:50",
-       "room": "מפ\"ט יעד"
+       "room": "מפ\"ט זית"
       }
      ],
      "exams": []
@@ -7609,7 +7609,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

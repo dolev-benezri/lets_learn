@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-08T22:18:32.495Z",
+ "fetchedAt": "2026-10-09T22:18:29.701Z",
  "year": 2027,
  "startYear": 2025,
  "program": 22,
@@ -4867,7 +4867,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4885,7 +4885,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9470,7 +9470,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092503/1"
@@ -9626,7 +9626,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9949,7 +9949,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092902/1"
@@ -10027,7 +10027,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

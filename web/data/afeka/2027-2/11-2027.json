@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-08T22:18:32.495Z",
+ "fetchedAt": "2026-10-09T22:18:29.701Z",
  "year": 2027,
  "startYear": 2027,
  "program": 11,
@@ -932,7 +932,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר כהן תום",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271001616/1"
@@ -1006,7 +1006,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן תום",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3360,7 +3360,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר עבד אלחלים הישאם",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "271023801/1"
@@ -3380,7 +3380,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר עבד אלחלים הישאם",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

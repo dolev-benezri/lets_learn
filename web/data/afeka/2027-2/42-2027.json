@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-08T22:18:32.495Z",
+ "fetchedAt": "2026-10-09T22:18:29.701Z",
  "year": 2027,
  "startYear": 2027,
  "program": 42,
@@ -729,7 +729,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר כהן תום",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271001616/1"
@@ -803,7 +803,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן תום",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4862,7 +4862,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר גולומב שחר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "274024804/1"
@@ -4882,7 +4882,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גולומב שחר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8242,7 +8242,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092503/1"
@@ -8398,7 +8398,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
