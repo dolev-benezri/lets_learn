@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-10T22:26:40.184Z",
+ "fetchedAt": "2026-10-11T23:09:19.541Z",
  "year": 2027,
  "startYear": 2027,
  "program": 40,
@@ -1342,7 +1342,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר פרי עומר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

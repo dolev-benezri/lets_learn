@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-10T22:26:40.184Z",
+ "fetchedAt": "2026-10-11T23:09:19.541Z",
  "year": 2027,
  "startYear": 2024,
  "program": 50,
@@ -3132,7 +3132,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר נפתלי שרה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
