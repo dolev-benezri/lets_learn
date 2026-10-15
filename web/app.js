@@ -298,8 +298,8 @@ async function init() {
   try { sem = await fetchSemesters(app.state); } catch { sem = null; }
   app.status = await status;
   if (!sem) {
-    app.loadFailed = true; // the nav tabs still switch views (ui-plan.js onHash), both showing this message
-    for (const id of ['week', 'me']) {
+    app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
+    for (const id of ['week', 'me', 'side', 'prefs']) {
       const el = document.getElementById(id);
       el.innerHTML = '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b>' +
         '<p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions">' +

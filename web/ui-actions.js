@@ -7,17 +7,17 @@ import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
 import { friendToast, gradeInput, rangeError, shareText, waUrl } from './ui-text.js';
-import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, $, ui } from './ui-common.js';
+import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { avgLine, specSave, specView, importGrades } from './ui-me.js';
-import { MAX_BLOCKS, registrationText, icsParts, renderDrawer, openPanel } from './ui-drawer.js';
+import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel } from './ui-drawer.js';
 
 // ---------- actions ----------
 export function addFriend(p) {
   const name = friendName(app.state.friends, p);
   const r = upsertFriend(app.state.friends, { name, groups: p.groups });
-  if (r.error) { ui.friendMsg = r.error; toast(ui.friendMsg); keepFocus(renderDrawer); return; }
+  if (r.error) { ui.friendMsg = r.error; toast(ui.friendMsg); keepFocus(renderPrefs); return; }
   app.state.friends = r.friends;
   app.friendLanding = null;
   refresh();
@@ -51,9 +51,8 @@ export const ACT = {
   shareOut,
   gradeImport() { $('gradeFile').click(); },
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
-  statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = ''; },
-  openStatus() { location.hash = '#me'; },
-  skip(el, e) { e.preventDefault(); ($('me').hidden ? $('week') : $('meTitle'))?.focus(); }, // a real #fragment would switch the view
+  statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = '#courses'; },
+  skip(el, e) { e.preventDefault(); ($('layout').hidden ? shownTitle() : $('week'))?.focus(); }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
   closeDrawer: () => $('drawer').close(),
   prev: () => go(-1),
@@ -107,7 +106,7 @@ export const ACT = {
   landingDrop() { app.friendLanding = null; renderBanner(); focusWeek(); },
   dismissError() { app.hashError = null; renderBanner(); focusWeek(); },
   dropPin(el) { app.state.pins = app.state.pins.filter((p) => p !== el.dataset.gid); refresh(); focusWeek(); },
-  removeFriend(el) { app.state.friends.splice(Number(el.dataset.i), 1); refresh(); $('drawer').querySelector('[data-k="closeDrawer"]')?.focus(); },
+  removeFriend(el) { app.state.friends.splice(Number(el.dataset.i), 1); refresh(); $('prefsTitle')?.focus(); },
   openFriendEditor: () => openFriendEditor({ onSave: saveManualFriend, returnFocusId: 'openFriendEditor' }),
   editFriend: (el) => openFriendEditor({ friend: app.state.friends[Number(el.dataset.i)], onSave: saveManualFriend, returnFocusId: `editFriend-${el.dataset.i}` }),
   dayOff(el) {
@@ -120,13 +119,13 @@ export const ACT = {
     if (bl.length >= MAX_BLOCKS) return;
     bl.push({ day: 1, start: '18:00', end: '20:00', label: '' });
     refresh();
-    $('drawer').querySelector(`[data-k="blk-${bl.length - 1}-day"]`)?.focus();
+    $('prefs').querySelector(`[data-k="blk-${bl.length - 1}-day"]`)?.focus();
   },
   blkRemove(el) {
     const bl = app.state.constraints.blocks, i = Number(el.dataset.i);
     bl.splice(i, 1);
     refresh();
-    ($('drawer').querySelector(`[data-k="blk-rm-${Math.min(i, bl.length - 1)}"]`) ?? $('drawer').querySelector('[data-k="blkAdd"]'))?.focus();
+    ($('prefs').querySelector(`[data-k="blk-rm-${Math.min(i, bl.length - 1)}"]`) ?? $('prefs').querySelector('[data-k="blkAdd"]'))?.focus();
   },
   clearPins() { app.state.pins = []; refresh(); },
   async eraseAll() {
@@ -188,7 +187,7 @@ export const CHG = {
     const p = app.catalog.programs.find((x) => x.id === app.state.program); // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024)
     const start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
     if (start && start !== app.state.startYear) changeIdentity(app.state.program, start);
-    if (was) queueMicrotask(focusWeek); // after the refresh: the question is gone, keep focus out of <body>
+    if (was) queueMicrotask(() => shownTitle()?.focus()); // after the refresh: the question is gone, the step's own page shows; keep focus out of <body>
   },
   amirnet: (el) => {
     const err = rangeError(el.validity?.badInput ? 'x' : el.value, 50, 150);

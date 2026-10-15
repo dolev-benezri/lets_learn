@@ -95,7 +95,7 @@ export function renderMe() {
   const premarked = (y) => (y < 2 ? '' : y === 2 ? ' (שנה א׳ מסומנת מראש)' : ` (שנים א׳–${'אבגד'[y - 2]}׳ מסומנות מראש)`); // ensurePassed (app.js)
   const step = onboarded()
     ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
-    : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${premarked(studyYear(data, state))}, ואז לחצו ״סיימתי״.`;
+    : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${premarked(studyYear(data, state))}, ואז לחצו ״הבא: קורסים״.`;
   el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step">${step}</p></div>
     <div class="me-grid">
       <div class="me-side">
@@ -113,7 +113,6 @@ export function renderMe() {
             style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
           ${checklist(data, state)}
           <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
-          <button type="button" class="btn" data-act="openMap" data-k="openMap">${icon('share')} הראה התקדמות</button>
           <button type="button" class="btn" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
           <input type="file" id="gradeFile" hidden accept="application/pdf" data-chg="gradeFile">
           <p class="hint" id="gradeMsg" role="status">${esc(ui.gradeMsg)}</p></section>
@@ -130,7 +129,7 @@ export function renderMe() {
         ${details('specOthers', 'התמחויות אחרות', specOthers.map(group).join(''), specOthers.length)}
       </section>
     </div>
-    <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#" data-act="statusDone" data-k="statusDone">${icon('check')} סיימתי, לבניית המערכת</a></div>`;
+    <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#courses" data-act="statusDone" data-k="statusDone">הבא: קורסים</a></div>`;
 }
 
 // ---------- grade-sheet import (PDF read on this device only, never stored) ----------

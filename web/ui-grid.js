@@ -152,6 +152,10 @@ export function summary(res, data, friends, constraints = {}) {
   };
 }
 
+// The free days of a summary, as the board's pill and the courses page say them.
+export const freeDaysText = (days) => (!days.length ? 'אין יום פנוי' : days.length === 1 ? `יום ${DAYS[days[0]]}׳ פנוי`
+  : `ימים ${days.map((d) => `${DAYS[d]}׳`).join(', ')} פנויים`);
+
 // Friend tags on a block: first name (tooltip = full name), at most two, then "+N". Tags, not circles, so they never overlap.
 export const firstName = (name) => {
   const w = Array.from(name.trim().split(/\s+/)[0]);

@@ -1,40 +1,46 @@
-// Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, status page (#me), courses sidebar,
-// preferences / friends / registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, save, refresh, setRenderers, keepFocus, routeOf, applyHash } from './app.js';
+// Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, four step pages (#me, #courses, #prefs, the plans),
+// the registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
+import { app, save, refresh, setRenderers, keepFocus, STEPS, routeOf, applyHash } from './app.js';
 import { readHash } from './share.js';
 import { icon } from './ui-grid.js';
 import { trapTab } from './ui-dialog.js';
 import './ui-map.js';
 import { popStale } from './ui-text.js';
-import { PHONE, openDetails, onboarded, markOnboarded, gated, $, ui } from './ui-common.js';
+import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderTop, renderBanner, renderView, scrollToDay, go } from './ui-view.js';
 import { renderMe } from './ui-me.js';
-import { renderDrawer } from './ui-drawer.js';
+import { renderPrefs } from './ui-drawer.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 let firstVisit = !onboarded() && !location.hash;
 
-// The view follows the hash: #me shows the status page, anything else the builder (index.html #me / #layout).
-// The top bar keeps only the title on #me (index.html [data-view="me"]): the alternatives and the plan actions belong to the builder.
+// The step follows the hash (app.js routeOf): one page shown at a time (index.html #me, #courses, #prefs, #layout).
+// The top bar keeps only the title off the plans (style.css [data-view]): the alternatives and the plan actions belong to step 4.
+const NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות' };
 function renderRoute() {
-  const view = routeOf(location.hash), me = view === 'me', gate = !me && gated(); // the gate question takes the status page's container
-  $('me').hidden = !me && !gate;
-  $('layout').hidden = me || gate;
+  const view = routeOf(location.hash), gate = view !== 'me' && gated(); // the gate question takes the status page's container
+  const page = PAGE[gate ? 'me' : view][0];
+  for (const [p] of Object.values(PAGE)) $(p).hidden = p !== page;
   document.body.dataset.view = view;
-  document.title = `${me ? 'המצב שלי' : gate ? 'התחלה' : 'בניית מערכת'} · המערכת שלי · אפקה`; // a tab title per view (a11y)
+  document.title = `${gate ? 'התחלה' : NAME[view]} · המערכת שלי · אפקה`; // a tab title per step (a11y)
   document.body.classList.toggle('gated', gate);
-  if (!me && app.cls) markOnboarded(); // reaching the builder any way (tab, link, "סיימתי") ends the first-visit redirect
-  for (const a of document.querySelectorAll('.views a')) if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  if (view !== 'me' && app.cls) markOnboarded(); // leaving step 1 any way (step bar, link, "הבא") ends the first-visit redirect
+  const at = STEPS.indexOf(view);
+  for (const a of document.querySelectorAll('.steps a')) {
+    const k = STEPS.indexOf(a.dataset.view);
+    a.classList.toggle('done', k < at);
+    if (k === at) a.setAttribute('aria-current', 'step'); else a.removeAttribute('aria-current');
+  }
   if (app.cls) renderMe();
 }
-const focusView = () => $($('me').hidden ? 'weekTitle' : 'meTitle')?.focus({ preventScroll: true });
+const focusView = () => shownTitle()?.focus({ preventScroll: true });
 // Back/forward and the nav links switch views without a new search (a search would reset the shown alternative).
 // A friend or backup link pasted into the open tab is applied like at load, then lands on the builder.
 function onHash() {
   document.activeElement?.blur(); // commit a typed grade or Amirnet value (fires change) before #me is emptied
-  if (!app.cls) { // loading: init() reads the hash when the data arrives; failed: the tabs switch views, both showing the error (app.js)
+  if (!app.cls) { // loading: init() reads the hash when the data arrives; failed: the step bar switches pages, each showing the error (app.js)
     if (app.loadFailed) { renderRoute(); scrollTo(0, 0); focusView(); }
     return;
   }
@@ -56,7 +62,7 @@ function renderAll() {
   renderTop();
   renderBanner();
   renderView();
-  if (ui.panel !== 'reg') renderDrawer();
+  renderPrefs();
   scheduleRun();
 }
 
@@ -82,13 +88,13 @@ document.addEventListener('change', (e) => {
     (cards[Math.min(idx, cards.length - 1)]?.querySelector('input:checked') ?? $('side').querySelector('summary'))?.focus();
   }
 });
-document.addEventListener('input', (e) => { if (e.target.id === 'friendUrl') ui.friendUrl = e.target.value; }); // a drawer redraw keeps the typed link
+document.addEventListener('input', (e) => { if (e.target.id === 'friendUrl') ui.friendUrl = e.target.value; }); // a page redraw keeps the typed link
 document.addEventListener('submit', async (e) => {
   if (e.target.id !== 'addFriendForm') return;
   e.preventDefault();
   ui.friendUrl = $('friendUrl').value.trim();
   const r = await readHash(ui.friendUrl.includes('#') ? ui.friendUrl.slice(ui.friendUrl.indexOf('#')) : '', app.state);
-  if (!r || r.error || r.type !== 'friend') { ui.friendMsg = r?.error ?? 'זה לא קישור חבר'; keepFocus(renderDrawer); return; }
+  if (!r || r.error || r.type !== 'friend') { ui.friendMsg = r?.error ?? 'זה לא קישור חבר'; keepFocus(renderPrefs); return; }
   ui.friendMsg = ui.friendUrl = '';
   addFriend(r.payload);
 });
@@ -99,7 +105,7 @@ document.addEventListener('toggle', (e) => {
 document.addEventListener('keydown', (e) => {
   if (document.querySelector('dialog:modal:not(#drawer)')) return; // a confirm or the friend editor is on top (focus may sit on <body>)
   if (e.key === 'Escape' && $('drawer').open && !$('pop').matches(':popover-open')) { $('drawer').close(); return; }
-  if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || !$('me').hidden || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || $('layout').hidden || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   if (e.target.closest?.('input, textarea, select, [contenteditable]') || $('drawer').contains(e.target) || $('pop').matches(':popover-open')) return;
   e.preventDefault();
   go(e.key === 'ArrowLeft' ? 1 : -1); // RTL: left = next

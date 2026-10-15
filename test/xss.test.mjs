@@ -38,8 +38,8 @@ const { app, normalize, refresh, yearCourses } = app_;
 const { ui, current } = await import('../web/ui-common.js');
 const { renderTop, renderBanner, renderView, showAlt } = await import('../web/ui-view.js');
 const { renderMe, identityPick } = await import('../web/ui-me.js');
-const { renderSide } = await import('../web/ui-side.js');
-const { renderDrawer } = await import('../web/ui-drawer.js');
+const { renderSide, coursesSummary } = await import('../web/ui-side.js');
+const { renderDrawer, renderPrefs } = await import('../web/ui-drawer.js');
 const { openPop, groupIndex, resCourses } = await import('../web/ui-grid.js');
 const { openFriendEditor } = await import('../web/ui-friend-editor.js');
 const { layoutMap, geometry } = await import('../web/map-layout.js');
@@ -85,7 +85,14 @@ document.body.dataset.view = 'plan';
 run('picker', () => { writes.push({ scope: 'picker', id: 'pick', html: identityPick(2, true) }); });
 run('view', () => { renderView(); });
 run('side', () => { renderSide(current()); });
-for (const p of ['prefs', 'friends', 'reg']) run(`drawer-${p}`, () => { ui.panel = p; renderDrawer(); });
+run('prefs-page', () => { renderPrefs(); });
+run('drawer-reg', () => { ui.panel = 'reg'; renderDrawer(); });
+run('courses-top', () => { // the friend takes the shown plan's groups, so a friend line (with the hostile name) is written
+  const res = current(), saved = app.state.friends[0].groups;
+  app.state.friends[0].groups = [...(res.a?.groups ?? res.groups ?? [])].slice(0, 3);
+  writes.push({ scope: 'courses-top', id: 'coursesTop', html: coursesSummary(current()) });
+  app.state.friends[0].groups = saved;
+});
 run('pop', () => {
   const res = current();
   const gid = [...(res.a?.groups ?? res.groups ?? [])][0] ?? gids[0];
@@ -105,7 +112,7 @@ test('the search found plans, so the board and the registration list render real
 });
 
 test('every renderer got the payload and wrote it escaped (no element or on* attribute created from data)', () => {
-  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'drawer-prefs', 'drawer-friends', 'drawer-reg', 'pop', 'map', 'map-mini', 'friend-editor'];
+  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'prefs-page', 'drawer-reg', 'courses-top', 'pop', 'map', 'map-mini', 'friend-editor'];
   for (const s of scopes) {
     const mine = writes.filter((w) => w.scope === s);
     assert.ok(mine.length, `${s}: nothing written`);
@@ -173,11 +180,11 @@ test('a friend link from another program says which one, escaped', () => {
 });
 
 test('one h1 per page: the views use h2 under the app title (a11y)', () => {
-  for (const s of ['me', 'view', 'side', 'picker']) for (const w of writes.filter((x) => x.scope === s)) assert.ok(!w.html.includes('<h1'), `${s} #${w.id}`);
+  for (const s of ['me', 'view', 'side', 'picker', 'prefs-page']) for (const w of writes.filter((x) => x.scope === s)) assert.ok(!w.html.includes('<h1'), `${s} #${w.id}`);
 });
 
-test('the friends drawer offers a share button next to copy (WhatsApp)', () => {
-  assert.ok(writes.filter((w) => w.scope === 'drawer-friends').some((w) => w.html.includes('data-act="shareOut"')));
+test('the preferences page offers a share button next to copy (WhatsApp)', () => {
+  assert.ok(writes.filter((w) => w.scope === 'prefs-page').some((w) => w.html.includes('data-act="shareOut"')));
 });
 
 test('the status page has the degree checklist, one row per requirement', () => {
@@ -185,13 +192,13 @@ test('the status page has the degree checklist, one row per requirement', () => 
   assert.ok(me.includes('data-key="checklist"') && /מתוך \d/.test(me));
 });
 
-test('the preferences drawer offers a campus-day cap', () => {
-  assert.ok(writes.filter((w) => w.scope === 'drawer-prefs').some((w) => w.html.includes('data-chg="maxDays"')));
+test('the preferences page offers a campus-day cap', () => {
+  assert.ok(writes.filter((w) => w.scope === 'prefs-page').some((w) => w.html.includes('data-chg="maxDays"')));
 });
 
-test('lecturer buttons in the popover and the drawer list (hostile names escaped above)', () => {
+test('lecturer buttons in the popover and the preferences list (hostile names escaped above)', () => {
   assert.ok(writes.filter((w) => w.scope === 'pop').some((w) => w.html.includes('data-act="lecturer"')));
-  assert.ok(writes.filter((w) => w.scope === 'drawer-prefs').some((w) => w.html.includes('data-act="lecturerDrop"')));
+  assert.ok(writes.filter((w) => w.scope === 'prefs-page').some((w) => w.html.includes('data-act="lecturerDrop"')));
 });
 
 test('a later alternative says what changes against the first, escaped', () => {

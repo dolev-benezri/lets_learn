@@ -200,6 +200,12 @@ test('status page CSS is scoped to #me: the map lane div.ml.me must not inherit 
   assert.deepEqual(css.match(/(^|[\s,}])\.me(?![\w-])/gm), null);
 });
 
+test('index.html: one step link per step, in order, with hashOf hrefs', () => {
+  const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  const links = [...html.matchAll(/<a href="([^"]*)" data-view="([a-z]+)"/g)].map((m) => [m[2], m[1]]);
+  assert.deepEqual(links, STEPS.map((v) => [v, hashOf(v) || '#']));
+});
+
 test('hashOf is routeOf inverse for every step', () => {
   for (const v of STEPS) assert.equal(routeOf(hashOf(v)), v);
   assert.equal(hashOf(undefined), '');

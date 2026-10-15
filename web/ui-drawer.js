@@ -1,11 +1,11 @@
-// Drawer panels: preferences, friends, registration list.
+// The preferences page (step 3: preferences and friends) and the registration drawer.
 import { app, esc, DEFAULT } from './app.js';
 import { SEMESTER_DATES } from './ics.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, backups, isPair, semResult } from './ui-grid.js';
 import { groupLabel, strictnessHint, defaultNotes, hebYear, groupCount } from './ui-text.js';
 import { WEIGHTS, SCALE, FSCALE, SEMS, scopes, colors, LOAD, HARD, SHEET, current, allGroupIds, seg, $, ui } from './ui-common.js';
 
-// ---------- drawer panels ----------
+// ---------- step 3 and the drawer ----------
 export const MAX_BLOCKS = 12;
 const blockRow = (b, i) => {
   const when = `יום ${DAY_FULL[b.day]} ${b.start}–${b.end}`;
@@ -21,7 +21,7 @@ const blockRow = (b, i) => {
 function prefsPanel() {
   const { state, data } = app, c = state.constraints, notes = defaultNotes(DEFAULT.constraints);
   const pinName = (p) => { const x = groupIndex(data).get(p); return x ? `${esc(x.c.name)} · ${esc(groupLabel(x.g))}` : esc(p); };
-  return ['העדפות', `
+  return `
     ${app.sem['ב'] ? `<section class="dr-sec"><h3>תכנון</h3>
       ${seg('scope', 'לתכנן', scopes(), state.scope, 'data-chg="scope"', true)}
       ${state.scope === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>` : ''}
@@ -59,7 +59,7 @@ function prefsPanel() {
         class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות,
         תקרת הנ״ז, בחינות באותו יום וקבוצות מלאות לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.</p></section>
     <footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
-      <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`];
+      <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`;
 }
 
 function friendsPanel() {
@@ -74,7 +74,7 @@ function friendsPanel() {
       <div class="frow-full">${seg(`fw-${i}`, `כמה חשוב להיות עם ${f.name}?`, FSCALE, nearestStep(f.weight, [0, 1, 2, 3]), `data-chg="fw" data-i="${i}"`, true)}
       <label class="check"><input type="checkbox" data-chg="factive" data-i="${i}" data-k="fa-${i}"${f.active ? ' checked' : ''}> להציג במערכת</label></div></div>`;
   };
-  return ['חברים', `
+  return `
     <section class="dr-sec fr-sec"><h3>הוספת חבר</h3>
       <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
       <form id="addFriendForm" class="row"><label for="friendUrl" class="sr">קישור שחבר שלח</label>
@@ -90,7 +90,7 @@ function friendsPanel() {
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
       <button type="button" class="btn fr-wide" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
       <button type="button" class="btn fr-wide" data-act="shareOut" data-k="shareOut">${icon('share')} שתף (וואטסאפ ועוד)</button>
-      <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`];
+      <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`;
 }
 
 // A pair lists each semester under its own heading, each against its own data file; a single result has one untitled part.
@@ -139,7 +139,17 @@ export function icsParts(r) {
   return parts.every((p) => p.dates) ? parts : null;
 }
 
-const PANELS = { prefs: prefsPanel, friends: friendsPanel, reg: regPanel };
+// Step 3: preferences, then friends, laid out like the status page (style.css .step-page); the search re-runs after every change.
+export function renderPrefs() {
+  $('prefs').innerHTML = `<div class="me-grid halves">
+    <section aria-labelledby="prefsTitle"><div class="me-head"><h2 id="prefsTitle" tabindex="-1">מה חשוב לי</h2></div>
+      <div class="me-card dr-body">${prefsPanel()}</div></section>
+    <section aria-labelledby="friendsTitle"><div class="me-head"><h2 id="friendsTitle">חברים</h2></div>
+      <div class="me-card dr-body">${friendsPanel()}</div></section></div>
+    <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#">הבא: מערכות</a></div>`;
+}
+
+const PANELS = { reg: regPanel };
 export function renderDrawer() {
   if (!ui.panel) return;
   const [title, body, actions = ''] = PANELS[ui.panel](); // actions: a row that stays under the header while the body scrolls
@@ -151,7 +161,6 @@ export function renderDrawer() {
 export function openPanel(name, from) {
   ui.panel = name;
   ui.opener = from;
-  ui.friendMsg = '';
   renderDrawer();
   const d = $('drawer');
   if (!d.open) {
