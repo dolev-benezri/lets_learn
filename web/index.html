@@ -49,9 +49,9 @@
   </div>
 </header>
 <nav class="steps" aria-label="שלבים">
-  <a href="#me" data-view="me" aria-label="שלב 1: המצב שלי"><span class="n" aria-hidden="true">1</span><span class="lbl">המצב שלי</span></a>
-  <a href="#courses" data-view="courses" aria-label="שלב 2: קורסים"><span class="n" aria-hidden="true">2</span><span class="lbl">קורסים</span></a>
-  <a href="#prefs" data-view="prefs" aria-label="שלב 3: מה חשוב לי"><span class="n" aria-hidden="true">3</span><span class="lbl">מה חשוב לי</span></a>
+  <a href="#me" data-view="me" aria-label="שלב 1: המצב שלי"><span class="n" aria-hidden="true" data-icon="check">1</span><span class="lbl">המצב שלי</span></a>
+  <a href="#courses" data-view="courses" aria-label="שלב 2: קורסים"><span class="n" aria-hidden="true" data-icon="check">2</span><span class="lbl">קורסים</span></a>
+  <a href="#prefs" data-view="prefs" aria-label="שלב 3: מה חשוב לי"><span class="n" aria-hidden="true" data-icon="check">3</span><span class="lbl">מה חשוב לי</span></a>
   <a href="#" data-view="plan" aria-label="שלב 4: מערכות"><span class="n" aria-hidden="true">4</span><span class="lbl">מערכות</span></a>
   <button type="button" class="btn ghost theme-btn"><span class="to-dark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span
     class="lbl">מצב כהה</span></span><span class="to-light"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path
@@ -74,7 +74,7 @@
 </div>
 <main id="me" class="me step-page" aria-labelledby="meTitle" hidden></main>
 <main id="courses" class="step-page" aria-labelledby="coursesTitle" hidden>
-  <div class="me-head"><h2 id="coursesTitle" tabindex="-1">הקורסים שלי</h2><p id="coursesTop" class="me-step"></p></div>
+  <div class="me-head"><h2 id="coursesTitle" tabindex="-1">הקורסים שלי</h2><p id="coursesTop" class="me-step"></p><span id="coursesBusy" class="busy" hidden>מחשב…</span></div>
   <section id="side" class="me-main"></section>
   <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#prefs">הבא: מה חשוב לי</a></div>
 </main>

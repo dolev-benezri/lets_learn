@@ -76,7 +76,8 @@ export function renderView() {
 
   const noFriend = state.sortBy === 'friends' && !state.friends.some((f) => f.active !== false); // as showWeights: the search runs as 'best'
   $('showby').innerHTML = `<label class="field"><span class="ctl-l">הצג לפי</span><select data-chg="sortBy" data-k="sortBy">${SORT_BY.map(([v, t]) => `<option value="${v}"${v === state.sortBy
-    ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${noFriend ? '<p class="hint">אין עדיין חברים. אפשר להוסיף <a href="#prefs">בשלב 3</a>.</p>' : ''}`;
+    ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${noFriend ? `<p class="hint">${state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם'
+    : 'אין עדיין חברים. אפשר להוסיף'} <a href="#prefs">בשלב 3</a>.</p>` : ''}`;
 
   $('altLabel').textContent = nAlt ? `חלופה ${ui.cur + 1} מתוך ${nAlt}` : 'אין חלופות';
   const stranded = [$('prev'), $('next')].includes(document.activeElement) && nAlt < 2;
@@ -90,7 +91,7 @@ export function renderView() {
   else if (!Object.keys(app.data.courses).some(planned)) {
     const pickSpec = studyYear(app.data, state) >= 3 && app.data.specializations?.length && !state.profile.specs.length; // from year 3 the specialization fills the plan
     const how = pickSpec ? 'בחרו התמחות ב<a href="#me">״המצב שלי״</a>: משנה ג׳ קורסי ההתמחות נכנסים לבד. אפשר גם לסמן' : 'סמנו';
-    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב"הקורסים שלי", והמערכת תיבנה לבד.</p></div></div>`;
+    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב<a href="#courses">שלב 2</a>, והמערכת תיבנה לבד.</p></div></div>`;
     live = 'לא נבחרו קורסים';
   } else if (noRes) { // partial and empty: only this message, with the "search more" button (no second notice)
     const why = ui.last.diagnosis?.length ? ui.last.diagnosis : ['ההעדפות, האילוצים והנעיצות הנוכחיים לא משאירים אף קורס אפשרי.'];

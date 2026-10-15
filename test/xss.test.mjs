@@ -235,11 +235,27 @@ test('show-by friends without an active friend points to step 3', () => {
   const text = (s) => writes.filter((w) => w.scope === s).map((w) => w.html).join('');
   app.state.sortBy = 'friends'; app.state.friends = [];
   run('view-nofriends', () => { renderView(); });
+  app.state.friends = friends.map((f) => ({ ...f, active: false })); // friends exist, all hidden
+  run('view-hidden', () => { renderView(); });
   app.state.friends = friends; // an active friend: no line
   run('view-friends', () => { renderView(); });
   app.state.sortBy = sortBy;
   assert.ok(text('view-nofriends').includes('אין עדיין חברים. אפשר להוסיף <a href="#prefs">בשלב 3</a>.'));
-  assert.ok(!text('view-friends').includes('אין עדיין חברים'));
+  assert.ok(text('view-hidden').includes('החברים מוסתרים. אפשר להציג אותם <a href="#prefs">בשלב 3</a>.'));
+  assert.ok(!text('view-hidden').includes('אין עדיין חברים'));
+  assert.ok(!text('view-friends').includes('אין עדיין חברים') && !text('view-friends').includes('החברים מוסתרים'));
+});
+
+test('step 2 says when the search found no plan, and links to step 4', () => {
+  const last = ui.last, text = (s) => writes.filter((w) => w.scope === s && w.id === 'coursesTop').map((w) => w.html).join('');
+  ui.last = { results: [], partial: false, diagnosis: ['x'], ms: 3000 };
+  run('side-noplan', () => { renderSide(null); });
+  ui.last = { results: [], partial: true, diagnosis: [], ms: 3000 };
+  run('side-partial', () => { renderSide(null); });
+  ui.last = last;
+  assert.equal(text('side-noplan'), 'לא נמצאה מערכת. הפרטים <a href="#">בשלב 4</a>.');
+  assert.ok(text('side-partial').startsWith('החיפוש לא הספיק.'));
+  assert.ok(!text('side').includes('לא נמצאה מערכת'), 'a plan: the summary line');
 });
 
 test('showAlt picks an alternative for the board and the map: planIds follow it and the map hook runs once', () => {

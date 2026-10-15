@@ -55,7 +55,7 @@ function card(id, res, unlocks, musts) {
   </article>`;
 }
 
-// The shown alternative in one line (the board's pills, shortened): courses, credits, free days, courses with friends. Empty before a plan.
+// The shown alternative in one line (the board's pills, shortened): courses, credits, free days, courses with friends. Empty without a plan.
 export function coursesSummary(res) {
   const r = semResult(res, ui.sem);
   if (!r?.courses.length) return '';
@@ -84,7 +84,8 @@ export function renderSide(res) {
   const locked = (st) => ids.filter((id) => status(id) === st);
   const rows = (list) => `<ul
     class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
-  $('coursesTop').innerHTML = coursesSummary(res);
+  const noPlan = ui.last && !ui.last.results.some((r) => resCourses(r).length); // the search finished without a plan: say so, step 4 says why
+  $('coursesTop').innerHTML = noPlan ? `${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}. הפרטים <a href="#">בשלב 4</a>.` : coursesSummary(res);
   $('side').innerHTML = `<p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
     ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks, musts)).join('')
       || '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'}</div>`, 1)}

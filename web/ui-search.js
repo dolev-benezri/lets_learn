@@ -44,5 +44,5 @@ function run() {
 export function setBusy() {
   $('board').classList.toggle('is-busy', ui.running);
   $('board').setAttribute('aria-busy', String(ui.running));
-  $('busy').hidden = !ui.running;
+  $('busy').hidden = $('coursesBusy').hidden = !ui.running; // step 2 has no board: its own indicator
 }
