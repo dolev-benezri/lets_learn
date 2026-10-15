@@ -79,6 +79,12 @@ test('switchTo: personal state stays, program state resets, the cohort sets the 
   assert.equal(app.data.program, 20);
 });
 
+test('sortBy survives a program switch (PERSONAL)', async () => {
+  serve(); reset({ ...mine(), sortBy: 'unlocks' });
+  assert.equal(await switchTo(20, 2027), true);
+  assert.equal(app.state.sortBy, 'unlocks');
+});
+
 test('switchTo: a later cohort pre-marks year 1 as before; an unanswered year question stays open', async () => {
   serve(); reset({ ...mine(), profile: { year: null, amirnet: null, specs: [], summer: false } });
   await switchTo(30, 2025);
