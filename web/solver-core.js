@@ -170,6 +170,14 @@ const popcount = (x) => {
   return ((x + (x >>> 4) & 0x0f0f0f0f) * 0x01010101) >>> 24;
 };
 
+// The courses still ahead that `chosen` opens: the union of their downstream sets, minus `exclude` (the chosen courses) and courses
+// already done. One definition for the plan's count (metrics, leaf) and the unlocks bound (search), so the two cannot drift.
+function unlockSet(chosen, down, statuses, exclude = chosen) {
+  const out = new Set();
+  for (const id of chosen) for (const x of down[id]) if (!exclude.has(x) && statuses[x]?.status !== 'done') out.add(x);
+  return out;
+}
+
 function metrics(sel, mask, ctx) {
   const total = sel.reduce((a, o) => a + o.minutes, 0) || 1;
 
@@ -205,15 +213,15 @@ function metrics(sel, mask, ctx) {
     minGap = minGap === null ? g : Math.min(minGap, g);
   }
 
-  const chosen = new Set(sel.map((o) => o.course));
-  const unlocks = new Set([...chosen].flatMap((id) => [...ctx.down[id]]).filter((x) => !chosen.has(x) && ctx.statuses[x]?.status !== 'done')).size; // only what is still ahead
+  // Credits and unlocks only when weighted: the unlock set at every leaf made the default search about 4x slower (leaf() counts it for the shown plans).
+  const unlocks = ctx.maxUnlocks ? unlockSet(new Set(sel.map((o) => o.course)), ctx.down, ctx.statuses).size : undefined;
 
   return {
     m: {
       friends: fw ? fs / fw : 0,
       progress: value / ctx.maxValue,
-      credits: sel.reduce((a, o) => a + ctx.credits[o.course], 0) / ctx.maxCredits,
-      unlocks: unlocks / ctx.maxUnlocks,
+      credits: ctx.credits ? sel.reduce((a, o) => a + ctx.credits[o.course], 0) / ctx.maxCredits : 0,
+      unlocks: ctx.maxUnlocks ? unlocks / ctx.maxUnlocks : 0,
       freeDays: freeDays.length / 5,
       compact: 1 - Math.min(gapMin / 600, 1),
       timeWindow: 1 - Math.min(outside / 600, 1),
@@ -283,17 +291,22 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     return { id, mode, credits: c.credits, options };
   }).sort((a, b) => a.options.length - b.options.length);
 
-  const maxUnlocks = new Set(items.flatMap((it) => [...down[it.id]]).filter((x) => statuses[x]?.status !== 'done')).size;
-  const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished, freeCand: freeDayCandidates(constraints),
-    credits: Object.fromEntries(items.map((it) => [it.id, it.credits])), maxCredits: Math.max(1, items.reduce((a, it) => a + it.credits, 0)), down, statuses, maxUnlocks: Math.max(1, maxUnlocks) };
+  // Unlocks: restU[i] = every course still ahead that items i.. could open (done courses left out); restU[0] is the largest set any plan can open.
+  const NONE = new Set(), restU = [NONE];
+  if (weights.unlocks) for (let i = items.length - 1; i >= 0; i--) restU.unshift(new Set([...restU[0], ...unlockSet([items[i].id], down, statuses, NONE)]));
+  // credits / maxUnlocks set only when weighted: metrics() skips what nothing weights (about 250 searches per year plan)
+  const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished, freeCand: freeDayCandidates(constraints), down, statuses,
+    ...(weights.credits && { credits: Object.fromEntries(items.map((it) => [it.id, it.credits])), maxCredits: Math.max(1, items.reduce((a, it) => a + it.credits, 0)) }),
+    ...(weights.unlocks && { maxUnlocks: Math.max(1, restU[0].size) }) };
   const noExamClash = data.examsPublished && constraints.examsSameDay !== 'allow';
   const conditional = courses.filter(({ id }) => statuses[id]?.missingParallel).map(({ id }) => ({ id, needs: statuses[id].missingParallel }));
   const top = [];
   const sel = [];
 
   // Branch and bound: an optimistic score for anything reachable from a partial selection. Every metric is either
-  // monotone as courses are added (free days and time window only get worse, progress only gains what is left) or
-  // bounded by 1 (friends, compact, exam spread with fewer than 2 exams). Pruning never drops a result that would
+  // monotone as courses are added (free days and time window only get worse; progress and credits only gain what is left;
+  // unlocks only gain the union of what is left can open) or bounded by 1 (friends, compact, exam spread with fewer
+  // than 2 exams). Pruning never drops a result that would
   // have entered the top K, so the output is identical to the exhaustive search (test: "pruning keeps results").
   const W = (k) => weights[k] ?? 0;
   // bound() only knows these metrics: a weighted metric it doesn't know switches pruning off rather than risk a wrong cut.
@@ -307,12 +320,9 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   for (let i = items.length - 1; i >= 0; i--) {
     for (let f = 0; f < activeFriends.length; f++) restShared[f][i] = restShared[f][i + 1] + Math.max(0, ...items[i].options.map((o) => o.sharedMin[f]));
   }
-  // Credits and unlocks: what is left can add at most the sum of its credits / the sum of its downstream sizes (overlaps only shrink the union).
-  const restCredits = new Array(items.length + 1).fill(0), restDown = new Array(items.length + 1).fill(0);
-  for (let i = items.length - 1; i >= 0; i--) {
-    restCredits[i] = restCredits[i + 1] + items[i].credits;
-    restDown[i] = restDown[i + 1] + down[items[i].id].size;
-  }
+  // Credits: what is left can add at most the sum of its credits.
+  const restCredits = new Array(items.length + 1).fill(0);
+  for (let i = items.length - 1; i >= 0; i--) restCredits[i] = restCredits[i + 1] + items[i].credits;
   const fixedUp = W('compact');
   function friendsUp(i) {
     if (!fw) return 0;
@@ -331,9 +341,11 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     let b = fixedUp + W('friends') * friendsUp(i) + W('progress') * ((val + restValue[i]) / ctx.maxValue) + W('freeDays') * (free / 5) + W('timeWindow') * (1 - Math.min(outside / 600, 1));
     if (W('credits')) b += W('credits') * (credits + restCredits[i]) / ctx.maxCredits;
     if (W('unlocks')) {
-      const chosen = new Set(sel.map((o) => o.course));
-      const got = new Set(sel.flatMap((o) => [...down[o.course]]).filter((x) => !chosen.has(x) && statuses[x]?.status !== 'done'));
-      b += W('unlocks') * Math.min(1, (got.size + restDown[i]) / ctx.maxUnlocks);
+      // Any completion opens a subset of got ∪ restU[i], so |restU[i]| + |got \ restU[i]| is never less than what it opens.
+      const got = unlockSet(new Set(sel.map((o) => o.course)), down, statuses);
+      let extra = 0;
+      for (const x of got) if (!restU[i].has(x)) extra++;
+      b += W('unlocks') * (restU[i].size + extra) / ctx.maxUnlocks;
     }
     if (ctx.examsPublished && W('examSpread')) {
       const dates = sel.flatMap((o) => o.exams).sort();
@@ -352,9 +364,9 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     const chosen = new Set(sel.map((o) => o.course));
     for (const k of conditional) if (chosen.has(k.id) && !k.needs.every((anyOf) => anyOf.some((x) => chosen.has(x)))) return;
     const { m, info } = metrics(sel, mask, ctx);
-    const { unlocks } = info;
     const score = Object.entries(weights).reduce((a, [k, w]) => a + w * (m[k] ?? 0), 0);
     if (top.length === topK && score <= top[top.length - 1].score) return;
+    const unlocks = info.unlocks ?? unlockSet(chosen, down, statuses).size;
     // distinct: one plan per course set (its best group variant), so the list shows different courses, not the same ones in other groups
     const same = distinct ? top.findIndex((t) => t.courses.length === chosen.size && t.courses.every((id) => chosen.has(id))) : -1;
     if (same >= 0) { if (score <= top[same].score) return; top.splice(same, 1); }

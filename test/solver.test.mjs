@@ -557,6 +557,18 @@ test('searchYear: default state on real data finishes within 3 s', { skip: !exis
   assert.ok(r.results.length > 0);
 });
 
+test('searchYear: default weights, no friends, first visit: not partial at the real limit (unlocks are counted only for shown plans)', { skip: !existsSync('web/data/afeka/2027-2/30-2026.json') }, () => {
+  const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+  const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
+  const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
+  const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
+  const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' }, yearList: y2, friends: [],
+    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' }, timeLimitMs: LIMIT });
+  assert.equal(r.partial, false);
+  assert.ok(r.results.length > 0);
+  assert.ok(r.results.every((p) => Number.isInteger(p.a.unlocks)), 'unlocks still counted for the shown plans');
+});
+
 test('searchYear: a must course with an afterA status lands in ב׳ when its prerequisite is in א׳', () => {
   const { dataA, dataB } = yearFixture();
   const state = yState({ choices: { P: 'must', N: 'must' }, semesterOf: { P: 'א' } });
