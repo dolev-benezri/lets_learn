@@ -36,7 +36,7 @@
 Body text is 15–16px, line-height 1.5. Nothing is under 12px except the grid's hour labels (12px, `--text-3`).
 
 ## Layout
-**The step bar** (`<nav class="steps">`) sits under the top bar on every page: four numbered links, `1 המצב שלי`, `2 קורסים`, `3 מה חשוב לי`, `4 מערכות`, then the theme button. The current step is a raised pill with a filled number (`aria-current="step"`), and a finished step shows a check mark in the number. Steps can be visited in any order. Under 600px only the current step shows its label, the others are 44px number buttons.
+**The step bar** (`<nav class="steps">`) sits under the top bar on every page: four numbered links, `1 המצב שלי`, `2 קורסים`, `3 מה חשוב לי`, `4 מערכות`, then the theme button. The current step is a raised pill with a filled number (`aria-current="step"`), and every step before the current one shows a check mark in the number. Steps can be visited in any order, but until a study year is chosen on step 1, steps 2-4 ask only for the year (and hide the switcher and plan actions). Under 600px only the current step shows its label, the others are 44px number buttons.
 
 **The top bar** has the title "המערכת שלי · סמסטר א׳ תשפ״ז", plus the data date as small `--text-3`. The alternative switcher and the plan actions show on step 4 only.
 
@@ -72,9 +72,9 @@ Body text is 15–16px, line-height 1.5. Nothing is under 12px except the grid's
 - Popovers and the registration drawer become bottom sheets (in-flow panels, not fixed overlays that block scrolling).
 
 ## Onboarding and status (step 1, "המצב שלי")
-- The first step. It is where a new visitor starts, and it can be reopened at any time from the step bar. The heading "המצב שלי" has a hint: "צעד ראשון: סמנו מה כבר עברתם, ואז לחצו ״הבא: קורסים״."
+- The first step. It is where a new visitor starts, and it can be reopened at any time from the step bar. The heading "המצב שלי" has a hint. Before the first visit is done it reads "צעד ראשון: סמנו מה כבר עברתם", with "(שנה א׳ מסומנת מראש)" when it applies, and "ואז לחצו ״הבא: קורסים״"; after that it reads "עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד."
 - A profile card holds the track and year, the amirnet grade, the specialization and the summer option. A progress card holds the progress bar ("התקדמות: 41/41 נ״ז (יעד 70%)"), the "מה נשאר לסיום התואר" checklist and the grade-sheet import.
-- Courses appear as **chips grouped by year** (שנה א׳ … ד׳). Clicking a chip cycles `לא לקחתי → עברתי ✓ → נכשלתי ✗ → לא לקחתי`, with distinct colours plus icons (`--success-soft` + check, `--danger-soft` + x), never colour alone.
+- Courses appear as **one row per course, grouped by year** (שנה א׳ … ד׳). Each row is a `role="radiogroup"` with three text options, `לא לקחתי | עברתי | נכשלתי`, so state is never colour alone. A passed course also shows a grade field, and a failed one a failure-count scale.
 - Year א׳ starts as "עברתי". The regulation warnings show above the chips.
 - There is no "סיימתי" button: changes save at once, and the step bar and the "הבא: קורסים" button lead on.
 
