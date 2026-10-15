@@ -40,6 +40,7 @@ export function renderBanner() {
 }
 
 // ---------- grid area ----------
+const SORT_BY = [['best', 'מומלץ'], ['credits', 'הכי הרבה נ״ז'], ['friends', 'הכי הרבה עם חברים'], ['unlocks', 'פותחת הכי הרבה קורסי המשך']]; // "הצג לפי" (state.sortBy)
 function colorOrder() {
   const cand = Object.keys(app.data.courses).filter((id) => candidateMode(id));
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
@@ -72,6 +73,10 @@ export function renderView() {
   $('semnote').innerHTML = (app.semNotice ? note('info', app.semNotice) : '') + (summerNote ? note('info', summerNote) : '')
     + (pair ? raw.warnings.map((w) => note('info', w)).join('') : '')
     + (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
+
+  const noFriend = state.sortBy === 'friends' && !state.friends.some((f) => f.active !== false); // as showWeights: the search runs as 'best'
+  $('showby').innerHTML = `<label class="field"><span class="ctl-l">הצג לפי</span><select data-chg="sortBy" data-k="sortBy">${SORT_BY.map(([v, t]) => `<option value="${v}"${v === state.sortBy
+    ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${noFriend ? '<p class="hint">אין עדיין חברים. אפשר להוסיף <a href="#prefs">בשלב 3</a>.</p>' : ''}`;
 
   $('altLabel').textContent = nAlt ? `חלופה ${ui.cur + 1} מתוך ${nAlt}` : 'אין חלופות';
   const stranded = [$('prev'), $('next')].includes(document.activeElement) && nAlt < 2;

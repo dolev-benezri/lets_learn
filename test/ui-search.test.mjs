@@ -6,7 +6,7 @@ const appMod = await import('../web/app.js'); // before the DOM stub: app.js sta
 const el = () => ({ dataset: {}, classList: { toggle() {}, add() {}, remove() {} }, setAttribute() {}, addEventListener() {}, hidden: false, querySelector: () => null, querySelectorAll: () => [] });
 globalThis.document = { getElementById: () => el(), querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, activeElement: null, body: { dataset: { view: 'plan' } } };
 const made = [];
-globalThis.Worker = class { constructor() { made.push(this); } postMessage() {} terminate() {} };
+globalThis.Worker = class { constructor() { made.push(this); } postMessage(m) { this.sent = m; } terminate() {} };
 Object.assign(globalThis, { matchMedia: () => ({ matches: false, addEventListener() {} }), CSS: { escape: (s) => s }, innerHeight: 800, scrollBy() {}, scrollTo() {}, addEventListener() {} });
 globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const { app, normalize, refresh } = appMod;
@@ -41,4 +41,16 @@ test('CHG.myName stores the trimmed name and does not ask for a new search', () 
   app.state = normalize({ v: 1 });
   assert.equal(CHG.myName({ value: '  Dana ' }), 'save');
   assert.equal(app.state.name, 'Dana');
+});
+
+test('CHG.sortBy: the next search posts the chosen criterion as the leading weight (showWeights)', async () => {
+  const { PRIMARY } = await import('../web/solver-core.js');
+  app.state = normalize({ v: 1 });
+  Object.assign(app.state.profile, { year: 1 });
+  app.state.scope = 'א';
+  assert.equal(CHG.sortBy({ value: 'credits' }), undefined, 'the default path: refresh, then a new search');
+  refresh();
+  scheduleRun();
+  await started();
+  assert.equal(made.at(-1).sent.weights.credits, (app.state.weights.credits ?? 0) + PRIMARY);
 });

@@ -308,7 +308,7 @@ details[open] > summary::after { transform:rotate(-135deg); }
 .dr-body input[type=time], .dr-body input[type=number], .dr-body input[type=text] { min-height:var(--tap); padding:0 10px; border:1px solid var(--border-input);
   border-radius:10px; background:var(--surface); }
 .dr-body input[type=number] { width:96px; }
-.dr-body select { min-height:var(--tap); padding:0 8px; border:1px solid var(--border-input); border-radius:10px; background:var(--surface); font:inherit; }
+.dr-body select, .showby select { min-height:var(--tap); padding:0 8px; border:1px solid var(--border-input); border-radius:10px; background:var(--surface); font:inherit; }
 .brow { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:4px 10px; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius); }
 .brow .field { min-width:0; } .brow input[type=time] { flex:1; min-width:0; }
 .brow .grow { grid-column:1 / -1; margin-bottom:0; }
@@ -353,7 +353,7 @@ details[open] > summary::after { transform:rotate(-135deg); }
 .toast.show { opacity:1; }
 
 /* ---- responsive layer: sticky chrome, breakpoints, type scale, touch targets ----
-   1100 two columns (sidebar | grid) · 900 labelled top-bar actions · 760 whole week (below: one day + day selector)
+   one column at every width (steps 1-4) · 1080 labelled top-bar actions · 760 whole week (below: one day + day selector)
    600 phone: bottom action bar, bottom sheets with a scrim */
 button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .switcher .btn:active:not(:disabled) { background:var(--border); }
@@ -407,10 +407,8 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .pills::-webkit-scrollbar { display:none; }
   .pill, .pill-info, .pill.quiet { flex:none; white-space:nowrap; scroll-snap-align:start; }
 }
-/* the course list's locked rows use the width */
-@media (max-width:1099px) {
-  .locked { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); column-gap:16px; }
-}
+/* the course list's locked rows use the width (#courses is full width at every size) */
+.locked { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); column-gap:16px; }
 /* phone */
 .scrim { display:none; }
 @media (max-width:599px) {
@@ -420,7 +418,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .alt-label { min-width:0; padding:0 4px; font-size:var(--fs-sm); }
   .board { padding:12px; }
   /* actions move to a bottom bar: the top bar keeps only the title and the alternative switcher */
-  .actions { position:fixed; inset:auto 0 0 0; z-index:5; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px;
+  .actions { position:fixed; inset:auto 0 0 0; z-index:5; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px;
     padding:6px 8px calc(6px + env(safe-area-inset-bottom)); background:var(--chrome); border-top:0; box-shadow:var(--shadow-up); }
   .actions .btn { width:auto; min-height:48px; flex-direction:column; gap:2px; padding:0 2px; border-color:transparent; background:transparent; font-size:12px; }
   .actions .btn.primary { background:var(--primary); color:var(--on-primary); }
@@ -478,12 +476,25 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .steps a:hover { color:var(--text); }
 .steps a[aria-current="step"] { background:var(--surface); color:var(--primary); box-shadow:var(--shadow-card); }
 .steps a:active { background:var(--primary-soft); }
+/* the step number: a ring; filled on the current step, a check on the steps before it (the check is CSS only: .n is aria-hidden, the link has aria-label) */
+.steps .n { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; flex:none; margin-inline-end:8px; border:1px solid var(--border-strong);
+  border-radius:50%; font-size:var(--fs-xs); font-weight:600; line-height:1; font-variant-numeric:tabular-nums;
+  transition:background-color var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease; }
+.steps a[aria-current="step"] .n { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
+.steps a.done .n { background:var(--primary-soft); border-color:var(--primary-line); color:var(--primary); font-size:0; }
+.steps a.done .n::before { content:"✓"; font-size:var(--fs-xs); }
 .theme-btn { margin-inline-start:auto; border-radius:999px; color:var(--text-2); }
 .theme-btn > span { display:inline-flex; align-items:center; gap:6px; }
 [data-theme="dark"] .to-dark, :root:not([data-theme="dark"]) .to-light { display:none; } /* the button names what a click turns on */
 @media (max-width:1079px) { .steps { padding:8px 14px; } }
 @media (max-width:599px) { .steps { padding-block:4px; }
+  /* phone: one row; the steps other than the current one show their number only (the link keeps its aria-label) */
+  .steps a { padding:0 12px; font-size:var(--fs-sm); }
+  .steps a:not([aria-current]) { min-width:max(36px, var(--tap) - 8px); padding:0; justify-content:center; }
+  .steps a:not([aria-current]) .n { margin:0; }
+  .steps a:not([aria-current]) .lbl { display:none; }
   .theme-btn { width:var(--tap); padding:0; } .theme-btn .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
+.showby { margin-bottom:10px; } /* "הצג לפי" above the summary pills (ui-view.js renderView) */
 /* off the plans the bar keeps the title only: the alternatives and the plan actions belong to step 4 */
 body:not([data-view="plan"]) .switcher, body:not([data-view="plan"]) .actions, body.gated .switcher, body.gated .actions { display:none; }
 .gate { max-width:440px; } /* the year question shown before planning starts (ui-plan.js renderMe) */
@@ -660,6 +671,7 @@ body:has(#friendEd[open]) { overflow:hidden; }
   .pop:popover-open { animation:in-pop var(--dur-1) var(--ease-out); }
   .pop.\:popover-open { animation:in-pop var(--dur-1) var(--ease-out); } /* polyfill (Safari 16) */
   .dlg[open] { animation:in-pop var(--dur-2) var(--ease-out); }
+  .step-page, #layout { animation:in-fade var(--dur-1) ease-out; } /* a step switch (display:none to shown) fades in */
   #friendEd[open], .pmap[open] { animation:in-fade var(--dur-2) ease-out; } /* full-screen: a fade, no scale */
   body.drawer-open .scrim, .pop::backdrop, .drawer.modal::backdrop, .dlg::backdrop { animation:in-fade var(--dur-2) ease-out; }
   details > summary::after { transition:transform var(--dur-1) var(--ease-out); }

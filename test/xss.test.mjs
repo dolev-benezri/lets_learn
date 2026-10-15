@@ -224,6 +224,24 @@ test('lecturer buttons only on a primary group: a tutorial’s lecturer is not f
   assert.ok(!writes.filter((w) => w.scope === 'pop-sub').some((w) => w.html.includes('data-act="lecturer"')));
 });
 
+test('the plans step offers show-by with the four criteria', () => {
+  const html = writes.filter((w) => w.scope === 'view').map((w) => w.html).join('');
+  for (const v of ['best', 'credits', 'friends', 'unlocks']) assert.ok(html.includes(`value="${v}"`), v);
+  assert.ok(html.includes('data-chg="sortBy"'));
+});
+
+test('show-by friends without an active friend points to step 3', () => {
+  const { sortBy, friends } = app.state;
+  const text = (s) => writes.filter((w) => w.scope === s).map((w) => w.html).join('');
+  app.state.sortBy = 'friends'; app.state.friends = [];
+  run('view-nofriends', () => { renderView(); });
+  app.state.friends = friends; // an active friend: no line
+  run('view-friends', () => { renderView(); });
+  app.state.sortBy = sortBy;
+  assert.ok(text('view-nofriends').includes('אין עדיין חברים. אפשר להוסיף <a href="#prefs">בשלב 3</a>.'));
+  assert.ok(!text('view-friends').includes('אין עדיין חברים'));
+});
+
 test('showAlt picks an alternative for the board and the map: planIds follow it and the map hook runs once', () => {
   assert.ok(ui.last.results.length > 1, 'the search found two alternatives');
   let calls = 0;

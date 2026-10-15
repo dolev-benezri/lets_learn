@@ -180,6 +180,7 @@ export const CHG = {
   sem: (el) => { ui.sem = el.value === 'ב' ? 'ב' : 'א'; return 'view'; }, // a view switch: no new search
   scope: (el) => { app.state.scope = el.value; },
   load: (el) => { app.state.load = el.value; },
+  sortBy: (el) => { app.state.sortBy = el.value; }, // a new search (refresh); normalize drops an unknown value on the next load
   semOf: (el) => { if (el.value) app.state.semesterOf[el.dataset.id] = el.value; else delete app.state.semesterOf[el.dataset.id]; }, // a pin still wins in the solver
   pyear: (el) => {
     const was = gated(), y = cleanProfile({ year: Number(el.value) }).year;

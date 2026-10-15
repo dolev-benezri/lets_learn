@@ -2,6 +2,7 @@
 import { app, candidateMode, yearCourses, keepFocus } from './app.js';
 import { gated, yearSearch, toast, focusWeek, $, ui } from './ui-common.js';
 import { renderView } from './ui-view.js';
+import { showWeights } from './solver-core.js';
 
 // ---------- search ----------
 export const MAX_MS = 12000; // "חפש עוד" doubles the time limit up to this
@@ -35,9 +36,10 @@ function run() {
   ui.worker.onmessage = (e) => { if (my !== ui.gen) return; ui.last = { ...e.data, ms }; ui.cur = 0; done(); };
   ui.worker.onerror = (e) => { if (my !== ui.gen) return; ui.runError = e.message || 'שגיאה לא ידועה'; ui.last = null; done(); }; // the old plan no longer matches the settings
   const pins = state.pins.filter((p) => courses.some((c) => data.courses[c.id].groups.some((g) => g.id === p))); // stale pins stay in state
+  const weights = showWeights(state.weights, state.sortBy, state.friends); // "הצג לפי": the chosen criterion leads, the usual score breaks ties
   if (yearSearch()) ui.worker.postMessage({ year: { dataA: app.sem['א'], dataB: app.sem['ב'], state, yearList: new Set(yearCourses()), pins: state.pins,
-    constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: ms } });
-  else ui.worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights: state.weights, friends: state.friends, timeLimitMs: ms });
+    constraints: state.constraints, weights, friends: state.friends, timeLimitMs: ms } });
+  else ui.worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights, friends: state.friends, timeLimitMs: ms });
 }
 export function setBusy() {
   $('board').classList.toggle('is-busy', ui.running);

@@ -141,11 +141,10 @@ export function icsParts(r) {
 
 // Step 3: preferences, then friends, laid out like the status page (style.css .step-page); the search re-runs after every change.
 export function renderPrefs() {
-  $('prefs').innerHTML = `<div class="me-grid halves">
-    <section aria-labelledby="prefsTitle"><div class="me-head"><h2 id="prefsTitle" tabindex="-1">מה חשוב לי</h2></div>
-      <div class="me-card dr-body">${prefsPanel()}</div></section>
-    <section aria-labelledby="friendsTitle"><div class="me-head"><h2 id="friendsTitle">חברים</h2></div>
-      <div class="me-card dr-body">${friendsPanel()}</div></section></div>
+  $('prefs').innerHTML = `<div class="me-head"><h2 id="prefsTitle" tabindex="-1">מה חשוב לי</h2><p class="me-step">סמנו מה חשוב לכם במערכת והוסיפו חברים. המערכות מתעדכנות לבד.</p></div>
+    <div class="me-grid halves">
+      <section class="me-card dr-body" aria-labelledby="prefsPrefs"><h2 id="prefsPrefs">העדפות</h2>${prefsPanel()}</section>
+      <section class="me-card dr-body" aria-labelledby="friendsTitle"><h2 id="friendsTitle">חברים</h2>${friendsPanel()}</section></div>
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#">הבא: מערכות</a></div>`;
 }
 
