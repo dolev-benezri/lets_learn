@@ -205,16 +205,21 @@ function metrics(sel, mask, ctx) {
     minGap = minGap === null ? g : Math.min(minGap, g);
   }
 
+  const chosen = new Set(sel.map((o) => o.course));
+  const unlocks = new Set([...chosen].flatMap((id) => [...ctx.down[id]]).filter((x) => !chosen.has(x) && ctx.statuses[x]?.status !== 'done')).size; // only what is still ahead
+
   return {
     m: {
       friends: fw ? fs / fw : 0,
       progress: value / ctx.maxValue,
+      credits: sel.reduce((a, o) => a + ctx.credits[o.course], 0) / ctx.maxCredits,
+      unlocks: unlocks / ctx.maxUnlocks,
       freeDays: freeDays.length / 5,
       compact: 1 - Math.min(gapMin / 600, 1),
       timeWindow: 1 - Math.min(outside / 600, 1),
       examSpread: !ctx.examsPublished ? 0 : minGap === null ? 1 : Math.min(minGap, 7) / 7, // fewer than two exams: nothing to crowd (the bound in dfs says the same)
     },
-    info: { shared, freeDays, gapMin, minGap },
+    info: { shared, freeDays, gapMin, minGap, unlocks },
   };
 }
 
@@ -251,7 +256,13 @@ function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () =
   return out;
 }
 
-const KNOWN = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'];
+const KNOWN = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread', 'credits', 'unlocks'];
+// A "show by" criterion outranks every weighted metric (each is <= weight * 1), so the plan list is ordered by it first.
+export const PRIMARY = 1e5;
+export function showWeights(weights, sortBy, friends) {
+  if (sortBy === 'best' || (sortBy === 'friends' && !friends.some((f) => f.active !== false))) return weights;
+  return { ...weights, [sortBy]: (weights[sortBy] ?? 0) + PRIMARY };
+}
 // distinct: one plan per course set; why: when there is no plan, relax one constraint at a time to name the reason.
 export function search({ data, courses, statuses = {}, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000, prune = true, bias = {},
   distinct = false, why = true }) {
@@ -272,7 +283,9 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     return { id, mode, credits: c.credits, options };
   }).sort((a, b) => a.options.length - b.options.length);
 
-  const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished, freeCand: freeDayCandidates(constraints) };
+  const maxUnlocks = new Set(items.flatMap((it) => [...down[it.id]]).filter((x) => statuses[x]?.status !== 'done')).size;
+  const ctx = { friends: activeFriends, value, maxValue: maxValue || 1, constraints, examsPublished: data.examsPublished, freeCand: freeDayCandidates(constraints),
+    credits: Object.fromEntries(items.map((it) => [it.id, it.credits])), maxCredits: Math.max(1, items.reduce((a, it) => a + it.credits, 0)), down, statuses, maxUnlocks: Math.max(1, maxUnlocks) };
   const noExamClash = data.examsPublished && constraints.examsSameDay !== 'allow';
   const conditional = courses.filter(({ id }) => statuses[id]?.missingParallel).map(({ id }) => ({ id, needs: statuses[id].missingParallel }));
   const top = [];
@@ -294,6 +307,12 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
   for (let i = items.length - 1; i >= 0; i--) {
     for (let f = 0; f < activeFriends.length; f++) restShared[f][i] = restShared[f][i + 1] + Math.max(0, ...items[i].options.map((o) => o.sharedMin[f]));
   }
+  // Credits and unlocks: what is left can add at most the sum of its credits / the sum of its downstream sizes (overlaps only shrink the union).
+  const restCredits = new Array(items.length + 1).fill(0), restDown = new Array(items.length + 1).fill(0);
+  for (let i = items.length - 1; i >= 0; i--) {
+    restCredits[i] = restCredits[i + 1] + items[i].credits;
+    restDown[i] = restDown[i + 1] + down[items[i].id].size;
+  }
   const fixedUp = W('compact');
   function friendsUp(i) {
     if (!fw) return 0;
@@ -305,11 +324,17 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     }
     return up / fw;
   }
-  function bound(i, mask, val) {
+  function bound(i, mask, val, credits) {
     let free = 0;
     for (const d of ctx.freeCand) if (mask[d] === 0) free++;
     const outside = sel.reduce((a, o) => a + o.out, 0); // outside minutes only grow as courses are added
     let b = fixedUp + W('friends') * friendsUp(i) + W('progress') * ((val + restValue[i]) / ctx.maxValue) + W('freeDays') * (free / 5) + W('timeWindow') * (1 - Math.min(outside / 600, 1));
+    if (W('credits')) b += W('credits') * (credits + restCredits[i]) / ctx.maxCredits;
+    if (W('unlocks')) {
+      const chosen = new Set(sel.map((o) => o.course));
+      const got = new Set(sel.flatMap((o) => [...down[o.course]]).filter((x) => !chosen.has(x) && statuses[x]?.status !== 'done'));
+      b += W('unlocks') * Math.min(1, (got.size + restDown[i]) / ctx.maxUnlocks);
+    }
     if (ctx.examsPublished && W('examSpread')) {
       const dates = sel.flatMap((o) => o.exams).sort();
       let g = null;
@@ -327,12 +352,12 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     const chosen = new Set(sel.map((o) => o.course));
     for (const k of conditional) if (chosen.has(k.id) && !k.needs.every((anyOf) => anyOf.some((x) => chosen.has(x)))) return;
     const { m, info } = metrics(sel, mask, ctx);
+    const { unlocks } = info;
     const score = Object.entries(weights).reduce((a, [k, w]) => a + w * (m[k] ?? 0), 0);
     if (top.length === topK && score <= top[top.length - 1].score) return;
     // distinct: one plan per course set (its best group variant), so the list shows different courses, not the same ones in other groups
     const same = distinct ? top.findIndex((t) => t.courses.length === chosen.size && t.courses.every((id) => chosen.has(id))) : -1;
     if (same >= 0) { if (score <= top[same].score) return; top.splice(same, 1); }
-    const unlocks = new Set([...chosen].flatMap((id) => [...down[id]]).filter((x) => !chosen.has(x) && statuses[x]?.status !== 'done')).size; // only what is still ahead
     top.push({
       score, breakdown: m, groups: sel.flatMap((o) => o.groups), courses: [...chosen], unlocks, explanation: explain(info, unlocks),
       alts: Object.assign({}, ...sel.map((o) => o.alts)),
@@ -346,7 +371,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     if (partial) return;
     if (++nodes % 1000 === 0 && Date.now() > deadline) { partial = true; return; }
     if (i === items.length) return leaf(mask);
-    if (canPrune && top.length === topK && bound(i, mask, val) <= top[top.length - 1].score) return;
+    if (canPrune && top.length === topK && bound(i, mask, val, credits) <= top[top.length - 1].score) return;
     const it = items[i];
     for (const o of it.options) {
       if (overlaps(mask, o.mask)) continue;
@@ -417,6 +442,7 @@ const A_SHARE = 0.6, B_FLOOR = 100, B_K = 5; // B_K: ב׳ plans tried per א׳ a
 
 // Year plan: top א׳ alternatives, each completed by the best ב׳ alternative with the א׳ courses counted as passed.
 export function searchYear({ dataA, dataB, state, yearList, pins = [], constraints = {}, weights = {}, friends = [], topK = 10, timeLimitMs = 3000 }) {
+  const missW = Object.values(weights).some((w) => w >= PRIMARY) ? PRIMARY * 10 : MISSING_W; // with a show-by criterion, fewer missing musts still comes first
   const deadline = Date.now() + timeLimitMs;
   const offered = (d, id) => !!d.courses[id]?.offered;
   const pinnedIn = (d, id) => pins.some((p) => d.courses[id]?.groups.some((g) => g.id === p));
@@ -549,7 +575,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
     const regrouped = (b?.courses ?? []).filter((id) => pinnedB(id) && !dataB.courses[id].groups.every((g) => !pins.includes(g.id) || b.groups.includes(g.id)))
       .map((id) => `הנעיצה של ${dataB.courses[id].name} (ב׳) לא נשמרה: הקורס בקבוצה אחרת`);
     return {
-      score: a.score + (b?.score ?? 0) + progressFix + LOAD_W * loadScore - MISSING_W * missing.length,
+      score: a.score + (b?.score ?? 0) + progressFix + LOAD_W * loadScore - missW * missing.length,
       a, b, credits: { a: ca, b: cb }, missing,
       warnings: [...(needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : []), ...regrouped],
     };

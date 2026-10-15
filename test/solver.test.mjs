@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { meetingsMask, overlaps, buildOptions, forbiddenBy, unlockCounts, downstream, chainDepth, search, searchYear } from '../web/solver-core.js';
+import { meetingsMask, overlaps, buildOptions, forbiddenBy, unlockCounts, downstream, chainDepth, search, searchYear, showWeights, PRIMARY } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { mini } from './fixtures/mini-data.mjs';
@@ -421,6 +421,69 @@ test('synthetic (published exams): pruning keeps results identical across weight
     const a = search({ ...args, prune: false }), b = search(args);
     assert.deepEqual(b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), `case ${t}`);
   }
+});
+
+test('showWeights: best and friendless friends keep the weights, a criterion adds PRIMARY', () => {
+  const w = { friends: 3, progress: 3 };
+  assert.deepEqual(showWeights(w, 'best', []), w);
+  assert.deepEqual(showWeights(w, 'friends', [{ name: 'a', active: false, groups: [] }]), w);
+  assert.equal(showWeights(w, 'credits', []).credits, PRIMARY);
+  assert.equal(showWeights(w, 'friends', [{ name: 'a', groups: [] }]).friends, 3 + PRIMARY);
+});
+
+// synth plus random prerequisites (before anything asks for downstream, which is cached per dataset)
+function synthChain(rnd) {
+  const { data, ids } = synth(rnd);
+  ids.forEach((id, i) => { if (i && rnd() < 0.5) data.courses[id].prereqs = [{ kind: 'קדם', anyOf: [{ id: ids[Math.floor(rnd() * i)], name: 'x' }] }]; });
+  return { data, ids };
+}
+const credits = (data, r) => r.courses.reduce((a, id) => a + data.courses[id].credits, 0);
+
+test('synthetic: credits and unlocks keep pruning identical to the exhaustive search', () => {
+  let seed = 13;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  for (let t = 0; t < 40; t++) {
+    const { data, ids } = synthChain(rnd);
+    const groups = ids.flatMap((id) => data.courses[id].groups.map((g) => g.id));
+    const courses = ids.filter(() => rnd() < 0.8).map((id) => ({ id, mode: rnd() < 0.15 ? 'must' : 'optional' }));
+    const statuses = {};
+    for (const id of ids) if (rnd() < 0.2) statuses[id] = { status: 'done' };
+    const base = Object.fromEntries(['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'].map((k) => [k, pick([0, 1, 3, 5])]));
+    const friends = rnd() < 0.5 ? [{ name: 'f', weight: pick([1, 3]), active: true, groups: groups.filter(() => rnd() < 0.3) }] : [];
+    const weights = showWeights(base, pick(['credits', 'unlocks']), friends);
+    const constraints = { dayOff: rnd() < 0.5 ? [pick([1, 2, 3])] : [], maxCredits: rnd() < 0.4 ? 8 + Math.floor(rnd() * 8) : null, examsSameDay: pick(['allow', 'forbid']) };
+    const args = { data, courses, statuses, pins: [], weights, friends, constraints, topK: pick([1, 3, 10]), timeLimitMs: 60000 };
+    const a = search({ ...args, prune: false }), b = search(args);
+    assert.deepEqual(b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), `case ${t}`);
+  }
+});
+
+for (const [key, of] of [['credits', credits], ['unlocks', (data, r) => r.unlocks]]) {
+  test(`synthetic: sortBy ${key} puts the ${key === 'credits' ? 'most credits' : 'most unlocked follow-ups'} first`, () => {
+    let seed = 17;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
+    for (let t = 0; t < 20; t++) {
+      const { data, ids } = synthChain(rnd);
+      const args = { data, courses: ids.map((id) => ({ id, mode: 'optional' })), constraints: { examsSameDay: 'allow' }, friends: [], timeLimitMs: 60000, topK: 10 };
+      const best = Math.max(...search({ ...args, weights: {}, topK: 5000, prune: false, distinct: true }).results.map((r) => of(data, r)));
+      const r = search({ ...args, weights: showWeights({ progress: 3, freeDays: 1 }, key, []) }).results[0];
+      assert.equal(of(data, r), best, `case ${t}`);
+    }
+  });
+}
+
+test('searchYear: with a criterion, a pair missing a must course never outranks one that misses fewer', { skip: !existsSync(REAL) || !existsSync('web/data/afeka/2027-2/30-2026.json') }, () => {
+  const dataA = JSON.parse(readFileSync(REAL, 'utf8'));
+  const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
+  const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
+  const y2 = dataA.lists.find((l) => l.name.includes("שנה ב'")).courses;
+  const choices = Object.fromEntries(y2.map((id) => [id, 'must']));
+  const weights = showWeights({ friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, 'credits', []);
+  const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices, semesterOf: {}, load: 'even' }, yearList: new Set(y2), weights,
+    constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' }, timeLimitMs: LIMIT });
+  assert.ok(r.results.length > 1);
+  for (let i = 1; i < r.results.length; i++) assert.ok(r.results[i - 1].missing.length <= r.results[i].missing.length, `rank ${i}`);
 });
 
 test('a timeout before any leaf says so instead of "no solution"', () => {
