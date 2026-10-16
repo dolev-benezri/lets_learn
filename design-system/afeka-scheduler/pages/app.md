@@ -36,7 +36,7 @@
 Body text is 15–16px, line-height 1.5. Nothing is under 12px except the grid's hour labels (12px, `--text-3`).
 
 ## Layout
-**The step bar** (`<nav class="steps">`) sits under the top bar on every page: four numbered links, `1 המצב שלי`, `2 קורסים`, `3 מה חשוב לי`, `4 מערכות`, then the theme button. The current step is a raised pill with a filled number (`aria-current="step"`), and every step before the current one shows a check mark in the number. Steps can be visited in any order, but until a study year is chosen on step 1, steps 2-4 ask only for the year (and hide the switcher and plan actions). Under 600px only the current step shows its label, the others are 44px number buttons.
+**The step bar** (`<nav class="steps">`) sits under the top bar on every page: four numbered links, `1 המצב שלי`, `2 קורסים`, `3 מה חשוב לי`, `4 מערכות`, then the theme button. The current step is a raised pill with a filled number (`aria-current="step"`), and every step before the current one shows a check mark in the number. Steps can be visited in any order, but until a track ("בחרו מסלול": none is preselected) and a study year are chosen, every step shows only those two questions (and hides the switcher and plan actions); the step bar then counts as step 1. The semester switch on step 4 reads א׳ | ב׳, plus קיץ when the profile plans a summer. Under 600px only the current step shows its label, the others are 44px number buttons.
 
 **The top bar** has the title "המערכת שלי · סמסטר א׳ תשפ״ז", plus the data date as small `--text-3`. The alternative switcher and the plan actions show on step 4 only.
 
