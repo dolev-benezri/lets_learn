@@ -54,3 +54,18 @@ test('CHG.sortBy: the next search posts the chosen criterion as the leading weig
   await started();
   assert.equal(made.at(-1).sent.weights.credits, (app.state.weights.credits ?? 0) + PRIMARY);
 });
+
+test('summer is a third tab of the year (issue 10): קיץ plans the summer, א׳/ב׳ go back to the year plan', async () => {
+  const { semTabs, scopeOf } = await import('../web/ui-common.js');
+  app.sem = { 'א': mini(), 'ב': mini(), 'קיץ': mini() };
+  app.state = normalize({ v: 1, programSet: true, profile: { year: 2, summer: true } });
+  assert.deepEqual(semTabs().map(([v]) => v), ['א', 'ב', 'קיץ']);
+  assert.equal(CHG.sem({ value: 'קיץ' }), undefined, 'a new search: the summer is planned on top of the shown year');
+  assert.equal(app.state.scope, 'קיץ');
+  assert.equal(scopeOf(app.state.scope), 'year', 'the "לתכנן" choice still reads "שנה"');
+  assert.equal(CHG.sem({ value: 'ב' }), undefined, 'back to the year plan: a new search');
+  assert.deepEqual([app.state.scope, ui.sem], ['year', 'ב']);
+  assert.equal(CHG.sem({ value: 'א' }), 'view', 'between א׳ and ב׳ only the view changes');
+  app.state.profile.summer = false;
+  assert.deepEqual(semTabs().map(([v]) => v), ['א', 'ב']);
+});

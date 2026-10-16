@@ -13,8 +13,10 @@ export const STATUS = [['none', 'לא לקחתי'], ['passed', 'עברתי'], ['
 export const FAILS = [[1, 'פעם'], [2, 'פעמיים'], [3, '3 פעמים']];
 export const FSCALE = [[0, 'לא חשוב'], [1, 'קצת'], [2, 'חשוב'], [3, 'מאוד']];
 export const SEMS = [['א', 'סמסטר א׳'], ['ב', 'סמסטר ב׳']];
-const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
-export const scopes = () => (summerOn() ? [...SCOPE, ['קיץ', 'קיץ']] : SCOPE); // summer only when the profile plans one
+export const SCOPE = [['year', 'שנה'], ['א', 'רק א׳'], ['ב', 'רק ב׳']];
+// Summer belongs to the year: a third tab next to א׳ and ב׳ when the profile plans one (issue 10). Its scope ('קיץ') still reads "שנה" in the "לתכנן" choice.
+export const semTabs = () => (summerOn() ? [...SEMS, ['קיץ', 'קיץ']] : SEMS);
+export const scopeOf = (s) => (s === 'קיץ' ? 'year' : s);
 export const LOAD = [['א', 'יותר בא׳'], ['even', 'מאוזן'], ['ב', 'יותר בב׳']];
 export const YEARS = [[1, 'א׳'], [2, 'ב׳'], [3, 'ג׳'], [4, 'ד׳'], [5, 'ה׳']]; // ה׳: evening programs (yearsOf cuts the list per program)
 export const SEM_PICK = [['', 'אוטומטי'], ['א', 'א׳'], ['ב', 'ב׳']];

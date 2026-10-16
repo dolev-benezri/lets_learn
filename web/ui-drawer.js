@@ -3,7 +3,7 @@ import { app, esc, DEFAULT } from './app.js';
 import { SEMESTER_DATES } from './ics.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, backups, isPair, semResult } from './ui-grid.js';
 import { groupLabel, strictnessHint, defaultNotes, hebYear, groupCount } from './ui-text.js';
-import { WEIGHTS, SCALE, FSCALE, SEMS, scopes, colors, LOAD, HARD, SHEET, current, allGroupIds, seg, $, ui } from './ui-common.js';
+import { WEIGHTS, SCALE, FSCALE, SEMS, SCOPE, scopeOf, colors, LOAD, HARD, SHEET, current, allGroupIds, seg, $, ui } from './ui-common.js';
 
 // ---------- step 3 and the drawer ----------
 export const MAX_BLOCKS = 12;
@@ -23,8 +23,8 @@ function prefsPanel() {
   const pinName = (p) => { const x = groupIndex(data).get(p); return x ? `${esc(x.c.name)} · ${esc(groupLabel(x.g))}` : esc(p); };
   return `
     ${app.sem['ב'] ? `<section class="dr-sec"><h3>תכנון</h3>
-      ${seg('scope', 'לתכנן', scopes(), state.scope, 'data-chg="scope"', true)}
-      ${state.scope === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>` : ''}
+      ${seg('scope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"', true)}
+      ${scopeOf(state.scope) === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>` : ''}
     <section class="dr-sec"><h3>מה חשוב לך?</h3>
       ${WEIGHTS.filter(([k]) => k !== 'examSpread' || data.examsPublished).map(([k, t]) => seg(`w-${k}`, t, SCALE, nearestStep(state.weights[k], [0, 1, 3, 5]),
         `data-chg="w" data-w="${k}"`, true)).join('')}</section>
