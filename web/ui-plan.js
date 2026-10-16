@@ -27,7 +27,7 @@ function renderRoute() {
   document.title = `${gate ? 'התחלה' : NAME[view]} · המערכת שלי · אפקה`; // a tab title per step (a11y)
   document.body.classList.toggle('gated', gate);
   if (view !== 'me' && app.cls) markOnboarded(); // leaving step 1 any way (step bar, link, "הבא") ends the first-visit redirect
-  const at = STEPS.indexOf(view);
+  const at = STEPS.indexOf(gate ? 'me' : view); // the gate question is step 1: nothing is done yet
   for (const a of document.querySelectorAll('.steps a')) {
     const k = STEPS.indexOf(a.dataset.view);
     a.classList.toggle('done', k < at);
