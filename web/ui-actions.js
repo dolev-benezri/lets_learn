@@ -165,6 +165,7 @@ const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math
 export const CHG = {
   program: (el) => {
     const p = app.catalog.programs.find((x) => x.id === Number(el.value));
+    if (p) app.state.programSet = true; // the loaded track too: switchTo then refuses and changeIdentity just refreshes
     if (p) changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear));
     return 'save';
   },

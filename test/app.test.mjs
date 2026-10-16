@@ -291,3 +291,12 @@ test('normalize: lecturers is { name: prefer|avoid }, at most 30, names up to 60
   assert.equal(Object.keys(normalize({ v: 1, constraints: { lecturers: many } }).constraints.lecturers).length, 30);
   assert.deepEqual(normalize({ v: 1 }).constraints.lecturers, {});
 });
+
+test('normalize: programSet only from a real choice; a saved study year or another program counts as one (older saves)', () => {
+  assert.equal(D.programSet, false);
+  assert.equal(normalize({ v: 1, programSet: true }).programSet, true);
+  assert.equal(normalize({ v: 1, programSet: 'yes' }).programSet, false);
+  assert.equal(normalize({ v: 1, profile: { year: 2 } }).programSet, true);
+  assert.equal(normalize({ v: 1, program: 10, startYear: 2026 }, { programs: [{ id: 10, name: 'x', startYears: [2026] }, { id: 30, name: 'y', startYears: [2026] }] }).programSet, true);
+  assert.equal(normalize({ v: 1, profile: { year: null } }).programSet, false);
+});

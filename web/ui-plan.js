@@ -20,7 +20,7 @@ let firstVisit = !onboarded() && !location.hash;
 // The top bar keeps only the title off the plans (style.css [data-view]): the alternatives and the plan actions belong to step 4.
 const NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות' };
 function renderRoute() {
-  const view = routeOf(location.hash), gate = view !== 'me' && gated(); // the gate question takes the status page's container
+  const view = routeOf(location.hash), gate = gated(); // the gate question takes the status page's container
   const page = PAGE[gate ? 'me' : view][0];
   for (const [p] of Object.values(PAGE)) $(p).hidden = p !== page;
   document.body.dataset.view = view;
