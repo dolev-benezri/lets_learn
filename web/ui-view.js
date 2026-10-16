@@ -5,14 +5,14 @@ import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
 import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts } from './ui-text.js';
-import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, pill, seg, $, ui } from './ui-common.js';
+import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, needsProgram, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
 import { renderDrawer } from './ui-drawer.js';
 
 // ---------- top bar and banners ----------
 export function renderTop() {
-  const progs = app.catalog.programs, prog = progs.length > 1 ? progs.find((p) => p.id === app.data.program)?.name : null; // the program name only when there is a choice
+  const progs = app.catalog.programs, prog = progs.length > 1 && !needsProgram() ? progs.find((p) => p.id === app.data.program)?.name : null; // named only when there is a choice and it was made
   $('title').innerHTML = `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
   const f = freshness(app.status, app.data.fetchedAt);

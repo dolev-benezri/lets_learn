@@ -136,6 +136,16 @@ test('an unverified program says so in the header of both views (L3)', () => {
   assert.ok(!writes.filter((w) => w.scope === 'top-verified' && w.id === 'meta').at(-1).html.includes('לא נבדקו'));
 });
 
+test('the header names no program until one is picked (a first visit assumes none)', () => {
+  const title = (s) => writes.filter((w) => w.scope === s && w.id === 'title').at(-1).html;
+  app.state.programSet = false;
+  run('top-unset', () => { renderTop(); });
+  assert.ok(!title('top-unset').includes(' · a'), title('top-unset'));
+  app.state.programSet = true;
+  run('top-set', () => { renderTop(); });
+  assert.ok(title('top-set').includes(' · a'), title('top-set'));
+});
+
 test('a two-year program offers study years א׳ and ב׳ only (L6)', () => {
   const lists = app.data.lists;
   app.data.lists = lists.filter((l) => !/שנה [גד]'/.test(l.name));
