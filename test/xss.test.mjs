@@ -53,7 +53,7 @@ app.sem['ב'] = hostile(read(2));
 app.sem['קיץ'] = hostile(read(3));
 const gids = Object.values(app.sem['א'].courses).flatMap((c) => c.groups.map((g) => g.id));
 app.catalog = { programs: [{ id: 30, name: `a${P}`, startYears: [2026, 2025] }, { id: 20, name: `b${P}`, startYears: [2026] }] }; // a hostile catalog: names reach the picker and the title
-app.state = normalize({ v: 1 });
+app.state = normalize({ v: 1, programSet: true });
 Object.assign(app.state, { name: P, passed: app.sem['א'].lists.find((l) => l.name.includes("שנה א'")).courses }); // year 1 passed, as on a first visit
 app.state.profile = { ...app.state.profile, year: 2, summer: true, amirnet: 120 };
 app.state.friends = [{ name: P, groups: gids.slice(0, 3), weight: 1, active: true, manual: true }, { name: `${P}2`, groups: [P], weight: 2, active: false }];

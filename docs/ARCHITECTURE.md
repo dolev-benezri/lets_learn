@@ -8,7 +8,7 @@
 |---|---|
 | `scripts/` | משיכת נתונים ובנייה: scrape, polite, parse, build, discover, audit, `programs.json`, ו-fixtures של HTML אמיתי |
 | `web/` | האתר: HTML ו-ES modules, בלי build |
-| `web/app.js` | מצב (כולל `sortBy` של "הצג לפי"), `normalize()`, localStorage, טעינת נתונים, החלפת תוכנית ומחזור, ושלבי הניווט (`STEPS`, `routeOf`, `hashOf`: `#me`, `#courses`, `#prefs`, וכל hash אחר הוא המערכות) |
+| `web/app.js` | מצב (כולל `sortBy` של "הצג לפי" ו-`programSet`: האם נבחר מסלול, כי בביקור ראשון אף מסלול לא נבחר מראש), `normalize()`, localStorage, טעינת נתונים, החלפת תוכנית ומחזור, ושלבי הניווט (`STEPS`, `routeOf`, `hashOf`: `#me`, `#courses`, `#prefs`, וכל hash אחר הוא המערכות) |
 | `web/rules.js` | מנוע התקנון: סיווג קורסים, התקדמות והתמחויות |
 | `web/solver-core.js` | חיפוש: backtracking עם מסכות ביטים וגבולות עליונים לקיצוץ, כולל המדדים `credits` ו-`unlocks` ו-`showWeights` (ו-`solver-worker.js`) |
 | `web/share.js` | קישורי חבר וגיבוי, עם אימות |

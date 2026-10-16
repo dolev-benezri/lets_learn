@@ -5,7 +5,7 @@ import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
 import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts } from './ui-text.js';
-import { SEMS, scopes, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, pill, seg, $, ui } from './ui-common.js';
+import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
 import { renderDrawer } from './ui-drawer.js';
@@ -65,8 +65,8 @@ export function renderView() {
   if (ui.mobileDay > range.days) ui.mobileDay = 1;
   // Board header: scope and semester controls first, then the notices that hold for the whole plan (shown once, whichever tab is open).
   const note = (ic, t) => `<p class="notice">${icon(ic)}<span>${esc(t)}</span></p>`;
-  const ctl = (app.sem['ב'] ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', scopes(), state.scope, 'data-chg="scope"')}</div>` : '')
-    + (pair ? `<div class="ctl">${seg('sem', 'סמסטר מוצג', SEMS, ui.sem, 'data-chg="sem"')}</div>` : '');
+  const ctl = (app.sem['ב'] ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"')}</div>` : '')
+    + (pair || summerScope() ? `<div class="ctl">${seg('sem', 'סמסטר מוצג', semTabs(), summerScope() ? 'קיץ' : ui.sem, 'data-chg="sem"')}</div>` : '');
   const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
   $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
   const summerNote = summerScope() ? (state.yearIds.length ? `הקיץ מניח שעוברים את ${state.yearIds.length} הקורסים שבמערכת השנה המוצגת.` : 'עוד אין מערכת לשנה: הקיץ מתוכנן לפי מה שכבר עברת.') : '';

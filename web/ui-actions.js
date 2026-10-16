@@ -165,6 +165,7 @@ const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math
 export const CHG = {
   program: (el) => {
     const p = app.catalog.programs.find((x) => x.id === Number(el.value));
+    if (p) app.state.programSet = true; // the loaded track too: switchTo then refuses and changeIdentity just refreshes
     if (p) changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear));
     return 'save';
   },
@@ -177,7 +178,12 @@ export const CHG = {
       if (kept.length < app.state.pins.length) { app.state.pins = kept; toast('הנעיצות של הקורס בוטלו'); }
     }
   },
-  sem: (el) => { ui.sem = el.value === 'ב' ? 'ב' : 'א'; return 'view'; }, // a view switch: no new search
+  sem: (el) => { // summer is the year's third tab: it is planned on top of the shown year plan, so leaving or entering it is a new search
+    if (el.value === 'קיץ') { app.state.scope = 'קיץ'; return; }
+    ui.sem = el.value === 'ב' ? 'ב' : 'א';
+    if (app.state.scope !== 'קיץ') return 'view'; // between א׳ and ב׳: a view switch, no new search
+    app.state.scope = 'year';
+  },
   scope: (el) => { app.state.scope = el.value; },
   load: (el) => { app.state.load = el.value; },
   sortBy: (el) => { app.state.sortBy = el.value; }, // a new search (refresh); normalize drops an unknown value on the next load
@@ -207,7 +213,11 @@ export const CHG = {
     app.state.profile.specs = specSave(app.data, 'pick', ui.specPick.picks);
     app.state.specDraft = ui.specPick.picks.length && ui.specPick.picks.length < pick ? ui.specPick.picks : null;
   },
-  summer: (el) => { app.state.profile.summer = el.checked; if (!el.checked && app.state.scope === 'קיץ') app.state.scope = 'year'; },
+  summer: (el) => {
+    app.state.profile.summer = el.checked;
+    if (!el.checked && app.state.scope === 'קיץ') app.state.scope = 'year';
+    if (el.checked && app.sem?.['קיץ']) toast('הקיץ נוסף לתכנון: לשונית ״קיץ״ ליד סמסטר א׳ וב׳ במערכות');
+  },
   grade: (el) => {
     const raw = el.validity?.badInput ? 'x' : el.value, g = gradeInput(raw, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
     const err = rangeError(raw, 0, 100);

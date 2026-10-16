@@ -6,7 +6,7 @@ import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
 import { creditsGoal, courseCount } from './ui-text.js';
-import { STATUS, FAILS, YEARS, onboarded, gated, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
+import { STATUS, FAILS, YEARS, onboarded, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
@@ -61,8 +61,9 @@ function checklist(data, state) {
 // The two questions that fix who the schedule is for: the track (only when the catalog has more than one) and the study year, which also picks the cohort.
 export function identityPick(year, visible) {
   const { programs } = app.catalog, cur = programs.find((p) => p.id === app.state.program) ?? programs[0];
-  const opt = (p) => `<option value="${esc(p.id)}"${p.id === cur.id ? ' selected' : ''}>${esc(heb(p.name))}</option>`;
-  const track = programs.length < 2 ? '' : `<label class="field pick">מסלול <select data-chg="program" data-k="program">${programs.map(opt).join('')}</select></label>`;
+  const none = needsProgram(), opt = (p) => `<option value="${esc(p.id)}"${!none && p.id === cur.id ? ' selected' : ''}>${esc(heb(p.name))}</option>`;
+  const track = programs.length < 2 ? '' : `<label class="field pick">מסלול <select data-chg="program" data-k="program">${none
+    ? '<option value="" selected disabled>בחרו מסלול</option>' : ''}${programs.map(opt).join('')}</select></label>`;
   const own = !year || cur.startYears.includes(app.data.year - year + 1); // no data for that cohort: the plan runs on the nearest one, and the page says so
   const note = own ? '' : `<p class="hint" role="status">אין עדיין נתונים למחזור של שנה ${esc(YEARS.find(([n]) => n === year)[1])}. התכנון לפי מחזור ${app.state.startYear}.</p>`;
   return track + seg('p-year', 'שנת לימודים', YEARS.slice(0, yearsOf(app.data)), year, 'data-chg="pyear"', visible) + note;
@@ -72,9 +73,9 @@ export function renderMe() {
   const el = $('me');
   if (el.hidden) { el.innerHTML = ''; return; }
   const { data, state, cls } = app;
-  if (gated() && document.body.dataset.view !== 'me') { // the builder waits for the study year: one question, nothing else
+  if (gated()) { // every step waits for the track and the study year: the two questions, nothing else
     el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">${app.catalog.programs.length > 1 ? 'באיזה מסלול ובאיזו שנה את/ה?' : 'באיזו שנה את/ה?'}</h2></div>
-      <section class="me-card gate">${identityPick(null, true)}
+      <section class="me-card gate">${identityPick(state.profile.year, true)}
         <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p></section>`;
     return;
   }
@@ -100,7 +101,7 @@ export function renderMe() {
     <div class="me-grid">
       <div class="me-side">
         <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
-          ${identityPick(state.profile.year, true)}${unverified}${state.profile.year ? '' : '<p class="hint">בחרו שנה כדי לבנות מערכת.</p>'}
+          ${identityPick(state.profile.year, true)}${unverified}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
