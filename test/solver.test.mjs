@@ -288,7 +288,7 @@ test('real data: all year-2 available courses solve in < 1s with no overlaps', {
   const y2 = data.lists.find((l) => l.name.includes("שנה ב'")).courses;
   const courses = [{ id: '90903', mode: 'must' }, ...y2.filter((id) => ['available', 'conditional'].includes(statuses[id]?.status)).map((id) => ({ id, mode: 'optional' }))];
   const t = Date.now();
-  const r = search({ data, courses, statuses, weights: { ...W0, progress: 1, compact: 1 }, friends: [], constraints: {} });
+  const r = search({ data, courses, statuses, weights: { ...W0, progress: 1, compact: 1 }, friends: [], constraints: { includeFull: true } }); // speed and overlaps only: full groups count, as registration fills them
   assert.ok(Date.now() - t < 1000, `took ${Date.now() - t}ms`);
   assert.ok(r.results.length > 0);
   assert.equal(r.partial, false);
