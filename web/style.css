@@ -78,10 +78,7 @@ a { color:var(--primary); }
 .btn.primary:active:not(:disabled) { background:var(--primary-press); border-color:var(--primary-press); }
 .btn.ghost:active:not(:disabled) { background:var(--border); }
 .icon-btn { width:var(--tap); padding:0; }
-.link-btn { min-height:var(--tap); padding:0 8px; border:0; border-radius:var(--radius-sm); background:none; color:var(--primary); font-weight:500;
-  cursor:pointer; transition:background-color .15s ease; }
-.link-btn:hover { background:var(--primary-soft); }
-.link-btn:active, summary:active { background:var(--primary-soft); }
+summary:active { background:var(--primary-soft); }
 .daysel button:active, .daypill:active { background:var(--border); }
 .daysel button[aria-pressed="true"]:active { background:var(--primary-hover); }
 .seg label:active span { background:var(--border); }
@@ -101,29 +98,18 @@ a { color:var(--primary); }
 .switcher .btn:hover:not(:disabled) { background:var(--surface); }
 .alt-label { min-width:120px; text-align:center; font-weight:600; color:var(--primary-hover); font-variant-numeric:tabular-nums; }
 .actions { grid-area:actions; display:flex; gap:6px; justify-content:flex-end; }
-.avatars { padding:0 10px; }
-.stack { display:flex; align-items:center; }
 .av { display:inline-grid; place-items:center; width:24px; height:24px; flex:none; border-radius:50%; background:var(--surface); color:var(--text);
   font-size:12px; font-weight:500; line-height:1; box-shadow:0 0 0 2px var(--friend); }
 .av.lg { width:36px; height:36px; font-size:13px; }
-.stack .av { width:28px; height:28px; border:2px solid var(--surface); box-shadow:0 0 0 2px var(--friend); }
-.stack .av + .av { margin-inline-start:-6px; }
-.stack .av.plus { background:var(--primary-soft); color:var(--primary); box-shadow:none; }
-.stack .av.plus .icon { width:14px; height:14px; }
 .site-foot { margin: 28px auto 0; padding: 14px; max-width: 72ch; text-align: center; font-size: var(--fs-sm); color: var(--text-2); border-top: 1px solid var(--border); }
 .site-foot a { display: inline-block; padding: 12px 4px; color: var(--primary); }
-@media (max-width:599px) { body:not([data-view="me"]) .site-foot { padding-bottom: calc(var(--bar-h) + 16px); } } /* room for the bottom action bar, which #me does not have */
+@media (max-width:599px) { body[data-view="plan"] .site-foot { padding-bottom: calc(var(--bar-h) + 16px); } } /* room for the bottom action bar, which only the plans have */
 
-/* layout: one column (grid first, then the sidebar) up to 1099px; from 1100px the sidebar is the first column,
-   which in RTL is the right one. DOM order is main, then aside, so keyboard users reach the grid before 38 sidebar controls. */
-.layout { display:grid; grid-template-columns:minmax(0, 1fr); grid-template-areas:"main" "side"; gap:14px; padding:10px 14px 20px; align-items:start; }
-main { grid-area:main; min-width:0; }
-.layout[hidden], #me[hidden] { display:none; } /* one view at a time, by the hash (ui-plan.js renderRoute) */
-aside { grid-area:side; min-width:0; padding:2px; }
-@media (min-width:1100px) {
-  .layout { grid-template-columns:280px minmax(0, 1fr); grid-template-areas:"side main"; gap:18px; padding:10px 20px 28px; }
-  aside { position:sticky; top:calc(var(--bar-h) + 10px); max-height:calc(100vh - var(--bar-h) - 20px); overflow:auto; }
-}
+/* layout: the plans (step 4) are one column, the grid; the course list is its own page (#courses) */
+.layout { padding:10px 14px 20px; }
+main { min-width:0; }
+.layout[hidden], .step-page[hidden] { display:none; } /* one step at a time, by the hash (ui-plan.js renderRoute) */
+@media (min-width:1100px) { .layout { padding:10px 20px 28px; } }
 
 /* banners and status page (#me) */
 .banner { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 14px; margin-bottom:14px; border-radius:var(--radius);
@@ -158,13 +144,11 @@ details > summary::-webkit-details-marker { display:none; }
 details > summary::after { content:""; width:8px; height:8px; margin-inline-start:auto; border:solid var(--text-2); border-width:0 2px 2px 0; transform:rotate(45deg); }
 details[open] > summary::after { transform:rotate(-135deg); }
 
-/* sidebar */
-.side-head { display:flex; align-items:center; justify-content:space-between; }
-.side-head h2 { font-size:16px; font-weight:600; }
-aside > .hint { margin-bottom:10px; font-size:12px; }
-.cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap:7px; } /* one column in the 300px sidebar, several when it sits below the grid */
-aside details { margin-top:8px; border-top:1px solid var(--border); padding-top:4px; }
-aside details .cards { margin:4px 0 8px; }
+/* course list (#courses) */
+#side > .hint { margin-bottom:10px; font-size:12px; }
+.cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap:7px; } /* as many columns as the page width holds */
+#side details { margin-top:8px; border-top:1px solid var(--border); padding-top:4px; }
+#side details .cards { margin:4px 0 8px; }
 .course { background:var(--surface); border:1px solid var(--border); border-inline-start:4px solid var(--border); border-radius:var(--radius); padding:5px 9px 7px; box-shadow:var(--shadow-sm); }
 .course.rep { border-inline-start-style:dashed; } /* repeats a colour: only with more than 8 courses in one alternative */
 .course.rep .dot { background:repeating-linear-gradient(45deg, var(--cfg) 0 2px, transparent 2px 4px); outline:1px solid var(--cfg); }
@@ -300,7 +284,7 @@ aside details .cards { margin:4px 0 8px; }
 .pop-alts .btn { width:100%; min-height:var(--tap); justify-content:flex-start; text-align:start; flex-wrap:wrap; font-size:12px; }
 .pop-alts .tag { margin:0; }
 
-/* drawer (preferences / friends / registration) */
+/* drawer (registration) and the preferences page (#prefs): both lay their sections out in .dr-body */
 .drawer { position:fixed; inset-block:0; inset-inline-end:0; inset-inline-start:auto; width:min(var(--drawer-w, 440px), 100vw); height:100dvh; max-height:none; max-width:none; margin:0; padding:0;
   border:0; border-start-start-radius:16px; border-end-start-radius:16px; background:var(--surface); color:var(--text); box-shadow:var(--shadow-pop); overflow:auto; }
 /* non-modal: the grid stays visible and live; on wide screens the page makes room for the drawer */
@@ -321,10 +305,11 @@ aside details .cards { margin:4px 0 8px; }
 .times { display:flex; flex-wrap:wrap; gap:8px 16px; }
 .field { display:flex; align-items:center; gap:8px; min-height:var(--tap); }
 .field.col { flex-direction:column; align-items:stretch; gap:4px; margin-bottom:8px; }
-.drawer input[type=time], .drawer input[type=number], .drawer input[type=text] { min-height:var(--tap); padding:0 10px; border:1px solid var(--border-input);
+.dr-body input[type=time], .dr-body input[type=number], .dr-body input[type=text] { min-height:var(--tap); padding:0 10px; border:1px solid var(--border-input);
   border-radius:10px; background:var(--surface); }
-.drawer input[type=number] { width:96px; }
-.drawer select { min-height:var(--tap); padding:0 8px; border:1px solid var(--border-input); border-radius:10px; background:var(--surface); font:inherit; }
+.dr-body input[type=number] { width:96px; }
+.dr-body select, .showby select { min-width:0; max-width:100%; min-height:var(--tap);
+  padding:0 8px; border:1px solid var(--border-input); border-radius:10px; background:var(--surface); font:inherit; }
 .brow { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:4px 10px; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius); }
 .brow .field { min-width:0; } .brow input[type=time] { flex:1; min-width:0; }
 .brow .grow { grid-column:1 / -1; margin-bottom:0; }
@@ -333,10 +318,11 @@ aside details .cards { margin:4px 0 8px; }
 .check input { width:20px; height:20px; margin:0; accent-color:var(--primary); }
 .row { display:flex; gap:8px; }
 .row input { flex:1; min-width:0; }
-/* friends drawer: 4/8 spacing scale. Sections 32px apart (16 + a hairline + 16), heading 8px above its content, cards 8px apart. */
+/* friends (#prefs): 4/8 spacing scale. Sections 32px apart (16 + a hairline + 16), heading 8px above its content, cards 8px apart. */
 .dr-body:has(.fr-sec) { gap:0; }
+.dr-body:has(.fr-sec) > h2 { margin-bottom:20px; } /* the card heading sits 20px above its content, as the .dr-body gap does in the preferences card */
 .fr-sec { padding-block:16px; }
-.fr-sec:first-child { padding-top:0; }
+.fr-sec:first-of-type { padding-top:0; }
 .fr-sec:last-child { padding-bottom:0; }
 .fr-sec + .fr-sec { border-top:1px solid var(--border); }
 .fr-sec h3 { margin-bottom:8px; }
@@ -369,14 +355,14 @@ aside details .cards { margin:4px 0 8px; }
 .toast.show { opacity:1; }
 
 /* ---- responsive layer: sticky chrome, breakpoints, type scale, touch targets ----
-   1100 two columns (sidebar | grid) · 900 labelled top-bar actions · 760 whole week (below: one day + day selector)
+   one column at every width (steps 1-4) · 1080 labelled top-bar actions · 760 whole week (below: one day + day selector)
    600 phone: bottom action bar, bottom sheets with a scrim */
 button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .switcher .btn:active:not(:disabled) { background:var(--border); }
 .course .seg span { min-height:calc(var(--tap) - 6px); font-size:var(--fs-sm); } /* --tap with the label padding, also on desktop */
 .seg label { min-width:var(--tap); }
 .course h3, .locked li { font-size:var(--fs); }
-.hint, aside > .hint, .reason, .locked p, .pill-info, .pill, .busy, .year h3 span, .meta { font-size:var(--fs-sm); }
+.hint, #side > .hint, .reason, .locked p, .pill-info, .pill, .busy, .year h3 span, .meta { font-size:var(--fs-sm); }
 .cr, .tag { font-size:12px; }
 .warnbox, .notice { border-radius:var(--radius); }
 .skip { border-radius:var(--radius); }
@@ -393,12 +379,12 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .top { padding:0 14px; column-gap:8px; }
   .actions { gap:4px; }
   .actions .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
-  .actions .btn:not(.avatars) { width:var(--tap); padding:0; }
+  .actions .btn { width:var(--tap); padding:0; }
 }
 /* the docked drawer takes up to 440px: below 1500 the bar is tablet-narrow, so actions go icon-only and the title keeps room */
 @media (min-width:1080px) and (max-width:1499px) {
   body.drawer-open .actions .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
-  body.drawer-open .actions .btn:not(.avatars) { width:var(--tap); padding:0; }
+  body.drawer-open .actions .btn { width:var(--tap); padding:0; }
   body.drawer-open .top .meta { display:none; }
   body.drawer-open .top h1 { grid-row:1 / 3; white-space:normal; }
   body.drawer-open .top h1 small { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -423,10 +409,8 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .pills::-webkit-scrollbar { display:none; }
   .pill, .pill-info, .pill.quiet { flex:none; white-space:nowrap; scroll-snap-align:start; }
 }
-/* the sidebar sits below the grid: its lists use the width */
-@media (max-width:1099px) {
-  .locked { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); column-gap:16px; }
-}
+/* the course list's locked rows use the width (#courses is full width at every size) */
+.locked { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); column-gap:16px; }
 /* phone */
 .scrim { display:none; }
 @media (max-width:599px) {
@@ -436,13 +420,12 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .alt-label { min-width:0; padding:0 4px; font-size:var(--fs-sm); }
   .board { padding:12px; }
   /* actions move to a bottom bar: the top bar keeps only the title and the alternative switcher */
-  .actions { position:fixed; inset:auto 0 0 0; z-index:5; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:4px;
+  .actions { position:fixed; inset:auto 0 0 0; z-index:5; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px;
     padding:6px 8px calc(6px + env(safe-area-inset-bottom)); background:var(--chrome); border-top:0; box-shadow:var(--shadow-up); }
-  .actions .btn, .actions .btn:not(.avatars) { width:auto; min-height:48px; flex-direction:column; gap:2px; padding:0 2px; border-color:transparent; background:transparent; font-size:12px; }
+  .actions .btn { width:auto; min-height:48px; flex-direction:column; gap:2px; padding:0 2px; border-color:transparent; background:transparent; font-size:12px; }
   .actions .btn.primary { background:var(--primary); color:var(--on-primary); }
   .actions .btn.primary:active:not(:disabled) { background:var(--primary-press); }
   .actions .lbl { position:static; width:auto; height:auto; overflow:visible; clip:auto; }
-  .actions .stack .av:nth-child(n+3):not(.plus) { display:none; }
   .toast { bottom:84px; }
   /* sheets: dimmed page that does not scroll behind them; tapping the scrim closes the drawer */
   body.drawer-open { overflow:hidden; }
@@ -453,7 +436,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .pop.pop { position:fixed; inset:auto 0 0 0 !important; width:100%; max-width:none; border-radius:16px 16px 0 0; max-height:80dvh; overflow:auto; overscroll-behavior:contain; }
   .drawer { inset-block-start:auto; inset-inline:0; width:100vw; height:auto; max-height:75dvh; border-radius:16px 16px 0 0; box-shadow:var(--shadow-sheet); overscroll-behavior:contain; }
 }
-@media (pointer:coarse) { :root :is(input, select) { font-size:16px; } } /* iOS zooms into a focused field under 16px; :root lifts it over .drawer select */
+@media (pointer:coarse) { :root :is(input, select) { font-size:16px; } } /* iOS zooms into a focused field under 16px; :root lifts it over .dr-body select */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition:none !important; animation:none !important; }
   .busy::before { display:none; } /* a frozen ring reads as stuck; the word stays */
@@ -487,35 +470,50 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 @keyframes shimmer { to { background-position:-200% 0; } }
 @media (max-width:759px) { .skel-grid { grid-template-columns:minmax(0, 1fr); } .skel-grid > div:nth-child(n+2) { display:none; } }
 /* batch 2: first run + chrome */
-/* view nav: a tab strip under the sticky bar (scrolls away; the bar has no room for it at phone widths) */
-/* the tabs are a pill segment; the dark-mode switch sits at the far end of the strip (theme.js) */
-.views { display:flex; align-items:center; gap:4px; padding:8px 20px; }
-.views a { display:inline-flex; align-items:center; min-height:max(36px, var(--tap) - 8px); padding:0 16px; border-radius:999px;
+/* step bar: a strip under the sticky bar (scrolls away; the bar has no room for it at phone widths) */
+/* the steps are a pill segment; the dark-mode switch sits at the far end of the strip (theme.js) */
+.steps { display:flex; align-items:center; gap:4px; padding:8px 20px; }
+.steps a { display:inline-flex; align-items:center; min-height:max(36px, var(--tap) - 8px); padding:0 16px; border-radius:999px;
   color:var(--text-2); font-weight:500; text-decoration:none; white-space:nowrap; transition:color var(--dur-1) ease, background-color var(--dur-1) ease, box-shadow var(--dur-1) ease; }
-.views a:hover { color:var(--text); }
-.views a[aria-current="page"] { background:var(--surface); color:var(--primary); box-shadow:var(--shadow-card); }
-.views a:active { background:var(--primary-soft); }
+.steps a:hover { color:var(--text); }
+.steps a[aria-current="step"] { background:var(--surface); color:var(--primary); box-shadow:var(--shadow-card); }
+.steps a:active { background:var(--primary-soft); }
+/* the step number: a ring; filled on the current step, a check icon on the steps before it (.n is aria-hidden, the link has aria-label) */
+.steps .n { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; flex:none; margin-inline-end:8px; border:1px solid var(--border-strong);
+  border-radius:50%; font-size:var(--fs-xs); font-weight:600; line-height:1; font-variant-numeric:tabular-nums;
+  transition:background-color var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease; }
+.steps a[aria-current="step"] .n { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
+.steps a.done .n { background:var(--primary-soft); border-color:var(--primary-line); color:var(--primary); font-size:0; }
+.steps .n .icon { display:none; width:14px; height:14px; stroke-width:2.5; } /* the inline Lucide check (data-icon), shown on done steps only */
+.steps a.done .n .icon { display:block; }
 .theme-btn { margin-inline-start:auto; border-radius:999px; color:var(--text-2); }
 .theme-btn > span { display:inline-flex; align-items:center; gap:6px; }
 [data-theme="dark"] .to-dark, :root:not([data-theme="dark"]) .to-light { display:none; } /* the button names what a click turns on */
-@media (max-width:1079px) { .views { padding:8px 14px; } }
-@media (max-width:599px) { .views { padding-block:4px; }
+@media (max-width:1079px) { .steps { padding:8px 14px; } }
+@media (max-width:599px) { .steps { padding:4px 8px; gap:0; }
+  /* phone: one row; the steps other than the current one show their number only (the link keeps its aria-label) */
+  .steps a { min-height:var(--tap); padding:0 8px; font-size:var(--fs-sm); } /* 44px hit areas on touch (app.md) */
+  .steps a:not([aria-current]) { min-width:var(--tap); padding:0; justify-content:center; }
+  .steps a:not([aria-current]) .n { margin:0; }
+  .steps a:not([aria-current]) .lbl { display:none; }
   .theme-btn { width:var(--tap); padding:0; } .theme-btn .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
-/* on #me the bar keeps the title only: the alternatives and the plan actions belong to the builder */
-[data-view="me"] .switcher, [data-view="me"] .actions, body.gated .switcher, body.gated .actions { display:none; }
+.showby { margin-bottom:10px; } /* "הצג לפי" above the summary pills (ui-view.js renderView) */
+/* off the plans the bar keeps the title only: the alternatives and the plan actions belong to step 4 */
+body:not([data-view="plan"]) .switcher, body:not([data-view="plan"]) .actions, body.gated .switcher, body.gated .actions { display:none; }
 .gate { max-width:440px; } /* the year question shown before planning starts (ui-plan.js renderMe) */
-/* status page (#me): profile and progress on the right (sticky) and the course lists beside them from 900px; one column below */
-#me { --gut:14px; max-width:1200px; margin:0 auto; padding:14px var(--gut) 0; }
-#me { scroll-margin-top:100vh; } /* loading or following #me must not scroll the page past the nav strip: the fragment scroll clamps to 0 */
+/* step pages (#me, #courses, #prefs) share the container, the heading and the sticky "הבא" bar (.me-foot) */
+/* status page (#me): profile and progress on the right (sticky) and the course lists beside them from 720px; one column below */
+.step-page { --gut:14px; max-width:1200px; margin:0 auto; padding:14px var(--gut) 0; }
+.step-page { scroll-margin-top:100vh; } /* following #me, #courses or #prefs must not scroll past the step bar: the fragment scroll clamps to 0 */
 .me-head { margin-bottom:14px; }
-#me .me-head h2 { font-size:20px; font-weight:600; }
+.step-page .me-head h2 { font-size:20px; font-weight:600; }
 .me-head h2:focus { outline:none; }
 .me-step { margin-top:4px; color:var(--text-2); }
 .me-step b { color:var(--text); font-weight:600; }
 .me-grid { display:grid; grid-template-columns:minmax(0, 1fr); gap:14px; }
 .me-side { display:grid; gap:14px; align-content:start; }
 .me-card, .me-main { min-width:0; padding:14px; background:var(--surface); border:1px solid transparent; border-radius:var(--radius-lg); box-shadow:var(--shadow-card); }
-#me h2 { font-size:16px; font-weight:600; }
+.me-card h2, .me-main h2 { font-size:16px; font-weight:600; }
 #me .field { flex-wrap:wrap; margin-top:12px; }
 .me-card .progress { margin:12px 0; }
 .me-main > .hint { margin-top:8px; }
@@ -525,14 +523,15 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .me-foot { position:sticky; bottom:0; z-index:4; display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px 16px;
   margin:14px calc(-1 * var(--gut)) 0; padding:10px var(--gut); background:var(--surface); border-top:1px solid var(--border); box-shadow:var(--shadow-up); }
 @media (min-width:720px) {
-  #me { --gut:20px; padding-top:20px; }
+  .step-page { --gut:20px; padding-top:20px; }
   .me-grid { grid-template-columns:280px minmax(0, 1fr); gap:18px; align-items:start; }
+  .me-grid.halves { grid-template-columns:repeat(2, minmax(0, 1fr)); } /* #prefs: preferences | friends */
   .me-side { position:sticky; top:calc(var(--bar-h) + 14px); }
 }
 /* header: one data line */
 .meta { font-size:12px; }
 @media (max-width:599px) {
-  body[data-view="me"] { padding-bottom:0; } /* no bottom action bar on #me: the sticky "סיימתי" bar takes its place */
+  body:not([data-view="plan"]) { padding-bottom:0; } /* no bottom action bar on steps 1-3: the sticky "הבא" bar takes its place */
   .me-foot .hint { display:none; }
   .me-foot .btn { flex:1; }
 }
@@ -571,7 +570,7 @@ body:has(.drawer.modal[open]), body.pop-open { overflow:hidden; }
 .toast[popover] { top:auto; border:0; overflow:visible; }
 /* phone: keep the grid in view (final check: grid was at y=777 of 812 at 375px) */
 @media (max-width:599px) {
-  .board-ctl .ctl:has(input[name="bscope"]) { display:none; } /* scope stays in the preferences drawer */
+  .board-ctl .ctl:has(input[name="bscope"]) { display:none; } /* scope stays on the preferences page */
   .board-ctl { margin-bottom:4px; }
   #semnote .notice { padding:6px 10px; font-size:12px; line-height:1.4; margin-bottom:6px; }
 }
@@ -675,6 +674,7 @@ body:has(#friendEd[open]) { overflow:hidden; }
   .pop:popover-open { animation:in-pop var(--dur-1) var(--ease-out); }
   .pop.\:popover-open { animation:in-pop var(--dur-1) var(--ease-out); } /* polyfill (Safari 16) */
   .dlg[open] { animation:in-pop var(--dur-2) var(--ease-out); }
+  .step-page, #layout { animation:in-fade var(--dur-1) ease-out; } /* a step switch (display:none to shown) fades in */
   #friendEd[open], .pmap[open] { animation:in-fade var(--dur-2) ease-out; } /* full-screen: a fade, no scale */
   body.drawer-open .scrim, .pop::backdrop, .drawer.modal::backdrop, .dlg::backdrop { animation:in-fade var(--dur-2) ease-out; }
   details > summary::after { transition:transform var(--dur-1) var(--ease-out); }

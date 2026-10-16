@@ -39,6 +39,8 @@ export const ICON = {
     '<path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
   file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/>',
   pencil: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z"/>',
+  map: '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0' +
+    'l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
 };
 export const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICON[name]}</svg>`;
 export const initials = (name) => name.trim().split(/\s+/).map((w) => Array.from(w)[0] ?? '').slice(0, 2).join('') || '?';
@@ -151,6 +153,10 @@ export function summary(res, data, friends, constraints = {}) {
     examGap: res.explanation.match(/לפחות (\S+) ימים בין בחינות/)?.[1] ?? (res.explanation.includes('לפחות יום אחד בין בחינות') ? '1' : null),
   };
 }
+
+// The free days of a summary, as the board's pill and the courses page say them.
+export const freeDaysText = (days) => (!days.length ? 'אין יום פנוי' : days.length === 1 ? `יום ${DAYS[days[0]]}׳ פנוי`
+  : `ימים ${days.map((d) => `${DAYS[d]}׳`).join(', ')} פנויים`);
 
 // Friend tags on a block: first name (tooltip = full name), at most two, then "+N". Tags, not circles, so they never overlap.
 export const firstName = (name) => {

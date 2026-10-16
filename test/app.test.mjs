@@ -184,14 +184,10 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
   assert.equal(html.slice(html.indexOf('<body')).split('כלי עזר לא רשמי').length, 2); // the visible page; the meta description repeats it for link previews
 });
 
-import { routeOf, hashOf } from '../web/app.js';
-test('routeOf: #me is the status page, everything else is the builder', () => {
-  assert.equal(routeOf('#me'), 'me');
-  for (const h of ['', '#', '#f=abc', '#b=abc', '#mex']) assert.equal(routeOf(h), 'plan');
-});
-
-test('routeOf: a pasted friend link lands on the builder', () => {
-  assert.equal(routeOf('#f=x'), 'plan');
+import { routeOf, hashOf, STEPS } from '../web/app.js';
+test('routeOf: four steps; friend, backup and unknown hashes land on the plans', () => {
+  assert.deepEqual(['#me', '#courses', '#prefs'].map(routeOf), ['me', 'courses', 'prefs']);
+  for (const h of ['', '#', '#f=abc', '#b=abc', '#mex', '#courses2']) assert.equal(routeOf(h), 'plan');
 });
 
 test('normalize keeps integer grades 0-100 and drops the rest', () => {
@@ -204,9 +200,19 @@ test('status page CSS is scoped to #me: the map lane div.ml.me must not inherit 
   assert.deepEqual(css.match(/(^|[\s,}])\.me(?![\w-])/gm), null);
 });
 
-test('hashOf: the inverse of routeOf, so a cancelled backup keeps the current page', () => {
-  for (const v of ['me', 'plan']) assert.equal(routeOf(hashOf(v)), v);
+test('index.html: one step link per step, in order, with hashOf hrefs', () => {
+  const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  const links = [...html.matchAll(/<a href="([^"]*)" data-view="([a-z]+)"/g)].map((m) => [m[2], m[1]]);
+  assert.deepEqual(links, STEPS.map((v) => [v, hashOf(v) || '#']));
+});
+
+test('hashOf is routeOf inverse for every step', () => {
+  for (const v of STEPS) assert.equal(routeOf(hashOf(v)), v);
   assert.equal(hashOf(undefined), '');
+});
+test('normalize: sortBy keeps the four values, anything else is best', () => {
+  for (const v of ['best', 'credits', 'friends', 'unlocks']) assert.equal(normalize({ v: 1, sortBy: v }).sortBy, v);
+  for (const v of [undefined, '__proto__', 5, 'credits ', null]) assert.equal(normalize({ v: 1, sortBy: v }).sortBy, 'best');
 });
 
 test('normalize: blocks keep valid items, drop invalid ones individually, cap at 12', () => {

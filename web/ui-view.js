@@ -2,7 +2,7 @@
 import { app, esc, save, refresh, candidateMode, keepFocus, summerOn, summerScope, waitingOnEarlier } from './app.js';
 import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
-import { DAYS, icon, initials, groupIndex, hourRange, summary, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
+import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
 import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts } from './ui-text.js';
 import { SEMS, scopes, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, pill, seg, $, ui } from './ui-common.js';
@@ -18,10 +18,6 @@ export function renderTop() {
   const f = freshness(app.status, app.data.fetchedAt);
   $('meta').innerHTML = (f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text))
     + (app.data.verified === false ? ' · הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.' : '');
-  const fr = app.state.friends;
-  $('friendsBtn').innerHTML = `<span class="stack" aria-hidden="true">${fr.slice(0, 3).map((f) => `<span
-    class="av">${esc(initials(f.name))}</span>`).join('')}${fr.length ? '' : `<span class="av plus">${icon('plus')}</span>`}</span><span class="lbl">חברים${fr.length
-    ? ` (${fr.length})` : ''}</span>`;
 }
 
 export function renderBanner() {
@@ -44,6 +40,7 @@ export function renderBanner() {
 }
 
 // ---------- grid area ----------
+const SORT_BY = [['best', 'מומלץ'], ['credits', 'הכי הרבה נ״ז'], ['friends', 'הכי הרבה עם חברים'], ['unlocks', 'פותחת הכי הרבה קורסי המשך']]; // "הצג לפי" (state.sortBy)
 function colorOrder() {
   const cand = Object.keys(app.data.courses).filter((id) => candidateMode(id));
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
@@ -77,6 +74,11 @@ export function renderView() {
     + (pair ? raw.warnings.map((w) => note('info', w)).join('') : '')
     + (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
+  const noFriend = state.sortBy === 'friends' && !state.friends.some((f) => f.active !== false); // as showWeights: the search runs as 'best'
+  $('showby').innerHTML = `<label class="field"><span class="ctl-l">הצג לפי</span><select data-chg="sortBy" data-k="sortBy">${SORT_BY.map(([v, t]) => `<option value="${v}"${v === state.sortBy
+    ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${noFriend ? `<p class="hint">${state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם'
+    : 'אין עדיין חברים. אפשר להוסיף'} <a href="#prefs">בשלב 3</a>.</p>` : ''}`;
+
   $('altLabel').textContent = nAlt ? `חלופה ${ui.cur + 1} מתוך ${nAlt}` : 'אין חלופות';
   const stranded = [$('prev'), $('next')].includes(document.activeElement) && nAlt < 2;
   $('prev').disabled = $('next').disabled = nAlt < 2;
@@ -89,21 +91,21 @@ export function renderView() {
   else if (!Object.keys(app.data.courses).some(planned)) {
     const pickSpec = studyYear(app.data, state) >= 3 && app.data.specializations?.length && !state.profile.specs.length; // from year 3 the specialization fills the plan
     const how = pickSpec ? 'בחרו התמחות ב<a href="#me">״המצב שלי״</a>: משנה ג׳ קורסי ההתמחות נכנסים לבד. אפשר גם לסמן' : 'סמנו';
-    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב"הקורסים שלי", והמערכת תיבנה לבד.</p></div></div>`;
+    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב<a href="#courses">שלב 2</a>, והמערכת תיבנה לבד.</p></div></div>`;
     live = 'לא נבחרו קורסים';
   } else if (noRes) { // partial and empty: only this message, with the "search more" button (no second notice)
     const why = ui.last.diagnosis?.length ? ui.last.diagnosis : ['ההעדפות, האילוצים והנעיצות הנוכחיים לא משאירים אף קורס אפשרי.'];
     const blocked = waitingOnEarlier().length, who = blocked === 1 ? 'קורס אחד של השנה מחכה' : `${blocked} קורסים של השנה מחכים`;
     const prereqs = blocked ? `<p>${who} לדרישות קדם משנים קודמות שלא סומנו כ״עברתי״. עדכנו ב<a href="#me">״המצב שלי״</a>.</p>` : '';
     msg += `<div class="msg bad">${icon('alert')}<div><b>${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}</b><ul>${why.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>${prereqs}
-      <p class="msg-actions">${more}<button type="button" class="btn" data-act="panel" data-panel="prefs">${icon('sliders')} פתח העדפות</button>
+      <p class="msg-actions">${more}<a class="btn" href="#prefs">${icon('sliders')} פתח העדפות</a>
       ${state.pins.length ? `<button type="button" class="btn" data-act="clearPins">${icon('pin')} נקה נעיצות</button>` : ''}</p></div></div>`;
     live = ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת';
   }
 
   if (res) {
     const s = summary(res, data, state.friends, state.constraints);
-    const fd = !s.freeDays.length ? 'אין יום פנוי' : s.freeDays.length === 1 ? `יום ${DAYS[s.freeDays[0]]}׳ פנוי` : `ימים ${s.freeDays.map((d) => `${DAYS[d]}׳`).join(', ')} פנויים`;
+    const fd = freeDaysText(s.freeDays);
     const gap = s.gapH >= 10 ? 'יותר מ-10 שעות חלונות' : s.gapH ? `${count(s.gapH, 'שעת חלון אחת', 'שעות חלונות')}` : 'בלי חלונות';
     const exams = !data.examsPublished ? 'לוח הבחינות טרם פורסם' : s.examGap ? `לפחות ${esc(count(Number(s.examGap), 'יום אחד', 'ימים'))} בין בחינות` : 'פער בין בחינות: לא ידוע';
     const fr = s.withFriends.map((f) => (f.n === 1 ? `קורס אחד עם ${f.name}` : `${f.n} קורסים עם ${f.name}`)); // raw: escaped once in the pill, the live region is text

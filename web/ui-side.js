@@ -1,12 +1,12 @@
-// The courses sidebar of the builder ("הקורסים שלי").
+// Step 2, the courses page ("הקורסים שלי"): the course list and a one-line summary of the shown alternative.
 import { app, esc, candidateMode } from './app.js';
 import { englishOptions, specLists } from './rules.js';
 import { unlockCounts } from './solver-core.js';
-import { icon, isPair, resCourses, placedIn } from './ui-grid.js';
-import { notFitReason } from './ui-text.js';
+import { icon, isPair, resCourses, placedIn, semResult, summary, freeDaysText } from './ui-grid.js';
+import { notFitReason, courseCount } from './ui-text.js';
 import { CAND, SEM_PICK, colors, listIds, status, doneIds, planned, seg, details, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
-// ---------- sidebar ----------
+// ---------- course list ----------
 // Why a planned course is missing from the shown alternative (issue 17א#5).
 function outReason(id) {
   const c = app.data.courses[id], prim = c.groups.filter((g) => g.primary);
@@ -55,6 +55,15 @@ function card(id, res, unlocks, musts) {
   </article>`;
 }
 
+// The shown alternative in one line (the board's pills, shortened): courses, credits, free days, courses with friends. Empty without a plan.
+export function coursesSummary(res) {
+  const r = semResult(res, ui.sem);
+  if (!r?.courses.length) return '';
+  const s = summary(r, isPair(res) ? app.sem[ui.sem] : app.data, app.state.friends, app.state.constraints);
+  return [isPair(res) && `סמסטר ${ui.sem}׳`, courseCount(r.courses.length), `${s.credits} נ״ז`, freeDaysText(s.freeDays),
+    ...s.withFriends.map((f) => `${f.n === 1 ? 'קורס אחד' : `${f.n} קורסים`} עם ${f.name}`)].filter(Boolean).map(esc).join(' · ');
+}
+
 export function renderSide(res) {
   const ids = listIds(), unlocks = unlockCounts(app.data, doneIds());
   const order = { retake: 0, available: 1, afterA: 1, conditional: 1 };
@@ -75,8 +84,9 @@ export function renderSide(res) {
   const locked = (st) => ids.filter((id) => status(id) === st);
   const rows = (list) => `<ul
     class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
-  $('side').innerHTML = `<div class="side-head"><h2>הקורסים שלי</h2><button type="button" class="link-btn" data-act="openStatus" data-k="openStatus">עדכן מצב</button></div>
-    <p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
+  const noPlan = ui.last && !ui.last.results.some((r) => resCourses(r).length); // the search finished without a plan: say so, step 4 says why
+  $('coursesTop').innerHTML = noPlan ? `${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}. הפרטים <a href="#">בשלב 4</a>.` : coursesSummary(res);
+  $('side').innerHTML = `<p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
     ${details('plan', `בתכנון (${plan.length})`, `<div class="cards">${plan.map((id) => card(id, res, unlocks, musts)).join('')
       || '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'}</div>`, 1)}
     ${listsHtml}

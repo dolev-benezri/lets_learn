@@ -73,6 +73,9 @@ export const listTitle = (l) => {
 };
 
 export const focusWeek = () => $('week').focus({ preventScroll: false });
+// Each step's page (index.html) and its h2, the focus target when the step is shown.
+export const PAGE = { me: ['me', 'meTitle'], courses: ['courses', 'coursesTitle'], prefs: ['prefs', 'prefsTitle'], plan: ['layout', 'weekTitle'] };
+export const shownTitle = () => $(Object.values(PAGE).find(([p]) => !$(p).hidden)?.[1]);
 
 // state shared by the modules (sem: the shown semester of a year result)
 export const ui = { worker: null, timer: null, last: null, cur: 0, running: false, runError: null, gen: 0, moreMul: 1, sem: 'א', gradeMsg: '', panel: null,

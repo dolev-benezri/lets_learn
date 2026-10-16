@@ -9,7 +9,7 @@ const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 export const DEFAULT = {
   v: 1, year: 2027, semester: 'א', program: 30, startYear: 2026, name: '',
   passed: null, failed: {}, grades: {}, choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null, specs: [], summer: false },
-  scope: 'year', load: 'even', semesterOf: {},
+  scope: 'year', load: 'even', sortBy: 'best', semesterOf: {},
   specDraft: null, yearIds: [], // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
   constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, maxDays: null, examsSameDay: 'forbid', includeFull: false, blocks: [],
@@ -42,6 +42,7 @@ const CONSTRAINT_OK = {
 
 // The one gate for state from localStorage and from backup links: only valid values get through.
 // year/semester are never taken from input (the year is the catalog's); program/startYear only when the catalog lists them (a foreign program would 404 the data file forever).
+const SORTS = ['best', 'credits', 'friends', 'unlocks'];
 export function normalize(raw, catalog = FALLBACK_CATALOG) {
   const out = structuredClone(DEFAULT);
   if (Number.isInteger(catalog?.year)) out.year = catalog.year; // the academic year comes from the scraper's catalog: one place to roll over
@@ -69,6 +70,7 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   out.yearIds = strs(raw.yearIds, 60, 20) ?? [];
   if (['year', 'א', 'ב', 'קיץ'].includes(raw.scope)) out.scope = raw.scope;
   if (['א', 'even', 'ב'].includes(raw.load)) out.load = raw.load;
+  if (SORTS.includes(raw.sortBy)) out.sortBy = raw.sortBy; // includes() on an array: '__proto__' and non-strings fall through to 'best'
   if (isObj(raw.semesterOf)) out.semesterOf = Object.fromEntries(Object.entries(raw.semesterOf).filter(([k, v]) => k.length <= 20 && (v === 'א' || v === 'ב')).slice(0, 200));
   if (isObj(raw.weights)) for (const k of Object.keys(DEFAULT.weights)) if (num(raw.weights[k])) out.weights[k] = [0, 1, 3, 5].reduce((b,
     s) => (Math.abs(s - raw.weights[k]) <= Math.abs(b - raw.weights[k]) ? s : b), 0); // snap to the UI scale; ties go up like nearestStep
@@ -220,9 +222,11 @@ export function refresh() {
   keepFocus(() => renderers.forEach((r) => r()));
 }
 
-// Two views in one page: #me is the status page, any other hash (friend and backup links too) is the builder.
-export const routeOf = (h) => (h === '#me' ? 'me' : 'plan');
-export const hashOf = (view) => (view === 'me' ? '#me' : ''); // routeOf's inverse: the hash that shows a view
+// Four steps, one page: #me, #courses, #prefs; any other hash (friend and backup links too) is the plans.
+const HASH = { me: '#me', courses: '#courses', prefs: '#prefs', plan: '' };
+export const STEPS = Object.keys(HASH);
+export const routeOf = (h) => STEPS.find((v) => HASH[v] === h && h) ?? 'plan';
+export const hashOf = (view) => (Object.hasOwn(HASH, view) ? HASH[view] : ''); // routeOf's inverse: the hash that shows a view
 
 const SKELETON = `<div class="skel" role="status"><span class="sr">טוען את מערכת השעות…</span><div class="skel-grid" aria-hidden="true">${'<div><i></i><i></i><i></i></div>'.repeat(5)}</div></div>`;
 
@@ -244,7 +248,7 @@ function setSemesters(sem) {
 }
 
 // The personal part of the state (who you are, how you plan) survives a program change; what you passed does not.
-const PERSONAL = ['name', 'friends', 'weights', 'constraints', 'load'];
+const PERSONAL = ['name', 'friends', 'weights', 'constraints', 'load', 'sortBy'];
 const withPersonal = (to, from) => {
   for (const k of PERSONAL) to[k] = structuredClone(from[k]);
   to.scope = 'year';
@@ -294,8 +298,8 @@ async function init() {
   try { sem = await fetchSemesters(app.state); } catch { sem = null; }
   app.status = await status;
   if (!sem) {
-    app.loadFailed = true; // the nav tabs still switch views (ui-plan.js onHash), both showing this message
-    for (const id of ['week', 'me']) {
+    app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
+    for (const id of ['week', 'me', 'side', 'prefs']) {
       const el = document.getElementById(id);
       el.innerHTML = '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b>' +
         '<p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions">' +
