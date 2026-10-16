@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-11T23:09:19.541Z",
+ "fetchedAt": "2026-10-16T18:08:48.356Z",
  "year": 2027,
  "startYear": 2024,
  "program": 40,
@@ -526,7 +526,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3547,7 +3547,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר גוטמן דוד",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274020501/1"
@@ -3567,7 +3567,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גוטמן דוד",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4509,7 +4509,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר גולומב שחר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274024804/1"
@@ -4529,7 +4529,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גולומב שחר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4806,7 +4806,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "מר וולף רון",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -5826,7 +5826,7 @@
        "day": 1,
        "start": "08:00",
        "end": "09:50",
-       "room": "קריה ז'1"
+       "room": "קריה אודיטוריום"
       },
       {
        "day": 3,
@@ -5879,7 +5879,7 @@
        "day": 1,
        "start": "10:00",
        "end": "11:50",
-       "room": "קריה ז'1"
+       "room": "קריה אודיטוריום"
       },
       {
        "day": 3,
@@ -6376,7 +6376,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6520,7 +6520,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6538,7 +6538,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7546,7 +7546,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091411/1"
@@ -7576,7 +7576,7 @@
        "day": 1,
        "start": "09:00",
        "end": "10:50",
-       "room": "201 פיקוס"
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
       }
      ],
      "exams": []
@@ -7586,7 +7586,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091413/1"
@@ -7772,7 +7772,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7808,7 +7808,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' זלקמן סמירין אולגה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7976,7 +7976,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' פישלוב דליה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092504/1"
@@ -8130,7 +8130,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' נמירובסקי אירינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

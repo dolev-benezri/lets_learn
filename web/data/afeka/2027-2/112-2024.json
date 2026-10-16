@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-09T22:18:29.701Z",
+ "fetchedAt": "2026-10-16T18:08:48.356Z",
  "year": 2027,
  "startYear": 2024,
  "program": 112,
@@ -338,7 +338,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -941,7 +941,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר כהן תום",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "271001616/1"
@@ -1015,7 +1015,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן תום",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1345,7 +1345,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ארטישצ'ב מריה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271012101/1"
@@ -1445,7 +1445,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר ארטישצ'ב מריה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3922,6 +3922,26 @@
      "exams": []
     },
     {
+     "id": "271026605",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "מר שלומי פיני",
+     "full": false,
+     "semester": "ב",
+     "linked": [
+      "271026605/1"
+     ],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "08:00",
+       "end": "09:50",
+       "room": "055 פרונטלי בניין מעבדות"
+      }
+     ],
+     "exams": []
+    },
+    {
      "id": "271026602/1",
      "type": "תרגול",
      "primary": false,
@@ -3935,6 +3955,24 @@
        "start": "10:00",
        "end": "11:50",
        "room": "קריה ז'4"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "271026605/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "מר שלומי פיני",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 5,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "055 פרונטלי בניין מעבדות"
       }
      ],
      "exams": []
@@ -4877,7 +4915,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר שטטר דוד",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6086,7 +6124,7 @@
        "day": 1,
        "start": "08:00",
        "end": "09:50",
-       "room": "קריה ז'1"
+       "room": "קריה אודיטוריום"
       },
       {
        "day": 3,
@@ -6139,7 +6177,7 @@
        "day": 1,
        "start": "10:00",
        "end": "11:50",
-       "room": "קריה ז'1"
+       "room": "קריה אודיטוריום"
       },
       {
        "day": 3,
@@ -6636,7 +6674,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6780,7 +6818,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6798,7 +6836,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

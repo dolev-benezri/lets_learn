@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-08T22:18:32.495Z",
+ "fetchedAt": "2026-10-16T18:08:48.356Z",
  "year": 2027,
  "startYear": 2027,
  "program": 50,
@@ -2872,7 +2872,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": ", מר אולבינסקי אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
