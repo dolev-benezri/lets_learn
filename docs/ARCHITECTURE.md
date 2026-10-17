@@ -6,25 +6,32 @@
 
 | נתיב | מה יש בו |
 |---|---|
-| `scripts/` | משיכת נתונים ובנייה: scrape, polite, parse, build, discover, audit, `programs.json`, ו-fixtures של HTML אמיתי |
-| `web/` | האתר: HTML ו-ES modules, בלי build |
+| `scripts/` | משיכת נתונים ובנייה, בלי דפדפן: `scrape.mjs` (משיכה מנומסת מהידיעון ל-`web/data/afeka`), `polite.mjs` (קצב, המתנה אחרי חסימה, וסיכום השינויים שהופך להודעת ה-commit), `parse.mjs` (HTML לנתונים), `build.mjs` (קובץ נתונים לתוכנית ולסמסטר), `discover.mjs` (טיוטה של `programs.json` מדפי המסלולים), `audit.mjs` (נוצר ממנו `docs/DATA-AUDIT.md`), `prereq-map.mjs` (נוצרים ממנו `docs/PREREQS.md` ו-`docs/prereqs.json`) ו-`programs.json` (התוכניות והמחזורים שנמשכים) |
+| `scripts/fixtures/` | דפי HTML ו-JSON אמיתיים מהידיעון, לבדיקות של המשיכה והפענוח |
+| `web/` | האתר: HTML ו-ES modules, בלי build. `index.html` הוא האתר, `legal.html` תנאי השימוש והפרטיות, `icon.svg` ו-`og.png` (נוצר מ-`design-system/og.html`) |
 | `web/app.js` | מצב (כולל `sortBy` של "הצג לפי" ו-`programSet`: האם נבחר מסלול, כי בביקור ראשון אף מסלול לא נבחר מראש), `normalize()`, localStorage, טעינת נתונים, החלפת תוכנית ומחזור, ושלבי הניווט (`STEPS`, `routeOf`, `hashOf`: `#me`, `#courses`, `#prefs`, וכל hash אחר הוא המערכות) |
 | `web/rules.js` | מנוע התקנון: סיווג קורסים, התקדמות והתמחויות |
 | `web/solver-core.js` | חיפוש: backtracking עם מסכות ביטים וגבולות עליונים לקיצוץ, כולל המדדים `credits` ו-`unlocks` ו-`showWeights` (ו-`solver-worker.js`) |
 | `web/share.js` | קישורי חבר וגיבוי, עם אימות |
-| `web/friend-*.js` | ייבוא מערכת חבר: טקסט, PDF, תמונה ועורך |
-| `web/grade-import.js` | ייבוא ציונים |
-| `web/ui-*.js` | ממשק, לפי ארבעת השלבים: `ui-plan` (נקודת הכניסה והניתוב בין השלבים), `ui-me` (1, המצב שלי), `ui-side` (2, רשימת הקורסים וסיכום החלופה), `ui-drawer` (3, העדפות וחברים; והמגירה של רשימת ההרשמה), `ui-view`, `ui-grid` ו-`ui-search` (4, המערכות: לוח, "הצג לפי", חיפוש). בנוסף `ui-map` (חלון המפה), `ui-friend-editor`, `ui-actions`, `ui-common`, `ui-dialog` ו-`ui-text` |
-| `web/map-*.js` | מפת ההתקדמות |
+| `web/friend-*.js` | ייבוא מערכת חבר: `friend-import` (מספרי קבוצות מטקסט), `friend-scan` (קריאת PDF או תמונה ו-OCR בדפדפן), `friend-schedule` (התאמת שקף טבלה או לוח לקבוצות), `friend-blocks` (מציאת המשבצות הצבעוניות בלוח). העורך עצמו ב-`ui-friend-editor` |
+| `web/grade-import.js` | ייבוא גיליון הציונים (PDF מהפורטל), דרך pdf.js |
+| `web/ics.js` | ייצוא ליומן (קובץ `.ics`): השיעורים השבועיים והבחינות, עם תאריכי הסמסטר |
+| `web/ui-*.js` | ממשק, לפי ארבעת השלבים: `ui-plan` (נקודת הכניסה והניתוב בין השלבים), `ui-me` (1, המצב שלי, כולל מסך הפתיחה לבחירת מסלול ושנה), `ui-side` (2, רשימת הקורסים וסיכום החלופה), `ui-drawer` (3, העדפות וחברים; והמגירה של רשימת ההרשמה), `ui-view`, `ui-grid` ו-`ui-search` (4, המערכות: לוח, "הצג לפי", חיפוש). בנוסף `ui-map` (חלון המפה), `ui-friend-editor`, `ui-actions`, `ui-common`, `ui-dialog` ו-`ui-text` |
+| `web/map-*.js` | מפת ההתקדמות: `map-layout` (אילו קורסים, סידור וגיאומטריה) ו-`map-render` (ה-SVG ותצוגת הרשימה). החלון עצמו ב-`ui-map` |
 | `web/theme.js` | מצב בהיר או כהה, לפני הציור הראשון |
-| `web/style.css` | כל העיצוב, מטוקנים (בהיר וכהה) |
-| `web/data/afeka/` | הנתונים שנמשכו, `catalog.json` ו-`status.json` |
-| `web/fonts/` | Rubik, מתארח מקומית |
-| `web/vendor/` | עותקים מקומיים של pdf.js, panzoom ו-popover polyfill |
-| `test/` | בדיקות `node --test` |
-| `ci/` | סריקה לילית ל-GitLab CI |
-| `docs/` | תיעוד, מחקר, specs ותוכניות |
-| `design-system/` | מערכת העיצוב |
+| `web/style.css` | העיצוב של האתר, מטוקנים (בהיר וכהה). `map.css` הוא העיצוב של מפת ההתקדמות |
+| `web/data/afeka/` | הנתונים שנמשכו: תיקייה לכל סמסטר (`2027-1`, `2027-2`, ו-`2027-3` לקיץ) ובה קובץ לכל תוכנית ומחזור (`30-2026.json`), ו-`catalog.json` (התוכניות והמחזורים) ו-`status.json` (מתי נבדק לאחרונה ומתי השתנה כל סמסטר; האתר מזהיר כשהנתונים ישנים) |
+| `web/fonts/` | Rubik, מתארח מקומית (עם הרישיון `OFL.txt`) |
+| `web/vendor/` | עותקים מקומיים של pdf.js, panzoom ו-popover polyfill, כל אחד עם הרישיון שלו |
+| `test/` | בדיקות `node --test`, ו-`fixtures/mini-data.mjs` (נתונים קטנים לבדיקות) |
+| `ci/` | `gitlab-scrape.yml`: הסריקה הלילית ב-GitLab CI, שדוחפת את הנתונים ל-`main` |
+| `.github/` | `workflows/deploy.yml` (כל הבדיקות, ואז העלאת `web/` ל-GitHub Pages אחרי דחיפה ל-`main` שנוגעת ב-`web/`) ותבניות ה-issues (באג, טעות בנתונים, בקשה) |
+| `docs/` | תיעוד, מחקר, ביקורות, specs ותוכניות. האינדקס: [docs/README.md](README.md) |
+| `design-system/` | מערכת העיצוב: `afeka-scheduler/MASTER.md`, ה-override של העמוד `afeka-scheduler/pages/app.md`, ו-`og.html` (המקור של `web/og.png`) |
+| `solver-audit/` | ביקורת מנוע החיפוש (6.10.2026): `findings.md`, `dependencies.md`, תרשימי הזרימה (`flow-*`), `repro/` (סקריפט לכל ממצא, `run-all.mjs`), `plan-probes/` (בדיקות מקדימות לתוכנית התיקונים) ו-`issues/` (טיוטות ה-issues). לא נטען באתר |
+| בשורש | `README.md` (לסטודנטים), `CONTRIBUTING.md`, `TERMS.md` (תקציר; הנוסח המחייב ב-`web/legal.html`), `LICENSE`, ו-`package.json` (תלות אחת: `node-html-parser`, לפענוח בסקריפטים) |
+
+לא בגיט (`.gitignore` ו-`.git/info/exclude`): `node_modules/`, המטמון של המשיכה (`.yedion-cache/`), כלים מקומיים (`.claude/`, `.superpowers/`), `NOTES.md`, קובצי PDF בשורש (מסמכים של המכללה), חומרי הפגישה (`docs/meeting/`, `docs/meeting-prep.md`), צילומי סקירת העיצוב, והפלטים הגדולים של `solver-audit/plan-probes/out-*/`.
 
 ## ליבת הלוגיקה
 
