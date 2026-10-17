@@ -15,7 +15,7 @@ function chip(id, li) {
   if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${nameHtml(app.data.courses[id].name)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
   return `<div class="crs" data-st="${st}">${seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
-    }${st === 'passed' ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
+    }${st === 'passed' && s.exempt?.includes(id) ? ' <span class="tag ok">פטור</span>' : st === 'passed' ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
       aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>` : ''}${n
       ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
 }
@@ -186,8 +186,9 @@ export async function importGrades(file) {
   for (const i of pick) {
     const r = todo[i];
     setStatus(state, r.id, r.result === 'failed' ? 'failed' : 'passed');
-    if (r.result === 'failed') delete state.grades[r.id]; // gradeAverage counts passed courses only
-    else if (r.result === 'passed') state.grades[r.id] = r.grade;
+    if (r.result === 'passed') state.grades[r.id] = r.grade;
+    else delete state.grades[r.id]; // gradeAverage counts graded passes only: a failure or an exemption has no grade
+    state.exempt = state.exempt.filter((x) => x !== r.id).concat(r.result === 'exempt' ? [r.id] : []);
   }
   setGradeMsg('');
   enterList();

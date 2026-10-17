@@ -85,3 +85,10 @@ test('gradeChanges: a failed row on a course marked passed is offered but not pr
     { id: '30133', grade: 90, result: 'passed' }, { id: '30135', grade: null, result: 'pending' }], state);
   assert.deepEqual(todo.map((t) => [t.id, t.was, t.to, t.check]), [['10016', 'passed', 'failed', false], ['30003', 'passed', 'passed', true], ['30133', 'none', 'passed', true]]);
 });
+
+test('gradeChanges: an exemption on a course already marked passed is offered once, until it is on file', async () => {
+  const { gradeChanges } = await import('../web/grade-import.js');
+  const row = [{ id: '90901', grade: null, result: 'exempt' }];
+  assert.deepEqual(gradeChanges(row, { passed: ['90901'], failed: {}, grades: {} }).map((t) => [t.id, t.was, t.to]), [['90901', 'passed', 'passed']]);
+  assert.deepEqual(gradeChanges(row, { passed: ['90901'], failed: {}, grades: {}, exempt: ['90901'] }), []);
+});
