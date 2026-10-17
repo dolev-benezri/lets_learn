@@ -150,9 +150,10 @@ export function withAfterA(data, state, cls) {
   return { ...cls, statuses };
 }
 
-// Direct status choice. Failures stay on file once passed: regulations 11.4.1 and 11.5.x count every failure.
+// Direct status choice. Failures stay on file once passed: regulations 11.4.1 and 11.5.x count every failure. An exemption lasts while passed.
 export function setStatus(state, id, st) {
   state.passed = state.passed.filter((x) => x !== id);
+  if (st !== 'passed' && state.exempt) state.exempt = state.exempt.filter((x) => x !== id);
   if (st === 'passed') state.passed.push(id);
   if (st === 'none') delete state.failed[id];
   if (st === 'failed') state.failed[id] ||= 1;

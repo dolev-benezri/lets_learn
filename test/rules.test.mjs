@@ -113,6 +113,14 @@ test('passing a course keeps its failures and they still count toward the regula
   assert.deepEqual(s.failed, { B: 1 });
 });
 
+test('an exempt course stays exempt while passed; any other status drops the exemption', () => {
+  const s = { passed: ['A'], failed: {}, exempt: ['A'] };
+  setStatus(s, 'A', 'passed');
+  assert.deepEqual(s.exempt, ['A']);
+  setStatus(s, 'A', 'none');
+  assert.deepEqual([s.passed, s.exempt], [[], []]);
+});
+
 test('expulsion replaces probation instead of showing both', () => {
   assert.equal(classify(mini(), { passed: [], failed: { A: 3 } }).warnings.length, 1);
   const w = classify(mini(), { passed: [], failed: { A: 1, B: 1, C: 1, P: 1 } }).warnings;

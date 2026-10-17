@@ -51,7 +51,8 @@ function parseRow(row, data) {
 export function gradeChanges(found, state) {
   const now = (id) => (state.passed.includes(id) ? 'passed' : state.failed[id] ? 'failed' : 'none');
   return found.filter((r) => r.result !== 'pending').map((r) => ({ ...r, was: now(r.id), to: r.result === 'failed' ? 'failed' : 'passed' }))
-    .filter((r) => r.was !== r.to || (r.to === 'passed' && r.grade !== null && state.grades[r.id] !== r.grade))
+    .filter((r) => r.was !== r.to || (r.to === 'passed' && r.grade !== null && state.grades[r.id] !== r.grade)
+      || (r.result === 'exempt' && !(state.exempt ?? []).includes(r.id)))
     .map((r) => ({ ...r, check: !(r.to === 'failed' && r.was === 'passed') }));
 }
 
