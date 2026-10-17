@@ -30,6 +30,10 @@ export const colors = new Map(); // sticky: a course keeps its colour unless it 
 const ONBOARDED = 'afeka-sched-v1-onboarded';
 export const onboarded = () => { try { return localStorage.getItem(ONBOARDED) === '1'; } catch { return false; } };
 export const markOnboarded = () => { try { localStorage.setItem(ONBOARDED, '1'); } catch { /* storage unavailable */ } };
+// Step 1's entry choice (grade sheet or "הזנה ידנית") was made; until then a first visit sees the entry screen (ui-me.js entryScreen).
+const ENTRY = 'afeka-sched-v1-entry';
+export const entered = () => { try { return localStorage.getItem(ENTRY) === '1'; } catch { return false; } };
+export const markEntered = () => { try { localStorage.setItem(ENTRY, '1'); } catch { /* storage unavailable */ } };
 
 export const needsProgram = () => !!app.state && !app.state.programSet && app.catalog.programs.length > 1; // a first visit picks the track, none is assumed
 export const gated = () => !!app.state && (!app.state.profile.year || needsProgram()); // planning waits for the study year (credits goal and English depend on it)
