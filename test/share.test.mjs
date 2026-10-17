@@ -146,6 +146,12 @@ test('a backup link carries grades', async () => {
   assert.deepEqual(r.payload.grades, { a: 90 });
 });
 
+test('a backup link carries exemptions from the grade sheet', async () => {
+  const b = await backupLink('https://x.test/', { v: 1, year: 2027, semester: 'א', program: 30, passed: ['a'], exempt: ['a'] });
+  const r = await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' });
+  assert.deepEqual(r.payload.exempt, ['a']);
+});
+
 test('backup keeps blocks through normalize; friend link never carries them', async () => {
   const { normalize } = await import('../web/app.js');
   const at = { year: 2027, semester: 'א' };
