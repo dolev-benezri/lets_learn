@@ -514,8 +514,9 @@ body.gated .steps a { display:none; } /* nothing to step through before the two 
 .tile { display:flex; align-items:center; justify-content:center; min-height:56px; padding:8px 10px; text-align:center; line-height:1.3; font:inherit; color:var(--text); cursor:pointer;
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-card); transition:background-color .15s ease, border-color .15s ease; }
 .tiles.years .tile { font-size:18px; font-weight:500; }
-.tile:hover { border-color:var(--primary-line); background:var(--primary-soft); }
-.tile:active { background:var(--primary-soft); border-color:var(--primary); }
+@media (hover:hover) { .tile:hover { border-color:var(--primary-line); background:var(--primary-soft); } }
+.tile:active, .tile.on { background:var(--primary-soft); border-color:var(--primary); color:var(--primary); }
+.tiles[aria-busy="true"] { pointer-events:none; } /* a track is loading (ACT.pickTrack): no second tap */
 /* step pages (#me, #courses, #prefs) share the container, the heading and the sticky "הבא" bar (.me-foot) */
 /* status page (#me): profile and progress on the right (sticky) and the course lists beside them from 720px; one column below */
 .step-page { --gut:14px; max-width:1200px; margin:0 auto; padding:14px var(--gut) 0; }
