@@ -6,7 +6,7 @@ import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
 import { creditsGoal, courseCount } from './ui-text.js';
-import { STATUS, FAILS, YEARS, onboarded, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
+import { STATUS, FAILS, YEARS, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
@@ -87,6 +87,10 @@ function gateHtml() {
     <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p>`;
 }
 
+// The entry screen: a first visit (step 1 never left) before the choice. The choice opens the course list and moves focus to it.
+export const entryScreen = () => !entered() && !onboarded();
+export function enterList() { const first = entryScreen(); markEntered(); refresh(); if (first) $('meCourses')?.focus(); }
+
 export function renderMe() {
   const el = $('me');
   if (el.hidden) { el.innerHTML = ''; return; }
@@ -110,31 +114,47 @@ export function renderMe() {
   const step = onboarded()
     ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
     : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${premarked(studyYear(data, state))}, ואז לחצו ״הבא: קורסים״.`;
-  el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step">${step}</p></div>
-    <div class="me-grid">
-      <div class="me-side">
-        <section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
+  const entry = entryScreen();
+  const importBtn = (cls) => `<button type="button" class="btn${cls}" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
+    <input type="file" id="gradeFile" hidden accept="application/pdf" data-chg="gradeFile">`;
+  const gradeMsg = `<p class="hint" id="gradeMsg" role="status">${esc(ui.gradeMsg)}</p>`;
+  const profile = `<section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
           ${identityPick(state.profile.year, true)}${unverified}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
-          <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>
-        <section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
+          <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>`;
+  const prog = `<section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
           <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span
             class="hint">יעד 70% (תקנון 11.4.4)</span></div>
           <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i
             style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
           ${checklist(data, state)}
           <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
-          <button type="button" class="btn" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
-          <input type="file" id="gradeFile" hidden accept="application/pdf" data-chg="gradeFile">
-          <p class="hint" id="gradeMsg" role="status">${esc(ui.gradeMsg)}</p></section>
+          ${entry ? '' : importBtn('') + gradeMsg}</section>`;
+  // A first visit: the import first, the course list only after a choice (enterList).
+  if (entry) {
+    el.innerHTML = `<div class="me-entry"><div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step"><b>צעד ראשון:</b> סמנו מה
+      כבר עברתם. הכי מהיר: גליון הציונים מהפורטל.</p></div>
+      <div class="me-entry-cards">${profile}${prog}</div>
+      <section class="me-card me-choice" aria-labelledby="meChoice"><h2 id="meChoice">איך מסמנים מה עברתם?</h2>
+        <p>על מנת להתייחס לפטורים מקורסים מסוימים, העלו את גליון הציונים הרשמי של המכללה.</p>
+        <p>הקובץ נקרא רק במכשיר שלך ולא נשמר.</p>
+        <div class="me-choice-btns">${importBtn(' primary')}<button type="button" class="btn" data-act="manualEntry" data-k="manualEntry">הזנה ידנית</button></div>
+        ${gradeMsg}</section></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step">${step}</p></div>
+    <div class="me-grid">
+      <div class="me-side">
+        ${profile}
+        ${prog}
         <section class="me-card" aria-labelledby="meData"><h2 id="meData">הנתונים שלי</h2>
           <p class="hint">הכול נשמר רק בדפדפן הזה. <a href="legal.html#privacy" target="_blank" rel="noopener">פרטיות<span class="sr"> (נפתח בחלון חדש)</span></a></p>
           <button type="button" class="btn" data-act="eraseAll" data-k="eraseAll">${icon('trash')} מחק את כל הנתונים שלי</button></section>
       </div>
-      <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses">קורסים לפי שנה</h2>
+      <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses" tabindex="-1">קורסים לפי שנה</h2>
         ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
         <p class="hint">כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון.</p>
         ${lists.filter(past).map(group).join('')}
@@ -158,7 +178,7 @@ export async function importGrades(file) {
   if (!rows.length) return setGradeMsg(GRADE_NONE);
   const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
   const todo = gradeChanges(found, state);
-  if (!todo.length) return setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.`);
+  if (!todo.length) { setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.`); return enterList(); }
   const label = (r) => `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}`;
   const pick = await askRows('ייבוא מגליון ציונים', 'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.', ['קורס', 'ציון', 'שינוי'],
     todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]), { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) });
@@ -170,6 +190,6 @@ export async function importGrades(file) {
     else if (r.result === 'passed') state.grades[r.id] = r.grade;
   }
   setGradeMsg('');
-  refresh();
+  enterList();
   toast(pick.length === 1 ? 'עודכן קורס אחד' : `עודכנו ${pick.length} קורסים`);
 }

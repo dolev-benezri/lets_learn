@@ -10,7 +10,7 @@ import { friendToast, gradeInput, rangeError, shareText, waUrl } from './ui-text
 import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
-import { avgLine, specSave, specView, importGrades, renderMe } from './ui-me.js';
+import { avgLine, specSave, specView, importGrades, renderMe, enterList } from './ui-me.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel } from './ui-drawer.js';
 
 // ---------- actions ----------
@@ -56,6 +56,7 @@ export const ACT = {
   },
   pickYear(el) { CHG.pyear(el); refresh(); },
   gradeImport() { $('gradeFile').click(); },
+  manualEntry() { enterList(); }, // step 1's entry screen: the course list without the grade sheet
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
   statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = '#courses'; },
   skip(el, e) { e.preventDefault(); ($('layout').hidden ? shownTitle() : $('week'))?.focus(); }, // a real #fragment would switch the view
