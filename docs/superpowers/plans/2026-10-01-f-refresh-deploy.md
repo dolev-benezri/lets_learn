@@ -4,7 +4,7 @@
 
 **Goal:** Every night, one polite scrape of the yedion for all semesters. Data files are written only if every check passes, and the same run deploys `web/` to the live site. The client shows honest freshness ("נבדק" vs "השתנה").
 
-**Architecture:** Follows the research report (`origin/claude/cool-hawking-xhinen:docs/research/refresh-deploy/report.md`):
+**Architecture:** Follows the research report (`docs/archive/2026-10-01-refresh-deploy/report.md`):
 - one workflow `refresh-deploy.yml` (scrape, commit, deploy job);
 - a hardened `scripts/scrape.mjs` that fetches once and builds every semester;
 - `web/data/afeka/status.json`;

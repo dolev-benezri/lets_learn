@@ -8,7 +8,7 @@
 
 **Tech Stack:** HTML/CSS in `web/index.html`, Markdown, `node --test`.
 
-**Spec:** user bug map item 4 in `.superpowers/next-session.md` + research report `origin/claude/cool-hawking-xhinen:docs/research/refresh-deploy/report.md` (sections "הנימוס נקבע אצלנו" and "24 KB של נתונים").
+**Spec:** user bug map item 4 in `.superpowers/next-session.md` + research report `docs/archive/2026-10-01-refresh-deploy/report.md` (sections "הנימוס נקבע אצלנו" and "24 KB של נתונים").
 
 ## Global Constraints
 - No personal data in the repo: no name, no email. Contact means "פתחו issue ב-GitHub" plus the link `https://github.com/dolev-benezri/lets_learn/issues`.
