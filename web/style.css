@@ -500,7 +500,22 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 .showby { margin-bottom:10px; } /* "הצג לפי" above the summary pills (ui-view.js renderView) */
 /* off the plans the bar keeps the title only: the alternatives and the plan actions belong to step 4 */
 body:not([data-view="plan"]) .switcher, body:not([data-view="plan"]) .actions, body.gated .switcher, body.gated .actions { display:none; }
-.gate { max-width:440px; } /* the year question shown before planning starts (ui-plan.js renderMe) */
+body.gated .steps a { display:none; } /* nothing to step through before the two questions; the theme button stays */
+/* the gate (ui-me.js gateHtml): one question per screen, a centered column on the footer's axis, large tiles */
+.gate { max-width:560px; margin:0 auto; padding-top:clamp(0px, 8vh - 32px, 64px); }
+.gate-intro { margin-bottom:18px; font-size:16px; line-height:1.5; color:var(--text-2); }
+.gate-step { margin-bottom:2px; font-size:var(--fs-sm); color:var(--text-3); }
+.gate-track { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; color:var(--text-2); }
+.gate-track b { color:var(--text); font-weight:500; }
+.gate > .hint { margin-top:10px; }
+.tiles { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+@media (min-width:600px) { .tiles { grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+.tiles.years { grid-template-columns:repeat(auto-fit, minmax(56px, 1fr)); margin-top:12px; }
+.tile { display:flex; align-items:center; justify-content:center; min-height:56px; padding:8px 10px; text-align:center; line-height:1.3; font:inherit; color:var(--text); cursor:pointer;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-card); transition:background-color .15s ease, border-color .15s ease; }
+.tiles.years .tile { font-size:18px; font-weight:500; }
+.tile:hover { border-color:var(--primary-line); background:var(--primary-soft); }
+.tile:active { background:var(--primary-soft); border-color:var(--primary); }
 /* step pages (#me, #courses, #prefs) share the container, the heading and the sticky "הבא" bar (.me-foot) */
 /* status page (#me): profile and progress on the right (sticky) and the course lists beside them from 720px; one column below */
 .step-page { --gut:14px; max-width:1200px; margin:0 auto; padding:14px var(--gut) 0; }
