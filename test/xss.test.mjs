@@ -278,3 +278,23 @@ test('showAlt picks an alternative for the board and the map: planIds follow it 
   assert.equal(calls, 1);
   ui.onShown = null; showAlt(0);
 });
+
+test('the opening screen asks one question at a time', () => {
+  const me = (s, fn) => { fn(); run(s, () => { renderMe(); }); return writes.filter((w) => w.scope === s && w.id === 'me').at(-1).html; };
+  const year = app.state.profile.year, programs = app.catalog.programs;
+  fake('me').hidden = false;
+  document.body.dataset.view = 'me';
+  const track = me('gate-track', () => { app.state.programSet = false; });
+  assert.ok(track.includes('שאלה 1 מתוך 2') && track.includes('מה המסלול שלך?') && !track.includes('p-year'));
+  assert.equal(parse(track).querySelectorAll('input[name="p-prog"]').length, programs.length);
+  assert.ok(!track.includes('<xss-t>'));
+  const yr = me('gate-year', () => { app.state.programSet = true; app.state.profile.year = null; });
+  assert.ok(yr.includes('שאלה 2 מתוך 2') && yr.includes('באיזו שנה את/ה?') && yr.includes('p-year') && yr.includes('data-act="gateTrack"') && !yr.includes('p-prog'));
+  assert.ok(!yr.includes('<xss-t>'));
+  const back = me('gate-back', () => { ui.gateTrack = true; });
+  const tiles = parse(back).querySelectorAll('input[name="p-prog"]');
+  assert.ok(tiles.length && tiles.every((t) => !t.hasAttribute('checked'))); // a checked radio fires no change: re-picking the loaded track must work
+  const one = me('gate-one', () => { ui.gateTrack = false; app.catalog.programs = programs.slice(0, 1); });
+  assert.ok(one.includes('p-year') && !one.includes('מתוך 2') && !one.includes('gateTrack'));
+  app.catalog.programs = programs; app.state.profile.year = year; document.body.dataset.view = 'plan';
+});

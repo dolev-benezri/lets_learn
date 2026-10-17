@@ -69,16 +69,28 @@ export function identityPick(year, visible) {
   return track + seg('p-year', 'שנת לימודים', YEARS.slice(0, yearsOf(app.data)), year, 'data-chg="pyear"', visible) + note;
 }
 
+// The gate: the track first (tiles), then the year. "שינוי" (ui.gateTrack) shows the tiles again with none checked, so re-picking the loaded track
+// still fires a change (CHG.program then refreshes and the year screen returns). The tiles are radios with the profile card's own handlers.
+function gateHtml() {
+  const { programs } = app.catalog, many = programs.length > 1, pickTrack = needsProgram() || ui.gateTrack;
+  const head = (n, q) => `<div class="me-head">${many ? `<p class="gate-step">שאלה ${n} מתוך 2</p>` : ''}<h2 id="meTitle" tabindex="-1">${q}</h2></div>`;
+  if (pickTrack) {
+    const tile = (p) => `<label class="tile"><input type="radio" name="p-prog" value="${esc(p.id)}" data-chg="program" data-k="p-prog-${esc(p.id)}"><span>${esc(heb(p.name))}</span></label>`;
+    return `<p class="gate-intro">בונים מערכת שעות לאפקה: חלופות בלי התנגשויות, עם חברים ודרישות קדם. שתי שאלות ומתחילים.</p>${head(1, 'מה המסלול שלך?')}
+      <fieldset class="tiles"><legend class="sr">מסלול</legend>${programs.map(tile).join('')}</fieldset>`;
+  }
+  const name = programs.find((p) => p.id === app.state.program)?.name ?? '';
+  return `${head(2, 'באיזו שנה את/ה?')}${many ? `<p class="gate-track">מסלול: <b>${esc(heb(name))}</b>
+      <button type="button" class="btn ghost" data-act="gateTrack" data-k="gateTrack">שינוי</button></p>` : ''}
+    ${seg('p-year', 'שנת לימודים', YEARS.slice(0, yearsOf(app.data)), null, 'data-chg="pyear"')}
+    <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p>`;
+}
+
 export function renderMe() {
   const el = $('me');
   if (el.hidden) { el.innerHTML = ''; return; }
   const { data, state, cls } = app;
-  if (gated()) { // every step waits for the track and the study year: the two questions, nothing else
-    el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">${app.catalog.programs.length > 1 ? 'באיזה מסלול ובאיזו שנה את/ה?' : 'באיזו שנה את/ה?'}</h2></div>
-      <section class="me-card gate">${identityPick(state.profile.year, true)}
-        <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p></section>`;
-    return;
-  }
+  if (gated()) { el.innerHTML = `<div class="gate">${gateHtml()}</div>`; return; } // every step waits for the track and the study year: one question per screen, nothing else
   const unverified = data.verified === false ? '<p class="hint">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</p>' : '';
   const pr = progress(data, state);
   const pct = Math.min(100, Math.round(pr.ratio * 100));

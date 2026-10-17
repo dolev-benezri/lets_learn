@@ -10,7 +10,7 @@ import { friendToast, gradeInput, rangeError, shareText, waUrl } from './ui-text
 import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
-import { avgLine, specSave, specView, importGrades } from './ui-me.js';
+import { avgLine, specSave, specView, importGrades, renderMe } from './ui-me.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel } from './ui-drawer.js';
 
 // ---------- actions ----------
@@ -49,6 +49,7 @@ async function shareOut() {
 
 export const ACT = {
   shareOut,
+  gateTrack() { ui.gateTrack = true; renderMe(); shownTitle()?.focus(); }, // back to the track tiles from the year question
   gradeImport() { $('gradeFile').click(); },
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
   statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = '#courses'; },
@@ -165,8 +166,11 @@ const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math
 export const CHG = {
   program: (el) => {
     const p = app.catalog.programs.find((x) => x.id === Number(el.value));
+    const was = gated();
+    ui.gateTrack = false;
     if (p) app.state.programSet = true; // the loaded track too: switchTo then refuses and changeIdentity just refreshes
-    if (p) changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear));
+    if (p) changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear))
+      .then(() => was && shownTitle()?.focus()); // the picked tile is gone: the next question (or step 1) takes focus, not <body>
     return 'save';
   },
   gradeFile: (el) => { const f = el.files[0]; el.value = ''; if (f) importGrades(f); return 'save'; },
