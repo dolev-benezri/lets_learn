@@ -50,7 +50,10 @@ async function shareOut() {
 export const ACT = {
   shareOut,
   gateTrack() { ui.gateTrack = true; renderMe(); shownTitle()?.focus(); }, // back to the track tiles from the year question
-  pickTrack(el) { CHG.program(el); save(); }, // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
+  pickTrack(el) { // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
+    el.classList.add('on'); el.parentElement.setAttribute('aria-busy', 'true'); // the track's data may take a while: show the pick, take no second tap
+    CHG.program(el); save();
+  },
   pickYear(el) { CHG.pyear(el); refresh(); },
   gradeImport() { $('gradeFile').click(); },
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
@@ -199,8 +202,9 @@ export const CHG = {
     app.state.profile.year = y;
     const p = app.catalog.programs.find((x) => x.id === app.state.program); // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024)
     const start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
-    if (start && start !== app.state.startYear) changeIdentity(app.state.program, start);
+    const switching = start && start !== app.state.startYear ? changeIdentity(app.state.program, start) : null;
     if (was) queueMicrotask(() => shownTitle()?.focus()); // after the refresh: the question is gone, the step's own page shows; keep focus out of <body>
+    if (was && switching) switching.then(() => shownTitle()?.focus()); // a new cohort redraws #me again when its data arrives
   },
   amirnet: (el) => {
     const err = rangeError(el.validity?.badInput ? 'x' : el.value, 50, 150);

@@ -281,7 +281,7 @@ test('showAlt picks an alternative for the board and the map: planIds follow it 
 
 test('the opening screen asks one question at a time', () => {
   const me = (s, fn) => { fn(); run(s, () => { renderMe(); }); return writes.filter((w) => w.scope === s && w.id === 'me').at(-1).html; };
-  const year = app.state.profile.year, programs = app.catalog.programs;
+  const year = app.state.profile.year, programs = app.catalog.programs, set = app.state.programSet;
   fake('me').hidden = false;
   document.body.dataset.view = 'me';
   const track = me('gate-track', () => { app.state.programSet = false; });
@@ -295,5 +295,5 @@ test('the opening screen asks one question at a time', () => {
   assert.equal(parse(back).querySelectorAll('button[data-act="pickTrack"]').length, programs.length); // buttons: re-picking the loaded track works
   const one = me('gate-one', () => { ui.gateTrack = false; app.catalog.programs = programs.slice(0, 1); });
   assert.ok(one.includes('pickYear') && !one.includes('מתוך 2') && !one.includes('gateTrack'));
-  app.catalog.programs = programs; app.state.profile.year = year; document.body.dataset.view = 'plan';
+  app.catalog.programs = programs; app.state.profile.year = year; app.state.programSet = set; document.body.dataset.view = 'plan';
 });
