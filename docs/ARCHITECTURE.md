@@ -6,7 +6,7 @@
 
 | נתיב | מה יש בו |
 |---|---|
-| `scripts/` | משיכת נתונים ובנייה, בלי דפדפן: `scrape.mjs` (משיכה מנומסת מהידיעון ל-`web/data/afeka`), `polite.mjs` (קצב, המתנה אחרי חסימה, וסיכום השינויים שהופך להודעת ה-commit), `parse.mjs` (HTML לנתונים), `build.mjs` (קובץ נתונים לתוכנית ולסמסטר), `discover.mjs` (טיוטה של `programs.json` מדפי המסלולים), `audit.mjs` (נוצר ממנו `docs/DATA-AUDIT.md`), `prereq-map.mjs` (נוצרים ממנו `docs/PREREQS.md` ו-`docs/prereqs.json`) ו-`programs.json` (התוכניות והמחזורים שנמשכים) |
+| `scripts/` | משיכת נתונים ובנייה: `scrape.mjs` (משיכה מנומסת מהידיעון ל-`web/data/afeka`), `polite.mjs` (קצב, המתנה אחרי חסימה, וסיכום השינויים שהופך להודעת ה-commit), `parse.mjs` (HTML לנתונים), `build.mjs` (קובץ נתונים לתוכנית ולסמסטר), `discover.mjs` (טיוטה של `programs.json` מדפי המסלולים), `audit.mjs` (נוצר ממנו `docs/DATA-AUDIT.md`), `prereq-map.mjs` (נוצרים ממנו `docs/PREREQS.md` ו-`docs/prereqs.json`), `readme-shots.mjs` (צילומי המסך ב-`docs/media/`, בדפדפן Chrome) ו-`programs.json` (התוכניות והמחזורים שנמשכים) |
 | `scripts/fixtures/` | דפי HTML ו-JSON אמיתיים מהידיעון, לבדיקות של המשיכה והפענוח |
 | `web/` | האתר: HTML ו-ES modules, בלי build. `index.html` הוא האתר, `legal.html` תנאי השימוש והפרטיות, `icon.svg` ו-`og.png` (נוצר מ-`design-system/og.html`) |
 | `web/app.js` | מצב (כולל `sortBy` של "הצג לפי" ו-`programSet`: האם נבחר מסלול, כי בביקור ראשון אף מסלול לא נבחר מראש), `normalize()`, localStorage, טעינת נתונים, החלפת תוכנית ומחזור, ושלבי הניווט (`STEPS`, `routeOf`, `hashOf`: `#me`, `#courses`, `#prefs`, וכל hash אחר הוא המערכות) |
