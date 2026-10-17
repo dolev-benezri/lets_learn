@@ -8,7 +8,7 @@ const KEY = 'afeka-sched-v1';
 const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 export const DEFAULT = {
   v: 1, year: 2027, semester: 'א', program: 30, startYear: 2026, name: '',
-  passed: null, failed: {}, grades: {}, choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null, specs: [], summer: false },
+  passed: null, failed: {}, grades: {}, exempt: [], choices: {}, friends: [], pins: [], profile: { year: null, amirnet: null, specs: [], summer: false },
   scope: 'year', load: 'even', sortBy: 'best', semesterOf: {}, programSet: false, // programSet: the track was picked (a first visit starts with none)
   specDraft: null, yearIds: [], // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
@@ -57,6 +57,7 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   if (passed) out.passed = passed;
   if (isObj(raw.failed)) out.failed = Object.fromEntries(Object.entries(raw.failed).filter(([k, v]) => k.length <= 20 && Number.isInteger(v) && v >= 1 && v <= 3).slice(0, 200));
   if (isObj(raw.grades)) out.grades = Object.fromEntries(Object.entries(raw.grades).filter(([k, v]) => k.length <= 20 && Number.isInteger(v) && v >= 0 && v <= 100).slice(0, 200));
+  out.exempt = strs(raw.exempt, 200, 20) ?? []; // passed by an exemption on the grade sheet (פ.פנימ): the row says פטור
   if (isObj(raw.choices)) out.choices = Object.fromEntries(Object.entries(raw.choices).filter(([k, v]) => k.length <= 20 && ['must', 'optional', 'no'].includes(v)).slice(0, 200));
   if (Array.isArray(raw.friends)) {
     out.friends = raw.friends.filter((f) => isObj(f) && typeof f.name === 'string' && f.name.length <= 60 && Array.isArray(f.groups)).slice(0, 20)

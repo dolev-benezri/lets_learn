@@ -77,6 +77,10 @@ Body text is 15–16px, line-height 1.5. Nothing is under 12px except the grid's
   (a button, 56px) per track, 2 columns under 600px, 3 above. Screen 2: "שאלה 2 מתוך 2", "באיזו שנה את/ה?", "מסלול: <name>" with "שינוי" (back to
   screen 1), year tiles and the credits-goal hint. With one track only screen 2 shows, without the counter. Tiles are buttons, not radios: an arrow
   key must not commit. Focus moves to the next heading after each answer.
+- **The entry screen (2026-10-17):** after the gate, a first visit (no entry choice yet, step 1 never left) sees one centered column (max 900px): the
+  heading with "צעד ראשון: סמנו מה כבר עברתם. הכי מהיר: גליון הציונים מהפורטל.", the profile and progress cards side by side (stacked under 720px),
+  and a card "איך מסמנים מה עברתם?" with the exemptions line, the privacy line, "ייבוא מגליון ציונים (PDF)" (primary) and "הזנה ידנית". No course
+  list and no bottom bar. "הזנה ידנית" or a confirmed import opens the regular page below, with focus on "קורסים לפי שנה".
 - The first step. It is where a new visitor starts, and it can be reopened at any time from the step bar. The heading "המצב שלי" has a hint. Before the first visit is done it reads "צעד ראשון: סמנו מה כבר עברתם", with "(שנה א׳ מסומנת מראש)" when it applies, and "ואז לחצו ״הבא: קורסים״"; after that it reads "עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד."
 - A profile card holds the track and year, the amirnet grade, the specialization and the summer option. A progress card holds the progress bar ("התקדמות: 41/41 נ״ז (יעד 70%)"), the "מה נשאר לסיום התואר" checklist and the grade-sheet import.
 - Courses appear as **one row per course, grouped by year** (שנה א׳ … ד׳). Each row is a `role="radiogroup"` with three text options, `לא לקחתי | עברתי | נכשלתי`, so state is never colour alone. A passed course also shows a grade field, and a failed one a failure-count scale.

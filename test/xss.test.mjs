@@ -30,7 +30,8 @@ const fake = (id) => els[id] ??= {
 const app_ = await import('../web/app.js'); // before the stubs: app.js starts init() when it sees a document
 globalThis.document = { getElementById: fake, createElement: (t) => fake(`<${t}>`), querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, activeElement: null, body: { ...fake('body'), dataset: { view: 'plan' }, appendChild: (c) => c } };
 Object.assign(globalThis, { matchMedia: () => ({ matches: false, addEventListener() {} }), CSS: { escape: (s) => s }, getComputedStyle: () => ({ top: '0' }), innerHeight: 800, innerWidth: 1200, scrollBy() {}, scrollTo() {}, addEventListener() {} });
-globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+const ls = { 'afeka-sched-v1-entry': '1' }; // step 1's entry choice made: the renders below get the regular page
+globalThis.localStorage = { getItem: (k) => ls[k] ?? null, setItem: (k, v) => { ls[k] = String(v); }, removeItem: (k) => { delete ls[k]; } };
 globalThis.history = { replaceState() {} };
 globalThis.location = { hash: '', origin: 'https://x', pathname: '/' };
 
@@ -296,4 +297,23 @@ test('the opening screen asks one question at a time', () => {
   const one = me('gate-one', () => { ui.gateTrack = false; app.catalog.programs = programs.slice(0, 1); });
   assert.ok(one.includes('pickYear') && !one.includes('מתוך 2') && !one.includes('gateTrack'));
   app.catalog.programs = programs; app.state.profile.year = year; app.state.programSet = set; document.body.dataset.view = 'plan';
+});
+
+test('step 1 asks for the grade sheet before the course list', () => {
+  const me = (s, fn) => { fn(); run(s, () => { renderMe(); }); return writes.filter((w) => w.scope === s && w.id === 'me').at(-1).html; };
+  fake('me').hidden = false;
+  document.body.dataset.view = 'me';
+  const entry = me('entry', () => { delete ls['afeka-sched-v1-entry']; });
+  for (const s of ['data-act="manualEntry"', 'data-act="gradeImport"', 'איך מסמנים מה עברתם?', 'על מנת להתייחס לפטורים']) assert.ok(entry.includes(s), s);
+  assert.ok(!entry.includes('data-chg="status"') && !entry.includes('statusDone'));
+  assert.equal(parse(entry).querySelectorAll('#gradeMsg').length, 1);
+  assert.ok(!entry.includes('<xss-t>'));
+  const regular = (html) => html.includes('statusDone') && html.includes('data-chg="status"') && !html.includes('manualEntry');
+  assert.ok(regular(me('entry-returning', () => { ls['afeka-sched-v1-onboarded'] = '1'; }))); // users from before this screen
+  assert.ok(regular(me('entry-chosen', () => { delete ls['afeka-sched-v1-onboarded']; ls['afeka-sched-v1-entry'] = '1'; })));
+  const ex = app.state.passed.find((id) => app.cls.statuses[id]?.status !== 'exempt'); // not an Amirnet exemption (that row is fixed already). an exemption from the grade sheet: the row says פטור instead of a grade field
+  const tagged = parse(me('exempt-tag', () => { app.state.exempt = [ex]; })).querySelectorAll('.crs').find((r) => r.innerHTML.includes(`data-id="${ex}"`));
+  assert.ok(tagged.innerHTML.includes('פטור') && !tagged.querySelector('.grade'));
+  app.state.exempt = [];
+  document.body.dataset.view = 'plan';
 });
