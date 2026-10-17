@@ -538,7 +538,16 @@ body.gated .steps a { display:none; } /* nothing to step through before the two 
 .year-head h3 { margin:0; }
 .me-foot { position:sticky; bottom:0; z-index:4; display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px 16px;
   margin:14px calc(-1 * var(--gut)) 0; padding:10px var(--gut); background:var(--surface); border-top:1px solid var(--border); box-shadow:var(--shadow-up); }
+/* step 1 entry screen (first visit, before the choice): profile | progress, then the import card, on one centered column */
+.me-entry { max-width:900px; margin:0 auto; display:grid; gap:14px; }
+.me-entry .me-head { margin-bottom:0; }
+.me-entry-cards { display:grid; grid-template-columns:minmax(0, 1fr); gap:14px; }
+.me-choice p { margin:6px 0; color:var(--text-2); }
+.me-choice-btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.me-choice-btns .btn { flex:1 1 200px; }
+#meCourses:focus { outline:none; }
 @media (min-width:720px) {
+  .me-entry-cards { grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start; }
   .step-page { --gut:20px; padding-top:20px; }
   .me-grid { grid-template-columns:280px minmax(0, 1fr); gap:18px; align-items:start; }
   .me-grid.halves { grid-template-columns:repeat(2, minmax(0, 1fr)); } /* #prefs: preferences | friends */
