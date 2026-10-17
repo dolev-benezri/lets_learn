@@ -311,5 +311,9 @@ test('step 1 asks for the grade sheet before the course list', () => {
   const regular = (html) => html.includes('statusDone') && html.includes('data-chg="status"') && !html.includes('manualEntry');
   assert.ok(regular(me('entry-returning', () => { ls['afeka-sched-v1-onboarded'] = '1'; }))); // users from before this screen
   assert.ok(regular(me('entry-chosen', () => { delete ls['afeka-sched-v1-onboarded']; ls['afeka-sched-v1-entry'] = '1'; })));
+  const ex = app.state.passed.find((id) => app.cls.statuses[id]?.status !== 'exempt'); // not an Amirnet exemption (that row is fixed already). an exemption from the grade sheet: the row says פטור instead of a grade field
+  const tagged = parse(me('exempt-tag', () => { app.state.exempt = [ex]; })).querySelectorAll('.crs').find((r) => r.innerHTML.includes(`data-id="${ex}"`));
+  assert.ok(tagged.innerHTML.includes('פטור') && !tagged.querySelector('.grade'));
+  app.state.exempt = [];
   document.body.dataset.view = 'plan';
 });
