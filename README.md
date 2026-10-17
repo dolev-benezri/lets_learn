@@ -12,8 +12,8 @@
 ![privacy: stays in your browser](https://img.shields.io/badge/privacy-stays%20in%20your%20browser-success)
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/01-week-desktop-dark.webp">
-  <img src="docs/media/01-week-desktop.webp" alt="שלב 4, מערכות: לוח שבועי של חלופה 1 מתוך 10 מתחת לסרגל ארבעת השלבים, שיעורים בצבע לכל קורס, ושיעורים משותפים עם חבר מסומנים בשמו" width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/01-week-desktop-dark.webp?v=20261017">
+  <img src="docs/media/01-week-desktop.webp?v=20261017" alt="שלב 4, מערכות: לוח שבועי של חלופה 1 מתוך 10 מתחת לסרגל ארבעת השלבים, שיעורים בצבע לכל קורס, ושיעורים משותפים עם חבר מסומנים בשמו" width="720">
 </picture>
 
 </div>
@@ -28,8 +28,8 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/02-week-phone-dark.webp">
-  <img src="docs/media/02-week-phone.webp" alt="המערכת בטלפון: סרגל השלבים, יום ראשון, החצים לחלופות בראש המסך וסרגל פעולות בתחתית" width="260">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/02-week-phone-dark.webp?v=20261017">
+  <img src="docs/media/02-week-phone.webp?v=20261017" alt="המערכת בטלפון: סרגל השלבים, יום ראשון, החצים לחלופות בראש המסך וסרגל פעולות בתחתית" width="260">
 </picture>
 </p>
 
@@ -38,8 +38,8 @@
 **נכשלתם בקורס? גם קורסי ההמשך שלו נחסמים.** מסמנים מה עברתם ומה לא (או מייבאים גיליון ציונים), והכלי מחשב את דרישות הקדם, הקורסים המקבילים והחזרה על קורסים. מפת ההתקדמות (הכפתור "מפה" בשלב 4) מראה את כל התואר בתמונה אחת, ומה כל חלופה עושה לו.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/03-map-desktop-dark.webp">
-  <img src="docs/media/03-map-desktop.webp" alt="מפת ההתקדמות: הקורסים לפי שנים עם קווים של דרישות קדם, מד התקדמות בתואר וחלונית קטנה של השבוע הנבחר" width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/03-map-desktop-dark.webp?v=20261017">
+  <img src="docs/media/03-map-desktop.webp?v=20261017" alt="מפת ההתקדמות: הקורסים לפי שנים עם קווים של דרישות קדם, מד התקדמות בתואר וחלונית קטנה של השבוע הנבחר" width="720">
 </picture>
 
 ### עם חברים
@@ -47,7 +47,7 @@
 בשלב 3 ("מה חשוב לי") מוסיפים חבר בקישור שהוא שלח, בהדבקת טקסט, מקובץ PDF או מתמונה של המערכת שלו (הזיהוי נעשה בדפדפן שלכם). שיעור משותף מסומן בלוח, והחיפוש מעדיף מערכות עם יותר שיעורים משותפים. ב"הצג לפי" אפשר לדרג קודם את המערכות עם הכי הרבה שיעורים עם חברים.
 
 <p align="center">
-<img src="docs/media/04-friends-phone.webp" alt="החברים בשלב 3 בטלפון: שדה להדבקת קישור, כפתור להזנת מערכת של חבר, ושני חברים עם מידת החשיבות של כל אחד" width="260">
+<img src="docs/media/04-friends-phone.webp?v=20261017" alt="החברים בשלב 3 בטלפון: שדה להדבקת קישור, כפתור להזנת מערכת של חבר, ושני חברים עם מידת החשיבות של כל אחד" width="260">
 </p>
 
 ## איך מתחילים
