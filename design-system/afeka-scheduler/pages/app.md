@@ -36,7 +36,7 @@
 Body text is 15–16px, line-height 1.5. Nothing is under 12px except the grid's hour labels (12px, `--text-3`).
 
 ## Layout
-**The step bar** (`<nav class="steps">`) sits under the top bar on every page: four numbered links, `1 המצב שלי`, `2 קורסים`, `3 מה חשוב לי`, `4 מערכות`, then the theme button. The current step is a raised pill with a filled number (`aria-current="step"`), and every step before the current one shows a check mark in the number. Steps can be visited in any order, but until a track ("בחרו מסלול": none is preselected) and a study year are chosen, every step shows only those two questions (and hides the switcher and plan actions); the step bar then counts as step 1. The semester switch on step 4 reads א׳ | ב׳, plus קיץ when the profile plans a summer. Under 600px only the current step shows its label, the others are 44px number buttons.
+**The step bar** (`<nav class="steps">`) sits under the top bar on every page: four numbered links, `1 המצב שלי`, `2 קורסים`, `3 מה חשוב לי`, `4 מערכות`, then the theme button. The current step is a raised pill with a filled number (`aria-current="step"`), and every step before the current one shows a check mark in the number. Steps can be visited in any order, but until a track (none is preselected) and a study year are chosen, every step shows only those two questions, one per screen (see step 1), and the step bar hides its links (the theme button stays), the switcher and the plan actions. The semester switch on step 4 reads א׳ | ב׳, plus קיץ when the profile plans a summer. Under 600px only the current step shows its label, the others are 44px number buttons.
 
 **The top bar** has the title "המערכת שלי · סמסטר א׳ תשפ״ז", plus the data date as small `--text-3`. The alternative switcher and the plan actions show on step 4 only.
 
@@ -72,6 +72,11 @@ Body text is 15–16px, line-height 1.5. Nothing is under 12px except the grid's
 - Popovers and the registration drawer become bottom sheets (in-flow panels, not fixed overlays that block scrolling).
 
 ## Onboarding and status (step 1, "המצב שלי")
+- **Before planning (the gate, 2026-10-17):** one question per screen in a centered column (max 560px) on the footer's axis. Screen 1: a one-line intro
+  ("בונים מערכת שעות לאפקה: חלופות בלי התנגשויות, עם חברים ודרישות קדם. שתי שאלות ומתחילים."), "שאלה 1 מתוך 2", "מה המסלול שלך?" and one large tile
+  (a button, 56px) per track, 2 columns under 600px, 3 above. Screen 2: "שאלה 2 מתוך 2", "באיזו שנה את/ה?", "מסלול: <name>" with "שינוי" (back to
+  screen 1), year tiles and the credits-goal hint. With one track only screen 2 shows, without the counter. Tiles are buttons, not radios: an arrow
+  key must not commit. Focus moves to the next heading after each answer.
 - The first step. It is where a new visitor starts, and it can be reopened at any time from the step bar. The heading "המצב שלי" has a hint. Before the first visit is done it reads "צעד ראשון: סמנו מה כבר עברתם", with "(שנה א׳ מסומנת מראש)" when it applies, and "ואז לחצו ״הבא: קורסים״"; after that it reads "עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד."
 - A profile card holds the track and year, the amirnet grade, the specialization and the summer option. A progress card holds the progress bar ("התקדמות: 41/41 נ״ז (יעד 70%)"), the "מה נשאר לסיום התואר" checklist and the grade-sheet import.
 - Courses appear as **one row per course, grouped by year** (שנה א׳ … ד׳). Each row is a `role="radiogroup"` with three text options, `לא לקחתי | עברתי | נכשלתי`, so state is never colour alone. A passed course also shows a grade field, and a failed one a failure-count scale.

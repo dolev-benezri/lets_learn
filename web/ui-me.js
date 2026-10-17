@@ -69,20 +69,21 @@ export function identityPick(year, visible) {
   return track + seg('p-year', 'שנת לימודים', YEARS.slice(0, yearsOf(app.data)), year, 'data-chg="pyear"', visible) + note;
 }
 
-// The gate: the track first (tiles), then the year. "שינוי" (ui.gateTrack) shows the tiles again with none checked, so re-picking the loaded track
-// still fires a change (CHG.program then refreshes and the year screen returns). The tiles are radios with the profile card's own handlers.
+// The gate: the track first (tiles), then the year; "שינוי" (ui.gateTrack) shows the track tiles again. The tiles are buttons, not radios:
+// an arrow key on a radio would commit at once, and a button also re-picks the loaded track. They run the profile card's handlers (ACT.pickTrack, ACT.pickYear).
 function gateHtml() {
   const { programs } = app.catalog, many = programs.length > 1, pickTrack = needsProgram() || ui.gateTrack;
   const head = (n, q) => `<div class="me-head">${many ? `<p class="gate-step">שאלה ${n} מתוך 2</p>` : ''}<h2 id="meTitle" tabindex="-1">${q}</h2></div>`;
   if (pickTrack) {
-    const tile = (p) => `<label class="tile"><input type="radio" name="p-prog" value="${esc(p.id)}" data-chg="program" data-k="p-prog-${esc(p.id)}"><span>${esc(heb(p.name))}</span></label>`;
+    const tile = (p) => `<button type="button" class="tile" value="${esc(p.id)}" data-act="pickTrack" data-k="pick-${esc(p.id)}">${esc(heb(p.name))}</button>`;
     return `<p class="gate-intro">בונים מערכת שעות לאפקה: חלופות בלי התנגשויות, עם חברים ודרישות קדם. שתי שאלות ומתחילים.</p>${head(1, 'מה המסלול שלך?')}
-      <fieldset class="tiles"><legend class="sr">מסלול</legend>${programs.map(tile).join('')}</fieldset>`;
+      <div class="tiles" role="group" aria-labelledby="meTitle">${programs.map(tile).join('')}</div>`;
   }
   const name = programs.find((p) => p.id === app.state.program)?.name ?? '';
   return `${head(2, 'באיזו שנה את/ה?')}${many ? `<p class="gate-track">מסלול: <b>${esc(heb(name))}</b>
       <button type="button" class="btn ghost" data-act="gateTrack" data-k="gateTrack">שינוי</button></p>` : ''}
-    ${seg('p-year', 'שנת לימודים', YEARS.slice(0, yearsOf(app.data)), null, 'data-chg="pyear"')}
+    <div class="tiles years" role="group" aria-labelledby="meTitle">${YEARS.slice(0, yearsOf(app.data)).map(([n, t]) =>
+      `<button type="button" class="tile" value="${n}" data-act="pickYear" data-k="year-${n}">${t}</button>`).join('')}</div>
     <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p>`;
 }
 

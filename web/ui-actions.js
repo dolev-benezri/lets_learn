@@ -50,6 +50,8 @@ async function shareOut() {
 export const ACT = {
   shareOut,
   gateTrack() { ui.gateTrack = true; renderMe(); shownTitle()?.focus(); }, // back to the track tiles from the year question
+  pickTrack(el) { CHG.program(el); save(); }, // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
+  pickYear(el) { CHG.pyear(el); refresh(); },
   gradeImport() { $('gradeFile').click(); },
   yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
   statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = '#courses'; },
