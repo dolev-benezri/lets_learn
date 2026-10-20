@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { classify, progress, setStatus, amirnetExempt, cleanProfile, studyYear, yearsOf, modeFor, gradeAverage, englishOptions, specRule, validSpecs } from '../web/rules.js';
+import { classify, progress, missingRequired, setStatus, amirnetExempt, cleanProfile, studyYear, yearsOf, modeFor, gradeAverage, englishOptions, specRule, validSpecs } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
@@ -331,4 +331,17 @@ test('a course passed in summer counts the next year: its credits in progress, a
   assert.deepEqual(progress(d, state), { earned: 6, required: 6, ratio: 1 });
   assert.equal(classify(d, state).statuses.N.status, 'available');
   assert.equal(classify(d, { ...state, passed: ['A'] }).statuses.N.status, 'blocked', 'control: without the summer course N waits');
+});
+
+test('missingRequired names the not-passed courses of earlier-year lists that are short of their minimum, none for a met list', () => {
+  const d = mini(), st = (passed, year = 2) => ({ passed, profile: { year } });
+  assert.deepEqual(missingRequired(d, st([])), ['A', 'Q0']);
+  assert.deepEqual(missingRequired(d, st(['A'])), ['Q0']);
+  assert.deepEqual(missingRequired(d, st(['A', 'Q0'])), []);
+  assert.deepEqual(missingRequired(d, st([], 1)), [], 'year 1 has no earlier year');
+  d.lists[0].minCredits = 5; // the list asks for 5 of its 10: one course meets it, so the other is not needed
+  assert.deepEqual(missingRequired(d, st(['A'])), []);
+  assert.deepEqual(missingRequired(d, st([])), ['A', 'Q0']);
+  const p = progress(d, st(['A']));
+  assert.equal(p.earned, p.required, 'the credit figure agrees: nothing is needed');
 });

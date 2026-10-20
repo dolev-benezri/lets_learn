@@ -54,6 +54,8 @@ function dropSplitPins() {
   const kept = pinsWithoutSplit(Object.values(app.sem), app.state.pins);
   if (kept.length < app.state.pins.length) { app.state.pins = kept; toast('הנעיצות של הקבוצות המופרדות בוטלו'); }
 }
+let printWatched = false;
+const clearPrint = () => { $('print').hidden = true; document.documentElement.classList.remove('print-summary'); };
 export const ACT = {
   shareOut,
   async acceptTerms() { acceptTerms(); await applyPendingBackup(); refresh(); shownTitle()?.focus(); }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
@@ -115,13 +117,17 @@ export const ACT = {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast('הקובץ ירד. פותחים אותו כדי להוסיף את השיעורים ליומן.');
   },
-  advisor() { // fills #print and prints it alone (style.css @media print); afterprint puts the page back
+  advisor() { // fills #print and prints it alone (style.css @media print); the page is put back when printing ends
+    clearPrint(); // anything left over from a print that never reported its end
     const res = current();
     if (!res) return;
-    const p = $('print'), b = document.body;
-    p.innerHTML = advisorHtml({ state: app.state, data: app.data, res, cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
-    p.hidden = false; b.classList.add('print-summary');
-    addEventListener('afterprint', () => { p.hidden = true; b.classList.remove('print-summary'); }, { once: true });
+    $('print').innerHTML = advisorHtml({ state: app.state, data: app.data, res, cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
+    $('print').hidden = false; document.documentElement.classList.add('print-summary');
+    if (!printWatched) { // once: afterprint is missing on some phones, the print media query turning off is the second signal
+      printWatched = true;
+      addEventListener('afterprint', clearPrint);
+      matchMedia('print').addEventListener('change', (e) => { if (!e.matches) clearPrint(); });
+    }
     print();
   },
   backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),

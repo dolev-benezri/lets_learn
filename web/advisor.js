@@ -1,8 +1,8 @@
 // The one-page summary to bring to an academic advisor (printed from #print). Pure: no DOM; every string reaches HTML through esc().
-import { progress, gradeAverage, studyYear } from './rules.js';
+import { progress, gradeAverage, studyYear, missingRequired } from './rules.js';
 import { esc, DISCLAIMER, SPLIT_NOTE, splitLine, creditsGoal, groupLabel, meetingText, hebYear, courseCount } from './ui-text.js';
 
-const YEAR = ' אבגדה';
+const YEAR = ' אבגדה'; // study year number -> letter
 const dateText = (now) => now.toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: 'numeric' });
 const semName = (s) => (s === 'קיץ' ? 'סמסטר קיץ' : `סמסטר ${s}׳`);
 const list = (items) => (items.length ? `<ul>${items.map((t) => `<li>${t}</li>`).join('')}</ul>` : '');
@@ -12,10 +12,7 @@ export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), 
   const year = studyYear(data, state), prog = progress(data, state), avg = gradeAverage(data, state).avg;
   const program = catalog?.programs?.find((p) => p.id === data.program)?.name;
   const name = (id) => data.courses[id]?.name ?? Object.values(sem).find((d) => d?.courses?.[id])?.courses[id].name ?? id;
-  const done = new Set(Object.entries(cls?.statuses ?? {}).filter(([, s]) => ['done', 'exempt'].includes(s.status)).map(([id]) => id));
-  const listYear = (l) => YEAR.indexOf(/חובה שנה (\S)'/.exec(l.name)?.[1]);
-  const missing = [...new Set(data.lists.filter((l) => listYear(l) > 0 && listYear(l) < year).flatMap((l) => l.courses))]
-    .filter((id) => data.courses[id] && !done.has(id));
+  const missing = missingRequired(data, state);
   const passed = state.passed.filter((id) => data.courses[id]);
 
   const me = list([

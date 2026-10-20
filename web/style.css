@@ -740,10 +740,10 @@ body:has(#friendEd[open]) { overflow:hidden; }
 #print { display:none; }
 @media print {
   @page { size:A4; margin:14mm; }
-  :root, :root[data-theme="dark"] { color-scheme:light; }
-  html, body { background:#fff !important; color:#000 !important; padding:0 !important; }
-  body.print-summary > :not(#print) { display:none !important; }
-  body.print-summary #print { display:block; font-size:10.5pt; line-height:1.4; }
+  :root.print-summary, :root[data-theme="dark"].print-summary { color-scheme:light; } /* only while the summary prints: a normal print keeps the page as it was */
+  .print-summary, .print-summary body { background:#fff !important; color:#000 !important; padding:0 !important; }
+  .print-summary body > :not(#print) { display:none !important; }
+  .print-summary #print { display:block; font-size:10.5pt; line-height:1.4; }
   #print, #print * { color:#000 !important; background:none !important; box-shadow:none !important; }
   #print h2 { font-size:17pt; margin:0 0 1mm; }
   #print h3 { font-size:12.5pt; margin:4mm 0 1mm; padding-bottom:.5mm; border-bottom:1px solid #000; }

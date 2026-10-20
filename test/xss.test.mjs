@@ -108,9 +108,11 @@ run('map', () => {
 run('map-mini', () => { writes.push({ scope: 'map-mini', id: 'mini', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true }) });
   writes.push({ scope: 'map-mini', id: 'mini-ab', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true, abbr: true }) }); });
 const { ACT } = await import('../web/ui-actions.js');
-let printed = 0, afterprint = null;
-Object.assign(globalThis, { print: () => { printed++; }, addEventListener: (t, fn) => { if (t === 'afterprint') afterprint = fn; } });
-document.body.classList = { _s: new Set(), add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); }, toggle() {}, contains(c) { return this._s.has(c); } };
+let printed = 0, afterprint = null, printChange = null, listeners = 0;
+const root = { classList: { _s: new Set(), add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); }, contains(c) { return this._s.has(c); } } };
+document.documentElement = root;
+Object.assign(globalThis, { print: () => { printed++; }, addEventListener: (t, fn) => { if (t === 'afterprint') { afterprint = fn; listeners++; } },
+  matchMedia: (q) => ({ matches: false, addEventListener: (t, fn) => { if (q === 'print') { printChange = fn; listeners++; } } }) });
 run('advisor', () => { ACT.advisor(); });
 run('friend-editor', () => { openFriendEditor({ friend: app.state.friends[0], onSave: () => null, returnFocusId: 'x' }); });
 
@@ -398,12 +400,26 @@ test('a split alternative says so: the note on top of the week, the course names
   assert.ok(!els.altLabel.textContent.includes('מופרדת') && !els.week.innerHTML.includes('הפרדת הרצאה ותרגול'));
 });
 
-test('the advisor summary fills #print, prints it alone and puts the page back after printing', () => {
-  const body = document.body.classList;
+test('the advisor summary fills #print, prints it alone and puts the page back when printing ends (afterprint or the print query turning off)', () => {
+  const cls = root.classList;
   assert.equal(printed, 1);
-  assert.ok(fake('print').hidden === false && body.contains('print-summary') && fake('print').innerHTML.includes('סיכום לפגישה עם יועץ לימודים'));
+  assert.ok(fake('print').hidden === false && cls.contains('print-summary') && fake('print').innerHTML.includes('סיכום לפגישה עם יועץ לימודים'));
   afterprint();
-  assert.ok(fake('print').hidden === true && !body.contains('print-summary'));
+  assert.ok(fake('print').hidden === true && !cls.contains('print-summary'));
+  ACT.advisor(); // a second click: listeners are not stacked, and the second signal clears too
+  assert.equal(printed, 2); assert.equal(listeners, 2);
+  assert.ok(cls.contains('print-summary'));
+  printChange({ matches: true }); assert.ok(cls.contains('print-summary'), 'entering print media changes nothing');
+  printChange({ matches: false }); assert.ok(fake('print').hidden === true && !cls.contains('print-summary'));
+});
+
+test('a stale summary state is cleared at the start of the next ACT.advisor, also when there is nothing to print', () => {
+  const cls = root.classList;
+  ACT.advisor(); assert.ok(cls.contains('print-summary'));
+  const last = ui.last; ui.last = null; // no alternative: nothing prints, but the leftovers are gone
+  const n = printed; ACT.advisor();
+  ui.last = last;
+  assert.equal(printed, n); assert.ok(fake('print').hidden === true && !cls.contains('print-summary'));
 });
 
 test('the footer links to the counselling page only when settings give one (escaped by the DOM, https-validated upstream)', () => {
