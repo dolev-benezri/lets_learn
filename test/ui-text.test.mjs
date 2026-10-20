@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml, esc, groupFresh, turnWarning, freshAt } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml, esc, groupFresh, turnWarning, freshAt, conflictsFor, reportMailto } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -220,4 +220,37 @@ test('freshAt: the later of the data change and the last good check that covers 
   assert.equal(freshAt(data, status({ checkedAt: 'soon' })), data.fetchedAt);
   assert.equal(freshAt({ ...data, fetchedAt: undefined }, status()), '2026-10-20T04:00:00Z');
   assert.equal(freshAt({ ...data, fetchedAt: undefined }, null), undefined);
+});
+
+test('conflictsFor: only the texts whose cohorts include the start year; [] for an unknown program or no settings', () => {
+  const st = { programs: { 22: { conflicts: [{ cohorts: [2026, 2027], text: 'א' }, { cohorts: [2024], text: 'ב' }] }, 20: { approved: { 2024: '2026-07-01' } } } };
+  assert.deepEqual(conflictsFor(st, 22, 2026), ['א']);
+  assert.deepEqual(conflictsFor(st, 22, 2024), ['ב']);
+  assert.deepEqual(conflictsFor(st, 22, 2025), []);
+  assert.deepEqual(conflictsFor(st, 20, 2024), [], 'a program with no conflicts');
+  assert.deepEqual(conflictsFor(st, 99, 2024), [], 'an unknown program');
+  assert.deepEqual(conflictsFor(undefined, 22, 2026), []);
+  assert.deepEqual(conflictsFor({}, 22, 2026), []);
+  assert.deepEqual(conflictsFor(st, 'constructor', 2026), []);
+});
+
+test('reportMailto: subject, a body with every field, under 1800 characters even with long fields', () => {
+  const ctx = { program: 'הנדסה מכנית (30)', startYear: 2026, semester: 'א', group: 'הרצאה · קבוצה 01 · קורס 10013', page: 'מערכות' };
+  const url = reportMailto('a@b', ctx);
+  assert.ok(url.startsWith('mailto:a@b?subject='), url);
+  const q = new URLSearchParams(url.slice(url.indexOf('?') + 1));
+  assert.equal(q.get('subject'), 'דיווח על טעות במערכת השעות');
+  for (const v of Object.values(ctx)) assert.ok(q.get('body').includes(String(v)), `${v} in the body`);
+  assert.ok(url.length < 1800);
+  const { group, ...noGroup } = ctx;
+  assert.ok(!new URLSearchParams(reportMailto('a@b', noGroup).split('?')[1]).get('body').includes('קבוצה'), 'no group line without a group');
+  const long = 'ש'.repeat(500), big = reportMailto('a@b', { program: long, startYear: 2026, semester: 'א', group: long, page: long });
+  assert.ok(big.length < 1800, `a long field is clipped (${big.length})`);
+});
+
+test('reportMailto: the address cannot add a header, a second recipient or a fragment', () => {
+  const url = reportMailto('a@b.c?cc=x@y&bcc=z@w,q@r#h', { program: 'p', startYear: 1, semester: 'א', page: 'x' });
+  const i = url.indexOf('?subject=');
+  assert.ok(i > 0 && !/[?&,#]/.test(url.slice('mailto:'.length, i)), url);
+  assert.equal([...new URLSearchParams(url.slice(i + 1)).keys()].join(), 'subject,body');
 });

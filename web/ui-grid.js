@@ -1,7 +1,7 @@
 // Week grid, block popover and the small pure helpers behind them (hour range, pills summary, scale steps).
-import { esc, freshOf } from './app.js';
+import { app, esc, freshOf } from './app.js';
 import { toMin, meetingsMask, overlaps, buildOptions, freeDayCandidates } from './solver-core.js';
-import { groupLabel, groupNumber, groupFresh, heb } from './ui-text.js';
+import { groupLabel, groupNumber, groupFresh, heb, reportMailto, PAGE_NAME } from './ui-text.js';
 // A course name as HTML: escaped, with its Latin runs marked lang="en" so a Hebrew screen reader voice says "IOS", not letters. Entities (&lt;) are not words.
 export const nameHtml = (t) => esc(heb(t)).replace(/(?<![&\w])[A-Za-z](?:[A-Za-z0-9 .,+-]*[A-Za-z0-9])?(?![\w;])/g, (m) => `<span lang="en">${m}</span>`);
 
@@ -231,6 +231,13 @@ export function renderDaySelector(range, res, data, day) {
 // Prefer / avoid this lecturer in every search (constraints.lecturers); pressed again, the choice is cleared.
 const lecturerBtns = (name, mine) => [['prefer', 'העדף מרצה', `להעדיף את ${name}`], ['avoid', 'הימנע ממרצה', `להימנע מקבוצות של ${name}`]].map(([mode, label, aria]) => ` <button
   type="button" class="btn sm" data-act="lecturer" data-name="${esc(name)}" data-mode="${mode}" aria-pressed="${mine === mode}" aria-label="${esc(aria)}">${label}</button>`).join('');
+// The mailto of "דיווח על טעות" with what the tool knows (program, cohort, semester, page, and the group when one is open); '' when settings.json gives no address.
+export function reportHref(group) {
+  const { supportEmail } = app.settings, { program, startYear } = app.state;
+  if (!supportEmail) return '';
+  const name = app.catalog?.programs?.find((p) => p.id === program)?.name;
+  return reportMailto(supportEmail, { program: name ? `${heb(name)} (${program})` : program, startYear, semester: app.data.semester, group, page: PAGE_NAME[document.body.dataset.view] });
+}
 export function openPop(btn, ctx) {
   const pop = document.getElementById('pop');
   const { cid, c, g } = groupIndex(ctx.data).get(btn.dataset.gid);
@@ -238,6 +245,7 @@ export function openPop(btn, ctx) {
   const fr = ctx.friends.filter((f) => f.groups.includes(g.id));
   const alts = altGroups(ctx.data, ctx.res?.groups ?? [], g.id, ctx.includeFull, ctx.split);
   const exams = c.groups.filter((x) => ctx.res?.groups.includes(x.id)).flatMap((x) => x.exams).filter((e) => e.kind === 'בחינה');
+  const report = reportHref(`${groupLabel(g)} · קורס ${cid}`);
   pop.className = `pop c${ctx.colors.get(cid) ?? 7}`;
   pop.innerHTML = `
     <div class="pop-head"><span class="dot" aria-hidden="true"></span>
@@ -260,6 +268,7 @@ export function openPop(btn, ctx) {
       <dt class="gid">מספר להרשמה</dt><dd class="gid"><bdi dir="ltr">${esc(g.id)}</bdi></dd>
     </dl>
     <p class="pop-hint" id="popHint">נעיצה שומרת את הקבוצה הזו בכל החלופות.</p>
+    ${report ? `<p class="pop-hint"><a class="btn sm ghost" href="${esc(report)}">דיווח על טעות</a></p>` : ''}
     ${alts.length > 1 ? `<h4 class="pop-alt-h">קבוצות ${esc(typeLabel(g.type))} אחרות בקורס</h4><ul class="pop-alts">${alts.map(({ g: x, clash, ok }) => {
       // one red tag per row, the strongest reason; the others as plain text (a list of red reads as an error screen)
       const why = [x.full && 'מלאה', clash && 'מתנגשת', !ok && x.id !== g.id && 'לא זמינה'].filter(Boolean);
