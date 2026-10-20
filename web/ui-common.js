@@ -41,6 +41,7 @@ export const TERMS_VERSION = '1';
 const TERMS = 'afeka-sched-v1-terms';
 let accepted = false;
 export const termsOk = () => { try { if (localStorage.getItem(TERMS) === TERMS_VERSION) return true; } catch { /* storage unavailable */ } return accepted; };
+app.termsOk = termsOk; // app.js asks before it restores a backup link
 export const acceptTerms = () => { accepted = true; try { localStorage.setItem(TERMS, TERMS_VERSION); } catch { /* storage unavailable: kept for this visit only */ } };
 
 export const needsProgram = () => !!app.state && !app.state.programSet && app.catalog.programs.length > 1; // a first visit picks the track, none is assumed
