@@ -1,6 +1,7 @@
 import { classify, withAfterA, cleanProfile, studyYear, yearsOf, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
+import { cleanSettings, SETTINGS_DEFAULT } from './settings.js';
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -132,7 +133,7 @@ export function upsertFriend(friends, p, editing = null) {
 }
 
 export const app = { catalog: FALLBACK_CATALOG, loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), summerIds: [],
-  friendLanding: null, hashError: null, noSave: false };
+  friendLanding: null, hashError: null, noSave: false, settings: SETTINGS_DEFAULT };
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
 export function yearView(dataA, dataB) {
@@ -296,9 +297,11 @@ async function init() {
   app.catalog = goodCatalog(cat) ? cat : FALLBACK_CATALOG;
   app.state = load();
   const status = fetch('data/afeka/status.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const settings = fetch('settings.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   let sem;
   try { sem = await fetchSemesters(app.state); } catch { sem = null; }
   app.status = await status;
+  app.settings = cleanSettings(await settings);
   if (!sem) {
     app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
     for (const id of ['week', 'me', 'side', 'prefs']) {
