@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml, esc } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -167,4 +167,5 @@ test('DISCLAIMER is the owner-approved line; disclaimerHtml links "יועץ לי
   assert.ok(h.includes('<a href="https://x/y" target="_blank" rel="noopener">יועץ לימודים</a>'));
   assert.equal(h.replace(/<[^>]+>/g, ''), DISCLAIMER, 'the visible text is the same line');
   assert.doesNotMatch(disclaimerHtml('https://x/"><b>'), /"><b>/);
+  for (const u of ['https://x/?q=$&', 'https://x/a$`b', "https://x/a$'b", 'https://x/$$']) assert.ok(disclaimerHtml(u).includes(`<a href="${esc(u)}" target`), `$-patterns in ${u} stay literal`);
 });

@@ -1,9 +1,10 @@
 import { classify, withAfterA, cleanProfile, studyYear, yearsOf, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
+import { esc } from './ui-text.js';
 import { cleanSettings, SETTINGS_DEFAULT } from './settings.js';
 
-export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export { esc };
 
 const KEY = 'afeka-sched-v1';
 const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
