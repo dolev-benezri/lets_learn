@@ -461,6 +461,11 @@ test('remote notice: above every step, a red alert without a close button, escap
   assert.ok(html.includes('&lt;xss-n&gt;') && parse(html).querySelectorAll('xss-n').length === 0);
   const page = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
   assert.ok(page.indexOf('id="notice"') > 0 && page.indexOf('id="notice"') < page.indexOf('id="layout"'), 'the notice sits above every step, outside the plans step');
+  const wrote = () => { const n = writes.length; run('banner-notice', () => { renderBanner(); }); return writes.slice(n).filter((w) => w.id === 'notice').length; };
+  assert.equal(wrote(), 0, 'the same notice again: nothing rewritten, so a screen reader does not announce it twice');
+  app.settings = { ...keep, notice: 'שונה' };
+  assert.equal(wrote(), 1, 'a changed notice is written once');
+  assert.equal(wrote(), 0);
   app.settings = { ...keep, notice: '' };
   assert.ok(!banner().includes('xss-n'));
   app.settings = keep;

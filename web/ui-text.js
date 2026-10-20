@@ -163,6 +163,6 @@ const clip = (v) => [...String(v)].slice(0, 40).join('');
 export function reportMailto(email, ctx) {
   const lines = [['תוכנית', ctx.program], ['מחזור', ctx.startYear], ['סמסטר', ctx.semester], ['קבוצה', ctx.group], ['עמוד', ctx.page]]
     .filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => `${k}: ${clip(v)}`);
-  const body = `מה הטעות?\n\n\n${lines.join('\n')}`;
+  const body = `מה הטעות?\n\n\n${lines.join('\n')}`.replace(/\n/g, '\r\n'); // mail links use CRLF line breaks (%0D%0A)
   return `mailto:${encodeURIComponent(email).replace('%40', '@')}?subject=${encodeURIComponent('דיווח על טעות במערכת השעות')}&body=${encodeURIComponent(body)}`;
 }
