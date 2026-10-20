@@ -73,3 +73,10 @@ test('advisorHtml: hostile names come out escaped', () => {
   assert.equal(parse(html).querySelectorAll('xss-t').length, 0);
   assert.ok(!/<[^>]+ onxss/.test(html));
 });
+
+test('advisorHtml: a met list names no missing course (same logic as the credit figure)', () => {
+  const w = world();
+  w.data.lists[0].minCredits = 5;
+  const t = text(advisorHtml(w));
+  assert.ok(t.includes('5 מתוך 5 נ״ז') && t.includes('קורסי חובה משנים קודמות שחסרים: אין'), t);
+});
