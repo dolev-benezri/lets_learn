@@ -451,3 +451,47 @@ test('the footer links to the counselling page only when settings give one (esca
   assert.deepEqual(link('https://x.test/y'), [false, 'https://x.test/y']);
   app.settings = { ...app.settings, counselingUrl: '' };
 });
+
+test('remote notice: above every step, a red alert without a close button, escaped; absent when empty', () => {
+  const keep = app.settings, banner = () => { const n = writes.length; run('banner-notice', () => { renderBanner(); }); return writes.slice(n).filter((w) => w.id === 'notice').map((w) => w.html).join(''); };
+  app.settings = { ...keep, notice: '<xss-n>' + P };
+  const html = banner(), first = parse(html).querySelector('.banner');
+  assert.ok(first.classList.contains('err') && first.getAttribute('role') === 'alert' && first.text.includes('<xss-n>'), 'the notice is the first banner');
+  assert.equal(first.querySelectorAll('button').length, 0, 'no close button');
+  assert.ok(html.includes('&lt;xss-n&gt;') && parse(html).querySelectorAll('xss-n').length === 0);
+  const page = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  assert.ok(page.indexOf('id="notice"') > 0 && page.indexOf('id="notice"') < page.indexOf('id="layout"'), 'the notice sits above every step, outside the plans step');
+  app.settings = { ...keep, notice: '' };
+  assert.ok(!banner().includes('xss-n'));
+  app.settings = keep;
+});
+
+test('conflict line on step 1: under the profile, escaped, only for this program and cohort', () => {
+  const keep = app.settings, me = () => { const n = writes.length; run('me-conflict', () => { renderMe(); }); return writes.slice(n).filter((w) => w.id === 'me').map((w) => w.html).join(''); };
+  const { program, startYear } = app.state;
+  app.settings = { ...keep, programs: { [program]: { conflicts: [{ cohorts: [startYear], text: '<xss-c>' + P }, { cohorts: [startYear + 100], text: 'xss-other' }] } } };
+  const html = me(), line = parse(html).querySelector('.warn-text.hint');
+  assert.ok(html.includes('&lt;xss-c&gt;') && parse(html).querySelectorAll('xss-c').length === 0);
+  assert.ok(line.text.startsWith('יש סתירה בין המקורות הרשמיים לגבי ') && line.text.endsWith('. בדקו מול המחלקה.'), line.text);
+  assert.ok(!html.includes('xss-other'));
+  app.settings = keep;
+  assert.ok(!me().includes('יש סתירה'));
+});
+
+test('report a mistake: a real mailto link in the footer and the popover, only when supportEmail is set; the href is escaped', () => {
+  const keep = app.settings, gid = gids[0], btn = { dataset: { gid }, getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 }) };
+  const pop = () => { const n = writes.length; run('pop-report', () => openPop(btn, { data: app.sem['א'], res: null, includeFull: false, pins: [], friends: [], colors: new Map(), lecturers: {} })); return writes.slice(n).map((w) => w.html).join(''); };
+  app.settings = { ...keep, supportEmail: '' };
+  renderTop();
+  assert.equal(fake('report').hidden, true);
+  assert.ok(!pop().includes('mailto:'));
+  app.settings = { ...keep, supportEmail: 'a"b@c.d?x=1&y=<2>' };
+  renderTop();
+  assert.equal(fake('report').hidden, false);
+  assert.ok(fake('reportLink').href.startsWith('mailto:'));
+  const html = pop(), a = parse(html).querySelector('a[href^="mailto:"]');
+  assert.ok(a && a.text.includes('דיווח על טעות'), 'the popover link');
+  assert.ok(!/mailto:[^"]*[<>]/.test(html) && a.getAttribute("href").startsWith("mailto:a%22b@c.d%3F"), "nothing breaks out of the attribute");
+  assert.ok(new URLSearchParams(a.getAttribute('href').split('?')[1]).get('body').includes('קבוצה'), 'the group is filled in');
+  app.settings = keep;
+});

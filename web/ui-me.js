@@ -5,7 +5,7 @@ import { icon } from './ui-grid.js';
 import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
-import { creditsGoal, courseCount } from './ui-text.js';
+import { creditsGoal, courseCount, conflictsFor } from './ui-text.js';
 import { STATUS, FAILS, YEARS, termsOk, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
@@ -139,7 +139,8 @@ export function renderMe() {
           ${turnPick(state.profile.turn)}
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
-          <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>`;
+          <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p>
+          ${conflictsFor(app.settings, state.program, state.startYear).map((t) => `<p class="hint warn-text">יש סתירה בין המקורות הרשמיים לגבי ${esc(t)}. בדקו מול המחלקה.</p>`).join('')}</section>`;
   const prog = `<section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
           <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span
             class="hint">יעד 70% (תקנון 11.4.4)</span></div>

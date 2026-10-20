@@ -3,7 +3,7 @@ import { app, esc, freshOf, save, refresh, candidateMode, keepFocus, summerOn, s
 import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
-  semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
+  semResult, resCourses, resGroups, yearTotals, reportHref } from './ui-grid.js';
 import { freshness, turnWarning, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml, SPLIT_NOTE, splitLine } from './ui-text.js';
 import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, needsProgram, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
@@ -11,6 +11,12 @@ import { renderSide } from './ui-side.js';
 import { renderDrawer } from './ui-drawer.js';
 
 // ---------- top bar and banners ----------
+// The footer link "דיווח על טעות": only when settings.json gives an address; its mailto names the page, so a step change refreshes it too.
+export function renderReport() {
+  const report = reportHref();
+  $('report').hidden = !report;
+  if (report) $('reportLink').href = report;
+}
 export function renderTop() {
   const progs = app.catalog.programs, prog = progs.length > 1 && !needsProgram() ? progs.find((p) => p.id === app.data.program)?.name : null; // named only when there is a choice and it was made
   $('title').innerHTML = `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
@@ -18,6 +24,7 @@ export function renderTop() {
   const f = freshness(app.status, app.data.fetchedAt);
   $('counsel').hidden = !app.settings.counselingUrl; // the footer link to the counselling page, only when settings.json gives one
   if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
+  renderReport();
   $('meta').innerHTML = (f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text))
     + (app.data.verified === false ? ' · הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.' : '');
 }
@@ -30,6 +37,8 @@ export function renderBanner() {
     ? app.catalog.programs.find((p) => p.id === L.program)?.name ?? 'לא מוכרת' : null;
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : []; // with one semester loaded, the other's pins would look gone
   const turn = turnWarning(app.settings.turns, app.state.profile.turn, freshOf(app.data));
+  // the remote notice sits above every step (#notice, outside the plans step that holds #banner)
+  $('notice').innerHTML = app.settings.notice ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>` : '';
   $('banner').innerHTML = (app.hashError ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
       <button type="button" class="btn icon-btn ghost" data-act="dismissError" aria-label="סגור הודעה">${icon('x')}</button></div>` : '')
     + (turn ? `<div class="banner warn" role="status">${icon('alert')}<span class="grow">${esc(turn)}</span></div>` : '')

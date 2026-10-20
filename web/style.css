@@ -107,6 +107,9 @@ summary:active { background:var(--primary-soft); }
 
 /* layout: the plans (step 4) are one column, the grid; the course list is its own page (#courses) */
 .layout { padding:10px 14px 20px; }
+.notice-top { --gut:14px; }
+.notice-top:not(:empty) { max-width:1200px; margin:0 auto; padding:14px var(--gut) 0; } /* the remote notice, above every step; same gutters as .step-page */
+.notice-top .banner { margin-bottom:0; }
 main { min-width:0; }
 .layout[hidden], .step-page[hidden] { display:none; } /* one step at a time, by the hash (ui-plan.js renderRoute) */
 @media (min-width:1100px) { .layout { padding:10px 20px 28px; } }
@@ -556,6 +559,7 @@ body.gated .steps a { display:none; } /* nothing to step through before the two 
 @media (min-width:720px) {
   .me-entry-cards { grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start; }
   .step-page { --gut:20px; padding-top:20px; }
+  .notice-top { --gut:20px; }
   .me-grid { grid-template-columns:280px minmax(0, 1fr); gap:18px; align-items:start; }
   .me-grid.halves { grid-template-columns:repeat(2, minmax(0, 1fr)); } /* #prefs: preferences | friends */
   .me-side { position:sticky; top:calc(var(--bar-h) + 14px); }

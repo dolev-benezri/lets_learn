@@ -148,3 +148,21 @@ export function turnWarning(turns, turnId, fetchedAt, now = new Date()) {
   const opens = instant(turns?.find((t) => t.id === turnId)?.opensAt), fetched = instant(fetchedAt);
   return opens && fetched && fetched < opens && now >= opens ? TURN_WARNING : null;
 }
+
+// Open conflicts between official sources (settings.json programs[id].conflicts) for one program and cohort: the texts to show on step 1.
+export function conflictsFor(settings, program, startYear) {
+  const list = Object.hasOwn(settings?.programs ?? {}, program) ? settings.programs[program].conflicts : null;
+  return (list ?? []).filter((c) => c.cohorts.includes(startYear)).map((c) => c.text);
+}
+
+// "דיווח על טעות": a mailto with the subject and a body the tool fills (ctx: program, startYear, semester, group?, page).
+// The address goes through encodeURIComponent (so "?", "&", "," and "#" in it cannot add a header or a recipient), keeping only "@".
+// Each field is clipped to 40 characters: a Hebrew letter is 6 characters once encoded, and mail apps drop links over ~2000.
+export const PAGE_NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות' };
+const clip = (v) => [...String(v)].slice(0, 40).join('');
+export function reportMailto(email, ctx) {
+  const lines = [['תוכנית', ctx.program], ['מחזור', ctx.startYear], ['סמסטר', ctx.semester], ['קבוצה', ctx.group], ['עמוד', ctx.page]]
+    .filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => `${k}: ${clip(v)}`);
+  const body = `מה הטעות?\n\n\n${lines.join('\n')}`;
+  return `mailto:${encodeURIComponent(email).replace('%40', '@')}?subject=${encodeURIComponent('דיווח על טעות במערכת השעות')}&body=${encodeURIComponent(body)}`;
+}

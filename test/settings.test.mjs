@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { cleanSettings, SETTINGS_DEFAULT } from '../web/settings.js';
 
 const VALID = {
@@ -82,4 +83,19 @@ test('cleanSettings: notice and conflict text are trimmed, blank ones vanish, em
 test('cleanSettings: a turn id the profile could not keep (over 40 characters) is dropped', () => {
   const ok = { id: 'x'.repeat(40), label: 'A', opensAt: '2026-09-01T09:00:00Z' };
   assert.deepEqual(cleanSettings({ turns: [ok, { ...ok, id: 'x'.repeat(41) }] }).turns, [ok]);
+});
+
+test('the shipped settings.json: a clean, factual conflict for each program section 21 names (22, 20, 32, 12, 11, 112, 19)', () => {
+  const raw = JSON.parse(readFileSync(new URL('../web/settings.json', import.meta.url), 'utf8')), s = cleanSettings(raw);
+  const cat = JSON.parse(readFileSync(new URL('../web/data/afeka/catalog.json', import.meta.url), 'utf8'));
+  for (const id of [22, 20, 32, 12, 11, 112, 19]) {
+    const list = s.programs[id]?.conflicts ?? [];
+    assert.ok(list.length >= 1, `program ${id} has a conflict`);
+    assert.equal(list.length, raw.programs[id].conflicts.length, `none of program ${id}'s conflicts was dropped by cleanSettings`);
+    const years = cat.programs.find((p) => p.id === id).startYears;
+    for (const c of list) {
+      assert.ok(c.cohorts.every((y) => years.includes(y)), `${id}: cohorts ${c.cohorts} are cohorts the program has`);
+      assert.ok(!/[.!?]$/.test(c.text), `${id}: "${c.text}" ends no sentence (the line adds the full stop)`);
+    }
+  }
 });
