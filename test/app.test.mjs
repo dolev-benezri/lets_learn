@@ -112,7 +112,7 @@ test('yearView: offered in either semester, groups merged, semesters listed', ()
 });
 
 import { app, pickData, semOfGroup } from '../web/app.js';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 const real = (n) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${n}/30-2026.json`, import.meta.url)));
 test('pickData: year view, single-semester scopes, and fallback when ב is missing', () => {
   const A = real(1), B = real(2);
@@ -166,8 +166,7 @@ test('index.html has a description and og/twitter tags with an absolute og:image
   assert.ok(existsSync('web/og.png'));
 });
 
-test('both pages carry a CSP: self by default, no plugins or base override; only index.html loads tesseract.js paths from jsdelivr', () => {
-  const tess = (s) => /^https:\/\/cdn\.jsdelivr\.net\/npm\/(tesseract\.js(-core)?@v?7\.0\.0|@tesseract\.js-data)\/$/.test(s); // a path, never the whole CDN
+test('both pages carry a CSP: self by default, no plugins or base override, no source from outside the site', () => {
   for (const page of ['web/index.html', 'web/legal.html']) {
     const csp = readFileSync(page, 'utf8').match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
     const dir = Object.fromEntries(csp.split(';').map((d) => d.trim().split(/\s+/)).filter((d) => d[0]).map(([k, ...v]) => [k, v]));
@@ -175,10 +174,11 @@ test('both pages carry a CSP: self by default, no plugins or base override; only
     assert.deepEqual(dir['object-src'], ["'none'"], page);
     assert.deepEqual(dir['base-uri'], ["'none'"], page);
     assert.ok(dir['script-src'], page);
-    for (const d of ['script-src', 'worker-src', 'connect-src']) assert.ok((dir[d] ?? []).every((s) => ["'self'", "'wasm-unsafe-eval'", 'blob:'].includes(s) || tess(s)), `${page} ${d}: ${dir[d]}`);
+    for (const d of ['script-src', 'worker-src', 'connect-src']) assert.ok((dir[d] ?? []).every((s) => ["'self'", "'wasm-unsafe-eval'", 'blob:'].includes(s)), `${page} ${d}: ${dir[d]}`);
+    assert.doesNotMatch(csp, /https?:|jsdelivr/, `${page} allows no outside host`);
   }
   const legal = readFileSync('web/legal.html', 'utf8').match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
-  assert.doesNotMatch(legal, /jsdelivr|wasm|blob:/, 'legal.html loads nothing from outside');
+  assert.doesNotMatch(legal, /wasm|blob:/, 'legal.html runs no OCR');
 });
 
 test('the unofficial-tool line lives once, inside the page footer', () => {
@@ -254,10 +254,16 @@ test('both pages declare an icon, so the browser does not fetch a missing /favic
   assert.match(readFileSync('web/icon.svg', 'utf8'), /^<svg /);
 });
 
-test('pdf.js and panzoom load from web/vendor with their licenses; only tesseract stays on a CDN (S1)', () => {
-  const src = ['grade-import.js', 'ui-map.js', 'friend-scan.js'].map((f) => readFileSync(`web/${f}`, 'utf8')).join('\n');
-  assert.deepEqual([...src.matchAll(/https:\/\/[^'"`\s]+/g)].map((m) => m[0]).filter((u) => !u.includes('tesseract.js@')), []);
-  for (const f of ['pdfjs/pdf.min.mjs', 'pdfjs/pdf.worker.min.mjs', 'pdfjs/LICENSE', 'panzoom/panzoom.es.js', 'panzoom/LICENSE']) assert.ok(readFileSync(`web/vendor/${f}`).length > 500, f);
+test('pdf.js, panzoom and tesseract.js load from web/vendor with their licenses; the site loads nothing from a CDN (S1)', () => {
+  // Links to other sites in text are fine; a URL to a script, style, data file or a CDN is a library loaded from outside.
+  const loaded = readdirSync('web').filter((f) => /\.(js|html)$/.test(f)).flatMap((f) => [...readFileSync(`web/${f}`, 'utf8').matchAll(/https?:\/\/[^'"`\s)<>]+/g)]
+    .map((m) => m[0]).filter((u) => /\.(m?js|css|wasm|gz|json|traineddata)(\?|$)|cdn|jsdelivr|unpkg|googleapis|gstatic/i.test(u)).map((u) => `${f}: ${u}`));
+  assert.deepEqual(loaded, []);
+  for (const f of ['pdfjs/pdf.min.mjs', 'pdfjs/pdf.worker.min.mjs', 'pdfjs/LICENSE', 'panzoom/panzoom.es.js', 'panzoom/LICENSE', 'tesseract/LICENSE', 'tesseract/SOURCES.txt',
+    'tesseract/tesseract.esm.min.js', 'tesseract/worker.min.js', 'tesseract/lang/heb.traineddata.gz', 'tesseract/lang/eng.traineddata.gz']) assert.ok(readFileSync(`web/vendor/${f}`).length > 500, f);
+  // The worker picks one core file by browser features; all three LSTM builds must be there, or some phones would fail only at import time.
+  for (const f of ['lstm', 'simd-lstm', 'relaxedsimd-lstm']) assert.ok(readFileSync(`web/vendor/tesseract/core/tesseract-core-${f}.wasm.js`).length > 1e6, f);
+  assert.match(readFileSync('web/friend-scan.js', 'utf8'), /workerPath.*corePath.*langPath/, 'the OCR paths are set explicitly: the library defaults point at jsdelivr');
 });
 
 test('the deploy waits for a green test job (P9)', () => {

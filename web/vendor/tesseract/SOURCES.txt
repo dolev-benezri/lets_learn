@@ -1,0 +1,28 @@
+tesseract.js 7.0.0, self-hosted so the site makes no request outside its own origin.
+
+Every file is byte-identical to the one in the npm package named below. Each package tarball was fetched with `npm pack <name>@<version>` from the
+npm registry, and its sha512 matched the registry's dist.integrity. Files were copied out of the extracted tarball into this folder, unmodified.
+To update: pack the new versions the same way, replace the files, rewrite this list (`sha256sum` of every file), and run `npm test`.
+
+Packages (sha512 = dist.integrity from the registry):
+  tesseract.js@7.0.0               sha512-exPBkd+z+wM1BuMkx/Bjv43OeLBxhL5kKWsz/9JY+DXcXdiBjiAch0V49QR3oAJqCaL5qURE0vx9Eo+G5YE7mA==   (Apache-2.0)
+  tesseract.js-core@7.0.0          sha512-WnNH518NzmbSq9zgTPeoF8c+xmilS8rFIl1YKbk/ptuuc7p6cLNELNuPAzcmsYw450ca6bLa8j3t0VAtq435Vw==   (Apache-2.0)
+  @tesseract.js-data/heb@1.0.0     sha512-t70MeqlBqOsf+pINWgG32gaVsXG2LUiOFMMzeJLl+bDEjRK9nXUqF/xzl37xP2IdwZcOsd6BnQRbZDN/8AAWlA==   (MIT wrapper, Tesseract "best" model: Apache-2.0)
+  @tesseract.js-data/eng@1.0.0     sha512-mbTumm6KQPUHyzTPQaF3ObXYnx0SqqfV2nabqFVQBwD6Kl7PhGSLSzOlfFTWy0P3BjghaSKA2W9GB19Jk+ZcTg==   (same)
+
+Files (sha256, file here <- path inside the package):
+  64871d76c75609fd5413b88a8171e2ef40deedd77d5875ba23df104b2d05eb29  tesseract.esm.min.js                       <- tesseract.js/dist/tesseract.esm.min.js
+  576b7df7e3393e137e51849357c9adb53fe7ac1bb69bfa06cf3d61520f182c6d  worker.min.js                              <- tesseract.js/dist/worker.min.js
+  45f54171aeaa1d10c0c1a66f374b7bba1f02472b1487fbe892eec04f840002ac  worker.min.js.LICENSE.txt                  <- tesseract.js/dist/worker.min.js.LICENSE.txt
+  eef5f8b2f8e20e150680b20adaec4a60babafee3adbe8a94583c81fee46e8680  core/tesseract-core-lstm.wasm.js           <- tesseract.js-core/tesseract-core-lstm.wasm.js
+  c58b46a4c796c0b8afccf77591d5b875b6896b45d402bbce8caa6f5362447b38  core/tesseract-core-simd-lstm.wasm.js      <- tesseract.js-core/tesseract-core-simd-lstm.wasm.js
+  861a536cf9ef8e63cb644d57bab39c388f37f7d6b6f60024b741c5f6b39a59b3  core/tesseract-core-relaxedsimd-lstm.wasm.js <- tesseract.js-core/tesseract-core-relaxedsimd-lstm.wasm.js
+  9c70b524200dae77fb25e3567566eee600ccbcae9aeb89722990ccae0e84e805  lang/heb.traineddata.gz                    <- @tesseract.js-data/heb/4.0.0_best_int/heb.traineddata.gz
+  45b4cb346724ac1774f1c36f42f182b887bcdb28ebe63e6fff90ac41f3fcff91  lang/eng.traineddata.gz                    <- @tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz
+
+LICENSE here is the tesseract.js license, followed by the tesseract.js-core license and a note on the language models.
+
+Why only these files: friend-scan.js starts the worker with the default OCR engine mode (LSTM only), so tesseract.js asks for the three "-lstm" core builds
+(plain, SIMD, relaxed SIMD; it picks one by what the browser supports) and the "4.0.0_best_int" language files. The legacy engine's cores and models, the
+non-LSTM builds, the UMD bundle and the source maps are not needed and were left out.
+Paths are set in web/friend-scan.js (workerPath, corePath, langPath). The library's own defaults point at cdn.jsdelivr.net and are never used.
