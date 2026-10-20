@@ -2,6 +2,7 @@ import { classify, withAfterA, cleanProfile, studyYear, yearsOf, modeFor, specLi
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
 import { esc } from './ui-text.js';
+import { pinsWithoutSplit } from './solver-core.js';
 import { cleanSettings, SETTINGS_DEFAULT } from './settings.js';
 
 export { esc };
@@ -335,6 +336,7 @@ export async function restoreBackup(payload) {
     setSemesters(sem);
   }
   p.constraints.split = false; // a link never switches the split on: that takes the visitor's own confirmation (CHG.split)
+  p.pins = pinsWithoutSplit(Object.values(app.sem), p.pins); // its split-only pins would leave a course with no schedule
   app.state = p;
   uiReset();
   return true;

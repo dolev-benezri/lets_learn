@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mini } from './fixtures/mini-data.mjs';
 
 const appMod = await import('../web/app.js'); // before the DOM stub: app.js starts init() when it sees a document
-const el = () => ({ dataset: {}, classList: { toggle() {}, add() {}, remove() {} }, setAttribute() {}, addEventListener() {}, hidden: false, querySelector: () => null, querySelectorAll: () => [] });
+const el = () => ({ dataset: {}, matches: () => false, classList: { toggle() {}, add() {}, remove() {} }, setAttribute() {}, addEventListener() {}, hidden: false, querySelector: () => null, querySelectorAll: () => [] });
 globalThis.document = { getElementById: () => el(), querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, activeElement: null, body: { dataset: { view: 'plan' } } };
 const made = [];
 globalThis.Worker = class { constructor() { made.push(this); } postMessage(m) { this.sent = m; } terminate() {} };
@@ -93,6 +93,27 @@ test('CHG.split: ticking asks first and a cancel unticks the box; unticking asks
   box.checked = false;
   await CHG.split(box);
   assert.equal(app.state.constraints.split, false);
+  delete globalThis.confirm;
+  clearTimeout(ui.timer);
+});
+
+test('split goes off (untick, reset prefs): the unlinked tutorial pin is dropped, the lecture pin stays; split off pins are unchanged', async () => {
+  const { ACT } = await import('../web/ui-actions.js');
+  const mk = (id, type, day, linked = []) => ({ id, type, meetings: [{ day, start: '08:00', end: '10:00' }], linked, primary: !id.includes('/'), full: false, exams: [], lecturer: '' });
+  const d = mini();
+  d.courses.S = { name: 'S', credits: 3, offered: true, prereqs: [], groups: [mk('S1', 'L', 1, ['S1/1']), mk('S1/1', 'T', 2), mk('S9/1', 'T', 3)] };
+  app.sem = { 'א': d, 'ב': null, 'קיץ': null };
+  const fresh = (split, pins) => { app.state = normalize({ v: 1 }); app.state.constraints.split = split; app.state.pins = pins; };
+  fresh(true, ['S1', 'S9/1', 'zz']);
+  globalThis.confirm = () => true;
+  await CHG.split({ checked: false });
+  assert.deepEqual(app.state.pins, ['S1', 'zz'], 'untick');
+  fresh(true, ['S1', 'S9/1']);
+  await ACT.resetPrefs();
+  assert.deepEqual([app.state.pins, app.state.constraints.split], [['S1'], false], 'reset prefs');
+  fresh(false, ['S1', 'S1/1']);
+  await CHG.split({ checked: false });
+  assert.deepEqual(app.state.pins, ['S1', 'S1/1'], 'a linked pair is not touched');
   delete globalThis.confirm;
   clearTimeout(ui.timer);
 });
