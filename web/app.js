@@ -14,8 +14,8 @@ export const DEFAULT = {
   scope: 'year', load: 'even', sortBy: 'best', semesterOf: {}, programSet: false, // programSet: the track was picked (a first visit starts with none)
   specDraft: null, yearIds: [], // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
-  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, maxDays: null, examsSameDay: 'forbid', includeFull: false, blocks: [],
-    lecturers: {} },
+  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, maxDays: null, examsSameDay: 'forbid', includeFull: false, split: false,
+    blocks: [], lecturers: {} },
 };
 
 // The programs and cohorts the site has data for (data/afeka/catalog.json, written by the scraper). Without it: mechanical engineering 2026, the first program.
@@ -34,7 +34,7 @@ export const cleanBlocks = (a) => Array.isArray(a) ? a.filter((b) => isObj(b) &&
   .slice(0, 12).map((b) => ({ day: b.day, start: b.start, end: b.end, label: b.label })) : [];
 const CONSTRAINT_OK = {
   dayOff: (v) => Array.isArray(v) && v.every((d) => Number.isInteger(d) && d >= 1 && d <= 6),
-  dayOffHard: (v) => typeof v === 'boolean', windowHard: (v) => typeof v === 'boolean', includeFull: (v) => typeof v === 'boolean',
+  dayOffHard: (v) => typeof v === 'boolean', windowHard: (v) => typeof v === 'boolean', includeFull: (v) => typeof v === 'boolean', split: (v) => typeof v === 'boolean',
   notBefore: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   notAfter: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   maxCredits: (v) => v === null || (num(v) && v >= 0),
@@ -334,6 +334,7 @@ export async function restoreBackup(payload) {
     try { sem = await fetchSemesters(p); } catch { app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי'; return false; }
     setSemesters(sem);
   }
+  p.constraints.split = false; // a link never switches the split on: that takes the visitor's own confirmation (CHG.split)
   app.state = p;
   uiReset();
   return true;

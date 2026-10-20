@@ -81,16 +81,24 @@ export function groupIndex(data) {
 
 export const paired = (a, b) => a.linked.includes(b.id) || b.linked.includes(a.id);
 
+// The pins after pinning `gid`: it replaces the course's pins it can't pair with. With split on, a group of another type is no conflict
+// (a lecture may take any tutorial), so a pinned lecture survives pinning an unlinked tutorial.
+export function pinWith(data, pins, gid, split = false) {
+  const byId = groupIndex(data), { cid, g } = byId.get(gid);
+  const sameSlot = (p) => { const x = byId.get(p); return x?.cid === cid && !paired(x.g, g) && !(split && x.g.type !== g.type); };
+  return [...pins.filter((p) => !sameSlot(p)), gid];
+}
+
 // Every group of the same course and type as `gid`, with whether it clashes with the rest of the alternative
 // (`groupIds`): other courses' groups plus the candidate's linked partners (a lecture's own tutorial, a tutorial's lecture).
 // `ok` is false when pinning it can't produce a schedule (its partner is full, or no lecture links to it).
 // ponytail: several partners of one type all count, so a candidate with two possible tutorials can read as clashing.
-export function altGroups(data, groupIds, gid, includeFull = false) {
+export function altGroups(data, groupIds, gid, includeFull = false, split = false) {
   const byId = groupIndex(data), { cid, c, g: cur } = byId.get(gid);
   const rest = meetingsMask(groupIds.filter((id) => byId.get(id)?.cid !== cid).flatMap((id) => byId.get(id).g.meetings));
   return c.groups.filter((x) => x.type === cur.type).map((x) => {
     const mine = [x, ...c.groups.filter((y) => y.type !== x.type && paired(x, y))];
-    return { g: x, clash: overlaps(meetingsMask(mine.flatMap((y) => y.meetings)), rest), ok: buildOptions(c, { pins: [x.id], includeFull }).length > 0 };
+    return { g: x, clash: overlaps(meetingsMask(mine.flatMap((y) => y.meetings)), rest), ok: buildOptions(c, { pins: [x.id], includeFull, split }).length > 0 };
   });
 }
 
@@ -228,7 +236,7 @@ export function openPop(btn, ctx) {
   const { cid, c, g } = groupIndex(ctx.data).get(btn.dataset.gid);
   const pinned = ctx.pins.includes(g.id);
   const fr = ctx.friends.filter((f) => f.groups.includes(g.id));
-  const alts = altGroups(ctx.data, ctx.res?.groups ?? [], g.id, ctx.includeFull);
+  const alts = altGroups(ctx.data, ctx.res?.groups ?? [], g.id, ctx.includeFull, ctx.split);
   const exams = c.groups.filter((x) => ctx.res?.groups.includes(x.id)).flatMap((x) => x.exams).filter((e) => e.kind === 'בחינה');
   pop.className = `pop c${ctx.colors.get(cid) ?? 7}`;
   pop.innerHTML = `

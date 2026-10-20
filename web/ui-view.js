@@ -4,7 +4,7 @@ import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
-import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml } from './ui-text.js';
+import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml, SPLIT_NOTE, splitLine } from './ui-text.js';
 import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, needsProgram, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -79,7 +79,8 @@ export function renderView() {
     ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${noFriend ? `<p class="hint">${state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם'
     : 'אין עדיין חברים. אפשר להוסיף'} <a href="#prefs">בשלב 3</a>.</p>` : ''}`;
 
-  $('altLabel').textContent = nAlt ? `חלופה ${ui.cur + 1} מתוך ${nAlt}` : 'אין חלופות';
+  const split = raw && !none ? raw.split ?? [] : []; // course ids built from a lecture and a tutorial the college does not link
+  $('altLabel').textContent = nAlt ? `חלופה ${ui.cur + 1} מתוך ${nAlt}${split.length ? ' · מופרדת' : ''}` : 'אין חלופות';
   const stranded = [$('prev'), $('next')].includes(document.activeElement) && nAlt < 2;
   $('prev').disabled = $('next').disabled = nAlt < 2;
   if (stranded) $('switcher').focus();
@@ -120,6 +121,8 @@ export function renderView() {
     const blockingText = blockingNames.length ? blockingNames.join(', ') + (blocking.length > 3 ? ` ועוד ${blocking.length - 3}` : '') : '';
     const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת לך קורס חדש אחד' : `פותחת לך ${res.unlocks} קורסים חדשים`) : '';
     const infoLine = [blockingText && `קורסי קדם לקורסים אחרים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
+    const nameOf = (id) => [data, app.data, app.sem['א'], app.sem['ב'], app.sem['קיץ']].find((d) => d?.courses?.[id])?.courses[id].name ?? id;
+    if (split.length) msg = note('alert', SPLIT_NOTE) + `<p class="split-line">${esc(splitLine(split.map(nameOf)))}</p>` + msg; // not in the phone's swipe row: it wraps
     const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null; // what this alternative changes against the first one (§14ז)
     const vs = best ? compareAlts({ ...res, ...s }, { ...best, ...summary(best, data, state.friends, state.constraints) }, data).map(esc).join(' · ') : '';
 
@@ -128,7 +131,7 @@ export function renderView() {
       : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
       + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') + (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
     live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, courseCount(res.courses.length), `${s.credits} נ״ז`, pair
-      && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
+      && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`, fd, gap, ...fr, split.length && SPLIT_NOTE, pn?.text].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
   $('disclaimer').innerHTML = res ? disclaimerHtml(app.settings.counselingUrl) : ''; // also the step-4 counselling link
 

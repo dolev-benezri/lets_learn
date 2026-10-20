@@ -305,3 +305,9 @@ test('normalize: programSet only from a real choice; a saved study year or anoth
   assert.equal(normalize({ v: 1, program: 10, startYear: 2026 }, { programs: [{ id: 10, name: 'x', startYears: [2026] }, { id: 30, name: 'y', startYears: [2026] }] }).programSet, true);
   assert.equal(normalize({ v: 1, profile: { year: null } }).programSet, false);
 });
+
+test('normalize: constraints.split is off by default, kept when true, false for anything else', () => {
+  assert.equal(D.constraints.split, false);
+  assert.equal(normalize({ v: 1, constraints: { split: true } }).constraints.split, true);
+  for (const bad of ['yes', 1, null, 'true', [true]]) assert.equal(normalize({ v: 1, constraints: { split: bad } }).constraints.split, false, String(bad));
+});

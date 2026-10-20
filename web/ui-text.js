@@ -2,6 +2,10 @@
 const D = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
 // The line under every alternative and in every calendar event; "יועץ לימודים" links to the counselling page when settings.json sets one (already https-validated).
 export const DISCLAIMER = 'אינו הרשמה ואינו המלצה. לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.';
+// Split lecture and tutorial (opt-in): the warning before it is switched on, and what a split alternative says about itself.
+export const SPLIT_WARNING = 'הפרדה בין הרצאה לתרגול עלולה ליצור פער בין החומר שנלמד בהרצאה לחומר שבתרגול, כי הקצב שלהם מתואם. הפרדה כזו מותרת רק באישור ההכוון האקדמי.';
+export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
+export const splitLine = (names) => `מופרדים: ${names.join(', ')} · דורש אישור ההכוון`; // names are raw: the caller escapes
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const disclaimerHtml = (url) => (url ? DISCLAIMER.replace('יועץ לימודים', () => `<a href="${esc(url)}" target="_blank" rel="noopener">יועץ לימודים</a>`) : DISCLAIMER);
 const typeName = (t) => String(t).replace('סופי-', '');

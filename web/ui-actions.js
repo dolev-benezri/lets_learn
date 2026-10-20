@@ -3,10 +3,10 @@ import { app, applyPendingBackup, cleanBlocks, upsertFriend, friendName, save, r
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { toIcs } from './ics.js';
-import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
+import { groupIndex, openPop, pinWith, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { friendToast, gradeInput, rangeError, shareText, waUrl } from './ui-text.js';
+import { friendToast, gradeInput, rangeError, shareText, waUrl, SPLIT_WARNING } from './ui-text.js';
 import { colors, markOnboarded, acceptTerms, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
@@ -66,8 +66,8 @@ export const ACT = {
   prev: () => go(-1),
   next: () => go(1),
   day(el) { ui.mobileDay = Number(el.dataset.day); ui.dayScroll = true; keepFocus(renderView); },
-  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors,
-    lecturers: app.state.constraints.lecturers }),
+  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, split: app.state.constraints.split, pins: app.state.pins,
+    friends: app.state.friends.filter((f) => f.active), colors, lecturers: app.state.constraints.lecturers }),
   more(el) { // the button says it is working until the result replaces it
     if (ui.running) return;
     ui.moreMul *= 2;
@@ -87,9 +87,8 @@ export const ACT = {
   lecturerDrop(el) { delete app.state.constraints.lecturers[el.dataset.name]; refresh(); },
   pin(el) {
     const gid = el.dataset.gid, was = app.state.pins.includes(gid);
-    const { cid, g } = groupIndex(app.data).get(gid);
-    const sameSlot = (p) => { const x = groupIndex(app.data).get(p); return x?.cid === cid && !paired(x.g, g); }; // a new pin replaces the course's pins it can't pair with
-    app.state.pins = was ? app.state.pins.filter((x) => x !== gid) : [...app.state.pins.filter((p) => !sameSlot(p)), gid];
+    const { cid } = groupIndex(app.data).get(gid);
+    app.state.pins = was ? app.state.pins.filter((x) => x !== gid) : pinWith(app.data, app.state.pins, gid, app.state.constraints.split);
     if (!was) app.state.choices[cid] = 'must'; // the solver forces a pinned course in; show it
     const fromGid = $('pop').dataset.gid;
     $('pop').hidePopover();
@@ -250,6 +249,10 @@ export const CHG = {
   winHard: (el) => { app.state.constraints.windowHard = el.value === 'hard'; },
   examsAllow: (el) => { app.state.constraints.examsSameDay = el.checked ? 'allow' : 'forbid'; },
   includeFull: (el) => { app.state.constraints.includeFull = el.checked; },
+  async split(el) { // ticking needs the academic advisor's warning acknowledged; a cancel unticks the box
+    if (el.checked && !await askConfirm(SPLIT_WARNING, { ok: 'הבנתי, להציג', cancel: 'ביטול' })) { el.checked = false; return 'none'; }
+    app.state.constraints.split = el.checked;
+  },
   notBefore: (el) => { app.state.constraints.notBefore = time(el.value); return 'quiet'; },
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
   maxDays: (el) => { app.state.constraints.maxDays = el.value ? Number(el.value) : null; },

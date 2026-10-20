@@ -447,6 +447,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 }
 .notice.partial { flex-wrap:wrap; margin-top:0; margin-bottom:12px; }
 .notice.partial span { flex:1 1 16rem; }
+.split-line { margin:6px 2px 12px; font-size:var(--fs-sm); color:var(--text-2); overflow-wrap:anywhere; }
 .notice.partial .btn { margin-inline-start:auto; }
 
 /* batch 4: board */
