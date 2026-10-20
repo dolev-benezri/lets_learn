@@ -3,6 +3,7 @@ import { app, applyPendingBackup, cleanBlocks, upsertFriend, friendName, save, r
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { toIcs } from './ics.js';
+import { advisorHtml } from './advisor.js';
 import { groupIndex, openPop, pinWith, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
@@ -113,6 +114,15 @@ export const ACT = {
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast('הקובץ ירד. פותחים אותו כדי להוסיף את השיעורים ליומן.');
+  },
+  advisor() { // fills #print and prints it alone (style.css @media print); afterprint puts the page back
+    const res = current();
+    if (!res) return;
+    const p = $('print'), b = document.body;
+    p.innerHTML = advisorHtml({ state: app.state, data: app.data, res, cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
+    p.hidden = false; b.classList.add('print-summary');
+    addEventListener('afterprint', () => { p.hidden = true; b.classList.remove('print-summary'); }, { once: true });
+    print();
   },
   backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),
   landingAdd: () => addFriend(app.friendLanding),

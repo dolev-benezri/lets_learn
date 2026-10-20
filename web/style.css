@@ -423,7 +423,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .alt-label { min-width:0; padding:0 4px; font-size:var(--fs-sm); }
   .board { padding:12px; }
   /* actions move to a bottom bar: the top bar keeps only the title and the alternative switcher */
-  .actions { position:fixed; inset:auto 0 0 0; z-index:5; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px;
+  .actions { position:fixed; inset:auto 0 0 0; z-index:5; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:4px;
     padding:6px 8px calc(6px + env(safe-area-inset-bottom)); background:var(--chrome); border-top:0; box-shadow:var(--shadow-up); }
   .actions .btn { width:auto; min-height:48px; flex-direction:column; gap:2px; padding:0 2px; border-color:transparent; background:transparent; font-size:12px; }
   .actions .btn.primary { background:var(--primary); color:var(--on-primary); }
@@ -734,4 +734,21 @@ body:has(#friendEd[open]) { overflow:hidden; }
   .day:not(.on) { display:block; }
   .day.on:not(:last-child) { border-inline-end:0; }
   #semnote, .pill-info { display:none; }
+}
+
+/* The advisor summary (ACT.advisor): on screen #print is never shown; on paper it is the only thing, A4, black on white in both themes. */
+#print { display:none; }
+@media print {
+  @page { size:A4; margin:14mm; }
+  :root, :root[data-theme="dark"] { color-scheme:light; }
+  html, body { background:#fff !important; color:#000 !important; padding:0 !important; }
+  body.print-summary > :not(#print) { display:none !important; }
+  body.print-summary #print { display:block; font-size:10.5pt; line-height:1.4; }
+  #print, #print * { color:#000 !important; background:none !important; box-shadow:none !important; }
+  #print h2 { font-size:17pt; margin:0 0 1mm; }
+  #print h3 { font-size:12.5pt; margin:4mm 0 1mm; padding-bottom:.5mm; border-bottom:1px solid #000; }
+  #print h4 { font-size:11pt; margin:2mm 0 0; }
+  #print ul { list-style:disc; padding-inline-start:5mm; }
+  #print li { break-inside:avoid; }
+  #print li div { font-size:9.5pt; }
 }

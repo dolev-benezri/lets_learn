@@ -16,6 +16,8 @@ export function renderTop() {
   $('title').innerHTML = `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
   const f = freshness(app.status, app.data.fetchedAt);
+  $('counsel').hidden = !app.settings.counselingUrl; // the footer link to the counselling page, only when settings.json gives one
+  if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
   $('meta').innerHTML = (f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text))
     + (app.data.verified === false ? ' · הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.' : '');
 }
@@ -133,6 +135,7 @@ export function renderView() {
     live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, courseCount(res.courses.length), `${s.credits} נ״ז`, pair
       && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`, fd, gap, ...fr, split.length && SPLIT_NOTE, pn?.text].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
+  $('advisorBtn').disabled = !res;
   $('disclaimer').innerHTML = res ? disclaimerHtml(app.settings.counselingUrl) : ''; // also the step-4 counselling link
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed: ui.dashed, pins: state.pins, friends, day: ui.mobileDay, blocks: state.constraints.blocks });
