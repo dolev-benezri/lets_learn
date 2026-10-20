@@ -120,9 +120,11 @@ test('switchTo: going back finds the old progress with the current personal sett
   assert.equal(app.state.name, 'שם חדש');
   assert.ok(store.size > 0);
   store.set('afeka-sched-v1-onboarded', '1'); // erasing everything also starts a first visit again
+  store.set('afeka-sched-v1-terms', '1'); // ...and asks for the terms again
   sync();
   clearSaved();
   assert.equal(store.size, 0);
+  assert.equal(localStorage.getItem('afeka-sched-v1-terms'), null);
 });
 
 test('switchTo: the study year picked (set before the switch, as CHG.pyear does) wins over the one in the stash', async () => {
@@ -324,6 +326,30 @@ test('switchTo and a dropped program take the academic year from the catalog, no
   reset(null); app.catalog = { ...CATALOG, year: 2028 }; store.set('afeka-sched-v1', JSON.stringify({ ...mine(), v: 1, program: 40, startYear: 2026 }));
   assert.equal(load().year, 2028);
   app.hashError = null;
+});
+
+test('applyHash: a backup link waits for the terms, then restores', async () => {
+  const { applyHash, applyPendingBackup } = await import('../web/app.js');
+  const { backupLink } = await import('../web/share.js');
+  const g = { location: globalThis.location, history: globalThis.history, document: globalThis.document };
+  globalThis.history = { replaceState() {} };
+  globalThis.document ??= { activeElement: null, body: { dataset: {} }, querySelector: () => null };
+  try {
+    reset({ ...mine(), program: 30, startYear: 2026 });
+    const link = await backupLink('https://x.test/', { ...app.state, name: 'מגובה' });
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    app.termsOk = () => false;
+    await applyHash();
+    assert.equal(app.state.name, 'דנה', 'not restored (and no confirm) before the terms are accepted');
+    assert.ok(app.pendingBackup);
+    app.termsOk = () => true;
+    await applyPendingBackup();
+    assert.equal(app.state.name, 'מגובה');
+    assert.equal(app.pendingBackup, null);
+    reset({ ...mine(), program: 30, startYear: 2026 }); // terms already accepted: restored at once
+    await applyHash();
+    assert.equal(app.state.name, 'מגובה');
+  } finally { Object.assign(globalThis, g); app.termsOk = () => true; app.pendingBackup = null; }
 });
 
 test('applyHash: a backup whose data fails to load says so even when a load notice is up', async () => {

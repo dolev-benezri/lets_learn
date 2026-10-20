@@ -36,7 +36,7 @@ globalThis.history = { replaceState() {} };
 globalThis.location = { hash: '', origin: 'https://x', pathname: '/' };
 
 const { app, normalize, refresh, yearCourses } = app_;
-const { ui, current, TERMS_VERSION, termsOk, acceptTerms } = await import('../web/ui-common.js');
+const { ui, current, gated, TERMS_VERSION, termsOk, acceptTerms } = await import('../web/ui-common.js');
 ls['afeka-sched-v1-terms'] = TERMS_VERSION; // the terms were accepted: the renders below get the track question and the pages
 const { renderTop, renderBanner, renderView, showAlt } = await import('../web/ui-view.js');
 const { renderMe, identityPick } = await import('../web/ui-me.js');
@@ -335,6 +335,8 @@ test('the terms come before the first question', async () => {
     assert.ok(root.querySelector('a[href="legal.html#terms"]') && root.querySelector('a[href="legal.html#scope"]'));
   };
   terms(me('terms-none', () => { delete ls['afeka-sched-v1-terms']; app.state.programSet = false; }));
+  const landing = { name: 'x', groups: [] }; app.friendLanding = landing; me('terms-landing', () => {});
+  assert.ok(gated() && app.friendLanding === landing, 'a friend link waits in app.friendLanding while the gate shows'); app.friendLanding = null;
   terms(me('terms-old', () => { ls['afeka-sched-v1-terms'] = '0'; }));
   terms(me('terms-year', () => { ls['afeka-sched-v1-terms'] = '0'; app.state.programSet = true; })); // the year question waits too
   assert.ok(me('terms-ok', () => { ls['afeka-sched-v1-terms'] = TERMS_VERSION; app.state.programSet = false; }).includes('מה המסלול שלך?'));
