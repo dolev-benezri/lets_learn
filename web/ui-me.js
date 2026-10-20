@@ -9,6 +9,9 @@ import { creditsGoal, courseCount } from './ui-text.js';
 import { STATUS, FAILS, YEARS, termsOk, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
+// "התור שלי בהרשמה": only when settings.json lists turns. A saved turn that is no longer listed shows as "לא יודע/ת" and warns about nothing.
+const turnPick = (cur) => (app.settings.turns.length ? `<label class="field pick">התור שלי בהרשמה <select data-chg="turn" data-k="turn"><option value="">לא יודע/ת</option>
+  ${app.settings.turns.map((t) => `<option value="${esc(t.id)}"${t.id === cur ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>` : '');
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
   const s = app.state, n = s.failed[id] ?? 0, k = `${li}-${id}`, nm = heb(app.data.courses[id].name);
@@ -133,6 +136,7 @@ export function renderMe() {
           ${identityPick(state.profile.year, true)}${unverified}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
+          ${turnPick(state.profile.turn)}
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
           <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>`;

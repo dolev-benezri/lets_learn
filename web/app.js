@@ -260,6 +260,7 @@ const withPersonal = (to, from) => {
   to.scope = 'year';
   to.profile.amirnet = from.profile.amirnet;
   to.profile.summer = from.profile.summer;
+  if (from.profile.turn) to.profile.turn = from.profile.turn;
   return to;
 };
 // Evening tracks: a day student is not asked to come before 16:00, so the default hours differ. They follow the track only while the student has not changed them.

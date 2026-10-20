@@ -4,7 +4,7 @@ import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
-import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml, SPLIT_NOTE, splitLine } from './ui-text.js';
+import { freshness, turnWarning, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml, SPLIT_NOTE, splitLine } from './ui-text.js';
 import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, needsProgram, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -29,8 +29,10 @@ export function renderBanner() {
   const other = L && L.program !== undefined && L.program !== app.state.program // groups of another program rarely match
     ? app.catalog.programs.find((p) => p.id === L.program)?.name ?? 'לא מוכרת' : null;
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : []; // with one semester loaded, the other's pins would look gone
+  const turn = turnWarning(app.settings.turns, app.state.profile.turn, app.data.fetchedAt);
   $('banner').innerHTML = (app.hashError ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
       <button type="button" class="btn icon-btn ghost" data-act="dismissError" aria-label="סגור הודעה">${icon('x')}</button></div>` : '')
+    + (turn ? `<div class="banner warn" role="status">${icon('alert')}<span class="grow">${esc(turn)}</span></div>` : '')
     + gone.map((p) => `<div class="banner warn">${icon('alert')}<span class="grow">${esc(p.text)}. המערכת תבחר קבוצה אחרת אם תסירו את הנעיצה.</span>
       <button type="button" class="btn" data-act="dropPin" data-gid="${esc(p.gid)}">${icon('pin')} הסר נעיצה</button></div>`).join('')
     + (L ? `<div class="banner"><span class="av lg" aria-hidden="true">${esc(initials(L.name || 'חבר'))}</span>

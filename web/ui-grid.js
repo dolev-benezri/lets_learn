@@ -1,7 +1,7 @@
 // Week grid, block popover and the small pure helpers behind them (hour range, pills summary, scale steps).
 import { esc } from './app.js';
 import { toMin, meetingsMask, overlaps, buildOptions, freeDayCandidates } from './solver-core.js';
-import { groupLabel, groupNumber, heb } from './ui-text.js';
+import { groupLabel, groupNumber, groupFresh, heb } from './ui-text.js';
 // A course name as HTML: escaped, with its Latin runs marked lang="en" so a Hebrew screen reader voice says "IOS", not letters. Entities (&lt;) are not words.
 export const nameHtml = (t) => esc(heb(t)).replace(/(?<![&\w])[A-Za-z](?:[A-Za-z0-9 .,+-]*[A-Za-z0-9])?(?![\w;])/g, (m) => `<span lang="en">${m}</span>`);
 
@@ -241,7 +241,8 @@ export function openPop(btn, ctx) {
   pop.className = `pop c${ctx.colors.get(cid) ?? 7}`;
   pop.innerHTML = `
     <div class="pop-head"><span class="dot" aria-hidden="true"></span>
-      <div><h3 id="popTitle">${nameHtml(c.name)}</h3><p>${esc(groupLabel(g))} · קורס ${esc(cid)}</p></div>
+      <div><h3 id="popTitle">${nameHtml(c.name)}</h3><p>${esc(groupLabel(g))} · קורס ${esc(cid)}</p>
+        <p>${esc(groupFresh(g, ctx.data.fetchedAt))}</p></div>
       <button type="button" class="btn icon-btn ghost" data-act="popClose" aria-label="סגור">${icon('x')}</button></div>
     <div class="pop-actions">
       <button type="button" class="btn ${pinned ? '' : 'primary'}" data-act="pin" data-gid="${esc(g.id)}" aria-pressed="${pinned}"

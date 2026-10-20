@@ -21,7 +21,9 @@ export function validSpecs(data, ids) {
   const paired = ok.length === rule.pick;
   return ok.length === ids.length && (paired || (ok.length === 1 && rule.alone.includes(ok[0]))) ? ok : [];
 }
-export const cleanProfile = (p) => ({ year: int(p?.year, 1, 5), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
+export const cleanProfile = (p) => ({ year: int(p?.year, 1, 5), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true, ...turnOf(p?.turn) });
+// The registration turn id (settings.json turns): kept only when it is a non-empty string.
+const turnOf = (t) => (typeof t === 'string' && t && t.length <= 40 ? { turn: t } : {});
 
 // Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the standalone extra (aloneExtra) when its area is chosen alone;
 // elective = their בחירה lists minus what is mandatory (a course in several lists counts once). chosen / all = list codes of the chosen areas / of every specialization list.

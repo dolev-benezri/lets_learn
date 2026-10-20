@@ -382,6 +382,24 @@ test('the disclaimer under the pills links to the counselling page, escaped; wit
   app.settings = { ...app.settings, counselingUrl: '' };
 });
 
+test('registration turns: the label is escaped in the picker; the banner shows only for a listed turn whose time has passed since the fetch', () => {
+  const keep = [app.settings, app.state.profile], turns = [{ id: 't1', label: '<xss-t>' + P, opensAt: '2020-01-01T08:00:00+02:00' }];
+  const meHtml = (t) => { app.settings = { ...keep[0], turns: t }; const n = writes.length; run('me-turn', () => { renderMe(); }); return writes.slice(n).filter((w) => w.id === 'me').map((w) => w.html).join(''); };
+  const picker = parse(meHtml(turns)).querySelector('select[data-chg="turn"]');
+  assert.equal(picker.querySelectorAll('option').length, 2);
+  assert.equal(picker.querySelectorAll('xss-t').length, 0);
+  assert.ok(picker.innerHTML.includes('&lt;xss-t&gt;'));
+  assert.ok(!meHtml([]).includes('data-chg="turn"'), 'no turns, no picker');
+  app.settings = { ...keep[0], turns };
+  const banner = (turn) => { app.state.profile = { ...keep[1], turn }; const n = writes.length; run('banner-turn', () => { renderBanner(); }); return writes.slice(n).filter((w) => w.id === 'banner').map((w) => w.html).join(''); };
+  const saved = app.data.fetchedAt;
+  app.data.fetchedAt = '2019-12-31T00:00:00Z';
+  assert.ok(banner('t1').includes('הנתונים נמשכו לפני פתיחת התור שלך'));
+  assert.ok(!banner('gone').includes('פתיחת התור'), 'a turn that is no longer listed warns about nothing');
+  assert.ok(!banner(undefined).includes('פתיחת התור'));
+  app.data.fetchedAt = saved; [app.settings, app.state.profile] = keep;
+});
+
 test('a split alternative says so: the note on top of the week, the course names in the info line (escaped), the label', () => {
   const r = ui.last.results[0], id = resCourses(r)[0], name = (app.sem['א'].courses[id] ?? app.sem['ב'].courses[id]).name;
   const real = ui.last.results;

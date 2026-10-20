@@ -70,6 +70,12 @@ test('normalize: out-of-range profile dropped, valid kept', () => {
   assert.deepEqual(normalize({ v: 1, profile: 'x' }).profile, { year: null, amirnet: null, ...none });
 });
 
+test('normalize: profile.turn is kept only as a non-empty string', () => {
+  assert.equal(normalize({ v: 1, profile: { turn: 'a' } }).profile.turn, 'a');
+  for (const t of ['', 5, null, ['a'], {}, 'x'.repeat(41)]) assert.ok(!('turn' in normalize({ v: 1, profile: { turn: t } }).profile), String(t));
+  assert.ok(!('turn' in normalize({ v: 1 }).profile));
+});
+
 test('normalize: old saved state without specs/summer gets the defaults; valid ones are kept, bad ones dropped', () => {
   assert.deepEqual(normalize({ v: 1, profile: { year: 3, amirnet: 100 } }).profile, { year: 3, amirnet: 100, specs: [], summer: false });
   assert.deepEqual(normalize({ v: 1 }).profile, { year: null, amirnet: null, specs: [], summer: false });

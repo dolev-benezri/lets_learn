@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml, esc } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml, esc, groupFresh, turnWarning } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -168,4 +168,35 @@ test('DISCLAIMER is the owner-approved line; disclaimerHtml links "יועץ לי
   assert.equal(h.replace(/<[^>]+>/g, ''), DISCLAIMER, 'the visible text is the same line');
   assert.doesNotMatch(disclaimerHtml('https://x/"><b>'), /"><b>/);
   for (const u of ['https://x/?q=$&', 'https://x/a$`b', "https://x/a$'b", 'https://x/$$']) assert.ok(disclaimerHtml(u).includes(`<a href="${esc(u)}" target`), `$-patterns in ${u} stay literal`);
+});
+
+test('groupFresh: full / free / seats left, then the time in Israel (a group own fetchedAt wins)', () => {
+  const at = '2026-10-16T05:08:00Z';
+  assert.equal(groupFresh({ full: true }, at), 'מלא · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, seatsLeft: 3 }, at), 'נשארו 3 מקומות · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, seatsLeft: 1 }, at), 'נשאר מקום אחד · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false }, at), 'פנוי · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, fetchedAt: '2026-10-16T10:30:00Z' }, at), 'פנוי · נכון ל-13:30');
+  assert.equal(groupFresh({ full: true, seatsLeft: 5 }, at), 'מלא · נכון ל-08:08'); // full wins over a stale count
+  assert.equal(groupFresh({ full: false, seatsLeft: '<x>' }, at), 'פנוי · נכון ל-08:08'); // only a whole number is a count
+  assert.equal(groupFresh({ full: false }, undefined), 'פנוי'); // no time anywhere: say nothing about when
+  assert.equal(groupFresh({ full: false }, 'not a date'), 'פנוי');
+  assert.equal(groupFresh({ full: false }, '2026-01-16T05:08:00Z'), 'פנוי · נכון ל-07:08'); // winter: +02:00
+});
+
+test('turnWarning: only when the data predates my turn and the turn has opened (instants, not strings)', () => {
+  const turns = [{ id: 'a', label: 'תור א', opensAt: '2026-11-01T08:00:00+02:00' }, { id: 'b', label: 'תור ב', opensAt: '2026-11-02T06:00:00Z' }];
+  const MSG = 'שימו לב: הנתונים נמשכו לפני פתיחת התור שלך. ייתכנו שינויים במקומות הפנויים.';
+  const after = new Date('2026-11-01T07:00:00Z'), before = new Date('2026-11-01T05:00:00Z');
+  assert.equal(turnWarning([], 'a', '2026-10-30T00:00:00Z', after), null);
+  assert.equal(turnWarning(turns, 'zzz', '2026-10-30T00:00:00Z', after), null);
+  assert.equal(turnWarning(turns, undefined, '2026-10-30T00:00:00Z', after), null);
+  assert.equal(turnWarning(turns, 'a', '2026-10-30T00:00:00Z', after), MSG);
+  assert.equal(turnWarning(turns, 'a', '2026-11-01T06:30:00Z', after), null); // fetched after it opened
+  assert.equal(turnWarning(turns, 'a', '2026-10-30T00:00:00Z', before), null); // not open yet
+  assert.equal(turnWarning(turns, 'a', '2026-11-01T05:59:00Z', after), MSG); // 08:00+02:00 is 06:00Z: 05:59Z is before it
+  assert.equal(turnWarning(turns, 'a', '2026-11-01T06:01:00Z', after), null);
+  assert.equal(turnWarning(turns, 'b', '2026-11-02T05:59:00Z', new Date('2026-11-02T06:00:00Z')), MSG);
+  assert.equal(turnWarning(turns, 'a', '2026-11-01T08:30:00+03:00', after), MSG); // +03:00 is 05:30Z
+  assert.equal(turnWarning(turns, 'a', undefined, after), null); // no fetch time: nothing to compare
 });
