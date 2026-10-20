@@ -4,7 +4,11 @@ import { loadPdfjs } from './grade-import.js';
 import { findBlocks, columnOf, gridHours } from './friend-blocks.js';
 import { rowsFromTable, rowsFromWords, matchRows, matchGrid } from './friend-schedule.js';
 
-const TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js'; // ESM build: default export only
+// tesseract.js 7.0.0 from web/vendor/tesseract/ (SOURCES.txt there). The ESM build has a default export only. The worker, core and language data are
+// absolute URLs so the blob worker can load them; the worker picks the core file for this browser (SIMD or not) inside corePath.
+const VENDOR = new URL('vendor/tesseract/', import.meta.url).href;
+const TESSERACT = `${VENDOR}tesseract.esm.min.js`;
+const OCR_PATHS = { workerPath: `${VENDOR}worker.min.js`, corePath: `${VENDOR}core`, langPath: `${VENDOR}lang` };
 const WIDTH = 2880; // small text (8px in a 1045px screenshot) reads well at about 3x
 
 const canvasOf = (w, h) => Object.assign(document.createElement('canvas'), { width: Math.round(w), height: Math.round(h) });
@@ -65,7 +69,7 @@ const wordsOf = (blocks) => (blocks ?? []).flatMap((b) => b.paragraphs.flatMap((
 export async function scanCanvases(canvases, courses, onProgress = () => {}) {
   const { createWorker } = (await import(TESSERACT)).default;
   let at = 0;
-  const worker = await createWorker('heb+eng', 1, { logger: (m) => { if (m.status === 'recognizing text') onProgress(at, canvases.length, m.progress); } });
+  const worker = await createWorker('heb+eng', 1, { ...OCR_PATHS, logger: (m) => { if (m.status === 'recognizing text') onProgress(at, canvases.length, m.progress); } });
   const texts = [], tables = [], grids = [];
   try {
     for (const [i, c] of canvases.entries()) {
