@@ -384,3 +384,12 @@ test('restoreBackup: pins that only worked with split on lose the sub-group pin 
   assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, pins: ['S1', 'S1/1'] }), true);
   assert.deepEqual(app.state.pins, ['S1', 'S1/1'], 'linked pins are kept');
 });
+
+test('switchTo: the registration turn stays with me, and a cleared turn is not brought back from the stash', async () => {
+  serve(); reset({ ...mine(), startYear: 2026, profile: { ...mine().profile, year: 2, turn: 't1' } });
+  assert.equal(await switchTo(20, 2027), true);
+  assert.equal(app.state.profile.turn, 't1');
+  app.state.profile = { ...app.state.profile, turn: undefined }; delete app.state.profile.turn; // cleared on the other program
+  assert.equal(await switchTo(30, 2026), true);
+  assert.ok(!('turn' in app.state.profile), 'the stashed program 30 state still had turn t1');
+});

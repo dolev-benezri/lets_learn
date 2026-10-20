@@ -392,12 +392,17 @@ test('registration turns: the label is escaped in the picker; the banner shows o
   assert.ok(!meHtml([]).includes('data-chg="turn"'), 'no turns, no picker');
   app.settings = { ...keep[0], turns };
   const banner = (turn) => { app.state.profile = { ...keep[1], turn }; const n = writes.length; run('banner-turn', () => { renderBanner(); }); return writes.slice(n).filter((w) => w.id === 'banner').map((w) => w.html).join(''); };
-  const saved = app.data.fetchedAt;
-  app.data.fetchedAt = '2019-12-31T00:00:00Z';
+  const saved = [app.status, ...['א', 'ב'].map((k) => app.sem[k]?.fetchedAt)];
+  app.status = null;
+  for (const k of ['א', 'ב']) if (app.sem[k]) app.sem[k].fetchedAt = '2019-12-31T00:00:00Z'; // the year view reads both files
   assert.ok(banner('t1').includes('הנתונים נמשכו לפני פתיחת התור שלך'));
   assert.ok(!banner('gone').includes('פתיחת התור'), 'a turn that is no longer listed warns about nothing');
   assert.ok(!banner(undefined).includes('פתיחת התור'));
-  app.data.fetchedAt = saved; [app.settings, app.state.profile] = keep;
+  app.status = { checkedAt: '2020-06-01T00:00:00Z', ok: true, semesters: { [`${app.sem['א'].year}-1/${app.sem['א'].program}-${app.sem['א'].startYear}`]: {}, [`${app.sem['ב'].year}-2/${app.sem['ב'].program}-${app.sem['ב'].startYear}`]: {} } };
+  assert.ok(!banner('t1').includes('פתיחת התור'), 'a later check that covers both semesters: the data is current');
+  app.status = saved[0];
+  ['א', 'ב'].forEach((k, i) => { if (app.sem[k]) app.sem[k].fetchedAt = saved[i + 1]; });
+  [app.settings, app.state.profile] = keep;
 });
 
 test('a split alternative says so: the note on top of the week, the course names in the info line (escaped), the label', () => {

@@ -1,5 +1,5 @@
 // The builder board: top bar, banners, the shown alternative (pills, notices, week grid) and the alternative switcher.
-import { app, esc, save, refresh, candidateMode, keepFocus, summerOn, summerScope, waitingOnEarlier } from './app.js';
+import { app, esc, freshOf, save, refresh, candidateMode, keepFocus, summerOn, summerScope, waitingOnEarlier } from './app.js';
 import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
@@ -29,7 +29,7 @@ export function renderBanner() {
   const other = L && L.program !== undefined && L.program !== app.state.program // groups of another program rarely match
     ? app.catalog.programs.find((p) => p.id === L.program)?.name ?? 'לא מוכרת' : null;
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : []; // with one semester loaded, the other's pins would look gone
-  const turn = turnWarning(app.settings.turns, app.state.profile.turn, app.data.fetchedAt);
+  const turn = turnWarning(app.settings.turns, app.state.profile.turn, freshOf(app.data));
   $('banner').innerHTML = (app.hashError ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
       <button type="button" class="btn icon-btn ghost" data-act="dismissError" aria-label="סגור הודעה">${icon('x')}</button></div>` : '')
     + (turn ? `<div class="banner warn" role="status">${icon('alert')}<span class="grow">${esc(turn)}</span></div>` : '')

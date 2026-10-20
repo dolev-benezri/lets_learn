@@ -1,4 +1,5 @@
 // Afeka regulations engine (תקנון לימודים תואר ראשון, 5.2.2026). Pure: runs in browser and node.
+import { TURN_ID_MAX } from './settings.js';
 const YEAR_LETTERS = { 'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5 }; // evening programs run five years
 
 // Afeka english clearance (checked 2026-10-01): Amirnet 85/100/120/134 exempts the first 1/2/3/4 courses; exemption gives no credits.
@@ -23,7 +24,7 @@ export function validSpecs(data, ids) {
 }
 export const cleanProfile = (p) => ({ year: int(p?.year, 1, 5), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true, ...turnOf(p?.turn) });
 // The registration turn id (settings.json turns): kept only when it is a non-empty string.
-const turnOf = (t) => (typeof t === 'string' && t && t.length <= 40 ? { turn: t } : {});
+const turnOf = (t) => (typeof t === 'string' && t && t.length <= TURN_ID_MAX ? { turn: t } : {});
 
 // Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the standalone extra (aloneExtra) when its area is chosen alone;
 // elective = their בחירה lists minus what is mandatory (a course in several lists counts once). chosen / all = list codes of the chosen areas / of every specialization list.

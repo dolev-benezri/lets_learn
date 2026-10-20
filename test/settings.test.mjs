@@ -78,3 +78,8 @@ test('cleanSettings: notice and conflict text are trimmed, blank ones vanish, em
   ] } } }).programs[3].conflicts;
   assert.deepEqual(c, [{ cohorts: [2024], text: 'סתירה' }, { cohorts: [2024], text: 'x'.repeat(300) }]);
 });
+
+test('cleanSettings: a turn id the profile could not keep (over 40 characters) is dropped', () => {
+  const ok = { id: 'x'.repeat(40), label: 'A', opensAt: '2026-09-01T09:00:00Z' };
+  assert.deepEqual(cleanSettings({ turns: [ok, { ...ok, id: 'x'.repeat(41) }] }).turns, [ok]);
+});
