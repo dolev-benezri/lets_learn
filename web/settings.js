@@ -2,19 +2,22 @@
 // whatever is missing or the wrong type falls back to the default, so a broken file never breaks the site.
 const EMAIL = /^[^\s@<>"]+@[^\s@<>"]+$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const MOMENT = /^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/; // an instant: the zone is required
 const str = (v) => (typeof v === 'string' ? v : '');
+const trimmed = (v) => str(v).trim();
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
 const validDate = (s) => typeof s === 'string' && !Number.isNaN(new Date(s).getTime());
 
 export const SETTINGS_DEFAULT = { supportEmail: '', counselingUrl: '', notice: '', turns: [], programs: {} };
 
 function httpsUrl(v) {
-  try { return new URL(v).protocol === 'https:' ? v : ''; } catch { return ''; }
+  if (typeof v !== 'string') return '';
+  try { const u = new URL(v); return u.protocol === 'https:' && u.href.startsWith('https://') ? u.href : ''; } catch { return ''; }
 }
 
 function cleanTurns(raw) {
   if (!Array.isArray(raw)) return [];
-  return raw.filter((t) => isObj(t) && str(t.id) && str(t.label) && validDate(t.opensAt)).map((t) => ({ id: t.id, label: t.label, opensAt: t.opensAt }));
+  return raw.filter((t) => isObj(t) && str(t.id) && str(t.label) && MOMENT.test(t.opensAt) && validDate(t.opensAt)).map((t) => ({ id: t.id, label: t.label, opensAt: t.opensAt }));
 }
 
 function cleanProgram(raw) {
@@ -25,8 +28,8 @@ function cleanProgram(raw) {
   }
   if (Array.isArray(raw.conflicts)) {
     const c = raw.conflicts
-      .filter((x) => isObj(x) && Array.isArray(x.cohorts) && x.cohorts.every(Number.isInteger) && str(x.text) && x.text.length <= 300)
-      .map((x) => ({ cohorts: [...x.cohorts], text: x.text }));
+      .filter((x) => isObj(x) && Array.isArray(x.cohorts) && x.cohorts.length && x.cohorts.every(Number.isInteger) && trimmed(x.text) && trimmed(x.text).length <= 300)
+      .map((x) => ({ cohorts: [...x.cohorts], text: x.text.trim() }));
     if (c.length) out.conflicts = c;
   }
   return out;
@@ -48,7 +51,7 @@ export function cleanSettings(raw) {
   return {
     supportEmail: EMAIL.test(str(raw.supportEmail)) ? raw.supportEmail : '',
     counselingUrl: httpsUrl(raw.counselingUrl),
-    notice: str(raw.notice),
+    notice: trimmed(raw.notice),
     turns: cleanTurns(raw.turns),
     programs: cleanPrograms(raw.programs),
   };

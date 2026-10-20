@@ -54,3 +54,27 @@ test('cleanSettings: programs without anything valid vanish; __proto__ is not a 
   assert.deepEqual(s.programs, {});
   assert.equal(Object.getPrototypeOf(s.programs), Object.prototype);
 });
+
+test('cleanSettings: counselingUrl must be a string and comes back as the normalized href', () => {
+  for (const bad of [['https://a.co'], { href: 'https://a.co' }, 5, true, 'a.co', '/x']) {
+    assert.equal(cleanSettings({ counselingUrl: bad }).counselingUrl, '', String(bad));
+  }
+  assert.equal(cleanSettings({ counselingUrl: 'https://a.co' }).counselingUrl, 'https://a.co/');
+  // 'https:foo' would be a relative path as an href; the normalized href is absolute
+  assert.equal(cleanSettings({ counselingUrl: 'https:foo' }).counselingUrl, 'https://foo/');
+});
+
+test('cleanSettings: opensAt needs an ISO date-time with a zone', () => {
+  const t = (opensAt) => cleanSettings({ turns: [{ id: 'a', label: 'A', opensAt }] }).turns.length;
+  for (const bad of ['1', '2026-09-01', '2026-09-01T09:00', '2026-09-01T09:00:00', 'Sep 1 2026 09:00 GMT', '2026-13-01T09:00:00Z']) assert.equal(t(bad), 0, bad);
+  for (const ok of ['2026-09-01T09:00:00+03:00', '2026-09-01T06:00Z', '2026-09-01T06:00:00.5Z']) assert.equal(t(ok), 1, ok);
+});
+
+test('cleanSettings: notice and conflict text are trimmed, blank ones vanish, empty cohorts drop the conflict', () => {
+  assert.equal(cleanSettings({ notice: '  שלום \n' }).notice, 'שלום');
+  assert.equal(cleanSettings({ notice: ' \t\n ' }).notice, '');
+  const c = cleanSettings({ programs: { 3: { conflicts: [
+    { cohorts: [2024], text: '  סתירה ' }, { cohorts: [2024], text: '   ' }, { cohorts: [], text: 'x' }, { cohorts: [2024], text: ` ${'x'.repeat(300)} ` },
+  ] } } }).programs[3].conflicts;
+  assert.deepEqual(c, [{ cohorts: [2024], text: 'סתירה' }, { cohorts: [2024], text: 'x'.repeat(300) }]);
+});
