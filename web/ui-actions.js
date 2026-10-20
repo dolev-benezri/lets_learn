@@ -7,7 +7,7 @@ import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
 import { friendToast, gradeInput, rangeError, shareText, waUrl } from './ui-text.js';
-import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
+import { colors, markOnboarded, acceptTerms, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList } from './ui-me.js';
@@ -49,6 +49,7 @@ async function shareOut() {
 
 export const ACT = {
   shareOut,
+  acceptTerms() { acceptTerms(); refresh(); shownTitle()?.focus(); }, // the friend or backup link kept in app.js (friendLanding, restored state) shows next
   gateTrack() { ui.gateTrack = true; renderMe(); shownTitle()?.focus(); }, // back to the track tiles from the year question
   pickTrack(el) { // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
     el.classList.add('on'); el.parentElement.setAttribute('aria-busy', 'true'); // the track's data may take a while: show the pick, take no second tap
@@ -170,6 +171,7 @@ async function changeIdentity(program, startYear) {
 const cohortOf = (y) => y && app.data.year - y + 1; // the cohort that is in study year y
 const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math.abs(b - want) ? y : b), list[0]); // same cohort if offered, else the closest
 export const CHG = {
+  termsTick: (el) => { el.closest('.gate').querySelector('[data-act="acceptTerms"]').disabled = !el.checked; return 'none'; }, // the only toggle of the button
   program: (el) => {
     const p = app.catalog.programs.find((x) => x.id === Number(el.value));
     const was = gated();

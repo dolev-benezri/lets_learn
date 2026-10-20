@@ -6,7 +6,7 @@ import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
 import { creditsGoal, courseCount } from './ui-text.js';
-import { STATUS, FAILS, YEARS, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
+import { STATUS, FAILS, YEARS, termsOk, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
@@ -72,7 +72,17 @@ export function identityPick(year, visible) {
 
 // The gate: the track first (tiles), then the year; "שינוי" (ui.gateTrack) shows the track tiles again. The tiles are buttons, not radios:
 // an arrow key on a radio would commit at once, and a button also re-picks the loaded track. They run the profile card's handlers (ACT.pickTrack, ACT.pickYear).
+function termsHtml() {
+  return `<div class="me-head"><h2 id="meTitle" tabindex="-1">לפני שמתחילים</h2></div>
+    <div class="gate-terms"><p>זה כלי עזר לתכנון בלבד. הוא לא רושם אתכם לקורסים: ההרשמה נעשית רק באפקה-נט.</p>
+    <p>החלופות שהכלי מציג הן אפשרויות, לא המלצה.</p>
+    <p>לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים, במיוחד בכל חריגה מהמערכת המומלצת של המחלקה.</p></div>
+    <p class="gate-links"><a href="legal.html#terms">תנאי השימוש</a> · <a href="legal.html#scope">מה הכלי בודק ומה לא</a></p>
+    <label class="check"><input type="checkbox" data-chg="termsTick" data-k="termsTick"> קראתי והבנתי</label>
+    <button type="button" class="btn primary gate-go" data-act="acceptTerms" data-k="acceptTerms" disabled>המשך</button>`;
+}
 function gateHtml() {
+  if (!termsOk()) return termsHtml();
   const { programs } = app.catalog, many = programs.length > 1, pickTrack = needsProgram() || ui.gateTrack;
   const head = (n, q) => `<div class="me-head">${many ? `<p class="gate-step">שאלה ${n} מתוך 2</p>` : ''}<h2 id="meTitle" tabindex="-1">${q}</h2></div>`;
   if (pickTrack) {

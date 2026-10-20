@@ -79,6 +79,7 @@ document.addEventListener('change', (e) => {
   const visibleCards = () => [...$('side').querySelectorAll('.course')].filter(shown);
   const idx = visibleCards().indexOf(e.target.closest('.course'));
   const how = f(e.target);
+  if (how === 'none') return; // nothing to redraw (the gate's tick only enables its button)
   if (how === 'view') keepFocus(renderView);
   else if (how === 'save') save();
   else if (how === 'quiet') { save(); scheduleRun(); } else refresh();
