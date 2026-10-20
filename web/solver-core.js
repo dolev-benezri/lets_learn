@@ -48,6 +48,20 @@ function byLecturer(options, lecturers, byId) {
   const ok = options.filter((o) => who(o) !== 'avoid'), pref = ok.filter((o) => who(o) === 'prefer');
   return pref.length ? pref : ok;
 }
+// Split turned off: a course whose pins only work with split on (a lecture plus a tutorial it does not link) would get no schedule and
+// no explanation. Its sub-group pins go; the lecture pin stays. `datas`: the loaded semesters' data files (nulls are skipped).
+export function pinsWithoutSplit(datas, pins) {
+  const drop = new Set();
+  for (const d of datas.filter(Boolean)) {
+    for (const c of Object.values(d.courses)) {
+      const mine = c.groups.filter((g) => pins.includes(g.id));
+      if (!mine.length) continue;
+      const ids = mine.map((g) => g.id), at = (split) => buildOptions(c, { pins: ids, includeFull: true, split }).length;
+      if (!at(false) && at(true)) mine.filter((g) => !g.primary).forEach((g) => drop.add(g.id));
+    }
+  }
+  return pins.filter((p) => !drop.has(p));
+}
 export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [], lecturers = {}, split = false } = {}) {
   const byId = new Map(course.groups.map((g) => [g.id, g])), primaries = course.groups.filter((g) => g.primary);
   const subGroups = course.groups.filter((g) => !g.primary);

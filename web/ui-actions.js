@@ -8,6 +8,7 @@ import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
 import { friendToast, gradeInput, rangeError, shareText, waUrl, SPLIT_WARNING } from './ui-text.js';
 import { colors, markOnboarded, acceptTerms, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
+import { pinsWithoutSplit } from './solver-core.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList } from './ui-me.js';
@@ -47,6 +48,11 @@ async function shareOut() {
   open(waUrl(text, url), '_blank', 'noopener');
 }
 
+// Split just went off: pins that only worked with it are removed, and the visitor is told (a course with no schedule would say nothing).
+function dropSplitPins() {
+  const kept = pinsWithoutSplit(Object.values(app.sem), app.state.pins);
+  if (kept.length < app.state.pins.length) { app.state.pins = kept; toast('הנעיצות של הקבוצות המופרדות בוטלו'); }
+}
 export const ACT = {
   shareOut,
   async acceptTerms() { acceptTerms(); await applyPendingBackup(); refresh(); shownTitle()?.focus(); }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
@@ -147,6 +153,7 @@ export const ACT = {
     app.state.constraints = { ...structuredClone(DEFAULT.constraints), blocks: app.state.constraints.blocks }; // busy time is a fact about the week, like pins and friends
     app.state.scope = DEFAULT.scope;
     app.state.load = DEFAULT.load;
+    dropSplitPins();
     refresh();
     toast('ההעדפות אופסו');
   },
@@ -252,6 +259,7 @@ export const CHG = {
   async split(el) { // ticking needs the academic advisor's warning acknowledged; a cancel unticks the box
     if (el.checked && !await askConfirm(SPLIT_WARNING, { ok: 'הבנתי, להציג', cancel: 'ביטול' })) { el.checked = false; return 'none'; }
     app.state.constraints.split = el.checked;
+    if (!el.checked) dropSplitPins();
   },
   notBefore: (el) => { app.state.constraints.notBefore = time(el.value); return 'quiet'; },
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },

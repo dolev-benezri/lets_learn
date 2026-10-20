@@ -374,3 +374,13 @@ test('restoreBackup: a backup link cannot switch the split option on (it needs t
   assert.equal(app.state.constraints.split, false);
   assert.equal(app.state.constraints.includeFull, true, 'the other constraints come through as before');
 });
+
+test('restoreBackup: pins that only worked with split on lose the sub-group pin (the restore turns split off), the lecture pin stays', async () => {
+  serve(); reset(mine());
+  const mk = (id, type, day, linked = []) => ({ id, type, meetings: [{ day, start: '08:00', end: '10:00' }], linked, primary: !id.includes('/'), full: false, exams: [], lecturer: '' });
+  app.sem['א'].courses.S = { name: 'S', credits: 3, offered: true, prereqs: [], groups: [mk('S1', 'L', 1, ['S1/1']), mk('S1/1', 'T', 2), mk('S9/1', 'T', 3)] };
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, pins: ['S1', 'S9/1'], constraints: { split: true } }), true);
+  assert.deepEqual([app.state.pins, app.state.constraints.split], [['S1'], false]);
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, pins: ['S1', 'S1/1'] }), true);
+  assert.deepEqual(app.state.pins, ['S1', 'S1/1'], 'linked pins are kept');
+});
