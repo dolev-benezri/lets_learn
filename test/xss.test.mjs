@@ -362,3 +362,15 @@ test('"המשך" stores the acceptance and redraws', async () => {
   ACT.acceptTerms();
   assert.equal(ls['afeka-sched-v1-terms'], TERMS_VERSION);
 });
+
+test('the disclaimer under the pills links to the counselling page, escaped; without a URL it is plain text', () => {
+  const html = (url) => { app.settings = { ...app.settings, counselingUrl: url }; const n = writes.length; run('view-disclaimer', () => { renderView(); });
+    return writes.slice(n).filter((w) => w.id === 'disclaimer').map((w) => w.html).join(''); };
+  assert.ok(html('').startsWith('אינו הרשמה') && !html('').includes('<a'));
+  const a = parse(html('https://x.test/y?a=1&b="><xss-t>')).querySelectorAll('a');
+  assert.equal(a.length, 1);
+  assert.equal(a[0].getAttribute('href'), 'https://x.test/y?a=1&b="><xss-t>');
+  assert.equal(a[0].getAttribute('rel'), 'noopener');
+  assert.equal(parse(html('https://x.test/"><xss-t>')).querySelectorAll('xss-t').length, 0);
+  app.settings = { ...app.settings, counselingUrl: '' };
+});

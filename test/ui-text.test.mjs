@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -156,4 +156,15 @@ test('compareAlts: the same groups (a year plan whose semester did not change) s
   const x = { courses: ['A'], groups: ['g1', 'g2'], unlocks: 1, freeDays: [], gapH: 1, withFriends: [] };
   assert.deepEqual(compareAlts({ ...x, groups: ['g2', 'g1'] }, x, { courses: { A: { name: 'a' } } }), ['זהה לחלופה 1 בסמסטר הזה']);
   assert.deepEqual(compareAlts({ ...x, courses: [], groups: [] }, { ...x, courses: [], groups: [] }, { courses: {} }), ['זהה לחלופה 1 בסמסטר הזה']);
+});
+
+test('DISCLAIMER is the owner-approved line; disclaimerHtml links "יועץ לימודים" only when a URL is set, escaped', () => {
+  assert.equal(DISCLAIMER, 'אינו הרשמה ואינו המלצה. לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.');
+  assert.equal(disclaimerHtml(''), DISCLAIMER);
+  assert.doesNotMatch(disclaimerHtml(''), /<a/);
+  const h = disclaimerHtml('https://x/y');
+  assert.equal(h.match(/<a /g).length, 1);
+  assert.ok(h.includes('<a href="https://x/y" target="_blank" rel="noopener">יועץ לימודים</a>'));
+  assert.equal(h.replace(/<[^>]+>/g, ''), DISCLAIMER, 'the visible text is the same line');
+  assert.doesNotMatch(disclaimerHtml('https://x/"><b>'), /"><b>/);
 });
