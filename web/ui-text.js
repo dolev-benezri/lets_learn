@@ -1,5 +1,9 @@
 // Pure copy and label helpers for the sidebar, drawers and popover (leaf module: no DOM, no imports, node-testable).
 const D = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
+// The line under every alternative and in every calendar event; "יועץ לימודים" links to the counselling page when settings.json sets one (already https-validated).
+export const DISCLAIMER = 'אינו הרשמה ואינו המלצה. לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.';
+const escAttr = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); // app.js esc(), kept out so this leaf stays import-free
+export const disclaimerHtml = (url) => (url ? DISCLAIMER.replace('יועץ לימודים', `<a href="${escAttr(url)}" target="_blank" rel="noopener">יועץ לימודים</a>`) : DISCLAIMER);
 const typeName = (t) => String(t).replace('סופי-', '');
 
 // "271001601/1" -> "01/1", "270600301" -> "01": the part of a 9-digit Afeka group id a student actually recognises.

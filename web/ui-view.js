@@ -4,7 +4,7 @@ import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
-import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts } from './ui-text.js';
+import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml } from './ui-text.js';
 import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, needsProgram, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -40,7 +40,7 @@ export function renderBanner() {
 }
 
 // ---------- grid area ----------
-const SORT_BY = [['best', 'מומלץ'], ['credits', 'הכי הרבה נ״ז'], ['friends', 'הכי הרבה עם חברים'], ['unlocks', 'פותחת הכי הרבה קורסי המשך']]; // "הצג לפי" (state.sortBy)
+const SORT_BY = [['best', 'מאוזן'], ['credits', 'הכי הרבה נ״ז'], ['friends', 'הכי הרבה עם חברים'], ['unlocks', 'פותחת הכי הרבה קורסי המשך']]; // "הצג לפי" (state.sortBy)
 function colorOrder() {
   const cand = Object.keys(app.data.courses).filter((id) => candidateMode(id));
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
@@ -130,6 +130,7 @@ export function renderView() {
     live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, courseCount(res.courses.length), `${s.credits} נ״ז`, pair
       && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
+  $('disclaimer').innerHTML = res ? disclaimerHtml(app.settings.counselingUrl) : ''; // also the step-4 counselling link
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed: ui.dashed, pins: state.pins, friends, day: ui.mobileDay, blocks: state.constraints.blocks });
   $('daysel').innerHTML = renderDaySelector(range, res, data, ui.mobileDay);
