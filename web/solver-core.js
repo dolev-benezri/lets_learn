@@ -48,8 +48,9 @@ function byLecturer(options, lecturers, byId) {
   const ok = options.filter((o) => who(o) !== 'avoid'), pref = ok.filter((o) => who(o) === 'prefer');
   return pref.length ? pref : ok;
 }
-export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [], lecturers = {} } = {}) {
+export function buildOptions(course, { pins = [], includeFull = false, forbidden = null, friendGroups = [], lecturers = {}, split = false } = {}) {
   const byId = new Map(course.groups.map((g) => [g.id, g])), primaries = course.groups.filter((g) => g.primary);
+  const subGroups = course.groups.filter((g) => !g.primary);
   const options = [];
   // Identical primaries (same type, lecturer, meetings, rooms, links, fullness, friends, pin) are one option;
   // the others are listed as registration alternatives instead of producing duplicate schedules (ISSUES 17א#2).
@@ -73,7 +74,19 @@ export function buildOptions(course, { pins = [], includeFull = false, forbidden
       for (const subs of Object.values(subsByType)) out = out.flatMap((c) => subs.map((s) => [...c, s]));
       return out.flatMap((c) => c.slice(combo.length).reduce((acc, s) => acc.flatMap((cc) => grow(cc, s)), [c]));
     };
-    for (const groups of grow([p], p)) {
+    const combos = grow([p], p).map((c) => [c, false]);
+    if (split) {
+      // Split (opt-in): each sub-group slot a linked combination has may take any sub-group of that type in the course. The college
+      // rule is that a lecture's pace matches its linked tutorial, so only combinations that no link chain builds are new, marked split.
+      const key = (c) => c.map((g) => g.id).sort().join(), seen = new Set(combos.map(([c]) => key(c)));
+      const slots = new Map(combos.map(([c]) => c.slice(1).map((g) => g.type)).map((t) => [t.join('|'), t]));
+      for (const types of slots.values()) {
+        for (const c of types.reduce((acc, t) => acc.flatMap((cc) => subGroups.filter((s) => s.type === t && !cc.includes(s)).map((s) => [...cc, s])), [[p]])) {
+          if (!seen.has(key(c))) { seen.add(key(c)); combos.push([c, true]); }
+        }
+      }
+    }
+    for (const [groups, isSplit] of combos) {
       const ids = groups.map((g) => g.id);
       if (!includeFull && groups.some((g) => g.full && !pins.includes(g.id))) continue;
       const meetings = groups.flatMap((g) => g.meetings.map((m) => ({ ...m, group: g.id })));
@@ -93,6 +106,7 @@ export function buildOptions(course, { pins = [], includeFull = false, forbidden
         allExams: p.exams,
         minutes, sharedMin, sharesWith,
         alts: alts[p.id] ? { [p.id]: alts[p.id] } : {},
+        split: isSplit,
       });
     }
   }
@@ -286,7 +300,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     const mode = pins.some((p) => c.groups.some((g) => g.id === p)) ? 'must' : m; // a pinned group forces its course in
     value[id] = base[id] + (bias[id] ?? 0);
     maxValue += Math.max(0, value[id]);
-    const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers })
+    const options = buildOptions(c, { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers, split: constraints.split })
       .map((o) => ({ ...o, course: id, out: o.meetings.reduce((a, m) => a + outsideMin(m, constraints), 0) }));
     return { id, mode, credits: c.credits, options };
   }).sort((a, b) => a.options.length - b.options.length);
@@ -372,7 +386,7 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     if (same >= 0) { if (score <= top[same].score) return; top.splice(same, 1); }
     top.push({
       score, breakdown: m, groups: sel.flatMap((o) => o.groups), courses: [...chosen], unlocks, explanation: explain(info, unlocks),
-      alts: Object.assign({}, ...sel.map((o) => o.alts)),
+      alts: Object.assign({}, ...sel.map((o) => o.alts)), split: sel.filter((o) => o.split).map((o) => o.course),
       exams: sel.flatMap((o) => o.allExams.map((e) => ({ course: o.course, ...e }))),
     });
     top.sort((a, b) => b.score - a.score);
@@ -416,9 +430,10 @@ export function search({ data, courses, statuses = {}, pins = [], constraints = 
     return { results: [], partial: false, diagnosis: [anyMust ? `תקרת ${cap} בקמפוס קטנה מדי לקורסי החובה. העלו אותה או סמנו פחות קורסים כ"חובה".`
       : `תקרת ${cap} בקמפוס קטנה מדי: כל קורס שבחרתם צריך יותר ימים. העלו אותה.`] };
   }
-  const optionsIf = (id, over) => buildOptions(data.courses[id], { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers, ...over }).length > 0;
+  const optionsIf = (id, over) => buildOptions(data.courses[id], { pins, includeFull: constraints.includeFull, forbidden, friendGroups, lecturers: constraints.lecturers,
+    split: constraints.split, ...over }).length > 0;
   const found = diagnose(items, data, (id) => optionsIf(id, { forbidden: forbiddenBy({ ...constraints, blocks: [] }) }), Object.keys(constraints.lecturers ?? {}).length > 0,
-    (id) => optionsIf(id, { includeFull: true }));
+    (id) => !constraints.split && optionsIf(id, { includeFull: true })); // split on: an unlinked free group is already usable
   return { results: [], partial: false, diagnosis: found.length ? found : [why ? whyNot() : GENERIC] };
 
   // Nothing to blame on one course or one pair: relax one constraint at a time and name the first that alone lets a plan through.
@@ -519,7 +534,7 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
   }
   // search() never returns an empty selection; when nothing is must in א׳, "take nothing in א׳" is a valid year plan.
   const aList = [...seeds, ...ra.results];
-  if (!coursesA.some((c) => c.mode === 'must')) aList.push({ score: 0, breakdown: {}, groups: [], courses: [], unlocks: 0, explanation: '', alts: {}, exams: [] });
+  if (!coursesA.some((c) => c.mode === 'must')) aList.push({ score: 0, breakdown: {}, groups: [], courses: [], unlocks: 0, explanation: '', alts: {}, exams: [], split: [] });
   for (const [i, a] of aList.entries()) {
     if (Date.now() > deadline + timeLimitMs / 2) { partial = true; break; }
     const takenA = new Set(a.courses);
@@ -588,8 +603,22 @@ export function searchYear({ dataA, dataB, state, yearList, pins = [], constrain
       .map((id) => `הנעיצה של ${dataB.courses[id].name} (ב׳) לא נשמרה: הקורס בקבוצה אחרת`);
     return {
       score: a.score + (b?.score ?? 0) + progressFix + LOAD_W * loadScore - missW * missing.length,
-      a, b, credits: { a: ca, b: cb }, missing,
+      a, b, credits: { a: ca, b: cb }, missing, split: [...new Set([...a.split, ...(b?.split ?? [])])],
       warnings: [...(needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : []), ...regrouped],
     };
   }
+}
+
+// What the worker runs: `{ year }` or search() args. Split on: the regular search with 60% of the time, then the split search with 40%;
+// its plans that split a course and are not a regular plan are appended, so a split alternative never ranks above a regular one.
+export function searchAll(msg) {
+  const run = msg.year ? searchYear : search, args = msg.year ?? msg;
+  if (!args.constraints?.split) return run(args);
+  const t = args.timeLimitMs ?? 3000;
+  const reg = run({ ...args, constraints: { ...args.constraints, split: false }, timeLimitMs: t * 0.6 });
+  const sp = run({ ...args, timeLimitMs: t * 0.4 });
+  const key = (r) => JSON.stringify(msg.year ? [[...r.a.groups].sort(), [...(r.b?.groups ?? [])].sort()] : [...r.groups].sort());
+  const regular = new Set(reg.results.map(key));
+  const extra = sp.results.filter((r) => r.split.length && !regular.has(key(r)));
+  return { results: [...reg.results, ...extra], partial: reg.partial || sp.partial, diagnosis: reg.diagnosis };
 }
