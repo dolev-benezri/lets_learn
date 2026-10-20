@@ -99,3 +99,8 @@ test('the shipped settings.json: a clean, factual conflict for each program sect
     }
   }
 });
+
+test('cleanSettings: a supportEmail with mailto separators (, % ? & #) is dropped', () => {
+  for (const bad of ['a@b.c,d@e.f', 'a%40b@c.d', 'a@b.c?cc=x@y.z', 'a@b.c&x=1', 'a@b.c#h', 'a?b@c.d', 'a@b%c.d']) assert.equal(cleanSettings({ supportEmail: bad }).supportEmail, '', bad);
+  assert.equal(cleanSettings({ supportEmail: 'help.me+x@afeka.ac.il' }).supportEmail, 'help.me+x@afeka.ac.il');
+});

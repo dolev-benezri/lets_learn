@@ -38,7 +38,10 @@ export function renderBanner() {
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : []; // with one semester loaded, the other's pins would look gone
   const turn = turnWarning(app.settings.turns, app.state.profile.turn, freshOf(app.data));
   // the remote notice sits above every step (#notice, outside the plans step that holds #banner)
-  $('notice').innerHTML = app.settings.notice ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>` : '';
+  if ($('notice').dataset.text !== app.settings.notice) { // written only on a change: a role=alert region replaced on every refresh is announced again each time
+    $('notice').dataset.text = app.settings.notice;
+    $('notice').innerHTML = app.settings.notice ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>` : '';
+  }
   $('banner').innerHTML = (app.hashError ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
       <button type="button" class="btn icon-btn ghost" data-act="dismissError" aria-label="סגור הודעה">${icon('x')}</button></div>` : '')
     + (turn ? `<div class="banner warn" role="status">${icon('alert')}<span class="grow">${esc(turn)}</span></div>` : '')

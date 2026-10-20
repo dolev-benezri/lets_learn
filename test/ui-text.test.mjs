@@ -242,6 +242,7 @@ test('reportMailto: subject, a body with every field, under 1800 characters even
   assert.equal(q.get('subject'), 'דיווח על טעות במערכת השעות');
   for (const v of Object.values(ctx)) assert.ok(q.get('body').includes(String(v)), `${v} in the body`);
   assert.ok(url.length < 1800);
+  assert.ok(url.includes('%0D%0A') && !q.get('body').replaceAll('\r\n', '').includes('\n'), 'line breaks are CRLF (%0D%0A)');
   const { group, ...noGroup } = ctx;
   assert.ok(!new URLSearchParams(reportMailto('a@b', noGroup).split('?')[1]).get('body').includes('קבוצה'), 'no group line without a group');
   const long = 'ש'.repeat(500), big = reportMailto('a@b', { program: long, startYear: 2026, semester: 'א', group: long, page: long });
