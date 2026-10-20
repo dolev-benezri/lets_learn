@@ -2,6 +2,7 @@
 
 Date: 2026-10-21. Owner's choices from a brainstorm, one question at a time. Each numbered item below becomes one GitHub issue (label `adoption`,
 milestone "לפני הפגישה הבאה"); the tracking issue "מוכנות לאימוץ" links them all, and docs/ISSUES.md section 24 points to it.
+Issues: items 1-14 are #12-#25, 15a #26, 15b #27, 17-19 #28-#30; item 16 has no issue (docs only); tracking #31.
 
 ## Goal
 
