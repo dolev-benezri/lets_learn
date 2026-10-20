@@ -35,8 +35,16 @@ const ENTRY = 'afeka-sched-v1-entry';
 export const entered = () => { try { return localStorage.getItem(ENTRY) === '1'; } catch { return false; } };
 export const markEntered = () => { try { localStorage.setItem(ENTRY, '1'); } catch { /* storage unavailable */ } };
 
+// The terms gate (ui-me.js gateHtml): shown before the first question until accepted; a new TERMS_VERSION asks everyone again.
+// A blocked storage still lets this visit through (the flag), and asks again next visit.
+export const TERMS_VERSION = '1';
+const TERMS = 'afeka-sched-v1-terms';
+let accepted = false;
+export const termsOk = () => { try { if (localStorage.getItem(TERMS) === TERMS_VERSION) return true; } catch { /* storage unavailable */ } return accepted; };
+export const acceptTerms = () => { accepted = true; try { localStorage.setItem(TERMS, TERMS_VERSION); } catch { /* storage unavailable: kept for this visit only */ } };
+
 export const needsProgram = () => !!app.state && !app.state.programSet && app.catalog.programs.length > 1; // a first visit picks the track, none is assumed
-export const gated = () => !!app.state && (!app.state.profile.year || needsProgram()); // planning waits for the study year (credits goal and English depend on it)
+export const gated = () => !!app.state && (!termsOk() || !app.state.profile.year || needsProgram()); // planning waits for the study year (credits goal and English depend on it)
 export const current = () => ui.last?.results[ui.cur] ?? null; // a search result, or a pair in year scope
 export const shown = () => semResult(current(), ui.sem); // what the grid, pills and popover render
 export const shownData = () => (isPair(current()) ? app.sem[ui.sem] : app.data);

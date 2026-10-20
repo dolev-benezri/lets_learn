@@ -36,7 +36,8 @@ globalThis.history = { replaceState() {} };
 globalThis.location = { hash: '', origin: 'https://x', pathname: '/' };
 
 const { app, normalize, refresh, yearCourses } = app_;
-const { ui, current } = await import('../web/ui-common.js');
+const { ui, current, TERMS_VERSION, termsOk, acceptTerms } = await import('../web/ui-common.js');
+ls['afeka-sched-v1-terms'] = TERMS_VERSION; // the terms were accepted: the renders below get the track question and the pages
 const { renderTop, renderBanner, renderView, showAlt } = await import('../web/ui-view.js');
 const { renderMe, identityPick } = await import('../web/ui-me.js');
 const { renderSide, coursesSummary } = await import('../web/ui-side.js');
@@ -316,4 +317,46 @@ test('step 1 asks for the grade sheet before the course list', () => {
   assert.ok(tagged.innerHTML.includes('פטור') && !tagged.querySelector('.grade'));
   app.state.exempt = [];
   document.body.dataset.view = 'plan';
+});
+
+test('the terms come before the first question', async () => {
+  const me = (s, fn) => { fn(); run(s, () => { renderMe(); }); return writes.filter((w) => w.scope === s && w.id === 'me').at(-1).html; };
+  const programSet = app.state.programSet;
+  fake('me').hidden = false;
+  document.body.dataset.view = 'me';
+  const terms = (html) => {
+    const root = parse(html);
+    assert.ok(html.includes('לפני שמתחילים') && !html.includes('מה המסלול שלך?') && !html.includes('<xss-t>'));
+    for (const s of ['זה כלי עזר לתכנון בלבד. הוא לא רושם אתכם לקורסים: ההרשמה נעשית רק באפקה-נט.', 'החלופות שהכלי מציג הן אפשרויות, לא המלצה.',
+      'לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים, במיוחד בכל חריגה מהמערכת המומלצת של המחלקה.', 'קראתי והבנתי']) assert.ok(html.includes(s), s);
+    assert.equal(root.querySelectorAll('input[type="checkbox"][data-chg="termsTick"]').length, 1);
+    assert.ok(root.querySelector('button[data-act="acceptTerms"]').hasAttribute('disabled'));
+    assert.equal(root.querySelector('button[data-act="acceptTerms"]').text.trim(), 'המשך');
+    assert.ok(root.querySelector('a[href="legal.html#terms"]') && root.querySelector('a[href="legal.html#scope"]'));
+  };
+  terms(me('terms-none', () => { delete ls['afeka-sched-v1-terms']; app.state.programSet = false; }));
+  terms(me('terms-old', () => { ls['afeka-sched-v1-terms'] = '0'; }));
+  terms(me('terms-year', () => { ls['afeka-sched-v1-terms'] = '0'; app.state.programSet = true; })); // the year question waits too
+  assert.ok(me('terms-ok', () => { ls['afeka-sched-v1-terms'] = TERMS_VERSION; app.state.programSet = false; }).includes('מה המסלול שלך?'));
+  app.state.programSet = programSet; document.body.dataset.view = 'plan';
+
+  const { CHG } = await import('../web/ui-actions.js'); // the tick enables the button without a re-render
+  const btn = { disabled: true }, box = { checked: true, closest: () => ({ querySelector: () => btn }) };
+  assert.equal(CHG.termsTick(box), 'none'); assert.equal(btn.disabled, false);
+  box.checked = false; CHG.termsTick(box); assert.equal(btn.disabled, true);
+});
+
+test('storage that throws still lets the visitor through for this visit', () => {
+  const real = globalThis.localStorage, saved = { ...ls };
+  delete ls['afeka-sched-v1-terms'];
+  const boom = () => { throw new Error('blocked'); };
+  globalThis.localStorage = { getItem: boom, setItem: boom, removeItem: boom };
+  try { assert.equal(termsOk(), false); acceptTerms(); assert.equal(termsOk(), true); } finally { globalThis.localStorage = real; Object.assign(ls, saved); }
+});
+
+test('"המשך" stores the acceptance and redraws', async () => {
+  const { ACT } = await import('../web/ui-actions.js');
+  delete ls['afeka-sched-v1-terms'];
+  ACT.acceptTerms();
+  assert.equal(ls['afeka-sched-v1-terms'], TERMS_VERSION);
 });
