@@ -107,6 +107,11 @@ run('map', () => {
 });
 run('map-mini', () => { writes.push({ scope: 'map-mini', id: 'mini', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true }) });
   writes.push({ scope: 'map-mini', id: 'mini-ab', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true, abbr: true }) }); });
+const { ACT } = await import('../web/ui-actions.js');
+let printed = 0, afterprint = null;
+Object.assign(globalThis, { print: () => { printed++; }, addEventListener: (t, fn) => { if (t === 'afterprint') afterprint = fn; } });
+document.body.classList = { _s: new Set(), add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); }, toggle() {}, contains(c) { return this._s.has(c); } };
+run('advisor', () => { ACT.advisor(); });
 run('friend-editor', () => { openFriendEditor({ friend: app.state.friends[0], onSave: () => null, returnFocusId: 'x' }); });
 
 test('the search found plans, so the board and the registration list render real data', () => {
@@ -114,7 +119,7 @@ test('the search found plans, so the board and the registration list render real
 });
 
 test('every renderer got the payload and wrote it escaped (no element or on* attribute created from data)', () => {
-  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'prefs-page', 'drawer-reg', 'courses-top', 'pop', 'map', 'map-mini', 'friend-editor'];
+  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'prefs-page', 'drawer-reg', 'courses-top', 'pop', 'map', 'map-mini', 'friend-editor', 'advisor'];
   for (const s of scopes) {
     const mine = writes.filter((w) => w.scope === s);
     assert.ok(mine.length, `${s}: nothing written`);
@@ -391,4 +396,19 @@ test('a split alternative says so: the note on top of the week, the course names
   ui.last = { ...ui.last, results: real };
   renderView();
   assert.ok(!els.altLabel.textContent.includes('מופרדת') && !els.week.innerHTML.includes('הפרדת הרצאה ותרגול'));
+});
+
+test('the advisor summary fills #print, prints it alone and puts the page back after printing', () => {
+  const body = document.body.classList;
+  assert.equal(printed, 1);
+  assert.ok(fake('print').hidden === false && body.contains('print-summary') && fake('print').innerHTML.includes('סיכום לפגישה עם יועץ לימודים'));
+  afterprint();
+  assert.ok(fake('print').hidden === true && !body.contains('print-summary'));
+});
+
+test('the footer links to the counselling page only when settings give one (escaped by the DOM, https-validated upstream)', () => {
+  const link = (url) => { app.settings = { ...app.settings, counselingUrl: url }; renderTop(); return [fake('counsel').hidden, fake('counselLink').href]; };
+  assert.deepEqual(link(''), [true, fake('counselLink').href]);
+  assert.deepEqual(link('https://x.test/y'), [false, 'https://x.test/y']);
+  app.settings = { ...app.settings, counselingUrl: '' };
 });

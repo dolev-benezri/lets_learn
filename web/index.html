@@ -45,6 +45,7 @@
   <div class="actions">
     <button type="button" class="btn" data-act="openMap" data-k="openMap" data-icon="map" aria-haspopup="dialog" title="מפה"><span class="lbl">מפה</span></button>
     <button type="button" class="btn" data-act="panel" data-panel="reg" data-icon="clipboard-list" aria-haspopup="dialog" title="רשימה להרשמה"><span class="lbl">רשימה להרשמה</span></button>
+    <button type="button" id="advisorBtn" class="btn" data-act="advisor" data-icon="file" title="סיכום ליועץ"><span class="lbl">סיכום ליועץ</span></button>
     <button type="button" class="btn primary" data-act="share" data-icon="share" title="שתף"><span class="lbl">שתף</span></button>
   </div>
 </header>
@@ -84,8 +85,10 @@
 <footer class="site-foot">
   <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.</p>
 <p><a href="legal.html#terms">תנאי שימוש</a> · <a href="legal.html#privacy">פרטיות ועוגיות</a> · <a href="legal.html#accessibility">הצהרת נגישות</a> · <a
-    href="https://github.com/dolev-benezri/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a></p>
+    href="https://github.com/dolev-benezri/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a><span id="counsel" hidden> · <a
+    id="counselLink" target="_blank" rel="noopener">הכוון אקדמי</a></span></p>
 </footer>
+<section id="print" aria-label="סיכום לפגישה עם יועץ לימודים" hidden></section><!-- filled and printed by ACT.advisor; screen: never shown (style.css) -->
 <dialog id="drawer" class="drawer" aria-labelledby="drawerTitle"></dialog>
 <dialog id="friendEd" class="dlg-full" aria-labelledby="feTitle"></dialog>
 <div id="pop" class="pop" popover role="dialog"></div>
