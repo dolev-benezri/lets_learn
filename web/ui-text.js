@@ -122,3 +122,21 @@ export function hebYear(gregorian) {
   out = out.replace('יה', 'טו').replace('יו', 'טז');
   return out.length > 1 ? `${out.slice(0, -1)}״${out.slice(-1)}` : `${out}׳`;
 }
+
+// How fresh one group's seat count is: "מלא · נכון ל-08:08". A group may carry its own fetchedAt and seatsLeft (an official feed); the data file's time is the fallback.
+// Times are instants shown in Israel time, 24h, whatever offset the ISO string was written with.
+const HHMM = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const instant = (iso) => { const t = typeof iso === 'string' ? new Date(iso) : null; return t && !Number.isNaN(t.getTime()) ? t : null; };
+export function groupFresh(g, fileFetchedAt) {
+  const left = Number.isInteger(g.seatsLeft) && g.seatsLeft >= 0 ? g.seatsLeft : null;
+  const state = g.full ? 'מלא' : left === null ? 'פנוי' : left === 1 ? 'נשאר מקום אחד' : `נשארו ${left} מקומות`;
+  const t = instant(g.fetchedAt) ?? instant(fileFetchedAt);
+  return t ? `${state} · נכון ל-${HHMM.format(t)}` : state;
+}
+
+// The warning before my registration turn: my turn has opened, but the data was fetched before it did (seats may have gone since).
+export const TURN_WARNING = 'שימו לב: הנתונים נמשכו לפני פתיחת התור שלך. ייתכנו שינויים במקומות הפנויים.';
+export function turnWarning(turns, turnId, fetchedAt, now = new Date()) {
+  const opens = instant(turns?.find((t) => t.id === turnId)?.opensAt), fetched = instant(fetchedAt);
+  return opens && fetched && fetched < opens && now >= opens ? TURN_WARNING : null;
+}

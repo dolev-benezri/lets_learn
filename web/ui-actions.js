@@ -236,6 +236,11 @@ export const CHG = {
     if (err) toast(err);
     app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet;
   },
+  turn: (el) => { // a turn id of settings.json, or '' (לא יודע/ת)
+    app.state.profile = cleanProfile({ ...app.state.profile, turn: el.value });
+    renderBanner();
+    return 'save';
+  },
   specMode: (el) => {
     const mode = el.value, picks = mode === 'pick' ? specView(app.data, app.state.profile.specs).picks : [];
     ui.specPick = { mode, picks };
