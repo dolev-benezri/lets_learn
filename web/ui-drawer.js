@@ -50,14 +50,15 @@ function prefsPanel() {
       <label class="field">לכל היותר ימים בקמפוס <select data-chg="maxDays" data-k="maxDays">${['', 1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}"${(c.maxDays ?? '')
         === n ? ' selected' : ''}>${n || 'ללא'}</option>`).join('')}</select></label>
       <label class="check"><input type="checkbox" data-chg="examsAllow" data-k="examsAllow"${c.examsSameDay === 'allow' ? ' checked' : ''}> לאפשר 2 בחינות באותו יום</label>
-      <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label></section>
+      <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label>
+      <label class="check"><input type="checkbox" data-chg="split" data-k="split"${c.split ? ' checked' : ''}> להציג גם הרצאה ותרגול מופרדים</label></section>
     ${state.pins.length ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length === 1 ? 'קבוצה אחת נעוצה' : `${state.pins.length} קבוצות נעוצות`}:</p><ul
       class="plain">${state.pins.map((p) => `<li>${pinName(p)}</li>`).join('')}</ul>
       <button type="button" class="btn" data-act="clearPins" data-k="clearPins">${icon('pin')} נקה נעיצות</button></section>` : ''}
     <section class="dr-sec"><button type="button" class="btn" data-act="resetPrefs" data-k="resetPrefs">איפוס העדפות</button>
       <p
         class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות,
-        תקרת הנ״ז, בחינות באותו יום וקבוצות מלאות לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.</p></section>
+        תקרת הנ״ז, בחינות באותו יום, קבוצות מלאות והפרדת הרצאה ותרגול לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.</p></section>
     <footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
       <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`;
 }

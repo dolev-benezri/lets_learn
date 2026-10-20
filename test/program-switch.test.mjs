@@ -367,3 +367,10 @@ test('applyHash: a backup whose data fails to load says so even when a load noti
     assert.match(app.hashError ?? '', /לא הצלחנו לטעון/);
   } finally { Object.assign(globalThis, g); app.hashError = null; }
 });
+
+test('restoreBackup: a backup link cannot switch the split option on (it needs the visitor confirming it in the page)', async () => {
+  serve(); reset(mine());
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, constraints: { split: true, includeFull: true } }), true);
+  assert.equal(app.state.constraints.split, false);
+  assert.equal(app.state.constraints.includeFull, true, 'the other constraints come through as before');
+});

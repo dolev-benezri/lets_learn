@@ -72,13 +72,14 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
   if (el && !el.disabled && ACT[el.dataset.act]) ACT[el.dataset.act](el, e);
 });
-document.addEventListener('change', (e) => {
+document.addEventListener('change', async (e) => {
   const f = CHG[e.target.dataset.chg];
   if (!f) return;
   const shown = (el) => (el.checkVisibility ? el.checkVisibility() : !!el.offsetParent); // closed <details> use content-visibility
   const visibleCards = () => [...$('side').querySelectorAll('.course')].filter(shown);
   const idx = visibleCards().indexOf(e.target.closest('.course'));
-  const how = f(e.target);
+  let how = f(e.target);
+  if (how?.then) how = await how; // CHG.split waits for its confirm dialog
   if (how === 'none') return; // nothing to redraw (the gate's tick only enables its button)
   if (how === 'view') keepFocus(renderView);
   else if (how === 'save') save();

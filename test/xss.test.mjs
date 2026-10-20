@@ -374,3 +374,21 @@ test('the disclaimer under the pills links to the counselling page, escaped; wit
   assert.equal(parse(html('https://x.test/"><xss-t>')).querySelectorAll('xss-t').length, 0);
   app.settings = { ...app.settings, counselingUrl: '' };
 });
+
+test('a split alternative says so: the note on top of the week, the course names in the info line (escaped), the label', () => {
+  const r = ui.last.results[0], id = resCourses(r)[0], name = (app.sem['א'].courses[id] ?? app.sem['ב'].courses[id]).name;
+  const real = ui.last.results;
+  ui.last = { ...ui.last, results: [{ ...r, split: [id] }, ...real.slice(1)] };
+  const n = writes.length;
+  run('view-split', () => { renderView(); });
+  const html = writes.slice(n).map((w) => w.html).join('');
+  const week = parse(writes.slice(n).filter((w) => w.id === 'week').map((w) => w.html).join(''));
+  assert.ok(week.querySelector('.notice').text.includes('חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)'));
+  const line = week.querySelectorAll('.split-line').map((p) => p.text).join('|');
+  assert.ok(line.includes('מופרדים: ') && line.includes('· דורש אישור ההכוון') && line.includes(name), line);
+  assert.ok(html.includes('&lt;xss-t&gt;') && parse(html).querySelectorAll('xss-t').length === 0);
+  assert.match(els.altLabel.textContent, / · מופרדת$/);
+  ui.last = { ...ui.last, results: real };
+  renderView();
+  assert.ok(!els.altLabel.textContent.includes('מופרדת') && !els.week.innerHTML.includes('הפרדת הרצאה ותרגול'));
+});

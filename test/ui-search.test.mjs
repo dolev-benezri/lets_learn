@@ -69,3 +69,30 @@ test('summer is a third tab of the year (issue 10): קיץ plans the summer, א�
   app.state.profile.summer = false;
   assert.deepEqual(semTabs().map(([v]) => v), ['א', 'ב']);
 });
+
+test('CHG.split: ticking asks first and a cancel unticks the box; unticking asks nothing; the search carries constraints.split', async () => {
+  app.state = normalize({ v: 1 });
+  Object.assign(app.state.profile, { year: 1 });
+  app.state.scope = 'א';
+  const asked = [];
+  globalThis.confirm = (t) => { asked.push(t); return false; };
+  const box = { checked: true };
+  assert.equal(await CHG.split(box), 'none', 'cancelled: nothing to redraw');
+  assert.deepEqual([box.checked, app.state.constraints.split, asked.length], [false, false, 1]);
+  assert.match(asked[0], /הפרדה בין הרצאה לתרגול עלולה ליצור פער/);
+  assert.match(asked[0], /רק באישור ההכוון האקדמי\.$/);
+  globalThis.confirm = () => true;
+  box.checked = true;
+  assert.notEqual(await CHG.split(box), 'none');
+  assert.deepEqual([box.checked, app.state.constraints.split], [true, true]);
+  refresh();
+  scheduleRun();
+  await started();
+  assert.equal(made.at(-1).sent.constraints.split, true);
+  globalThis.confirm = () => { throw new Error('unticking must not ask'); };
+  box.checked = false;
+  await CHG.split(box);
+  assert.equal(app.state.constraints.split, false);
+  delete globalThis.confirm;
+  clearTimeout(ui.timer);
+});
