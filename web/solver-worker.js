@@ -1,3 +1,3 @@
-import { search, searchYear } from './solver-core.js';
+import { searchAll } from './solver-core.js';
 
-self.onmessage = (e) => self.postMessage(e.data.year ? searchYear(e.data.year) : search(e.data));
+self.onmessage = (e) => self.postMessage(searchAll(e.data));
