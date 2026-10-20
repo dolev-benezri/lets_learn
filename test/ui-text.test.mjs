@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml, esc, groupFresh, turnWarning } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml, esc, groupFresh, turnWarning, freshAt } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -199,4 +199,25 @@ test('turnWarning: only when the data predates my turn and the turn has opened (
   assert.equal(turnWarning(turns, 'b', '2026-11-02T05:59:00Z', new Date('2026-11-02T06:00:00Z')), MSG);
   assert.equal(turnWarning(turns, 'a', '2026-11-01T08:30:00+03:00', after), MSG); // +03:00 is 05:30Z
   assert.equal(turnWarning(turns, 'a', undefined, after), null); // no fetch time: nothing to compare
+});
+
+test('groupFresh: no seats left means full', () => {
+  assert.equal(groupFresh({ full: false, seatsLeft: 0 }, '2026-10-16T05:08:00Z'), 'מלא · נכון ל-08:08');
+});
+
+test('freshAt: the later of the data change and the last good check that covers this semester', () => {
+  const data = { year: 2027, semester: 'א', program: 30, startYear: 2026, fetchedAt: '2026-10-16T18:08:48.356Z' };
+  const status = (o = {}) => ({ checkedAt: '2026-10-20T04:00:00Z', ok: true, semesters: { '2027-1/30-2026': { hash: 'h', changedAt: 'x' } }, ...o });
+  assert.equal(freshAt(data, status()), '2026-10-20T04:00:00Z'); // a check after the change
+  assert.equal(freshAt(data, status({ checkedAt: '2026-10-10T04:00:00Z' })), data.fetchedAt); // a check before the change
+  assert.equal(freshAt(data, status({ ok: false })), data.fetchedAt);
+  assert.equal(freshAt(data, null), data.fetchedAt);
+  assert.equal(freshAt(data, {}), data.fetchedAt);
+  assert.equal(freshAt(data, status({ semesters: { '2027-2/30-2026': {} } })), data.fetchedAt); // another semester only
+  assert.equal(freshAt(data, status({ semesters: { '2027-1/20-2026': {} } })), data.fetchedAt); // another program only
+  assert.equal(freshAt({ ...data, semester: 'ב' }, status({ semesters: { '2027-2/30-2026': {} } })), '2026-10-20T04:00:00Z');
+  assert.equal(freshAt(data, status({ checkedAt: '2026-10-20T07:00:00+03:00' })), '2026-10-20T07:00:00+03:00'); // instants, not strings
+  assert.equal(freshAt(data, status({ checkedAt: 'soon' })), data.fetchedAt);
+  assert.equal(freshAt({ ...data, fetchedAt: undefined }, status()), '2026-10-20T04:00:00Z');
+  assert.equal(freshAt({ ...data, fetchedAt: undefined }, null), undefined);
 });

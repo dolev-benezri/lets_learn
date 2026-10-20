@@ -127,9 +127,17 @@ export function hebYear(gregorian) {
 // Times are instants shown in Israel time, 24h, whatever offset the ISO string was written with.
 const HHMM = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const instant = (iso) => { const t = typeof iso === 'string' ? new Date(iso) : null; return t && !Number.isNaN(t.getTime()) ? t : null; };
+// The instant a data file is known to be current: its last change (fetchedAt), or a later successful check by the scraper (status.json: checkedAt, ok, semesters)
+// that covers this file. A failed, missing or unrelated check says nothing, so fetchedAt stays. Returns the original ISO string, or undefined.
+const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
+export function freshAt(data, status) {
+  const covered = status?.ok === true && !!status.semesters?.[`${data.year}-${SEM_CODE[data.semester]}/${data.program}-${data.startYear}`];
+  const change = instant(data.fetchedAt), check = covered ? instant(status.checkedAt) : null;
+  return check && (!change || check > change) ? status.checkedAt : change ? data.fetchedAt : undefined;
+}
 export function groupFresh(g, fileFetchedAt) {
   const left = Number.isInteger(g.seatsLeft) && g.seatsLeft >= 0 ? g.seatsLeft : null;
-  const state = g.full ? 'מלא' : left === null ? 'פנוי' : left === 1 ? 'נשאר מקום אחד' : `נשארו ${left} מקומות`;
+  const state = g.full || left === 0 ? 'מלא' : left === null ? 'פנוי' : left === 1 ? 'נשאר מקום אחד' : `נשארו ${left} מקומות`;
   const t = instant(g.fetchedAt) ?? instant(fileFetchedAt);
   return t ? `${state} · נכון ל-${HHMM.format(t)}` : state;
 }

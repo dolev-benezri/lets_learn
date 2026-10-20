@@ -1,5 +1,5 @@
 // The preferences page (step 3: preferences and friends) and the registration drawer.
-import { app, esc, DEFAULT } from './app.js';
+import { app, esc, freshOf, DEFAULT } from './app.js';
 import { SEMESTER_DATES } from './ics.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, backups, isPair, semResult } from './ui-grid.js';
 import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount } from './ui-text.js';
@@ -118,7 +118,7 @@ function regPanel() {
     return `<li class="c${colors.get(cid) ?? 7}"><span class="dot" aria-hidden="true"></span><div class="grow"><b>${esc(c.name)}</b>
       <span class="hint">${esc(cid)} · <span class="nw">${c.credits} נ״ז</span></span>
       <p>${gs.map((g) => `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
-        <span class="hint">(${esc(groupFresh(g, data.fetchedAt))})</span>${res.alts?.[g.id] ? ` <span class="hint">(או <bdi
+        <span class="hint">(${esc(groupFresh(g, freshOf(data)))})</span>${res.alts?.[g.id] ? ` <span class="hint">(או <bdi
         dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>` : ''}${backups(data, res, g.id).length ? ` <span class="hint">(גיבוי: <bdi
         dir="ltr">${backups(data, res, g.id).map(esc).join(', ')}</bdi>)</span>` : ''}`).join(' · ')}</p></div>
       <a class="btn icon-btn ghost" href="${yedion(cid)}" target="_blank" rel="noopener" aria-label="${esc(c.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></li>`;

@@ -1,7 +1,7 @@
 import { classify, withAfterA, cleanProfile, studyYear, yearsOf, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
-import { esc } from './ui-text.js';
+import { esc, freshAt } from './ui-text.js';
 import { pinsWithoutSplit } from './solver-core.js';
 import { cleanSettings, SETTINGS_DEFAULT } from './settings.js';
 
@@ -161,6 +161,11 @@ export function pickData() {
   const { א: A, ב: B } = app.sem, scope = app.state.scope;
   app.data = summerScope() ? app.sem['קיץ'] : scope === 'year' && B ? { ...yearView(A, B), fetchedAt: A.fetchedAt, examsPublished: A.examsPublished } : (scope === 'ב' && B ? B : A);
 }
+// When the shown data was last known to be current (ui-text.js freshAt). The year view spans two files: the older of the two, so a warning is never missed.
+export const freshOf = (data) => {
+  const files = data.semester === 'שנה' ? [app.sem?.['א'], app.sem?.['ב']].filter(Boolean) : [data];
+  return files.map((d) => freshAt(d, app.status)).filter(Boolean).sort((a, b) => new Date(a) - new Date(b))[0];
+};
 // Summer is planned after the school year: on only when the profile asks for it and the summer file loaded.
 export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ']);
 export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
@@ -260,7 +265,7 @@ const withPersonal = (to, from) => {
   to.scope = 'year';
   to.profile.amirnet = from.profile.amirnet;
   to.profile.summer = from.profile.summer;
-  if (from.profile.turn) to.profile.turn = from.profile.turn;
+  if (from.profile.turn) to.profile.turn = from.profile.turn; else delete to.profile.turn; // a cleared turn must not come back from the stash
   return to;
 };
 // Evening tracks: a day student is not asked to come before 16:00, so the default hours differ. They follow the track only while the student has not changed them.
