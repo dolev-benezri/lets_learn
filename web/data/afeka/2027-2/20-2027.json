@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-16T18:08:48.356Z",
+ "fetchedAt": "2026-10-21T18:13:53.421Z",
  "year": 2027,
  "startYear": 2027,
  "program": 20,
@@ -184,8 +184,7 @@
     "20379",
     "20380",
     "20381",
-    "20386",
-    "20387"
+    "20386"
    ]
   },
   {
@@ -432,7 +431,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -450,7 +449,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -522,7 +521,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -881,7 +880,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בלל יעל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "272011503/1"
@@ -939,7 +938,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר בלל יעל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1312,7 +1311,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר עמר ניסים",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272012205/1"
@@ -1373,7 +1372,7 @@
      "id": "272012204/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "גב' אורן ירדן",
+     "lecturer": "גב' ארן ירדן",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -1391,8 +1390,8 @@
      "id": "272012205/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "גב' אורן ירדן",
-     "full": false,
+     "lecturer": "גב' ארן ירדן",
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1703,7 +1702,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר גבאי יוסף",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1810,7 +1809,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' לפידות יצחק",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272012703/1"
@@ -1892,7 +1891,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "פרופ' לפידות יצחק",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2246,7 +2245,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר חצקלביץ רון חיים",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3811,7 +3810,7 @@
      "id": "272032602",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "ד\"ר בלל יעל, גב' ליבסטר אירנה",
+     "lecturer": "ד\"ר בלל יעל,, גב' ליבסטר אירנה",
      "full": false,
      "semester": "ב",
      "linked": [],
@@ -3829,8 +3828,26 @@
      "id": "272032603",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "ד\"ר בלל יעל, גב' ליבסטר אירנה",
+     "lecturer": "ד\"ר בלל יעל,, גב' ליבסטר אירנה",
      "full": true,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "17:00",
+       "end": "19:50",
+       "room": "354 מעב' אלקט'/תקשורת"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "272032604",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "ד\"ר בלל יעל,, גב' ליבסטר אירנה",
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4022,7 +4039,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר נח יואב",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4442,7 +4459,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' ליבסטר אירנה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272036301/1"
@@ -4462,7 +4479,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' ליבסטר אירנה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4875,7 +4892,7 @@
      "id": "272037701",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
+     "lecturer": "מר ארנפלד יוסף, גב' ארן ירדן",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -4893,7 +4910,7 @@
      "id": "272037702",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
+     "lecturer": "מר ארנפלד יוסף, גב' ארן ירדן",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -4912,7 +4929,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "ד\"ר עמר ניסים, מר ארנפלד יוסף",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4929,8 +4946,8 @@
      "id": "272037704",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
-     "full": true,
+     "lecturer": "מר ארנפלד יוסף, גב' ארן ירדן",
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4947,7 +4964,7 @@
      "id": "272037705",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר ארנפלד יוסף, גב' אורן ירדן",
+     "lecturer": "מר ארנפלד יוסף, גב' ארן ירדן",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -5334,7 +5351,7 @@
      "id": "272041103",
      "type": "סופי-הרצאה",
      "primary": true,
-     "lecturer": "ד\"ר עמר ניסים",
+     "lecturer": "",
      "full": false,
      "semester": "ב",
      "linked": [],
@@ -6193,7 +6210,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090215/1",
@@ -6300,7 +6317,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שלום תמיר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090219/1",
@@ -6631,7 +6648,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6739,7 +6756,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7191,7 +7208,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר עצמון ישעיהו",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090311/1"
@@ -7424,7 +7441,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אולבינסקי אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7576,7 +7593,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090404/1",
@@ -7603,7 +7620,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר דינאי יהודה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090413/1"
@@ -7647,7 +7664,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' בלובשטיין הראל אילנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7719,7 +7736,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אולבינסקי אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7755,7 +7772,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אבישר עמיחי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7898,7 +7915,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר וקסמן עזרא",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091117/1"
@@ -7958,7 +7975,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר טטרואשוילי לובה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091120/1"
@@ -8128,7 +8145,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8182,7 +8199,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8421,7 +8438,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091411/1"
@@ -8441,7 +8458,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091412/1"
@@ -8461,7 +8478,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091413/1"
@@ -8647,7 +8664,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8665,7 +8682,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8683,7 +8700,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' זלקמן סמירין אולגה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9206,7 +9223,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בן סימון גבריאל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091706/1"
@@ -9226,7 +9243,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9261,8 +9278,8 @@
      "id": "279091801",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר חסנוב אולג, מר אמבר עמית אדם",
-     "full": false,
+     "lecturer": "מר חסנוב אולג,, מר אמבר עמית אדם",
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9279,7 +9296,7 @@
      "id": "279091802",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר אמבר עמית אדם, גב' ארזי שחם תמר",
+     "lecturer": "מר אמבר עמית אדם,, גב' ארזי שחם תמר",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -9297,7 +9314,7 @@
      "id": "279091803",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר אמבר עמית אדם, גב' ארזי שחם תמר",
+     "lecturer": "מר אמבר עמית אדם,, גב' ארזי שחם תמר",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -9315,7 +9332,7 @@
      "id": "279091804",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר אמבר עמית אדם, מר חסנוב אולג",
+     "lecturer": "מר אמבר עמית אדם,, מר חסנוב אולג",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -9333,7 +9350,7 @@
      "id": "279091805",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר אולבינסקי אלכסנדר, מר אבישר עמיחי",
+     "lecturer": "מר אולבינסקי אלכסנדר,, מר אבישר עמיחי",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -9351,7 +9368,7 @@
      "id": "279091806",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר אבישר עמיחי, מר שפירא יובל",
+     "lecturer": "מר אבישר עמיחי,, מר שפירא יובל",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -9369,7 +9386,7 @@
      "id": "279091807",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר אמבר עמית אדם, מר חסנוב אולג",
+     "lecturer": "מר אמבר עמית אדם,, מר חסנוב אולג",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -9387,7 +9404,7 @@
      "id": "279091820",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "מר אלקיים רמי, גב' אליהו דנה",
+     "lecturer": "מר אלקיים רמי,, גב' אליהו דנה",
      "full": false,
      "semester": "ב",
      "linked": [],
@@ -9405,7 +9422,7 @@
      "id": "279091821",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "גב' אליהו דנה, מר אולבינסקי אלכסנדר",
+     "lecturer": "גב' אליהו דנה,, מר אולבינסקי אלכסנדר",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -9520,7 +9537,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' פישלוב דליה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279092504/1"
@@ -9674,7 +9691,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' נמירובסקי אירינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

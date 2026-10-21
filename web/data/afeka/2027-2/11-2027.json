@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-16T18:08:48.356Z",
+ "fetchedAt": "2026-10-21T18:13:53.421Z",
  "year": 2027,
  "startYear": 2027,
  "program": 11,
@@ -311,7 +311,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -329,7 +329,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -401,7 +401,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -912,7 +912,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' מרינוב עדי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271001615/1"
@@ -988,7 +988,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' מרינוב עדי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2092,7 +2092,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בוסני רם",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "271014508/1"
@@ -2190,7 +2190,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר בוסני רם",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4129,7 +4129,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271032401/1"
@@ -4189,7 +4189,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שלומי פיני",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6189,7 +6189,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090215/1",
@@ -6296,7 +6296,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שלום תמיר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090219/1",
@@ -6627,7 +6627,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6735,7 +6735,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7130,7 +7130,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר וקסמן עזרא",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091117/1"
@@ -7190,7 +7190,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר טטרואשוילי לובה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091120/1"
@@ -7360,7 +7360,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7414,7 +7414,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
