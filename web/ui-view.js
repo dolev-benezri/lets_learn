@@ -1,10 +1,11 @@
 // The builder board: top bar, banners, the shown alternative (pills, notices, week grid) and the alternative switcher.
 import { app, esc, freshOf, save, refresh, candidateMode, keepFocus, summerOn, summerScope, waitingOnEarlier } from './app.js';
 import { progress, studyYear } from './rules.js';
+import { approvedOn } from './settings.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
   semResult, resCourses, resGroups, yearTotals, reportHref } from './ui-grid.js';
-import { freshness, turnWarning, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml, SPLIT_NOTE, splitLine } from './ui-text.js';
+import { approvedText, freshness, turnWarning, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml, SPLIT_NOTE, splitLine } from './ui-text.js';
 import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, needsProgram, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -21,12 +22,13 @@ export function renderTop() {
   const progs = app.catalog.programs, prog = progs.length > 1 && !needsProgram() ? progs.find((p) => p.id === app.data.program)?.name : null; // named only when there is a choice and it was made
   $('title').innerHTML = `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
-  const f = freshness(app.status, app.data.fetchedAt);
+  const f = freshness(app.status, app.data.fetchedAt), approved = approvedOn(app.settings, app.data.program, app.data.startYear);
   $('counsel').hidden = !app.settings.counselingUrl; // the footer link to the counselling page, only when settings.json gives one
   if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
   renderReport();
   $('meta').innerHTML = (f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text))
-    + (app.data.verified === false ? ' · הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.' : '');
+    + (approved ? ` · ${esc(approvedText(approved))}`
+      : app.data.verified === false ? ' · <span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>' : '');
 }
 
 export function renderBanner() {

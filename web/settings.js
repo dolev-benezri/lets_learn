@@ -58,3 +58,9 @@ export function cleanSettings(raw) {
     programs: cleanPrograms(raw.programs),
   };
 }
+
+// The day (YYYY-MM-DD) a department approved the rules of one program and cohort (settings.json programs[id].approved), else null. Takes cleaned settings.
+export function approvedOn(settings, program, startYear) {
+  const p = Object.hasOwn(settings?.programs ?? {}, program) ? settings.programs[program] : null;
+  return p?.approved && Object.hasOwn(p.approved, startYear) ? p.approved[startYear] : null;
+}
