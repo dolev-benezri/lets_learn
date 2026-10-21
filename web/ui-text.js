@@ -159,6 +159,9 @@ export function conflictsFor(settings, program, startYear) {
   return (list ?? []).filter((c) => c.cohorts.includes(startYear)).map((c) => c.text);
 }
 
+// "אושר על ידי המחלקה, 5.10.2026": the department's sign-off (settings.json programs[id].approved) with the day as D.M.YYYY, like the legal page.
+export const approvedText = (day) => `אושר על ידי המחלקה, ${day.split('-').reverse().map(Number).join('.')}`;
+
 // "דיווח על טעות": a mailto with the subject and a body the tool fills (ctx: program, startYear, semester, group?, page).
 // The address goes through encodeURIComponent (so "?", "&", "," and "#" in it cannot add a header or a recipient), keeping only "@".
 // Each field is clipped to 40 characters: a Hebrew letter is 6 characters once encoded, and mail apps drop links over ~2000.

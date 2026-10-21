@@ -5,7 +5,8 @@ import { icon } from './ui-grid.js';
 import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
-import { creditsGoal, courseCount, conflictsFor } from './ui-text.js';
+import { approvedOn } from './settings.js';
+import { creditsGoal, courseCount, conflictsFor, approvedText } from './ui-text.js';
 import { STATUS, FAILS, YEARS, termsOk, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
@@ -110,7 +111,9 @@ export function renderMe() {
   if (el.hidden) { el.innerHTML = ''; return; }
   const { data, state, cls } = app;
   if (gated()) { el.innerHTML = `<div class="gate">${gateHtml()}</div>`; return; } // every step waits for the track and the study year: one question per screen, nothing else
-  const unverified = data.verified === false ? '<p class="hint">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</p>' : '';
+  const approved = approvedOn(app.settings, data.program, data.startYear);
+  const unverified = approved ? `<p class="hint">${esc(approvedText(approved))}</p>`
+    : data.verified === false ? '<p class="hint warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</p>' : '';
   const pr = progress(data, state);
   const pct = Math.min(100, Math.round(pr.ratio * 100));
   // Years already studied are open; later years and the other lists sit in a collapsed section.
