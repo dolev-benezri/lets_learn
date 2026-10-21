@@ -129,8 +129,8 @@ export function renderView() {
     const yt = pair ? yearTotals(raw) : null;
     if (pair && !res.courses.length) msg += note('info', `אין קורסים בסמסטר ${ui.sem}׳ בחלופה הזו`);
 
-    const ranks = progressRanks(results.map((r) => semResult(r, ui.sem)));
-    const myRank = ranks[ui.cur];
+    const regular = results.filter((r) => !r.split?.length); // a split alternative never ranks, and never pushes a regular one down
+    const myRank = split.length ? null : progressRanks(regular.map((r) => semResult(r, ui.sem)))[regular.indexOf(raw)];
     const counts = unlockCounts(data, doneIds());
     const blocking = res.courses.filter((cid) => counts[cid] > 0);
     const blockingNames = blocking.slice(0, 3).map((cid) => esc(data.courses[cid].name));
@@ -143,7 +143,7 @@ export function renderView() {
     const vs = best ? compareAlts({ ...res, ...s }, { ...best, ...summary(best, data, state.friends, state.constraints) }, data).map(esc).join(' · ') : '';
 
     $('pills').innerHTML = [pill('calendar', courseCount(res.courses.length)), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar',
-      `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))]
+      `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(myRank && regular.length > 1 ? [pill('check', rankText(myRank, regular.length))]
       : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
       + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') + (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
     live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, courseCount(res.courses.length), `${s.credits} נ״ז`, pair

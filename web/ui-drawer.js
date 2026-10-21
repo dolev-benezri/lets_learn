@@ -2,7 +2,7 @@
 import { app, esc, freshOf, DEFAULT } from './app.js';
 import { SEMESTER_DATES } from './ics.js';
 import { DAYS, DAY_FULL, icon, initials, yedion, typeLabel, nearestStep, groupIndex, backups, isPair, semResult } from './ui-grid.js';
-import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount } from './ui-text.js';
+import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG } from './ui-text.js';
 import { WEIGHTS, SCALE, FSCALE, SEMS, SCOPE, scopeOf, colors, LOAD, HARD, SHEET, current, allGroupIds, seg, $, ui } from './ui-common.js';
 
 // ---------- step 3 and the drawer ----------
@@ -105,7 +105,9 @@ const lecturerSec = (L) => (Object.keys(L).length ? `<section class="dr-sec"><h3
 export function registrationText(r) {
   const one = (res, data) => {
     const alt = (g) => (res.alts?.[g] ? ` (או ${res.alts[g].join(', ')})` : '') + (backups(data, res, g).length ? ` [גיבוי: ${backups(data, res, g).join(', ')}]` : '');
-    return res.courses.map((cid) => `${cid} ${data.courses[cid].name}: ${res.groups.filter((g) => data.courses[cid].groups.some((x) => x.id === g)).map((g) => g + alt(g)).join(', ')}`).join('\n');
+    const mark = (cid) => (res.split?.includes(cid) ? ` (${SPLIT_TAG})` : '');
+    const gs = (cid) => res.groups.filter((g) => data.courses[cid].groups.some((x) => x.id === g)).map((g) => g + alt(g)).join(', ');
+    return res.courses.map((cid) => `${cid} ${data.courses[cid].name}${mark(cid)}: ${gs(cid)}`).join('\n');
   };
   return regParts(r).map((p) => (p.title ? `${p.title}\n${one(p.res, p.data) || '—'}` : one(p.res, p.data))).join('\n\n');
 }
@@ -116,9 +118,10 @@ function regPanel() {
   const rowsOf = (res, data) => res.courses.map((cid) => {
     const c = data.courses[cid], gs = c.groups.filter((g) => res.groups.includes(g.id));
     return `<li class="c${colors.get(cid) ?? 7}"><span class="dot" aria-hidden="true"></span><div class="grow"><b>${esc(c.name)}</b>
+      ${res.split?.includes(cid) ? `<span class="tag warn">${esc(SPLIT_TAG)}</span>` : ''}
       <span class="hint">${esc(cid)} · <span class="nw">${c.credits} נ״ז</span></span>
       <p>${gs.map((g) => `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
-        <span class="hint">(${esc(groupFresh(g, freshOf(data)))})</span>${res.alts?.[g.id] ? ` <span class="hint">(או <bdi
+        <span class="hint nw">(${esc(groupFresh(g, freshOf(data)))})</span>${res.alts?.[g.id] ? ` <span class="hint">(או <bdi
         dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>` : ''}${backups(data, res, g.id).length ? ` <span class="hint">(גיבוי: <bdi
         dir="ltr">${backups(data, res, g.id).map(esc).join(', ')}</bdi>)</span>` : ''}`).join(' · ')}</p></div>
       <a class="btn icon-btn ghost" href="${yedion(cid)}" target="_blank" rel="noopener" aria-label="${esc(c.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></li>`;
