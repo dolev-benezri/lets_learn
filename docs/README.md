@@ -20,6 +20,7 @@
 | קובץ | מה יש בו |
 |---|---|
 | [ACCESSIBILITY-AUDIT.md](ACCESSIBILITY-AUDIT.md) | ביקורת נגישות עצמאית מול WCAG 2.2 AA, וסטטוס התיקונים |
+| [ACCESSIBILITY-WCAG21.md](ACCESSIBILITY-WCAG21.md) | בדיקה עצמית מול WCAG 2.1 AA: טבלת קריטריונים, מה תוקן ומה נשאר לאדם (טיוטה, לבדיקת מורשה נגישות) |
 | [LAUNCH-READINESS.md](LAUNCH-READINESS.md) | הערכת המוכנות לפרסום (4.10.2026) והתיקונים שבעקבותיה |
 | [DATA-AUDIT.md](DATA-AUDIT.md) | סקירת נתונים אוטומטית לכל התוכניות (נוצר על ידי `scripts/audit.mjs`) |
 | [PREREQS.md](PREREQS.md) | מפת דרישות הקדם של הנדסה מכנית, מחזור 2026 (נוצר יחד עם [prereqs.json](prereqs.json) על ידי `scripts/prereq-map.mjs`) |
