@@ -207,7 +207,7 @@ export function classify(data, state) {
 export function withAfterA(data, state, cls) {
   if (data.semester !== 'שנה') return cls;
   const candA = new Set(Object.keys(cls.statuses)
-    .filter((id) => ['retake', 'available'].includes(cls.statuses[id].status)
+    .filter((id) => ['retake', 'available', 'conditional'].includes(cls.statuses[id].status)
       && data.courses[id].semesters?.includes('א')));
   const second = classify(data, { ...state, passed: [...state.passed, ...candA] }).statuses;
   const settled = (a) => a.id && ['done', 'exempt'].includes(cls.statuses[a.id]?.status);
