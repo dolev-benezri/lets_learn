@@ -76,8 +76,19 @@ for (const [size, scheme] of COMBOS) {
     await page.locator('#openFriendEditor').click();
     await page.locator('#friendEd[open]').waitFor();
     await check(page, 'friend editor, groups tab');
-    if (size === 'phone') await page.locator('#friendEd [data-fe="tab"][data-tab="grid"]').click(); // the desktop editor shows both halves
-    await check(page, 'friend editor, schedule tab');
+    const tab = (name) => (size === 'phone' ? page.locator(`#friendEd [data-fe="tab"][data-tab="${name}"]`).click() : null); // desktop shows both halves
+    await tab('grid');
+    await check(page, 'friend editor, empty schedule');
+    await tab('pick');
+    await page.locator('#feCourse').fill(await page.locator('#feCourses option').first().getAttribute('value'));
+    await page.locator('#feSearch button[type="submit"]').click();
+    await page.locator('#feGroups [data-fe="toggle"]').first().waitFor();
+    await page.locator('#feGroups [data-fe="toggle"]').first().click(); // a group chosen: the schedule has blocks on some days only
+    await check(page, 'friend editor, a group chosen');
+    await tab('grid');
+    for (const day of await page.locator('#feDays [data-fe="day"]').all()) { // one day at a time on a phone; the desktop editor shows the whole week
+      if (await day.isVisible()) { await day.click(); await check(page, `friend editor, schedule, day ${await day.getAttribute('data-day')}`); }
+    }
     await page.keyboard.press('Escape');
     await page.goto(SITE.replace(/\/?$/, '/') + 'legal.html');
     await check(page, 'legal page');
@@ -89,10 +100,22 @@ for (const [size, scheme] of COMBOS) {
     const page = await visit(t, DONE);
     await weekReady(page);
     await check(page, 'step 4');
+    // The popover of a block that has other groups in its course, one of them full or closed (the greyed row, once a contrast failure).
+    let withAlt = false;
+    for (const blk of (await page.locator('#week .blk').all()).slice(0, 25)) {
+      if (!await blk.isVisible()) continue;
+      await blk.click();
+      await page.locator('#pop:popover-open').waitFor();
+      if (await page.locator('#pop li.na').count()) { withAlt = true; await check(page, 'course popover with a greyed alternative'); }
+      await page.keyboard.press('Escape');
+      if (withAlt) break;
+    }
+    assert.ok(withAlt, 'some block of the seeded plan has a full or closed alternative group');
     await page.locator('#week .blk').first().click();
     await page.locator('#pop:popover-open').waitFor();
     await check(page, 'course popover');
     await page.keyboard.press('Escape');
+    for (const day of await page.locator('#daysel [data-act="day"]').all()) { if (await day.isVisible()) { await day.click(); await check(page, `step 4, day ${await day.getAttribute('data-day')}`); } }
     await page.locator('[data-act="openMap"]').click();
     await page.locator('#pmap[open]').waitFor();
     await check(page, 'map');
@@ -142,7 +165,6 @@ for (const size of NARROW) {
       await page.keyboard.press('Escape');
     }
     for (const hash of ['#me', '#courses', '#prefs']) { await page.goto(SITE + hash); await page.locator(`${hash}Title`).waitFor(); await look(hash); }
-    await page.locator('[data-act="panel"][data-panel="friends"]').click().catch(() => {});
     await page.locator('#openFriendEditor').click();
     await page.locator('#friendEd[open]').waitFor();
     await look('friend editor');
@@ -154,28 +176,33 @@ for (const size of NARROW) {
 }
 
 // Focus visible (2.4.7) and the Tab order (2.4.3): on step 4 every Tab stop shows a ring, and no stop jumps backwards in the document.
-test('keyboard: every Tab stop on step 4 shows a focus ring, in document order', async (t) => {
+test('keyboard: the first 60 Tab stops of each step show a focus ring, in document order', async (t) => {
   const page = await visitIn(browser, t, 'desktop', DONE);
   await weekReady(page);
-  await page.evaluate(() => document.activeElement?.blur());
-  const stops = [], bad = [];
-  for (let i = 0; i < 60; i++) {
-    await page.keyboard.press('Tab');
-    const s = await page.evaluate(() => {
-      const e = document.activeElement, mark = e.matches('input[type="radio"], input[type="checkbox"]') ? e.closest('label')?.querySelector('span') ?? e : e;
-      const st = getComputedStyle(mark);
-      window.__prev = window.__prev ?? null;
-      const backwards = window.__prev && !(window.__prev.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING);
-      window.__prev = e;
-      return { id: e.dataset.k ?? e.id ?? e.tagName, ring: st.outlineStyle !== 'none' && parseFloat(st.outlineWidth) >= 2, tabindex: e.tabIndex, backwards: !!backwards, body: e === document.body };
-    });
-    if (s.body) break; // Tab left the page
-    stops.push(s.id);
-    if (!s.ring) bad.push(`${s.id}: no focus ring`);
-    if (s.tabindex > 0) bad.push(`${s.id}: positive tabindex`);
-    if (s.backwards && stops.length > 1) bad.push(`${s.id}: before the previous stop in the document`);
+  const bad = [];
+  for (const hash of ['', '#me', '#courses', '#prefs']) {
+    await page.goto(SITE + hash);
+    await page.locator(hash ? `${hash}Title` : '#week .blk').first().waitFor({ timeout: 30000 });
+    await frame(page);
+    await page.evaluate(() => { document.activeElement?.blur(); window.__prev = null; });
+    const stops = [];
+    for (let i = 0; i < 60; i++) {
+      await page.keyboard.press('Tab');
+      const s = await page.evaluate(() => {
+        const e = document.activeElement, mark = e.matches('input[type="radio"], input[type="checkbox"]') ? e.closest('label')?.querySelector('span') ?? e : e;
+        const st = getComputedStyle(mark);
+        const backwards = window.__prev && !(window.__prev.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING);
+        window.__prev = e;
+        return { id: e.dataset.k ?? e.id ?? e.tagName, ring: st.outlineStyle !== 'none' && parseFloat(st.outlineWidth) >= 2, tabindex: e.tabIndex, backwards: !!backwards, body: e === document.body };
+      });
+      if (s.body) break; // Tab left the page
+      stops.push(s.id);
+      if (!s.ring) bad.push(`${hash || 'plan'}: ${s.id}: no focus ring`);
+      if (s.tabindex > 0) bad.push(`${hash || 'plan'}: ${s.id}: positive tabindex`);
+      if (s.backwards && stops.length > 1) bad.push(`${hash || 'plan'}: ${s.id}: before the previous stop in the document`);
+    }
+    assert.ok(stops.length > 8, `${hash || 'plan'}: only ${stops.length} Tab stops`);
   }
-  assert.ok(stops.length > 8, `only ${stops.length} Tab stops`);
   assert.deepEqual(bad, [], 'keyboard problems');
 });
 
