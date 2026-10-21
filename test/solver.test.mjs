@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { meetingsMask, overlaps, buildOptions, forbiddenBy, unlockCounts, downstream, chainDepth, search, searchYear, showWeights, PRIMARY } from '../web/solver-core.js';
+import { meetingsMask, overlaps, buildOptions, forbiddenBy, unlockCounts, downstream, chainDepth, search, searchYear, searchAll, showWeights, PRIMARY } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { mini } from './fixtures/mini-data.mjs';
 // Wall-clock budgets: a shared CI runner (GitHub sets CI) is 2-3x slower than a dev machine, so there the search gets 3x the time and the budgets scale with it.
 const SLACK = process.env.CI ? 3 : 1, LIMIT = 3000 * SLACK;
@@ -976,4 +976,115 @@ test('searchYear warns when a lifted ב׳ pin kept the lecture but moved the pin
   const p = best(searchYear({ dataA: semData('א', none), dataB, state: yState({ choices: { Y1: 'must', Y2: 'must', Z: 'optional' } }), pins: ['ZL', 'ZT1'], yearList: new Set(), weights: W }));
   assert.ok(p.b.groups.includes('ZT2'), JSON.stringify(p.b.groups));
   assert.ok(p.warnings.includes('הנעיצה של Z (ב׳) לא נשמרה: הקורס בקבוצה אחרת'), JSON.stringify(p.warnings));
+});
+
+// ---- task 4 (#15): split lecture and tutorial, opt-in ----
+// S: lecture L links tutorial T1; T2 (same type) is linked from nothing and frees a day. O: a lecture only.
+const tut = (id, day, start, end) => ({ ...grp(id, day, start, end), type: 'תרגול', primary: false });
+const splitData = () => set({
+  S: one([{ ...grp('L', 1, '08:00', '09:50'), linked: ['T1'] }, tut('T1', 2, '08:00', '09:50'), tut('T2', 1, '10:00', '11:50')]),
+  O: one([grp('O1', 3, '08:00', '09:50')]),
+});
+const gs = (options) => options.map((o) => o.groups);
+
+test('split off: a lecture takes only its linked tutorial, and no plan is split', () => {
+  const d = splitData();
+  assert.deepEqual(gs(buildOptions(d.courses.S)), [['L', 'T1']]);
+  assert.ok(buildOptions(d.courses.S).every((o) => o.split === false));
+  const r = search({ data: d, courses: opts('S', 'O'), weights: DEF_W, constraints: DEF_C });
+  assert.ok(r.results.length && r.results.every((x) => Array.isArray(x.split) && !x.split.length), JSON.stringify(r.results.map((x) => x.split)));
+});
+
+test('split on: the unlinked tutorial is an extra option marked split; no sub-groups or all linked: nothing extra', () => {
+  const d = splitData();
+  assert.deepEqual(buildOptions(d.courses.S, { split: true }).map((o) => [o.groups, o.split]), [[['L', 'T1'], false], [['L', 'T2'], true]]);
+  assert.deepEqual(buildOptions(d.courses.O, { split: true }), buildOptions(d.courses.O));
+  const A = mini().courses.A; // A1 links both tutorials, A2 has none
+  assert.deepEqual(buildOptions(A, { split: true }), buildOptions(A));
+});
+
+test('split on with the unlinked tutorial pinned: every option of the course contains the pin; split off finds none, no crash', () => {
+  const d = splitData();
+  const on = buildOptions(d.courses.S, { split: true, pins: ['T2'] });
+  assert.ok(on.length && on.every((o) => o.groups.includes('T2')), JSON.stringify(gs(on)));
+  assert.deepEqual(buildOptions(d.courses.S, { pins: ['T2'] }), []);
+  const r = searchAll({ data: d, courses: opts('S', 'O'), pins: ['T2'], weights: DEF_W, constraints: { ...DEF_C, split: true } });
+  assert.ok(r.results.length && r.results.every((x) => x.groups.includes('T2')), JSON.stringify(r.results.map((x) => x.groups)));
+  const off = searchAll({ data: d, courses: opts('S', 'O'), pins: ['T2'], weights: DEF_W, constraints: DEF_C });
+  assert.equal(off.results.length, 0);
+  assert.ok(off.diagnosis.length);
+});
+
+test('split on, course 10013 shape: the free lab no one links becomes a split option, never a duplicate', () => {
+  const g = (id, type, linked, day, full = false) => ({ id, type, primary: type.startsWith('סופי'), full, lecturer: 'L', linked, exams: [],
+    meetings: [{ day, start: '10:00', end: '11:50', room: 'r' }] });
+  const course = { groups: [g('P', 'סופי-הרצאה+תרגול', ['P/1'], 1), g('P/1', 'תרגול', ['L1'], 2), g('L1', 'מעבדה', [], 3, true), g('L2', 'מעבדה', [], 4)] };
+  assert.deepEqual(buildOptions(course), [], 'split off: as today, the only linked lab is full');
+  assert.deepEqual(gs(buildOptions(course, { includeFull: true })), [['P', 'P/1', 'L1']]);
+  assert.deepEqual(buildOptions(course, { split: true }).map((o) => [o.groups, o.split]), [[['P', 'P/1', 'L2'], true]]);
+  const both = buildOptions(course, { split: true, includeFull: true });
+  assert.deepEqual(both.map((o) => [o.groups, o.split]), [[['P', 'P/1', 'L1'], false], [['P', 'P/1', 'L2'], true]]);
+});
+
+test('searchAll: split off is search; split on lists split plans after every regular one, at most topK of each', () => {
+  const args = { data: splitData(), courses: opts('S', 'O'), weights: DEF_W, constraints: DEF_C, topK: 2 };
+  assert.deepEqual(searchAll(args).results.map((x) => x.groups), search(args).results.map((x) => x.groups));
+  const r = searchAll({ ...args, constraints: { ...DEF_C, split: true } });
+  const k = r.results.findIndex((x) => x.split.length);
+  assert.ok(k > 0, JSON.stringify(r.results.map((x) => [x.groups, x.split])));
+  assert.ok(r.results.slice(k).every((x) => x.split.length) && k <= 2 && r.results.length - k <= 2);
+  assert.deepEqual(r.results[k].split, ['S']);
+  assert.ok(r.results[k].score > r.results[0].score, 'the split plan frees a day, so it scores higher, and still comes after');
+  const key = (x) => [...x.groups].sort().join();
+  assert.ok(r.results.slice(k).every((x) => !r.results.slice(0, k).some((y) => key(y) === key(x))));
+});
+
+test('searchAll year mode: split pairs come after regular pairs, a pair\'s split is the union of its halves, every plan carries split', () => {
+  const S = splitData().courses.S;
+  const dataA = semData('א', { S: yc('S', 3, S.groups), M: yc('M', 4, [grp('MA', 3)]), OB: yc('OB', 2, []) });
+  const dataB = semData('ב', { S: yc('S', 3, []), M: yc('M', 4, []), OB: yc('OB', 2, [grp('OBB', 4)]) });
+  const year = { dataA, dataB, state: yState({ choices: { S: 'optional', M: 'optional', OB: 'optional' } }), yearList: new Set(), weights: DEF_W,
+    constraints: DEF_C, topK: 3 };
+  const all = (r) => r.results.every((p) => Array.isArray(p.split) && Array.isArray(p.a.split) && (!p.b || Array.isArray(p.b.split)));
+  const off = searchAll({ year });
+  assert.ok(off.results.length && all(off) && off.results.every((p) => !p.split.length));
+  const r = searchAll({ year: { ...year, constraints: { ...DEF_C, split: true } } });
+  assert.ok(all(r));
+  const k = r.results.findIndex((p) => p.split.length);
+  assert.ok(k > 0 && r.results.slice(k).every((p) => p.split.length) && k <= 3 && r.results.length - k <= 3, JSON.stringify(r.results.map((p) => p.split)));
+  for (const p of r.results) assert.deepEqual(p.split, [...new Set([...p.a.split, ...(p.b?.split ?? [])])]);
+  assert.ok(r.results.slice(k).every((p) => p.a.groups.includes('T2')));
+});
+
+test('split on: the largest real file with every offered course optional stays within its time budget', () => {
+  const dir = new URL('../web/data/afeka/2027-1/', import.meta.url);
+  const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')) : [];
+  if (!files.length) return;
+  const size = (d) => Object.values(d.courses ?? {}).reduce((a, c) => a + (c.groups?.length ?? 0), 0);
+  const data = files.map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8'))).reduce((a, d) => (size(d) > size(a) ? d : a));
+  const courses = Object.keys(data.courses).filter((id) => data.courses[id].offered && data.courses[id].groups.length).map((id) => ({ id, mode: 'optional' }));
+  const t = Date.now();
+  const r = searchAll({ data, courses, weights: DEF_W, constraints: { ...DEF_C, split: true }, timeLimitMs: 1500 });
+  const ms = Date.now() - t;
+  assert.ok(ms < 2500 * SLACK, `${ms} ms`);
+  assert.ok(r.results.length);
+});
+
+test('split on, year mode: the largest real program with every offered course optional stays within its time budget', () => {
+  const dir = (n) => new URL(`../web/data/afeka/2027-${n}/`, import.meta.url);
+  if (!existsSync(dir(1)) || !existsSync(dir(2))) return;
+  const read = (n, f) => JSON.parse(readFileSync(new URL(f, dir(n)), 'utf8'));
+  const size = (d) => Object.values(d.courses ?? {}).reduce((a, c) => a + (c.groups?.length ?? 0), 0);
+  const both = readdirSync(dir(1)).filter((f) => f.endsWith('.json') && existsSync(new URL(f, dir(2))));
+  if (!both.length) return;
+  const [f] = both.sort((x, y) => size(read(1, y)) + size(read(2, y)) - size(read(1, x)) - size(read(2, x)));
+  const [dataA, dataB] = [read(1, f), read(2, f)];
+  const choices = Object.fromEntries([...Object.keys(dataA.courses), ...Object.keys(dataB.courses)].map((id) => [id, 'optional']));
+  const t = Date.now();
+  const r = searchAll({ year: { dataA, dataB, state: { passed: [], failed: {}, choices, semesterOf: {}, load: 'even' }, yearList: new Set(), weights: DEF_W,
+    constraints: { ...DEF_C, split: true }, timeLimitMs: LIMIT } });
+  const ms = Date.now() - t;
+  // searchYear may run to 1.5x its limit by design (a pair needs both semesters); split off measures the same, so the bound is that plus a second
+  assert.ok(ms < 5500 * SLACK, `${f}: ${size(dataA) + size(dataB)} groups, ${ms} ms, partial ${r.partial}`);
+  assert.ok(r.results.length);
 });

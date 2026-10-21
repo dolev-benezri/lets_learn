@@ -1,21 +1,30 @@
 // The builder board: top bar, banners, the shown alternative (pills, notices, week grid) and the alternative switcher.
-import { app, esc, save, refresh, candidateMode, keepFocus, summerOn, summerScope, waitingOnEarlier } from './app.js';
+import { app, esc, freshOf, save, refresh, candidateMode, keepFocus, summerOn, summerScope, waitingOnEarlier } from './app.js';
 import { progress, studyYear } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, initials, groupIndex, hourRange, summary, freeDaysText, renderWeek, renderDaySelector, assignColors, repeatIds, progressRanks, rankText, isPair,
-  semResult, resCourses, resGroups, yearTotals } from './ui-grid.js';
-import { freshness, stalePins, partialNote, hebYear, courseCount, count, compareAlts } from './ui-text.js';
+  semResult, resCourses, resGroups, yearTotals, reportHref } from './ui-grid.js';
+import { freshness, turnWarning, stalePins, partialNote, hebYear, courseCount, count, compareAlts, disclaimerHtml, SPLIT_NOTE, splitLine } from './ui-text.js';
 import { SCOPE, semTabs, scopeOf, PHONE, heb, colors, current, shown, shownData, doneIds, planned, allGroupIds, needsProgram, pill, seg, $, ui } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
 import { renderDrawer } from './ui-drawer.js';
 
 // ---------- top bar and banners ----------
+// The footer link "דיווח על טעות": only when settings.json gives an address; its mailto names the page, so a step change refreshes it too.
+export function renderReport() {
+  const report = reportHref();
+  $('report').hidden = !report;
+  if (report) $('reportLink').href = report;
+}
 export function renderTop() {
   const progs = app.catalog.programs, prog = progs.length > 1 && !needsProgram() ? progs.find((p) => p.id === app.data.program)?.name : null; // named only when there is a choice and it was made
   $('title').innerHTML = `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
   const f = freshness(app.status, app.data.fetchedAt);
+  $('counsel').hidden = !app.settings.counselingUrl; // the footer link to the counselling page, only when settings.json gives one
+  if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
+  renderReport();
   $('meta').innerHTML = (f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text))
     + (app.data.verified === false ? ' · הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.' : '');
 }
@@ -27,8 +36,15 @@ export function renderBanner() {
   const other = L && L.program !== undefined && L.program !== app.state.program // groups of another program rarely match
     ? app.catalog.programs.find((p) => p.id === L.program)?.name ?? 'לא מוכרת' : null;
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : []; // with one semester loaded, the other's pins would look gone
+  const turn = turnWarning(app.settings.turns, app.state.profile.turn, freshOf(app.data));
+  // the remote notice sits above every step (#notice, outside the plans step that holds #banner)
+  if ($('notice').dataset.text !== app.settings.notice) { // written only on a change: a role=alert region replaced on every refresh is announced again each time
+    $('notice').dataset.text = app.settings.notice;
+    $('notice').innerHTML = app.settings.notice ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>` : '';
+  }
   $('banner').innerHTML = (app.hashError ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
       <button type="button" class="btn icon-btn ghost" data-act="dismissError" aria-label="סגור הודעה">${icon('x')}</button></div>` : '')
+    + (turn ? `<div class="banner warn" role="status">${icon('alert')}<span class="grow">${esc(turn)}</span></div>` : '')
     + gone.map((p) => `<div class="banner warn">${icon('alert')}<span class="grow">${esc(p.text)}. המערכת תבחר קבוצה אחרת אם תסירו את הנעיצה.</span>
       <button type="button" class="btn" data-act="dropPin" data-gid="${esc(p.gid)}">${icon('pin')} הסר נעיצה</button></div>`).join('')
     + (L ? `<div class="banner"><span class="av lg" aria-hidden="true">${esc(initials(L.name || 'חבר'))}</span>
@@ -40,7 +56,7 @@ export function renderBanner() {
 }
 
 // ---------- grid area ----------
-const SORT_BY = [['best', 'מומלץ'], ['credits', 'הכי הרבה נ״ז'], ['friends', 'הכי הרבה עם חברים'], ['unlocks', 'פותחת הכי הרבה קורסי המשך']]; // "הצג לפי" (state.sortBy)
+const SORT_BY = [['best', 'מאוזן'], ['credits', 'הכי הרבה נ״ז'], ['friends', 'הכי הרבה עם חברים'], ['unlocks', 'פותחת הכי הרבה קורסי המשך']]; // "הצג לפי" (state.sortBy)
 function colorOrder() {
   const cand = Object.keys(app.data.courses).filter((id) => candidateMode(id));
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
@@ -79,7 +95,8 @@ export function renderView() {
     ? ' selected' : ''}>${t}</option>`).join('')}</select></label>${noFriend ? `<p class="hint">${state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם'
     : 'אין עדיין חברים. אפשר להוסיף'} <a href="#prefs">בשלב 3</a>.</p>` : ''}`;
 
-  $('altLabel').textContent = nAlt ? `חלופה ${ui.cur + 1} מתוך ${nAlt}` : 'אין חלופות';
+  const split = raw && !none ? raw.split ?? [] : []; // course ids built from a lecture and a tutorial the college does not link
+  $('altLabel').textContent = nAlt ? `חלופה ${ui.cur + 1} מתוך ${nAlt}${split.length ? ' · מופרדת' : ''}` : 'אין חלופות';
   const stranded = [$('prev'), $('next')].includes(document.activeElement) && nAlt < 2;
   $('prev').disabled = $('next').disabled = nAlt < 2;
   if (stranded) $('switcher').focus();
@@ -112,24 +129,28 @@ export function renderView() {
     const yt = pair ? yearTotals(raw) : null;
     if (pair && !res.courses.length) msg += note('info', `אין קורסים בסמסטר ${ui.sem}׳ בחלופה הזו`);
 
-    const ranks = progressRanks(results.map((r) => semResult(r, ui.sem)));
-    const myRank = ranks[ui.cur];
+    const regular = results.filter((r) => !r.split?.length); // a split alternative never ranks, and never pushes a regular one down
+    const myRank = split.length ? null : progressRanks(regular.map((r) => semResult(r, ui.sem)))[regular.indexOf(raw)];
     const counts = unlockCounts(data, doneIds());
     const blocking = res.courses.filter((cid) => counts[cid] > 0);
     const blockingNames = blocking.slice(0, 3).map((cid) => esc(data.courses[cid].name));
     const blockingText = blockingNames.length ? blockingNames.join(', ') + (blocking.length > 3 ? ` ועוד ${blocking.length - 3}` : '') : '';
     const unlocksText = res.unlocks ? (res.unlocks === 1 ? 'פותחת לך קורס חדש אחד' : `פותחת לך ${res.unlocks} קורסים חדשים`) : '';
     const infoLine = [blockingText && `קורסי קדם לקורסים אחרים: ${blockingText}`, unlocksText].filter(Boolean).join(' · ');
+    const nameOf = (id) => [data, app.data, app.sem['א'], app.sem['ב'], app.sem['קיץ']].find((d) => d?.courses?.[id])?.courses[id].name ?? id;
+    if (split.length) msg = note('alert', SPLIT_NOTE) + `<p class="split-line">${esc(splitLine(split.map(nameOf)))}</p>` + msg; // not in the phone's swipe row: it wraps
     const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null; // what this alternative changes against the first one (§14ז)
     const vs = best ? compareAlts({ ...res, ...s }, { ...best, ...summary(best, data, state.friends, state.constraints) }, data).map(esc).join(' · ') : '';
 
     $('pills').innerHTML = [pill('calendar', courseCount(res.courses.length)), pill('cap', `${s.credits} נ״ז`), ...(pair ? [pill('calendar',
-      `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(nAlt > 1 ? [pill('check', rankText(myRank, nAlt))]
+      `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []), pill('sun', fd), pill('clock', gap), ...(myRank && regular.length > 1 ? [pill('check', rankText(myRank, regular.length))]
       : []), ...fr.map((t) => pill('users', esc(t), 'friend')), pill('file', exams)].join('')
       + (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') + (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
     live = [`חלופה ${ui.cur + 1} מתוך ${nAlt}`, pair && `סמסטר ${ui.sem}׳`, courseCount(res.courses.length), `${s.credits} נ״ז`, pair
-      && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`, fd, gap, ...fr, pn?.text].filter(Boolean).join(', ');
+      && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`, fd, gap, ...fr, split.length && SPLIT_NOTE, pn?.text].filter(Boolean).join(', ');
   } else $('pills').innerHTML = '';
+  $('advisorBtn').disabled = !res;
+  $('disclaimer').innerHTML = res ? disclaimerHtml(app.settings.counselingUrl) : ''; // also the step-4 counselling link
 
   $('week').innerHTML = msg + renderWeek({ data, res, range, colors, dashed: ui.dashed, pins: state.pins, friends, day: ui.mobileDay, blocks: state.constraints.blocks });
   $('daysel').innerHTML = renderDaySelector(range, res, data, ui.mobileDay);

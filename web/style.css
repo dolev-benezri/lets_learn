@@ -107,6 +107,9 @@ summary:active { background:var(--primary-soft); }
 
 /* layout: the plans (step 4) are one column, the grid; the course list is its own page (#courses) */
 .layout { padding:10px 14px 20px; }
+.notice-top { --gut:14px; }
+.notice-top:not(:empty) { max-width:1200px; margin:0 auto; padding:14px var(--gut) 0; } /* the remote notice, above every step; same gutters as .step-page */
+.notice-top .banner { margin-bottom:0; }
 main { min-width:0; }
 .layout[hidden], .step-page[hidden] { display:none; } /* one step at a time, by the hash (ui-plan.js renderRoute) */
 @media (min-width:1100px) { .layout { padding:10px 20px 28px; } }
@@ -195,6 +198,9 @@ details[open] > summary::after { transform:rotate(-135deg); }
 @keyframes slide { from { background-position:-60% 0; } to { background-position:160% 0; } }
 .board-top { display:flex; align-items:flex-start; gap:8px; margin-bottom:10px; min-height:30px; }
 .pills { display:flex; flex-wrap:wrap; gap:7px; flex:1; }
+.disclaimer { margin:0 0 10px; font-size:var(--fs-sm); color:var(--text-2); }
+.disclaimer:empty { display:none; }
+.disclaimer a { color:inherit; text-decoration:underline; }
 .pill-info { flex-basis:100%; margin:0; font-size:12px; color:var(--text-2); }
 .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:999px; background:var(--surface); box-shadow:inset 0 0 0 1px var(--border); color:var(--text);
   font-size:13px; }
@@ -420,7 +426,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .alt-label { min-width:0; padding:0 4px; font-size:var(--fs-sm); }
   .board { padding:12px; }
   /* actions move to a bottom bar: the top bar keeps only the title and the alternative switcher */
-  .actions { position:fixed; inset:auto 0 0 0; z-index:5; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px;
+  .actions { position:fixed; inset:auto 0 0 0; z-index:5; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:4px;
     padding:6px 8px calc(6px + env(safe-area-inset-bottom)); background:var(--chrome); border-top:0; box-shadow:var(--shadow-up); }
   .actions .btn { width:auto; min-height:48px; flex-direction:column; gap:2px; padding:0 2px; border-color:transparent; background:transparent; font-size:12px; }
   .actions .btn.primary { background:var(--primary); color:var(--on-primary); }
@@ -444,6 +450,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
 }
 .notice.partial { flex-wrap:wrap; margin-top:0; margin-bottom:12px; }
 .notice.partial span { flex:1 1 16rem; }
+.split-line { margin:6px 2px 12px; font-size:var(--fs-sm); color:var(--text-2); overflow-wrap:anywhere; }
 .notice.partial .btn { margin-inline-start:auto; }
 
 /* batch 4: board */
@@ -505,6 +512,9 @@ body.gated .steps a { display:none; } /* nothing to step through before the two 
 .gate { max-width:560px; margin:0 auto; padding-top:clamp(0px, 8vh - 32px, 64px); }
 .gate-intro { margin-bottom:18px; font-size:16px; line-height:1.5; color:var(--text-2); }
 .gate-step { margin-bottom:2px; font-size:var(--fs-sm); color:var(--text-3); }
+.gate-terms p { margin-bottom:10px; font-size:16px; line-height:1.5; color:var(--text-2); }
+.gate-links { margin:14px 0 10px; font-size:var(--fs-sm); }
+.gate-go { width:100%; margin-top:14px; min-height:var(--tap); }
 .gate-track { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; color:var(--text-2); }
 .gate-track b { color:var(--text); font-weight:500; }
 .gate > .hint { margin-top:10px; }
@@ -549,6 +559,7 @@ body.gated .steps a { display:none; } /* nothing to step through before the two 
 @media (min-width:720px) {
   .me-entry-cards { grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start; }
   .step-page { --gut:20px; padding-top:20px; }
+  .notice-top { --gut:20px; }
   .me-grid { grid-template-columns:280px minmax(0, 1fr); gap:18px; align-items:start; }
   .me-grid.halves { grid-template-columns:repeat(2, minmax(0, 1fr)); } /* #prefs: preferences | friends */
   .me-side { position:sticky; top:calc(var(--bar-h) + 14px); }
@@ -712,6 +723,8 @@ body:has(#friendEd[open]) { overflow:hidden; }
 }
 /* phone polish (U-10, U-11, U-14, U-16) */
 .nw, .reglist bdi { white-space:nowrap; }
+.reglist { grid-template-columns:minmax(0,1fr); } /* a row never widens the list */
+.reglist .hint bdi { white-space:normal; } /* the long backup and alternative lists wrap at their commas */
 @media (pointer:coarse) { .btn.sm { min-height:var(--tap); } }
 @media (max-width:599px) {
   .actions .lbl { white-space:normal; line-height:1.1; text-align:center; } /* "רשימה להרשמה" takes two lines at 320 instead of spilling */
@@ -727,4 +740,21 @@ body:has(#friendEd[open]) { overflow:hidden; }
   .day:not(.on) { display:block; }
   .day.on:not(:last-child) { border-inline-end:0; }
   #semnote, .pill-info { display:none; }
+}
+
+/* The advisor summary (ACT.advisor): on screen #print is never shown; on paper it is the only thing, A4, black on white in both themes. */
+#print { display:none; }
+@media print {
+  @page { size:A4; margin:14mm; }
+  :root.print-summary, :root[data-theme="dark"].print-summary { color-scheme:light; } /* only while the summary prints: a normal print keeps the page as it was */
+  .print-summary, .print-summary body { background:#fff !important; color:#000 !important; padding:0 !important; }
+  .print-summary body > :not(#print) { display:none !important; }
+  .print-summary #print { display:block; font-size:10.5pt; line-height:1.4; }
+  #print, #print * { color:#000 !important; background:none !important; box-shadow:none !important; }
+  #print h2 { font-size:17pt; margin:0 0 1mm; }
+  #print h3 { font-size:12.5pt; margin:4mm 0 1mm; padding-bottom:.5mm; border-bottom:1px solid #000; }
+  #print h4 { font-size:11pt; margin:2mm 0 0; }
+  #print ul { list-style:disc; padding-inline-start:5mm; }
+  #print li { break-inside:avoid; }
+  #print li div { font-size:9.5pt; }
 }

@@ -120,9 +120,11 @@ test('switchTo: going back finds the old progress with the current personal sett
   assert.equal(app.state.name, 'שם חדש');
   assert.ok(store.size > 0);
   store.set('afeka-sched-v1-onboarded', '1'); // erasing everything also starts a first visit again
+  store.set('afeka-sched-v1-terms', '1'); // ...and asks for the terms again
   sync();
   clearSaved();
   assert.equal(store.size, 0);
+  assert.equal(localStorage.getItem('afeka-sched-v1-terms'), null);
 });
 
 test('switchTo: the study year picked (set before the switch, as CHG.pyear does) wins over the one in the stash', async () => {
@@ -326,6 +328,56 @@ test('switchTo and a dropped program take the academic year from the catalog, no
   app.hashError = null;
 });
 
+test('applyHash: a backup link waits for the terms, then restores', async () => {
+  const { applyHash, applyPendingBackup } = await import('../web/app.js');
+  const { backupLink } = await import('../web/share.js');
+  const g = { location: globalThis.location, history: globalThis.history, document: globalThis.document };
+  globalThis.history = { replaceState() {} };
+  globalThis.document ??= { activeElement: null, body: { dataset: {} }, querySelector: () => null };
+  try {
+    reset({ ...mine(), program: 30, startYear: 2026 });
+    const link = await backupLink('https://x.test/', { ...app.state, name: 'מגובה' });
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    app.termsOk = () => false;
+    await applyHash();
+    assert.equal(app.state.name, 'דנה', 'not restored (and no confirm) before the terms are accepted');
+    assert.ok(app.pendingBackup);
+    app.termsOk = () => true;
+    await applyPendingBackup();
+    assert.equal(app.state.name, 'מגובה');
+    assert.equal(app.pendingBackup, null);
+    reset({ ...mine(), program: 30, startYear: 2026 }); // terms already accepted: restored at once
+    await applyHash();
+    assert.equal(app.state.name, 'מגובה');
+  } finally { Object.assign(globalThis, g); app.termsOk = () => true; app.pendingBackup = null; }
+});
+
+test('applyHash: a backup link for a fresh visitor restores without "replace the current state?" (refresh saves before the terms); a returning one is asked', async () => {
+  const { applyHash, applyPendingBackup } = await import('../web/app.js');
+  const { backupLink } = await import('../web/share.js');
+  const g = { location: globalThis.location, history: globalThis.history, document: globalThis.document, confirm: globalThis.confirm };
+  globalThis.history = { replaceState() {} };
+  globalThis.document ??= { activeElement: null, body: { dataset: {} }, querySelector: () => null };
+  let asked = 0;
+  globalThis.confirm = () => { asked++; return true; };
+  try {
+    reset({ ...mine(), program: 30, startYear: 2026 });
+    const link = await backupLink('https://x.test/', { ...app.state, name: 'מגובה' });
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    for (const [saved, expected] of [[false, 0], [true, 1]]) {
+      reset({ ...mine(), program: 30, startYear: 2026 });
+      if (saved) store.set('afeka-sched-v1', JSON.stringify(mine()));
+      app.termsOk = () => false; asked = 0;
+      await applyHash();
+      assert.ok(store.has('afeka-sched-v1'), 'refresh saved before the terms were accepted');
+      app.termsOk = () => true;
+      await applyPendingBackup();
+      assert.equal(asked, expected, saved ? 'saved state: asked' : 'fresh visitor: not asked');
+      assert.equal(app.state.name, 'מגובה');
+    }
+  } finally { Object.assign(globalThis, g); app.termsOk = () => true; app.pendingBackup = null; }
+});
+
 test('applyHash: a backup whose data fails to load says so even when a load notice is up', async () => {
   const { applyHash } = await import('../web/app.js');
   const { backupLink } = await import('../web/share.js');
@@ -340,4 +392,30 @@ test('applyHash: a backup whose data fails to load says so even when a load noti
     await applyHash();
     assert.match(app.hashError ?? '', /לא הצלחנו לטעון/);
   } finally { Object.assign(globalThis, g); app.hashError = null; }
+});
+
+test('restoreBackup: a backup link cannot switch the split option on (it needs the visitor confirming it in the page)', async () => {
+  serve(); reset(mine());
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, constraints: { split: true, includeFull: true } }), true);
+  assert.equal(app.state.constraints.split, false);
+  assert.equal(app.state.constraints.includeFull, true, 'the other constraints come through as before');
+});
+
+test('restoreBackup: pins that only worked with split on lose the sub-group pin (the restore turns split off), the lecture pin stays', async () => {
+  serve(); reset(mine());
+  const mk = (id, type, day, linked = []) => ({ id, type, meetings: [{ day, start: '08:00', end: '10:00' }], linked, primary: !id.includes('/'), full: false, exams: [], lecturer: '' });
+  app.sem['א'].courses.S = { name: 'S', credits: 3, offered: true, prereqs: [], groups: [mk('S1', 'L', 1, ['S1/1']), mk('S1/1', 'T', 2), mk('S9/1', 'T', 3)] };
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, pins: ['S1', 'S9/1'], constraints: { split: true } }), true);
+  assert.deepEqual([app.state.pins, app.state.constraints.split], [['S1'], false]);
+  assert.equal(await restoreBackup({ v: 1, program: 30, startYear: 2026, pins: ['S1', 'S1/1'] }), true);
+  assert.deepEqual(app.state.pins, ['S1', 'S1/1'], 'linked pins are kept');
+});
+
+test('switchTo: the registration turn stays with me, and a cleared turn is not brought back from the stash', async () => {
+  serve(); reset({ ...mine(), startYear: 2026, profile: { ...mine().profile, year: 2, turn: 't1' } });
+  assert.equal(await switchTo(20, 2027), true);
+  assert.equal(app.state.profile.turn, 't1');
+  app.state.profile = { ...app.state.profile, turn: undefined }; delete app.state.profile.turn; // cleared on the other program
+  assert.equal(await switchTo(30, 2026), true);
+  assert.ok(!('turn' in app.state.profile), 'the stashed program 30 state still had turn t1');
 });

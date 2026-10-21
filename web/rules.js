@@ -1,4 +1,5 @@
 // Afeka regulations engine (תקנון לימודים תואר ראשון, 5.2.2026). Pure: runs in browser and node.
+import { TURN_ID_MAX } from './settings.js';
 const YEAR_LETTERS = { 'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5 }; // evening programs run five years
 
 // Afeka english clearance (checked 2026-10-01): Amirnet 85/100/120/134 exempts the first 1/2/3/4 courses; exemption gives no credits.
@@ -21,7 +22,9 @@ export function validSpecs(data, ids) {
   const paired = ok.length === rule.pick;
   return ok.length === ids.length && (paired || (ok.length === 1 && rule.alone.includes(ok[0]))) ? ok : [];
 }
-export const cleanProfile = (p) => ({ year: int(p?.year, 1, 5), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true });
+export const cleanProfile = (p) => ({ year: int(p?.year, 1, 5), amirnet: int(p?.amirnet, 50, 150), specs: specs(p?.specs), summer: p?.summer === true, ...turnOf(p?.turn) });
+// The registration turn id (settings.json turns): kept only when it is a non-empty string.
+const turnOf = (t) => (typeof t === 'string' && t && t.length <= TURN_ID_MAX ? { turn: t } : {});
 
 // Course sets of the chosen areas (profile.specs, data.specializations): mandatory = their חובה lists, plus the standalone extra (aloneExtra) when its area is chosen alone;
 // elective = their בחירה lists minus what is mandatory (a course in several lists counts once). chosen / all = list codes of the chosen areas / of every specialization list.
@@ -159,20 +162,28 @@ export function setStatus(state, id, st) {
   if (st === 'failed') state.failed[id] ||= 1;
 }
 
-export function progress(data, state) {
-  const passed = new Set(state.passed);
-  const year = studyYear(data, state);
-  const lists = (data.lists ?? []).filter((l) => {
+// The required lists of the years before the study year, each with the credits of its passed courses (a course in two lists counts once).
+function earlierTally(data, state) {
+  const passed = new Set(state.passed), year = studyYear(data, state), seen = new Set();
+  return (data.lists ?? []).filter((l) => {
     const m = l.name.match(/חובה שנה (\S)'/);
     return m && YEAR_LETTERS[m[1]] < year;
-  });
+  }).map((l) => ({ l, got: l.courses.filter((id) => passed.has(id) && !seen.has(id) && seen.add(id)).reduce((s, id) => s + (data.courses[id]?.credits ?? 0), 0) }));
+}
+
+export function progress(data, state) {
+  const tally = earlierTally(data, state), lists = tally.map((t) => t.l);
   const required = lists.reduce((a, l) => a + l.minCredits, 0);
-  const seen = new Set(); // a course in two lists counts once; a list counts up to its minimum
-  const earned = lists.reduce((a, l) => a + Math.min(l.minCredits, l.courses.filter((id) => passed.has(id) && !seen.has(id) && seen.add(id))
-    .reduce((s, id) => s + (data.courses[id]?.credits ?? 0), 0)), 0);
+  const earned = tally.reduce((a, { l, got }) => a + Math.min(l.minCredits, got), 0); // a list counts up to its minimum
   // short: a list's courses carry fewer known credits than its minimum (courses without credits in the data), so the ratio can't reach 1
   const short = lists.some((l) => l.courses.reduce((s, id) => s + (data.courses[id]?.credits ?? 0), 0) < l.minCredits);
   return { earned, required, ratio: required ? earned / required : 1, ...(short && { short }) };
+}
+
+// Names the credit figure of progress() still needs: the not-passed courses of every earlier-year list that is short of its minimum (none for a list that is met).
+export function missingRequired(data, state) {
+  const passed = new Set(state.passed);
+  return [...new Set(earlierTally(data, state).filter(({ l, got }) => got < l.minCredits).flatMap(({ l }) => l.courses.filter((id) => !passed.has(id) && data.courses[id])))];
 }
 
 // Credit-weighted average over passed courses that have a grade (courses without credits in the data don't count).

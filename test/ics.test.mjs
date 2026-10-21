@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toIcs, firstOn, SEMESTER_DATES } from '../web/ics.js';
+import { DISCLAIMER } from '../web/ui-text.js';
 
 const course = (day, extra = {}) => ({ name: 'פיזיקה, א; "ב"', groups: [{ id: 'g1', lecturer: 'כהן', primary: true,
   meetings: [{ day, start: '09:00', end: '10:50', room: 'A1' }], exams: [{ kind: 'בחינה', moed: 'א', date: '2027-02-01' }], ...extra }] });
@@ -49,4 +50,17 @@ test('toIcs: two exam kinds on one date get two UIDs; a bare CR is escaped; a la
   assert.equal(new Set(uids).size, uids.length);
   assert.ok(!/\r(?!\n)/.test(out), 'no bare CR');
   assert.match(out, /DTEND:20270220T235900/);
+});
+
+test('toIcs: every event (lessons and exams, dated or timed) has a DESCRIPTION that ends with the disclaimer', () => {
+  const data = { courses: { 7: course(2, { exams: [{ kind: 'בחינה', moed: 'א', date: '2027-02-01' }, { kind: 'בחינה', moed: 'ב', date: '2027-02-20', time: '09:00' }] }) } };
+  const out = toIcs([part(data, SEMESTER_DATES[2027]['א'])], NOW).replace(/\r\n /g, '');
+  const events = out.split('BEGIN:VEVENT').slice(1);
+  assert.equal(events.length, 3, 'one lesson and two exams');
+  for (const ev of events) {
+    const d = ev.split('\r\n').filter((l) => l.startsWith('DESCRIPTION:'));
+    assert.equal(d.length, 1);
+    assert.ok(d[0].endsWith(DISCLAIMER), d[0]);
+  }
+  assert.ok(events[0].includes(`DESCRIPTION:קבוצה g1 · כהן\\n${DISCLAIMER}\r\n`), 'the lesson keeps its group line, then the escaped newline');
 });

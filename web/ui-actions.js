@@ -1,13 +1,15 @@
 // Click (ACT) and change (CHG) handlers, wired to the document in ui-plan.js.
-import { app, cleanBlocks, upsertFriend, friendName, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
+import { app, applyPendingBackup, cleanBlocks, upsertFriend, friendName, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { toIcs } from './ics.js';
-import { groupIndex, openPop, paired, resGroups } from './ui-grid.js';
+import { advisorHtml } from './advisor.js';
+import { groupIndex, openPop, pinWith, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { friendToast, gradeInput, rangeError, shareText, waUrl } from './ui-text.js';
-import { colors, markOnboarded, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
+import { friendToast, gradeInput, rangeError, shareText, waUrl, SPLIT_WARNING } from './ui-text.js';
+import { colors, markOnboarded, acceptTerms, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
+import { pinsWithoutSplit } from './solver-core.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList } from './ui-me.js';
@@ -47,8 +49,16 @@ async function shareOut() {
   open(waUrl(text, url), '_blank', 'noopener');
 }
 
+// Split just went off: pins that only worked with it are removed, and the visitor is told (a course with no schedule would say nothing).
+function dropSplitPins() {
+  const kept = pinsWithoutSplit(Object.values(app.sem), app.state.pins);
+  if (kept.length < app.state.pins.length) { app.state.pins = kept; toast('הנעיצות של הקבוצות המופרדות בוטלו'); }
+}
+let printWatched = false;
+const clearPrint = () => { $('print').hidden = true; document.documentElement.classList.remove('print-summary'); };
 export const ACT = {
   shareOut,
+  async acceptTerms() { acceptTerms(); await applyPendingBackup(); refresh(); shownTitle()?.focus(); }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
   gateTrack() { ui.gateTrack = true; renderMe(); shownTitle()?.focus(); }, // back to the track tiles from the year question
   pickTrack(el) { // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
     el.classList.add('on'); el.parentElement.setAttribute('aria-busy', 'true'); // the track's data may take a while: show the pick, take no second tap
@@ -65,8 +75,8 @@ export const ACT = {
   prev: () => go(-1),
   next: () => go(1),
   day(el) { ui.mobileDay = Number(el.dataset.day); ui.dayScroll = true; keepFocus(renderView); },
-  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, pins: app.state.pins, friends: app.state.friends.filter((f) => f.active), colors,
-    lecturers: app.state.constraints.lecturers }),
+  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, split: app.state.constraints.split, pins: app.state.pins,
+    friends: app.state.friends.filter((f) => f.active), colors, lecturers: app.state.constraints.lecturers }),
   more(el) { // the button says it is working until the result replaces it
     if (ui.running) return;
     ui.moreMul *= 2;
@@ -86,9 +96,8 @@ export const ACT = {
   lecturerDrop(el) { delete app.state.constraints.lecturers[el.dataset.name]; refresh(); },
   pin(el) {
     const gid = el.dataset.gid, was = app.state.pins.includes(gid);
-    const { cid, g } = groupIndex(app.data).get(gid);
-    const sameSlot = (p) => { const x = groupIndex(app.data).get(p); return x?.cid === cid && !paired(x.g, g); }; // a new pin replaces the course's pins it can't pair with
-    app.state.pins = was ? app.state.pins.filter((x) => x !== gid) : [...app.state.pins.filter((p) => !sameSlot(p)), gid];
+    const { cid } = groupIndex(app.data).get(gid);
+    app.state.pins = was ? app.state.pins.filter((x) => x !== gid) : pinWith(app.data, app.state.pins, gid, app.state.constraints.split);
     if (!was) app.state.choices[cid] = 'must'; // the solver forces a pinned course in; show it
     const fromGid = $('pop').dataset.gid;
     $('pop').hidePopover();
@@ -107,6 +116,19 @@ export const ACT = {
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast('הקובץ ירד. פותחים אותו כדי להוסיף את השיעורים ליומן.');
+  },
+  advisor() { // fills #print and prints it alone (style.css @media print); the page is put back when printing ends
+    clearPrint(); // anything left over from a print that never reported its end
+    const res = current();
+    if (!res) return;
+    $('print').innerHTML = advisorHtml({ state: app.state, data: app.data, res, cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
+    $('print').hidden = false; document.documentElement.classList.add('print-summary');
+    if (!printWatched) { // once: afterprint is missing on some phones, the print media query turning off is the second signal
+      printWatched = true;
+      addEventListener('afterprint', clearPrint);
+      matchMedia('print').addEventListener('change', (e) => { if (!e.matches) clearPrint(); });
+    }
+    print();
   },
   backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),
   landingAdd: () => addFriend(app.friendLanding),
@@ -147,6 +169,7 @@ export const ACT = {
     app.state.constraints = { ...structuredClone(DEFAULT.constraints), blocks: app.state.constraints.blocks }; // busy time is a fact about the week, like pins and friends
     app.state.scope = DEFAULT.scope;
     app.state.load = DEFAULT.load;
+    dropSplitPins();
     refresh();
     toast('ההעדפות אופסו');
   },
@@ -170,6 +193,7 @@ async function changeIdentity(program, startYear) {
 const cohortOf = (y) => y && app.data.year - y + 1; // the cohort that is in study year y
 const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math.abs(b - want) ? y : b), list[0]); // same cohort if offered, else the closest
 export const CHG = {
+  termsTick: (el) => { el.closest('.gate').querySelector('[data-act="acceptTerms"]').disabled = !el.checked; return 'none'; }, // the only toggle of the button
   program: (el) => {
     const p = app.catalog.programs.find((x) => x.id === Number(el.value));
     const was = gated();
@@ -212,6 +236,11 @@ export const CHG = {
     if (err) toast(err);
     app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet;
   },
+  turn: (el) => { // a turn id of settings.json, or '' (לא יודע/ת)
+    app.state.profile = cleanProfile({ ...app.state.profile, turn: el.value });
+    renderBanner();
+    return 'save';
+  },
   specMode: (el) => {
     const mode = el.value, picks = mode === 'pick' ? specView(app.data, app.state.profile.specs).picks : [];
     ui.specPick = { mode, picks };
@@ -248,6 +277,11 @@ export const CHG = {
   winHard: (el) => { app.state.constraints.windowHard = el.value === 'hard'; },
   examsAllow: (el) => { app.state.constraints.examsSameDay = el.checked ? 'allow' : 'forbid'; },
   includeFull: (el) => { app.state.constraints.includeFull = el.checked; },
+  async split(el) { // ticking needs the academic advisor's warning acknowledged; a cancel unticks the box
+    if (el.checked && !await askConfirm(SPLIT_WARNING, { ok: 'הבנתי, להציג', cancel: 'ביטול' })) { el.checked = false; return 'none'; }
+    app.state.constraints.split = el.checked;
+    if (!el.checked) dropSplitPins();
+  },
   notBefore: (el) => { app.state.constraints.notBefore = time(el.value); return 'quiet'; },
   notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
   maxDays: (el) => { app.state.constraints.maxDays = el.value ? Number(el.value) : null; },

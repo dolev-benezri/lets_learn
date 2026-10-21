@@ -70,6 +70,12 @@ test('normalize: out-of-range profile dropped, valid kept', () => {
   assert.deepEqual(normalize({ v: 1, profile: 'x' }).profile, { year: null, amirnet: null, ...none });
 });
 
+test('normalize: profile.turn is kept only as a non-empty string', () => {
+  assert.equal(normalize({ v: 1, profile: { turn: 'a' } }).profile.turn, 'a');
+  for (const t of ['', 5, null, ['a'], {}, 'x'.repeat(41)]) assert.ok(!('turn' in normalize({ v: 1, profile: { turn: t } }).profile), String(t));
+  assert.ok(!('turn' in normalize({ v: 1 }).profile));
+});
+
 test('normalize: old saved state without specs/summer gets the defaults; valid ones are kept, bad ones dropped', () => {
   assert.deepEqual(normalize({ v: 1, profile: { year: 3, amirnet: 100 } }).profile, { year: 3, amirnet: 100, specs: [], summer: false });
   assert.deepEqual(normalize({ v: 1 }).profile, { year: null, amirnet: null, specs: [], summer: false });
@@ -304,4 +310,17 @@ test('normalize: programSet only from a real choice; a saved study year or anoth
   assert.equal(normalize({ v: 1, profile: { year: 2 } }).programSet, true);
   assert.equal(normalize({ v: 1, program: 10, startYear: 2026 }, { programs: [{ id: 10, name: 'x', startYears: [2026] }, { id: 30, name: 'y', startYears: [2026] }] }).programSet, true);
   assert.equal(normalize({ v: 1, profile: { year: null } }).programSet, false);
+});
+
+test('normalize: constraints.split is off by default, kept when true, false for anything else', () => {
+  assert.equal(D.constraints.split, false);
+  assert.equal(normalize({ v: 1, constraints: { split: true } }).constraints.split, true);
+  for (const bad of ['yes', 1, null, 'true', [true]]) assert.equal(normalize({ v: 1, constraints: { split: bad } }).constraints.split, false, String(bad));
+});
+
+test('legal.html: dated for this change; the English line says the Amirnet exemption is computed; the list says it goes by the data shown', () => {
+  const html = readFileSync('web/legal.html', 'utf8');
+  assert.match(html, /עדכון אחרון: 21\.10\.2026/);
+  assert.match(html, /רמת האנגלית[^<]*הכלי מחשב פטור רק לפי ציון אמירנט שהזנתם/);
+  assert.match(html, /<h3>מה הכלי בודק<\/h3>\s*<ul>\s*<li>הכול לפי הנתונים שמוצגים בכלי, שנמשכו מהידיעון/);
 });

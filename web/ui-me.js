@@ -5,10 +5,13 @@ import { icon } from './ui-grid.js';
 import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
-import { creditsGoal, courseCount } from './ui-text.js';
-import { STATUS, FAILS, YEARS, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
+import { creditsGoal, courseCount, conflictsFor } from './ui-text.js';
+import { STATUS, FAILS, YEARS, termsOk, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
 
 // ---------- status page (#me) ----------
+// "התור שלי בהרשמה": only when settings.json lists turns. A saved turn that is no longer listed shows as "לא יודע/ת" and warns about nothing.
+const turnPick = (cur) => (app.settings.turns.length ? `<label class="field pick">התור שלי בהרשמה <select data-chg="turn" data-k="turn"><option value="">לא יודע/ת</option>
+  ${app.settings.turns.map((t) => `<option value="${esc(t.id)}"${t.id === cur ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>` : '');
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
   const s = app.state, n = s.failed[id] ?? 0, k = `${li}-${id}`, nm = heb(app.data.courses[id].name);
@@ -72,7 +75,17 @@ export function identityPick(year, visible) {
 
 // The gate: the track first (tiles), then the year; "שינוי" (ui.gateTrack) shows the track tiles again. The tiles are buttons, not radios:
 // an arrow key on a radio would commit at once, and a button also re-picks the loaded track. They run the profile card's handlers (ACT.pickTrack, ACT.pickYear).
+function termsHtml() {
+  return `<div class="me-head"><h2 id="meTitle" tabindex="-1">לפני שמתחילים</h2></div>
+    <div class="gate-terms"><p>זה כלי עזר לתכנון בלבד. הוא לא רושם אתכם לקורסים: ההרשמה נעשית רק באפקה-נט.</p>
+    <p>החלופות שהכלי מציג הן אפשרויות, לא המלצה.</p>
+    <p>לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים, במיוחד בכל חריגה מהמערכת המומלצת של המחלקה.</p></div>
+    <p class="gate-links"><a href="legal.html#terms">תנאי השימוש</a> · <a href="legal.html#scope">מה הכלי בודק ומה לא</a></p>
+    <label class="check"><input type="checkbox" data-chg="termsTick" data-k="termsTick"> קראתי והבנתי</label>
+    <button type="button" class="btn primary gate-go" data-act="acceptTerms" data-k="acceptTerms" disabled>המשך</button>`;
+}
 function gateHtml() {
+  if (!termsOk()) return termsHtml();
   const { programs } = app.catalog, many = programs.length > 1, pickTrack = needsProgram() || ui.gateTrack;
   const head = (n, q) => `<div class="me-head">${many ? `<p class="gate-step">שאלה ${n} מתוך 2</p>` : ''}<h2 id="meTitle" tabindex="-1">${q}</h2></div>`;
   if (pickTrack) {
@@ -123,9 +136,11 @@ export function renderMe() {
           ${identityPick(state.profile.year, true)}${unverified}
           <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
+          ${turnPick(state.profile.turn)}
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
-          <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p></section>`;
+          <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p>
+          ${conflictsFor(app.settings, state.program, state.startYear).map((t) => `<p class="hint warn-text">יש סתירה בין המקורות הרשמיים לגבי ${esc(t)}. בדקו מול המחלקה.</p>`).join('')}</section>`;
   const prog = `<section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
           <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span
             class="hint">יעד 70% (תקנון 11.4.4)</span></div>

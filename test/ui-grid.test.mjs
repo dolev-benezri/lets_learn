@@ -208,3 +208,36 @@ test('summary lists Friday as free when the student wished it off', () => {
   assert.deepEqual(summary(res, data, [], { dayOff: [6] }).freeDays, [2, 3, 4, 5, 6]);
   assert.deepEqual(summary(res, data, []).freeDays, [2, 3, 4, 5]);
 });
+
+test('altGroups: with split on, a tutorial no lecture links to can be pinned (a lecture can pair with it); off, it cannot', () => {
+  const data = { courses: course([
+    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
+  ]) };
+  const ok = (split) => Object.fromEntries(altGroups(data, ['a1', 'a1/1'], 'a1/1', false, split).map((x) => [x.g.id, x.ok]));
+  assert.deepEqual(ok(false), { 'a1/1': true, 'a9/1': false });
+  assert.deepEqual(ok(true), { 'a1/1': true, 'a9/1': true });
+});
+
+test('pinWith: a new pin replaces the course\'s pins it can\'t pair with; with split on a group of another type stays', async () => {
+  const { pinWith } = await import('../web/ui-grid.js');
+  const data = { courses: course([
+    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a2', 'L', [m(2, '08:00', '10:00')]), mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
+  ]) };
+  assert.deepEqual(pinWith(data, ['a1'], 'a1/1'), ['a1', 'a1/1'], 'linked: both stay');
+  assert.deepEqual(pinWith(data, ['a1'], 'a9/1'), ['a9/1'], 'split off: the unlinked tutorial replaces the lecture pin');
+  assert.deepEqual(pinWith(data, ['a1'], 'a9/1', true), ['a1', 'a9/1'], 'split on: the lecture pin holds');
+  assert.deepEqual(pinWith(data, ['a1'], 'a2', true), ['a2'], 'the same type still replaces');
+});
+
+test('pinsWithoutSplit: pins that only work with split on lose their sub-group pins, the lecture stays; everything else is untouched', async () => {
+  const { pinsWithoutSplit } = await import('../web/solver-core.js');
+  const data = { courses: course([
+    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
+  ]) };
+  assert.deepEqual(pinsWithoutSplit([data], ['a1', 'a9/1', 'b1']), ['a1', 'b1'], 'lecture + unlinked tutorial: the tutorial pin goes');
+  assert.deepEqual(pinsWithoutSplit([null, data], ['a9/1']), [], 'a lone unlinked tutorial pin worked only with split');
+  assert.deepEqual(pinsWithoutSplit([data], ['a1', 'a1/1']), ['a1', 'a1/1'], 'a linked pair is fine without split');
+  assert.deepEqual(pinsWithoutSplit([data], ['zz', 'b1']), ['zz', 'b1'], 'stale and unrelated pins stay');
+  const clash = { courses: course([mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a1/1', 'T', [m(1, '09:00', '11:00')]), mk('a9/1', 'T', [m(1, '09:00', '11:00')])]) };
+  assert.deepEqual(pinsWithoutSplit([clash], ['a1', 'a9/1']), ['a1', 'a9/1'], 'infeasible with split too: not the split\'s doing, kept');
+});
