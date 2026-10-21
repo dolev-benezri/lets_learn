@@ -4,7 +4,9 @@ import { toMin } from './solver-core.js';
 // Afeka group ids are 9 digits, tutorials and labs add /N ("271001601/1", spaces around the slash allowed); the whole token is classified.
 // A ":" after /N means a time, not an id. (?<!\d)…(?!\d) keeps 10-digit phone numbers out.
 export function groupsFromText(text, data) {
-  const known = groupIndex(data), found = [], unknown = [];
+  const known = groupIndex(data),
+    found = [],
+    unknown = [];
   for (const [tok] of String(text).matchAll(/(?<!\d)\d{9}(?:\s*\/\s*\d{1,2}(?![\d:]))?(?!\d)/g)) {
     const id = tok.replace(/\s+/g, ''); // pdf.js / OCR may split "271001601 / 1"
     const list = known.has(id) ? found : unknown;
@@ -55,7 +57,10 @@ export function findCourse(text, courses) {
 
 // Gids (present in data) with a meeting that overlaps a meeting of another gid in the list.
 export function clashIds(gids, data) {
-  const byId = groupIndex(data), ms = gids.filter((id, i) => byId.has(id) && gids.indexOf(id) === i).map((id) => [id, byId.get(id).g.meetings]);
+  const byId = groupIndex(data),
+    ms = gids.filter((id, i) => byId.has(id) && gids.indexOf(id) === i).map((id) => [id, byId.get(id).g.meetings]);
   const hit = (a, b) => a.day === b.day && toMin(a.start) < toMin(b.end) && toMin(b.start) < toMin(a.end);
-  return new Set(ms.filter(([id, a]) => ms.some(([o, b]) => o !== id && a.some((x) => b.some((y) => hit(x, y))))).map(([id]) => id));
+  return new Set(
+    ms.filter(([id, a]) => ms.some(([o, b]) => o !== id && a.some((x) => b.some((y) => hit(x, y))))).map(([id]) => id)
+  );
 }

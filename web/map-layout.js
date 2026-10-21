@@ -11,7 +11,10 @@ export function makeKeep(mode, data, statuses, year) {
   if (mode === 'remaining') return (id) => !['done', 'exempt'].includes(statuses[id]?.status);
   if (mode === 'year') {
     const l = data.lists.find((x) => yearOf(x) === YEAR_LETTERS[year - 1]);
-    if (l) { const ids = new Set(l.courses); return (id) => ids.has(id); }
+    if (l) {
+      const ids = new Set(l.courses);
+      return (id) => ids.has(id);
+    }
   }
   return () => true;
 }
@@ -19,7 +22,13 @@ export function makeKeep(mode, data, statuses, year) {
 // Study year (1-5) of every course in a "חובה שנה X'" list (the first one that holds it); anything else is an elective.
 export function courseYears(data) {
   const m = new Map();
-  for (const l of data.lists) { const y = YEAR_LETTERS.indexOf(yearOf(l) ?? '?'); if (y >= 0) l.courses.forEach((id) => { if (data.courses[id] && !m.has(id)) m.set(id, y + 1); }); }
+  for (const l of data.lists) {
+    const y = YEAR_LETTERS.indexOf(yearOf(l) ?? '?');
+    if (y >= 0)
+      l.courses.forEach((id) => {
+        if (data.courses[id] && !m.has(id)) m.set(id, y + 1);
+      });
+  }
   return m;
 }
 // Electives the student has no stake in stay off the map: in no required list (a year, English, the final project…), not chosen "חובה"/"אולי", not passed or being retaken.
@@ -27,13 +36,25 @@ const REQUIRED = /חובה|פרויקט גמר/;
 // Specialization lists never count by their name: only the chosen areas' mandatory courses are required, and their electives are the student's pool (not aside).
 export const asideIds = (data, statuses, choices = {}, specs = []) => {
   const sp = specLists(data, specs);
-  const req = new Set([...data.lists.filter((l) => REQUIRED.test(l.name) && !sp.all.has(l.code)).flatMap((l) => l.courses), ...sp.mandatory]);
-  return Object.keys(data.courses).filter((id) => !req.has(id) && !sp.elective.has(id) && !['must', 'optional'].includes(choices[id]) && !['done', 'exempt', 'retake'].includes(statuses[id]?.status));
+  const req = new Set([
+    ...data.lists.filter((l) => REQUIRED.test(l.name) && !sp.all.has(l.code)).flatMap((l) => l.courses),
+    ...sp.mandatory
+  ]);
+  return Object.keys(data.courses).filter(
+    (id) =>
+      !req.has(id) &&
+      !sp.elective.has(id) &&
+      !['must', 'optional'].includes(choices[id]) &&
+      !['done', 'exempt', 'retake'].includes(statuses[id]?.status)
+  );
 };
 
 // Geometry helpers for the progress-map renderer
 export const nodeRadius = (credits) => Math.max(14, Math.min(30, 12 + 3 * (Number(credits) || 0)));
-export const edgePath = (a, b) => { const mx = (a.x + b.x) / 2; return `M${a.x},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x},${b.y}`; };
+export const edgePath = (a, b) => {
+  const mx = (a.x + b.x) / 2;
+  return `M${a.x},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x},${b.y}`;
+};
 
 // Structure only, no pixels: a band per study year (א׳ first = rightmost) and an electives band last (leftmost). A band has unlabelled columns by
 // prerequisite depth inside the band (a depth with many courses wraps into more columns), so arrows mostly flow right to left, top to bottom.
@@ -41,32 +62,44 @@ export const edgePath = (a, b) => { const mx = (a.x + b.x) / 2; return `M${a.x},
 // become `ext` pills in their target's column, except pre-academic ones (מכינה), which sit in their own band right of year א׳: they come before
 // the degree, and only some students need them. An outside option next to one inside the program (another department's version of the same
 // course, 96% of them) is not drawn: the student takes their own; the card still lists it.
-const PRE = /מכינה|קורס הכנה/, PRE_BAND = -1, ROWS = 9;
-export const PRE_NAME = 'לפני התואר (מכינה)', PRE_NOTE = 'רק למי שנדרש/ה לפי תנאי הקבלה';
+const PRE = /מכינה|קורס הכנה/,
+  PRE_BAND = -1,
+  ROWS = 9;
+export const PRE_NAME = 'לפני התואר (מכינה)',
+  PRE_NOTE = 'רק למי שנדרש/ה לפי תנאי הקבלה';
 export function layoutMap(data, keep = () => true) {
-  const C = data.courses, yr = courseYears(data);
+  const C = data.courses,
+    yr = courseYears(data);
   const bandOf = (id) => (yr.get(id) ?? YEAR_LETTERS.length + 1) - 1; // electives: after the last year (5)
   const order = Object.keys(C).filter((id) => keep(id));
   const K = new Set(order);
 
   // Requirements that survive the filter. ext options are keyed per band and name (pre-academic ones once, for the whole map).
   const entries = [];
-  for (const id of order) C[id].prereqs.forEach((p, pi) => {
-    const seen = new Set(), opts = [], own = p.anyOf.some((a) => a.id !== id && C[a.id]);
-    for (const a of p.anyOf) {
-      const isCourse = a.id && C[a.id], pre = !isCourse && PRE.test(a.name);
-      const k = isCourse ? a.id : `x:${pre ? 'pre' : bandOf(id)}:${a.name}`;
-      if (seen.has(k) || a.id === id || (isCourse && !K.has(a.id)) || (!isCourse && !pre && own)) continue;
-      seen.add(k);
-      opts.push(isCourse ? { key: k, id: a.id } : { key: k, ext: true, pre, name: a.name });
-    }
-    if (opts.length) entries.push({ to: id, kind: p.kind, opts, pi });
-  });
+  for (const id of order)
+    C[id].prereqs.forEach((p, pi) => {
+      const seen = new Set(),
+        opts = [],
+        own = p.anyOf.some((a) => a.id !== id && C[a.id]);
+      for (const a of p.anyOf) {
+        const isCourse = a.id && C[a.id],
+          pre = !isCourse && PRE.test(a.name);
+        const k = isCourse ? a.id : `x:${pre ? 'pre' : bandOf(id)}:${a.name}`;
+        if (seen.has(k) || a.id === id || (isCourse && !K.has(a.id)) || (!isCourse && !pre && own)) continue;
+        seen.add(k);
+        opts.push(isCourse ? { key: k, id: a.id } : { key: k, ext: true, pre, name: a.name });
+      }
+      if (opts.length) entries.push({ to: id, kind: p.kind, opts, pi });
+    });
 
   // Longest path inside the band (a prerequisite from another year says nothing about the column). A cycle (bad data) just stops the recursion.
   const incoming = new Map();
-  for (const e of entries) for (const o of e.opts) if (!o.ext && bandOf(o.id) === bandOf(e.to)) (incoming.get(e.to) ?? incoming.set(e.to, []).get(e.to)).push([o.id, e.kind === 'קדם' ? 1 : 0]);
-  const memo = new Map(), stack = new Set();
+  for (const e of entries)
+    for (const o of e.opts)
+      if (!o.ext && bandOf(o.id) === bandOf(e.to))
+        (incoming.get(e.to) ?? incoming.set(e.to, []).get(e.to)).push([o.id, e.kind === 'קדם' ? 1 : 0]);
+  const memo = new Map(),
+    stack = new Set();
   const depthOf = (id) => {
     if (memo.has(id)) return memo.get(id);
     if (stack.has(id)) return 0;
@@ -76,31 +109,85 @@ export function layoutMap(data, keep = () => true) {
     memo.set(id, v);
     return v;
   };
-  const nodes = new Map(order.map((id) => [id, { key: id, type: 'course', id, band: bandOf(id), depth: depthOf(id), sub: 0, year: yr.get(id) ?? null }]));
+  const nodes = new Map(
+    order.map((id) => [
+      id,
+      { key: id, type: 'course', id, band: bandOf(id), depth: depthOf(id), sub: 0, year: yr.get(id) ?? null }
+    ])
+  );
   // Sub-column inside the band: one per depth, a crowded depth split into ROWS-sized (balanced) columns.
   for (const b of new Set([...nodes.values()].map((n) => n.band))) {
-    const ids = order.filter((id) => nodes.get(id).band === b), depths = [...new Set(ids.map((id) => nodes.get(id).depth))].sort((x, y) => x - y);
+    const ids = order.filter((id) => nodes.get(id).band === b),
+      depths = [...new Set(ids.map((id) => nodes.get(id).depth))].sort((x, y) => x - y);
     let sub = 0;
     for (const d of depths) {
-      const at = ids.filter((id) => nodes.get(id).depth === d), k = Math.ceil(at.length / ROWS), per = Math.ceil(at.length / k);
-      at.forEach((id, i) => { nodes.get(id).sub = sub + Math.floor(i / per); });
+      const at = ids.filter((id) => nodes.get(id).depth === d),
+        k = Math.ceil(at.length / ROWS),
+        per = Math.ceil(at.length / k);
+      at.forEach((id, i) => {
+        nodes.get(id).sub = sub + Math.floor(i / per);
+      });
       sub += k;
     }
   }
-  for (const e of entries) for (const o of e.opts) if (o.ext) { // one pill per band and name, in the earliest column of its targets, just above the shallowest one
-    const t = nodes.get(e.to);
-    if (o.pre) { nodes.get(o.key) ?? nodes.set(o.key, { key: o.key, type: 'ext', pre: true, name: o.name, band: PRE_BAND, depth: 0, sub: 0, year: null }); continue; }
-    const n = nodes.get(o.key) ?? nodes.set(o.key, { key: o.key, type: 'ext', name: o.name, band: t.band, depth: t.depth - 1, sub: t.sub, year: t.year }).get(o.key);
-    n.sub = Math.min(n.sub, t.sub); n.depth = Math.min(n.depth, t.depth - 1);
-  }
+  for (const e of entries)
+    for (const o of e.opts)
+      if (o.ext) {
+        // one pill per band and name, in the earliest column of its targets, just above the shallowest one
+        const t = nodes.get(e.to);
+        if (o.pre) {
+          nodes.get(o.key) ??
+            nodes.set(o.key, {
+              key: o.key,
+              type: 'ext',
+              pre: true,
+              name: o.name,
+              band: PRE_BAND,
+              depth: 0,
+              sub: 0,
+              year: null
+            });
+          continue;
+        }
+        const n =
+          nodes.get(o.key) ??
+          nodes
+            .set(o.key, {
+              key: o.key,
+              type: 'ext',
+              name: o.name,
+              band: t.band,
+              depth: t.depth - 1,
+              sub: t.sub,
+              year: t.year
+            })
+            .get(o.key);
+        n.sub = Math.min(n.sub, t.sub);
+        n.depth = Math.min(n.depth, t.depth - 1);
+      }
 
   // Columns in flow order (band, sub-column), an empty one skipped. Rows: depth, then list order (the sort is stable; ext pills come first).
-  const list = [...nodes.values()], cols = [], bands = [];
+  const list = [...nodes.values()],
+    cols = [],
+    bands = [];
   for (const b of [...new Set(list.map((n) => n.band))].sort((x, y) => x - y)) {
     const year = b >= 0 && b < YEAR_LETTERS.length ? b + 1 : null;
-    const band = { year, kind: b === PRE_BAND ? 'pre' : year ? 'year' : 'other', name: b === PRE_BAND ? PRE_NAME : bandName(year), note: b === PRE_BAND ? PRE_NOTE : null, first: cols.length, n: 0 };
+    const band = {
+      year,
+      kind: b === PRE_BAND ? 'pre' : year ? 'year' : 'other',
+      name: b === PRE_BAND ? PRE_NAME : bandName(year),
+      note: b === PRE_BAND ? PRE_NOTE : null,
+      first: cols.length,
+      n: 0
+    };
     for (const s of [...new Set(list.filter((n) => n.band === b).map((n) => n.sub))].sort((x, y) => x - y)) {
-      list.filter((n) => n.band === b && n.sub === s).sort((x, y) => x.depth - y.depth).forEach((n, row) => { n.col = cols.length; n.row = row; });
+      list
+        .filter((n) => n.band === b && n.sub === s)
+        .sort((x, y) => x.depth - y.depth)
+        .forEach((n, row) => {
+          n.col = cols.length;
+          n.row = row;
+        });
       cols.push({});
       band.n++;
     }
@@ -109,7 +196,8 @@ export function layoutMap(data, keep = () => true) {
   list.sort((x, y) => x.col - y.col || x.row - y.row);
 
   // "או" diamonds, and the routes: a path per hop (option -> diamond -> target, or option -> target).
-  const diamonds = [], paths = [];
+  const diamonds = [],
+    paths = [];
   const hop = (from, to, kind) => paths.push({ id: paths.length, from, to, kind });
   for (const e of entries) {
     if (e.opts.length > 1) {
@@ -124,12 +212,25 @@ export function layoutMap(data, keep = () => true) {
 
 // Everything upstream (what it needs) and downstream (what it opens) of one node, as keys and path ids.
 export function chainOf(paths, key) {
-  const nodes = new Set([key]), used = new Set();
-  for (const [a, b] of [['to', 'from'], ['from', 'to']]) {
-    const seen = new Set([key]), todo = [key];
+  const nodes = new Set([key]),
+    used = new Set();
+  for (const [a, b] of [
+    ['to', 'from'],
+    ['from', 'to']
+  ]) {
+    const seen = new Set([key]),
+      todo = [key];
     while (todo.length) {
       const k = todo.pop();
-      for (const p of paths) if (p[a] === k) { used.add(p.id); nodes.add(p[b]); if (!seen.has(p[b])) { seen.add(p[b]); todo.push(p[b]); } }
+      for (const p of paths)
+        if (p[a] === k) {
+          used.add(p.id);
+          nodes.add(p[b]);
+          if (!seen.has(p[b])) {
+            seen.add(p[b]);
+            todo.push(p[b]);
+          }
+        }
     }
   }
   return { nodes, paths: used };
@@ -148,60 +249,145 @@ export function planPaths(paths, plan) {
 // specialization credits still missing (null while no area is chosen).
 export const isDone = (st, id) => ['done', 'exempt'].includes(st[id]?.status);
 export function progressInfo(data, st, plan = new Set(), specs = []) {
-  const seen = new Set(), sp = specLists(data, specs), credits = (id) => Number(data.courses[id].credits) || 0, degree = Number(data.degree?.total) || 0;
-  let total = 0, reach = 0, done = 0, planned = 0;
+  const seen = new Set(),
+    sp = specLists(data, specs),
+    credits = (id) => Number(data.courses[id].credits) || 0,
+    degree = Number(data.degree?.total) || 0;
+  let total = 0,
+    reach = 0,
+    done = 0,
+    planned = 0;
   const extra = { reach: 0, done: 0, planned: 0 }; // credits past a list's minimum (or the specialization cap), which count toward the rest of the degree
   const rows = []; // the degree checklist: one row per requirement, with the same clipped numbers the bar adds up
   const fill = (cap, all, d0, p0, name, need = cap) => {
-    const d = Math.min(cap, d0), p = Math.min(cap - d, p0);
-    extra.reach += Math.max(0, all - cap); extra.done += d0 - d; extra.planned += p0 - p;
-    reach += Math.min(cap, all); done += d; planned += p;
+    const d = Math.min(cap, d0),
+      p = Math.min(cap - d, p0);
+    extra.reach += Math.max(0, all - cap);
+    extra.done += d0 - d;
+    extra.planned += p0 - p;
+    reach += Math.min(cap, all);
+    done += d;
+    planned += p;
     if (Math.min(need, all) > 0) rows.push({ name, need: Math.min(need, all), done: d, planned: p }); // what the data can reach; the rest is untracked
   };
   for (const l of data.lists.filter((x) => !sp.all.has(x.code))) {
-    const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)), min = Number(l.minCredits) || 0;
+    const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)),
+      min = Number(l.minCredits) || 0;
     ids.forEach((id) => seen.add(id));
     const sum = (f) => ids.filter(f).reduce((s, id) => s + credits(id), 0);
-    total += min; fill(min, sum(() => true), sum((id) => isDone(st, id)), sum((id) => !isDone(st, id) && plan.has(id)), l.name);
+    total += min;
+    fill(
+      min,
+      sum(() => true),
+      sum((id) => isDone(st, id)),
+      sum((id) => !isDone(st, id) && plan.has(id)),
+      l.name
+    );
   }
-  const pool = new Set((specs.length ? [...sp.mandatory, ...sp.elective] : data.lists.filter((x) => sp.all.has(x.code)).flatMap((x) => x.courses)).filter((id) => data.courses[id] && !seen.has(id)));
+  const pool = new Set(
+    (specs.length
+      ? [...sp.mandatory, ...sp.elective]
+      : data.lists.filter((x) => sp.all.has(x.code)).flatMap((x) => x.courses)
+    ).filter((id) => data.courses[id] && !seen.has(id))
+  );
   // No specCredits with areas to pick: what the lists leave of the degree total in this cohort (mechanical 2027: 160 - 133 = 27). A derived number the
   // area's courses can't reach (medical engineering) is met from the electives instead ("complete to 160 from the electives"), so it counts up to that reach.
-  const known = Number(data.degree?.specCredits), cap = known || (data.specializations?.length && degree ? Math.max(0, degree - total) : 0);
-  const pick = (f) => [...pool].filter(f).reduce((s, id) => s + credits(id), 0), sd = Math.min(cap, pick((id) => isDone(st, id)));
-  const need = known ? cap : Math.min(cap, pick(() => true));
-  fill(cap, pick(() => true), pick((id) => isDone(st, id)), pick((id) => !isDone(st, id) && plan.has(id)), 'התמחות', need);
+  const known = Number(data.degree?.specCredits),
+    cap = known || (data.specializations?.length && degree ? Math.max(0, degree - total) : 0);
+  const pick = (f) => [...pool].filter(f).reduce((s, id) => s + credits(id), 0),
+    sd = Math.min(
+      cap,
+      pick((id) => isDone(st, id))
+    );
+  const need = known
+    ? cap
+    : Math.min(
+        cap,
+        pick(() => true)
+      );
+  fill(
+    cap,
+    pick(() => true),
+    pick((id) => isDone(st, id)),
+    pick((id) => !isDone(st, id) && plan.has(id)),
+    'התמחות',
+    need
+  );
   // What the minimums and the specialization leave of the degree (computer science: an electives list with minCredits 0) fills from the extra credits.
-  const rest = Math.max(0, degree - total - need), rd = Math.min(rest, extra.done);
-  reach += Math.min(rest, extra.reach); done += rd; planned += Math.min(rest - rd, extra.planned);
-  if (Math.min(rest, extra.reach) > 0) rows.push({ name: 'בחירה (מעבר למינימום)', need: Math.min(rest, extra.reach), done: rd, planned: Math.min(rest - rd, extra.planned) });
+  const rest = Math.max(0, degree - total - need),
+    rd = Math.min(rest, extra.done);
+  reach += Math.min(rest, extra.reach);
+  done += rd;
+  planned += Math.min(rest - rd, extra.planned);
+  if (Math.min(rest, extra.reach) > 0)
+    rows.push({
+      name: 'בחירה (מעבר למינימום)',
+      need: Math.min(rest, extra.reach),
+      done: rd,
+      planned: Math.min(rest - rd, extra.planned)
+    });
   const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + credits(id), 0);
   // The bar ends where the data does (all passed = 100%); credits of the degree no list in the data covers are named, not silently unreachable.
   const r = (v) => Math.round(v * 2) / 2;
-  return { total: r(reach), done, planned, adds, specLeft: specs.length ? need - sd : null, untracked: degree > reach ? r(degree - reach) : 0, degreeTotal: degree || null, rows };
+  return {
+    total: r(reach),
+    done,
+    planned,
+    adds,
+    specLeft: specs.length ? need - sd : null,
+    untracked: degree > reach ? r(degree - reach) : 0,
+    degreeTotal: degree || null,
+    rows
+  };
 }
 // Courses the plan newly opens: blocked now, not blocked once the plan's courses count as passed (the plan's own courses excluded).
 export function newlyUnlocked(data, state, plan) {
   if (!plan.size) return 0;
-  const before = classify(data, state).statuses, after = classify(data, { ...state, passed: [...new Set([...(state.passed ?? []), ...plan])] }).statuses;
-  return Object.keys(before).filter((id) => !plan.has(id) && before[id].status === 'blocked' && after[id].status !== 'blocked').length;
+  const before = classify(data, state).statuses,
+    after = classify(data, { ...state, passed: [...new Set([...(state.passed ?? []), ...plan])] }).statuses;
+  return Object.keys(before).filter(
+    (id) => !plan.has(id) && before[id].status === 'blocked' && after[id].status !== 'blocked'
+  ).length;
 }
 
-
 // ---------- neural-style geometry (pure) ----------
-export const G = { pitch: 150, row: 72, padX: 28, padY: 20, head: 58, bandGap: 32, orR: 11, orDx: 76, extHW: 66, extR: 15, bulge: 56 };
+export const G = {
+  pitch: 150,
+  row: 72,
+  padX: 28,
+  padY: 20,
+  head: 58,
+  bandGap: 32,
+  orR: 11,
+  orDx: 76,
+  extHW: 66,
+  extR: 15,
+  bulge: 56
+};
 export const truncate = (s, n = 18) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 // Edge leaves the near side of one circle and enters the near side of the next (flow runs right to left in RTL).
-export const edgeEnds = (a, b) => { const d = b.x < a.x ? -1 : 1; return [{ x: a.x + d * a.hw, y: a.y }, { x: b.x - d * b.hw, y: b.y }]; };
+export const edgeEnds = (a, b) => {
+  const d = b.x < a.x ? -1 : 1;
+  return [
+    { x: a.x + d * a.hw, y: a.y },
+    { x: b.x - d * b.hw, y: b.y }
+  ];
+};
 // Two nodes in one column: edgePath would be a straight line through the column, so bow out to the right (further for a longer hop, clear of the names between).
-export const sameColPath = (a, b) => { const x1 = a.x + a.hw, x2 = b.x + b.hw, k = G.bulge + Math.min(40, Math.abs(b.y - a.y) / 6); return `M${x1},${a.y} C${x1
-  + k},${a.y} ${x2 + k},${b.y} ${x2},${b.y}`; };
+export const sameColPath = (a, b) => {
+  const x1 = a.x + a.hw,
+    x2 = b.x + b.hw,
+    k = G.bulge + Math.min(40, Math.abs(b.y - a.y) / 6);
+  return `M${x1},${a.y} C${x1 + k},${a.y} ${x2 + k},${b.y} ${x2},${b.y}`;
+};
 
 export function geometry(L, creditsOf = () => 0) {
   const radius = (n) => (n.type === 'ext' ? G.extR : nodeRadius(creditsOf(n.id)));
-  const W = G.padX * 2 + L.cols.length * G.pitch + Math.max(0, L.bands.length - 1) * G.bandGap, top = G.head + G.padY;
+  const W = G.padX * 2 + L.cols.length * G.pitch + Math.max(0, L.bands.length - 1) * G.bandGap,
+    top = G.head + G.padY;
   // x of each column and each band's box, band by band from the right edge
-  const colX = [], bands = [];
+  const colX = [],
+    bands = [];
   let xr = W - G.padX;
   for (const b of L.bands) {
     for (let j = 0; j < b.n; j++) colX[b.first + j] = xr - (j + 0.5) * G.pitch;
@@ -210,30 +396,60 @@ export function geometry(L, creditsOf = () => 0) {
   }
   // A column's step is at least a row, and enough for what sits between two circles that follow each other: the upper one's name (16px below it)
   // and the lower one's "פותח N" badge (riding 0.85r + 8 above its centre), plus a small gap.
-  const byCol = {}, step = {}; // not Object.groupBy: Safari before 17.4
+  const byCol = {},
+    step = {}; // not Object.groupBy: Safari before 17.4
   for (const n of L.nodes) (byCol[n.col] ??= []).push(n);
-  for (const [c, col] of Object.entries(byCol)) step[c] = Math.max(G.row, ...col.slice(1).map((n, i) => radius(col[i]) + 22 + 0.85 * radius(n) + 12));
-  const H = top + G.padY + Math.max(0, ...Object.entries(byCol).map(([c, col]) => col.length * step[c])), pos = new Map();
-  for (const n of L.nodes) { const r = radius(n); pos.set(n.key, { ...n, x: colX[n.col], y: top + (n.row + 0.5) * step[n.col], r, hw: n.type === 'ext' ? G.extHW : r }); }
-  const seen = new Map(), ors = L.diamonds.map((d) => {
-    const t = pos.get(d.target), n = L.diamonds.filter((x) => x.target === d.target).length, j = seen.get(d.target) ?? 0;
-    seen.set(d.target, j + 1);
-    return { key: d.key, type: 'or', x: t.x + G.orDx, y: t.y + (j - (n - 1) / 2) * (2 * G.orR + 4), r: G.orR, hw: G.orR };
-  });
+  for (const [c, col] of Object.entries(byCol))
+    step[c] = Math.max(G.row, ...col.slice(1).map((n, i) => radius(col[i]) + 22 + 0.85 * radius(n) + 12));
+  const H = top + G.padY + Math.max(0, ...Object.entries(byCol).map(([c, col]) => col.length * step[c])),
+    pos = new Map();
+  for (const n of L.nodes) {
+    const r = radius(n);
+    pos.set(n.key, {
+      ...n,
+      x: colX[n.col],
+      y: top + (n.row + 0.5) * step[n.col],
+      r,
+      hw: n.type === 'ext' ? G.extHW : r
+    });
+  }
+  const seen = new Map(),
+    ors = L.diamonds.map((d) => {
+      const t = pos.get(d.target),
+        n = L.diamonds.filter((x) => x.target === d.target).length,
+        j = seen.get(d.target) ?? 0;
+      seen.set(d.target, j + 1);
+      return {
+        key: d.key,
+        type: 'or',
+        x: t.x + G.orDx,
+        y: t.y + (j - (n - 1) / 2) * (2 * G.orR + 4),
+        r: G.orR,
+        hw: G.orR
+      };
+    });
   ors.forEach((o) => pos.set(o.key, o));
   const edges = L.paths.map((p) => {
-    const a = pos.get(p.from), b = pos.get(p.to), [s, e] = edgeEnds(a, b);
-    return { id: p.id, from: p.from, to: p.to, kind: p.kind, d: a.col !== undefined && a.col === b.col ? sameColPath(a, b) : edgePath(s, e) };
+    const a = pos.get(p.from),
+      b = pos.get(p.to),
+      [s, e] = edgeEnds(a, b);
+    return {
+      id: p.id,
+      from: p.from,
+      to: p.to,
+      kind: p.kind,
+      d: a.col !== undefined && a.col === b.col ? sameColPath(a, b) : edgePath(s, e)
+    };
   });
   const nodes = [...pos.values()].filter((n) => n.type !== 'or'); // L.nodes' order is the Tab order: columns right to left, then top to bottom
   return { W, H, head: G.head, bands, nodes, ors, edges };
 }
 
-
-
 // panzoom's zoomWithWheel takes one fixed step per wheel event, so the step follows the event's size: a mouse notch zooms about 16%,
 // a trackpad's stream of small events stays gentle (Firefox reports lines, not pixels).
-export const wheelStep = (e) => Math.max(0.03, Math.min(0.6, (Math.abs(e.deltaY || e.deltaX) * (e.deltaMode ? 33 : 1) / 100) * 0.45));
+export const wheelStep = (e) =>
+  Math.max(0.03, Math.min(0.6, (Math.abs(e.deltaY || e.deltaX) * (e.deltaMode ? 33 : 1) / 100) * 0.45));
 
 // Opening scale: the whole graph on a desktop; on a phone fit by height (floor 0.3), pinned to year א׳ on the right, one finger pans.
-export const fitScale = (vw, vh, W, H) => (vw >= 600 ? Math.max(0.2, Math.min(1, vw / W, vh / H)) : Math.max(0.3, Math.min(1, vh / H)));
+export const fitScale = (vw, vh, W, H) =>
+  (vw >= 600 ? Math.max(0.2, Math.min(1, vw / W, vh / H)) : Math.max(0.3, Math.min(1, vh / H)));
