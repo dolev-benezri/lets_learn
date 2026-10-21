@@ -25,9 +25,11 @@
 <meta name="twitter:card" content="summary_large_image">
 <script src="theme.js"></script><!-- light or dark before the first paint -->
 <link rel="preload" href="fonts/rubik-hebrew-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/rubik-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin><!-- digits and times -->
+<link rel="preload" href="fonts/rubik-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<!-- digits and times -->
 <link rel="stylesheet" href="map.css">
-<link rel="stylesheet" href="vendor/driver/driver.css"><!-- the first-visit tour (tour.js); style.css restyles its popover, so it comes after this -->
+<link rel="stylesheet" href="vendor/driver/driver.css">
+<!-- the first-visit tour (tour.js); style.css restyles its popover, so it comes after this -->
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -37,28 +39,43 @@
   <h1 id="title">המערכת שלי</h1>
   <p id="meta" class="meta"></p>
   <div id="switcher" class="switcher" role="group" aria-label="מעבר בין חלופות" tabindex="-1">
-    <button type="button" id="prev" class="btn icon-btn" data-act="prev" data-icon="chevron-right" aria-label="החלופה הקודמת" aria-keyshortcuts="ArrowRight"></button>
+    <button type="button" id="prev" class="btn icon-btn" data-act="prev" data-icon="chevron-right"
+      aria-label="החלופה הקודמת" aria-keyshortcuts="ArrowRight"></button>
     <span id="altLabel" class="alt-label">טוען…</span>
-    <button type="button" id="next" class="btn icon-btn" data-act="next" data-icon="chevron-left" aria-label="החלופה הבאה" aria-keyshortcuts="ArrowLeft"></button>
+    <button type="button" id="next" class="btn icon-btn" data-act="next" data-icon="chevron-left"
+      aria-label="החלופה הבאה" aria-keyshortcuts="ArrowLeft"></button>
   </div>
   <div class="actions">
-    <button type="button" class="btn" data-act="openMap" data-k="openMap" data-icon="map" aria-haspopup="dialog" title="מפה"><span class="lbl">מפה</span></button>
-    <button type="button" class="btn" data-act="panel" data-panel="reg" data-icon="clipboard-list" aria-haspopup="dialog" title="רשימה להרשמה"><span class="lbl">רשימה להרשמה</span></button>
-    <button type="button" id="advisorBtn" class="btn" data-act="advisor" data-icon="file" title="סיכום ליועץ"><span class="lbl">סיכום ליועץ</span></button>
-    <button type="button" class="btn primary" data-act="share" data-icon="share" title="שתף"><span class="lbl">שתף</span></button>
+    <button type="button" class="btn" data-act="openMap" data-k="openMap" data-icon="map" aria-haspopup="dialog"
+      title="מפה"><span class="lbl">מפה</span></button>
+    <button type="button" class="btn" data-act="panel" data-panel="reg" data-icon="clipboard-list"
+      aria-haspopup="dialog" title="רשימה להרשמה"><span class="lbl">רשימה להרשמה</span></button>
+    <button type="button" id="advisorBtn" class="btn" data-act="advisor" data-icon="file" title="סיכום ליועץ"><span
+      class="lbl">סיכום ליועץ</span></button>
+    <button type="button" class="btn primary" data-act="share" data-icon="share" title="שתף"><span
+      class="lbl">שתף</span></button>
   </div>
 </header>
 <nav class="steps" aria-label="שלבים">
-  <a href="#me" data-view="me" aria-label="שלב 1: המצב שלי"><span class="n" aria-hidden="true" data-icon="check">1</span> <span class="lbl">המצב שלי</span></a>
-  <a href="#courses" data-view="courses" aria-label="שלב 2: קורסים"><span class="n" aria-hidden="true" data-icon="check">2</span> <span class="lbl">קורסים</span></a>
-  <a href="#prefs" data-view="prefs" aria-label="שלב 3: מה חשוב לי"><span class="n" aria-hidden="true" data-icon="check">3</span> <span class="lbl">מה חשוב לי</span></a>
-  <a href="#" data-view="plan" aria-label="שלב 4: מערכות"><span class="n" aria-hidden="true">4</span> <span class="lbl">מערכות</span></a>
-  <button type="button" id="tourBtn" class="btn ghost tour-btn" data-act="tour" data-icon="info"><span class="lbl">סיור באתר</span></button>
-  <button type="button" class="btn ghost theme-btn"><span class="to-dark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span
-    class="lbl">מצב כהה</span></span><span class="to-light"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path
-    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="lbl">מצב בהיר</span></span></button>
+  <a href="#me" data-view="me" aria-label="שלב 1: המצב שלי"><span class="n" aria-hidden="true"
+    data-icon="check">1</span> <span class="lbl">המצב שלי</span></a>
+  <a href="#courses" data-view="courses" aria-label="שלב 2: קורסים"><span class="n" aria-hidden="true"
+    data-icon="check">2</span> <span class="lbl">קורסים</span></a>
+  <a href="#prefs" data-view="prefs" aria-label="שלב 3: מה חשוב לי"><span class="n" aria-hidden="true"
+    data-icon="check">3</span> <span class="lbl">מה חשוב לי</span></a>
+  <a href="#" data-view="plan" aria-label="שלב 4: מערכות"><span class="n" aria-hidden="true">4</span> <span
+    class="lbl">מערכות</span></a>
+  <button type="button" id="tourBtn" class="btn ghost tour-btn" data-act="tour" data-icon="info"><span class="lbl">סיור
+    באתר</span></button>
+  <button type="button" class="btn ghost theme-btn"><span class="to-dark"><svg class="icon"
+      viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span
+      class="lbl">מצב כהה</span></span><span class="to-light"><svg class="icon" viewBox="0 0 24 24"
+      aria-hidden="true"><circle cx="12" cy="12" r="4"/><path
+      d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span
+      class="lbl">מצב בהיר</span></span></button>
 </nav>
-<div id="notice" class="notice-top"></div><!-- the remote notice (settings.json): above every step, unlike #banner which lives in the plans step -->
+<div id="notice" class="notice-top"></div>
+<!-- the remote notice (settings.json): above every step, unlike #banner which lives in the plans step -->
 <div id="layout" class="layout">
   <main>
     <div id="banner"></div>
@@ -67,7 +84,8 @@
       <div id="semtabs" class="semtabs"></div>
       <div id="semnote"></div>
       <div id="showby" class="showby"></div>
-      <div class="board-top"><div id="pills" class="pills" tabindex="0" role="region" aria-label="סיכום החלופה"></div><span id="busy" class="busy" hidden>מחשב…</span></div>
+      <div class="board-top"><div id="pills" class="pills" tabindex="0" role="region"
+        aria-label="סיכום החלופה"></div><span id="busy" class="busy" hidden>מחשב…</span></div>
       <p id="disclaimer" class="disclaimer"></p>
       <div id="daysel" class="daysel" role="group" aria-label="בחירת יום"></div>
       <div id="week" tabindex="-1"></div>
@@ -77,20 +95,26 @@
 </div>
 <main id="me" class="me step-page" aria-labelledby="meTitle" hidden></main>
 <main id="courses" class="step-page" aria-labelledby="coursesTitle" hidden>
-  <div class="me-head"><h2 id="coursesTitle" tabindex="-1">הקורסים שלי</h2><p id="coursesTop" class="me-step"></p><span id="coursesBusy" class="busy" hidden>מחשב…</span></div>
+  <div class="me-head"><h2 id="coursesTitle" tabindex="-1">הקורסים שלי</h2><p id="coursesTop" class="me-step"></p><span
+    id="coursesBusy" class="busy" hidden>מחשב…</span></div>
   <section id="side" class="me-main"></section>
-  <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#prefs">הבא: מה חשוב לי</a></div>
+  <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#prefs">הבא: מה חשוב
+    לי</a></div>
 </main>
 <main id="prefs" class="step-page" aria-labelledby="prefsTitle" hidden></main>
 <div class="scrim" data-act="closeDrawer" aria-hidden="true"></div>
 <footer class="site-foot">
-  <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.</p>
-<p><a href="legal.html#terms">תנאי שימוש</a> · <a href="legal.html#privacy">פרטיות ועוגיות</a> · <a href="legal.html#accessibility">הצהרת נגישות</a> · <a
-    href="https://github.com/dolev-benezri/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a><span id="report" hidden> · <a id="reportLink">דיווח על טעות</a></span><span
+  <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה
+    באפקה-נט היא הקובעת.</p>
+<p><a href="legal.html#terms">תנאי שימוש</a> · <a href="legal.html#privacy">פרטיות ועוגיות</a> · <a
+  href="legal.html#accessibility">הצהרת נגישות</a> · <a
+    href="https://github.com/dolev-benezri/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת
+      הסרה</a><span id="report" hidden> · <a id="reportLink">דיווח על טעות</a></span><span
     id="counsel" hidden> · <a
     id="counselLink" target="_blank" rel="noopener">הכוון אקדמי</a></span></p>
 </footer>
-<section id="print" aria-label="סיכום לפגישה עם יועץ לימודים" hidden></section><!-- filled and printed by ACT.advisor; screen: never shown (style.css) -->
+<section id="print" aria-label="סיכום לפגישה עם יועץ לימודים"
+  hidden></section><!-- filled and printed by ACT.advisor; screen: never shown (style.css) -->
 <dialog id="drawer" class="drawer" aria-labelledby="drawerTitle"></dialog>
 <dialog id="friendEd" class="dlg-full" aria-labelledby="feTitle"></dialog>
 <div id="pop" class="pop" popover role="dialog"></div>
