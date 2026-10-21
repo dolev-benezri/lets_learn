@@ -8,8 +8,11 @@ import { esc } from '../web/ui-text.js';
 export const COLUMNS = ['מה מצאנו', 'תוכנית הלימודים', 'הידיעון', 'מה הכלי עושה היום', 'ההחלטה שלכם'];
 const UNKNOWN = 'לבדיקת המחלקה'; // a source the repo does not show is never guessed
 
+// Fonts by relative path from out/conflicts/, so a page opens from disk with Rubik (same faces as rules-report.mjs).
 const CSS = `@page { size: A4; margin: 12mm }
-body { font: 11pt/1.4 Arial, sans-serif; margin: 0; color: #000 }
+@font-face { font-family:"Rubik"; font-weight:300 900; src:url(../../web/fonts/rubik-hebrew-wght-normal.woff2) format("woff2"); unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F; }
+@font-face { font-family:"Rubik"; font-weight:300 900; src:url(../../web/fonts/rubik-latin-wght-normal.woff2) format("woff2"); unicode-range:U+0000-00FF,U+2000-206F,U+20AC; }
+body { font: 11pt/1.4 "Rubik", sans-serif; margin: 0; color: #000 }
 h1 { font-size: 16pt; margin: 0 0 4mm }
 p { margin: 0 0 4mm }
 table { width: 100%; border-collapse: collapse; table-layout: fixed }
@@ -26,7 +29,7 @@ function html(deptName, rows) {
   return `<!doctype html>
 <html lang="he" dir="rtl"><head><meta charset="utf-8"><title>סתירות בין המקורות: ${esc(deptName)}</title><style>${CSS}</style></head><body>
 <h1>סתירות בין המקורות הרשמיים: מחלקת ${esc(deptName)}</h1>
-<p>האתר הולך לפי הידיעון. נבקש שתכתבו בעמודה האחרונה מה נכון, ואנחנו נעדכן את האתר.</p>
+<p>מה הכלי עושה היום כתוב בעמודה הרביעית, לכל שורה. נבקש שתכתבו בעמודה האחרונה מה נכון, ואנחנו נעדכן את האתר.</p>
 <table><thead><tr>${COLUMNS.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>
 ${rows.join('\n')}
 </tbody></table></body></html>
