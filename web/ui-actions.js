@@ -1,5 +1,18 @@
 // Click (ACT) and change (CHG) handlers, wired to the document in ui-plan.js.
-import { app, applyPendingBackup, cleanBlocks, upsertFriend, friendName, save, refresh, keepFocus, switchTo, clearSaved, setUiReset, DEFAULT } from './app.js';
+import {
+  app,
+  applyPendingBackup,
+  cleanBlocks,
+  upsertFriend,
+  friendName,
+  save,
+  refresh,
+  keepFocus,
+  switchTo,
+  clearSaved,
+  setUiReset,
+  DEFAULT
+} from './app.js';
 import { setStatus, cleanProfile, specRule } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { toIcs } from './ics.js';
@@ -8,7 +21,22 @@ import { groupIndex, openPop, pinWith, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
 import { friendToast, gradeInput, rangeError, shareText, waUrl, SPLIT_WARNING } from './ui-text.js';
-import { colors, markOnboarded, acceptTerms, gated, current, shown, shownData, status, toast, copy, focusWeek, shownTitle, $, ui } from './ui-common.js';
+import {
+  colors,
+  markOnboarded,
+  acceptTerms,
+  gated,
+  current,
+  shown,
+  shownData,
+  status,
+  toast,
+  copy,
+  focusWeek,
+  shownTitle,
+  $,
+  ui
+} from './ui-common.js';
 import { pinsWithoutSplit } from './solver-core.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
@@ -20,7 +48,12 @@ import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel } from '
 export function addFriend(p) {
   const name = friendName(app.state.friends, p);
   const r = upsertFriend(app.state.friends, { name, groups: p.groups });
-  if (r.error) { ui.friendMsg = r.error; toast(ui.friendMsg); keepFocus(renderPrefs); return; }
+  if (r.error) {
+    ui.friendMsg = r.error;
+    toast(ui.friendMsg);
+    keepFocus(renderPrefs);
+    return;
+  }
   app.state.friends = r.friends;
   app.friendLanding = null;
   refresh();
@@ -35,7 +68,10 @@ function saveManualFriend(p, editing) {
   toast(friendToast(p.name, r.replaced));
   return null;
 }
-const myLink = async () => { const res = current(); return res ? friendLink(location.origin + location.pathname, app.state, resGroups(res)) : null; };
+const myLink = async () => {
+  const res = current();
+  return res ? friendLink(location.origin + location.pathname, app.state, resGroups(res)) : null;
+};
 async function share() {
   const url = await myLink();
   if (!url) return toast('אין עדיין מערכת לשתף');
@@ -46,40 +82,100 @@ async function shareOut() {
   const url = await myLink();
   if (!url) return toast('אין עדיין מערכת לשתף');
   const text = shareText(app.state.name);
-  if (navigator.share) { try { await navigator.share({ title: 'המערכת שלי', text, url }); } catch (e) { if (e?.name !== 'AbortError') copy(url, 'הקישור הועתק.'); } return; }
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'המערכת שלי', text, url });
+    } catch (e) {
+      if (e?.name !== 'AbortError') copy(url, 'הקישור הועתק.');
+    }
+    return;
+  }
   open(waUrl(text, url), '_blank', 'noopener');
 }
 
 // Split just went off: pins that only worked with it are removed, and the visitor is told (a course with no schedule would say nothing).
 function dropSplitPins() {
   const kept = pinsWithoutSplit(Object.values(app.sem), app.state.pins);
-  if (kept.length < app.state.pins.length) { app.state.pins = kept; toast('הנעיצות של הקבוצות המופרדות בוטלו'); }
+  if (kept.length < app.state.pins.length) {
+    app.state.pins = kept;
+    toast('הנעיצות של הקבוצות המופרדות בוטלו');
+  }
 }
 let printWatched = false;
-const clearPrint = () => { $('print').hidden = true; document.documentElement.classList.remove('print-summary'); };
+const clearPrint = () => {
+  $('print').hidden = true;
+  document.documentElement.classList.remove('print-summary');
+};
 export const ACT = {
   shareOut,
-  async acceptTerms() { acceptTerms(); await applyPendingBackup(); dueIntro(); refresh(); shownTitle()?.focus(); }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
-  tour() { startTour('intro', () => $('tourBtn')); }, // the replay button in the step bar (WebKit does not focus a clicked button: focus goes back to it anyway)
-  gateTrack() { ui.gateTrack = true; renderMe(); shownTitle()?.focus(); }, // back to the track tiles from the year question
-  pickTrack(el) { // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
-    el.classList.add('on'); el.parentElement.setAttribute('aria-busy', 'true'); // the track's data may take a while: show the pick, take no second tap
-    CHG.program(el); save();
+  async acceptTerms() {
+    acceptTerms();
+    await applyPendingBackup();
+    dueIntro();
+    refresh();
+    shownTitle()?.focus();
+  }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
+  tour() {
+    startTour('intro', () => $('tourBtn'));
+  }, // the replay button in the step bar (WebKit does not focus a clicked button: focus goes back to it anyway)
+  gateTrack() {
+    ui.gateTrack = true;
+    renderMe();
+    shownTitle()?.focus();
+  }, // back to the track tiles from the year question
+  pickTrack(el) {
+    // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
+    el.classList.add('on');
+    // the track's data may take a while: show the pick, take no second tap
+    el.parentElement.setAttribute('aria-busy', 'true');
+    CHG.program(el);
+    save();
   },
-  pickYear(el) { CHG.pyear(el); refresh(); },
-  gradeImport() { $('gradeFile').click(); },
-  manualEntry() { enterList(); }, // step 1's entry screen: the course list without the grade sheet
-  yearPassed(el) { app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed')); refresh(); },
-  statusDone(el, e) { e.preventDefault(); markOnboarded(); location.hash = '#courses'; },
-  skip(el, e) { e.preventDefault(); ($('layout').hidden ? shownTitle() : $('week'))?.focus(); }, // a real #fragment would switch the view
+  pickYear(el) {
+    CHG.pyear(el);
+    refresh();
+  },
+  gradeImport() {
+    $('gradeFile').click();
+  },
+  manualEntry() {
+    enterList();
+  }, // step 1's entry screen: the course list without the grade sheet
+  yearPassed(el) {
+    app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed'));
+    refresh();
+  },
+  statusDone(el, e) {
+    e.preventDefault();
+    markOnboarded();
+    location.hash = '#courses';
+  },
+  skip(el, e) {
+    e.preventDefault();
+    ($('layout').hidden ? shownTitle() : $('week'))?.focus();
+  }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
   closeDrawer: () => $('drawer').close(),
   prev: () => go(-1),
   next: () => go(1),
-  day(el) { ui.mobileDay = Number(el.dataset.day); ui.dayScroll = true; keepFocus(renderView); },
-  block: (el) => openPop(el, { data: shownData(), res: shown(), includeFull: app.state.constraints.includeFull, split: app.state.constraints.split, pins: app.state.pins,
-    friends: app.state.friends.filter((f) => f.active), colors, lecturers: app.state.constraints.lecturers }),
-  more(el) { // the button says it is working until the result replaces it
+  day(el) {
+    ui.mobileDay = Number(el.dataset.day);
+    ui.dayScroll = true;
+    keepFocus(renderView);
+  },
+  block: (el) =>
+    openPop(el, {
+      data: shownData(),
+      res: shown(),
+      includeFull: app.state.constraints.includeFull,
+      split: app.state.constraints.split,
+      pins: app.state.pins,
+      friends: app.state.friends.filter((f) => f.active),
+      colors,
+      lecturers: app.state.constraints.lecturers
+    }),
+  more(el) {
+    // the button says it is working until the result replaces it
     if (ui.running) return;
     ui.moreMul *= 2;
     el.textContent = 'מחפש…';
@@ -88,18 +184,33 @@ export const ACT = {
   },
   popClose: () => $('pop').hidePopover(),
   lecturer(el) {
-    const L = app.state.constraints.lecturers, { name, mode } = el.dataset, was = L[name] === mode;
-    if (was) delete L[name]; else L[name] = mode;
+    const L = app.state.constraints.lecturers,
+      { name, mode } = el.dataset,
+      was = L[name] === mode;
+    if (was) delete L[name];
+    else L[name] = mode;
     $('pop').hidePopover?.();
     refresh();
     focusWeek();
-    toast(was ? `בוטל: ${name}` : mode === 'avoid' ? `החיפוש לא ישבץ קבוצות של ${name}` : `כשאפשר, החיפוש יבחר קבוצות של ${name}`);
+    toast(
+      was
+        ? `בוטל: ${name}`
+        : mode === 'avoid'
+          ? `החיפוש לא ישבץ קבוצות של ${name}`
+          : `כשאפשר, החיפוש יבחר קבוצות של ${name}`
+    );
   },
-  lecturerDrop(el) { delete app.state.constraints.lecturers[el.dataset.name]; refresh(); },
+  lecturerDrop(el) {
+    delete app.state.constraints.lecturers[el.dataset.name];
+    refresh();
+  },
   pin(el) {
-    const gid = el.dataset.gid, was = app.state.pins.includes(gid);
+    const gid = el.dataset.gid,
+      was = app.state.pins.includes(gid);
     const { cid } = groupIndex(app.data).get(gid);
-    app.state.pins = was ? app.state.pins.filter((x) => x !== gid) : pinWith(app.data, app.state.pins, gid, app.state.constraints.split);
+    app.state.pins = was
+      ? app.state.pins.filter((x) => x !== gid)
+      : pinWith(app.data, app.state.pins, gid, app.state.constraints.split);
     if (!was) app.state.choices[cid] = 'must'; // the solver forces a pinned course in; show it
     const fromGid = $('pop').dataset.gid;
     $('pop').hidePopover();
@@ -109,7 +220,8 @@ export const ACT = {
   },
   share,
   copyReg: () => current() && copy(registrationText(current()), 'הרשימה הועתקה'),
-  ics() { // a local file: no server, nothing sent anywhere
+  ics() {
+    // a local file: no server, nothing sent anywhere
     const parts = current() && icsParts(current());
     if (!parts) return;
     const a = document.createElement('a');
@@ -119,29 +231,64 @@ export const ACT = {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast('הקובץ ירד. פותחים אותו כדי להוסיף את השיעורים ליומן.');
   },
-  advisor() { // fills #print and prints it alone (style.css @media print); the page is put back when printing ends
+  advisor() {
+    // fills #print and prints it alone (style.css @media print); the page is put back when printing ends
     clearPrint(); // anything left over from a print that never reported its end
     const res = current();
     if (!res) return;
-    $('print').innerHTML = advisorHtml({ state: app.state, data: app.data, res, cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
-    $('print').hidden = false; document.documentElement.classList.add('print-summary');
-    if (!printWatched) { // once: afterprint is missing on some phones, the print media query turning off is the second signal
+    $('print').innerHTML = advisorHtml({
+      state: app.state,
+      data: app.data,
+      res,
+      cls: app.cls,
+      catalog: app.catalog,
+      now: new Date(),
+      sem: app.sem
+    });
+    $('print').hidden = false;
+    document.documentElement.classList.add('print-summary');
+    if (!printWatched) {
+      // once: afterprint is missing on some phones, the print media query turning off is the second signal
       printWatched = true;
       addEventListener('afterprint', clearPrint);
-      matchMedia('print').addEventListener('change', (e) => { if (!e.matches) clearPrint(); });
+      matchMedia('print').addEventListener('change', (e) => {
+        if (!e.matches) clearPrint();
+      });
     }
     print();
   },
   backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),
   landingAdd: () => addFriend(app.friendLanding),
-  landingDrop() { app.friendLanding = null; renderBanner(); focusWeek(); },
-  dismissError() { app.hashError = null; renderBanner(); focusWeek(); },
-  dropPin(el) { app.state.pins = app.state.pins.filter((p) => p !== el.dataset.gid); refresh(); focusWeek(); },
-  removeFriend(el) { app.state.friends.splice(Number(el.dataset.i), 1); refresh(); $('prefsTitle')?.focus(); },
+  landingDrop() {
+    app.friendLanding = null;
+    renderBanner();
+    focusWeek();
+  },
+  dismissError() {
+    app.hashError = null;
+    renderBanner();
+    focusWeek();
+  },
+  dropPin(el) {
+    app.state.pins = app.state.pins.filter((p) => p !== el.dataset.gid);
+    refresh();
+    focusWeek();
+  },
+  removeFriend(el) {
+    app.state.friends.splice(Number(el.dataset.i), 1);
+    refresh();
+    $('prefsTitle')?.focus();
+  },
   openFriendEditor: () => openFriendEditor({ onSave: saveManualFriend, returnFocusId: 'openFriendEditor' }),
-  editFriend: (el) => openFriendEditor({ friend: app.state.friends[Number(el.dataset.i)], onSave: saveManualFriend, returnFocusId: `editFriend-${el.dataset.i}` }),
+  editFriend: (el) =>
+    openFriendEditor({
+      friend: app.state.friends[Number(el.dataset.i)],
+      onSave: saveManualFriend,
+      returnFocusId: `editFriend-${el.dataset.i}`
+    }),
   dayOff(el) {
-    const c = app.state.constraints, d = Number(el.dataset.day);
+    const c = app.state.constraints,
+      d = Number(el.dataset.day);
     c.dayOff = c.dayOff.includes(d) ? c.dayOff.filter((x) => x !== d) : [...c.dayOff, d];
     refresh();
   },
@@ -150,17 +297,32 @@ export const ACT = {
     if (bl.length >= MAX_BLOCKS) return;
     bl.push({ day: 1, start: '18:00', end: '20:00', label: '' });
     refresh();
-    $('prefs').querySelector(`[data-k="blk-${bl.length - 1}-day"]`)?.focus();
+    $('prefs')
+      .querySelector(`[data-k="blk-${bl.length - 1}-day"]`)
+      ?.focus();
   },
   blkRemove(el) {
-    const bl = app.state.constraints.blocks, i = Number(el.dataset.i);
+    const bl = app.state.constraints.blocks,
+      i = Number(el.dataset.i);
     bl.splice(i, 1);
     refresh();
-    ($('prefs').querySelector(`[data-k="blk-rm-${Math.min(i, bl.length - 1)}"]`) ?? $('prefs').querySelector('[data-k="blkAdd"]'))?.focus();
+    (
+      $('prefs').querySelector(`[data-k="blk-rm-${Math.min(i, bl.length - 1)}"]`) ??
+      $('prefs').querySelector('[data-k="blkAdd"]')
+    )?.focus();
   },
-  clearPins() { app.state.pins = []; refresh(); },
+  clearPins() {
+    app.state.pins = [];
+    refresh();
+  },
   async eraseAll() {
-    if (!await askConfirm('למחוק מהדפדפן את כל הנתונים השמורים: ההתקדמות, החברים וההעדפות? אי אפשר לשחזר, אלא מגיבוי שיצרתם.', { ok: 'מחק הכול', cancel: 'ביטול' })) return;
+    if (
+      !await askConfirm(
+        'למחוק מהדפדפן את כל הנתונים השמורים: ההתקדמות, החברים וההעדפות? אי אפשר לשחזר, אלא מגיבוי שיצרתם.',
+        { ok: 'מחק הכול', cancel: 'ביטול' }
+      )
+    )
+      return;
     clearSaved();
     history.replaceState(null, '', location.pathname); // no hash: the reload is a first visit again
     location.reload();
@@ -168,7 +330,8 @@ export const ACT = {
   async resetPrefs() {
     if (!await askConfirm('לאפס את ההעדפות לברירת המחדל?', { ok: 'אפס', cancel: 'ביטול' })) return;
     app.state.weights = structuredClone(DEFAULT.weights);
-    app.state.constraints = { ...structuredClone(DEFAULT.constraints), blocks: app.state.constraints.blocks }; // busy time is a fact about the week, like pins and friends
+    // busy time is a fact about the week, like pins and friends
+    app.state.constraints = { ...structuredClone(DEFAULT.constraints), blocks: app.state.constraints.blocks };
     app.state.scope = DEFAULT.scope;
     app.state.load = DEFAULT.load;
     dropSplitPins();
@@ -185,72 +348,116 @@ const blockEdit = (el, k, v) => {
   if (cleanBlocks([{ ...b, [k]: v }]).length) b[k] = v;
 };
 // A program or cohort change, or a restored backup, replaces the state: app.js then drops what the UI kept for the old one (results, colors, a half-made pick).
-setUiReset(() => { ui.last = null; ui.cur = 0; ui.specPick = null; colors.clear(); });
+setUiReset(() => {
+  ui.last = null;
+  ui.cur = 0;
+  ui.specPick = null;
+  colors.clear();
+});
 // A program or cohort change: switchTo loads the data and resets; this redraws and says so.
 async function changeIdentity(program, startYear) {
-  if (!await switchTo(program, startYear)) { refresh(); return; } // refused or failed: the selects go back to the real state
+  if (!await switchTo(program, startYear)) {
+    refresh();
+    return;
+  } // refused or failed: the selects go back to the real state
   refresh();
   toast(`עברנו ל${app.catalog.programs.find((p) => p.id === program)?.name ?? ''} ${startYear}`);
 }
 const cohortOf = (y) => y && app.data.year - y + 1; // the cohort that is in study year y
-const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math.abs(b - want) ? y : b), list[0]); // same cohort if offered, else the closest
+// same cohort if offered, else the closest
+const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math.abs(b - want) ? y : b), list[0]);
 export const CHG = {
-  termsTick: (el) => { el.closest('.gate').querySelector('[data-act="acceptTerms"]').disabled = !el.checked; return 'none'; }, // the only toggle of the button
+  termsTick: (el) => {
+    el.closest('.gate').querySelector('[data-act="acceptTerms"]').disabled = !el.checked;
+    return 'none';
+  }, // the only toggle of the button
   program: (el) => {
     const p = app.catalog.programs.find((x) => x.id === Number(el.value));
     const was = gated();
     ui.gateTrack = false;
     if (p) app.state.programSet = true; // the loaded track too: switchTo then refuses and changeIdentity just refreshes
-    if (p) changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear))
-      .then(() => was && shownTitle()?.focus()); // the picked tile is gone: the next question (or step 1) takes focus, not <body>
+    if (p)
+      changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear)).then(
+        () => was && shownTitle()?.focus()
+      ); // the picked tile is gone: the next question (or step 1) takes focus, not <body>
     return 'save';
   },
-  gradeFile: (el) => { const f = el.files[0]; el.value = ''; if (f) importGrades(f); return 'save'; },
+  gradeFile: (el) => {
+    const f = el.files[0];
+    el.value = '';
+    if (f) importGrades(f);
+    return 'save';
+  },
   mode: (el) => {
     const id = el.dataset.id;
     app.state.choices[id] = el.value;
-    if (el.value !== 'must') { // a pin would force it back in
+    if (el.value !== 'must') {
+      // a pin would force it back in
       const kept = app.state.pins.filter((p) => groupIndex(app.data).get(p)?.cid !== id);
-      if (kept.length < app.state.pins.length) { app.state.pins = kept; toast('הנעיצות של הקורס בוטלו'); }
+      if (kept.length < app.state.pins.length) {
+        app.state.pins = kept;
+        toast('הנעיצות של הקורס בוטלו');
+      }
     }
   },
-  sem: (el) => { // summer is the year's third tab: it is planned on top of the shown year plan, so leaving or entering it is a new search
-    if (el.value === 'קיץ') { app.state.scope = 'קיץ'; return; }
+  sem: (el) => {
+    // summer is the year's third tab: it is planned on top of the shown year plan, so leaving or entering it is a new search
+    if (el.value === 'קיץ') {
+      app.state.scope = 'קיץ';
+      return;
+    }
     ui.sem = el.value === 'ב' ? 'ב' : 'א';
     if (app.state.scope !== 'קיץ') return 'view'; // between א׳ and ב׳: a view switch, no new search
     app.state.scope = 'year';
   },
-  scope: (el) => { app.state.scope = el.value; },
-  load: (el) => { app.state.load = el.value; },
-  sortBy: (el) => { app.state.sortBy = el.value; }, // a new search (refresh); normalize drops an unknown value on the next load
-  semOf: (el) => { if (el.value) app.state.semesterOf[el.dataset.id] = el.value; else delete app.state.semesterOf[el.dataset.id]; }, // a pin still wins in the solver
+  scope: (el) => {
+    app.state.scope = el.value;
+  },
+  load: (el) => {
+    app.state.load = el.value;
+  },
+  sortBy: (el) => {
+    app.state.sortBy = el.value;
+  }, // a new search (refresh); normalize drops an unknown value on the next load
+  semOf: (el) => {
+    if (el.value) app.state.semesterOf[el.dataset.id] = el.value;
+    else delete app.state.semesterOf[el.dataset.id];
+  }, // a pin still wins in the solver
   pyear: (el) => {
-    const was = gated(), y = cleanProfile({ year: Number(el.value) }).year;
+    const was = gated(),
+      y = cleanProfile({ year: Number(el.value) }).year;
     app.state.profile.year = y;
-    const p = app.catalog.programs.find((x) => x.id === app.state.program); // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024)
+    // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024)
+    const p = app.catalog.programs.find((x) => x.id === app.state.program);
     const start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
     const switching = start && start !== app.state.startYear ? changeIdentity(app.state.program, start) : null;
-    if (was) queueMicrotask(() => shownTitle()?.focus()); // after the refresh: the question is gone, the step's own page shows; keep focus out of <body>
-    if (was && switching) switching.then(() => shownTitle()?.focus()); // a new cohort redraws #me again when its data arrives
+    // after the refresh: the question is gone, the step's own page shows; keep focus out of <body>
+    if (was) queueMicrotask(() => shownTitle()?.focus());
+    // a new cohort redraws #me again when its data arrives
+    if (was && switching) switching.then(() => shownTitle()?.focus());
   },
   amirnet: (el) => {
     const err = rangeError(el.validity?.badInput ? 'x' : el.value, 50, 150);
     if (err) toast(err);
     app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet;
   },
-  turn: (el) => { // a turn id of settings.json, or '' (לא יודע/ת)
+  turn: (el) => {
+    // a turn id of settings.json, or '' (לא יודע/ת)
     app.state.profile = cleanProfile({ ...app.state.profile, turn: el.value });
     renderBanner();
     return 'save';
   },
   specMode: (el) => {
-    const mode = el.value, picks = mode === 'pick' ? specView(app.data, app.state.profile.specs).picks : [];
+    const mode = el.value,
+      picks = mode === 'pick' ? specView(app.data, app.state.profile.specs).picks : [];
     ui.specPick = { mode, picks };
     app.state.profile.specs = specSave(app.data, mode, picks);
     app.state.specDraft = mode === 'pick' && picks.length && picks.length < specRule(app.data).pick ? picks : null;
   },
   specPick: (el) => {
-    const { pick } = specRule(app.data), { picks } = specView(app.data, app.state.profile.specs), next = el.checked ? [...picks, el.dataset.id] : picks.filter((x) => x !== el.dataset.id);
+    const { pick } = specRule(app.data),
+      { picks } = specView(app.data, app.state.profile.specs),
+      next = el.checked ? [...picks, el.dataset.id] : picks.filter((x) => x !== el.dataset.id);
     ui.specPick = { mode: 'pick', picks: next.slice(0, pick) };
     app.state.profile.specs = specSave(app.data, 'pick', ui.specPick.picks);
     app.state.specDraft = ui.specPick.picks.length && ui.specPick.picks.length < pick ? ui.specPick.picks : null;
@@ -261,36 +468,77 @@ export const CHG = {
     if (el.checked && app.sem?.['קיץ']) toast('הקיץ נוסף לתכנון: לשונית ״קיץ״ ליד סמסטר א׳ וב׳ במערכות');
   },
   grade: (el) => {
-    const raw = el.validity?.badInput ? 'x' : el.value, g = gradeInput(raw, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
+    const raw = el.validity?.badInput ? 'x' : el.value,
+      g = gradeInput(raw, app.state.grades[el.dataset.cid]); // an invalid entry keeps the previous grade
     const err = rangeError(raw, 0, 100);
     if (err) toast(err);
-    if (g === undefined) delete app.state.grades[el.dataset.cid]; else app.state.grades[el.dataset.cid] = g;
+    if (g === undefined) delete app.state.grades[el.dataset.cid];
+    else app.state.grades[el.dataset.cid] = g;
     el.value = g ?? ''; // snap an invalid entry back
     const avg = $('gradeAvg');
     if (avg) avg.innerHTML = avgLine(); // just this line: re-rendering the page would drop the caret
     return 'save'; // grades do not touch the solver: no new search
   },
   status: (el) => setStatus(app.state, el.dataset.id, el.value),
-  failCount: (el) => { app.state.failed[el.dataset.id] = Number(el.value); },
-  w: (el) => { app.state.weights[el.dataset.w] = Number(el.value); },
-  fw: (el) => { app.state.friends[el.dataset.i].weight = Number(el.value); },
-  factive: (el) => { app.state.friends[el.dataset.i].active = el.checked; },
-  dayHard: (el) => { app.state.constraints.dayOffHard = el.value === 'hard'; },
-  winHard: (el) => { app.state.constraints.windowHard = el.value === 'hard'; },
-  examsAllow: (el) => { app.state.constraints.examsSameDay = el.checked ? 'allow' : 'forbid'; },
-  includeFull: (el) => { app.state.constraints.includeFull = el.checked; },
-  async split(el) { // ticking needs the academic advisor's warning acknowledged; a cancel unticks the box
-    if (el.checked && !await askConfirm(SPLIT_WARNING, { ok: 'הבנתי, להציג', cancel: 'ביטול' })) { el.checked = false; return 'none'; }
+  failCount: (el) => {
+    app.state.failed[el.dataset.id] = Number(el.value);
+  },
+  w: (el) => {
+    app.state.weights[el.dataset.w] = Number(el.value);
+  },
+  fw: (el) => {
+    app.state.friends[el.dataset.i].weight = Number(el.value);
+  },
+  factive: (el) => {
+    app.state.friends[el.dataset.i].active = el.checked;
+  },
+  dayHard: (el) => {
+    app.state.constraints.dayOffHard = el.value === 'hard';
+  },
+  winHard: (el) => {
+    app.state.constraints.windowHard = el.value === 'hard';
+  },
+  examsAllow: (el) => {
+    app.state.constraints.examsSameDay = el.checked ? 'allow' : 'forbid';
+  },
+  includeFull: (el) => {
+    app.state.constraints.includeFull = el.checked;
+  },
+  async split(el) {
+    // ticking needs the academic advisor's warning acknowledged; a cancel unticks the box
+    if (el.checked && !await askConfirm(SPLIT_WARNING, { ok: 'הבנתי, להציג', cancel: 'ביטול' })) {
+      el.checked = false;
+      return 'none';
+    }
     app.state.constraints.split = el.checked;
     if (!el.checked) dropSplitPins();
   },
-  notBefore: (el) => { app.state.constraints.notBefore = time(el.value); return 'quiet'; },
-  notAfter: (el) => { app.state.constraints.notAfter = time(el.value); return 'quiet'; },
-  maxDays: (el) => { app.state.constraints.maxDays = el.value ? Number(el.value) : null; },
-  maxCredits: (el) => { const n = parseFloat(el.value); app.state.constraints.maxCredits = Number.isFinite(n) && n >= 0 ? n : null; return 'quiet'; },
+  notBefore: (el) => {
+    app.state.constraints.notBefore = time(el.value);
+    return 'quiet';
+  },
+  notAfter: (el) => {
+    app.state.constraints.notAfter = time(el.value);
+    return 'quiet';
+  },
+  maxDays: (el) => {
+    app.state.constraints.maxDays = el.value ? Number(el.value) : null;
+  },
+  maxCredits: (el) => {
+    const n = parseFloat(el.value);
+    app.state.constraints.maxCredits = Number.isFinite(n) && n >= 0 ? n : null;
+    return 'quiet';
+  },
   blkDay: (el) => blockEdit(el, 'day', Number(el.value)),
   blkStart: (el) => blockEdit(el, 'start', el.value),
   blkEnd: (el) => blockEdit(el, 'end', el.value),
-  blkLabel: (el) => { app.state.constraints.blocks[el.dataset.i].label = el.value.slice(0, 30); save(); return 'view'; }, // the label never changes the search
-  myName: (el) => { app.state.name = el.value.trim().slice(0, 60); return 'save'; },
+  blkLabel: (el) => {
+    app.state.constraints.blocks[el.dataset.i].label = el.value.slice(0, 30);
+    save();
+    return 'view';
+  }, // the label never changes the search
+  myName: (el) => {
+    app.state.name = el.value.trim().slice(0, 60);
+    return 'save';
+  },
 };
