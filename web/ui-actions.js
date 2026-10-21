@@ -12,6 +12,7 @@ import { colors, markOnboarded, acceptTerms, gated, current, shown, shownData, s
 import { pinsWithoutSplit } from './solver-core.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
+import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList } from './ui-me.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel } from './ui-drawer.js';
 
@@ -58,7 +59,8 @@ let printWatched = false;
 const clearPrint = () => { $('print').hidden = true; document.documentElement.classList.remove('print-summary'); };
 export const ACT = {
   shareOut,
-  async acceptTerms() { acceptTerms(); await applyPendingBackup(); refresh(); shownTitle()?.focus(); }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
+  async acceptTerms() { acceptTerms(); await applyPendingBackup(); dueIntro(); refresh(); shownTitle()?.focus(); }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
+  tour() { startTour('intro'); }, // the replay button in the step bar
   gateTrack() { ui.gateTrack = true; renderMe(); shownTitle()?.focus(); }, // back to the track tiles from the year question
   pickTrack(el) { // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
     el.classList.add('on'); el.parentElement.setAttribute('aria-busy', 'true'); // the track's data may take a while: show the pick, take no second tap

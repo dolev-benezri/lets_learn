@@ -12,6 +12,7 @@ import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go } fr
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
+import { tourCheck, tourOnce } from './tour.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 let firstVisit = !onboarded() && !location.hash;
@@ -63,7 +64,9 @@ function renderAll() {
   renderView();
   renderPrefs();
   scheduleRun();
+  tourCheck(!gated()); // the intro of a first visit, once the gate is done and the step bar is on screen
 }
+ui.onResult = () => tourOnce('plans'); // renderView: step 4 shows an alternative
 
 // ---------- wiring (static shell from index.html) ----------
 document.querySelectorAll('[data-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));

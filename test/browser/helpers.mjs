@@ -24,18 +24,20 @@ export function gradeSheetPdf(lines) {
 
 // A new browser context (empty storage) at this size; `seed` is written into localStorage once, before the site's first script. print() is counted, not shown.
 // `size` is 'phone' or 'desktop', or a { width, height } of its own. `scheme` is the device's colour scheme (the site follows it). The outside-request and script-error checks run when the test ends.
-export async function visit(browser, t, size, seed = null, hash = '', scheme = 'light') {
+// The first-visit tour is marked seen, so it never stands between a test and the page; `withTour` leaves it unseen (tour.spec.mjs, and the axe run with its popover open).
+export const TOUR_SEEN = { 'afeka-sched-v1-tour': 'intro,plans' };
+export async function visit(browser, t, size, seed = null, hash = '', scheme = 'light', withTour = false) {
   const viewport = typeof size === 'string' ? SIZES[size] : size, phone = viewport.width < 600;
   const context = await browser.newContext({ viewport, isMobile: phone, hasTouch: phone, locale: 'he-IL', acceptDownloads: true, reducedMotion: 'reduce', colorScheme: scheme });
   const page = await context.newPage();
   const outside = [], errors = [];
   page.on('request', (r) => { if (!/^(data|blob):/.test(r.url()) && new URL(r.url()).origin !== new URL(SITE).origin) outside.push(r.url()); });
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.addInitScript((items) => {
+  await page.addInitScript(({ items, tourSeen }) => {
     navigator.clipboard.writeText = () => Promise.reject(new Error('no clipboard')); // the copy button then shows its text dialog
     window.__prints = 0; window.print = () => { window.__prints++; };
-    if (items && !sessionStorage.getItem('__seeded')) { sessionStorage.setItem('__seeded', '1'); for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v); }
-  }, seed);
+    if (!sessionStorage.getItem('__seeded')) { sessionStorage.setItem('__seeded', '1'); for (const [k, v] of Object.entries({ ...tourSeen, ...items })) localStorage.setItem(k, v); }
+  }, { items: seed, tourSeen: withTour ? null : TOUR_SEEN });
   t.after(async () => { await context.close(); assert.deepEqual(outside, [], 'a request left the local server'); assert.deepEqual(errors, [], 'a script error'); });
   await page.goto(SITE + hash);
   return page;
