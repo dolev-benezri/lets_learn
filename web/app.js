@@ -351,9 +351,9 @@ export async function restoreBackup(payload) {
 // Friend (#f=) and backup (#b=) links: read at load, and again when one is pasted into an open tab (hashchange in ui-plan.js).
 let linkError = null;
 // Ask before replacing saved state, then restore. Returns the hash to keep when the visitor cancelled (stay on the page the link was pasted into).
-async function runBackup(payload) {
-  let hadSaved = false;
-  try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
+const savedExists = () => { try { return localStorage.getItem(KEY) !== null; } catch { return false; } }; // storage unavailable: nothing to replace
+let pendingSaved = false; // whether state was saved before this visit's own first save (refresh() saves before the terms are accepted)
+async function runBackup(payload, hadSaved = savedExists()) {
   if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
     if (!await restoreBackup(payload)) linkError = app.hashError; // its own message, cleared by the next good link like a bad link's
     return '';
@@ -365,7 +365,7 @@ export async function applyPendingBackup() {
   const p = app.pendingBackup;
   app.pendingBackup = null;
   if (!p) return;
-  const keep = await runBackup(p);
+  const keep = await runBackup(p, pendingSaved);
   if (keep) history.replaceState(null, '', location.pathname + keep);
   ensurePassed();
   refresh();
@@ -379,7 +379,7 @@ export async function applyHash() {
   }
   if (h?.type === 'backup') {
     if (app.termsOk()) keep = await runBackup(h.payload);
-    else app.pendingBackup = h.payload; // the terms gate comes first (ACT.acceptTerms runs applyPendingBackup)
+    else { app.pendingBackup = h.payload; pendingSaved = savedExists(); } // the terms gate comes first (ACT.acceptTerms runs applyPendingBackup)
   }
   ensurePassed();
   if (h?.type === 'friend') app.friendLanding = h.payload;

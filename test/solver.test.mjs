@@ -1066,7 +1066,25 @@ test('split on: the largest real file with every offered course optional stays w
   const t = Date.now();
   const r = searchAll({ data, courses, weights: DEF_W, constraints: { ...DEF_C, split: true }, timeLimitMs: 1500 });
   const ms = Date.now() - t;
-  console.log(`split timing: ${size(data)} groups, ${courses.length} optional courses, ${ms} ms, partial ${r.partial}, ${r.results.length} plans`);
   assert.ok(ms < 2500 * SLACK, `${ms} ms`);
+  assert.ok(r.results.length);
+});
+
+test('split on, year mode: the largest real program with every offered course optional stays within its time budget', () => {
+  const dir = (n) => new URL(`../web/data/afeka/2027-${n}/`, import.meta.url);
+  if (!existsSync(dir(1)) || !existsSync(dir(2))) return;
+  const read = (n, f) => JSON.parse(readFileSync(new URL(f, dir(n)), 'utf8'));
+  const size = (d) => Object.values(d.courses ?? {}).reduce((a, c) => a + (c.groups?.length ?? 0), 0);
+  const both = readdirSync(dir(1)).filter((f) => f.endsWith('.json') && existsSync(new URL(f, dir(2))));
+  if (!both.length) return;
+  const [f] = both.sort((x, y) => size(read(1, y)) + size(read(2, y)) - size(read(1, x)) - size(read(2, x)));
+  const [dataA, dataB] = [read(1, f), read(2, f)];
+  const choices = Object.fromEntries([...Object.keys(dataA.courses), ...Object.keys(dataB.courses)].map((id) => [id, 'optional']));
+  const t = Date.now();
+  const r = searchAll({ year: { dataA, dataB, state: { passed: [], failed: {}, choices, semesterOf: {}, load: 'even' }, yearList: new Set(), weights: DEF_W,
+    constraints: { ...DEF_C, split: true }, timeLimitMs: LIMIT } });
+  const ms = Date.now() - t;
+  // searchYear may run to 1.5x its limit by design (a pair needs both semesters); split off measures the same, so the bound is that plus a second
+  assert.ok(ms < 5500 * SLACK, `${f}: ${size(dataA) + size(dataB)} groups, ${ms} ms, partial ${r.partial}`);
   assert.ok(r.results.length);
 });

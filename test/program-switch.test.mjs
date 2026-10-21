@@ -352,6 +352,32 @@ test('applyHash: a backup link waits for the terms, then restores', async () => 
   } finally { Object.assign(globalThis, g); app.termsOk = () => true; app.pendingBackup = null; }
 });
 
+test('applyHash: a backup link for a fresh visitor restores without "replace the current state?" (refresh saves before the terms); a returning one is asked', async () => {
+  const { applyHash, applyPendingBackup } = await import('../web/app.js');
+  const { backupLink } = await import('../web/share.js');
+  const g = { location: globalThis.location, history: globalThis.history, document: globalThis.document, confirm: globalThis.confirm };
+  globalThis.history = { replaceState() {} };
+  globalThis.document ??= { activeElement: null, body: { dataset: {} }, querySelector: () => null };
+  let asked = 0;
+  globalThis.confirm = () => { asked++; return true; };
+  try {
+    reset({ ...mine(), program: 30, startYear: 2026 });
+    const link = await backupLink('https://x.test/', { ...app.state, name: 'מגובה' });
+    globalThis.location = { hash: link.slice(link.indexOf('#')), pathname: '/' };
+    for (const [saved, expected] of [[false, 0], [true, 1]]) {
+      reset({ ...mine(), program: 30, startYear: 2026 });
+      if (saved) store.set('afeka-sched-v1', JSON.stringify(mine()));
+      app.termsOk = () => false; asked = 0;
+      await applyHash();
+      assert.ok(store.has('afeka-sched-v1'), 'refresh saved before the terms were accepted');
+      app.termsOk = () => true;
+      await applyPendingBackup();
+      assert.equal(asked, expected, saved ? 'saved state: asked' : 'fresh visitor: not asked');
+      assert.equal(app.state.name, 'מגובה');
+    }
+  } finally { Object.assign(globalThis, g); app.termsOk = () => true; app.pendingBackup = null; }
+});
+
 test('applyHash: a backup whose data fails to load says so even when a load notice is up', async () => {
   const { applyHash } = await import('../web/app.js');
   const { backupLink } = await import('../web/share.js');
