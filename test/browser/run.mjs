@@ -1,6 +1,7 @@
 // Real-browser checks in Playwright WebKit (the engine of iPhone Safari). Outside `npm test`: it needs the WebKit download (npx playwright install webkit).
 // Serves web/ on a free local port, hands the address to every test/browser/*.spec.mjs as SITE_URL, and runs them with node:test.
-//   npm run test:browser
+//   npm run test:browser              (all)
+//   npm run test:browser -- a11y      (only the specs whose name contains a11y)
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { readFile, readdir } from 'node:fs/promises';
@@ -18,6 +19,6 @@ const server = createServer(async (req, res) => {
 }).listen(0, '127.0.0.1');
 await new Promise((r) => server.once('listening', r));
 
-const specs = (await readdir(HERE)).filter((f) => f.endsWith('.spec.mjs')).sort().map((f) => path.join(HERE, f));
+const specs = (await readdir(HERE)).filter((f) => f.endsWith('.spec.mjs') && f.includes(process.argv[2] ?? '')).sort().map((f) => path.join(HERE, f));
 const child = spawn(process.execPath, ['--test', ...specs], { stdio: 'inherit', env: { ...process.env, SITE_URL: `http://127.0.0.1:${server.address().port}/` } });
 child.on('exit', (code) => { server.close(); process.exit(code ?? 1); });
