@@ -96,4 +96,5 @@ export const shownTitle = () => $(Object.values(PAGE).find(([p]) => !$(p).hidden
 // state shared by the modules (sem: the shown semester of a year result)
 export const ui = { worker: null, timer: null, last: null, cur: 0, running: false, runError: null, gen: 0, moreMul: 1, sem: 'א', gradeMsg: '', panel: null,
   opener: null, mobileDay: 1, friendMsg: '', friendUrl: '', liveText: '', dashed: new Set(), dayScroll: true, specPick: null,
-  onShown: null }; // onShown: set by the progress map, called after every renderView (a switched alternative or a search result)
+  onShown: null, onResult: null }; // onShown: set by the progress map, called after every renderView (a switched alternative or a search result)
+// onResult: set by ui-plan.js, called when step 4 shows at least one alternative (the plans part of the tour)

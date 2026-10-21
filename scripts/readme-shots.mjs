@@ -70,7 +70,7 @@ async function shot(name) {
 }
 
 await mkdir(OUT, { recursive: true });
-const DONE = { 'afeka-sched-v1-onboarded': '1', 'afeka-sched-v1-entry': '1' };
+const DONE = { 'afeka-sched-v1-onboarded': '1', 'afeka-sched-v1-entry': '1', 'afeka-sched-v1-tour': 'intro,plans' }; // the tour seen: it would dim the shots
 
 // The friends: alternatives 1 and 2 of the student without friends.
 await open({ state: student(), flags: DONE, size: DESK, ready: results });

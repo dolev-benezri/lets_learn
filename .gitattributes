@@ -1,1 +1,2 @@
 web/vendor/tesseract/** -text
+web/vendor/driver/** -text

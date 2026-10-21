@@ -758,3 +758,31 @@ body:has(#friendEd[open]) { overflow:hidden; }
   #print li { break-inside:avoid; }
   #print li div { font-size:9.5pt; }
 }
+/* the first-visit tour (tour.js): Driver.js draws the dimmed page and the popover, this gives the popover the site's tokens, right to left, in both themes */
+.tour-btn { margin-inline-start:auto; border-radius:999px; color:var(--text-2); }
+.tour-btn + .theme-btn { margin-inline-start:0; }
+/* below 800px the step bar has no room for the two words (640px is what 200% zoom leaves of a desktop): both buttons keep only their icon, the label stays as the name */
+@media (max-width:799px) { .tour-btn, .theme-btn { width:var(--tap); padding:0; }
+  .tour-btn .lbl, .theme-btn .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
+body.gated .tour-btn { display:none; }
+/* while the tour points at the plan buttons they show on every step (they are hidden off the plans, above) */
+body.touring .actions { display:flex; }
+@media (max-width:599px) { body.touring .actions { display:grid; } }
+.tour-pop { right:auto; min-width:0; max-width:min(320px, calc(100vw - 24px)); padding:14px; background:var(--surface); color:var(--text); border:1px solid var(--border-strong);
+  border-radius:var(--radius); box-shadow:var(--shadow-pop); font:var(--fs)/1.6 var(--font); direction:rtl; text-align:start; }
+/* right:auto above: with direction rtl, Driver's inline left would lose to its right:0 */
+.tour-pop .driver-popover-arrow { display:none; }
+.tour-pop .driver-popover-description { font-size:var(--fs); line-height:1.6; }
+.tour-pop .driver-popover-footer { flex-wrap:wrap; gap:8px 12px; margin-top:12px; }
+.tour-pop .driver-popover-progress-text { color:var(--text-2); font-size:var(--fs-sm); }
+.tour-pop .driver-popover-navigation-btns { flex-wrap:wrap; gap:6px; justify-content:flex-end; }
+.tour-pop .driver-popover-navigation-btns button + button { margin:0; }
+.tour-pop .driver-popover-footer-btn, .tour-pop .driver-popover-close-btn { position:static; display:inline-flex; align-items:center; justify-content:center; width:auto; height:auto;
+  min-width:var(--tap); min-height:var(--tap); padding:0 12px; border:1px solid var(--border-strong); border-radius:var(--radius); background:var(--surface); color:var(--text);
+  font:inherit; font-weight:500; line-height:1.2; cursor:pointer; }
+.tour-pop .driver-popover-close-btn { border-color:transparent; color:var(--text-2); }
+.tour-pop .driver-popover-footer-btn:hover, .tour-pop .driver-popover-footer-btn:focus, .tour-pop .driver-popover-close-btn:hover, .tour-pop .driver-popover-close-btn:focus-visible
+  { background:var(--surface-2); color:var(--text); }
+.tour-pop .driver-popover-next-btn, .tour-pop .driver-popover-next-btn:hover, .tour-pop .driver-popover-next-btn:focus
+  { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
+.tour-pop .driver-popover-next-btn:hover { background:var(--primary-hover); border-color:var(--primary-hover); }

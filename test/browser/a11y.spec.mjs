@@ -1,10 +1,12 @@
 // Accessibility in WebKit: axe-core (WCAG 2.0/2.1 A and AA) on every screen and dialog, phone and desktop, light and dark, plus the checks axe cannot make
 // (reflow at 320px, a visible focus ring, accessible names). Run through `npm run test:browser`. Student and seeding: helpers.mjs.
+// The first-visit tour is marked seen for these specs (helpers.mjs); the tour test below shows it on purpose.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { webkit } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
 import { SITE, SIZES, STUDENT, DONE, gradeSheetPdf, visit as visitIn } from './helpers.mjs';
+import { TOUR_INTRO, TOUR_PLANS } from '../../web/tour.js';
 
 let browser;
 before(async () => { browser = await webkit.launch(); });
@@ -57,6 +59,25 @@ for (const [size, scheme] of COMBOS) {
     await manual.click();
     await page.locator('.crs').first().waitFor();
     await check(page, 'step 1');
+    done();
+  });
+
+  // The tour popover and its dimmed page (Driver.js, restyled in style.css): every stop of the intro from the replay button, then the plans part on its own.
+  test(`${size}/${scheme}: axe, the first-visit tour: every stop of the intro and of the plans part`, async (t) => {
+    const { check, done } = checker(scheme);
+    const page = await visitIn(browser, t, size, DONE, '#me', scheme, true); // the tour unseen: the plans part waits for step 4, the intro for the replay button
+    await page.locator('#meTitle').waitFor();
+    await page.locator('#tourBtn').click();
+    for (const [part, steps] of [['intro', TOUR_INTRO], ['plans', TOUR_PLANS]]) {
+      if (part === 'plans') await page.goto(SITE);
+      for (let i = 1; i <= steps.length; i++) {
+        await page.waitForFunction((n) => document.querySelector('.driver-popover-progress-text')?.textContent.startsWith(`${n} מתוך`), i, { timeout: 30000 });
+        await check(page, `tour ${part}, stop ${i}`);
+        if (i < steps.length) await page.locator('.driver-popover-next-btn').click();
+      }
+      await page.locator('.driver-popover-next-btn').click();
+      await page.locator('.driver-popover').waitFor({ state: 'detached' });
+    }
     done();
   });
 

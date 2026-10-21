@@ -27,6 +27,7 @@
 <link rel="preload" href="fonts/rubik-hebrew-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/rubik-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin><!-- digits and times -->
 <link rel="stylesheet" href="map.css">
+<link rel="stylesheet" href="vendor/driver/driver.css"><!-- the first-visit tour (tour.js); style.css restyles its popover, so it comes after this -->
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -52,6 +53,7 @@
   <a href="#courses" data-view="courses" aria-label="שלב 2: קורסים"><span class="n" aria-hidden="true" data-icon="check">2</span> <span class="lbl">קורסים</span></a>
   <a href="#prefs" data-view="prefs" aria-label="שלב 3: מה חשוב לי"><span class="n" aria-hidden="true" data-icon="check">3</span> <span class="lbl">מה חשוב לי</span></a>
   <a href="#" data-view="plan" aria-label="שלב 4: מערכות"><span class="n" aria-hidden="true">4</span> <span class="lbl">מערכות</span></a>
+  <button type="button" id="tourBtn" class="btn ghost tour-btn" data-act="tour" data-icon="info"><span class="lbl">סיור באתר</span></button>
   <button type="button" class="btn ghost theme-btn"><span class="to-dark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span
     class="lbl">מצב כהה</span></span><span class="to-light"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path
     d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="lbl">מצב בהיר</span></span></button>

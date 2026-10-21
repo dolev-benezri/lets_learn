@@ -1,0 +1,19 @@
+driver.js 1.10.2 (MIT), self-hosted so the site makes no request outside its own origin.
+
+Every file is byte-identical to the one in the npm package named below. The tarball was fetched with `npm pack driver.js@1.10.2 --ignore-scripts` from the
+npm registry into an empty folder outside the repository and extracted as data (nothing from it was run); its sha512 matched the registry's dist.integrity.
+Files were copied out of the extracted tarball into this folder, unmodified. driver.js 1.10.2 was published on 2026-10-18.
+To update: pack the new version the same way, replace the files, rewrite this list (`sha256sum` of every file), and run `npm test` and `npm run test:browser`.
+
+Package (sha512 = dist.integrity from the registry):
+  driver.js@1.10.2   sha512-L/EMTriJPAmg+5kIFmrjzt3TI+1NblhHOV/UZkfpgU/uxhSflGheynMBxk5oImDSy6seAEkIl6MzNOc0zdoKtg==   (MIT)
+
+Files (sha256, file here <- path inside the package):
+  fe945c3ab8cfec61f00bb8df1bf55a85088576354db64762e53f0415a3a44c54  driver.js.mjs   <- package/dist/driver.js.mjs
+  ff1934a5a7ef3f50deb9266ba8945b3eb407ee10b97da12feda4b7c10055bf12  driver.css      <- package/dist/driver.css
+  ec3ce3a08736fefd6a03a6d5b52b0705e6919fe06de9d7bd3fb63dcfb492d76d  LICENSE         <- package/license
+
+Why only these files: web/tour.js loads the ES module with import() on the first tour, and index.html links the stylesheet. The CommonJS and IIFE builds, the type
+declarations, and the checklist and hints add-ons are not used and were left out. The module makes no network request (no fetch, XMLHttpRequest or beacon in it).
+Driver.js writes a step's text with innerHTML: tour.js passes only its own constant Hebrew strings, never visitor or catalogue data.
+The popover look (RTL, the site's colours in both themes) is in web/style.css, not in these files.

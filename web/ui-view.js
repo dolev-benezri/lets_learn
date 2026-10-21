@@ -162,6 +162,7 @@ export function renderView() {
   setBusy();
   scrollToDay();
   ui.onShown?.();
+  if (nAlt && !$('layout').hidden) ui.onResult?.();
 }
 
 // Phone: the day column starts at the earliest hour of any day, so a later-starting day opens on empty hours.
