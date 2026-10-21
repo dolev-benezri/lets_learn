@@ -1,11 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { meetingsMask, overlaps, buildOptions, forbiddenBy, unlockCounts, downstream, chainDepth, search, searchYear, searchAll, showWeights, PRIMARY } from '../web/solver-core.js';
+import {
+  meetingsMask,
+  overlaps,
+  buildOptions,
+  forbiddenBy,
+  unlockCounts,
+  downstream,
+  chainDepth,
+  search,
+  searchYear,
+  searchAll,
+  showWeights,
+  PRIMARY
+} from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { mini } from './fixtures/mini-data.mjs';
 // Wall-clock budgets: a shared CI runner (GitHub sets CI) is 2-3x slower than a dev machine, so there the search gets 3x the time and the budgets scale with it.
-const SLACK = process.env.CI ? 3 : 1, LIMIT = 3000 * SLACK;
+const SLACK = process.env.CI ? 3 : 1,
+  LIMIT = 3000 * SLACK;
 
 test('masks: 08:00-09:50 and 10:00-11:50 do not overlap; 09:30 start does', () => {
   const a = meetingsMask([{ day: 2, start: '08:00', end: '09:50' }]);
@@ -15,49 +29,100 @@ test('masks: 08:00-09:50 and 10:00-11:50 do not overlap; 09:30 start does', () =
 });
 
 test('masks clamp meetings outside 07:00-23:00 and ignore missing days', () => {
-  const m = meetingsMask([{ day: 1, start: '06:00', end: '23:30' }, { day: null, start: '08:00', end: '09:00' }]);
+  const m = meetingsMask([
+    { day: 1, start: '06:00', end: '23:30' },
+    { day: null, start: '08:00', end: '09:00' }
+  ]);
   assert.equal(m[1] >>> 0, 0xffffffff);
   assert.deepEqual(m.slice(2), [0, 0, 0, 0, 0]);
 });
 
 test('buildOptions pairs each primary with one linked tutorial', () => {
   const opts = buildOptions(mini().courses.A);
-  assert.deepEqual(opts.map((o) => o.groups), [['A1', 'A1/1'], ['A1', 'A1/2'], ['A2']]);
+  assert.deepEqual(
+    opts.map((o) => o.groups),
+    [['A1', 'A1/1'], ['A1', 'A1/2'], ['A2']]
+  );
   assert.deepEqual(opts[0].exams, ['2027-02-04']);
   assert.equal(opts[0].meetings.find((m) => m.group === 'A1/1').day, 3);
 });
 
 test('buildOptions follows a tutorial\'s own link to its lab (course 10013: lecture -> tutorial -> one of two labs)', () => {
-  const g = (id, type, linked, day) => ({ id, type, primary: type.startsWith('סופי'), full: false, lecturer: 'L', linked, exams: [],
-    meetings: [{ semester: 'א', day, start: '10:00', end: '11:50', room: 'r' }] });
-  const course = { groups: [g('P', 'סופי-הרצאה+תרגול', ['P/1'], 1), g('P/1', 'תרגול', ['L1', 'L2'], 2), g('L1', 'מעבדה', [], 3), g('L2', 'מעבדה', [], 4)] };
+  const g = (id, type, linked, day) => ({
+    id,
+    type,
+    primary: type.startsWith('סופי'),
+    full: false,
+    lecturer: 'L',
+    linked,
+    exams: [],
+    meetings: [{ semester: 'א', day, start: '10:00', end: '11:50', room: 'r' }]
+  });
+  const course = {
+    groups: [
+      g('P', 'סופי-הרצאה+תרגול', ['P/1'], 1),
+      g('P/1', 'תרגול', ['L1', 'L2'], 2),
+      g('L1', 'מעבדה', [], 3),
+      g('L2', 'מעבדה', [], 4)
+    ]
+  };
   const opts = buildOptions(course);
-  assert.deepEqual(opts.map((o) => o.groups), [['P', 'P/1', 'L1'], ['P', 'P/1', 'L2']]);
+  assert.deepEqual(
+    opts.map((o) => o.groups),
+    [
+      ['P', 'P/1', 'L1'],
+      ['P', 'P/1', 'L2']
+    ]
+  );
   assert.equal(opts[0].meetings.find((m) => m.group === 'L1').day, 3, 'the lab\'s hours are in the mask');
 });
 
 test('primary with no linked sub-groups still yields an option', () => {
-  assert.deepEqual(buildOptions(mini().courses.B).map((o) => o.groups), [['B1']]);
+  assert.deepEqual(
+    buildOptions(mini().courses.B).map((o) => o.groups),
+    [['B1']]
+  );
 });
 
 test('full groups are skipped unless pinned or includeFull', () => {
   const Q = mini().courses.Q;
-  assert.deepEqual(buildOptions(Q).map((o) => o.groups), [['Q1']]);
-  assert.deepEqual(buildOptions(Q, { includeFull: true }).map((o) => o.groups), [['Q1'], ['Q2']]);
-  assert.deepEqual(buildOptions(Q, { pins: ['Q2'] }).map((o) => o.groups), [['Q2']]);
+  assert.deepEqual(
+    buildOptions(Q).map((o) => o.groups),
+    [['Q1']]
+  );
+  assert.deepEqual(
+    buildOptions(Q, { includeFull: true }).map((o) => o.groups),
+    [['Q1'], ['Q2']]
+  );
+  assert.deepEqual(
+    buildOptions(Q, { pins: ['Q2'] }).map((o) => o.groups),
+    [['Q2']]
+  );
 });
 
 test('full-group exemption only for the pinned group itself', () => {
   const data = mini();
   const A = data.courses.A;
   A.groups[1].full = true; // A1/1 is now full
-  assert.deepEqual(buildOptions(A, { pins: ['A1'] }).map((o) => o.groups), [['A1', 'A1/2']]);
+  assert.deepEqual(
+    buildOptions(A, { pins: ['A1'] }).map((o) => o.groups),
+    [['A1', 'A1/2']]
+  );
 });
 
 test('forbiddenBy removes options (hard day off / window)', () => {
   const A = mini().courses.A;
-  assert.deepEqual(buildOptions(A, { forbidden: forbiddenBy({ dayOff: [1], dayOffHard: true }) }).map((o) => o.groups), [['A1', 'A1/1'], ['A1', 'A1/2']]);
-  assert.deepEqual(buildOptions(A, { forbidden: forbiddenBy({ notBefore: '10:00', windowHard: true }) }).map((o) => o.groups), [['A2']]);
+  assert.deepEqual(
+    buildOptions(A, { forbidden: forbiddenBy({ dayOff: [1], dayOffHard: true }) }).map((o) => o.groups),
+    [
+      ['A1', 'A1/1'],
+      ['A1', 'A1/2']
+    ]
+  );
+  assert.deepEqual(
+    buildOptions(A, { forbidden: forbiddenBy({ notBefore: '10:00', windowHard: true }) }).map((o) => o.groups),
+    [['A2']]
+  );
 });
 
 test('hard time window edges in real minutes: "not after 17:50" allows a lesson ending 17:50, "not after 17:45" does not', () => {
@@ -71,7 +136,8 @@ test('hard time window edges in real minutes: "not after 17:50" allows a lesson 
 });
 
 test('busy blocks: always hard, in real minutes (a block may start when a lesson ends, or end when it starts)', () => {
-  const hit = (b, start, end, c = {}) => forbiddenBy({ ...c, blocks: [{ day: 2, label: '', ...b }] })({ day: 2, start, end });
+  const hit = (b, start, end, c = {}) =>
+    forbiddenBy({ ...c, blocks: [{ day: 2, label: '', ...b }] })({ day: 2, start, end });
   assert.equal(hit({ start: '20:50', end: '22:00' }, '19:00', '20:50'), false);
   assert.equal(hit({ start: '18:00', end: '20:00' }, '16:00', '17:50'), false);
   assert.equal(hit({ start: '18:00', end: '20:00' }, '19:00', '20:50'), true);
@@ -80,18 +146,41 @@ test('busy blocks: always hard, in real minutes (a block may start when a lesson
   assert.equal(hit({ start: '07:00', end: '08:00' }, '07:00', '08:50'), true);
   assert.equal(hit({ start: '17:45', end: '19:00' }, '16:00', '17:50'), true); // five minutes inside the lesson
   assert.equal(hit({ start: '18:00', end: '20:00' }, '18:00', '18:50', { dayOffHard: false, windowHard: false }), true); // independent of the hardness flags
-  assert.equal(forbiddenBy({ blocks: [{ day: 3, start: '18:00', end: '20:00', label: '' }] })({ day: 2, start: '18:00', end: '19:50' }), false); // other day
+  assert.equal(
+    forbiddenBy({ blocks: [{ day: 3, start: '18:00', end: '20:00', label: '' }] })({
+      day: 2,
+      start: '18:00',
+      end: '19:50'
+    }),
+    false
+  ); // other day
 });
 
 test('search: a busy block excludes the only option that overlaps it; diagnosis names the block when it empties a course', () => {
   const A = { courses: [{ id: 'A', mode: 'must' }] };
   const blocks = [{ day: 1, start: '12:00', end: '14:00', label: 'עבודה' }]; // A2 is Sunday 12:00-13:50
-  assert.deepEqual(run({ ...A }).results.map((r) => r.groups[0]).sort(), ['A1', 'A1', 'A2']);
-  assert.deepEqual(run({ ...A, constraints: { blocks } }).results.map((r) => r.groups[0]).sort(), ['A1', 'A1']);
-  const r = run({ courses: [{ id: 'B', mode: 'must' }], constraints: { blocks: [{ day: 2, start: '10:00', end: '12:00', label: '' }] } });
+  assert.deepEqual(
+    run({ ...A })
+      .results.map((r) => r.groups[0])
+      .sort(),
+    ['A1', 'A1', 'A2']
+  );
+  assert.deepEqual(
+    run({ ...A, constraints: { blocks } })
+      .results.map((r) => r.groups[0])
+      .sort(),
+    ['A1', 'A1']
+  );
+  const r = run({
+    courses: [{ id: 'B', mode: 'must' }],
+    constraints: { blocks: [{ day: 2, start: '10:00', end: '12:00', label: '' }] }
+  });
   assert.equal(r.results.length, 0);
   assert.match(r.diagnosis[0], /דינמיקה.*זמן תפוס/);
-  assert.doesNotMatch(run({ courses: [{ id: 'B', mode: 'must' }], constraints: { dayOff: [2], dayOffHard: true } }).diagnosis[0], /זמן תפוס/);
+  assert.doesNotMatch(
+    run({ courses: [{ id: 'B', mode: 'must' }], constraints: { dayOff: [2], dayOffHard: true } }).diagnosis[0],
+    /זמן תפוס/
+  );
 });
 
 test('unlockCounts is transitive', () => {
@@ -117,14 +206,29 @@ const W0 = { friends: 0, progress: 0, freeDays: 0, compact: 0, timeWindow: 0, ex
 const me = { passed: ['Q0'], failed: { A: 1 } };
 const run = (over = {}) => {
   const data = over.data ?? mini();
-  return search({ data, statuses: classify(data, me).statuses, weights: W0, friends: [], constraints: {}, topK: 1000, ...over });
+  return search({
+    data,
+    statuses: classify(data, me).statuses,
+    weights: W0,
+    friends: [],
+    constraints: {},
+    topK: 1000,
+    ...over
+  });
 };
 
 test('search: weights default to none, topK <= 0 returns nothing without throwing', () => {
   const data = mini();
-  const base = { data, courses: [{ id: 'Q', mode: 'must' }], statuses: classify(data, me).statuses, friends: [], constraints: {} };
+  const base = {
+    data,
+    courses: [{ id: 'Q', mode: 'must' }],
+    statuses: classify(data, me).statuses,
+    friends: [],
+    constraints: {}
+  };
   assert.ok(search(base).results.length > 0);
-  for (const topK of [0, -1]) assert.deepEqual(search({ ...base, weights: W0, topK }), { results: [], partial: false, diagnosis: [] });
+  for (const topK of [0, -1])
+    assert.deepEqual(search({ ...base, weights: W0, topK }), { results: [], partial: false, diagnosis: [] });
 });
 
 test('search: a retaken course still needs its corequisite planned together', () => {
@@ -132,13 +236,25 @@ test('search: a retaken course still needs its corequisite planned together', ()
   const statuses = classify(data, { passed: ['Q0'], failed: { P: 1 } }).statuses;
   const args = { data, statuses, weights: W0, friends: [], constraints: {} };
   assert.equal(search({ ...args, courses: [{ id: 'P', mode: 'must' }] }).results.length, 0);
-  assert.deepEqual(search({ ...args, courses: [{ id: 'P', mode: 'must' }, { id: 'Q', mode: 'optional' }] }).results[0].courses.sort(), ['P', 'Q']);
+  assert.deepEqual(
+    search({
+      ...args,
+      courses: [
+        { id: 'P', mode: 'must' },
+        { id: 'Q', mode: 'optional' }
+      ]
+    }).results[0].courses.sort(),
+    ['P', 'Q']
+  );
 });
 
 // Independent brute force: enumerate option products, reject overlaps by interval comparison.
 function brute(data, courses) {
   const toM = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
-  const clash = (a, b) => a.meetings.some((x) => b.meetings.some((y) => x.day === y.day && toM(x.start) < toM(y.end) && toM(y.start) < toM(x.end)));
+  const clash = (a, b) =>
+    a.meetings.some((x) =>
+      b.meetings.some((y) => x.day === y.day && toM(x.start) < toM(y.end) && toM(y.start) < toM(x.end))
+    );
   let sets = [[]];
   for (const { id, mode } of courses) {
     const opts = buildOptions(data.courses[id]);
@@ -149,25 +265,51 @@ function brute(data, courses) {
     }
     sets = next;
   }
-  return sets.filter((s) => s.length).map((s) => s.flatMap((o) => o.groups).sort().join(',')).sort();
+  return sets
+    .filter((s) => s.length)
+    .map((s) =>
+      s
+        .flatMap((o) => o.groups)
+        .sort()
+        .join(',')
+    )
+    .sort();
 }
 
 test('search finds exactly the valid combinations (vs brute force)', () => {
-  const courses = [{ id: 'A', mode: 'must' }, { id: 'Q', mode: 'optional' }, { id: 'X', mode: 'must' }];
-  const got = run({ courses, constraints: { examsSameDay: 'allow' } }).results.map((r) => [...r.groups].sort().join(',')).sort();
+  const courses = [
+    { id: 'A', mode: 'must' },
+    { id: 'Q', mode: 'optional' },
+    { id: 'X', mode: 'must' }
+  ];
+  const got = run({ courses, constraints: { examsSameDay: 'allow' } })
+    .results.map((r) => [...r.groups].sort().join(','))
+    .sort();
   assert.deepEqual(got, brute(mini(), courses));
 });
 
 test('exam same-day rule removes clashing exams when published', () => {
   const data = mini();
   data.courses.Q.groups[0].exams = [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time: '09:00' }];
-  const r = run({ data, courses: [{ id: 'A', mode: 'must' }, { id: 'Q', mode: 'must' }] });
+  const r = run({
+    data,
+    courses: [
+      { id: 'A', mode: 'must' },
+      { id: 'Q', mode: 'must' }
+    ]
+  });
   assert.equal(r.results.length, 0);
   assert.ok(r.diagnosis.length > 0);
 });
 
 test('conditional course only appears with its parallel course', () => {
-  const r = run({ courses: [{ id: 'P', mode: 'optional' }, { id: 'Q', mode: 'optional' }], constraints: { examsSameDay: 'allow' } });
+  const r = run({
+    courses: [
+      { id: 'P', mode: 'optional' },
+      { id: 'Q', mode: 'optional' }
+    ],
+    constraints: { examsSameDay: 'allow' }
+  });
   for (const res of r.results) if (res.courses.includes('P')) assert.ok(res.courses.includes('Q'));
   assert.ok(r.results.some((res) => res.courses.includes('P')));
 });
@@ -184,7 +326,10 @@ test('freeDays and pins', () => {
   const r = run({ courses: [{ id: 'A', mode: 'must' }], weights: { ...W0, freeDays: 1 }, topK: 1 });
   assert.deepEqual(r.results[0].groups, ['A2']); // 1 busy day beats 2
   const p = run({ courses: [{ id: 'A', mode: 'must' }], pins: ['A1/2'] });
-  assert.deepEqual(p.results.map((x) => x.groups), [['A1', 'A1/2']]);
+  assert.deepEqual(
+    p.results.map((x) => x.groups),
+    [['A1', 'A1/2']]
+  );
 });
 
 test('diagnosis names a course with no option left', () => {
@@ -195,71 +340,191 @@ test('diagnosis names a course with no option left', () => {
 
 test('gaps: 08:00–09:50 and 11:00–12:50 on same day = 60 gap minutes', () => {
   const data = mini();
-  data.courses.Y = { name: 'Test', credits: 1, offered: true, prereqs: [], groups: [
-    { id: 'Y1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-      meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }, { day: 2, start: '11:00', end: '12:50', room: 'r' }],
-      exams: [] },
-  ] };
+  data.courses.Y = {
+    name: 'Test',
+    credits: 1,
+    offered: true,
+    prereqs: [],
+    groups: [
+      {
+        id: 'Y1',
+        type: 'סופי-הרצאה',
+        primary: true,
+        lecturer: 'L',
+        full: false,
+        semester: 'א',
+        linked: [],
+        meetings: [
+          { day: 2, start: '08:00', end: '09:50', room: 'r' },
+          { day: 2, start: '11:00', end: '12:50', room: 'r' }
+        ],
+        exams: []
+      },
+    ]
+  };
   const r = run({ data, courses: [{ id: 'Y', mode: 'must' }], weights: { ...W0, compact: 1 } });
   assert.equal(r.results[0].breakdown.compact, 1 - 60 / 600);
 });
 
 test('late slot 21:00–22:50 (bit 31): 660 gap minutes, capped at 600', () => {
   const data = mini();
-  data.courses.Y = { name: 'Test', credits: 1, offered: true, prereqs: [], groups: [
-    { id: 'Y1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-      meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }, { day: 2, start: '21:00', end: '22:50', room: 'r' }],
-      exams: [] },
-  ] };
+  data.courses.Y = {
+    name: 'Test',
+    credits: 1,
+    offered: true,
+    prereqs: [],
+    groups: [
+      {
+        id: 'Y1',
+        type: 'סופי-הרצאה',
+        primary: true,
+        lecturer: 'L',
+        full: false,
+        semester: 'א',
+        linked: [],
+        meetings: [
+          { day: 2, start: '08:00', end: '09:50', room: 'r' },
+          { day: 2, start: '21:00', end: '22:50', room: 'r' }
+        ],
+        exams: []
+      },
+    ]
+  };
   const r = run({ data, courses: [{ id: 'Y', mode: 'must' }], weights: { ...W0, compact: 1 } });
   assert.equal(r.results[0].breakdown.compact, 0);
 });
 
 test('consecutive late slots 21:00–21:50 and 22:00–22:50: no gap', () => {
   const data = mini();
-  data.courses.Y = { name: 'Test', credits: 1, offered: true, prereqs: [], groups: [
-    { id: 'Y1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-      meetings: [{ day: 2, start: '21:00', end: '21:50', room: 'r' }, { day: 2, start: '22:00', end: '22:50', room: 'r' }],
-      exams: [] },
-  ] };
+  data.courses.Y = {
+    name: 'Test',
+    credits: 1,
+    offered: true,
+    prereqs: [],
+    groups: [
+      {
+        id: 'Y1',
+        type: 'סופי-הרצאה',
+        primary: true,
+        lecturer: 'L',
+        full: false,
+        semester: 'א',
+        linked: [],
+        meetings: [
+          { day: 2, start: '21:00', end: '21:50', room: 'r' },
+          { day: 2, start: '22:00', end: '22:50', room: 'r' }
+        ],
+        exams: []
+      },
+    ]
+  };
   const r = run({ data, courses: [{ id: 'Y', mode: 'must' }], weights: { ...W0, compact: 1 } });
   assert.ok(Math.abs(r.results[0].breakdown.compact - 1) < 0.01);
 });
 
 test('soft time window (notBefore not hard): 08:00–09:50 before 10:00 = 110 outside minutes', () => {
   const data = mini();
-  data.courses.Y = { name: 'Test', credits: 1, offered: true, prereqs: [], groups: [
-    { id: 'Y1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-      meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
-      exams: [] },
-  ] };
-  const r = run({ data, courses: [{ id: 'Y', mode: 'must' }], constraints: { notBefore: '10:00' }, weights: { ...W0, timeWindow: 1 } });
+  data.courses.Y = {
+    name: 'Test',
+    credits: 1,
+    offered: true,
+    prereqs: [],
+    groups: [
+      {
+        id: 'Y1',
+        type: 'סופי-הרצאה',
+        primary: true,
+        lecturer: 'L',
+        full: false,
+        semester: 'א',
+        linked: [],
+        meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
+        exams: []
+      },
+    ]
+  };
+  const r = run({
+    data,
+    courses: [{ id: 'Y', mode: 'must' }],
+    constraints: { notBefore: '10:00' },
+    weights: { ...W0, timeWindow: 1 }
+  });
   assert.equal(r.results[0].breakdown.timeWindow, 1 - 110 / 600);
 });
 
 test('examSpread: two moed-1 exams 3 days apart = 3/7', () => {
   const data = mini();
-  data.courses.Y = { name: 'Test', credits: 1, offered: true, prereqs: [], groups: [
-    { id: 'Y1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-      meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
-      exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time: '09:00' }] },
-  ] };
-  data.courses.Z = { name: 'Test 2', credits: 1, offered: true, prereqs: [], groups: [
-    { id: 'Z1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-      meetings: [{ day: 3, start: '08:00', end: '09:50', room: 'r' }],
-      exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-07', time: '09:00' }] },
-  ] };
-  const r = run({ data, courses: [{ id: 'Y', mode: 'must' }, { id: 'Z', mode: 'must' }], constraints: { examsSameDay: 'allow' }, weights: { ...W0, examSpread: 1 } });
+  data.courses.Y = {
+    name: 'Test',
+    credits: 1,
+    offered: true,
+    prereqs: [],
+    groups: [
+      {
+        id: 'Y1',
+        type: 'סופי-הרצאה',
+        primary: true,
+        lecturer: 'L',
+        full: false,
+        semester: 'א',
+        linked: [],
+        meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
+        exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time: '09:00' }]
+      },
+    ]
+  };
+  data.courses.Z = {
+    name: 'Test 2',
+    credits: 1,
+    offered: true,
+    prereqs: [],
+    groups: [
+      {
+        id: 'Z1',
+        type: 'סופי-הרצאה',
+        primary: true,
+        lecturer: 'L',
+        full: false,
+        semester: 'א',
+        linked: [],
+        meetings: [{ day: 3, start: '08:00', end: '09:50', room: 'r' }],
+        exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-07', time: '09:00' }]
+      },
+    ]
+  };
+  const r = run({
+    data,
+    courses: [
+      { id: 'Y', mode: 'must' },
+      { id: 'Z', mode: 'must' }
+    ],
+    constraints: { examsSameDay: 'allow' },
+    weights: { ...W0, examSpread: 1 }
+  });
   assert.ok(Math.abs(r.results[0].breakdown.examSpread - 3 / 7) < 0.01);
 });
 
 test('examSpread: one exam (nothing to crowd) scores 1, like the bound, never below two crowded exams', () => {
   const data = mini();
-  data.courses.Y = { name: 'Test', credits: 1, offered: true, prereqs: [], groups: [
-    { id: 'Y1', type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-      meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
-      exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time: '09:00' }] },
-  ] };
+  data.courses.Y = {
+    name: 'Test',
+    credits: 1,
+    offered: true,
+    prereqs: [],
+    groups: [
+      {
+        id: 'Y1',
+        type: 'סופי-הרצאה',
+        primary: true,
+        lecturer: 'L',
+        full: false,
+        semester: 'א',
+        linked: [],
+        meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
+        exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time: '09:00' }]
+      },
+    ]
+  };
   const r = run({ data, courses: [{ id: 'Y', mode: 'must' }], weights: { ...W0, examSpread: 1 } });
   assert.equal(r.results[0].breakdown.examSpread, 1);
 });
@@ -268,13 +533,39 @@ test('timeLimitMs: 0 → partial true on large search space', () => {
   const data = mini();
   // Add many optional courses to create a large search space
   for (let i = 0; i < 10; i++) {
-    data.courses[`O${i}`] = { name: `Opt${i}`, credits: 1, offered: true, prereqs: [], groups: [
-      { id: `O${i}1`, type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-        meetings: [{ day: ((i % 5) + 1), start: '08:00', end: '09:50', room: 'r' }], exams: [] },
-    ] };
+    data.courses[`O${i}`] = {
+      name: `Opt${i}`,
+      credits: 1,
+      offered: true,
+      prereqs: [],
+      groups: [
+        {
+          id: `O${i}1`,
+          type: 'סופי-הרצאה',
+          primary: true,
+          lecturer: 'L',
+          full: false,
+          semester: 'א',
+          linked: [],
+          meetings: [{ day: ((i % 5) + 1), start: '08:00', end: '09:50', room: 'r' }],
+          exams: []
+        },
+      ]
+    };
   }
-  const courses = [{ id: 'A', mode: 'must' }, ...Array.from({ length: 10 }, (_, i) => ({ id: `O${i}`, mode: 'optional' }))];
-  const r = search({ data, courses, statuses: classify(data, me).statuses, weights: W0, friends: [], constraints: {}, timeLimitMs: 0 });
+  const courses = [
+    { id: 'A', mode: 'must' },
+    ...Array.from({ length: 10 }, (_, i) => ({ id: `O${i}`, mode: 'optional' }))
+  ];
+  const r = search({
+    data,
+    courses,
+    statuses: classify(data, me).statuses,
+    weights: W0,
+    friends: [],
+    constraints: {},
+    timeLimitMs: 0
+  });
   assert.equal(r.partial, true);
   if (!r.results.length) assert.match(r.diagnosis[0], /מגבלת הזמן/); // a timeout is not reported as "no solution"
 });
@@ -286,43 +577,96 @@ test('real data: all year-2 available courses solve in < 1s with no overlaps', {
   const state = { passed: y1.filter((id) => id !== '90903'), failed: { 90903: 1 } };
   const { statuses } = classify(data, state);
   const y2 = data.lists.find((l) => l.name.includes("שנה ב'")).courses;
-  const courses = [{ id: '90903', mode: 'must' }, ...y2.filter((id) => ['available', 'conditional'].includes(statuses[id]?.status)).map((id) => ({ id, mode: 'optional' }))];
+  const courses = [
+    { id: '90903', mode: 'must' },
+    ...y2
+      .filter((id) => ['available', 'conditional'].includes(statuses[id]?.status))
+      .map((id) => ({ id, mode: 'optional' }))
+  ];
   const t = Date.now();
-  const r = search({ data, courses, statuses, weights: { ...W0, progress: 1, compact: 1 }, friends: [], constraints: { includeFull: true } }); // speed and overlaps only: full groups count, as registration fills them
+  const r = search({
+    data,
+    courses,
+    statuses,
+    weights: { ...W0, progress: 1, compact: 1 },
+    friends: [],
+    constraints: { includeFull: true }
+  }); // speed and overlaps only: full groups count, as registration fills them
   assert.ok(Date.now() - t < 1000, `took ${Date.now() - t}ms`);
   assert.ok(r.results.length > 0);
   assert.equal(r.partial, false);
   for (const res of r.results) {
-    const ms = res.groups.flatMap((gid) => Object.values(data.courses).flatMap((c) => c.groups).find((g) => g.id === gid).meetings);
+    const ms = res.groups.flatMap(
+      (gid) =>
+        Object.values(data.courses)
+          .flatMap((c) => c.groups)
+          .find((g) => g.id === gid).meetings
+    );
     const toM = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
-    for (let i = 0; i < ms.length; i++) for (let j = i + 1; j < ms.length; j++) {
-      const [a, b] = [ms[i], ms[j]];
-      assert.ok(!(a.day === b.day && toM(a.start) < toM(b.end) && toM(b.start) < toM(a.end)), 'overlap in result');
-    }
+    for (let i = 0; i < ms.length; i++)
+      for (let j = i + 1; j < ms.length; j++) {
+        const [a, b] = [ms[i], ms[j]];
+        assert.ok(!(a.day === b.day && toM(a.start) < toM(b.end) && toM(b.start) < toM(a.end)), 'overlap in result');
+      }
     assert.ok(res.courses.includes('90903'));
   }
 });
 
 test('a pin forces its optional course into every result', () => {
-  const r = run({ courses: [{ id: 'A', mode: 'optional' }, { id: 'Q0', mode: 'optional' }], pins: ['A2'], topK: 10 });
+  const r = run({
+    courses: [
+      { id: 'A', mode: 'optional' },
+      { id: 'Q0', mode: 'optional' }
+    ],
+    pins: ['A2'],
+    topK: 10
+  });
   assert.ok(r.results.length > 0);
   for (const res of r.results) assert.ok(res.groups.includes('A2'));
 });
 
 test('a 0-credit course that unlocks 3 courses outranks a 2-credit elective that unlocks nothing', () => {
   const data = mini();
-  const g = (id) => ({ ...data.courses.A.groups[3], id, exams: [], meetings: [{ day: 1, start: '14:00', end: '15:50', room: 'r' }] }); // same slot: only one of Z0 / E fits
+  const g = (id) => ({
+    ...data.courses.A.groups[3],
+    id,
+    exams: [],
+    meetings: [{ day: 1, start: '14:00', end: '15:50', room: 'r' }]
+  }); // same slot: only one of Z0 / E fits
   data.courses.Z0 = { name: 'אנגלית', credits: 0, offered: true, prereqs: [], groups: [g('Z01')] };
   data.courses.E = { name: 'בחירה', credits: 2, offered: true, prereqs: [], groups: [g('E1')] };
-  for (const k of ['K1', 'K2', 'K3']) data.courses[k] = { name: k, credits: 1, offered: true, prereqs: [{ kind: 'קדם', anyOf: [{ id: 'Z0', name: 'אנגלית' }] }], groups: [] };
-  const r = run({ data, courses: [{ id: 'Z0', mode: 'optional' }, { id: 'E', mode: 'optional' }], weights: { ...W0, progress: 1 }, topK: 1 });
+  for (const k of ['K1', 'K2', 'K3'])
+    data.courses[k] = {
+      name: k,
+      credits: 1,
+      offered: true,
+      prereqs: [{ kind: 'קדם', anyOf: [{ id: 'Z0', name: 'אנגלית' }] }],
+      groups: []
+    };
+  const r = run({
+    data,
+    courses: [
+      { id: 'Z0', mode: 'optional' },
+      { id: 'E', mode: 'optional' }
+    ],
+    weights: { ...W0, progress: 1 },
+    topK: 1
+  });
   assert.deepEqual(r.results[0].courses, ['Z0']);
 });
 
 test('results report how many distinct courses they unlock, and say so in the explanation', () => {
-  const r = run({ courses: [{ id: 'A', mode: 'must' }, { id: 'B', mode: 'must' }] }); // A unlocks B, C; B unlocks C
+  const r = run({
+    courses: [
+      { id: 'A', mode: 'must' },
+      { id: 'B', mode: 'must' }
+    ]
+  }); // A unlocks B, C; B unlocks C
   assert.ok(r.results.length > 0);
-  for (const x of r.results) { assert.equal(x.unlocks, 1); assert.match(x.explanation, /פותחת קורס אחד להמשך/); } // B is chosen, so only C is ahead
+  for (const x of r.results) {
+    assert.equal(x.unlocks, 1);
+    assert.match(x.explanation, /פותחת קורס אחד להמשך/);
+  } // B is chosen, so only C is ahead
   const none = run({ courses: [{ id: 'Q0', mode: 'must' }] }).results[0];
   assert.equal(none.unlocks, 0);
   assert.doesNotMatch(none.explanation, /פותחת/);
@@ -348,31 +692,78 @@ test('real data: pruning keeps results identical to the exhaustive search', { sk
   for (let t = 0; t < 12; t++) {
     const failed = rnd() < 0.5 ? { 90903: 1 } : {};
     const { statuses } = classify(data, { passed: y1.filter((id) => !failed[id]), failed });
-    const cand = y2.filter((id) => ['available', 'conditional'].includes(statuses[id]?.status)).filter(() => rnd() < 0.6);
-    const courses = [...Object.keys(failed).map((id) => ({ id, mode: 'must' })), ...cand.map((id) => ({ id, mode: rnd() < 0.2 ? 'must' : 'optional' }))];
-    const weights = Object.fromEntries(['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'].map((k) => [k, scales[Math.floor(rnd() * 4)]]));
+    const cand = y2
+      .filter((id) => ['available', 'conditional'].includes(statuses[id]?.status))
+      .filter(() => rnd() < 0.6);
+    const courses = [
+      ...Object.keys(failed).map((id) => ({ id, mode: 'must' })),
+      ...cand.map((id) => ({ id, mode: rnd() < 0.2 ? 'must' : 'optional' }))
+    ];
+    const weights = Object.fromEntries(
+      ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'].map((k) => [
+        k,
+        scales[Math.floor(rnd() * 4)]
+      ])
+    );
     const constraints = { dayOff: rnd() < 0.5 ? [6] : [], notAfter: rnd() < 0.5 ? '18:00' : '' };
-    const friends = rnd() < 0.5 ? [{ name: 'f', weight: 2, groups: Object.values(data.courses).flatMap((c) => c.groups.filter(() => rnd() < 0.1).map((g) => g.id)) }] : [];
+    const friends =
+      rnd() < 0.5
+        ? [
+            {
+              name: 'f',
+              weight: 2,
+              groups: Object.values(data.courses).flatMap((c) => c.groups.filter(() => rnd() < 0.1).map((g) => g.id))
+            }
+          ]
+        : [];
     const args = { data, courses, statuses, weights, friends, constraints, timeLimitMs: 60000 };
-    const a = search({ ...args, prune: false }), b = search(args);
-    assert.deepEqual(b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), `case ${t}`);
+    const a = search({ ...args, prune: false }),
+      b = search(args);
+    assert.deepEqual(
+      b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]),
+      a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]),
+      `case ${t}`
+    );
   }
 });
 
-test('real data: default state (12 optional year-2 courses) finishes without hitting the time limit', { skip: !existsSync(REAL) }, () => {
-  const data = JSON.parse(readFileSync(REAL, 'utf8'));
-  const y1 = data.lists.find((l) => l.name.includes("שנה א'")).courses;
-  const { statuses } = classify(data, { passed: y1, failed: {} });
-  const y2 = data.lists.find((l) => l.name.includes("שנה ב'")).courses;
-  const courses = y2.filter((id) => ['available', 'conditional'].includes(statuses[id]?.status)).map((id) => ({ id, mode: 'optional' }));
-  const t = Date.now();
-  const r = search({ data, courses, statuses, weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, friends: [], constraints: { dayOff: [6], notAfter: '20:00' }, timeLimitMs: 1500 });
-  assert.equal(r.partial, false, `partial after ${Date.now() - t}ms`);
-});
+test(
+  'real data: default state (12 optional year-2 courses) finishes without hitting the time limit',
+  { skip: !existsSync(REAL) },
+  () => {
+    const data = JSON.parse(readFileSync(REAL, 'utf8'));
+    const y1 = data.lists.find((l) => l.name.includes("שנה א'")).courses;
+    const { statuses } = classify(data, { passed: y1, failed: {} });
+    const y2 = data.lists.find((l) => l.name.includes("שנה ב'")).courses;
+    const courses = y2
+      .filter((id) => ['available', 'conditional'].includes(statuses[id]?.status))
+      .map((id) => ({ id, mode: 'optional' }));
+    const t = Date.now();
+    const r = search({
+      data,
+      courses,
+      statuses,
+      weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
+      friends: [],
+      constraints: { dayOff: [6], notAfter: '20:00' },
+      timeLimitMs: 1500
+    });
+    assert.equal(r.partial, false, `partial after ${Date.now() - t}ms`);
+  }
+);
 
 test('identical primary groups collapse into one option that lists the others as alternates', () => {
-  const g = (id) => ({ id, type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-    meetings: [{ day: 2, start: '10:00', end: '11:50', room: 'r' }], exams: [] });
+  const g = (id) => ({
+    id,
+    type: 'סופי-הרצאה',
+    primary: true,
+    lecturer: 'L',
+    full: false,
+    semester: 'א',
+    linked: [],
+    meetings: [{ day: 2, start: '10:00', end: '11:50', room: 'r' }],
+    exams: []
+  });
   const course = { name: 'M', credits: 1, offered: true, prereqs: [], groups: [g('M1'), g('M2'), g('M3')] };
   const opts = buildOptions(course);
   assert.equal(opts.length, 1);
@@ -388,13 +779,27 @@ function synth(rnd) {
   data.courses = {};
   const ids = Array.from({ length: 9 }, (_, i) => `S${i}`);
   for (const id of ids) {
-    data.courses[id] = { name: id, credits: 1 + pick(4), offered: true, prereqs: [], groups: Array.from({ length: 1 + pick(3) }, (_, j) => {
-      const h = 8 + pick(10);
-      const t = (x) => `${String(x).padStart(2, '0')}:00`;
-      return { id: `${id}-${j}`, type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: rnd() < 0.15, semester: 'א', linked: [],
-        meetings: [{ day: 1 + pick(6), start: t(h), end: t(h + 1 + pick(2)), room: 'r' }],
-        exams: [{ kind: 'בחינה', moed: 1, date: `2027-02-${String(1 + pick(20)).padStart(2, '0')}`, time: '09:00' }] };
-    }) };
+    data.courses[id] = {
+      name: id,
+      credits: 1 + pick(4),
+      offered: true,
+      prereqs: [],
+      groups: Array.from({ length: 1 + pick(3) }, (_, j) => {
+        const h = 8 + pick(10);
+        const t = (x) => `${String(x).padStart(2, '0')}:00`;
+        return {
+          id: `${id}-${j}`,
+          type: 'סופי-הרצאה',
+          primary: true,
+          lecturer: 'L',
+          full: rnd() < 0.15,
+          semester: 'א',
+          linked: [],
+          meetings: [{ day: 1 + pick(6), start: t(h), end: t(h + 1 + pick(2)), room: 'r' }],
+          exams: [{ kind: 'בחינה', moed: 1, date: `2027-02-${String(1 + pick(20)).padStart(2, '0')}`, time: '09:00' }]
+        };
+      })
+    };
   }
   return { data, ids };
 }
@@ -408,18 +813,44 @@ test('synthetic (published exams): pruning keeps results identical across weight
     const groups = ids.flatMap((id) => data.courses[id].groups.map((g) => g.id));
     const courses = ids.filter(() => rnd() < 0.8).map((id) => ({ id, mode: rnd() < 0.15 ? 'must' : 'optional' }));
     const statuses = {};
-    for (const c of courses.slice(0, 2)) if (rnd() < 0.5) statuses[c.id] = { status: 'conditional', missingParallel: [[pick(ids)]] };
-    const weights = Object.fromEntries(['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'].map((k) => [k, pick([0, 1, 3, 5])]));
+    for (const c of courses.slice(0, 2))
+      if (rnd() < 0.5) statuses[c.id] = { status: 'conditional', missingParallel: [[pick(ids)]] };
+    const weights = Object.fromEntries(
+      ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'].map((k) => [k, pick([0, 1, 3, 5])])
+    );
     weights.examSpread ||= 3;
     const constraints = {
-      dayOff: rnd() < 0.5 ? [pick([1, 2, 3])] : [], dayOffHard: rnd() < 0.5, notAfter: rnd() < 0.4 ? '17:00' : '', windowHard: rnd() < 0.5,
-      maxCredits: rnd() < 0.4 ? 8 + Math.floor(rnd() * 8) : null, examsSameDay: pick(['allow', 'forbid']), includeFull: rnd() < 0.5,
+      dayOff: rnd() < 0.5 ? [pick([1, 2, 3])] : [],
+      dayOffHard: rnd() < 0.5,
+      notAfter: rnd() < 0.4 ? '17:00' : '',
+      windowHard: rnd() < 0.5,
+      maxCredits: rnd() < 0.4 ? 8 + Math.floor(rnd() * 8) : null,
+      examsSameDay: pick(['allow', 'forbid']),
+      includeFull: rnd() < 0.5,
     };
     const pins = rnd() < 0.3 ? [pick(groups)] : [];
-    const friends = rnd() < 0.5 ? [{ name: 'f', weight: pick([0, 1, 3]), active: rnd() < 0.8, groups: groups.filter(() => rnd() < 0.3) }] : [];
-    const args = { data, courses, statuses, pins, weights, friends, constraints, topK: pick([1, 3, 10]), timeLimitMs: 60000 };
-    const a = search({ ...args, prune: false }), b = search(args);
-    assert.deepEqual(b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), `case ${t}`);
+    const friends =
+      rnd() < 0.5
+        ? [{ name: 'f', weight: pick([0, 1, 3]), active: rnd() < 0.8, groups: groups.filter(() => rnd() < 0.3) }]
+        : [];
+    const args = {
+      data,
+      courses,
+      statuses,
+      pins,
+      weights,
+      friends,
+      constraints,
+      topK: pick([1, 3, 10]),
+      timeLimitMs: 60000
+    };
+    const a = search({ ...args, prune: false }),
+      b = search(args);
+    assert.deepEqual(
+      b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]),
+      a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]),
+      `case ${t}`
+    );
   }
 });
 
@@ -434,7 +865,10 @@ test('showWeights: best and friendless friends keep the weights, a criterion add
 // synth plus random prerequisites (before anything asks for downstream, which is cached per dataset)
 function synthChain(rnd) {
   const { data, ids } = synth(rnd);
-  ids.forEach((id, i) => { if (i && rnd() < 0.5) data.courses[id].prereqs = [{ kind: 'קדם', anyOf: [{ id: ids[Math.floor(rnd() * i)], name: 'x' }] }]; });
+  ids.forEach((id, i) => {
+    if (i && rnd() < 0.5)
+      data.courses[id].prereqs = [{ kind: 'קדם', anyOf: [{ id: ids[Math.floor(rnd() * i)], name: 'x' }] }];
+  });
   return { data, ids };
 }
 const credits = (data, r) => r.courses.reduce((a, id) => a + data.courses[id].credits, 0);
@@ -449,72 +883,193 @@ test('synthetic: credits and unlocks keep pruning identical to the exhaustive se
     const courses = ids.filter(() => rnd() < 0.8).map((id) => ({ id, mode: rnd() < 0.15 ? 'must' : 'optional' }));
     const statuses = {};
     for (const id of ids) if (rnd() < 0.2) statuses[id] = { status: 'done' };
-    const base = Object.fromEntries(['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'].map((k) => [k, pick([0, 1, 3, 5])]));
-    const friends = rnd() < 0.5 ? [{ name: 'f', weight: pick([1, 3]), active: true, groups: groups.filter(() => rnd() < 0.3) }] : [];
+    const base = Object.fromEntries(
+      ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'].map((k) => [k, pick([0, 1, 3, 5])])
+    );
+    const friends =
+      rnd() < 0.5 ? [{ name: 'f', weight: pick([1, 3]), active: true, groups: groups.filter(() => rnd() < 0.3) }] : [];
     const weights = showWeights(base, pick(['credits', 'unlocks']), friends);
-    const constraints = { dayOff: rnd() < 0.5 ? [pick([1, 2, 3])] : [], maxCredits: rnd() < 0.4 ? 8 + Math.floor(rnd() * 8) : null, examsSameDay: pick(['allow', 'forbid']) };
-    const args = { data, courses, statuses, pins: [], weights, friends, constraints, topK: pick([1, 3, 10]), timeLimitMs: 60000 };
-    const a = search({ ...args, prune: false }), b = search(args);
-    assert.deepEqual(b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), `case ${t}`);
+    const constraints = {
+      dayOff: rnd() < 0.5 ? [pick([1, 2, 3])] : [],
+      maxCredits: rnd() < 0.4 ? 8 + Math.floor(rnd() * 8) : null,
+      examsSameDay: pick(['allow', 'forbid'])
+    };
+    const args = {
+      data,
+      courses,
+      statuses,
+      pins: [],
+      weights,
+      friends,
+      constraints,
+      topK: pick([1, 3, 10]),
+      timeLimitMs: 60000
+    };
+    const a = search({ ...args, prune: false }),
+      b = search(args);
+    assert.deepEqual(
+      b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]),
+      a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]),
+      `case ${t}`
+    );
   }
 });
 
-for (const [key, of] of [['credits', credits], ['unlocks', (data, r) => r.unlocks]]) {
+for (const [key, of] of [
+  ['credits', credits],
+  ['unlocks', (data, r) => r.unlocks]
+]) {
   test(`synthetic: sortBy ${key} puts the ${key === 'credits' ? 'most credits' : 'most unlocked follow-ups'} first`, () => {
     let seed = 17;
     const rnd = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
     for (let t = 0; t < 20; t++) {
       const { data, ids } = synthChain(rnd);
-      const args = { data, courses: ids.map((id) => ({ id, mode: 'optional' })), constraints: { examsSameDay: 'allow' }, friends: [], timeLimitMs: 60000, topK: 10 };
-      const best = Math.max(...search({ ...args, weights: {}, topK: 5000, prune: false, distinct: true }).results.map((r) => of(data, r)));
+      const args = {
+        data,
+        courses: ids.map((id) => ({ id, mode: 'optional' })),
+        constraints: { examsSameDay: 'allow' },
+        friends: [],
+        timeLimitMs: 60000,
+        topK: 10
+      };
+      const best = Math.max(
+        ...search({ ...args, weights: {}, topK: 5000, prune: false, distinct: true }).results.map((r) => of(data, r))
+      );
       const r = search({ ...args, weights: showWeights({ progress: 3, freeDays: 1 }, key, []) }).results[0];
       assert.equal(of(data, r), best, `case ${t}`);
     }
   });
 }
 
-test('searchYear: with a criterion, a pair missing a must course never outranks one that misses fewer', { skip: !existsSync(REAL) || !existsSync('web/data/afeka/2027-2/30-2026.json') }, () => {
-  const dataA = JSON.parse(readFileSync(REAL, 'utf8'));
-  const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
-  const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
-  const y2 = dataA.lists.find((l) => l.name.includes("שנה ב'")).courses;
-  const choices = Object.fromEntries(y2.map((id) => [id, 'must']));
-  const weights = showWeights({ friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, 'credits', []);
-  const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices, semesterOf: {}, load: 'even' }, yearList: new Set(y2), weights,
-    constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' }, timeLimitMs: LIMIT });
-  assert.ok(r.results.length > 1);
-  for (let i = 1; i < r.results.length; i++) assert.ok(r.results[i - 1].missing.length <= r.results[i].missing.length, `rank ${i}`);
-});
+test(
+  'searchYear: with a criterion, a pair missing a must course never outranks one that misses fewer',
+  { skip: !existsSync(REAL) || !existsSync('web/data/afeka/2027-2/30-2026.json') },
+  () => {
+    const dataA = JSON.parse(readFileSync(REAL, 'utf8'));
+    const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
+    const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
+    const y2 = dataA.lists.find((l) => l.name.includes("שנה ב'")).courses;
+    const choices = Object.fromEntries(y2.map((id) => [id, 'must']));
+    const weights = showWeights(
+      { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
+      'credits',
+      []
+    );
+    const r = searchYear({
+      dataA,
+      dataB,
+      state: { passed: y1, failed: {}, choices, semesterOf: {}, load: 'even' },
+      yearList: new Set(y2),
+      weights,
+      constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' },
+      timeLimitMs: LIMIT
+    });
+    assert.ok(r.results.length > 1);
+    for (let i = 1; i < r.results.length; i++)
+      assert.ok(r.results[i - 1].missing.length <= r.results[i].missing.length, `rank ${i}`);
+  }
+);
 
 test('a timeout before any leaf says so instead of "no solution"', () => {
   const data = mini();
   const courses = [{ id: 'P', mode: 'must' }]; // conditional on Q, never chosen: every leaf is rejected
   for (let i = 0; i < 12; i++) {
-    data.courses[`O${i}`] = { name: `Opt${i}`, credits: 1, offered: true, prereqs: [], groups: [
-      { id: `O${i}1`, type: 'סופי-הרצאה', primary: true, lecturer: 'L', full: false, semester: 'א', linked: [],
-        meetings: [{ day: (i % 5) + 1, start: `${8 + Math.floor(i / 5) * 2}:00`.padStart(5, '0'), end: `${9 + Math.floor(i / 5) * 2}:00`.padStart(5, '0'), room: 'r' }], exams: [] }] };
+    data.courses[`O${i}`] = {
+      name: `Opt${i}`,
+      credits: 1,
+      offered: true,
+      prereqs: [],
+      groups: [
+        {
+          id: `O${i}1`,
+          type: 'סופי-הרצאה',
+          primary: true,
+          lecturer: 'L',
+          full: false,
+          semester: 'א',
+          linked: [],
+          meetings: [
+            {
+              day: (i % 5) + 1,
+              start: `${8 + Math.floor(i / 5) * 2}:00`.padStart(5, '0'),
+              end: `${9 + Math.floor(i / 5) * 2}:00`.padStart(5, '0'),
+              room: 'r'
+            }
+          ],
+          exams: []
+        }
+      ]
+    };
     courses.push({ id: `O${i}`, mode: 'optional' });
   }
   const statuses = { P: { status: 'conditional', missingParallel: [['Q']] } };
-  const r = search({ data, courses, statuses, weights: W0, friends: [], constraints: { examsSameDay: 'allow' }, timeLimitMs: -1 });
+  const r = search({
+    data,
+    courses,
+    statuses,
+    weights: W0,
+    friends: [],
+    constraints: { examsSameDay: 'allow' },
+    timeLimitMs: -1
+  });
   assert.equal(r.results.length, 0);
   assert.equal(r.partial, true);
   assert.match(r.diagnosis[0], /מגבלת הזמן/);
 });
 
 // Two semesters. P (prereq) and M (must, both semesters); N needs P; OB only in ב׳.
-const grp = (id, day, start = '08:00', end = '10:00') => ({ id, type: 'הרצאה', primary: true, full: false, linked: [], meetings: [{ day, start, end }], exams: [] });
-const yc = (name, credits, groups, prereqs = []) => ({ name, credits, offered: groups.length > 0, prereqs, groups, exams: [] });
+const grp = (id, day, start = '08:00', end = '10:00') => ({
+  id,
+  type: 'הרצאה',
+  primary: true,
+  full: false,
+  linked: [],
+  meetings: [{ day, start, end }],
+  exams: []
+});
+const yc = (name, credits, groups, prereqs = []) => ({
+  name,
+  credits,
+  offered: groups.length > 0,
+  prereqs,
+  groups,
+  exams: []
+});
 const pre = (id) => [{ kind: 'קדם', anyOf: [{ id, name: id }] }];
-const semData = (semester, courses) => ({ year: 2027, startYear: 2026, semester, examsPublished: false, lists: [{ code: 1, name: "חובה שנה א'", minCredits: 0, courses: Object.keys(courses) }], courses });
+const semData = (semester, courses) => ({
+  year: 2027,
+  startYear: 2026,
+  semester,
+  examsPublished: false,
+  lists: [{ code: 1, name: "חובה שנה א'", minCredits: 0, courses: Object.keys(courses) }],
+  courses
+});
 const yearFixture = () => ({
-  dataA: semData('א', { P: yc('P', 3, [grp('PA', 1)]), M: yc('M', 4, [grp('MA', 2)]), N: yc('N', 3, [], pre('P')), OB: yc('OB', 2, []) }),
-  dataB: semData('ב', { P: yc('P', 3, [grp('PB', 1)]), M: yc('M', 4, [grp('MB', 2)]), N: yc('N', 3, [grp('NB', 3)], pre('P')), OB: yc('OB', 2, [grp('OBB', 4)]) }),
+  dataA: semData('א', {
+    P: yc('P', 3, [grp('PA', 1)]),
+    M: yc('M', 4, [grp('MA', 2)]),
+    N: yc('N', 3, [], pre('P')),
+    OB: yc('OB', 2, [])
+  }),
+  dataB: semData('ב', {
+    P: yc('P', 3, [grp('PB', 1)]),
+    M: yc('M', 4, [grp('MB', 2)]),
+    N: yc('N', 3, [grp('NB', 3)], pre('P')),
+    OB: yc('OB', 2, [grp('OBB', 4)])
+  }),
 });
 const W = { progress: 3, freeDays: 0, compact: 0, timeWindow: 0, friends: 0, examSpread: 0 };
-const yState = (extra = {}) => ({ passed: [], failed: {}, choices: { M: 'must', P: 'must', N: 'optional', OB: 'optional' }, semesterOf: {}, load: 'even', ...extra });
+const yState = (extra = {}) => ({
+  passed: [],
+  failed: {},
+  choices: { M: 'must', P: 'must', N: 'optional', OB: 'optional' },
+  semesterOf: {},
+  load: 'even',
+  ...extra
+});
 const best = (r) => r.results[0];
-const inA = (p, id) => p.a.courses.includes(id), inB = (p, id) => !!p.b?.courses.includes(id);
+const inA = (p, id) => p.a.courses.includes(id),
+  inB = (p, id) => !!p.b?.courses.includes(id);
 
 test('searchYear: a must course lands in exactly one semester', () => {
   const { dataA, dataB } = yearFixture();
@@ -533,41 +1088,79 @@ test('searchYear: a course unlocked by its prerequisite in א׳ is planned in ב
 
 test('searchYear: semesterOf forces a course; a pin overrides semesterOf', () => {
   const { dataA, dataB } = yearFixture();
-  let p = best(searchYear({ dataA, dataB, state: yState({ semesterOf: { M: 'ב' } }), yearList: new Set(), weights: W }));
+  let p = best(
+    searchYear({ dataA, dataB, state: yState({ semesterOf: { M: 'ב' } }), yearList: new Set(), weights: W })
+  );
   assert.ok(inB(p, 'M') && !inA(p, 'M'));
-  p = best(searchYear({ dataA, dataB, state: yState({ semesterOf: { M: 'ב' } }), pins: ['MA'], yearList: new Set(), weights: W }));
+  p = best(
+    searchYear({
+      dataA,
+      dataB,
+      state: yState({ semesterOf: { M: 'ב' } }),
+      pins: ['MA'],
+      yearList: new Set(),
+      weights: W
+    })
+  );
   assert.ok(inA(p, 'M') && !inB(p, 'M'));
 });
 
 test('searchYear: load preference moves credits toward the chosen semester', () => {
   const { dataA, dataB } = yearFixture();
-  const run = (load) => best(searchYear({ dataA, dataB, state: yState({ load }), yearList: new Set(), weights: W })).credits;
+  const run = (load) =>
+    best(searchYear({ dataA, dataB, state: yState({ load }), yearList: new Set(), weights: W })).credits;
   assert.ok(run('א').a > run('ב').a);
 });
 
-test('searchYear: default state on real data finishes within 3 s', { skip: !existsSync('web/data/afeka/2027-2/30-2026.json') }, () => {
-  const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
-  const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
-  const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
-  const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
-  const t = Date.now();
-  const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' }, yearList: y2,
-    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' }, timeLimitMs: LIMIT });
-  assert.ok(Date.now() - t < 3500 * SLACK);
-  assert.ok(r.results.length > 0);
-});
+test(
+  'searchYear: default state on real data finishes within 3 s',
+  { skip: !existsSync('web/data/afeka/2027-2/30-2026.json') },
+  () => {
+    const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+    const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
+    const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
+    const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
+    const t = Date.now();
+    const r = searchYear({
+      dataA,
+      dataB,
+      state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' },
+      yearList: y2,
+      weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
+      constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' },
+      timeLimitMs: LIMIT
+    });
+    assert.ok(Date.now() - t < 3500 * SLACK);
+    assert.ok(r.results.length > 0);
+  }
+);
 
-test('searchYear: default weights, no friends, first visit: not partial at the real limit (unlocks are counted only for shown plans)', { skip: !existsSync('web/data/afeka/2027-2/30-2026.json') }, () => {
-  const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
-  const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
-  const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
-  const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
-  const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' }, yearList: y2, friends: [],
-    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' }, timeLimitMs: LIMIT });
-  assert.equal(r.partial, false);
-  assert.ok(r.results.length > 0);
-  assert.ok(r.results.every((p) => Number.isInteger(p.a.unlocks)), 'unlocks still counted for the shown plans');
-});
+test(
+  'searchYear: default weights, no friends, first visit: not partial at the real limit (unlocks are counted only for shown plans)',
+  { skip: !existsSync('web/data/afeka/2027-2/30-2026.json') },
+  () => {
+    const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+    const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
+    const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
+    const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
+    const r = searchYear({
+      dataA,
+      dataB,
+      state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' },
+      yearList: y2,
+      friends: [],
+      weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
+      constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' },
+      timeLimitMs: LIMIT
+    });
+    assert.equal(r.partial, false);
+    assert.ok(r.results.length > 0);
+    assert.ok(
+      r.results.every((p) => Number.isInteger(p.a.unlocks)),
+      'unlocks still counted for the shown plans'
+    );
+  }
+);
 
 test('searchYear: a must course with an afterA status lands in ב׳ when its prerequisite is in א׳', () => {
   const { dataA, dataB } = yearFixture();
@@ -580,7 +1173,18 @@ test('searchYear: a must course with an afterA status lands in ב׳ when its pre
 test('searchYear: a must course that needs an optional א׳ prerequisite the plan skips is reported missing', () => {
   const { dataA, dataB } = yearFixture();
   dataA.courses.P.groups[0].meetings[0].day = 2; // P in א׳ clashes with M, which is forced to א׳
-  const p = best(searchYear({ dataA, dataB, state: yState({ choices: { M: 'must', P: 'optional', N: 'must', OB: 'optional' }, semesterOf: { M: 'א', P: 'א' } }), yearList: new Set(), weights: W }));
+  const p = best(
+    searchYear({
+      dataA,
+      dataB,
+      state: yState({
+        choices: { M: 'must', P: 'optional', N: 'must', OB: 'optional' },
+        semesterOf: { M: 'א', P: 'א' }
+      }),
+      yearList: new Set(),
+      weights: W
+    })
+  );
   assert.ok(!inA(p, 'P'));
   assert.deepEqual(p.missing, ['N']);
 });
@@ -593,34 +1197,83 @@ test('synthetic: pruning with active friends sharing groups keeps results identi
     const { data, ids } = synth(rnd);
     const groups = ids.flatMap((id) => data.courses[id].groups.map((g) => g.id));
     const courses = ids.map((id) => ({ id, mode: rnd() < 0.15 ? 'must' : 'optional' }));
-    const weights = { friends: pick([3, 5]), progress: pick([0, 1, 3]), freeDays: pick([0, 1]), compact: pick([0, 1]), timeWindow: 0, examSpread: 0 };
-    const friends = Array.from({ length: 1 + Math.floor(rnd() * 3) }, (_, i) => ({ name: `f${i}`, weight: pick([1, 2, 3]), active: true, groups: groups.filter(() => rnd() < 0.45) }));
-    const args = { data, courses, statuses: {}, weights, friends, constraints: { examsSameDay: 'allow' }, topK: pick([1, 3, 10]), timeLimitMs: 60000 };
-    const a = search({ ...args, prune: false }), b = search(args);
-    assert.deepEqual(b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]), `case ${t}`);
+    const weights = {
+      friends: pick([3, 5]),
+      progress: pick([0, 1, 3]),
+      freeDays: pick([0, 1]),
+      compact: pick([0, 1]),
+      timeWindow: 0,
+      examSpread: 0
+    };
+    const friends = Array.from({ length: 1 + Math.floor(rnd() * 3) }, (_, i) => ({
+      name: `f${i}`,
+      weight: pick([1, 2, 3]),
+      active: true,
+      groups: groups.filter(() => rnd() < 0.45)
+    }));
+    const args = {
+      data,
+      courses,
+      statuses: {},
+      weights,
+      friends,
+      constraints: { examsSameDay: 'allow' },
+      topK: pick([1, 3, 10]),
+      timeLimitMs: 60000
+    };
+    const a = search({ ...args, prune: false }),
+      b = search(args);
+    assert.deepEqual(
+      b.results.map((r) => [r.groups.join(), r.score.toFixed(9)]),
+      a.results.map((r) => [r.groups.join(), r.score.toFixed(9)]),
+      `case ${t}`
+    );
   }
 });
 
 const REAL2 = 'web/data/afeka/2027-2/30-2026.json';
-test('searchYear: real data with one friend on an actual alternative finishes within 3 s, not partial', { skip: !existsSync(REAL2) }, () => {
-  const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
-  const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
-  const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
-  const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
-  const take = (d) => Object.values(d.courses).flatMap((c) => { const p = c.groups.find((g) => g.primary && !g.full); return p ? [p.id, ...p.linked] : []; });
-  const friends = [{ name: 'f', weight: 2, active: true, groups: [...take(dataA), ...take(dataB)] }];
-  const t = Date.now();
-  const r = searchYear({ dataA, dataB, state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' }, yearList: y2, friends,
-    weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' }, timeLimitMs: LIMIT });
-  assert.ok(Date.now() - t < 3000 * SLACK + 200, `took ${Date.now() - t}ms`);
-  assert.equal(r.partial, false);
-  assert.ok(r.results.length > 0);
-});
+test(
+  'searchYear: real data with one friend on an actual alternative finishes within 3 s, not partial',
+  { skip: !existsSync(REAL2) },
+  () => {
+    const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+    const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
+    const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
+    const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
+    const take = (d) =>
+      Object.values(d.courses).flatMap((c) => {
+        const p = c.groups.find((g) => g.primary && !g.full);
+        return p ? [p.id, ...p.linked] : [];
+      });
+    const friends = [{ name: 'f', weight: 2, active: true, groups: [...take(dataA), ...take(dataB)] }];
+    const t = Date.now();
+    const r = searchYear({
+      dataA,
+      dataB,
+      state: { passed: y1, failed: {}, choices: {}, semesterOf: {}, load: 'even' },
+      yearList: y2,
+      friends,
+      weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
+      constraints: { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' },
+      timeLimitMs: LIMIT
+    });
+    assert.ok(Date.now() - t < 3000 * SLACK + 200, `took ${Date.now() - t}ms`);
+    assert.equal(r.partial, false);
+    assert.ok(r.results.length > 0);
+  }
+);
 
 test('searchYear: a hard constraint that excludes everything gives no results (no empty plan)', () => {
   const { dataA, dataB } = yearFixture();
   const choices = { M: 'optional', P: 'optional', N: 'optional', OB: 'optional' };
-  const r = searchYear({ dataA, dataB, state: yState({ choices }), yearList: new Set(), weights: W, constraints: { dayOff: [1, 2, 3, 4, 5, 6], dayOffHard: true } });
+  const r = searchYear({
+    dataA,
+    dataB,
+    state: yState({ choices }),
+    yearList: new Set(),
+    weights: W,
+    constraints: { dayOff: [1, 2, 3, 4, 5, 6], dayOffHard: true }
+  });
   assert.equal(r.results.length, 0);
   assert.ok(r.diagnosis.length > 0);
 });
@@ -629,7 +1282,14 @@ test('searchYear: busy blocks apply to both semesters', () => {
   const { dataA, dataB } = yearFixture();
   const choices = { M: 'optional', P: 'optional', N: 'optional', OB: 'optional' };
   const blocks = [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '07:00', end: '23:00', label: '' }));
-  const r = searchYear({ dataA, dataB, state: yState({ choices }), yearList: new Set(), weights: W, constraints: { blocks } });
+  const r = searchYear({
+    dataA,
+    dataB,
+    state: yState({ choices }),
+    yearList: new Set(),
+    weights: W,
+    constraints: { blocks }
+  });
   assert.equal(r.results.length, 0);
 });
 
@@ -648,10 +1308,28 @@ const opt = (...ids) => Object.fromEntries(ids.map((id) => [id, 'optional']));
 test('S1 year score: the א׳ choice that unlocks a heavier ב׳ course wins (no per-ב׳ denominator)', () => {
   // P and Q clash in א׳ (3 credits each). P unlocks N (4 credits) in ב׳; N clashes with E (3 credits).
   // P + N = 7 credits beats Q + E = 6, but a per-search ב׳ denominator made Q's lonely E look "complete" (progress 1).
-  const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), Q: yc('Q', 3, [grp('QA', 1)]), N: yc('N', 4, [], pre('P')), E: yc('E', 3, []) });
-  const dataB = semData('ב', { P: yc('P', 3, []), Q: yc('Q', 3, []), N: yc('N', 4, [grp('NB', 3)], pre('P')), E: yc('E', 3, [grp('EB', 3)]) });
+  const dataA = semData('א', {
+    P: yc('P', 3, [grp('PA', 1)]),
+    Q: yc('Q', 3, [grp('QA', 1)]),
+    N: yc('N', 4, [], pre('P')),
+    E: yc('E', 3, [])
+  });
+  const dataB = semData('ב', {
+    P: yc('P', 3, []),
+    Q: yc('Q', 3, []),
+    N: yc('N', 4, [grp('NB', 3)], pre('P')),
+    E: yc('E', 3, [grp('EB', 3)])
+  });
   // Progress weight 10: progress decides here, not the credit balance (P + E is the even 3 + 3, and the pair score now sees that).
-  const p = best(searchYear({ dataA, dataB, state: yState({ choices: opt('P', 'Q', 'N', 'E') }), yearList: new Set(), weights: { ...W, progress: 10 } }));
+  const p = best(
+    searchYear({
+      dataA,
+      dataB,
+      state: yState({ choices: opt('P', 'Q', 'N', 'E') }),
+      yearList: new Set(),
+      weights: { ...W, progress: 10 }
+    })
+  );
   assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses]));
 });
 
@@ -659,16 +1337,44 @@ test('S2 ב׳ fallback: an impossible must course does not drop a feasible must 
   // Y clashes with the pinned Z, so the musts-first ב׳ search fails. X is still feasible; E is worth more but clashes with X.
   const none = { X: yc('X', 3, []), Y: yc('Y', 3, []), Z: yc('Z', 2, []), E: yc('E', 4, []) };
   const dataA = semData('א', none);
-  const dataB = semData('ב', { X: yc('X', 3, [grp('XB', 1)]), Y: yc('Y', 3, [grp('YB', 2)]), Z: yc('Z', 2, [grp('ZB', 2, '09:00', '11:00')]), E: yc('E', 4, [grp('EB', 1, '09:00', '11:00')]) });
-  const p = best(searchYear({ dataA, dataB, state: yState({ choices: { X: 'must', Y: 'must', Z: 'optional', E: 'optional' } }), pins: ['ZB'], yearList: new Set(), weights: W }));
+  const dataB = semData('ב', {
+    X: yc('X', 3, [grp('XB', 1)]),
+    Y: yc('Y', 3, [grp('YB', 2)]),
+    Z: yc('Z', 2, [grp('ZB', 2, '09:00', '11:00')]),
+    E: yc('E', 4, [grp('EB', 1, '09:00', '11:00')])
+  });
+  const p = best(
+    searchYear({
+      dataA,
+      dataB,
+      state: yState({ choices: { X: 'must', Y: 'must', Z: 'optional', E: 'optional' } }),
+      pins: ['ZB'],
+      yearList: new Set(),
+      weights: W
+    })
+  );
   assert.ok(inB(p, 'X') && inB(p, 'Z'), JSON.stringify(p.b?.courses));
   assert.deepEqual(p.missing, ['Y']);
 });
 
 test('S3 no "assumes you pass X" warning when another option of the same anyOf is already passed', () => {
-  const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), P2: yc('P2', 3, []), N: yc('N', 3, [], anyOf('P', 'P2')) });
-  const dataB = semData('ב', { P: yc('P', 3, []), P2: yc('P2', 3, []), N: yc('N', 3, [grp('NB', 3)], anyOf('P', 'P2')) });
-  const r = searchYear({ dataA, dataB, state: yState({ passed: ['P2'], choices: { P: 'must', N: 'optional' } }), yearList: new Set(), weights: W });
+  const dataA = semData('א', {
+    P: yc('P', 3, [grp('PA', 1)]),
+    P2: yc('P2', 3, []),
+    N: yc('N', 3, [], anyOf('P', 'P2'))
+  });
+  const dataB = semData('ב', {
+    P: yc('P', 3, []),
+    P2: yc('P2', 3, []),
+    N: yc('N', 3, [grp('NB', 3)], anyOf('P', 'P2'))
+  });
+  const r = searchYear({
+    dataA,
+    dataB,
+    state: yState({ passed: ['P2'], choices: { P: 'must', N: 'optional' } }),
+    yearList: new Set(),
+    weights: W
+  });
   assert.ok(inA(best(r), 'P') && inB(best(r), 'N'));
   for (const p of r.results) assert.deepEqual(p.warnings, []);
 });
@@ -677,7 +1383,13 @@ test('S4 a must course offered in neither semester is never placed and nothing t
   const { dataA, dataB } = yearFixture();
   dataA.courses.G = yc('G', 3, []);
   dataB.courses.G = yc('G', 3, []);
-  const r = searchYear({ dataA, dataB, state: yState({ choices: { ...yState().choices, G: 'must' } }), yearList: new Set(), weights: W });
+  const r = searchYear({
+    dataA,
+    dataB,
+    state: yState({ choices: { ...yState().choices, G: 'must' } }),
+    yearList: new Set(),
+    weights: W
+  });
   assert.ok(r.results.length > 0);
   // Policy (same as a course blocked all year): not a candidate, so not must for the year; the sidebar lists it under "לא נלמד".
   for (const p of r.results) assert.ok(!inA(p, 'G') && !inB(p, 'G') && !p.missing.includes('G'));
@@ -685,17 +1397,31 @@ test('S4 a must course offered in neither semester is never placed and nothing t
 
 test('S5 a low-ranked א׳ alternative that alone unlocks a ב׳ must course is still found (top-50 cut)', () => {
   // Seven 3-credit electives outrank {P} in א׳ alone (2^7 subsets, {P} ~121st), but only P unlocks the must N in ב׳.
-  const A = {}, B = {};
+  const A = {},
+    B = {};
   for (let i = 0; i < 7; i++) {
     const g = grp(`E${i}A`, (i % 6) + 1, i < 6 ? '08:00' : '12:00', i < 6 ? '10:00' : '14:00');
     A[`E${i}`] = yc(`E${i}`, 3, [g]);
     B[`E${i}`] = yc(`E${i}`, 3, []);
   }
-  const allDay = { ...grp('PA', 1), meetings: [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '08:00', end: '20:00' })) };
-  A.P = yc('P', 1, [allDay]); B.P = yc('P', 1, []);
-  A.N = yc('N', 4, [], pre('P')); B.N = yc('N', 4, [grp('NB', 1)], pre('P'));
+  const allDay = {
+    ...grp('PA', 1),
+    meetings: [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '08:00', end: '20:00' }))
+  };
+  A.P = yc('P', 1, [allDay]);
+  B.P = yc('P', 1, []);
+  A.N = yc('N', 4, [], pre('P'));
+  B.N = yc('N', 4, [grp('NB', 1)], pre('P'));
   const choices = { ...opt('P', ...Object.keys(A).filter((id) => id[0] === 'E')), N: 'must' };
-  const p = best(searchYear({ dataA: semData('א', A), dataB: semData('ב', B), state: yState({ choices }), yearList: new Set(), weights: W }));
+  const p = best(
+    searchYear({
+      dataA: semData('א', A),
+      dataB: semData('ב', B),
+      state: yState({ choices }),
+      yearList: new Set(),
+      weights: W
+    })
+  );
   assert.ok(inA(p, 'P') && inB(p, 'N'), JSON.stringify([p.a.courses, p.b?.courses, p.missing]));
   assert.deepEqual(p.missing, []);
 });
@@ -712,7 +1438,13 @@ test('S6 a friend only in ב׳ is neutral for every א׳ alternative and decides
 
 test('S7 a retake offered in both semesters is placed exactly once in every plan', () => {
   const { dataA, dataB } = yearFixture();
-  const r = searchYear({ dataA, dataB, state: yState({ failed: { M: 1 }, choices: opt('P', 'N', 'OB') }), yearList: new Set(), weights: W });
+  const r = searchYear({
+    dataA,
+    dataB,
+    state: yState({ failed: { M: 1 }, choices: opt('P', 'N', 'OB') }),
+    yearList: new Set(),
+    weights: W
+  });
   assert.ok(r.results.length > 0);
   for (const p of r.results) {
     assert.equal(inA(p, 'M') + inB(p, 'M'), 1);
@@ -720,42 +1452,75 @@ test('S7 a retake offered in both semesters is placed exactly once in every plan
   }
 });
 
-test('searchYear: 20 random real-data states each finish within 3.5 s, at most 2 partial', { skip: !existsSync(REAL2) }, () => {
-  const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
-  const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
-  const list = (n) => dataA.lists.find((l) => l.name.includes(n)).courses;
-  const y1 = list("שנה א'"), y2 = list("שנה ב'"), y3 = list("שנה ג'");
-  const yearList = new Set(y2);
-  const groupIds = Object.values({ ...dataA.courses, ...dataB.courses }).flatMap((c) => c.groups.map((g) => g.id));
-  let s = Math.imul(1 + 1, 2654435761) >>> 1; // seeded LCG (same style as solver-props), so a failing run reproduces
-  const rnd = () => ((s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff) / 2 ** 31);
-  const pick = (a) => a[Math.floor(rnd() * a.length)];
-  const weights = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 };
-  const constraints = { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' };
-  let partial = 0, worst = 0;
-  for (let i = 0; i < 20; i++) {
-    const passed = [...y1.filter(() => rnd() < 0.9), ...y2.filter(() => rnd() < 0.3)];
-    const choices = {};
-    for (const id of [...y2, ...y3].filter(() => rnd() < 0.15)) choices[id] = pick(['must', 'optional']);
-    const friends = Array.from({ length: Math.floor(rnd() * 3) }, (_, k) => ({ name: `f${k}`, weight: 1, active: true, groups: groupIds.filter(() => rnd() < 0.2) }));
-    const t = Date.now();
-    const r = searchYear({ dataA, dataB, state: { passed, failed: {}, choices, semesterOf: {}, load: 'even' }, yearList, friends, weights, constraints, timeLimitMs: LIMIT });
-    const ms = Date.now() - t;
-    worst = Math.max(worst, ms);
-    if (r.partial) partial++;
-    assert.ok(ms <= 3500 * SLACK, `state ${i}: took ${ms}ms (passed ${passed.length}, choices ${JSON.stringify(choices)}, friends ${friends.length})`);
+test(
+  'searchYear: 20 random real-data states each finish within 3.5 s, at most 2 partial',
+  { skip: !existsSync(REAL2) },
+  () => {
+    const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+    const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
+    const list = (n) => dataA.lists.find((l) => l.name.includes(n)).courses;
+    const y1 = list("שנה א'"),
+      y2 = list("שנה ב'"),
+      y3 = list("שנה ג'");
+    const yearList = new Set(y2);
+    const groupIds = Object.values({ ...dataA.courses, ...dataB.courses }).flatMap((c) => c.groups.map((g) => g.id));
+    let s = Math.imul(1 + 1, 2654435761) >>> 1; // seeded LCG (same style as solver-props), so a failing run reproduces
+    const rnd = () => ((s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff) / 2 ** 31);
+    const pick = (a) => a[Math.floor(rnd() * a.length)];
+    const weights = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 };
+    const constraints = { dayOff: [6], notAfter: '20:00', examsSameDay: 'forbid' };
+    let partial = 0,
+      worst = 0;
+    for (let i = 0; i < 20; i++) {
+      const passed = [...y1.filter(() => rnd() < 0.9), ...y2.filter(() => rnd() < 0.3)];
+      const choices = {};
+      for (const id of [...y2, ...y3].filter(() => rnd() < 0.15)) choices[id] = pick(['must', 'optional']);
+      const friends = Array.from({ length: Math.floor(rnd() * 3) }, (_, k) => ({
+        name: `f${k}`,
+        weight: 1,
+        active: true,
+        groups: groupIds.filter(() => rnd() < 0.2)
+      }));
+      const t = Date.now();
+      const r = searchYear({
+        dataA,
+        dataB,
+        state: { passed, failed: {}, choices, semesterOf: {}, load: 'even' },
+        yearList,
+        friends,
+        weights,
+        constraints,
+        timeLimitMs: LIMIT
+      });
+      const ms = Date.now() - t;
+      worst = Math.max(worst, ms);
+      if (r.partial) partial++;
+      assert.ok(
+        ms <= 3500 * SLACK,
+        `state ${i}: took ${ms}ms (passed ${passed.length}, choices ${JSON.stringify(choices)}, friends ${friends.length})`
+      );
+    }
+    console.log(`random states: worst ${worst}ms, partial ${partial}/20`);
+    assert.ok(partial <= 2, `${partial} of 20 partial`);
   }
-  console.log(`random states: worst ${worst}ms, partial ${partial}/20`);
-  assert.ok(partial <= 2, `${partial} of 20 partial`);
-});
+);
 
 test('a ב׳ pin the ב׳ search cannot honour is a missing must, and the rest of ב׳ is still planned', () => {
   // Shape of property seeds 545/1331: a pin on a 4-credit ב׳ course with maxCredits 3. It used to vanish (b null, no missing).
   const dataA = semData('א', { Q: yc('Q', 2, [grp('QA', 2)]), R: yc('R', 4, []), E: yc('E', 2, []) });
   const dataB = semData('ב', { Q: yc('Q', 2, []), R: yc('R', 4, [grp('RB', 1)]), E: yc('E', 2, [grp('EB', 3)]) });
-  const r = searchYear({ dataA, dataB, state: yState({ choices: opt('Q', 'R', 'E') }), pins: ['RB'], yearList: new Set(), weights: W, constraints: { maxCredits: 3 } });
+  const r = searchYear({
+    dataA,
+    dataB,
+    state: yState({ choices: opt('Q', 'R', 'E') }),
+    pins: ['RB'],
+    yearList: new Set(),
+    weights: W,
+    constraints: { maxCredits: 3 }
+  });
   assert.ok(r.results.length > 0);
-  for (const p of r.results) assert.ok(!inB(p, 'R') && p.missing.includes('R'), JSON.stringify([p.b?.courses, p.missing]));
+  for (const p of r.results)
+    assert.ok(!inB(p, 'R') && p.missing.includes('R'), JSON.stringify([p.b?.courses, p.missing]));
   assert.ok(inA(best(r), 'Q') && inB(best(r), 'E'), JSON.stringify([best(r).a.courses, best(r).b?.courses]));
 });
 
@@ -767,37 +1532,85 @@ test('downstream is computed once per dataset (the map, the side list and the vi
 });
 
 test('maxDays: no plan uses more campus days; too low a cap explains itself', () => {
-  const data = mini(), byId = new Map(Object.values(data.courses).flatMap((c) => c.groups.map((g) => [g.id, g])));
+  const data = mini(),
+    byId = new Map(Object.values(data.courses).flatMap((c) => c.groups.map((g) => [g.id, g])));
   const daysOf = (x) => new Set(x.groups.flatMap((id) => byId.get(id).meetings.map((m) => m.day))).size;
-  const courses = [{ id: 'A', mode: 'must' }, { id: 'Q0', mode: 'must' }, { id: 'Q', mode: 'must' }];
+  const courses = [
+    { id: 'A', mode: 'must' },
+    { id: 'Q0', mode: 'must' },
+    { id: 'Q', mode: 'must' }
+  ];
   const r = run({ data, courses, constraints: { maxDays: 2 } });
   assert.ok(r.results.length > 0);
   for (const x of r.results) assert.ok(daysOf(x) <= 2, x.groups.join());
-  assert.ok(run({ data, courses }).results.some((x) => daysOf(x) > 2), 'without the cap a wider plan exists');
+  assert.ok(
+    run({ data, courses }).results.some((x) => daysOf(x) > 2),
+    'without the cap a wider plan exists'
+  );
   const none = run({ data, courses, constraints: { maxDays: 1 } });
   assert.equal(none.results.length, 0);
-  assert.ok(none.diagnosis.some((t) => /תקרת יום אחד בקמפוס/.test(t)), none.diagnosis.join(' | '));
+  assert.ok(
+    none.diagnosis.some((t) => /תקרת יום אחד בקמפוס/.test(t)),
+    none.diagnosis.join(' | ')
+  );
 });
 
 test('lecturers: avoid drops that lecturer’s groups, prefer keeps only theirs when they teach the course', () => {
-  const c = { groups: [{ ...grp('g1', 1, '09:00', '11:00'), lecturer: 'כהן' }, { ...grp('g2', 2, '09:00', '11:00'), lecturer: 'לוי' }] };
-  assert.deepEqual(buildOptions(c, { lecturers: { 'כהן': 'avoid' } }).map((o) => o.groups[0]), ['g2']);
-  assert.deepEqual(buildOptions(c, { lecturers: { 'לוי': 'prefer' } }).map((o) => o.groups[0]), ['g2']);
-  assert.equal(buildOptions(c, { lecturers: { 'אחר': 'prefer' } }).length, 2, 'a preferred lecturer who does not teach it changes nothing');
+  const c = {
+    groups: [
+      { ...grp('g1', 1, '09:00', '11:00'), lecturer: 'כהן' },
+      { ...grp('g2', 2, '09:00', '11:00'), lecturer: 'לוי' }
+    ]
+  };
+  assert.deepEqual(
+    buildOptions(c, { lecturers: { 'כהן': 'avoid' } }).map((o) => o.groups[0]),
+    ['g2']
+  );
+  assert.deepEqual(
+    buildOptions(c, { lecturers: { 'לוי': 'prefer' } }).map((o) => o.groups[0]),
+    ['g2']
+  );
+  assert.equal(
+    buildOptions(c, { lecturers: { 'אחר': 'prefer' } }).length,
+    2,
+    'a preferred lecturer who does not teach it changes nothing'
+  );
   const data = mini();
   data.courses.Q0.groups[0].lecturer = 'כהן';
   const r = run({ data, courses: [{ id: 'Q0', mode: 'must' }], constraints: { lecturers: { 'כהן': 'avoid' } } });
   assert.equal(r.results.length, 0);
-  assert.ok(r.diagnosis.some((t) => /בחירת מרצה/.test(t)), r.diagnosis.join(' | '));
+  assert.ok(
+    r.diagnosis.some((t) => /בחירת מרצה/.test(t)),
+    r.diagnosis.join(' | ')
+  );
 });
 
 test('lecturers never strand a course: a pinned group survives avoid, prefer falls back when that lecturer’s groups are full', () => {
-  const g1 = { ...grp('g1', 1, '09:00', '11:00'), lecturer: 'כהן' }, g2 = { ...grp('g2', 2, '09:00', '11:00'), lecturer: 'לוי' };
-  assert.deepEqual(buildOptions({ groups: [g1, g2] }, { pins: ['g1'], lecturers: { 'כהן': 'avoid' } }).map((o) => o.groups[0]), ['g1'], 'pin beats avoid');
-  assert.deepEqual(buildOptions({ groups: [g1, g2] }, { pins: ['g2'], lecturers: { 'כהן': 'prefer' } }).map((o) => o.groups[0]), ['g2'], 'pin beats prefer');
-  assert.deepEqual(buildOptions({ groups: [{ ...g1, full: true }, g2] }, { lecturers: { 'כהן': 'prefer' } }).map((o) => o.groups[0]), ['g2'], 'the preferred group is full: the others stay');
-  assert.deepEqual(buildOptions({ groups: [g1, g2] }, { forbidden: forbiddenBy({ blocks: [{ day: 1, start: '09:00', end: '11:00' }] }), lecturers: { 'כהן': 'prefer' } })
-    .map((o) => o.groups[0]), ['g2'], 'the preferred group is blocked: the others stay');
+  const g1 = { ...grp('g1', 1, '09:00', '11:00'), lecturer: 'כהן' },
+    g2 = { ...grp('g2', 2, '09:00', '11:00'), lecturer: 'לוי' };
+  assert.deepEqual(
+    buildOptions({ groups: [g1, g2] }, { pins: ['g1'], lecturers: { 'כהן': 'avoid' } }).map((o) => o.groups[0]),
+    ['g1'],
+    'pin beats avoid'
+  );
+  assert.deepEqual(
+    buildOptions({ groups: [g1, g2] }, { pins: ['g2'], lecturers: { 'כהן': 'prefer' } }).map((o) => o.groups[0]),
+    ['g2'],
+    'pin beats prefer'
+  );
+  assert.deepEqual(
+    buildOptions({ groups: [{ ...g1, full: true }, g2] }, { lecturers: { 'כהן': 'prefer' } }).map((o) => o.groups[0]),
+    ['g2'],
+    'the preferred group is full: the others stay'
+  );
+  assert.deepEqual(
+    buildOptions(
+      { groups: [g1, g2] },
+      { forbidden: forbiddenBy({ blocks: [{ day: 1, start: '09:00', end: '11:00' }] }), lecturers: { 'כהן': 'prefer' } }
+    ).map((o) => o.groups[0]),
+    ['g2'],
+    'the preferred group is blocked: the others stay'
+  );
 });
 
 // ---- 2026-10-06 solver audit, stage 3 (issue #3) ----
@@ -809,31 +1622,76 @@ test('a credit cap of 0 is a cap, not "no cap"', () => {
   const d = set({ A: one([grp('A1', 1)]) });
   const r = search({ data: d, courses: musts('A'), weights: W0, constraints: { maxCredits: 0 } });
   assert.equal(r.results.length, 0);
-  assert.ok(r.diagnosis.some((t) => t.includes('תקרת נ"ז')), r.diagnosis.join(' | '));
-  assert.equal(search({ data: d, courses: musts('A'), weights: W0, constraints: { maxCredits: 3 } }).results.length, 1, 'a cap equal to the credits is fine');
+  assert.ok(
+    r.diagnosis.some((t) => t.includes('תקרת נ"ז')),
+    r.diagnosis.join(' | ')
+  );
+  assert.equal(
+    search({ data: d, courses: musts('A'), weights: W0, constraints: { maxCredits: 3 } }).results.length,
+    1,
+    'a cap equal to the credits is fine'
+  );
 });
 
 test('a preferred lecturer is a wish: when their group clashes with another must course, the plan is found without them', () => {
-  const d = set({ X: one([{ ...grp('X1', 1), lecturer: 'P' }, { ...grp('X2', 2), lecturer: 'Q' }]), Y: one([{ ...grp('Y1', 1), lecturer: 'R' }]) });
-  const groups = (data) => search({ data, courses: musts('X', 'Y'), weights: W0, constraints: { lecturers: { P: 'prefer' } }, topK: 5 }).results.map((p) => [...p.groups].sort());
+  const d = set({
+    X: one([
+      { ...grp('X1', 1), lecturer: 'P' },
+      { ...grp('X2', 2), lecturer: 'Q' }
+    ]),
+    Y: one([{ ...grp('Y1', 1), lecturer: 'R' }])
+  });
+  const groups = (data) =>
+    search({
+      data,
+      courses: musts('X', 'Y'),
+      weights: W0,
+      constraints: { lecturers: { P: 'prefer' } },
+      topK: 5
+    }).results.map((p) => [...p.groups].sort());
   assert.deepEqual(groups(d), [['X2', 'Y1']]);
-  assert.deepEqual(groups(set({ X: d.courses.X, Y: one([{ ...grp('Y1', 3), lecturer: 'R' }]) })), [['X1', 'Y1']], 'when it fits, prefer still narrows');
+  assert.deepEqual(
+    groups(set({ X: d.courses.X, Y: one([{ ...grp('Y1', 3), lecturer: 'R' }]) })),
+    [['X1', 'Y1']],
+    'when it fits, prefer still narrows'
+  );
 });
 
 test('a pinned tutorial keeps the lecturer choices of the lectures that reach it, and a pin still beats avoid', () => {
   const sub = { ...grp('S', 3), type: 'תרגול', primary: false, lecturer: 'Z' };
-  const c = { groups: [{ ...grp('A', 1), lecturer: 'X', linked: ['S'] }, { ...grp('B', 2), lecturer: 'Y', linked: ['S'] }, sub] };
+  const c = {
+    groups: [{ ...grp('A', 1), lecturer: 'X', linked: ['S'] }, { ...grp('B', 2), lecturer: 'Y', linked: ['S'] }, sub]
+  };
   const names = (course, opt) => buildOptions(course, opt).map((o) => o.groups.join('+'));
   assert.deepEqual(names(c, { pins: ['S'], lecturers: { X: 'avoid' } }), ['B+S']);
   assert.deepEqual(names(c, { pins: ['S'], lecturers: { X: 'prefer' } }), ['A+S']);
-  assert.deepEqual(names({ groups: [c.groups[0], sub] }, { pins: ['S'], lecturers: { X: 'avoid' } }), ['A+S'], 'only an avoided lecture reaches the pin: the pin wins');
-  assert.deepEqual(names(c, { pins: ['S'], lecturers: { Z: 'avoid' } }), ['A+S', 'B+S'], 'the pinned tutorial\'s own lecturer is not matched');
+  assert.deepEqual(
+    names({ groups: [c.groups[0], sub] }, { pins: ['S'], lecturers: { X: 'avoid' } }),
+    ['A+S'],
+    'only an avoided lecture reaches the pin: the pin wins'
+  );
+  assert.deepEqual(
+    names(c, { pins: ['S'], lecturers: { Z: 'avoid' } }),
+    ['A+S', 'B+S'],
+    'the pinned tutorial\'s own lecturer is not matched'
+  );
 });
 
 test('identical groups with different exam dates are two options, not registration alternatives', () => {
   const ex = (date) => [{ kind: 'בחינה', moed: 1, date, time: null }];
-  const o = buildOptions({ groups: [{ ...grp('A', 1), exams: ex('2027-02-01') }, { ...grp('B', 1), exams: ex('2027-02-20') }] });
-  assert.deepEqual(o.map((x) => [x.groups, x.exams]), [[['A'], ['2027-02-01']], [['B'], ['2027-02-20']]]);
+  const o = buildOptions({
+    groups: [
+      { ...grp('A', 1), exams: ex('2027-02-01') },
+      { ...grp('B', 1), exams: ex('2027-02-20') }
+    ]
+  });
+  assert.deepEqual(
+    o.map((x) => [x.groups, x.exams]),
+    [
+      [['A'], ['2027-02-01']],
+      [['B'], ['2027-02-20']]
+    ]
+  );
 });
 
 // ---- stage 4 (issue #4): busy time and time limits in real minutes ----
@@ -841,8 +1699,15 @@ const at = (start, end, day = 2) => set({ Y: one([{ ...grp('Y1', day, start, end
 const plans = (data, constraints, weights = W0) => search({ data, courses: musts('Y'), weights, constraints });
 
 test('a busy block from 20:50 keeps a lesson that ends at 20:50', () => {
-  assert.equal(plans(at('19:00', '20:50'), { blocks: [{ day: 2, start: '20:50', end: '22:00', label: '' }] }).results.length, 1);
-  assert.equal(plans(at('19:00', '20:50'), { blocks: [{ day: 2, start: '20:40', end: '22:00', label: '' }] }).results.length, 0, 'ten minutes inside the lesson');
+  assert.equal(
+    plans(at('19:00', '20:50'), { blocks: [{ day: 2, start: '20:50', end: '22:00', label: '' }] }).results.length,
+    1
+  );
+  assert.equal(
+    plans(at('19:00', '20:50'), { blocks: [{ day: 2, start: '20:40', end: '22:00', label: '' }] }).results.length,
+    0,
+    'ten minutes inside the lesson'
+  );
 });
 
 test('a hard "not after 17:45" drops a lesson that ends at 17:50', () => {
@@ -858,7 +1723,11 @@ test('a soft "not after 20:00" counts a 20:00-20:50 lesson as 50 outside minutes
 test('a lecture that overlaps its own linked tutorial gives no option', () => {
   const t = { ...grp('T', 1, '09:00', '10:00'), type: 'תרגול', primary: false };
   assert.deepEqual(buildOptions({ groups: [{ ...grp('L', 1, '08:00', '10:00'), linked: ['T'] }, t] }), []);
-  assert.equal(buildOptions({ groups: [{ ...grp('L', 1, '08:00', '09:00'), linked: ['T'] }, t] }).length, 1, 'back to back is fine');
+  assert.equal(
+    buildOptions({ groups: [{ ...grp('L', 1, '08:00', '09:00'), linked: ['T'] }, t] }).length,
+    1,
+    'back to back is fine'
+  );
 });
 
 // ---- stage 5 (issue #5): year plan ----
@@ -866,21 +1735,48 @@ test('searchYear chooses the ב׳ plan by the pair score, not by the ב׳ score 
   // E is worth more than F in ב׳ alone, but P (3) + F (3) balances the year better than P + E (4); with a small progress weight the balance decides.
   const dataA = semData('א', { P: yc('P', 3, [grp('PA', 1)]), E: yc('E', 4, []), F: yc('F', 3, []) });
   const dataB = semData('ב', { P: yc('P', 3, []), E: yc('E', 4, [grp('EB', 2)]), F: yc('F', 3, [grp('FB', 2)]) });
-  const r = searchYear({ dataA, dataB, state: yState({ choices: { P: 'must', E: 'optional', F: 'optional' } }), yearList: new Set(), weights: { ...W, progress: 0.3 } });
+  const r = searchYear({
+    dataA,
+    dataB,
+    state: yState({ choices: { P: 'must', E: 'optional', F: 'optional' } }),
+    yearList: new Set(),
+    weights: { ...W, progress: 0.3 }
+  });
   assert.deepEqual(best(r).b.courses, ['F']);
   assert.ok(r.results.every((p, i) => !i || p.score <= r.results[i - 1].score));
 });
 
 // test S5's instance: seven electives outrank {P} in א׳ alone (2^7 course sets, {P} ~121st), only P (or P2) opens the must N in ב׳.
 const s5 = (prereqs, { pFull = false, p2 = false } = {}) => {
-  const A = {}, B = {};
-  for (let i = 0; i < 7; i++) { A[`E${i}`] = yc(`E${i}`, 3, [grp(`E${i}A`, (i % 6) + 1, i < 6 ? '08:00' : '12:00', i < 6 ? '10:00' : '14:00')]); B[`E${i}`] = yc(`E${i}`, 3, []); }
-  const allDay = (id, full) => ({ ...grp(id, 1), full, meetings: [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '08:00', end: '20:00' })) });
-  A.P = yc('P', 1, [allDay('PA', pFull)]); B.P = yc('P', 1, []);
-  if (p2) { A.P2 = yc('P2', 1, [allDay('P2A', false)]); B.P2 = yc('P2', 1, []); }
-  A.N = yc('N', 4, [], prereqs); B.N = yc('N', 4, [grp('NB', 1)], prereqs);
+  const A = {},
+    B = {};
+  for (let i = 0; i < 7; i++) {
+    A[`E${i}`] = yc(`E${i}`, 3, [grp(`E${i}A`, (i % 6) + 1, i < 6 ? '08:00' : '12:00', i < 6 ? '10:00' : '14:00')]);
+    B[`E${i}`] = yc(`E${i}`, 3, []);
+  }
+  const allDay = (id, full) => ({
+    ...grp(id, 1),
+    full,
+    meetings: [1, 2, 3, 4, 5, 6].map((day) => ({ day, start: '08:00', end: '20:00' }))
+  });
+  A.P = yc('P', 1, [allDay('PA', pFull)]);
+  B.P = yc('P', 1, []);
+  if (p2) {
+    A.P2 = yc('P2', 1, [allDay('P2A', false)]);
+    B.P2 = yc('P2', 1, []);
+  }
+  A.N = yc('N', 4, [], prereqs);
+  B.N = yc('N', 4, [grp('NB', 1)], prereqs);
   const choices = { ...opt(...Object.keys(A).filter((id) => id !== 'N')), N: 'must' };
-  return best(searchYear({ dataA: semData('א', A), dataB: semData('ב', B), state: yState({ choices }), yearList: new Set(), weights: W }));
+  return best(
+    searchYear({
+      dataA: semData('א', A),
+      dataB: semData('ב', B),
+      state: yState({ choices }),
+      yearList: new Set(),
+      weights: W
+    })
+  );
 };
 
 test('searchYear seeds every candidate of an either-or prerequisite: the first one is full, the second opens the must course', () => {
@@ -898,36 +1794,99 @@ test('searchYear seeds a must course whose prerequisites include one outside the
 test('searchYear warns when a ב׳ pin was lifted and its course placed in another group', () => {
   // The pinned ZB1 clashes with both must courses; relaxing one of them is not enough, so the pin goes and Z moves to ZB2.
   const none = { Y1: yc('Y1', 3, []), Y2: yc('Y2', 3, []), Z: yc('Z', 3, []) };
-  const zb1 = { ...grp('ZB1', 1), meetings: [{ day: 1, start: '08:00', end: '10:00' }, { day: 2, start: '08:00', end: '10:00' }] };
-  const dataB = semData('ב', { Y1: yc('Y1', 3, [grp('Y1B', 1)]), Y2: yc('Y2', 3, [grp('Y2B', 2)]), Z: yc('Z', 3, [zb1, grp('ZB2', 3)]) });
-  const p = best(searchYear({ dataA: semData('א', none), dataB, state: yState({ choices: { Y1: 'must', Y2: 'must', Z: 'optional' } }), pins: ['ZB1'], yearList: new Set(), weights: W }));
+  const zb1 = {
+    ...grp('ZB1', 1),
+    meetings: [
+      { day: 1, start: '08:00', end: '10:00' },
+      { day: 2, start: '08:00', end: '10:00' }
+    ]
+  };
+  const dataB = semData('ב', {
+    Y1: yc('Y1', 3, [grp('Y1B', 1)]),
+    Y2: yc('Y2', 3, [grp('Y2B', 2)]),
+    Z: yc('Z', 3, [zb1, grp('ZB2', 3)])
+  });
+  const p = best(
+    searchYear({
+      dataA: semData('א', none),
+      dataB,
+      state: yState({ choices: { Y1: 'must', Y2: 'must', Z: 'optional' } }),
+      pins: ['ZB1'],
+      yearList: new Set(),
+      weights: W
+    })
+  );
   assert.deepEqual([...p.b.courses].sort(), ['Y1', 'Y2', 'Z']);
   assert.ok(p.warnings.includes('הנעיצה של Z (ב׳) לא נשמרה: הקורס בקבוצה אחרת'), JSON.stringify(p.warnings));
 });
 
 test('search({ distinct }) keeps one plan per course set, the best group variant', () => {
   const d = set({ A: one([grp('A1', 1), grp('A2', 2, '10:00', '12:00')]), B: one([grp('B1', 3)]) });
-  const r = search({ data: d, courses: [{ id: 'A', mode: 'must' }, { id: 'B', mode: 'optional' }], weights: W0, topK: 10, distinct: true });
-  assert.deepEqual(r.results.map((x) => [...x.courses].sort().join()), ['A,B', 'A']);
+  const r = search({
+    data: d,
+    courses: [
+      { id: 'A', mode: 'must' },
+      { id: 'B', mode: 'optional' }
+    ],
+    weights: W0,
+    topK: 10,
+    distinct: true
+  });
+  assert.deepEqual(
+    r.results.map((x) => [...x.courses].sort().join()),
+    ['A,B', 'A']
+  );
 });
 
 // ---- stage 6 (issue #6): messages ----
 test('a must course whose free lab is linked from nothing: the message names that lab (course 10013)', () => {
-  const g = (id, type, linked, full, day) => ({ ...grp(id, day, '10:00', '11:50'), type, primary: type.startsWith('סופי'), full, linked });
-  const X = { ...one([g('P', 'סופי-הרצאה', ['P/1'], false, 1), g('P/1', 'תרגול', ['L1'], false, 2), g('L1', 'מעבדה', [], true, 3), g('L2', 'מעבדה', [], false, 4)]), name: 'תקשורת' };
+  const g = (id, type, linked, full, day) => ({
+    ...grp(id, day, '10:00', '11:50'),
+    type,
+    primary: type.startsWith('סופי'),
+    full,
+    linked
+  });
+  const X = {
+    ...one([
+      g('P', 'סופי-הרצאה', ['P/1'], false, 1),
+      g('P/1', 'תרגול', ['L1'], false, 2),
+      g('L1', 'מעבדה', [], true, 3),
+      g('L2', 'מעבדה', [], false, 4)
+    ]),
+    name: 'תקשורת'
+  };
   const r = search({ data: set({ X }), courses: musts('X'), weights: W0 });
   assert.equal(r.results.length, 0);
-  assert.ok(r.diagnosis.some((l) => l.includes('L2 (מעבדה)') && l.includes('לא מקושרת')), r.diagnosis.join(' | '));
-  const blocked = search({ data: set({ X }), courses: musts('X'), weights: W0, constraints: { blocks: [{ day: 1, start: '09:00', end: '13:00', label: '' }] } });
+  assert.ok(
+    r.diagnosis.some((l) => l.includes('L2 (מעבדה)') && l.includes('לא מקושרת')),
+    r.diagnosis.join(' | ')
+  );
+  const blocked = search({
+    data: set({ X }),
+    courses: musts('X'),
+    weights: W0,
+    constraints: { blocks: [{ day: 1, start: '09:00', end: '13:00', label: '' }] }
+  });
   assert.ok(!blocked.diagnosis.some((l) => l.includes('לא מקושרת')), 'busy time is the reason there, not the link');
 });
 
 const opts = (...ids) => ids.map((id) => ({ id, mode: 'optional' }));
-const why = (data, courses, constraints = {}) => { const r = search({ data, courses, weights: W0, constraints }); assert.equal(r.results.length, 0); return r.diagnosis.join(' | '); };
+const why = (data, courses, constraints = {}) => {
+  const r = search({ data, courses, weights: W0, constraints });
+  assert.equal(r.results.length, 0);
+  return r.diagnosis.join(' | ');
+};
 const GENERIC = 'אין מערכת שעומדת בכל האילוצים יחד';
 
 test('no plan, all optional, the campus-day cap is too small: the message does not talk about must courses', () => {
-  const two = (id, d1, d2) => ({ ...grp(id, d1), meetings: [{ day: d1, start: '09:00', end: '09:50' }, { day: d2, start: '09:00', end: '09:50' }] });
+  const two = (id, d1, d2) => ({
+    ...grp(id, d1),
+    meetings: [
+      { day: d1, start: '09:00', end: '09:50' },
+      { day: d2, start: '09:00', end: '09:50' }
+    ]
+  });
   const t = why(set({ A: one([two('a1', 1, 3)]), B: one([two('b1', 2, 4)]) }), opts('A', 'B'), { maxDays: 1 });
   assert.ok(t.includes('תקרת יום אחד') && !t.includes('החובה'), t);
 });
@@ -952,13 +1911,19 @@ test('no plan although any two must courses fit and no single constraint is to b
 });
 
 // ---- stage 7 (issue #7): Friday is a free day when the student wished it off (D1) ----
-const DEF_W = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 }, DEF_C = { dayOff: [6], notAfter: '20:00' };
+const DEF_W = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
+  DEF_C = { dayOff: [6], notAfter: '20:00' };
 
 test('with the default wished day off, a free Friday counts as a free day', () => {
   const r = search({ data: set({ A: one([grp('A1', 1)]) }), courses: musts('A'), weights: DEF_W, constraints: DEF_C });
   assert.equal(r.results[0].breakdown.freeDays, 1); // Monday-Thursday and Friday: 5 free days
   assert.match(r.results[0].explanation, /יום ו' פנוי/);
-  const plain = search({ data: set({ A: one([grp('A1', 1)]) }), courses: musts('A'), weights: DEF_W, constraints: { dayOff: [] } });
+  const plain = search({
+    data: set({ A: one([grp('A1', 1)]) }),
+    courses: musts('A'),
+    weights: DEF_W,
+    constraints: { dayOff: [] }
+  });
   assert.equal(plain.results[0].breakdown.freeDays, 4 / 5, 'a student who studies on Friday: Sunday-Thursday only');
 });
 
@@ -970,10 +1935,27 @@ test('with default settings the solver does not move a lesson to Friday to free 
 
 test('searchYear warns when a lifted ב׳ pin kept the lecture but moved the pinned tutorial', () => {
   const none = { Y1: yc('Y1', 3, []), Y2: yc('Y2', 3, []), Z: yc('Z', 3, []) };
-  const zt = (id, days) => ({ ...grp(id, days[0]), type: 'תרגול', primary: false, meetings: days.map((day) => ({ day, start: '08:00', end: '10:00' })) });
-  const dataB = semData('ב', { Y1: yc('Y1', 3, [grp('Y1B', 1)]), Y2: yc('Y2', 3, [grp('Y2B', 2)]),
-    Z: yc('Z', 3, [{ ...grp('ZL', 4), linked: ['ZT1', 'ZT2'] }, zt('ZT1', [1, 2]), zt('ZT2', [3])]) });
-  const p = best(searchYear({ dataA: semData('א', none), dataB, state: yState({ choices: { Y1: 'must', Y2: 'must', Z: 'optional' } }), pins: ['ZL', 'ZT1'], yearList: new Set(), weights: W }));
+  const zt = (id, days) => ({
+    ...grp(id, days[0]),
+    type: 'תרגול',
+    primary: false,
+    meetings: days.map((day) => ({ day, start: '08:00', end: '10:00' }))
+  });
+  const dataB = semData('ב', {
+    Y1: yc('Y1', 3, [grp('Y1B', 1)]),
+    Y2: yc('Y2', 3, [grp('Y2B', 2)]),
+    Z: yc('Z', 3, [{ ...grp('ZL', 4), linked: ['ZT1', 'ZT2'] }, zt('ZT1', [1, 2]), zt('ZT2', [3])])
+  });
+  const p = best(
+    searchYear({
+      dataA: semData('א', none),
+      dataB,
+      state: yState({ choices: { Y1: 'must', Y2: 'must', Z: 'optional' } }),
+      pins: ['ZL', 'ZT1'],
+      yearList: new Set(),
+      weights: W
+    })
+  );
   assert.ok(p.b.groups.includes('ZT2'), JSON.stringify(p.b.groups));
   assert.ok(p.warnings.includes('הנעיצה של Z (ב׳) לא נשמרה: הקורס בקבוצה אחרת'), JSON.stringify(p.warnings));
 });
@@ -981,10 +1963,15 @@ test('searchYear warns when a lifted ב׳ pin kept the lecture but moved the pin
 // ---- task 4 (#15): split lecture and tutorial, opt-in ----
 // S: lecture L links tutorial T1; T2 (same type) is linked from nothing and frees a day. O: a lecture only.
 const tut = (id, day, start, end) => ({ ...grp(id, day, start, end), type: 'תרגול', primary: false });
-const splitData = () => set({
-  S: one([{ ...grp('L', 1, '08:00', '09:50'), linked: ['T1'] }, tut('T1', 2, '08:00', '09:50'), tut('T2', 1, '10:00', '11:50')]),
-  O: one([grp('O1', 3, '08:00', '09:50')]),
-});
+const splitData = () =>
+  set({
+    S: one([
+      { ...grp('L', 1, '08:00', '09:50'), linked: ['T1'] },
+      tut('T1', 2, '08:00', '09:50'),
+      tut('T2', 1, '10:00', '11:50')
+    ]),
+    O: one([grp('O1', 3, '08:00', '09:50')]),
+  });
 const gs = (options) => options.map((o) => o.groups);
 
 test('split off: a lecture takes only its linked tutorial, and no plan is split', () => {
@@ -992,12 +1979,21 @@ test('split off: a lecture takes only its linked tutorial, and no plan is split'
   assert.deepEqual(gs(buildOptions(d.courses.S)), [['L', 'T1']]);
   assert.ok(buildOptions(d.courses.S).every((o) => o.split === false));
   const r = search({ data: d, courses: opts('S', 'O'), weights: DEF_W, constraints: DEF_C });
-  assert.ok(r.results.length && r.results.every((x) => Array.isArray(x.split) && !x.split.length), JSON.stringify(r.results.map((x) => x.split)));
+  assert.ok(
+    r.results.length && r.results.every((x) => Array.isArray(x.split) && !x.split.length),
+    JSON.stringify(r.results.map((x) => x.split))
+  );
 });
 
 test('split on: the unlinked tutorial is an extra option marked split; no sub-groups or all linked: nothing extra', () => {
   const d = splitData();
-  assert.deepEqual(buildOptions(d.courses.S, { split: true }).map((o) => [o.groups, o.split]), [[['L', 'T1'], false], [['L', 'T2'], true]]);
+  assert.deepEqual(
+    buildOptions(d.courses.S, { split: true }).map((o) => [o.groups, o.split]),
+    [
+      [['L', 'T1'], false],
+      [['L', 'T2'], true]
+    ]
+  );
   assert.deepEqual(buildOptions(d.courses.O, { split: true }), buildOptions(d.courses.O));
   const A = mini().courses.A; // A1 links both tutorials, A2 has none
   assert.deepEqual(buildOptions(A, { split: true }), buildOptions(A));
@@ -1008,33 +2004,72 @@ test('split on with the unlinked tutorial pinned: every option of the course con
   const on = buildOptions(d.courses.S, { split: true, pins: ['T2'] });
   assert.ok(on.length && on.every((o) => o.groups.includes('T2')), JSON.stringify(gs(on)));
   assert.deepEqual(buildOptions(d.courses.S, { pins: ['T2'] }), []);
-  const r = searchAll({ data: d, courses: opts('S', 'O'), pins: ['T2'], weights: DEF_W, constraints: { ...DEF_C, split: true } });
-  assert.ok(r.results.length && r.results.every((x) => x.groups.includes('T2')), JSON.stringify(r.results.map((x) => x.groups)));
+  const r = searchAll({
+    data: d,
+    courses: opts('S', 'O'),
+    pins: ['T2'],
+    weights: DEF_W,
+    constraints: { ...DEF_C, split: true }
+  });
+  assert.ok(
+    r.results.length && r.results.every((x) => x.groups.includes('T2')),
+    JSON.stringify(r.results.map((x) => x.groups))
+  );
   const off = searchAll({ data: d, courses: opts('S', 'O'), pins: ['T2'], weights: DEF_W, constraints: DEF_C });
   assert.equal(off.results.length, 0);
   assert.ok(off.diagnosis.length);
 });
 
 test('split on, course 10013 shape: the free lab no one links becomes a split option, never a duplicate', () => {
-  const g = (id, type, linked, day, full = false) => ({ id, type, primary: type.startsWith('סופי'), full, lecturer: 'L', linked, exams: [],
-    meetings: [{ day, start: '10:00', end: '11:50', room: 'r' }] });
-  const course = { groups: [g('P', 'סופי-הרצאה+תרגול', ['P/1'], 1), g('P/1', 'תרגול', ['L1'], 2), g('L1', 'מעבדה', [], 3, true), g('L2', 'מעבדה', [], 4)] };
+  const g = (id, type, linked, day, full = false) => ({
+    id,
+    type,
+    primary: type.startsWith('סופי'),
+    full,
+    lecturer: 'L',
+    linked,
+    exams: [],
+    meetings: [{ day, start: '10:00', end: '11:50', room: 'r' }]
+  });
+  const course = {
+    groups: [
+      g('P', 'סופי-הרצאה+תרגול', ['P/1'], 1),
+      g('P/1', 'תרגול', ['L1'], 2),
+      g('L1', 'מעבדה', [], 3, true),
+      g('L2', 'מעבדה', [], 4)
+    ]
+  };
   assert.deepEqual(buildOptions(course), [], 'split off: as today, the only linked lab is full');
   assert.deepEqual(gs(buildOptions(course, { includeFull: true })), [['P', 'P/1', 'L1']]);
-  assert.deepEqual(buildOptions(course, { split: true }).map((o) => [o.groups, o.split]), [[['P', 'P/1', 'L2'], true]]);
+  assert.deepEqual(
+    buildOptions(course, { split: true }).map((o) => [o.groups, o.split]),
+    [[['P', 'P/1', 'L2'], true]]
+  );
   const both = buildOptions(course, { split: true, includeFull: true });
-  assert.deepEqual(both.map((o) => [o.groups, o.split]), [[['P', 'P/1', 'L1'], false], [['P', 'P/1', 'L2'], true]]);
+  assert.deepEqual(
+    both.map((o) => [o.groups, o.split]),
+    [
+      [['P', 'P/1', 'L1'], false],
+      [['P', 'P/1', 'L2'], true]
+    ]
+  );
 });
 
 test('searchAll: split off is search; split on lists split plans after every regular one, at most topK of each', () => {
   const args = { data: splitData(), courses: opts('S', 'O'), weights: DEF_W, constraints: DEF_C, topK: 2 };
-  assert.deepEqual(searchAll(args).results.map((x) => x.groups), search(args).results.map((x) => x.groups));
+  assert.deepEqual(
+    searchAll(args).results.map((x) => x.groups),
+    search(args).results.map((x) => x.groups)
+  );
   const r = searchAll({ ...args, constraints: { ...DEF_C, split: true } });
   const k = r.results.findIndex((x) => x.split.length);
   assert.ok(k > 0, JSON.stringify(r.results.map((x) => [x.groups, x.split])));
   assert.ok(r.results.slice(k).every((x) => x.split.length) && k <= 2 && r.results.length - k <= 2);
   assert.deepEqual(r.results[k].split, ['S']);
-  assert.ok(r.results[k].score > r.results[0].score, 'the split plan frees a day, so it scores higher, and still comes after');
+  assert.ok(
+    r.results[k].score > r.results[0].score,
+    'the split plan frees a day, so it scores higher, and still comes after'
+  );
   const key = (x) => [...x.groups].sort().join();
   assert.ok(r.results.slice(k).every((x) => !r.results.slice(0, k).some((y) => key(y) === key(x))));
 });
@@ -1043,15 +2078,26 @@ test('searchAll year mode: split pairs come after regular pairs, a pair\'s split
   const S = splitData().courses.S;
   const dataA = semData('א', { S: yc('S', 3, S.groups), M: yc('M', 4, [grp('MA', 3)]), OB: yc('OB', 2, []) });
   const dataB = semData('ב', { S: yc('S', 3, []), M: yc('M', 4, []), OB: yc('OB', 2, [grp('OBB', 4)]) });
-  const year = { dataA, dataB, state: yState({ choices: { S: 'optional', M: 'optional', OB: 'optional' } }), yearList: new Set(), weights: DEF_W,
-    constraints: DEF_C, topK: 3 };
-  const all = (r) => r.results.every((p) => Array.isArray(p.split) && Array.isArray(p.a.split) && (!p.b || Array.isArray(p.b.split)));
+  const year = {
+    dataA,
+    dataB,
+    state: yState({ choices: { S: 'optional', M: 'optional', OB: 'optional' } }),
+    yearList: new Set(),
+    weights: DEF_W,
+    constraints: DEF_C,
+    topK: 3
+  };
+  const all = (r) =>
+    r.results.every((p) => Array.isArray(p.split) && Array.isArray(p.a.split) && (!p.b || Array.isArray(p.b.split)));
   const off = searchAll({ year });
   assert.ok(off.results.length && all(off) && off.results.every((p) => !p.split.length));
   const r = searchAll({ year: { ...year, constraints: { ...DEF_C, split: true } } });
   assert.ok(all(r));
   const k = r.results.findIndex((p) => p.split.length);
-  assert.ok(k > 0 && r.results.slice(k).every((p) => p.split.length) && k <= 3 && r.results.length - k <= 3, JSON.stringify(r.results.map((p) => p.split)));
+  assert.ok(
+    k > 0 && r.results.slice(k).every((p) => p.split.length) && k <= 3 && r.results.length - k <= 3,
+    JSON.stringify(r.results.map((p) => p.split))
+  );
   for (const p of r.results) assert.deepEqual(p.split, [...new Set([...p.a.split, ...(p.b?.split ?? [])])]);
   assert.ok(r.results.slice(k).every((p) => p.a.groups.includes('T2')));
 });
@@ -1061,8 +2107,12 @@ test('split on: the largest real file with every offered course optional stays w
   const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')) : [];
   if (!files.length) return;
   const size = (d) => Object.values(d.courses ?? {}).reduce((a, c) => a + (c.groups?.length ?? 0), 0);
-  const data = files.map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8'))).reduce((a, d) => (size(d) > size(a) ? d : a));
-  const courses = Object.keys(data.courses).filter((id) => data.courses[id].offered && data.courses[id].groups.length).map((id) => ({ id, mode: 'optional' }));
+  const data = files
+    .map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')))
+    .reduce((a, d) => (size(d) > size(a) ? d : a));
+  const courses = Object.keys(data.courses)
+    .filter((id) => data.courses[id].offered && data.courses[id].groups.length)
+    .map((id) => ({ id, mode: 'optional' }));
   const t = Date.now();
   const r = searchAll({ data, courses, weights: DEF_W, constraints: { ...DEF_C, split: true }, timeLimitMs: 1500 });
   const ms = Date.now() - t;
@@ -1079,10 +2129,21 @@ test('split on, year mode: the largest real program with every offered course op
   if (!both.length) return;
   const [f] = both.sort((x, y) => size(read(1, y)) + size(read(2, y)) - size(read(1, x)) - size(read(2, x)));
   const [dataA, dataB] = [read(1, f), read(2, f)];
-  const choices = Object.fromEntries([...Object.keys(dataA.courses), ...Object.keys(dataB.courses)].map((id) => [id, 'optional']));
+  const choices = Object.fromEntries(
+    [...Object.keys(dataA.courses), ...Object.keys(dataB.courses)].map((id) => [id, 'optional'])
+  );
   const t = Date.now();
-  const r = searchAll({ year: { dataA, dataB, state: { passed: [], failed: {}, choices, semesterOf: {}, load: 'even' }, yearList: new Set(), weights: DEF_W,
-    constraints: { ...DEF_C, split: true }, timeLimitMs: LIMIT } });
+  const r = searchAll({
+    year: {
+      dataA,
+      dataB,
+      state: { passed: [], failed: {}, choices, semesterOf: {}, load: 'even' },
+      yearList: new Set(),
+      weights: DEF_W,
+      constraints: { ...DEF_C, split: true },
+      timeLimitMs: LIMIT
+    }
+  });
   const ms = Date.now() - t;
   // searchYear may run to 1.5x its limit by design (a pair needs both semesters); split off measures the same, so the bound is that plus a second
   assert.ok(ms < 5500 * SLACK, `${f}: ${size(dataA) + size(dataB)} groups, ${ms} ms, partial ${r.partial}`);

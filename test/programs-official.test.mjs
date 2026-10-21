@@ -12,12 +12,20 @@ const data = (id, y) => JSON.parse(readFileSync(`web/data/afeka/2027-1/${id}-${y
 test('degree totals: data science is 120', () => assert.equal(P[19].degree.total, 120));
 
 test('areas and pick rules match the curricula', () => {
-  assert.deepEqual(P[32].specializations.map((s) => s.id), ['solid', 'flow', 'vehicle'], 'mechanical evening offers three areas');
-  for (const id of [10, 12]) assert.equal(P[id].specializations.find((s) => s.id === 'mobile').name, 'ממשקי משתמש וחוויית שימוש');
+  assert.deepEqual(
+    P[32].specializations.map((s) => s.id),
+    ['solid', 'flow', 'vehicle'],
+    'mechanical evening offers three areas'
+  );
+  for (const id of [10, 12])
+    assert.equal(P[id].specializations.find((s) => s.id === 'mobile').name, 'ממשקי משתמש וחוויית שימוש');
   for (const id of [40, 42]) {
     const d = data(id, 2027);
     assert.equal(specRule(d).pick, 1);
-    assert.deepEqual(d.specializations.map((s) => s.id), ['mis', 'dss', 'bi']);
+    assert.deepEqual(
+      d.specializations.map((s) => s.id),
+      ['mis', 'dss', 'bi']
+    );
     assert.deepEqual(validSpecs(d, ['bi']), ['bi']);
     // the chosen area's seminar and electives, plus the other two areas' courses for students of another area ("משנית")
     assert.deepEqual(P[id].specializations.find((s) => s.id === 'mis').elective, [40122, 40126, 40129]);
@@ -31,7 +39,12 @@ test('master\'s programs 61 and 65 are out of the config, the catalog and the da
     assert.ok(!catalog.includes(id));
     assert.ok(!existsSync(`web/data/afeka/2027-1/${id}-2027.json`));
   }
-  assert.deepEqual(catalog.sort((a, b) => a - b), Object.keys(P).map(Number).sort((a, b) => a - b));
+  assert.deepEqual(
+    catalog.sort((a, b) => a - b),
+    Object.keys(P)
+      .map(Number)
+      .sort((a, b) => a - b)
+  );
 });
 
 test('every program is checked against its official curriculum', () => {

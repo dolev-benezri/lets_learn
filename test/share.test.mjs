@@ -2,8 +2,21 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { encode, decode, friendPayload, friendLink, backupLink, readHash } from '../web/share.js';
 
-const state = { v: 1, year: 2027, semester: 'א', program: 30, startYear: 2026, name: 'דולב',
-  passed: ['90901'], failed: { 90903: 1 }, choices: { 90903: 'must' }, friends: [], pins: [], weights: {}, constraints: {} };
+const state = {
+  v: 1,
+  year: 2027,
+  semester: 'א',
+  program: 30,
+  startYear: 2026,
+  name: 'דולב',
+  passed: ['90901'],
+  failed: { 90903: 1 },
+  choices: { 90903: 'must' },
+  friends: [],
+  pins: [],
+  weights: {},
+  constraints: {}
+};
 
 test('encode/decode round-trips Hebrew JSON', async () => {
   const obj = { a: 'שלום', n: [1, 2, 3] };
@@ -81,7 +94,21 @@ test('readHash rejects oversized hash (backup > 65536)', async () => {
 });
 
 test('readHash returns only 6 friend keys when backup payload is under #f=', async () => {
-  const backupShape = await encode({ v: 1, year: 2027, semester: 'א', program: 30, startYear: 2026, name: 'test', passed: ['90901'], failed: {}, choices: {}, weights: {}, constraints: {}, friends: [], pins: [] });
+  const backupShape = await encode({
+    v: 1,
+    year: 2027,
+    semester: 'א',
+    program: 30,
+    startYear: 2026,
+    name: 'test',
+    passed: ['90901'],
+    failed: {},
+    choices: {},
+    weights: {},
+    constraints: {},
+    friends: [],
+    pins: []
+  });
   const result = await readHash(`#f=${backupShape}`, { year: 2027, semester: 'א' });
   // Backup payload under friend link fails validation because passed is array (not in friend schema)
   assert.ok(result.error);
@@ -104,9 +131,19 @@ test('backup keeps a validated profile; friend link never carries it', async () 
   const at = { year: 2027, semester: 'א' };
   const s = { ...state, profile: { year: 3, amirnet: 110 } };
   const b = await backupLink('https://x.test/', s);
-  assert.deepEqual((await readHash(b.slice(b.indexOf('#')), at)).payload.profile, { year: 3, amirnet: 110, specs: [], summer: false });
+  assert.deepEqual((await readHash(b.slice(b.indexOf('#')), at)).payload.profile, {
+    year: 3,
+    amirnet: 110,
+    specs: [],
+    summer: false
+  });
   const bad = await backupLink('https://x.test/', { ...state, profile: { year: 7, amirnet: 10 } });
-  assert.deepEqual((await readHash(bad.slice(bad.indexOf('#')), at)).payload.profile, { year: null, amirnet: null, specs: [], summer: false });
+  assert.deepEqual((await readHash(bad.slice(bad.indexOf('#')), at)).payload.profile, {
+    year: null,
+    amirnet: null,
+    specs: [],
+    summer: false
+  });
   assert.ok(!('profile' in friendPayload(s, ['G1'])));
   const f = await friendLink('https://x.test/', s, ['G1']);
   assert.ok(!('profile' in (await readHash(f.slice(f.indexOf('#')), at)).payload));
@@ -117,10 +154,22 @@ test('backup round-trips specs and summer; an old link without them still loads 
   const prof = { year: 3, amirnet: 110, specs: ['solid', 'vehicle'], summer: true };
   const b = await backupLink('https://x.test/', { ...state, profile: prof });
   assert.deepEqual((await readHash(b.slice(b.indexOf('#')), at)).payload.profile, prof);
-  const bad = await backupLink('https://x.test/', { ...state, profile: { ...prof, specs: ['solid', 'solid'], summer: 1 } });
-  assert.deepEqual((await readHash(bad.slice(bad.indexOf('#')), at)).payload.profile, { ...prof, specs: [], summer: false });
+  const bad = await backupLink('https://x.test/', {
+    ...state,
+    profile: { ...prof, specs: ['solid', 'solid'], summer: 1 }
+  });
+  assert.deepEqual((await readHash(bad.slice(bad.indexOf('#')), at)).payload.profile, {
+    ...prof,
+    specs: [],
+    summer: false
+  });
   const old = await backupLink('https://x.test/', { ...state, profile: { year: 3, amirnet: 110 } });
-  assert.deepEqual((await readHash(old.slice(old.indexOf('#')), at)).payload.profile, { year: 3, amirnet: 110, specs: [], summer: false });
+  assert.deepEqual((await readHash(old.slice(old.indexOf('#')), at)).payload.profile, {
+    year: 3,
+    amirnet: 110,
+    specs: [],
+    summer: false
+  });
 });
 
 test('backup keeps scope/load/semesterOf through normalize; friend link never carries them', async () => {
@@ -141,13 +190,27 @@ test('readHash ignores the #me route', async () => {
 });
 
 test('a backup link carries grades', async () => {
-  const b = await backupLink('https://x.test/', { v: 1, year: 2027, semester: 'א', program: 30, passed: ['a'], grades: { a: 90 } });
+  const b = await backupLink('https://x.test/', {
+    v: 1,
+    year: 2027,
+    semester: 'א',
+    program: 30,
+    passed: ['a'],
+    grades: { a: 90 }
+  });
   const r = await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' });
   assert.deepEqual(r.payload.grades, { a: 90 });
 });
 
 test('a backup link carries exemptions from the grade sheet', async () => {
-  const b = await backupLink('https://x.test/', { v: 1, year: 2027, semester: 'א', program: 30, passed: ['a'], exempt: ['a'] });
+  const b = await backupLink('https://x.test/', {
+    v: 1,
+    year: 2027,
+    semester: 'א',
+    program: 30,
+    passed: ['a'],
+    exempt: ['a']
+  });
   const r = await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' });
   assert.deepEqual(r.payload.exempt, ['a']);
 });
@@ -165,12 +228,21 @@ test('backup keeps blocks through normalize; friend link never carries them', as
 });
 
 test('a backup from last year keeps the record, drops last year’s groups and moves the study year on; a friend link from last year is refused', async () => {
-  const old = { ...state, year: 2027, pins: ['G1'], semesterOf: { 90903: 'ב' }, friends: [{ name: 'דנה', groups: ['G1'] }], profile: { year: 2 } };
+  const old = {
+    ...state,
+    year: 2027,
+    pins: ['G1'],
+    semesterOf: { 90903: 'ב' },
+    friends: [{ name: 'דנה', groups: ['G1'] }],
+    profile: { year: 2 }
+  };
   const b = await backupLink('https://x.test/', old);
   const r = await readHash(b.slice(b.indexOf('#')), { year: 2028, semester: 'א' });
   assert.equal(r.type, 'backup');
   assert.deepEqual(r.payload.failed, { 90903: 1 });
-  assert.equal(r.payload.pins, undefined); assert.equal(r.payload.semesterOf, undefined); assert.equal(r.payload.friends, undefined);
+  assert.equal(r.payload.pins, undefined);
+  assert.equal(r.payload.semesterOf, undefined);
+  assert.equal(r.payload.friends, undefined);
   assert.equal(r.payload.profile.year, 3);
   const f = await friendLink('https://x.test/', old, ['G1']);
   assert.match((await readHash(f.slice(f.indexOf('#')), { year: 2028, semester: 'א' })).error, /סמסטר אחר/);

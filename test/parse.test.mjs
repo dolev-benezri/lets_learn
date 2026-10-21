@@ -1,7 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseProgram, parseGroups, parseDay, parseDetails, parseExams, toIsoDate, isRejected, isThrottled } from '../scripts/parse.mjs';
+import {
+  parseProgram,
+  parseGroups,
+  parseDay,
+  parseDetails,
+  parseExams,
+  toIsoDate,
+  isRejected,
+  isThrottled
+} from '../scripts/parse.mjs';
 
 const fx = (name) => readFileSync(new URL(`../scripts/fixtures/${name}`, import.meta.url), 'utf8');
 
@@ -10,15 +19,26 @@ test('parseProgram reads list name, min credits and courses', () => {
   assert.equal(p.name, "קורסי חובה שנה א'");
   assert.equal(p.minCredits, 41);
   assert.equal(p.courses.length, 11);
-  assert.deepEqual(p.courses.find((c) => c.id === '90903'), { id: '90903', name: 'פיזיקה-מכניקה', offered: true });
+  assert.deepEqual(
+    p.courses.find((c) => c.id === '90903'),
+    { id: '90903', name: 'פיזיקה-מכניקה', offered: true }
+  );
   assert.ok(p.courses.every((c) => /^\d{4,6}$/.test(c.id)));
 });
 
 test('parseGroups reads links to whole groups too (course 10013: a tutorial names its labs without a /n suffix)', () => {
   const group = (head) => `<div class="TextAlignRight">קורס מסוג ${head} מרצה הקורס : מר x פרטים נוספים</div>`;
-  const gs = parseGroups(group('תרגול קבוצה : 271001307/ 1 ( קבוצות הקשורות לקורס זה : 271001309 , 271001310 )')
-    + group('סופי-הרצאה+תרגול קבוצה : 271001307 ( קבוצות הקשורות לקורס זה : 271001307 / 1 )'));
-  assert.deepEqual(gs.map((g) => [g.id, g.linked]), [['271001307/1', ['271001309', '271001310']], ['271001307', ['271001307/1']]]);
+  const gs = parseGroups(
+    group('תרגול קבוצה : 271001307/ 1 ( קבוצות הקשורות לקורס זה : 271001309 , 271001310 )') +
+      group('סופי-הרצאה+תרגול קבוצה : 271001307 ( קבוצות הקשורות לקורס זה : 271001307 / 1 )')
+  );
+  assert.deepEqual(
+    gs.map((g) => [g.id, g.linked]),
+    [
+      ['271001307/1', ['271001309', '271001310']],
+      ['271001307', ['271001307/1']]
+    ]
+  );
 });
 
 test('parseDay handles words and letters', () => {
@@ -30,8 +50,28 @@ test('parseDay handles words and letters', () => {
 test('parseGroups reads primaries, linked tutorials and meetings for 90903', () => {
   const gs = parseGroups(fx('groups-90903.html'));
   const primaries = gs.filter((g) => g.primary);
-  assert.deepEqual(primaries.map((g) => g.id), ['279090301', '279090303', '279090304', '279090305', '279090312', '279090302', '279090306', '279090307', '279090308', '279090309', '279090310', '279090311', '279090313']);
-  assert.deepEqual(primaries.filter((g) => g.meetings.every((m) => m.semester === 'א')).map((g) => g.id), ['279090301', '279090303', '279090304', '279090305', '279090312']);
+  assert.deepEqual(
+    primaries.map((g) => g.id),
+    [
+      '279090301',
+      '279090303',
+      '279090304',
+      '279090305',
+      '279090312',
+      '279090302',
+      '279090306',
+      '279090307',
+      '279090308',
+      '279090309',
+      '279090310',
+      '279090311',
+      '279090313'
+    ]
+  );
+  assert.deepEqual(
+    primaries.filter((g) => g.meetings.every((m) => m.semester === 'א')).map((g) => g.id),
+    ['279090301', '279090303', '279090304', '279090305', '279090312']
+  );
   const g303 = gs.find((g) => g.id === '279090303');
   assert.equal(g303.type, 'סופי-הרצאה+תרגול');
   assert.equal(g303.lecturer, 'ד"ר שמעון מאיר');
@@ -41,7 +81,9 @@ test('parseGroups reads primaries, linked tutorials and meetings for 90903', () 
   const t = gs.find((g) => g.id === '279090301/1');
   assert.equal(t.type, 'תרגול');
   assert.equal(t.primary, false);
-  assert.deepEqual(t.meetings, [{ semester: 'א', day: 2, start: '10:00', end: '11:50', room: "ז'2 קריה - עגלת תחשבים" }]);
+  assert.deepEqual(t.meetings, [
+    { semester: 'א', day: 2, start: '10:00', end: '11:50', room: "ז'2 קריה - עגלת תחשבים" }
+  ]);
 });
 
 test('parseGroups fails loudly, naming the field, when the layout changes', () => {
@@ -68,15 +110,20 @@ test('parseGroups drops meetings without a real time', () => {
 test('parseDetails reads credits and a named prerequisite', () => {
   const d = parseDetails(fx('details-90903.html'));
   assert.equal(d.credits, 5);
-  assert.deepEqual(d.prereqs, [{ kind: 'קדם', population: '', names: ['קורס הכנה פיזיקה', 'פיזיקה - מכינה בדרך לאפקה'] }]);
+  assert.deepEqual(d.prereqs, [
+    { kind: 'קדם', population: '', names: ['קורס הכנה פיזיקה', 'פיזיקה - מכינה בדרך לאפקה'] }
+  ]);
 });
 
 test('parseDetails separates קדם and מקביל', () => {
   const d = parseDetails(fx('details-30120.html'));
-  assert.deepEqual(d.prereqs.map((p) => [p.kind, p.names]), [
-    ['קדם', ['תרמודינמיקה 1', 'תרמודינמיקה']],
-    ['מקביל', ["משוואות דיפ' חלקיות"]],
-  ]);
+  assert.deepEqual(
+    d.prereqs.map((p) => [p.kind, p.names]),
+    [
+      ['קדם', ['תרמודינמיקה 1', 'תרמודינמיקה']],
+      ['מקביל', ["משוואות דיפ' חלקיות"]],
+    ]
+  );
 });
 
 test('parseDetails keeps only prerequisite and corequisite rows', () => {
@@ -121,10 +168,17 @@ test('isThrottled spots the hourly rate-limit page, not real pages', () => {
 import { parseTracks, parseTrackLists } from '../scripts/parse.mjs';
 test('parseTracks: the tracks of a department; parseTrackLists: the list codes of a track page', () => {
   const tracks = parseTracks(fx('tracks-20-2026.json'));
-  assert.deepEqual(tracks.slice(0, 3), [{ code: 20, name: 'הנדסת חשמל מסלול יום' }, { code: 21, name: 'התמחות תקשורת' }, { code: 22, name: 'הנדסת חשמל מסלול ערב' }]);
+  assert.deepEqual(tracks.slice(0, 3), [
+    { code: 20, name: 'הנדסת חשמל מסלול יום' },
+    { code: 21, name: 'התמחות תקשורת' },
+    { code: 22, name: 'הנדסת חשמל מסלול ערב' }
+  ]);
   assert.equal(tracks.length, 7);
   assert.deepEqual(parseTracks('{"Answer":[]}'), []);
   assert.deepEqual(parseTracks('{}'), []);
-  assert.deepEqual(parseTrackLists(fx('sprog-20-2026-23.html')), [{ code: 20115, name: 'התמחות מערכות הספק ואנרגיה-חובה' }, { code: 20116, name: 'התמחות מערכות הספק ואנרגיה-בחירה' }]);
+  assert.deepEqual(parseTrackLists(fx('sprog-20-2026-23.html')), [
+    { code: 20115, name: 'התמחות מערכות הספק ואנרגיה-חובה' },
+    { code: 20116, name: 'התמחות מערכות הספק ואנרגיה-בחירה' }
+  ]);
   assert.deepEqual(parseTrackLists('<html></html>'), []);
 });

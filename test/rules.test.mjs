@@ -1,7 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { classify, progress, missingRequired, setStatus, amirnetExempt, cleanProfile, studyYear, yearsOf, modeFor, gradeAverage, englishOptions, specRule, validSpecs } from '../web/rules.js';
+import {
+  classify,
+  progress,
+  missingRequired,
+  setStatus,
+  amirnetExempt,
+  cleanProfile,
+  studyYear,
+  yearsOf,
+  modeFor,
+  gradeAverage,
+  englishOptions,
+  specRule,
+  validSpecs
+} from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
@@ -50,9 +64,14 @@ test('failure warnings follow the regulations', () => {
   assert.equal(w({ grades: { A: 60, Q0: 70 } }), '', 'average 65 is not below 65');
   assert.match(w({ passed: ['Q0'] }), /על תנאי.*50%.*11\.4\.4/, 'half of year א׳ done at the start of year ב׳');
   assert.equal(w({ passed: ['Q0'], profile: { year: 1 } }), '', 'no earlier year in year א׳');
-  const d = mini(); d.courses.A.credits = undefined; // a year א׳ course without credits in the data: 70% can't be judged
+  const d = mini();
+  d.courses.A.credits = undefined; // a year א׳ course without credits in the data: 70% can't be judged
   assert.equal(classify(d, { passed: ['Q0'], failed: {} }).warnings.join(), '');
-  assert.match(w({ grades: { A: 50, Q0: 50 }, failed: { A: 1, B: 1, C: 1 } }), /11\.4\.1\); .*11\.4\.2/, 'one probation line names every cause');
+  assert.match(
+    w({ grades: { A: 50, Q0: 50 }, failed: { A: 1, B: 1, C: 1 } }),
+    /11\.4\.1\); .*11\.4\.2/,
+    'one probation line names every cause'
+  );
 });
 
 test('mixed prerequisite alternatives: resolved blocks, unresolved-only satisfies', () => {
@@ -130,15 +149,36 @@ test('expulsion replaces probation instead of showing both', () => {
 
 test('amirnetExempt boundaries', () => {
   const ids = (n) => ['6000', '6001', '6002', '6003'].slice(0, n);
-  for (const [score, n] of [[84, 0], [85, 1], [99, 1], [100, 2], [119, 2], [120, 3], [133, 3], [134, 4]]) assert.deepEqual(amirnetExempt(score), ids(n), String(score));
+  for (const [score, n] of [
+    [84, 0],
+    [85, 1],
+    [99, 1],
+    [100, 2],
+    [119, 2],
+    [120, 3],
+    [133, 3],
+    [134, 4]
+  ])
+    assert.deepEqual(amirnetExempt(score), ids(n), String(score));
   assert.deepEqual(amirnetExempt(110), ['6000', '6001']);
   assert.deepEqual(amirnetExempt(null), []);
 });
 
 const english = () => {
-  const c = (id, prev) => ({ name: id, credits: 0, offered: true, prereqs: prev ? [{ kind: 'קדם', anyOf: [{ id: prev, name: prev }] }] : [], groups: [] });
-  return { year: 2027, startYear: 2026, semester: 'א', lists: [{ name: 'קורסי חובה לימודי אנגלית', minCredits: 0, courses: ['6000', '6001', '6002', '6003'] }],
-    courses: { 6000: c('6000'), 6001: c('6001', '6000'), 6002: c('6002', '6001'), 6003: c('6003', '6002') } };
+  const c = (id, prev) => ({
+    name: id,
+    credits: 0,
+    offered: true,
+    prereqs: prev ? [{ kind: 'קדם', anyOf: [{ id: prev, name: prev }] }] : [],
+    groups: []
+  });
+  return {
+    year: 2027,
+    startYear: 2026,
+    semester: 'א',
+    lists: [{ name: 'קורסי חובה לימודי אנגלית', minCredits: 0, courses: ['6000', '6001', '6002', '6003'] }],
+    courses: { 6000: c('6000'), 6001: c('6001', '6000'), 6002: c('6002', '6001'), 6003: c('6003', '6002') }
+  };
 };
 
 test('amirnet 110: 6000/6001 exempt, 6002 unblocked; done wins over exempt', () => {
@@ -147,7 +187,10 @@ test('amirnet 110: 6000/6001 exempt, 6002 unblocked; done wins over exempt', () 
   assert.equal(statuses[6000].reasons[0], 'פטור (ציון אמירנט)');
   assert.equal(statuses[6002].status, 'available');
   assert.equal(statuses[6003].status, 'blocked');
-  assert.equal(classify(english(), { passed: ['6000'], failed: {}, profile: { amirnet: 110 } }).statuses[6000].status, 'done');
+  assert.equal(
+    classify(english(), { passed: ['6000'], failed: {}, profile: { amirnet: 110 } }).statuses[6000].status,
+    'done'
+  );
   assert.equal(classify(english(), { passed: [], failed: {} }).statuses[6002].status, 'blocked');
 });
 
@@ -168,9 +211,14 @@ test('cleanProfile specs: shape only (1-2 distinct short ids); which areas and h
   assert.deepEqual(sp([]), []);
   assert.deepEqual(sp(['Bad id!']), []);
   assert.deepEqual(sp(['x'.repeat(21)]), []);
-  for (const bad of [undefined, null, 'solid', 'solid,flow', { 0: 'solid', 1: 'flow', length: 2 }, 7, [{}, 'flow']]) assert.deepEqual(sp(bad), []);
+  for (const bad of [undefined, null, 'solid', 'solid,flow', { 0: 'solid', 1: 'flow', length: 2 }, 7, [{}, 'flow']])
+    assert.deepEqual(sp(bad), []);
   assert.deepEqual(cleanProfile().specs, [], 'no argument');
-  assert.deepEqual(cleanProfile({ amirnet: 100 }), { year: null, amirnet: 100, specs: [], summer: false }, 'partial callers keep working');
+  assert.deepEqual(
+    cleanProfile({ amirnet: 100 }),
+    { year: null, amirnet: 100, specs: [], summer: false },
+    'partial callers keep working'
+  );
 });
 
 test('validSpecs: pick count and standalone areas come from the data; no rule in the data is the mechanical rule', () => {
@@ -181,8 +229,21 @@ test('validSpecs: pick count and standalone areas come from the data; no rule in
   assert.deepEqual(validSpecs(mech, ['aero', 'solid']), ['solid', 'aero'], 'dataset order');
   assert.deepEqual(validSpecs(mech, ['vehicle']), ['vehicle']);
   assert.deepEqual(validSpecs(mech, ['vehicle', 'materials']), ['vehicle', 'materials']);
-  for (const bad of [['solid'], ['solid', 'solid'], ['solid', 'flow', 'mech'], ['solid', 'nope'], ['nope'], [], null, 'solid']) assert.deepEqual(validSpecs(mech, bad), [], String(bad));
-  const ee = { specializations: ['comm', 'signals', 'computers', 'power'].map(area), specRule: { pick: 2, alone: ['power'] } };
+  for (const bad of [
+    ['solid'],
+    ['solid', 'solid'],
+    ['solid', 'flow', 'mech'],
+    ['solid', 'nope'],
+    ['nope'],
+    [],
+    null,
+    'solid'
+  ])
+    assert.deepEqual(validSpecs(mech, bad), [], String(bad));
+  const ee = {
+    specializations: ['comm', 'signals', 'computers', 'power'].map(area),
+    specRule: { pick: 2, alone: ['power'] }
+  };
   assert.deepEqual(validSpecs(ee, ['power']), ['power']);
   assert.deepEqual(validSpecs(ee, ['vehicle']), [], 'vehicle is not an electrical area');
   assert.deepEqual(validSpecs(ee, ['comm']), [], 'one ordinary area is not a complete choice');
@@ -190,12 +251,13 @@ test('validSpecs: pick count and standalone areas come from the data; no rule in
   assert.deepEqual(validSpecs(sw, ['cyber']), ['cyber']);
   assert.deepEqual(validSpecs(sw, ['cyber', 'ml']), [], 'software picks one');
   assert.deepEqual(validSpecs(mech, ['cyber']), [], 'an id from another program does not survive');
-  assert.deepEqual(validSpecs({ specializations: [] , specRule: { pick: 0 } }, []), [], 'no areas: nothing to choose');
+  assert.deepEqual(validSpecs({ specializations: [], specRule: { pick: 0 } }, []), [], 'no areas: nothing to choose');
 });
 
 test('cleanProfile summer: only exactly true', () => {
   assert.equal(cleanProfile({ summer: true }).summer, true);
-  for (const v of [1, 'true', 'yes', [], {}, null, undefined, false, 0]) assert.equal(cleanProfile({ summer: v }).summer, false);
+  for (const v of [1, 'true', 'yes', [], {}, null, undefined, false, 0])
+    assert.equal(cleanProfile({ summer: v }).summer, false);
 });
 
 test('modeFor: choice wins, retake is must, year list optional, others no, non-candidates null', () => {
@@ -210,8 +272,21 @@ test('modeFor: choice wins, retake is must, year list optional, others no, non-c
 // Year view: C1 (retake or available in א׳), C2 needs C1 (ב׳ only), C3 needs C2, C4 needs C1 but is א׳-only.
 import { withAfterA } from '../web/rules.js';
 const yearData = () => {
-  const c = (name, semesters, prev) => ({ name, credits: 3, offered: semesters.length > 0, semesters, groups: [], prereqs: prev ? [{ kind: 'קדם', anyOf: [{ id: prev, name: prev }] }] : [] });
-  return { year: 2027, startYear: 2026, semester: 'שנה', lists: [], courses: { C1: c('C1', ['א', 'ב']), C2: c('C2', ['ב'], 'C1'), C3: c('C3', ['ב'], 'C2'), C4: c('C4', ['א'], 'C1') } };
+  const c = (name, semesters, prev) => ({
+    name,
+    credits: 3,
+    offered: semesters.length > 0,
+    semesters,
+    groups: [],
+    prereqs: prev ? [{ kind: 'קדם', anyOf: [{ id: prev, name: prev }] }] : []
+  });
+  return {
+    year: 2027,
+    startYear: 2026,
+    semester: 'שנה',
+    lists: [],
+    courses: { C1: c('C1', ['א', 'ב']), C2: c('C2', ['ב'], 'C1'), C3: c('C3', ['ב'], 'C2'), C4: c('C4', ['א'], 'C1') }
+  };
 };
 const st = (extra = {}) => ({ passed: [], failed: {}, ...extra });
 const run = (state, data = yearData()) => withAfterA(data, state, classify(data, state)).statuses;
@@ -237,9 +312,12 @@ test('withAfterA: passed prerequisite is plain available; prerequisite not offer
 });
 
 test('withAfterA is pure, and modeFor treats afterA like available', () => {
-  const data = yearData(), state = st(), cls = classify(data, state);
+  const data = yearData(),
+    state = st(),
+    cls = classify(data, state);
   withAfterA(data, state, cls);
-  assert.equal(cls.statuses.C2.status, 'blocked'); assert.deepEqual(state.passed, []);
+  assert.equal(cls.statuses.C2.status, 'blocked');
+  assert.deepEqual(state.passed, []);
   assert.equal(modeFor('afterA', undefined, true), 'optional');
   assert.equal(modeFor('afterA', undefined, false), 'no');
   assert.equal(modeFor('afterA', 'must', false), 'must');
@@ -248,19 +326,40 @@ test('withAfterA is pure, and modeFor treats afterA like available', () => {
 test('gradeAverage weights by credits and ignores ungraded or not-passed courses', () => {
   const data = { courses: { a: { credits: 4 }, b: { credits: 2 }, c: { credits: 3 } } };
   const r = gradeAverage(data, { passed: ['a', 'b'], grades: { a: 90, b: 60, c: 100 } });
-  assert.equal(r.avg, 80); assert.equal(r.credits, 6);
+  assert.equal(r.avg, 80);
+  assert.equal(r.credits, 6);
   assert.equal(gradeAverage(data, { passed: [], grades: {} }).avg, null);
 });
 
 test('englishOptions: levels in the data with their exempting score, exempt flag from the Amirnet score', () => {
   const data = { courses: { 6000: { name: 'א' }, 6001: { name: 'ב' }, 6003: { name: 'ד' } } }; // levels missing from the data are skipped
-  assert.deepEqual(englishOptions(data, 100), [{ id: '6000', name: 'א', min: 85, exempt: true }, { id: '6001', name: 'ב', min: 100, exempt: true }, { id: '6003', name: 'ד', min: 134, exempt: false }]);
-  assert.deepEqual(englishOptions(data, null).map((e) => e.exempt), [false, false, false]);
+  assert.deepEqual(englishOptions(data, 100), [
+    { id: '6000', name: 'א', min: 85, exempt: true },
+    { id: '6001', name: 'ב', min: 100, exempt: true },
+    { id: '6003', name: 'ד', min: 134, exempt: false }
+  ]);
+  assert.deepEqual(
+    englishOptions(data, null).map((e) => e.exempt),
+    [false, false, false]
+  );
 });
 
 test('English without an Amirnet score: blocked levels say to enter it, and a doubled requirement is named once', () => {
-  const eng = (id, name, pre) => ({ name, credits: 0, offered: true, groups: [], prereqs: pre.map((p) => ({ kind: 'קדם', anyOf: [{ id: p, name: 'טרום' }] })) });
-  const d = { semester: 'א', courses: { 6000: { ...eng('6000', 'טרום', []), offered: false }, 6001: eng('6001', 'בסיסי', ['6000', '6000']), 6002: eng('6002', 'מתקדמים א', ['6001']) } };
+  const eng = (id, name, pre) => ({
+    name,
+    credits: 0,
+    offered: true,
+    groups: [],
+    prereqs: pre.map((p) => ({ kind: 'קדם', anyOf: [{ id: p, name: 'טרום' }] }))
+  });
+  const d = {
+    semester: 'א',
+    courses: {
+      6000: { ...eng('6000', 'טרום', []), offered: false },
+      6001: eng('6001', 'בסיסי', ['6000', '6000']),
+      6002: eng('6002', 'מתקדמים א', ['6001'])
+    }
+  };
   const st = classify(d, { passed: [], profile: { amirnet: null } }).statuses;
   assert.match(st[6001].reasons.at(-1), /הזינו ציון אמירנט/);
   assert.equal(st[6002].reasons[0], 'חסום: דורש בסיסי ← טרום (תקנון 7.4)');
@@ -269,36 +368,70 @@ test('English without an Amirnet score: blocked levels say to enter it, and a do
 
 import { summerOnly } from '../web/rules.js';
 test('summerOnly: a course not taught in א/ב but taught in summer points at the summer tab or the profile switch', () => {
-  const st = () => ({ a: { status: 'notOffered', reasons: ['x'] }, b: { status: 'notOffered', reasons: ['x'] }, c: { status: 'available', reasons: [] } });
+  const st = () => ({
+    a: { status: 'notOffered', reasons: ['x'] },
+    b: { status: 'notOffered', reasons: ['x'] },
+    c: { status: 'available', reasons: [] }
+  });
   const summer = { courses: { a: { offered: true }, b: { offered: false }, c: { offered: true } } };
   const on = summerOnly(st(), summer, true);
   assert.match(on.a.reasons[0], /נלמד רק בקיץ: תכננו/);
-  assert.deepEqual(on.b.reasons, ['x']); assert.equal(on.c.status, 'available');
+  assert.deepEqual(on.b.reasons, ['x']);
+  assert.equal(on.c.status, 'available');
   assert.match(summerOnly(st(), summer, false).a.reasons[0], /סמנו "אני מתכנן\/ת סמסטר קיץ השנה"/);
   assert.deepEqual(summerOnly(st(), null, true).a.reasons, ['x'], 'no summer file: unchanged');
 });
 
 import { specLists, specCodes } from '../web/rules.js';
 test('specLists: an area may have several mandatory and elective lists (core + seminar, extra electives)', () => {
-  const data = { specRule: { pick: 1 }, courses: { a: {}, b: {}, c: {}, d: {} },
-    lists: [{ code: 1, courses: ['a'] }, { code: 2, courses: ['b', 'c'] }, { code: 3, courses: ['c', 'd'] }],
-    specializations: [{ id: 'x', name: 'X', mandatory: [1, 2], elective: [3] }] };
-  assert.deepEqual(specCodes(data.specializations[0]).map((p) => p.join(':')), ['mandatory:1', 'mandatory:2', 'elective:3']);
+  const data = {
+    specRule: { pick: 1 },
+    courses: { a: {}, b: {}, c: {}, d: {} },
+    lists: [
+      { code: 1, courses: ['a'] },
+      { code: 2, courses: ['b', 'c'] },
+      { code: 3, courses: ['c', 'd'] }
+    ],
+    specializations: [{ id: 'x', name: 'X', mandatory: [1, 2], elective: [3] }]
+  };
+  assert.deepEqual(
+    specCodes(data.specializations[0]).map((p) => p.join(':')),
+    ['mandatory:1', 'mandatory:2', 'elective:3']
+  );
   const sp = specLists(data, ['x']);
   assert.deepEqual([[...sp.mandatory], [...sp.elective], [...sp.all]], [['a', 'b', 'c'], ['d'], [1, 2, 3]]);
   assert.deepEqual([...specLists(data, []).mandatory], [], 'an area that is not chosen adds nothing');
 });
 
 test('specLists: one list can be elective in a pair and mandatory when its area is chosen alone (electrical power)', () => {
-  const data = { specRule: { pick: 2, alone: ['p'] }, courses: { a: {}, b: {} },
-    lists: [{ code: 1, courses: ['a', 'b'] }], specializations: [{ id: 'p', name: 'P', elective: 1, aloneExtra: 1 }, { id: 'q', name: 'Q' }] };
-  assert.deepEqual([[...specLists(data, ['p']).mandatory], [...specLists(data, ['p']).elective]], [['a', 'b'], []], 'alone: all mandatory');
-  assert.deepEqual([[...specLists(data, ['p', 'q']).mandatory], [...specLists(data, ['p', 'q']).elective]], [[], ['a', 'b']], 'in a pair: electives');
+  const data = {
+    specRule: { pick: 2, alone: ['p'] },
+    courses: { a: {}, b: {} },
+    lists: [{ code: 1, courses: ['a', 'b'] }],
+    specializations: [
+      { id: 'p', name: 'P', elective: 1, aloneExtra: 1 },
+      { id: 'q', name: 'Q' }
+    ]
+  };
+  assert.deepEqual(
+    [[...specLists(data, ['p']).mandatory], [...specLists(data, ['p']).elective]],
+    [['a', 'b'], []],
+    'alone: all mandatory'
+  );
+  assert.deepEqual(
+    [[...specLists(data, ['p', 'q']).mandatory], [...specLists(data, ['p', 'q']).elective]],
+    [[], ['a', 'b']],
+    'in a pair: electives'
+  );
 });
 
 test('yearsOf: the study years are the mandatory year lists; studyYear stays inside them (L6)', async () => {
   const { yearsOf } = await import('../web/rules.js');
-  const two = { year: 2030, startYear: 2026, lists: [{ name: "קורסי חובה שנה א'" }, { name: "קורסי חובה שנה ב'" }, { name: 'פרויקט גמר' }] };
+  const two = {
+    year: 2030,
+    startYear: 2026,
+    lists: [{ name: "קורסי חובה שנה א'" }, { name: "קורסי חובה שנה ב'" }, { name: 'פרויקט גמר' }]
+  };
   assert.equal(yearsOf(two), 2);
   assert.equal(yearsOf({ lists: [{ name: "קורסי חובה שנה ד'" }] }), 4);
   assert.equal(yearsOf({ lists: [] }), 4, 'no year lists: the usual four');
@@ -307,34 +440,57 @@ test('yearsOf: the study years are the mandatory year lists; studyYear stays ins
 });
 
 // Evening programs (12, 22, 32, 42) run five years: their data has a "קורסי חובה שנה ה'" list.
-const cohort = (id) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-1/${id}-2027.json`, import.meta.url), 'utf8'));
+const cohort = (id) =>
+  JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-1/${id}-2027.json`, import.meta.url), 'utf8'));
 test('evening programs have a fifth study year', () => {
   for (const id of [12, 22, 32, 42]) assert.equal(yearsOf(cohort(id)), 5, id);
   assert.equal(yearsOf(cohort(30)), 4);
   assert.equal(cleanProfile({ year: 5 }).year, 5);
-  const d = cohort(12), four = d.lists.filter((l) => /חובה שנה [א-ד]'/.test(l.name)).reduce((a, l) => a + l.minCredits, 0);
-  assert.equal(progress(d, { passed: [], profile: { year: 5 } }).required, four, 'in year ה the four earlier years are behind');
+  const d = cohort(12),
+    four = d.lists.filter((l) => /חובה שנה [א-ד]'/.test(l.name)).reduce((a, l) => a + l.minCredits, 0);
+  assert.equal(
+    progress(d, { passed: [], profile: { year: 5 } }).required,
+    four,
+    'in year ה the four earlier years are behind'
+  );
 });
 
 test('progress counts each year list only up to its minimum (extra courses don’t pass the target)', () => {
   const c = (credits) => ({ name: 'c', credits, prereqs: [], groups: [] });
-  const d = { year: 2027, startYear: 2025, lists: [{ name: "קורסי חובה שנה א'", minCredits: 5, courses: ['a', 'b'] }], courses: { a: c(3), b: c(3) } };
+  const d = {
+    year: 2027,
+    startYear: 2025,
+    lists: [{ name: "קורסי חובה שנה א'", minCredits: 5, courses: ['a', 'b'] }],
+    courses: { a: c(3), b: c(3) }
+  };
   assert.deepEqual(progress(d, { passed: ['a', 'b'] }), { earned: 5, required: 5, ratio: 1 });
 });
 
 test('a course passed in summer counts the next year: its credits in progress, and what it opens is available', () => {
   // S is taught only in summer (not offered in א), as 482 summer-only course records are in the 2027 data, with their credits.
   const course = (credits, offered, prereqs = []) => ({ name: 'x', credits, offered, prereqs, groups: [] });
-  const d = { semester: 'א', lists: [{ code: 1, name: "קורסי חובה שנה א'", minCredits: 6, courses: ['S', 'A'] }],
-    courses: { S: course(3, false), A: course(3, true), N: course(3, true, [{ kind: 'קדם', anyOf: [{ id: 'S', name: 'S' }] }]) } };
+  const d = {
+    semester: 'א',
+    lists: [{ code: 1, name: "קורסי חובה שנה א'", minCredits: 6, courses: ['S', 'A'] }],
+    courses: {
+      S: course(3, false),
+      A: course(3, true),
+      N: course(3, true, [{ kind: 'קדם', anyOf: [{ id: 'S', name: 'S' }] }])
+    }
+  };
   const state = { passed: ['S', 'A'], failed: {}, profile: { year: 2 } };
   assert.deepEqual(progress(d, state), { earned: 6, required: 6, ratio: 1 });
   assert.equal(classify(d, state).statuses.N.status, 'available');
-  assert.equal(classify(d, { ...state, passed: ['A'] }).statuses.N.status, 'blocked', 'control: without the summer course N waits');
+  assert.equal(
+    classify(d, { ...state, passed: ['A'] }).statuses.N.status,
+    'blocked',
+    'control: without the summer course N waits'
+  );
 });
 
 test('missingRequired names the not-passed courses of earlier-year lists that are short of their minimum, none for a met list', () => {
-  const d = mini(), st = (passed, year = 2) => ({ passed, profile: { year } });
+  const d = mini(),
+    st = (passed, year = 2) => ({ passed, profile: { year } });
   assert.deepEqual(missingRequired(d, st([])), ['A', 'Q0']);
   assert.deepEqual(missingRequired(d, st(['A'])), ['Q0']);
   assert.deepEqual(missingRequired(d, st(['A', 'Q0'])), []);

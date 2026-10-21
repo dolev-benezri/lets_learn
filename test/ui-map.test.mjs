@@ -1,34 +1,73 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutMap, planPaths, progressInfo, newlyUnlocked, makeKeep, chainOf, nodeRadius, edgePath, G, truncate, edgeEnds, sameColPath, geometry, fitScale, wheelStep, courseYears, asideIds } from '../web/map-layout.js';
+import {
+  layoutMap,
+  planPaths,
+  progressInfo,
+  newlyUnlocked,
+  makeKeep,
+  chainOf,
+  nodeRadius,
+  edgePath,
+  G,
+  truncate,
+  edgeEnds,
+  sameColPath,
+  geometry,
+  fitScale,
+  wheelStep,
+  courseYears,
+  asideIds
+} from '../web/map-layout.js';
 import { progressHtml, mapSvg, altBarHtml, miniHtml, miniTotals, courseAbbr, uniqueAbbrs } from '../web/map-render.js';
 import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
 
-const read = (s) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${s}/30-2026.json`, import.meta.url), 'utf8'));
-const A = read(1), B = read(2);
+const read = (s) =>
+  JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${s}/30-2026.json`, import.meta.url), 'utf8'));
+const A = read(1),
+  B = read(2);
 const data = { ...yearView(A, B), fetchedAt: A.fetchedAt };
-const state = { passed: data.lists[0].courses, failed: { [data.lists[1].courses[0]]: 1 }, profile: { year: 2, amirnet: 110 } };
+const state = {
+  passed: data.lists[0].courses,
+  failed: { [data.lists[1].courses[0]]: 1 },
+  profile: { year: 2, amirnet: 110 }
+};
 const statuses = withAfterA(data, state, classify(data, state)).statuses;
-const geo = (keep) => { const L = layoutMap(data, keep), g = geometry(L, (id) => data.courses[id]?.credits); return { L, g }; };
-const mini = (courses) => ({ lists: [{ name: "קורסי חובה שנה א'", courses: Object.keys(courses), minCredits: 0 }], courses });
+const geo = (keep) => {
+  const L = layoutMap(data, keep),
+    g = geometry(L, (id) => data.courses[id]?.credits);
+  return { L, g };
+};
+const mini = (courses) => ({
+  lists: [{ name: "קורסי חובה שנה א'", courses: Object.keys(courses), minCredits: 0 }],
+  courses
+});
 const noRows = ({ rows, ...p }) => p; // the checklist rows have their own test
 const mc = (name, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups: [] });
 
 test('layout: a קדם edge from an earlier study year always flows leftwards, almost every other edge does too', () => {
-  const { L, g } = geo(), at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
+  const { L, g } = geo(),
+    at = Object.fromEntries(g.nodes.map((n) => [n.key, n]));
   assert.ok(L.paths.length > 40);
   const real = L.paths.filter((e) => at[e.from] && at[e.to]);
-  for (const e of real) if (at[e.from].year && at[e.to].year && at[e.from].year < at[e.to].year) assert.ok(at[e.from].x > at[e.to].x, `${e.from} -> ${e.to}`);
+  for (const e of real)
+    if (at[e.from].year && at[e.to].year && at[e.from].year < at[e.to].year)
+      assert.ok(at[e.from].x > at[e.to].x, `${e.from} -> ${e.to}`);
   assert.ok(real.filter((e) => at[e.from].x < at[e.to].x).length <= real.length * 0.05);
 });
 
 test('layout: "או" diamonds only for requirements with more than one distinct option', () => {
   const L = layoutMap(data);
-  const drawn = (p) => (p.anyOf.some((a) => data.courses[a.id]) ? p.anyOf.filter((a) => data.courses[a.id] || /מכינה|קורס הכנה/.test(a.name)) : p.anyOf); // outside twins of an own option are not drawn
-  const multi = Object.values(data.courses).flatMap((c) => c.prereqs).filter((p) => new Set(drawn(p).map((a) => a.id ?? a.name)).size > 1).length;
+  const drawn = (p) =>(
+    p.anyOf.some((a) => data.courses[a.id])
+      ? p.anyOf.filter((a) => data.courses[a.id] || /מכינה|קורס הכנה/.test(a.name))
+      : p.anyOf); // outside twins of an own option are not drawn
+  const multi = Object.values(data.courses)
+    .flatMap((c) => c.prereqs)
+    .filter((p) => new Set(drawn(p).map((a) => a.id ?? a.name)).size > 1).length;
   assert.equal(L.diamonds.length, multi);
   for (const d of L.diamonds) assert.ok(L.paths.filter((e) => e.to === d.key || e.from === d.key).length >= 3, d.key); // two options in, one out
   // 30163 lists the same parallel option twice: no diamond for it
@@ -46,10 +85,22 @@ test('layout: outside-the-program prerequisites become ext nodes, one per band a
 
 test('layout: bands are the pre-degree band, one per study year (א׳ rightmost) and the electives band last; no semester labels anywhere', () => {
   const { L, g } = geo();
-  assert.deepEqual(L.bands.map((b) => b.year), [null, 1, 2, 3, 4, null]);
-  assert.deepEqual(L.bands.map((b) => b.kind), ['pre', 'year', 'year', 'year', 'year', 'other']);
-  assert.deepEqual(L.bands.map((b) => b.name), ['לפני התואר (מכינה)', 'שנה א׳', 'שנה ב׳', 'שנה ג׳', 'שנה ד׳', 'חובה כללית ובחירה']);
-  assert.deepEqual(g.bands.map((b) => b.x), [...g.bands.map((b) => b.x)].sort((a, b) => b - a)); // later bands further left
+  assert.deepEqual(
+    L.bands.map((b) => b.year),
+    [null, 1, 2, 3, 4, null]
+  );
+  assert.deepEqual(
+    L.bands.map((b) => b.kind),
+    ['pre', 'year', 'year', 'year', 'year', 'other']
+  );
+  assert.deepEqual(
+    L.bands.map((b) => b.name),
+    ['לפני התואר (מכינה)', 'שנה א׳', 'שנה ב׳', 'שנה ג׳', 'שנה ד׳', 'חובה כללית ובחירה']
+  );
+  assert.deepEqual(
+    g.bands.map((b) => b.x),
+    [...g.bands.map((b) => b.x)].sort((a, b) => b - a)
+  ); // later bands further left
   assert.ok(g.bands.every((b, i) => i === 0 || b.x + b.w < g.bands[i - 1].x)); // a gap between bands
   const yr = courseYears(data);
   for (const n of g.nodes.filter((n) => n.type === 'course')) {
@@ -57,17 +108,36 @@ test('layout: bands are the pre-degree band, one per study year (א׳ rightmost)
     assert.equal(b.year, yr.get(n.id) ?? null, n.id);
     assert.ok(n.x > b.x && n.x < b.x + b.w);
   }
-  for (let c = 0; c < L.cols.length; c++) { const d = L.nodes.filter((n) => n.col === c).map((n) => n.depth); assert.deepEqual(d, [...d].sort((a, b) => a - b)); }
+  for (let c = 0; c < L.cols.length; c++) {
+    const d = L.nodes.filter((n) => n.col === c).map((n) => n.depth);
+    assert.deepEqual(
+      d,
+      [...d].sort((a, b) => a - b)
+    );
+  }
   assert.equal(L.nodes.filter((n) => n.type === 'course').length, Object.keys(data.courses).length);
-  const text = JSON.stringify({ b: L.bands, g: g.bands }) + [...mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() }).matchAll(/<text class="b[ts]"[^>]*>[^<]*/g)].join(); // band headers (course names may say סמסטר)
+  const text =
+    JSON.stringify({ b: L.bands, g: g.bands }) +
+    [
+      ...mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() }).matchAll(
+        /<text class="b[ts]"[^>]*>[^<]*/g
+      )
+    ].join(); // band headers (course names may say סמסטר)
   assert.ok(!/מוצע|סמסטר/.test(text), 'no semester or suggested labels');
   assert.ok(g.bands.every((b) => !('cols' in b)));
 });
 
 test('layout: inside a year band the columns are prerequisite depth: a course sits right of what it needs, a crowded depth wraps into more columns', () => {
   const pre = (id) => [{ kind: 'קדם', anyOf: [{ id, name: id }] }];
-  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b', 'c', 'd'], minCredits: 0 }, { name: "קורסי חובה שנה ב'", courses: ['e'], minCredits: 0 }], courses: { a: mc('A'), b: mc('B', pre('a')), c: mc('C', pre('b')), d: mc('D'), e: mc('E', pre('a')) } };
-  const L = layoutMap(d), at = Object.fromEntries(L.nodes.map((n) => [n.id, n]));
+  const d = {
+    lists: [
+      { name: "קורסי חובה שנה א'", courses: ['a', 'b', 'c', 'd'], minCredits: 0 },
+      { name: "קורסי חובה שנה ב'", courses: ['e'], minCredits: 0 }
+    ],
+    courses: { a: mc('A'), b: mc('B', pre('a')), c: mc('C', pre('b')), d: mc('D'), e: mc('E', pre('a')) }
+  };
+  const L = layoutMap(d),
+    at = Object.fromEntries(L.nodes.map((n) => [n.id, n]));
   assert.ok(at.a.col < at.b.col && at.b.col < at.c.col); // right to left in flow order
   assert.equal(at.d.col, at.a.col); // no prerequisite: depth 0
   assert.equal(at.e.depth, 0); // a prerequisite from another year says nothing about the column inside the band
@@ -82,28 +152,69 @@ test('filter "מה שנשאר לי" drops done and exempt courses (and their edg
   const ids = new Set(L.nodes.filter((n) => n.type === 'course').map((n) => n.id));
   for (const [id, s] of Object.entries(statuses)) assert.equal(ids.has(id), !['done', 'exempt'].includes(s.status), id);
   assert.ok(ids.size < Object.keys(data.courses).length);
-  assert.ok(L.paths.every((e) => (ids.has(e.to) || e.to.startsWith('or:')) && (ids.has(e.from) || e.from.startsWith('or:') || L.nodes.find((n) => n.key === e.from)?.type === 'ext')));
+  assert.ok(
+    L.paths.every(
+      (e) =>
+        (ids.has(e.to) || e.to.startsWith('or:')) &&
+        (ids.has(e.from) || e.from.startsWith('or:') || L.nodes.find((n) => n.key === e.from)?.type === 'ext')
+    )
+  );
   const Y = layoutMap(data, makeKeep('year', data, statuses, 2));
-  assert.deepEqual(new Set(Y.nodes.filter((n) => n.type === 'course').map((n) => n.id)), new Set(data.lists[1].courses));
+  assert.deepEqual(
+    new Set(Y.nodes.filter((n) => n.type === 'course').map((n) => n.id)),
+    new Set(data.lists[1].courses)
+  );
   assert.equal(Y.bands.length, 1);
 });
 
 test('layout: an outside option is drawn only when the requirement has no option inside the program', () => {
-  const d = mini({ a: mc('A'), b: mc('B', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }, { id: 'x9', name: 'A במחלקה אחרת' }, { id: null, name: 'A ישן' }] },
-    { kind: 'קדם', anyOf: [{ id: null, name: 'חוץ' }] }]) });
-  const L = layoutMap(d), ext = L.nodes.filter((n) => n.type === 'ext');
-  assert.deepEqual(ext.map((n) => n.name), ['חוץ']);
+  const d = mini({
+    a: mc('A'),
+    b: mc('B', [
+      {
+        kind: 'קדם',
+        anyOf: [
+          { id: 'a', name: 'A' },
+          { id: 'x9', name: 'A במחלקה אחרת' },
+          { id: null, name: 'A ישן' }
+        ]
+      },
+      { kind: 'קדם', anyOf: [{ id: null, name: 'חוץ' }] }
+    ])
+  });
+  const L = layoutMap(d),
+    ext = L.nodes.filter((n) => n.type === 'ext');
+  assert.deepEqual(
+    ext.map((n) => n.name),
+    ['חוץ']
+  );
   assert.equal(ext[0].band, L.nodes.find((n) => n.id === 'b').band);
   assert.equal(L.diamonds.length, 0); // A alone left: a plain edge, no "או"
   assert.ok(L.paths.some((e) => e.from === 'a' && e.to === 'b'));
 });
 
 test('layout: a tiny graph with an alternative, a parallel course and a cycle still terminates', () => {
-  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b', 'c', 'd', 'e'], minCredits: 0 }], courses: {
-    a: mc('A'), b: mc('B'), c: mc('C', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] }]),
-    d: mc('D', [{ kind: 'מקביל', anyOf: [{ id: 'c', name: 'C' }] }, { kind: 'קדם', anyOf: [{ id: null, name: 'חוץ' }] }]),
-    e: mc('E', [{ kind: 'מקביל', anyOf: [{ id: 'd', name: 'D' }] }]),
-  } };
+  const d = {
+    lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b', 'c', 'd', 'e'], minCredits: 0 }],
+    courses: {
+      a: mc('A'),
+      b: mc('B'),
+      c: mc('C', [
+        {
+          kind: 'קדם',
+          anyOf: [
+            { id: 'a', name: 'A' },
+            { id: 'b', name: 'B' }
+          ]
+        }
+      ]),
+      d: mc('D', [
+        { kind: 'מקביל', anyOf: [{ id: 'c', name: 'C' }] },
+        { kind: 'קדם', anyOf: [{ id: null, name: 'חוץ' }] }
+      ]),
+      e: mc('E', [{ kind: 'מקביל', anyOf: [{ id: 'd', name: 'D' }] }]),
+    }
+  };
   d.courses.a.prereqs = [{ kind: 'מקביל', anyOf: [{ id: 'e', name: 'E' }] }]; // a -> e -> d -> c -> a cycle through parallels
   const L = layoutMap(d);
   assert.equal(L.diamonds.length, 1);
@@ -112,14 +223,22 @@ test('layout: a tiny graph with an alternative, a parallel course and a cycle st
 });
 
 test('chainOf: all upstream and downstream, nothing from siblings', () => {
-  const paths = [['a', 'b'], ['b', 'c'], ['x', 'c'], ['c', 'd'], ['b', 'e'], ['z', 'y']].map(([from, to], id) => ({ id, from, to }));
+  const paths = [
+    ['a', 'b'],
+    ['b', 'c'],
+    ['x', 'c'],
+    ['c', 'd'],
+    ['b', 'e'],
+    ['z', 'y']
+  ].map(([from, to], id) => ({ id, from, to }));
   const r = chainOf(paths, 'c');
   assert.deepEqual([...r.nodes].sort(), ['a', 'b', 'c', 'd', 'x']);
   assert.deepEqual([...r.paths].sort(), [0, 1, 2, 3]);
 });
 
 test('nodeRadius grows with credits and is clamped', () => {
-  assert.equal(nodeRadius(0), 14); assert.equal(nodeRadius(100), 30);
+  assert.equal(nodeRadius(0), 14);
+  assert.equal(nodeRadius(100), 30);
   assert.ok(nodeRadius(5) > nodeRadius(2));
 });
 
@@ -134,51 +253,96 @@ test('truncate: 18 characters including the ellipsis, short names untouched', ()
 });
 
 test('edgeEnds: leaves the near edge of one circle and enters the near edge of the next, either direction', () => {
-  const a = { x: 300, y: 10, hw: 20 }, b = { x: 100, y: 50, hw: 14 };
-  assert.deepEqual(edgeEnds(a, b), [{ x: 280, y: 10 }, { x: 114, y: 50 }]);
-  assert.deepEqual(edgeEnds(b, a), [{ x: 114, y: 50 }, { x: 280, y: 10 }]);
+  const a = { x: 300, y: 10, hw: 20 },
+    b = { x: 100, y: 50, hw: 14 };
+  assert.deepEqual(edgeEnds(a, b), [
+    { x: 280, y: 10 },
+    { x: 114, y: 50 }
+  ]);
+  assert.deepEqual(edgeEnds(b, a), [
+    { x: 114, y: 50 },
+    { x: 280, y: 10 }
+  ]);
 });
 
 test('sameColPath: a bowed cubic between two nodes of one column (edgePath would be a straight line), further out for a longer hop', () => {
-  const k = G.bulge + 100 / 6, d = sameColPath({ x: 200, y: 10, hw: 20 }, { x: 200, y: 110, hw: 14 });
+  const k = G.bulge + 100 / 6,
+    d = sameColPath({ x: 200, y: 10, hw: 20 }, { x: 200, y: 110, hw: 14 });
   assert.equal(d, `M220,10 C${220 + k},10 ${214 + k},110 214,110`);
   assert.ok(sameColPath({ x: 0, y: 0, hw: 10 }, { x: 0, y: 600, hw: 10 }).includes(`C${10 + G.bulge + 40},`)); // capped
 });
 
 test('fitScale: the whole graph on a desktop (never above 1), by height on a phone (floor 0.3)', () => {
-  assert.equal(fitScale(1440, 900, 976, 1000), 0.9); assert.equal(fitScale(1440, 2000, 976, 1000), 1);
-  assert.ok(Math.abs(fitScale(800, 900, 1000, 1000) - 0.8) < 1e-9); assert.equal(fitScale(700, 100, 1000, 1000), 0.2);
-  assert.ok(Math.abs(fitScale(375, 500, 976, 1100) - 500 / 1100) < 1e-9); assert.equal(fitScale(375, 200, 976, 1100), 0.3);
+  assert.equal(fitScale(1440, 900, 976, 1000), 0.9);
+  assert.equal(fitScale(1440, 2000, 976, 1000), 1);
+  assert.ok(Math.abs(fitScale(800, 900, 1000, 1000) - 0.8) < 1e-9);
+  assert.equal(fitScale(700, 100, 1000, 1000), 0.2);
+  assert.ok(Math.abs(fitScale(375, 500, 976, 1100) - 500 / 1100) < 1e-9);
+  assert.equal(fitScale(375, 200, 976, 1100), 0.3);
 });
 
 test('geometry: columns right to left by band, finite, inside the canvas, no overlaps, Tab order by column then top to bottom', () => {
-  const { L, g } = geo(), ok = (v) => Number.isFinite(v);
+  const { L, g } = geo(),
+    ok = (v) => Number.isFinite(v);
   assert.ok(g.nodes.every((n) => [n.x, n.y, n.r, n.hw].every(ok)) && g.ors.every((o) => [o.x, o.y].every(ok)));
-  assert.ok(g.edges.length === L.paths.length && g.edges.every((e) => /^M[-\d.]+,[-\d.]+ C/.test(e.d) && !/NaN|undefined/.test(e.d)));
+  assert.ok(
+    g.edges.length === L.paths.length &&
+      g.edges.every((e) => /^M[-\d.]+,[-\d.]+ C/.test(e.d) && !/NaN|undefined/.test(e.d))
+  );
   assert.ok(g.nodes.every((n) => n.x - n.hw >= 0 && n.x + n.hw <= g.W && n.y - n.r >= g.head && n.y + n.r + 22 <= g.H)); // 22 = the name under the circle; the band headers sit above g.head
   assert.ok(g.bands.every((b) => b.x >= 0 && b.x + b.w <= g.W));
   const all = [...g.nodes, ...g.ors];
-  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.ok(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r, `${all[i].key} / ${all[j].key}`);
-  assert.deepEqual(g.nodes.map((n) => n.col), [...g.nodes.map((n) => n.col)].sort((a, b) => a - b));
-  for (const col of Object.values(Object.groupBy(g.nodes, (n) => n.col))) for (let i = 1; i < col.length; i++) assert.ok(col[i].y - col[i - 1].y >= col[i].r + col[i - 1].r + 22 - 1e-6, `${col[i - 1].key} / ${col[i].key}`); // both circles and the name between them
+  for (let i = 0; i < all.length; i++)
+    for (let j = i + 1; j < all.length; j++)
+      assert.ok(
+        Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) >= all[i].r + all[j].r,
+        `${all[i].key} / ${all[j].key}`
+      );
+  assert.deepEqual(
+    g.nodes.map((n) => n.col),
+    [...g.nodes.map((n) => n.col)].sort((a, b) => a - b)
+  );
+  for (const col of Object.values(Object.groupBy(g.nodes, (n) => n.col)))
+    for (let i = 1; i < col.length; i++)
+      assert.ok(col[i].y - col[i - 1].y >= col[i].r + col[i - 1].r + 22 - 1e-6, `${col[i - 1].key} / ${col[i].key}`); // both circles and the name between them
 });
 
 test('geometry: the whole map (electives not chosen stay aside) fits a laptop screen at a readable scale', () => {
-  const aside = new Set(asideIds(data, statuses, {})), { g } = geo((id) => !aside.has(id));
+  const aside = new Set(asideIds(data, statuses, {})),
+    { g } = geo((id) => !aside.has(id));
   assert.ok(fitScale(1440, 760, g.W, g.H) >= 0.6, `scale ${fitScale(1440, 760, g.W, g.H)} (${g.W}x${g.H})`);
 });
 
 test('geometry: a same-column מקביל edge is bowed, not a straight line through the column', () => {
-  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 0 }], courses: { a: mc('A'), b: mc('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) } };
-  const L = layoutMap(d), g = geometry(L, () => 3);
+  const d = {
+    lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 0 }],
+    courses: { a: mc('A'), b: mc('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) }
+  };
+  const L = layoutMap(d),
+    g = geometry(L, () => 3);
   assert.equal(L.nodes[0].col, L.nodes[1].col);
   assert.match(g.edges[0].d, /^M[\d.]+,[\d.]+ C/);
-  assert.ok(g.edges[0].d.includes(`C${g.nodes[0].x + g.nodes[0].hw + G.bulge + Math.min(40, Math.abs(g.nodes[1].y - g.nodes[0].y) / 6)},`));
+  assert.ok(
+    g.edges[0].d.includes(
+      `C${g.nodes[0].x + g.nodes[0].hw + G.bulge + Math.min(40, Math.abs(g.nodes[1].y - g.nodes[0].y) / 6)},`
+    )
+  );
 });
 
 test('mapSvg: one button per course in Tab order, labelled and titled; ext pills and "או" circles are not buttons; all text escaped', () => {
-  const { L, g } = geo(), st = statuses, doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
-  const evil = { ...data, courses: { ...data.courses, [Object.keys(data.courses)[0]]: { ...data.courses[Object.keys(data.courses)[0]], name: '<img onerror=x>' + 'א'.repeat(30) } } };
+  const { L, g } = geo(),
+    st = statuses,
+    doneIds = Object.keys(st).filter((id) => st[id].status === 'done');
+  const evil = {
+    ...data,
+    courses: {
+      ...data.courses,
+      [Object.keys(data.courses)[0]]: {
+        ...data.courses[Object.keys(data.courses)[0]],
+        name: '<img onerror=x>' + 'א'.repeat(30)
+      }
+    }
+  };
   const html = mapSvg({ data: evil, st, L, g, year: 2, unlocks: unlockCounts(evil, doneIds), mode: 'all' });
   assert.equal((html.match(/role="button"/g) ?? []).length, Object.keys(data.courses).length);
   assert.equal((html.match(/<title>/g) ?? []).length, g.nodes.length);
@@ -186,12 +350,18 @@ test('mapSvg: one button per course in Tab order, labelled and titled; ext pills
   assert.ok(!/NaN|undefined/.test(html));
   assert.ok(!html.includes('class="ml') && html.includes('mine-halo') && html.includes(' mine"'));
   assert.ok(html.includes('class="ext') && html.includes('class="or"'));
-  assert.ok([...html.matchAll(/<g class="(?:ext|or)[ "][^>]*>/g)].every(([m]) => m.includes('aria-hidden="true"') && !m.includes('role=')));
-  for (const s of ['done', 'retake', 'blocked']) if (Object.values(st).some((x) => x.status === s)) assert.ok(html.includes(`st-${s}`));
+  assert.ok(
+    [...html.matchAll(/<g class="(?:ext|or)[ "][^>]*>/g)].every(
+      ([m]) => m.includes('aria-hidden="true"') && !m.includes('role=')
+    )
+  );
+  for (const s of ['done', 'retake', 'blocked'])
+    if (Object.values(st).some((x) => x.status === s)) assert.ok(html.includes(`st-${s}`));
 });
 
 test('mapSvg: a header per band (the student\'s year marked), decorative only', () => {
-  const { L, g } = geo(), html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all' });
+  const { L, g } = geo(),
+    html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all' });
   for (const b of L.bands) assert.ok(html.includes(`>${b.name}</text>`), b.name);
   assert.equal((html.match(/class="band mine"/g) ?? []).length, 1);
   assert.equal((html.match(/class="band( mine| pre)?" aria-hidden="true"/g) ?? []).length, g.bands.length);
@@ -199,32 +369,71 @@ test('mapSvg: a header per band (the student\'s year marked), decorative only', 
 });
 
 test('geometry: the cycle graph and an empty filter both give finite geometry', () => {
-  const cyc = mini({ a: mc('A', [{ kind: 'מקביל', anyOf: [{ id: 'b', name: 'B' }] }]), b: mc('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }]) });
+  const cyc = mini({
+    a: mc('A', [{ kind: 'מקביל', anyOf: [{ id: 'b', name: 'B' }] }]),
+    b: mc('B', [{ kind: 'מקביל', anyOf: [{ id: 'a', name: 'A' }] }])
+  });
   const g = geometry(layoutMap(cyc), () => 3);
   assert.ok(g.nodes.length === 2 && [g.W, g.H, ...g.nodes.flatMap((n) => [n.x, n.y])].every(Number.isFinite));
-  const none = geometry(layoutMap(data, () => false), () => 3);
-  assert.equal(none.nodes.length, 0); assert.ok(Number.isFinite(none.W) && Number.isFinite(none.H) && none.W > 0 && none.H > 0);
+  const none = geometry(
+    layoutMap(data, () => false),
+    () => 3
+  );
+  assert.equal(none.nodes.length, 0);
+  assert.ok(Number.isFinite(none.W) && Number.isFinite(none.H) && none.W > 0 && none.H > 0);
 });
 
 test('chainOf: a node with no edges lights only itself', () => {
   const r = chainOf([], 'q');
-  assert.deepEqual([...r.nodes], ['q']); assert.equal(r.paths.size, 0);
+  assert.deepEqual([...r.nodes], ['q']);
+  assert.equal(r.paths.size, 0);
 });
 
 test('mapSvg: an outside-the-program name with markup and a quote is escaped', () => {
   const d = mini({ a: mc('A', [{ kind: 'קדם', anyOf: [{ id: null, name: "<b x=\"1\">'" }] }]) });
-  const L = layoutMap(d), html = mapSvg({ data: d, st: {}, L, g: geometry(L, () => 3), year: 1, unlocks: {}, mode: 'all' });
-  assert.ok(html.includes('class="ext"') && html.includes('לא בתוכנית שלך') && !html.includes('<b x=') && html.includes('&lt;b x=&quot;1&quot;&gt;&#39;'));
+  const L = layoutMap(d),
+    html = mapSvg({ data: d, st: {}, L, g: geometry(L, () => 3), year: 1, unlocks: {}, mode: 'all' });
+  assert.ok(
+    html.includes('class="ext"') &&
+      html.includes('לא בתוכנית שלך') &&
+      !html.includes('<b x=') &&
+      html.includes('&lt;b x=&quot;1&quot;&gt;&#39;')
+  );
 });
 
 test('courseYears: only "חובה שנה X\'" lists give a year; the first list wins', () => {
-  const d = { lists: [{ name: "קורסי חובה שנה ב'", courses: ['a', 'b'] }, { name: "קורסי חובה שנה א'", courses: ['b', 'c'] }, { name: 'קורסי יחידה ללימודי חברה ורוח', courses: ['d', 'zz'] }], courses: { a: mc('A'), b: mc('B'), c: mc('C'), d: mc('D') } };
-  assert.deepEqual([...courseYears(d)], [['a', 2], ['b', 2], ['c', 1]]);
-  assert.equal(courseYears(data).size, new Set(data.lists.filter((l) => /חובה שנה \S'/.test(l.name)).flatMap((l) => l.courses)).size);
+  const d = {
+    lists: [
+      { name: "קורסי חובה שנה ב'", courses: ['a', 'b'] },
+      { name: "קורסי חובה שנה א'", courses: ['b', 'c'] },
+      { name: 'קורסי יחידה ללימודי חברה ורוח', courses: ['d', 'zz'] }
+    ],
+    courses: { a: mc('A'), b: mc('B'), c: mc('C'), d: mc('D') }
+  };
+  assert.deepEqual(
+    [...courseYears(d)],
+    [
+      ['a', 2],
+      ['b', 2],
+      ['c', 1]
+    ]
+  );
+  assert.equal(
+    courseYears(data).size,
+    new Set(data.lists.filter((l) => /חובה שנה \S'/.test(l.name)).flatMap((l) => l.courses)).size
+  );
 });
 
 test('asideIds: an elective is aside unless chosen חובה/אולי, passed, exempt or being retaken; required courses (year, English, final project) never are', () => {
-  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['y'] }, { name: 'קורסי חובה לימודי אנגלית', courses: ['n'] }, { name: 'פרויקט גמר', courses: ['p'] }, { name: 'בחירה', courses: ['a', 'b', 'c', 'e', 'f', 'g'] }], courses: Object.fromEntries(['y', 'n', 'p', 'a', 'b', 'c', 'e', 'f', 'g', 'h'].map((k) => [k, mc(k)])) };
+  const d = {
+    lists: [
+      { name: "קורסי חובה שנה א'", courses: ['y'] },
+      { name: 'קורסי חובה לימודי אנגלית', courses: ['n'] },
+      { name: 'פרויקט גמר', courses: ['p'] },
+      { name: 'בחירה', courses: ['a', 'b', 'c', 'e', 'f', 'g'] }
+    ],
+    courses: Object.fromEntries(['y', 'n', 'p', 'a', 'b', 'c', 'e', 'f', 'g', 'h'].map((k) => [k, mc(k)]))
+  };
   const st = { e: { status: 'done' }, f: { status: 'retake' }, g: { status: 'blocked' } };
   // h is in no list at all: an elective too
   assert.deepEqual(asideIds(d, st, { a: 'must', b: 'optional', c: 'no' }).sort(), ['c', 'g', 'h']);
@@ -235,51 +444,103 @@ test('layout: aside electives are not drawn; a chosen one joins the last band', 
   const aside = new Set(asideIds(data, {}, {}));
   assert.ok(aside.size > 20);
   const L0 = layoutMap(data, (id) => !aside.has(id));
-  assert.deepEqual(L0.bands.map((b) => b.year), [null, 1, 2, 3, 4, null]); // nothing chosen: the last band still holds English and the final project
+  assert.deepEqual(
+    L0.bands.map((b) => b.year),
+    [null, 1, 2, 3, 4, null]
+  ); // nothing chosen: the last band still holds English and the final project
   assert.ok(L0.nodes.every((n) => n.type === 'ext' || !aside.has(n.id)));
-  const pick = [...aside][0], off = new Set(asideIds(data, {}, { [pick]: 'optional' })), L1 = layoutMap(data, (id) => !off.has(id));
+  const pick = [...aside][0],
+    off = new Set(asideIds(data, {}, { [pick]: 'optional' })),
+    L1 = layoutMap(data, (id) => !off.has(id));
   assert.equal(L1.bands.at(-1).year, null);
   assert.equal(L1.nodes.find((n) => n.id === pick).year, null);
 });
 
 test('layout: required courses are always drawn, chosen or not; the filter hides only electives that are in no required list', () => {
   const spec = new Set(data.specializations.flatMap((s) => [s.mandatory, s.elective, s.aloneExtra]));
-  const required = new Set(data.lists.filter((l) => /חובה|פרויקט גמר/.test(l.name) && !spec.has(l.code)).flatMap((l) => l.courses));
+  const required = new Set(
+    data.lists.filter((l) => /חובה|פרויקט גמר/.test(l.name) && !spec.has(l.code)).flatMap((l) => l.courses)
+  );
   const aside = new Set(asideIds(data, {}, {})); // nothing chosen at all
   for (const id of required) assert.ok(!aside.has(id), id);
-  const L = layoutMap(data, (id) => !aside.has(id)), drawn = new Set(L.nodes.filter((n) => n.type === 'course').map((n) => n.id));
+  const L = layoutMap(data, (id) => !aside.has(id)),
+    drawn = new Set(L.nodes.filter((n) => n.type === 'course').map((n) => n.id));
   for (const id of data.lists[0].courses) assert.ok(drawn.has(id), `year-א course ${id} unchosen but present`);
 });
 
 test('layout: מכינה / קורס הכנה outside items form their own band, right of year א׳, one pill per name; other outside items stay in their target\'s band', () => {
-  const { L, g } = geo(), pre = L.bands[0], ext = L.nodes.filter((n) => n.type === 'ext');
-  assert.equal(pre.kind, 'pre'); assert.equal(pre.note, 'רק למי שנדרש/ה לפי תנאי הקבלה'); assert.equal(g.bands[0].x > g.bands[1].x, true);
-  const inPre = ext.filter((n) => n.col >= pre.first && n.col < pre.first + pre.n), rest = ext.filter((n) => !inPre.includes(n));
+  const { L, g } = geo(),
+    pre = L.bands[0],
+    ext = L.nodes.filter((n) => n.type === 'ext');
+  assert.equal(pre.kind, 'pre');
+  assert.equal(pre.note, 'רק למי שנדרש/ה לפי תנאי הקבלה');
+  assert.equal(g.bands[0].x > g.bands[1].x, true);
+  const inPre = ext.filter((n) => n.col >= pre.first && n.col < pre.first + pre.n),
+    rest = ext.filter((n) => !inPre.includes(n));
   assert.ok(inPre.length >= 3 && inPre.every((n) => n.pre && /מכינה|קורס הכנה/.test(n.name)));
   assert.ok(rest.every((n) => !n.pre && !/מכינה|קורס הכנה/.test(n.name)));
   assert.equal(new Set(inPre.map((n) => n.name)).size, inPre.length);
   assert.equal(L.nodes.filter((n) => n.col >= pre.first && n.col < pre.first + pre.n && n.type !== 'ext').length, 0); // nothing but the pre-degree pills in that band
-  for (const n of rest) { const t = L.nodes.find((c) => c.type === 'course' && L.paths.some((p) => p.from === n.key && (p.to === c.id || L.diamonds.some((d) => d.key === p.to && d.target === c.id)))); assert.equal(n.band, t.band, n.key); }
+  for (const n of rest) {
+    const t = L.nodes.find(
+      (c) =>
+        c.type === 'course' &&
+        L.paths.some(
+          (p) => p.from === n.key && (p.to === c.id || L.diamonds.some((d) => d.key === p.to && d.target === c.id))
+        )
+    );
+    assert.equal(n.band, t.band, n.key);
+  }
   // a map with no pre-academic requirement has no such band
-  const stripped = Object.fromEntries(Object.entries(data.courses).map(([k, c]) => [k, { ...c, prereqs: c.prereqs.map((p) => ({ ...p, anyOf: p.anyOf.filter((a) => !/מכינה|קורס הכנה/.test(a.name)) })).filter((p) => p.anyOf.length) }]));
+  const stripped = Object.fromEntries(
+    Object.entries(data.courses).map(([k, c]) => [
+      k,
+      {
+        ...c,
+        prereqs: c.prereqs
+          .map((p) => ({ ...p, anyOf: p.anyOf.filter((a) => !/מכינה|קורס הכנה/.test(a.name)) }))
+          .filter((p) => p.anyOf.length)
+      }
+    ])
+  );
   assert.ok(layoutMap({ ...data, courses: stripped }).bands.every((b) => b.kind !== 'pre'));
 });
 
 test('mapSvg: the pre-degree band is muted and captioned; outside pills say who they are for', () => {
-  const { L, g } = geo(), html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() });
-  assert.ok(html.includes('class="band pre"') && html.includes('לפני התואר (מכינה)') && html.includes('לפי תנאי הקבלה'));
+  const { L, g } = geo(),
+    html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() });
+  assert.ok(
+    html.includes('class="band pre"') && html.includes('לפני התואר (מכינה)') && html.includes('לפי תנאי הקבלה')
+  );
   assert.ok(html.includes('class="ext pre"') && html.includes('>לפני התואר<'));
 });
 
 test('planPaths: edges out of a planned course, and the "או" hop after a planned option', () => {
-  const paths = [['a', 'b'], ['c', 'or1'], ['d', 'or1'], ['or1', 'e'], ['x', 'y']].map(([from, to], id) => ({ id, from, to }));
+  const paths = [
+    ['a', 'b'],
+    ['c', 'or1'],
+    ['d', 'or1'],
+    ['or1', 'e'],
+    ['x', 'y']
+  ].map(([from, to], id) => ({ id, from, to }));
   assert.deepEqual([...planPaths(paths, new Set(['a', 'c']))].sort(), [0, 1, 3]);
   assert.equal(planPaths(paths, new Set()).size, 0);
 });
 
 test('mapSvg: planned courses get the plan marker and their edges are highlighted; a passed course is never marked', () => {
-  const d = mini({ a: mc('A'), b: mc('B', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }] }]), c: mc('C') }), L = layoutMap(d), g = geometry(L, () => 3);
-  const html = mapSvg({ data: d, st: { c: { status: 'done' } }, L, g, year: 1, unlocks: {}, mode: 'all', plan: new Set(['a', 'c']) });
+  const d = mini({ a: mc('A'), b: mc('B', [{ kind: 'קדם', anyOf: [{ id: 'a', name: 'A' }] }]), c: mc('C') }),
+    L = layoutMap(d),
+    g = geometry(L, () => 3);
+  const html = mapSvg({
+    data: d,
+    st: { c: { status: 'done' } },
+    L,
+    g,
+    year: 1,
+    unlocks: {},
+    mode: 'all',
+    plan: new Set(['a', 'c'])
+  });
   assert.equal((html.match(/<g class="nd [^"]* plan"/g) ?? []).length, 1); // a only (every node has a ring; the class shows it)
   assert.ok(html.includes('בתכנון') && html.includes('class="e k plan"'));
   assert.ok(!/<g class="nd [^"]* plan"/.test(mapSvg({ data: d, st: {}, L, g, year: 1, unlocks: {}, mode: 'all' })));
@@ -287,10 +548,33 @@ test('mapSvg: planned courses get the plan marker and their edges are highlighte
 
 test('progressInfo: a course counts once, a list never past its minimum; plan credits count only for what is not done', () => {
   const co = (credits) => ({ ...mc('x'), credits });
-  const d = { lists: [{ name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 7 }, { name: 'בחירה', courses: ['b', 'e1', 'e2'], minCredits: 4 }, { name: 'אנגלית', courses: ['en'], minCredits: 0 }], courses: { a: co(4), b: co(3), e1: co(3), e2: co(3), en: co(2) } };
-  assert.deepEqual(noRows(progressInfo(d, {})), { total: 11, done: 0, planned: 0, adds: 0, specLeft: null, untracked: 0, degreeTotal: null });
+  const d = {
+    lists: [
+      { name: "קורסי חובה שנה א'", courses: ['a', 'b'], minCredits: 7 },
+      { name: 'בחירה', courses: ['b', 'e1', 'e2'], minCredits: 4 },
+      { name: 'אנגלית', courses: ['en'], minCredits: 0 }
+    ],
+    courses: { a: co(4), b: co(3), e1: co(3), e2: co(3), en: co(2) }
+  };
+  assert.deepEqual(noRows(progressInfo(d, {})), {
+    total: 11,
+    done: 0,
+    planned: 0,
+    adds: 0,
+    specLeft: null,
+    untracked: 0,
+    degreeTotal: null
+  });
   const st = { a: { status: 'done' }, e1: { status: 'exempt' }, en: { status: 'done' } };
-  assert.deepEqual(noRows(progressInfo(d, st, new Set(['b', 'e2', 'a']))), { total: 11, done: 7, planned: 3 + 1, adds: 6, specLeft: null, untracked: 0, degreeTotal: null }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
+  assert.deepEqual(noRows(progressInfo(d, st, new Set(['b', 'e2', 'a']))), {
+    total: 11,
+    done: 7,
+    planned: 3 + 1,
+    adds: 6,
+    specLeft: null,
+    untracked: 0,
+    degreeTotal: null
+  }); // done: a 4 + e1 3; planned: b 3 (year א), e2 1 (what is left of the elective minimum); a is done
 });
 
 test('newlyUnlocked: courses blocked now and open once the plan counts as passed (the plan itself excluded)', () => {
@@ -304,17 +588,32 @@ test('newlyUnlocked: courses blocked now and open once the plan counts as passed
 test('progressHtml: an accessible progressbar with the same numbers as the text; plan sentence only when there is a plan; escaped', () => {
   const base = { prog: { total: 100, done: 40, planned: 10, adds: 12 }, opened: 3 };
   const html = progressHtml(base);
-  assert.ok(html.includes('role="progressbar"') && html.includes('aria-valuemax="100"') && html.includes('aria-valuenow="50"') && html.includes('title="'));
-  assert.ok(html.includes('המערכת שנבחרה מוסיפה 12 נ״ז ופותחת 3 קורסים') && html.includes('width:40%') && html.includes('width:10%'));
+  assert.ok(
+    html.includes('role="progressbar"') &&
+      html.includes('aria-valuemax="100"') &&
+      html.includes('aria-valuenow="50"') &&
+      html.includes('title="')
+  );
+  assert.ok(
+    html.includes('המערכת שנבחרה מוסיפה 12 נ״ז ופותחת 3 קורסים') &&
+      html.includes('width:40%') &&
+      html.includes('width:10%')
+  );
   const plain = progressHtml({ prog: { total: 100, done: 40, planned: 0, adds: 0 }, opened: 0 });
   assert.ok(!plain.includes('המערכת שנבחרה') && plain.includes('aria-valuenow="40"'));
-  assert.ok(progressHtml({ prog: { total: 100, done: 1, planned: 1, adds: 3 }, opened: 1 }).includes('ופותחת קורס אחד'));
+  assert.ok(
+    progressHtml({ prog: { total: 100, done: 1, planned: 1, adds: 3 }, opened: 1 }).includes('ופותחת קורס אחד')
+  );
   assert.equal(progressHtml({ prog: { total: 0, done: 0, planned: 0, adds: 0 }, opened: 0 }), '');
 });
 
 test('wheelStep: a mouse notch is about 16% (either browser), small trackpad events stay gentle, huge ones are capped', () => {
   const pct = (e) => Math.exp(wheelStep(e) / 3) - 1;
-  assert.ok(Math.abs(pct({ deltaY: 100, deltaMode: 0 }) - 0.16) < 0.01 && Math.abs(pct({ deltaY: -100 }) - 0.16) < 0.01 && Math.abs(pct({ deltaY: 3, deltaMode: 1 }) - 0.16) < 0.01);
+  assert.ok(
+    Math.abs(pct({ deltaY: 100, deltaMode: 0 }) - 0.16) < 0.01 &&
+      Math.abs(pct({ deltaY: -100 }) - 0.16) < 0.01 &&
+      Math.abs(pct({ deltaY: 3, deltaMode: 1 }) - 0.16) < 0.01
+  );
   assert.ok(pct({ deltaY: 4 }) < 0.02 && pct({ deltaY: 0, deltaX: 0 }) > 0);
   assert.equal(wheelStep({ deltaY: 5000 }), 0.6);
   assert.equal(wheelStep({ deltaY: 0, deltaX: 100 }), wheelStep({ deltaY: 100 })); // shift+wheel on a Mac
@@ -322,45 +621,92 @@ test('wheelStep: a mouse notch is about 16% (either browser), small trackpad eve
 
 test('specialization lists are neither required of everyone nor part of the progress total', () => {
   const co = (credits) => ({ ...mc('x'), credits });
-  const d = { specializations: [{ id: 's', mandatory: 2, elective: 3, aloneExtra: 4 }], lists: [
-    { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
-    { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 10 },
-    { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 8 },
-    { code: 4, name: 'חובה רכב לבוחרי ללא התמחות נוספת', courses: ['x'], minCredits: 3 }],
-  courses: { a: co(4), m: co(5), e: co(3), x: co(3) } };
+  const d = {
+    specializations: [{ id: 's', mandatory: 2, elective: 3, aloneExtra: 4 }],
+    lists: [
+      { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
+      { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 10 },
+      { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 8 },
+      { code: 4, name: 'חובה רכב לבוחרי ללא התמחות נוספת', courses: ['x'], minCredits: 3 }
+    ],
+    courses: { a: co(4), m: co(5), e: co(3), x: co(3) }
+  };
   assert.deepEqual(asideIds(d, {}).sort(), ['e', 'm', 'x']);
-  assert.deepEqual(noRows(progressInfo(d, { m: { status: 'done' } }, new Set(['e']))), { total: 4, done: 0, planned: 0, adds: 3, specLeft: null, untracked: 0, degreeTotal: null }, 'no data.degree: the specialization part is zero');
-  assert.deepEqual(asideIds({ ...d, specializations: undefined }, {}), ['e'], 'without specializations the name rule applies as before');
+  assert.deepEqual(
+    noRows(progressInfo(d, { m: { status: 'done' } }, new Set(['e']))),
+    { total: 4, done: 0, planned: 0, adds: 3, specLeft: null, untracked: 0, degreeTotal: null },
+    'no data.degree: the specialization part is zero'
+  );
+  assert.deepEqual(
+    asideIds({ ...d, specializations: undefined }, {}),
+    ['e'],
+    'without specializations the name rule applies as before'
+  );
 });
 
 test('progressInfo: everything passed reaches 100%; spec credits default to what the lists leave of the degree; untracked credits are named (L4)', () => {
   const co = (credits) => ({ ...mc('x'), credits });
-  const d = { degree: { total: 20, specCredits: 0 }, specializations: [{ id: 's', mandatory: 2, elective: 3 }], lists: [
-    { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
-    { code: 5, name: 'בחירה', courses: ['b'], minCredits: 6 },
-    { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 10 },
-    { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 8 }],
-  courses: { a: co(4), b: co(3), m: co(5), e: co(3) } };
+  const d = {
+    degree: { total: 20, specCredits: 0 },
+    specializations: [{ id: 's', mandatory: 2, elective: 3 }],
+    lists: [
+      { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
+      { code: 5, name: 'בחירה', courses: ['b'], minCredits: 6 },
+      { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 10 },
+      { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 8 }
+    ],
+    courses: { a: co(4), b: co(3), m: co(5), e: co(3) }
+  };
   const all = Object.fromEntries(Object.keys(d.courses).map((id) => [id, { status: 'done' }]));
   const p = progressInfo(d, all, new Set(), ['s']);
   assert.equal(p.done, p.total, 'all done = 100%');
-  assert.deepEqual([p.total, p.untracked, p.specLeft], [15, 5, 0], 'b fills 3 of 6, spec cap 20-10=10 of which the area holds 8 (all done); 20-15 untracked');
-  assert.equal(progressInfo({ ...d, degree: { total: 20, specCredits: 9 } }, all, new Set(), ['s']).specLeft, 1, 'a known specCredits wins');
+  assert.deepEqual(
+    [p.total, p.untracked, p.specLeft],
+    [15, 5, 0],
+    'b fills 3 of 6, spec cap 20-10=10 of which the area holds 8 (all done); 20-15 untracked'
+  );
+  assert.equal(
+    progressInfo({ ...d, degree: { total: 20, specCredits: 9 } }, all, new Set(), ['s']).specLeft,
+    1,
+    'a known specCredits wins'
+  );
   // Medical engineering: the area's courses cover less than the derived 17, and "complete to 160 from the electives" (curriculum): general electives fill the gap.
-  const bm = { degree: { total: 20 }, specializations: [{ id: 's', mandatory: 2, elective: 3 }], lists: [
-    { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 10 }, { code: 5, name: 'קורסי בחירה', courses: ['f', 'g'], minCredits: 0 },
-    { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 0 }, { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 0 }],
-  courses: { a: co(10), f: co(3), g: co(3), m: co(5), e: co(2) } };
+  const bm = {
+    degree: { total: 20 },
+    specializations: [{ id: 's', mandatory: 2, elective: 3 }],
+    lists: [
+      { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 10 },
+      { code: 5, name: 'קורסי בחירה', courses: ['f', 'g'], minCredits: 0 },
+      { code: 2, name: 'התמחות ס-חובה', courses: ['m'], minCredits: 0 },
+      { code: 3, name: 'התמחות ס-בחירה', courses: ['e'], minCredits: 0 }
+    ],
+    courses: { a: co(10), f: co(3), g: co(3), m: co(5), e: co(2) }
+  };
   const bmAll = Object.fromEntries(Object.keys(bm.courses).map((id) => [id, { status: 'done' }]));
-  assert.deepEqual(noRows(progressInfo(bm, bmAll, new Set(), ['s'])), { total: 20, done: 20, planned: 0, adds: 0, specLeft: 0, untracked: 0, degreeTotal: 20 },
-    'area 7 of the derived 10, electives 3: nothing left, nothing untracked');
+  assert.deepEqual(
+    noRows(progressInfo(bm, bmAll, new Set(), ['s'])),
+    { total: 20, done: 20, planned: 0, adds: 0, specLeft: 0, untracked: 0, degreeTotal: 20 },
+    'area 7 of the derived 10, electives 3: nothing left, nothing untracked'
+  );
   assert.equal(progressInfo({ ...d, degree: undefined }, {}).untracked, 0);
   // Computer science: the electives list has minCredits 0, so what the minimums leave of the degree fills from courses beyond them, up to the total.
-  const cs = { degree: { total: 10 }, lists: [{ code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
-    { code: 9, name: 'קורסי בחירה', courses: ['b', 'c', 'f'], minCredits: 0 }], courses: { a: co(4), b: co(3), c: co(3), f: co(3) } };
-  assert.deepEqual(noRows(progressInfo(cs, { a: { status: 'done' }, c: { status: 'done' } }, new Set(['b', 'f']))),
-    { total: 10, done: 7, planned: 3, adds: 6, specLeft: null, untracked: 0, degreeTotal: 10 }, 'electives fill the 6 the minimums leave, no more');
-  const html = progressHtml({ prog: { total: 15, done: 15, planned: 0, adds: 0, untracked: 5, degreeTotal: 20 }, opened: 0 });
+  const cs = {
+    degree: { total: 10 },
+    lists: [
+      { code: 1, name: "קורסי חובה שנה א'", courses: ['a'], minCredits: 4 },
+      { code: 9, name: 'קורסי בחירה', courses: ['b', 'c', 'f'], minCredits: 0 }
+    ],
+    courses: { a: co(4), b: co(3), c: co(3), f: co(3) }
+  };
+  assert.deepEqual(
+    noRows(progressInfo(cs, { a: { status: 'done' }, c: { status: 'done' } }, new Set(['b', 'f']))),
+    { total: 10, done: 7, planned: 3, adds: 6, specLeft: null, untracked: 0, degreeTotal: 10 },
+    'electives fill the 6 the minimums leave, no more'
+  );
+  const html = progressHtml({
+    prog: { total: 15, done: 15, planned: 0, adds: 0, untracked: 5, degreeTotal: 20 },
+    opened: 0
+  });
   assert.ok(html.includes('aria-valuemax="15"') && html.includes('עוד <b><bdi>5</bdi></b> נ״ז'));
 });
 
@@ -372,44 +718,86 @@ test('layout: a fifth-year list (evening programs) gets its own band', () => {
 test('geometry runs without Object.groupBy (Safari before 17.4)', () => {
   const g = Object.groupBy;
   delete Object.groupBy;
-  try { assert.ok(geo().g.nodes.length > 0); } finally { Object.groupBy = g; }
+  try {
+    assert.ok(geo().g.nodes.length > 0);
+  } finally {
+    Object.groupBy = g;
+  }
 });
 
 test('progressInfo rows: one per list with a minimum, the area, the rest; they add up to the bar', () => {
   const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/11-2027.json', import.meta.url), 'utf8'));
-  const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])), p = progressInfo(d, all);
+  const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])),
+    p = progressInfo(d, all);
   assert.ok(p.rows.length > 2 && p.rows.every((r) => r.need > 0), 'no "0 of 0" rows (English, entrepreneurship)');
-  assert.equal(p.rows.reduce((s, r) => s + r.done, 0), p.done);
-  assert.ok(p.rows.some((r) => r.name === 'בחירה (מעבר למינימום)'), 'computer science fills 120 from surplus');
+  assert.equal(
+    p.rows.reduce((s, r) => s + r.done, 0),
+    p.done
+  );
+  assert.ok(
+    p.rows.some((r) => r.name === 'בחירה (מעבר למינימום)'),
+    'computer science fills 120 from surplus'
+  );
   assert.ok(progressInfo(d, {}).rows.every((r) => r.done === 0));
   const m = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/30-2027.json', import.meta.url), 'utf8'));
   const pm = progressInfo(m, {}, new Set(), ['solid', 'flow']);
   assert.equal(pm.rows.filter((r) => r.name === 'התמחות').length, 1);
-  assert.equal(pm.rows.reduce((s, r) => s + r.need, 0), 160);
+  assert.equal(
+    pm.rows.reduce((s, r) => s + r.need, 0),
+    160
+  );
 });
 
 test('progressInfo rows: an older cohort whose lists hold less than their minimum still completes; the gap is untracked', () => {
   const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/10-2024.json', import.meta.url), 'utf8'));
-  const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])), p = progressInfo(d, all, new Set(), [d.specializations[0].id]);
-  assert.ok(p.rows.every((r) => r.done >= r.need), p.rows.filter((r) => r.done < r.need).map((r) => `${r.name} ${r.done}/${r.need}`).join(', '));
-  assert.equal(p.rows.reduce((s, r) => s + r.need, 0), p.total, 'the rows add up to the bar');
+  const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])),
+    p = progressInfo(d, all, new Set(), [d.specializations[0].id]);
+  assert.ok(
+    p.rows.every((r) => r.done >= r.need),
+    p.rows
+      .filter((r) => r.done < r.need)
+      .map((r) => `${r.name} ${r.done}/${r.need}`)
+      .join(', ')
+  );
+  assert.equal(
+    p.rows.reduce((s, r) => s + r.need, 0),
+    p.total,
+    'the rows add up to the bar'
+  );
   assert.ok(p.untracked > 0);
 });
 
 // ---------- alternative switcher and mini week pane ----------
-const pick = (d) => { const [cid, c] = Object.entries(d.courses).find(([, x]) => x.groups.some((g) => g.meetings.some((m) => m.day >= 1 && m.day <= 5)));
-  return { cid, gid: c.groups.find((g) => g.meetings.length).id, cr: c.credits }; };
-const half = (x) => ({ courses: [x.cid], groups: [x.gid], exams: [], alts: {}, unlocks: 0, explanation: '', breakdown: { compact: 1, progress: 0 } });
-const xa = pick(A), xb = pick(B);
+const pick = (d) => {
+  const [cid, c] = Object.entries(d.courses).find(([, x]) =>
+    x.groups.some((g) => g.meetings.some((m) => m.day >= 1 && m.day <= 5))
+  );
+  return { cid, gid: c.groups.find((g) => g.meetings.length).id, cr: c.credits };
+};
+const half = (x) => ({
+  courses: [x.cid],
+  groups: [x.gid],
+  exams: [],
+  alts: {},
+  unlocks: 0,
+  explanation: '',
+  breakdown: { compact: 1, progress: 0 }
+});
+const xa = pick(A),
+  xb = pick(B);
 const pair = { a: half(xa), b: half(xb), credits: { a: xa.cr, b: xb.cr }, missing: [], warnings: [] };
 
 test('altBarHtml: hidden under two alternatives, disabled while searching, summer suffix', () => {
   assert.equal(altBarHtml({ k: 0, n: 1, running: false, summer: false }), '');
   const h = altBarHtml({ k: 1, n: 5, running: false, summer: false });
-  assert.match(h, /data-pm="alt" data-d="-1"/); assert.match(h, /data-d="1"/); assert.match(h, />2</); assert.match(h, />5</);
+  assert.match(h, /data-pm="alt" data-d="-1"/);
+  assert.match(h, /data-d="1"/);
+  assert.match(h, />2</);
+  assert.match(h, />5</);
   assert.ok(!h.includes('disabled') && !h.includes('data-act'));
   const r = altBarHtml({ k: 0, n: 3, running: true, summer: false });
-  assert.equal(r.match(/ disabled/g).length, 2); assert.ok(r.includes('מחפש חלופות…'));
+  assert.equal(r.match(/ disabled/g).length, 2);
+  assert.ok(r.includes('מחפש חלופות…'));
   assert.ok(altBarHtml({ k: 0, n: 2, running: false, summer: true }).includes('קיץ'));
 });
 test('altBarHtml fits a phone header: summer says "קיץ:" instead of a suffix, the searching label has a short form', () => {
@@ -419,10 +807,15 @@ test('altBarHtml fits a phone header: summer says "קיץ:" instead of a suffix,
   assert.match(r, /<span class="long">מחפש חלופות…<\/span><span class="short">מחפש…<\/span>/);
 });
 test('miniHtml: a year pair draws both semesters, hidden from screen readers, with no board hooks', () => {
-  const colors = new Map([[xa.cid, 3]]), before = [...colors];
+  const colors = new Map([[xa.cid, 3]]),
+    before = [...colors];
   const h = miniHtml({ raw: pair, sem: { 'א': A, 'ב': B }, data: A, colors, k: 1, open: true });
   assert.ok(h.includes('סמסטר א׳') && h.includes('סמסטר ב׳') && h.includes('<details class="pm-mini" open'));
-  assert.ok(h.includes('class="pm-mini-g" aria-hidden="true"') && !h.includes(' inert') && !h.includes('<button type="button" class="blk'));
+  assert.ok(
+    h.includes('class="pm-mini-g" aria-hidden="true"') &&
+      !h.includes(' inert') &&
+      !h.includes('<button type="button" class="blk')
+  );
   assert.ok(!/data-act=/.test(h) && !/data-k="b-/.test(h));
   assert.ok(h.includes('חלופה 2'));
   assert.deepEqual([...colors], before); // the board's sticky colours are untouched
@@ -457,19 +850,36 @@ test('courseAbbr on real names: punctuation is no word, an existing acronym stay
 });
 test('uniqueAbbrs: two names with the same initials get different abbreviations, the first keeps its own', () => {
   const [a, b] = uniqueAbbrs(['מבוא למדעי המחשב', 'מבוא לתורת המחשבים']);
-  assert.equal(a, 'מל״ה'); assert.notEqual(a, b);
+  assert.equal(a, 'מל״ה');
+  assert.notEqual(a, b);
 });
 test('miniHtml: an identify line, the abbreviation toggle, a legend with each course once', () => {
-  const off = miniHtml({ raw: pair, sem: { 'א': A, 'ב': B }, data: A, colors: new Map(), k: 0, open: true, abbr: false });
-  assert.ok(off.includes('class="pm-mini-c"') && off.includes('data-pm="abbr"') && off.includes('aria-pressed="false"'));
+  const off = miniHtml({
+    raw: pair,
+    sem: { 'א': A, 'ב': B },
+    data: A,
+    colors: new Map(),
+    k: 0,
+    open: true,
+    abbr: false
+  });
+  assert.ok(
+    off.includes('class="pm-mini-c"') && off.includes('data-pm="abbr"') && off.includes('aria-pressed="false"')
+  );
   assert.ok(off.includes('<ul class="pm-mini-l sr">') && !off.includes('class="pm-mini ab"'));
   for (const id of [xa.cid, xb.cid]) assert.equal(off.split(`<li data-c="${id}">`).length - 1, 1, id);
   assert.ok(off.includes('<b aria-hidden="true">')); // a hidden legend does not read its abbreviations to a screen reader
   const on = miniHtml({ raw: pair, sem: { 'א': A, 'ב': B }, data: A, colors: new Map(), k: 0, open: true, abbr: true });
-  assert.ok(on.includes('<details class="pm-mini ab" open') && on.includes('aria-pressed="true"') && on.includes('<ul class="pm-mini-l">') && !/<li[^>]*><i[^>]*><\/i><b aria-hidden/.test(on));
+  assert.ok(
+    on.includes('<details class="pm-mini ab" open') &&
+      on.includes('aria-pressed="true"') &&
+      on.includes('<ul class="pm-mini-l">') &&
+      !/<li[^>]*><i[^>]*><\/i><b aria-hidden/.test(on)
+  );
   assert.ok(on.includes(`<span class="blk-ab" aria-hidden="true">${courseAbbr(A.courses[xa.cid].name)}`));
 });
 test('mapSvg: every course node carries a plan ring (hidden off-plan), so a switch only changes classes', () => {
-  const { L, g } = geo(), html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() });
+  const { L, g } = geo(),
+    html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() });
   assert.equal((html.match(/class="plan-ring"/g) ?? []).length, (html.match(/<g class="nd /g) ?? []).length);
 });
