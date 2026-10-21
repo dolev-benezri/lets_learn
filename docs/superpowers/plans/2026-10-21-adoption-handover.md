@@ -158,3 +158,45 @@ into the git-ignored `out/`. Docs live in `docs/` and cite the code they describ
   day and evening), a 5-question feedback form (text, ready to paste into Google Forms), and what to record.
 - [ ] **Step 5: Run** tests and `npm run report:conflicts`; print preview: each sheet one A4 page. Commit
   `feat(report): a conflict sheet per department; docs: beta kit`. Then ask the owner to review; merge and push on OK; close #22-#30.
+
+### Task 8: First-visit tour (owner's request 2026-10-21)
+
+Owner chose a spotlight tour with Driver.js after the terms gate. Runs after Task 4 (a11y specs exist) and before Tasks 7 and 3.
+
+**Files:**
+- Create: `web/vendor/driver/` (driver.js ESM/IIFE build + driver.css + LICENSE + SOURCES.txt with source and SHA-256, like web/vendor/tesseract/),
+  `web/tour.js`, `test/tour.test.mjs`, `test/browser/tour.spec.mjs`
+- Modify: `web/index.html` (replay button, stylesheet link), `web/app.js` or the module that runs after `acceptTerms`, `web/style.css` (RTL + dark theme
+  for the popover, site tokens), `test/browser/a11y.spec.mjs` (axe on the open tour popover, 375 and 1280, light and dark)
+
+**Interfaces:**
+- Produces: `TOUR_KEY = 'afeka-sched-v1-tour'`; `tourSeen(part) -> boolean`, `markTour(part)` (part `'intro'` | `'plans'`), in-memory fallback when
+  localStorage throws (same pattern as termsOk/acceptTerms in web/ui-common.js); `TOUR_INTRO`, `TOUR_PLANS` step arrays (selector + Hebrew text);
+  `startTour(part)` skips steps whose element is missing or hidden.
+
+- [ ] **Step 1: Write the failing tests:** `tourSeen('intro')` false on a fresh store, true after `markTour('intro')`; parts are independent; works when
+  localStorage throws; every step text is ≤140 characters, Hebrew, no emoji; every selector in TOUR_INTRO exists in web/index.html.
+- [ ] **Step 2:** Vendor Driver.js: latest 1.x from npm (`npm pack` into a new empty folder, copy dist files only), exact version in SOURCES.txt.
+  No CDN, no outside request; CSP in index.html must still pass test/app.test.mjs.
+- [ ] **Step 3: Implement.** Part `intro` starts once, right after the terms gate is accepted on a first visit (not over a pending backup link
+  confirm, not on the print page). Part `plans` starts once, the first time step 4 shows at least one alternative. Buttons `הבא`, `הקודם`, `דלג`
+  (close = done, marks seen), progress `1 מתוך 7`; Escape closes; focus returns to where it was. A replay button `סיור באתר` (ghost, in nav.steps
+  beside the theme button; icon-only with aria-label at phone width if needed) runs `intro` again. Popover text RTL, Rubik, site colours, both themes.
+  Steps (copy, verbatim):
+  intro:
+  1. `nav.steps`: `ארבעה שלבים, מימין לשמאל. אפשר לחזור לכל שלב בכל רגע.`
+  2. step 1 link: `המצב שלי: מסלול, שנה ומה כבר עברת. אפשר לייבא את גליון הציונים.`
+  3. step 2 link: `קורסים: מה ללמוד בסמסטר. מוצגים רק קורסים שפתוחים לך.`
+  4. step 3 link: `מה חשוב לי: יום פנוי, בלי חלונות, עם חברים, שעות התחלה וסיום.`
+  5. step 4 link: `מערכות: עד 10 חלופות בלי התנגשויות. עוברים ביניהן בחיצים.`
+  6. `.actions`: `מכאן: רשימה להרשמה, סיכום לפגישה עם היועץ, ושיתוף עם חברים.`
+  7. replay button: `אפשר לראות את הסיור שוב מכאן. זה כלי עזר לתכנון, ההרשמה עצמה באפקה-נט.`
+  plans:
+  1. `#switcher`: `כל חלופה היא מערכת שלמה בלי התנגשויות. החיצים עוברים ביניהן.`
+  2. first group block in the week: `לחיצה על קבוצה מראה מרצה, מקומות פנויים ומתי זה נבדק.`
+  3. `#advisorBtn`: `דף מסודר להדפסה, להביא לפגישה עם היועץ.`
+  4. registration list button: `רשימת הקבוצות להרשמה, וייצוא ליומן.`
+- [ ] **Step 4: Browser spec** (WebKit, 375×812 and 1280×800): fresh visit, accept gate, tour shows step 1 of N; Next walks to the end; Escape closes;
+  reload shows no tour; replay button opens it; `plans` part shows once on the first alternatives screen; no outside requests. a11y spec: no axe
+  violations with the popover open.
+- [ ] **Step 5: Run** `npm test`, `npm run test:browser`. Commit `feat(tour): first-visit tour of the site (Driver.js, hosted locally)`.
