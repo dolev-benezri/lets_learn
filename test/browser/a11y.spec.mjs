@@ -15,11 +15,12 @@ const weekReady = (page) => page.locator('#week .blk').first().waitFor({ timeout
 const frame = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
 // One checker per test: check(page, 'screen name') runs axe and remembers the violations; done() fails with the whole list.
-function checker() {
+function checker(scheme) {
   const found = [];
   return {
     async check(page, screen) {
       await frame(page);
+      assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), scheme, 'the site follows the device colour scheme');
       const { violations } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
       for (const v of violations) found.push(`${screen}: ${v.id} (${v.impact}) x${v.nodes.length} ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);
     },
@@ -34,7 +35,7 @@ for (const [size, scheme] of COMBOS) {
   const visit = (t, seed, hash) => visitIn(browser, t, size, seed, hash, scheme);
 
   test(`${size}/${scheme}: axe, the way in: terms gate, track, year, grade-sheet entry, manual entry`, async (t) => {
-    const { check, done } = checker();
+    const { check, done } = checker(scheme);
     const page = await visit(t);
     await page.locator('.gate').waitFor();
     await check(page, 'gate');
@@ -56,7 +57,7 @@ for (const [size, scheme] of COMBOS) {
   });
 
   test(`${size}/${scheme}: axe, steps 2 and 3, the legal page`, async (t) => {
-    const { check, done } = checker();
+    const { check, done } = checker(scheme);
     const page = await visit(t, DONE, '#courses');
     await page.locator('#side *').first().waitFor();
     await check(page, 'step 2');
@@ -84,7 +85,7 @@ for (const [size, scheme] of COMBOS) {
   });
 
   test(`${size}/${scheme}: axe, step 4, the course popover, the map, the registration list, the text dialog`, async (t) => {
-    const { check, done } = checker();
+    const { check, done } = checker(scheme);
     const page = await visit(t, DONE);
     await weekReady(page);
     await check(page, 'step 4');
@@ -106,7 +107,7 @@ for (const [size, scheme] of COMBOS) {
   });
 
   test(`${size}/${scheme}: axe, the grade-sheet preview`, async (t) => {
-    const { check, done } = checker();
+    const { check, done } = checker(scheme);
     const page = await visit(t, { ...TERMS, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, passed: [] }) }, '#me');
     await page.locator('#gradeFile').waitFor({ state: 'attached' });
     await page.locator('#gradeFile').setInputFiles({ name: 'sheet.pdf', mimeType: 'application/pdf', buffer: gradeSheetPdf(['10016 Calculus 4.0 85', '30003 Physics 3.5 90']) });
