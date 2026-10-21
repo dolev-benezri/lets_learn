@@ -131,6 +131,7 @@ export function buildOptions(course, {
         seen = new Set(combos.map(([c]) => key(c)));
       const slots = new Map(combos.map(([c]) => c.slice(1).map((g) => g.type)).map((t) => [t.join('|'), t]));
       for (const types of slots.values()) {
+        // every way to fill these slots from the lecture: one course sub-group of each type, none twice
         for (const c of types.reduce(
           (acc, t) => acc.flatMap((cc) => subGroups
             .filter((s) => s.type === t && !cc.includes(s))
@@ -240,6 +241,7 @@ export function courseValue(data, down = downstream(data)) {
 
 const DAY_NAMES = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
 const dur = (m) => toMin(m.end) - toMin(m.start);
+// number of set bits (busy slots) in a 32-bit day mask
 const popcount = (x) => {
   x = (x >>> 0) - ((x >>> 1) & 0x55555555);
   x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
@@ -276,6 +278,7 @@ function metrics(sel, mask, ctx) {
   for (let d = 1; d <= 6; d++) {
     if (mask[d] === 0) continue;
     const bits = mask[d];
+    // first and last busy slot of the day; the free slots between them are gaps
     const lo = 31 - Math.clz32(bits & -bits);
     const hi = 31 - Math.clz32(bits);
     gapMin += ((hi - lo + 1) - popcount(bits)) * 30;
@@ -502,6 +505,7 @@ export function search({
   function leaf(mask) {
     if (!sel.length) return;
     const chosen = new Set(sel.map((o) => o.course));
+    // a conditional course is no plan without one course of each of its parallel requirements
     for (const k of conditional)
       if (chosen.has(k.id) && !k.needs.every((anyOf) => anyOf.some((x) => chosen.has(x)))) return;
     const { m, info } = metrics(sel, mask, ctx);
@@ -532,6 +536,7 @@ export function search({
     if (top.length > topK) top.pop();
   }
 
+  // i: the next item to decide; mask, credits, examDates and val describe what `sel` holds so far
   function dfs(i, mask, credits, examDates, val) {
     if (partial) return;
     if (++nodes % 1000 === 0 && Date.now() > deadline) {

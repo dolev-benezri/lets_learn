@@ -243,6 +243,7 @@ function earlierTally(data, state) {
     return m && YEAR_LETTERS[m[1]] < year;
   }).map((l) => ({
     l,
+    // seen.add returns the set (truthy): a course counts in the first list that has it
     got: l.courses.filter((id) => passed.has(id) && !seen.has(id) && seen.add(id))
       .reduce((s, id) => s + (data.courses[id]?.credits ?? 0), 0)
   }));
