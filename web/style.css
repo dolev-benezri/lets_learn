@@ -502,8 +502,7 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   .steps a { min-height:var(--tap); padding:0 8px; font-size:var(--fs-sm); } /* 44px hit areas on touch (app.md) */
   .steps a:not([aria-current]) { min-width:var(--tap); padding:0; justify-content:center; }
   .steps a:not([aria-current]) .n { margin:0; }
-  .steps a:not([aria-current]) .lbl { display:none; }
-  .theme-btn { width:var(--tap); padding:0; } .theme-btn .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
+  .steps a:not([aria-current]) .lbl { display:none; } }
 .showby { margin-bottom:10px; } /* "הצג לפי" above the summary pills (ui-view.js renderView) */
 /* off the plans the bar keeps the title only: the alternatives and the plan actions belong to step 4 */
 body:not([data-view="plan"]) .switcher, body:not([data-view="plan"]) .actions, body.gated .switcher, body.gated .actions { display:none; }

@@ -60,7 +60,7 @@ const clearPrint = () => { $('print').hidden = true; document.documentElement.cl
 export const ACT = {
   shareOut,
   async acceptTerms() { acceptTerms(); await applyPendingBackup(); dueIntro(); refresh(); shownTitle()?.focus(); }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
-  tour() { startTour('intro'); }, // the replay button in the step bar
+  tour() { startTour('intro', () => $('tourBtn')); }, // the replay button in the step bar (WebKit does not focus a clicked button: focus goes back to it anyway)
   gateTrack() { ui.gateTrack = true; renderMe(); shownTitle()?.focus(); }, // back to the track tiles from the year question
   pickTrack(el) { // the gate's tiles (ui-me.js gateHtml): buttons with the profile's handlers
     el.classList.add('on'); el.parentElement.setAttribute('aria-busy', 'true'); // the track's data may take a while: show the pick, take no second tap

@@ -72,8 +72,8 @@ export async function startTour(part, home) {
       else if (e.key === 'ArrowRight' && tour.hasPreviousStep()) tour.movePrevious();
     };
     addEventListener('keydown', keys, true);
-    markTour(part);
     tour.drive();
+    markTour(part); // only once the tour is on screen: a failed start is asked again next time
     return true;
   } catch { end(); return false; } // the module did not load (offline, a stale cache): the tour is skipped and asked again next time
 }
@@ -82,8 +82,7 @@ export const tourOnce = (part, home) => (tourSeen(part) ? false : startTour(part
 // The intro waits for the gate to be done (ACT.acceptTerms asks, ui-plan.js renderAll answers when the step bar is on screen).
 let introDue = false;
 export const dueIntro = () => { introDue = true; };
-export function tourCheck(ready, home) {
+export async function tourCheck(ready, home) {
   if (!introDue || !ready) return;
-  introDue = false;
-  tourOnce('intro', home);
+  if (tourSeen('intro') || await startTour('intro', home)) introDue = false; // refused (a dialog is open): still due at the next render
 }
