@@ -57,7 +57,7 @@ style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri '
 | @oddbird/popover-polyfill | 0.7.3 (מכותרת הקובץ `web/vendor/popover/popover.min.js`; אין קובץ SOURCES) | BSD-3-Clause ([LICENSE](../web/vendor/popover/LICENSE)) | חלוניות ב-Safari ישן |
 | Rubik (פונט) | [web/fonts](../web/fonts) | SIL OFL ([OFL.txt](../web/fonts/OFL.txt)) | הפונט של האתר |
 
-תלויות הפיתוח (`package.json`): `node-html-parser` לסורק, ו-`playwright` ו-`@axe-core/playwright` לבדיקות הדפדפן. אף אחת מהן לא נשלחת לאתר.
+ב-`package.json` יש תלות אחת, `node-html-parser`, לסורק בלבד, ושתי תלויות פיתוח, `playwright` ו-`@axe-core/playwright`, לבדיקות הדפדפן. אף אחת מהן לא נשלחת לאתר.
 
 **עדכון ספרייה:** חבילה חדשה נשלפת עם `npm pack` לתיקייה ריקה מחוץ למאגר, הגיבוב מושווה ל-`dist.integrity` של הרישום, הקבצים מועתקים כמות שהם, וה-`SOURCES.txt` נכתב מחדש. אחר כך `npm test` ו-`npm run test:browser`. הסיור כותב טקסט לחלון דרך `innerHTML` ומעביר אליו רק מחרוזות קבועות של האתר, אף פעם לא נתוני קטלוג או משתמש.
 

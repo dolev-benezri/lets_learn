@@ -39,6 +39,8 @@ for (const size of Object.keys(SIZES)) {
   test(`${size}: after the gate the tour walks the step bar, never shows twice, and the replay button starts it again`, async (t) => {
     const page = await visit(t);
     await page.locator('.gate').waitFor();
+    // on the gate the tour button is hidden: the theme button keeps its place at the end of the bar (its auto margin)
+    assert.notEqual(await page.locator('.theme-btn').evaluate((b) => getComputedStyle(b).marginInlineStart), '0px', 'theme button at the end of the bar on the gate');
     await page.locator('[data-k="termsTick"]').check();
     await page.locator('[data-act="acceptTerms"]').click();
     await page.locator('[data-act="pickTrack"]').first().waitFor();

@@ -20,7 +20,7 @@ table { width:100%; border-collapse:collapse; } th, td { border:1px solid #000; 
 .sign { break-inside:avoid; margin-top:24px; font-size:14px; } .ok { font-weight:700; }`;
 const page = (title, body) => `<!doctype html>\n<html lang="he" dir="rtl"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${CSS}</style></head><body>\n${body}\n</body></html>\n`;
 
-const prereqText = (c) => c.prereqs.map((p) => `${p.kind}: ${p.anyOf.map((a) => h(a.name)).join(' או ')}`).join('; ') || '—';
+const prereqText = (c) => c.prereqs.map((p) => `${h(p.kind)}: ${p.anyOf.map((a) => h(a.name)).join(' או ')}`).join('; ') || '—';
 
 export function rulesHtml(data, entry, settings) {
   const day = approvedOn(settings, entry.id, data.startYear), conflicts = conflictsFor(settings, entry.id, data.startYear);

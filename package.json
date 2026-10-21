@@ -2,7 +2,7 @@
   "name": "afeka-scheduler",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": { "node": ">=22.12" },
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
     "test:browser": "node test/browser/run.mjs",

@@ -521,6 +521,18 @@ test('conflict line on step 1: under the profile, escaped, only for this program
   assert.ok(!me().includes('יש סתירה'));
 });
 
+test('approved line on step 1: "אושר על ידי המחלקה" with the day, in place of the unverified warning, only for this program and cohort', () => {
+  const keep = app.settings, me = () => { const n = writes.length; run('me-approved', () => { renderMe(); }); return writes.slice(n).filter((w) => w.id === 'me').map((w) => w.html).join(''); };
+  const { program, startYear } = app.data;
+  app.settings = { ...keep, programs: { [program]: { approved: { [startYear]: '2026-03-05' } } } };
+  const html = me();
+  assert.ok(html.includes('אושר על ידי המחלקה, 5.3.2026'), 'the approved line shows the day as D.M.YYYY');
+  assert.ok(!html.includes('עוד לא נבדקו מול תוכנית הלימודים'), 'no unverified warning once approved');
+  app.settings = { ...keep, programs: { [program]: { approved: { [startYear + 1]: '2026-03-05' } } } };
+  assert.ok(!me().includes('אושר על ידי המחלקה'), 'another cohort\'s approval does not show');
+  app.settings = keep;
+});
+
 test('report a mistake: a real mailto link in the footer and the popover, only when supportEmail is set; the href is escaped', () => {
   const keep = app.settings, gid = gids[0], btn = { dataset: { gid }, getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 }) };
   const pop = () => { const n = writes.length; run('pop-report', () => openPop(btn, { data: app.sem['א'], res: null, includeFull: false, pins: [], friends: [], colors: new Map(), lecturers: {} })); return writes.slice(n).map((w) => w.html).join(''); };

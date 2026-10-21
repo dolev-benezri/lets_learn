@@ -19,7 +19,7 @@ scrape:
     GIT_STRATEGY: none # nothing to check out on the GitLab side
   script:
     - git clone --depth 1 "https://x-access-token:${GH_PUSH_TOKEN}@github.com/dolev-benezri/lets_learn.git" repo
-    - cd repo && npm ci --no-audit --no-fund --ignore-scripts # no dependency needs an install script, and GH_PUSH_TOKEN is in the environment
+    - cd repo && npm ci --omit=dev --no-audit --no-fund --ignore-scripts # dev packages (playwright, axe) are for the browser tests only; no dependency needs an install script, and GH_PUSH_TOKEN is in the environment
     # stdout is one summary line (the commit message); a failed scrape writes nothing and fails the job.
     # The first runs are longer than the job (~1800 requests at 400 an hour): `timeout` stops the scraper before GitLab kills the job, the cache is saved, and the run counts as
     # partial (exit 0, nothing committed, no failure mail) up to 3 in a row; the counter lives in the cache. 160m leaves ~20 min of the 3h for clone, npm ci and the cache upload.

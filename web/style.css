@@ -759,7 +759,7 @@ body:has(#friendEd[open]) { overflow:hidden; }
 }
 /* the first-visit tour (tour.js): Driver.js draws the dimmed page and the popover, this gives the popover the site's tokens, right to left, in both themes */
 .tour-btn { margin-inline-start:auto; border-radius:999px; color:var(--text-2); }
-.tour-btn + .theme-btn { margin-inline-start:0; }
+body:not(.gated) .tour-btn + .theme-btn { margin-inline-start:0; } /* on the gate the tour button is hidden: the theme button keeps its auto margin */
 /* below 800px the step bar has no room for the two words (640px is what 200% zoom leaves of a desktop): both buttons keep only their icon, the label stays as the name */
 @media (max-width:799px) { .tour-btn, .theme-btn { width:var(--tap); padding:0; }
   .tour-btn .lbl, .theme-btn .lbl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }

@@ -10,7 +10,7 @@
 | `scripts/fixtures/` | דפי HTML ו-JSON אמיתיים מהידיעון, לבדיקות של המשיכה והפענוח |
 | `web/` | האתר: HTML ו-ES modules, בלי build. `index.html` הוא האתר, `legal.html` תנאי השימוש והפרטיות, `icon.svg` ו-`og.png` (נוצר מ-`design-system/og.html`) |
 | `web/app.js` | מצב (כולל `sortBy` של "הצג לפי" ו-`programSet`: האם נבחר מסלול, כי בביקור ראשון אף מסלול לא נבחר מראש), `normalize()`, localStorage, טעינת נתונים, החלפת תוכנית ומחזור, ושלבי הניווט (`STEPS`, `routeOf`, `hashOf`: `#me`, `#courses`, `#prefs`, וכל hash אחר הוא המערכות) |
-| `web/settings.json` | הקובץ שמי שמחזיק בכלי עורך ביד, בלי בנייה ובלי סריקה: `supportEmail` (כתובת ל-"דיווח על טעות"), `counselingUrl` (קישור לעמוד הייעוץ), `notice` (הודעה בראש האתר), `turns` (תורות הרשמה: `id`, `label`, `opensAt`) ו-`programs[id]` עם `approved` (תאריך אישור לכל מחזור) ו-`conflicts` (סתירות פתוחות בין מקורות רשמיים, לכל מחזור). הוא נפרד מ-`status.json` כי הסריקה כותבת אותו מחדש מאפס |
+| `web/settings.json` | הקובץ שמי שמחזיק בכלי עורך ביד, בלי בנייה ובלי סריקה: `supportEmail` (כתובת ל-"דיווח על טעות"), `counselingUrl` (קישור לעמוד הייעוץ), `notice` (הודעה בראש האתר), `turns` (תורות הרשמה: `id`, `label`, `opensAt`) ו-`programs[id]` עם `approved` (תאריך אישור לכל מחזור) ו-`conflicts` (סתירות פתוחות בין מקורות רשמיים, לכל מחזור; לכל סתירה גם `plan`, `yedion` ו-`tool` רשות, לעמודות של דפי הסתירות). הוא נפרד מ-`status.json` כי הסריקה כותבת אותו מחדש מאפס |
 | `web/settings.js` | `cleanSettings`: בונה את `settings.json` מחדש שדה אחרי שדה. קובץ חסר, שבור או מהסוג הלא נכון מחזיר ברירות מחדל, והאתר עובד כמו קודם |
 | `web/advisor.js` | `advisorHtml`: דף "סיכום ליועץ" להדפסה (טהור, בלי DOM, כל טקסט דרך `esc()`). `ACT.advisor` ב-`ui-actions` ממלא בו את `#print` ומדפיס |
 | `web/rules.js` | מנוע התקנון: סיווג קורסים, התקדמות והתמחויות |
@@ -19,13 +19,13 @@
 | `web/friend-*.js` | ייבוא מערכת חבר: `friend-import` (מספרי קבוצות מטקסט), `friend-scan` (קריאת PDF או תמונה ו-OCR בדפדפן), `friend-schedule` (התאמת שקף טבלה או לוח לקבוצות), `friend-blocks` (מציאת המשבצות הצבעוניות בלוח). העורך עצמו ב-`ui-friend-editor` |
 | `web/grade-import.js` | ייבוא גיליון הציונים (PDF מהפורטל), דרך pdf.js |
 | `web/ics.js` | ייצוא ליומן (קובץ `.ics`): השיעורים השבועיים והבחינות, עם תאריכי הסמסטר |
-| `web/ui-*.js` | ממשק, לפי ארבעת השלבים: `ui-plan` (נקודת הכניסה והניתוב בין השלבים), `ui-me` (1, המצב שלי, כולל מסך הפתיחה לבחירת מסלול ושנה), `ui-side` (2, רשימת הקורסים וסיכום החלופה), `ui-drawer` (3, העדפות וחברים; והמגירה של רשימת ההרשמה), `ui-view`, `ui-grid` ו-`ui-search` (4, המערכות: לוח, "הצג לפי", חיפוש). בנוסף `ui-map` (חלון המפה), `ui-friend-editor`, `ui-actions`, `ui-common`, `ui-dialog` ו-`ui-text` (המשפטים והעזרים של הממשק: `DISCLAIMER`, `freshAt` ו-`groupFresh` לטריות הנתונים, `turnWarning` לפני התור שלי בהרשמה, `conflictsFor` לסתירות ב-`settings.json`, `reportMailto` ל-"דיווח על טעות") |
+| `web/ui-*.js` | ממשק, לפי ארבעת השלבים: `ui-plan` (נקודת הכניסה והניתוב בין השלבים), `ui-me` (1, המצב שלי, כולל מסך הפתיחה לבחירת מסלול ושנה), `ui-side` (2, רשימת הקורסים וסיכום החלופה), `ui-drawer` (3, העדפות וחברים; והמגירה של רשימת ההרשמה), `ui-view`, `ui-grid` ו-`ui-search` (4, המערכות: לוח, "הצג לפי", חיפוש). בנוסף `ui-map` (חלון המפה), `ui-friend-editor`, `ui-actions`, `ui-common`, `ui-dialog`, `tour` (הסיור בכניסה הראשונה, Driver.js) ו-`ui-text` (המשפטים והעזרים של הממשק: `DISCLAIMER`, `freshAt` ו-`groupFresh` לטריות הנתונים, `turnWarning` לפני התור שלי בהרשמה, `conflictsFor` לסתירות ב-`settings.json`, `reportMailto` ל-"דיווח על טעות") |
 | `web/map-*.js` | מפת ההתקדמות: `map-layout` (אילו קורסים, סידור וגיאומטריה) ו-`map-render` (ה-SVG ותצוגת הרשימה). החלון עצמו ב-`ui-map` |
 | `web/theme.js` | מצב בהיר או כהה, לפני הציור הראשון |
 | `web/style.css` | העיצוב של האתר, מטוקנים (בהיר וכהה). `map.css` הוא העיצוב של מפת ההתקדמות |
 | `web/data/afeka/` | הנתונים שנמשכו: תיקייה לכל סמסטר (`2027-1`, `2027-2`, ו-`2027-3` לקיץ) ובה קובץ לכל תוכנית ומחזור (`30-2026.json`), ו-`catalog.json` (התוכניות והמחזורים) ו-`status.json` (מתי נבדק לאחרונה ומתי השתנה כל סמסטר; האתר מזהיר כשהנתונים ישנים) |
 | `web/fonts/` | Rubik, מתארח מקומית (עם הרישיון `OFL.txt`) |
-| `web/vendor/` | עותקים מקומיים של pdf.js, panzoom ו-popover polyfill, כל אחד עם הרישיון שלו |
+| `web/vendor/` | עותקים מקומיים של pdf.js, panzoom, popover polyfill, tesseract.js ו-Driver.js, כל אחד עם הרישיון שלו |
 | `test/` | בדיקות `node --test`, ו-`fixtures/mini-data.mjs` (נתונים קטנים לבדיקות) |
 | `ci/` | `gitlab-scrape.yml`: הסריקה הלילית ב-GitLab CI, שדוחפת את הנתונים ל-`main` |
 | `.github/` | `workflows/deploy.yml` (כל הבדיקות, ואז העלאת `web/` ל-GitHub Pages אחרי דחיפה ל-`main` שנוגעת ב-`web/`) ותבניות ה-issues (באג, טעות בנתונים, בקשה) |
@@ -50,7 +50,7 @@
 
 - הכול נשמר ב-localStorage בדפדפן בלבד. אין שרת ואין חשבון.
 - קישורי חבר וגיבוי הם קלט לא מהימן: אימות מבנה, מגבלות גודל (4KB, 64KB, ו-256KB אחרי פריסה), בנייה מחדש שדה אחרי שדה ו-`normalize()` לפני הכניסה למצב. כל טקסט מוצג דרך `esc()`.
-- הספריות pdf.js (ייבוא PDF וייבוא ציונים), panzoom (מפת ההתקדמות) וה-popover polyfill הן עותקים מקומיים ב-`web/vendor/`. גם tesseract.js 7.0.0 (הסקריפט, ה-worker, ה-core ונתוני השפה עברית ואנגלית) מוגשת מ-`web/vendor/tesseract/` ונטענת רק כשבוחרים תמונה בעורך החבר; מקור וגיבוב של כל קובץ ב-`web/vendor/tesseract/SOURCES.txt`. האתר לא פונה לשום כתובת מחוץ לעצמו. קובץ שנבחר נקרא בדפדפן ולא נשלח.
+- הספריות pdf.js (ייבוא PDF וייבוא ציונים), panzoom (מפת ההתקדמות) וה-popover polyfill הן עותקים מקומיים ב-`web/vendor/`. גם tesseract.js 7.0.0 (הסקריפט, ה-worker, ה-core ונתוני השפה עברית ואנגלית) מוגשת מ-`web/vendor/tesseract/` ונטענת רק כשבוחרים תמונה בעורך החבר; מקור וגיבוב של כל קובץ ב-`web/vendor/tesseract/SOURCES.txt`. Driver.js 1.9.0 (הסיור באתר) מוגשת מ-`web/vendor/driver/` ונטענת רק כשהסיור נפתח; גם לה `SOURCES.txt`. האתר לא פונה לשום כתובת מחוץ לעצמו. קובץ שנבחר נקרא בדפדפן ולא נשלח.
 - **מדיניות אבטחה (CSP)** בשני הדפים: הכול מהאתר עצמו, בלי plugins ובלי שינוי של `base`. אף מקור חיצוני לא מותר, לא ב-`index.html` ולא ב-`legal.html`; `index.html` מוסיף רק `'wasm-unsafe-eval'` ו-`blob:` בשביל ה-OCR. בדיקה ב-`test/app.test.mjs` אוכפת את זה.
 - הפונט מתארח מקומית ואין בקשות ל-Google Fonts.
 - פירוט מלא, כולל גרסאות ורישיונות: [SECURITY](SECURITY.md).
