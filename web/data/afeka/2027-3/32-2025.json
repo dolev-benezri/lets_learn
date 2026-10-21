@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-16T18:08:48.356Z",
+ "fetchedAt": "2026-10-21T18:13:53.421Z",
  "year": 2027,
  "startYear": 2025,
  "program": 32,
@@ -950,7 +950,7 @@
      ]
     },
     {
-     "kind": "קדם",
+     "kind": "מקביל",
      "anyOf": [
       {
        "id": "30137",
@@ -976,7 +976,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "מר זילברמן אילן",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [
       "273013005/1"
@@ -1002,7 +1002,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "מר זילברמן אילן",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
@@ -3383,7 +3383,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בן סימון גבריאל",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [
       "279091606/1"

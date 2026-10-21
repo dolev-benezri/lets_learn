@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-16T18:08:48.356Z",
+ "fetchedAt": "2026-10-21T18:13:53.421Z",
  "year": 2027,
  "startYear": 2025,
  "program": 30,
@@ -287,7 +287,6 @@
    "courses": [
     "30151",
     "30153",
-    "30154",
     "30158",
     "30159",
     "30219",
@@ -1026,7 +1025,7 @@
      ]
     },
     {
-     "kind": "קדם",
+     "kind": "מקביל",
      "anyOf": [
       {
        "id": "30137",
@@ -1052,7 +1051,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "מר זילברמן אילן",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [
       "273013005/1"
@@ -1078,7 +1077,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "מר זילברמן אילן",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
@@ -1365,27 +1364,6 @@
   },
   "30153": {
    "name": "הנדסת ריתוך",
-   "credits": 2.5,
-   "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "30137",
-       "name": "תורת החומרים"
-      },
-      {
-       "id": null,
-       "name": "תורת החומרים 2"
-      }
-     ]
-    }
-   ],
-   "groups": []
-  },
-  "30154": {
-   "name": "קורוזיה ואמצעי הגנה",
    "credits": 2.5,
    "offered": false,
    "prereqs": [
@@ -3956,7 +3934,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בן סימון גבריאל",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [
       "279091606/1"

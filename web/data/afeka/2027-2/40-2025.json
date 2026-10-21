@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-16T18:08:48.356Z",
+ "fetchedAt": "2026-10-21T18:13:53.421Z",
  "year": 2027,
  "startYear": 2025,
  "program": 40,
@@ -211,7 +211,6 @@
     "40218",
     "40219",
     "40222",
-    "40231",
     "40237",
     "40248",
     "40249",
@@ -301,7 +300,6 @@
     "40218",
     "40219",
     "40222",
-    "40231",
     "40237",
     "40248",
     "40249",
@@ -502,7 +500,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -520,7 +518,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -592,7 +590,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2837,7 +2835,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' כהנא דפנה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274013001/1"
@@ -2897,7 +2895,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' כהנא דפנה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3599,7 +3597,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר פרי עומר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4234,45 +4232,6 @@
      "exams": []
     }
    ]
-  },
-  "40231": {
-   "name": "שיטות מתקדמות בתכנון ומדידת ביצועים",
-   "credits": 2.5,
-   "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "40007",
-       "name": "מבוא לכלכלה"
-      },
-      {
-       "id": "40007",
-       "name": "מבוא לכלכלה"
-      }
-     ]
-    },
-    {
-     "kind": "מקביל",
-     "anyOf": [
-      {
-       "id": "40123",
-       "name": "שיטות אופטימיזציה"
-      }
-     ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "40132",
-       "name": "ניהול התפעול1"
-      }
-     ]
-    }
-   ],
-   "groups": []
   },
   "40235": {
    "name": "ניתוח נתונים בשפת R",
@@ -4981,7 +4940,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "מר וולף רון",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6257,7 +6216,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090215/1",
@@ -6364,7 +6323,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שלום תמיר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090219/1",
@@ -6695,7 +6654,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6803,7 +6762,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7198,7 +7157,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר וקסמן עזרא",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091117/1"
@@ -7258,7 +7217,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר טטרואשוילי לובה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091120/1"
@@ -7428,7 +7387,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7482,7 +7441,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7721,7 +7680,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091411/1"
@@ -7741,7 +7700,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091412/1"
@@ -7761,7 +7720,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091413/1"
@@ -7947,7 +7906,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7965,7 +7924,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7983,7 +7942,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' זלקמן סמירין אולגה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8151,7 +8110,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' פישלוב דליה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279092504/1"
@@ -8305,7 +8264,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' נמירובסקי אירינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
