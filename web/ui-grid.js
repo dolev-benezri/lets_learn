@@ -229,7 +229,7 @@ export function renderDaySelector(range, res, data, day) {
 // Popover: details of one group, friends in it, pin toggle and a Yedion link. Compact: header and actions stay, the rest scrolls inside.
 // The group is named for people (type + short number); the 9-digit registration id stays visible but secondary.
 // Prefer / avoid this lecturer in every search (constraints.lecturers); pressed again, the choice is cleared.
-const lecturerBtns = (name, mine) => [['prefer', 'העדף מרצה', `להעדיף את ${name}`], ['avoid', 'הימנע ממרצה', `להימנע מקבוצות של ${name}`]].map(([mode, label, aria]) => ` <button
+const lecturerBtns = (name, mine) => [['prefer', 'העדף מרצה', `העדף מרצה: ${name}`], ['avoid', 'הימנע ממרצה', `הימנע ממרצה: ${name}`]].map(([mode, label, aria]) => ` <button
   type="button" class="btn sm" data-act="lecturer" data-name="${esc(name)}" data-mode="${mode}" aria-pressed="${mine === mode}" aria-label="${esc(aria)}">${label}</button>`).join('');
 // The mailto of "דיווח על טעות" with what the tool knows (program, cohort, semester, page, and the group when one is open); '' when settings.json gives no address.
 export function reportHref(group) {

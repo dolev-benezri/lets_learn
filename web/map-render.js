@@ -17,7 +17,7 @@ const nodeLabel = (c, id, yr) => {
   const co = c.data.courses[id], s = statusOf(c, id), n = c.unlocks[id] ?? 0;
   const why = ['blocked', 'notOffered', 'afterA', 'conditional'].includes(s) ? c.st[id].reasons : [];
   return [co.name, LABEL[s], `${co.credits} נ״ז`, yearTag(yr), requires(c.data, id).length && `דורש: ${requires(c.data, id).join('; ')}`, n
-    && `פותח: ${plural(n, 'קורס אחד', 'קורסים')}`, ...why].filter(Boolean).join(', ');
+    && `פותח: ${n} ${n === 1 ? 'קורס' : 'קורסים'}`, ...why].filter(Boolean).join(', ');
 };
 
 
@@ -45,6 +45,9 @@ export const LEGEND = [['done', 'עברתי'], ['exempt', 'פטור'], ['availab
   ['afterA', 'בב׳ אחרי…'], ['blocked', 'חסום, חסר קדם'], ['notOffered', 'לא נלמד בסמסטר']];
 const num = (n) => Math.round(n * 10) / 10;
 
+// The shortened course name is drawn through <use> from <defs>, so it is not part of the node's own text: the node is named by its full aria-label,
+// which can never contain the cut-off "…" that is on screen (WCAG 2.5.3 compares the visible text with the name).
+const nameDef = (c, n) => `<text id="nm-${esc(n.key)}" x="${num(n.x)}" y="${num(n.y + n.r + 16)}">${esc(truncate(c.data.courses[n.id].name))}</text>`;
 function nodeSvg(c, n) {
   const x = num(n.x), y = num(n.y);
   if (n.type === 'ext') {
@@ -61,7 +64,7 @@ function nodeSvg(c, n) {
     ${mine ? `<circle class="mine-halo" cx="${x}" cy="${y}" r="${n.r + 8}"/>` : ''}<circle class="plan-ring" cx="${x}" cy="${y}" r="${n.r + 4}"/>
     <circle class="halo" cx="${x}" cy="${y}" r="${n.r + 5}"/><circle class="hit" cx="${x}" cy="${y}" r="${Math.max(n.r, 22)}"/><circle class="ring"
       cx="${x}" cy="${y}" r="${n.r}"/>${glyph(s, x, y, n.r)}
-    <text class="nm" x="${x}" y="${num(y + n.r + 16)}" text-anchor="middle">${esc(truncate(co.name))}</text>${o ? `<g class="opens" aria-hidden="true"><rect
+    <use class="nm" href="#nm-${esc(n.key)}" text-anchor="middle"/>${o ? `<g class="opens" aria-hidden="true"><rect
       x="${num(x - n.r * 0.8 - bw / 2)}" y="${num(y - n.r * 0.85 - 8)}" width="${bw}" height="16" rx="8"/><text x="${num(x - n.r * 0.8)}"
       y="${num(y - n.r * 0.85)}" text-anchor="middle" dominant-baseline="central">פותח ${o}</text></g>` : ''}</g>`;
 }
@@ -85,7 +88,8 @@ export function mapSvg(c) {
   return `<svg class="pm-svg" width="100%" height="100%" role="group" aria-label="מפת הקורסים"><defs>
     <marker id="pmArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar"/></marker>
     <marker id="pmArrP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar plan"/></marker>
-    <marker id="pmArrL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar lit"/></marker></defs>
+    <marker id="pmArrL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 1 10 5 0 9z" class="ar lit"/></marker>
+    ${g.nodes.filter((n) => n.type !== 'ext').map((n) => nameDef(c, n)).join('')}</defs>
     <g class="pz"><g class="bands">${bands}</g><g class="edges" aria-hidden="true">${edges}</g><g class="ors">${ors}</g><g class="nodes">${g.nodes.map((n) => nodeSvg(c, n)).join('')}</g></g></svg>`;
 }
 
