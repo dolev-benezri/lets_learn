@@ -9,7 +9,9 @@ import { approvedText, esc, heb } from '../web/ui-text.js';
 
 const data = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
 const entry = { id: 30, name: 'הנדסה מכנית', startYears: [2026] };
-const settings = cleanSettings({ programs: { 30: { approved: { 2026: '2026-10-05' }, conflicts: [{ cohorts: [2026], text: 'סתירה לדוגמה' }] } } });
+const settings = cleanSettings({
+  programs: { 30: { approved: { 2026: '2026-10-05' }, conflicts: [{ cohorts: [2026], text: 'סתירה לדוגמה' }] } }
+});
 const html = rulesHtml(data, entry, cleanSettings({}));
 
 test('rulesHtml: program, cohort and total credits', () => {
@@ -29,7 +31,12 @@ test('rulesHtml: every list with its minimum credits and every course id', () =>
 test('rulesHtml: each course shows its prerequisites by name', () => {
   const listed = new Set(data.lists.flatMap((l) => l.courses));
   let seen = 0;
-  for (const id of listed) for (const p of data.courses[id]?.prereqs ?? []) for (const a of p.anyOf) { seen++; assert.ok(html.includes(esc(heb(a.name))), a.name); }
+  for (const id of listed)
+    for (const p of data.courses[id]?.prereqs ?? [])
+      for (const a of p.anyOf) {
+        seen++;
+        assert.ok(html.includes(esc(heb(a.name))), a.name);
+      }
   assert.ok(seen > 0);
 });
 
@@ -48,7 +55,18 @@ test('rulesHtml: an approved cohort says so; open conflicts are listed; text is 
 });
 
 test('indexHtml: links a program per cohort and says when a data file is missing', () => {
-  const h = indexHtml([{ entry, files: [{ startYear: 2026, found: true }, { startYear: 2027, found: false }] }], settings);
+  const h = indexHtml(
+    [
+      {
+        entry,
+        files: [
+          { startYear: 2026, found: true },
+          { startYear: 2027, found: false }
+        ]
+      }
+    ],
+    settings
+  );
   assert.ok(h.includes('href="30-2026.html"'));
   assert.ok(h.includes('לא נמצא קובץ נתונים'));
   assert.ok(!h.includes('href="30-2027.html"'));
@@ -67,11 +85,19 @@ test('main: writes a page per found data file and marks a missing one in the ind
   const root = mkdtempSync(path.join(tmpdir(), 'rules-'));
   try {
     mkdirSync(`${root}/data/afeka/2027-1`, { recursive: true });
-    writeFileSync(`${root}/data/afeka/catalog.json`, JSON.stringify({ year: 2027, programs: [{ id: 30, name: 'הנדסה מכנית', startYears: [2026, 2027] }] }));
+    writeFileSync(
+      `${root}/data/afeka/catalog.json`,
+      JSON.stringify({ year: 2027, programs: [{ id: 30, name: 'הנדסה מכנית', startYears: [2026, 2027] }] })
+    );
     copyFileSync('web/data/afeka/2027-1/30-2026.json', `${root}/data/afeka/2027-1/30-2026.json`);
     const programs = main(root, `${root}/out`);
-    assert.deepEqual(programs[0].files, [{ startYear: 2026, found: true }, { startYear: 2027, found: false }]);
+    assert.deepEqual(programs[0].files, [
+      { startYear: 2026, found: true },
+      { startYear: 2027, found: false }
+    ]);
     assert.ok(existsSync(`${root}/out/30-2026.html`) && !existsSync(`${root}/out/30-2027.html`));
     assert.match(readFileSync(`${root}/out/index.html`, 'utf8'), /2027 \(לא נמצא קובץ נתונים\)/);
-  } finally { rmSync(root, { recursive: true }); }
+  } finally {
+    rmSync(root, { recursive: true });
+  }
 });

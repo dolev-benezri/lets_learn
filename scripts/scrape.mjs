@@ -12,7 +12,17 @@ import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
 import { officialDrift, OFFICIAL } from './audit.mjs';
 import PROGRAMS from './programs.json' with { type: 'json' };
-import { pageKind, throttleUntil, nextDelay, retryAfterMs, stableJson, dataHash, changeSummary, msUntil, nextHour } from './polite.mjs';
+import {
+  pageKind,
+  throttleUntil,
+  nextDelay,
+  retryAfterMs,
+  stableJson,
+  dataHash,
+  changeSummary,
+  msUntil,
+  nextHour
+} from './polite.mjs';
 
 // scripts/programs.json: per program the list codes, department, specializations (hand-maintained, docs/research-degree-rules.md 5.2), degree credits and the anchor course validate() demands.
 const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
@@ -30,10 +40,19 @@ export class ThrottledError extends Error {
 // A request function with run-level state: cookie jar, rejected streak, and a retry budget shared by every request (a full run is ~1800 requests).
 // One request gives up after MAX_TRIES retries (~5 min of backoff): a site that is down fails the run instead of waiting out the whole budget.
 const MAX_TRIES = 6;
-export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), delay = 2500, rnd = Math.random, log = console.error, budget = 30 } = {}) {
+export function makeRequester({
+  fetchFn = fetch,
+  sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+  delay = 2500,
+  rnd = Math.random,
+  log = console.error,
+  budget = 30
+} = {}) {
   const cookies = new Map();
   let rejectedStreak = 0;
-  const spend = (why) => { if (budget-- <= 0) throw new Error(`retry budget exhausted (${why})`); };
+  const spend = (why) => {
+    if (budget-- <= 0) throw new Error(`retry budget exhausted (${why})`);
+  };
 
   return async function request(query, form) {
     const what = query ?? form.PRGNAME;
@@ -69,7 +88,10 @@ export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r)
       if (res.status === 429 || res.status >= 500) {
         spend(`HTTP ${res.status}`);
         const ra = res.status === 429 || res.status === 503 ? retryAfterMs(res.headers.get('retry-after')) : null;
-        if (ra > MAX_RETRY_AFTER_MS) throw new Error(`HTTP ${res.status} with Retry-After ${ra / 1000}s, too long to wait; nothing written (${what})`);
+        if (ra > MAX_RETRY_AFTER_MS)
+          throw new Error(
+            `HTTP ${res.status} with Retry-After ${ra / 1000}s, too long to wait; nothing written (${what})`
+          );
         log(`HTTP ${res.status}, retrying in ${(ra ?? backoff) / 1000}s: ${what}`);
         wait = ra ?? backoff;
         continue;
@@ -85,7 +107,8 @@ export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r)
         continue;
       }
       if (kind === 'rejected') {
-        if (++rejectedStreak >= 3) throw new Error(`request rejected by the site ${rejectedStreak} times in a row; nothing written (${what})`);
+        if (++rejectedStreak >= 3)
+          throw new Error(`request rejected by the site ${rejectedStreak} times in a row; nothing written (${what})`);
         spend('rejected');
         log(`rejected, retrying in ${backoff / 1000}s: ${what}`);
         wait = backoff;
@@ -99,11 +122,22 @@ export function makeRequester({ fetchFn = fetch, sleep = (ms) => new Promise((r)
 
 // Semesters that have at least one meeting in the scraped groups, in site order.
 export function semestersIn(raw) {
-  const seen = new Set(Object.values(raw).flatMap((r) => r.groups).flatMap((g) => g.meetings).map((m) => m.semester));
+  const seen = new Set(
+    Object.values(raw)
+      .flatMap((r) => r.groups)
+      .flatMap((g) => g.meetings)
+      .map((m) => m.semester)
+  );
   return ['א', 'ב', 'קיץ'].filter((s) => seen.has(s));
 }
 
-const readJson = async (file) => { try { return JSON.parse(await readFile(file, 'utf8')); } catch { return null; } };
+const readJson = async (file) => {
+  try {
+    return JSON.parse(await readFile(file, 'utf8'));
+  } catch {
+    return null;
+  }
+};
 
 const MAX_LISTED = 6; // the summary is a commit message: a first run over many programs must not make it a wall of text
 // Write every changed data file, then status.json. `results`: [{ key, file, dataset, prev }].
@@ -112,7 +146,8 @@ export async function writeResults({ results, statusFile, now }) {
   const semesters = { ...(await readJson(statusFile))?.semesters };
   const changes = [];
   for (const { key, file, dataset, prev } of results) {
-    const stable = stableJson(dataset), hash = dataHash(stable);
+    const stable = stableJson(dataset),
+      hash = dataHash(stable);
     if (!prev || stableJson(prev) !== stable) {
       await mkdir(dirname(file), { recursive: true });
       await writeFile(file, JSON.stringify(dataset, null, 1));
@@ -122,14 +157,21 @@ export async function writeResults({ results, statusFile, now }) {
   }
   await mkdir(dirname(statusFile), { recursive: true });
   await writeFile(statusFile, JSON.stringify({ checkedAt: now, ok: true, semesters }, null, 1));
-  const shown = changes.length > MAX_LISTED ? [...changes.slice(0, MAX_LISTED), `and ${changes.length - MAX_LISTED} more of ${changes.length} files`] : changes;
+  const shown =
+    changes.length > MAX_LISTED
+      ? [...changes.slice(0, MAX_LISTED), `and ${changes.length - MAX_LISTED} more of ${changes.length} files`]
+      : changes;
   return `data(afeka): ${shown.join('; ') || 'no changes'}`;
 }
 
 // Program x cohort pairs to build. One pair (--program, --start), or with --all-programs every configured program and cohort (--programs 20,30 narrows it).
 export function unitsOf(opt, programs) {
   const wanted = opt.programs ? opt.programs.split(',').map(Number) : null;
-  const ids = opt['all-programs'] ? Object.keys(programs).map(Number).filter((id) => !wanted || wanted.includes(id)) : [Number(opt.program)];
+  const ids = opt['all-programs']
+    ? Object.keys(programs)
+        .map(Number)
+        .filter((id) => !wanted || wanted.includes(id))
+    : [Number(opt.program)];
   return ids.flatMap((program) => {
     const cfg = programs[program];
     if (!cfg) throw new Error(`no list codes configured for program ${program}`);
@@ -148,15 +190,23 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
   const session = [];
   let replayed = false;
   return async (query, form) => {
-    if (query === 'prgname=Enter_Search' || form?.PRGNAME === 'Enter_Search') { session.push([query, form]); return ''; }
+    if (query === 'prgname=Enter_Search' || form?.PRGNAME === 'Enter_Search') {
+      session.push([query, form]);
+      return '';
+    }
     const key = query ?? new URLSearchParams(form).toString();
     const file = `${dir}/${createHash('sha1').update(key).digest('hex')}.html`;
     try {
       const html = await readFile(file, 'utf8');
       if (offline || Date.now() - (await stat(file)).mtimeMs <= ttl(key, html)) return html;
-    } catch { /* not cached */ }
+    } catch {
+      /* not cached */
+    }
     if (offline) throw new Error(`offline and not in the cache: ${key}`);
-    if (!replayed) { replayed = true; for (const [q, f] of session) await inner(q, f); }
+    if (!replayed) {
+      replayed = true;
+      for (const [q, f] of session) await inner(q, f);
+    }
     const html = await inner(query, form);
     await mkdir(dir, { recursive: true });
     await writeFile(`${file}.tmp`, html);
@@ -174,18 +224,32 @@ const weekly = (key) => (7 + (createHash('sha1').update(key).digest()[0] % 3)) *
 const otherNight = (key, now) => (Math.floor(now / DAY) + createHash('sha1').update(key).digest()[1]) % 2 === 1;
 export function nightlyTtl(key, html, now = Date.now()) {
   if (key.includes('S_EXAMS')) return 0;
-  if (key.startsWith('prgname=S_LOOK_FOR_NOSE')) return !parseGroups(html).length ? weekly(key) : otherNight(key, now) ? 1.5 * DAY : 0;
+  if (key.startsWith('prgname=S_LOOK_FOR_NOSE'))
+    return !parseGroups(html).length ? weekly(key) : otherNight(key, now) ? 1.5 * DAY : 0;
   return weekly(key);
 }
 
 // Wait out the site's hourly limit instead of failing: sleep until the hour it names (Jerusalem time), start a new session, ask again. Gives up past maxWaitMs.
-export function patient(request, { year, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), now = () => new Date(), log = console.error, maxWaitMs = 75 * 60e3, maxWaits = 6 }) {
+export function patient(
+  request,
+  {
+    year,
+    sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+    now = () => new Date(),
+    log = console.error,
+    maxWaitMs = 75 * 60e3,
+    maxWaits = 6
+  }
+) {
   let waits = 0;
   return async (query, form) => {
     for (;;) {
-      try { return await request(query, form); } catch (e) {
+      try {
+        return await request(query, form);
+      } catch (e) {
         if (!(e instanceof ThrottledError)) throw e;
-        const until = e.until ?? nextHour(now()), ms = msUntil(until, now()); // a limit page that names no hour (seen on GitLab's runner): the limit ends with the clock hour
+        const until = e.until ?? nextHour(now()),
+          ms = msUntil(until, now()); // a limit page that names no hour (seen on GitLab's runner): the limit ends with the clock hour
         if (ms > maxWaitMs || ++waits > maxWaits) throw e;
         log(`hourly limit: waiting ${Math.round(ms / 60000)} min until ${until}`);
         await sleep(ms);
@@ -199,30 +263,50 @@ export function patient(request, { year, sleep = (ms) => new Promise((r) => setT
 // data/afeka/catalog.json: which program x cohort the site has files for. Programs not in this run keep their entry; programs not in the config lose it.
 // The picker's order: a track and its evening twin side by side (day first), the pairs by their lowest program number.
 export function catalogOrder(programs) {
-  const base = (p) => p.name.replace(/ \(ערב\)$/, ''), first = new Map();
+  const base = (p) => p.name.replace(/ \(ערב\)$/, ''),
+    first = new Map();
   for (const p of programs) first.set(base(p), Math.min(first.get(base(p)) ?? Infinity, p.id));
   return [...programs].sort((x, y) => first.get(base(x)) - first.get(base(y)) || x.id - y.id);
 }
 
 export async function writeCatalog(file, units, programs, year) {
-  const was = await readJson(file), old = (was?.year ?? year) === year ? was?.programs ?? [] : []; // another year's programs point at that year's files
+  const was = await readJson(file),
+    old = (was?.year ?? year) === year ? was?.programs ?? [] : []; // another year's programs point at that year's files
   const mine = new Map();
-  for (const u of units) mine.set(u.program, { id: u.program, name: programs[u.program].name, startYears: [...(mine.get(u.program)?.startYears ?? []), u.start].sort() });
+  for (const u of units)
+    mine.set(u.program, {
+      id: u.program,
+      name: programs[u.program].name,
+      startYears: [...(mine.get(u.program)?.startYears ?? []), u.start].sort()
+    });
   const next = catalogOrder([...old.filter((p) => !mine.has(p.id) && programs[p.id]), ...mine.values()]);
   const out = { ...(Number.isInteger(year) ? { year } : {}), programs: next }; // the site takes the academic year from here
-  if (JSON.stringify(was) !== JSON.stringify(out)) { await mkdir(dirname(file), { recursive: true }); await writeFile(file, JSON.stringify(out, null, 1)); }
+  if (JSON.stringify(was) !== JSON.stringify(out)) {
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, JSON.stringify(out, null, 1));
+  }
 }
 
 // One cache folder per academic year: the requests carry no year (the session picks it), so a flat cache would answer 2028 with 2027 pages.
 // ponytail: the flat cache from before this change is all 2027 and moves into its year on the first run; drop the move after that run.
 export async function yearCache(base, year) {
-  const dir = join(base, String(year)), fresh = !(await stat(dir).catch(() => null));
+  const dir = join(base, String(year)),
+    fresh = !(await stat(dir).catch(() => null));
   await mkdir(dir, { recursive: true });
-  if (fresh) for (const f of (await readdir(base)).filter((f) => f.endsWith('.html'))) await rename(join(base, f), join(dir, f));
+  if (fresh)
+    for (const f of (await readdir(base)).filter((f) => f.endsWith('.html'))) await rename(join(base, f), join(dir, f));
   return dir;
 }
 
-export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/data/afeka', now = () => new Date().toISOString(), log = console.error, check = validate }) {
+export async function run({
+  opt,
+  request,
+  programs = PROGRAMS,
+  dataDir = 'web/data/afeka',
+  now = () => new Date().toISOString(),
+  log = console.error,
+  check = validate
+}) {
   const units = unitsOf(opt, programs);
 
   await request('prgname=Enter_Search');
@@ -251,18 +335,32 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
     const args = groups.find((g) => g.primary && g.detailsArgs)?.detailsArgs;
     const details = args ? parseDetails(await request(`prgname=S_CourseDetails&arguments=${args}`)) : null;
     raw[id] = { groups, details };
-    log(`[${i + 1}/${ids.length}] ${id}: ${groups.length} groups, ${details ? `${details.credits} credits` : 'no details'}`);
+    log(
+      `[${i + 1}/${ids.length}] ${id}: ${groups.length} groups, ${details ? `${details.credits} credits` : 'no details'}`
+    );
   }
 
   const examsOf = new Map();
   for (const dept of new Set(units.map((u) => u.cfg.dept))) {
-    examsOf.set(dept, parseExams(await request(null, { PRGNAME: 'S_EXAMS', ARGUMENTS: 'R1C28,R1C29,R1C30', R1C28: String(dept), R1C29: '0', R1C30: '0' })));
+    examsOf.set(
+      dept,
+      parseExams(
+        await request(null, {
+          PRGNAME: 'S_EXAMS',
+          ARGUMENTS: 'R1C28,R1C29,R1C30',
+          R1C28: String(dept),
+          R1C29: '0',
+          R1C30: '0'
+        })
+      )
+    );
     log(`exams (department ${dept}): ${examsOf.get(dept).length} rows`);
   }
 
   // Build and check every program, cohort and semester before writing any file.
   const fetchedAt = now();
-  const results = [], failures = [];
+  const results = [],
+    failures = [];
   for (const u of units) {
     const mine = Object.fromEntries(u.lists.flatMap((l) => l.courses).map((c) => [c.id, raw[c.id]]));
     const semesters = opt['all-semesters'] ? semestersIn(mine) : [opt.semester];
@@ -275,8 +373,20 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
       const prev = await readJson(file);
       const buildWarnings = [];
       const dataset = buildDataset({
-        year: Number(opt.year), startYear: u.start, program: u.program, semester, department: u.cfg.deptName, lists: u.lists, raw, exams: examsOf.get(u.cfg.dept), fetchedAt,
-        warnings: buildWarnings, specializations: u.cfg.specializations, degree: u.cfg.degree, specRule: u.cfg.specRule, verified: u.cfg.verified,
+        year: Number(opt.year),
+        startYear: u.start,
+        program: u.program,
+        semester,
+        department: u.cfg.deptName,
+        lists: u.lists,
+        raw,
+        exams: examsOf.get(u.cfg.dept),
+        fetchedAt,
+        warnings: buildWarnings,
+        specializations: u.cfg.specializations,
+        degree: u.cfg.degree,
+        specRule: u.cfg.specRule,
+        verified: u.cfg.verified,
       });
       const { errors, warnings } = check(dataset, prev, u.cfg.anchor, u.cfg.minCourses);
       [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${label}: ${w}`));
@@ -294,32 +404,43 @@ export async function run({ opt, request, programs = PROGRAMS, dataDir = 'web/da
   if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs, Number(opt.year));
   // Curriculum numbers that moved: a hint for a human, never a failed run (the deploy must not wait on it)
   const read = (p, y) => JSON.parse(readFileSync(`${dataDir}/${opt.year}-1/${p}-${y}.json`, 'utf8')); // written just above
-  if (opt['all-programs'] && Number(opt.year) === OFFICIAL.year) officialDrift(read).forEach((w) => log(`WARN official ${w}`)); // the table is one year's curricula
+  if (opt['all-programs'] && Number(opt.year) === OFFICIAL.year)
+    officialDrift(read).forEach((w) => log(`WARN official ${w}`)); // the table is one year's curricula
   return summary;
 }
 
 async function main() {
-  const { values: opt } = parseArgs({ options: {
-    year: { type: 'string', default: '2027' },
-    start: { type: 'string', default: '2026' },
-    program: { type: 'string', default: '30' },
-    semester: { type: 'string', default: 'א' },
-    'all-semesters': { type: 'boolean', default: false },
-    delay: { type: 'string', default: '2500' },
-    force: { type: 'boolean', default: false },
-    'all-programs': { type: 'boolean', default: false },
-    programs: { type: 'string' },
-    cache: { type: 'string' },
-    offline: { type: 'boolean', default: false },
-    nightly: { type: 'boolean', default: false },
-    'wait-throttle': { type: 'boolean', default: false },
-  } });
+  const { values: opt } = parseArgs({
+    options: {
+      year: { type: 'string', default: '2027' },
+      start: { type: 'string', default: '2026' },
+      program: { type: 'string', default: '30' },
+      semester: { type: 'string', default: 'א' },
+      'all-semesters': { type: 'boolean', default: false },
+      delay: { type: 'string', default: '2500' },
+      force: { type: 'boolean', default: false },
+      'all-programs': { type: 'boolean', default: false },
+      programs: { type: 'string' },
+      cache: { type: 'string' },
+      offline: { type: 'boolean', default: false },
+      nightly: { type: 'boolean', default: false },
+      'wait-throttle': { type: 'boolean', default: false },
+    }
+  });
   const made = makeRequester({ delay: Number(opt.delay) });
   const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
-  const request = opt.cache ? cachedRequester(live, await yearCache(opt.cache, opt.year), { offline: opt.offline, ttl: opt.nightly ? nightlyTtl : undefined }) : live;
+  const request = opt.cache
+    ? cachedRequester(live, await yearCache(opt.cache, opt.year), {
+        offline: opt.offline,
+        ttl: opt.nightly ? nightlyTtl : undefined
+      })
+    : live;
   console.log(await run({ opt, request }));
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  main().catch((e) => {
+    console.error('FAILED', e.message);
+    process.exit(1);
+  });
 }

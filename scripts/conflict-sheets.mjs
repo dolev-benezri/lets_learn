@@ -22,7 +22,11 @@ tr { break-inside: avoid }
 .decision { height: 28mm }
 small { display: block; margin-top: 1mm }`;
 
-const row = (id, program, c) => `<tr class="row"><td>${esc(c.text)}<small>${esc(program.name)} (${id}), מחזורים ${c.cohorts.join(' · ')}</small></td>
+const row = (
+  id,
+  program,
+  c
+) => `<tr class="row"><td>${esc(c.text)}<small>${esc(program.name)} (${id}), מחזורים ${c.cohorts.join(' · ')}</small></td>
 <td>${esc(c.plan || UNKNOWN)}</td><td>${esc(c.yedion || UNKNOWN)}</td><td>${esc(c.tool || UNKNOWN)}</td><td class="decision"></td></tr>`;
 
 function html(deptName, rows) {
@@ -46,12 +50,17 @@ export function sheets(settings, programs) {
     if (!byDept.has(p.dept)) byDept.set(p.dept, { deptName: p.deptName, rows: [] });
     byDept.get(p.dept).rows.push(...list.map((c) => row(id, p, c)));
   }
-  return [...byDept].sort(([a], [b]) => a - b).map(([dept, d]) => ({ dept, deptName: d.deptName, html: html(d.deptName, d.rows) }));
+  return [...byDept]
+    .sort(([a], [b]) => a - b)
+    .map(([dept, d]) => ({ dept, deptName: d.deptName, html: html(d.deptName, d.rows) }));
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const read = (f) => JSON.parse(readFileSync(new URL(f, import.meta.url), 'utf8'));
   const out = sheets(cleanSettings(read('../web/settings.json')), read('./programs.json'));
   mkdirSync('docs/conflicts', { recursive: true });
-  for (const s of out) { writeFileSync(`docs/conflicts/${s.dept}.html`, s.html); console.log(`docs/conflicts/${s.dept}.html  ${s.deptName}`); }
+  for (const s of out) {
+    writeFileSync(`docs/conflicts/${s.dept}.html`, s.html);
+    console.log(`docs/conflicts/${s.dept}.html  ${s.deptName}`);
+  }
 }

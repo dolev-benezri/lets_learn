@@ -1,6 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hourRange, nearestStep, summary, initials, firstName, rankText, assignColors, repeatIds, progressRanks, altGroups, backups, isPair, semResult, resCourses, resGroups, placedIn, yearTotals, renderWeek } from '../web/ui-grid.js';
+import {
+  hourRange,
+  nearestStep,
+  summary,
+  initials,
+  firstName,
+  rankText,
+  assignColors,
+  repeatIds,
+  progressRanks,
+  altGroups,
+  backups,
+  isPair,
+  semResult,
+  resCourses,
+  resGroups,
+  placedIn,
+  yearTotals,
+  renderWeek
+} from '../web/ui-grid.js';
 
 const m = (day, start, end) => ({ day, start, end });
 
@@ -22,13 +41,42 @@ test('nearestStep: reads a stored weight back to the nearest scale step, ties go
 });
 
 test('summary: credits, free days, gaps, friends and exam gap of one alternative', () => {
-  const data = { courses: {
-    A: { credits: 5, groups: [{ id: 'a1', meetings: [m(1, '08:00', '10:00')] }, { id: 'a1/1', meetings: [m(3, '10:00', '11:00')] }] },
-    B: { credits: 2.5, groups: [{ id: 'b1', meetings: [m(2, '12:00', '14:00')] }, { id: 'b2', meetings: [m(5, '12:00', '14:00')] }] },
-  } };
-  const res = { courses: ['A', 'B'], groups: ['a1', 'a1/1', 'b1'], breakdown: { compact: 0.85 }, explanation: 'x · לפחות 3 ימים בין בחינות' };
-  const friends = [{ name: 'נועה', groups: ['b1'], active: true }, { name: 'דן', groups: ['b2'], active: true }, { name: 'off', groups: ['a1'], active: false }];
-  assert.deepEqual(summary(res, data, friends), { credits: 7.5, freeDays: [4, 5], gapH: 1.5, withFriends: [{ name: 'נועה', n: 1 }], examGap: '3' });
+  const data = {
+    courses: {
+      A: {
+        credits: 5,
+        groups: [
+          { id: 'a1', meetings: [m(1, '08:00', '10:00')] },
+          { id: 'a1/1', meetings: [m(3, '10:00', '11:00')] }
+        ]
+      },
+      B: {
+        credits: 2.5,
+        groups: [
+          { id: 'b1', meetings: [m(2, '12:00', '14:00')] },
+          { id: 'b2', meetings: [m(5, '12:00', '14:00')] }
+        ]
+      },
+    }
+  };
+  const res = {
+    courses: ['A', 'B'],
+    groups: ['a1', 'a1/1', 'b1'],
+    breakdown: { compact: 0.85 },
+    explanation: 'x · לפחות 3 ימים בין בחינות'
+  };
+  const friends = [
+    { name: 'נועה', groups: ['b1'], active: true },
+    { name: 'דן', groups: ['b2'], active: true },
+    { name: 'off', groups: ['a1'], active: false }
+  ];
+  assert.deepEqual(summary(res, data, friends), {
+    credits: 7.5,
+    freeDays: [4, 5],
+    gapH: 1.5,
+    withFriends: [{ name: 'נועה', n: 1 }],
+    examGap: '3'
+  });
   assert.equal(summary({ ...res, explanation: 'בלי חלונות' }, data, []).examGap, null);
 });
 
@@ -51,7 +99,14 @@ test('rankText: plain Hebrew instead of "דירוג N מתוך M"', () => {
 
 test('assignColors: a course keeps its colour when others leave the plan or new ones appear', () => {
   const m = assignColors(new Map(), ['a', 'b', 'c']);
-  assert.deepEqual([...m], [['a', 0], ['b', 1], ['c', 2]]);
+  assert.deepEqual(
+    [...m],
+    [
+      ['a', 0],
+      ['b', 1],
+      ['c', 2]
+    ]
+  );
   assignColors(m, ['c', 'd']); // 'a' and 'b' dropped out of the plan, 'd' is new
   assert.deepEqual([m.get('c'), m.get('d'), m.get('a')], [2, 3, 0]);
   assignColors(m, ['e', 'f', 'g', 'h', 'i']);
@@ -59,7 +114,12 @@ test('assignColors: a course keeps its colour when others leave the plan or new 
 });
 
 test('assignColors: no two courses of the shown alternative share a colour, even when sticky colours clash; repeats only beyond 8', () => {
-  const m = new Map([['a', 0], ['b', 0], ['c', 0], ['x', 3]]); // stale clashes from earlier alternatives
+  const m = new Map([
+    ['a', 0],
+    ['b', 0],
+    ['c', 0],
+    ['x', 3]
+  ]); // stale clashes from earlier alternatives
   assignColors(m, ['a', 'b', 'c', 'x']);
   assert.equal(new Set(['a', 'b', 'c', 'x'].map((id) => m.get(id))).size, 4);
   assert.equal(m.get('a'), 0); // first keeps its sticky colour
@@ -79,12 +139,31 @@ test('progressRanks: ranks by breakdown.progress, ties share rank (1,1,3 style)'
 });
 
 test('altGroups: same course+type groups, flagged when they clash with the rest of the alternative', () => {
-  const g = (id, type, meetings, linked = []) => ({ id, type, meetings, linked, primary: !id.includes('/'), full: false, exams: [], lecturer: '' });
-  const data = { courses: {
-    A: { groups: [g('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), g('a2', 'L', [m(2, '08:00', '10:00')], ['a2/1']), g('a3', 'L', [m(3, '08:00', '10:00')], ['a3/1']),
-      g('a1/1', 'T', [m(4, '08:00', '10:00')]), g('a2/1', 'T', [m(5, '08:00', '10:00')]), g('a3/1', 'T', [m(2, '09:00', '11:00')])] },
-    B: { groups: [g('b1', 'L', [m(2, '09:00', '10:00')])] },
-  } };
+  const g = (id, type, meetings, linked = []) => ({
+    id,
+    type,
+    meetings,
+    linked,
+    primary: !id.includes('/'),
+    full: false,
+    exams: [],
+    lecturer: ''
+  });
+  const data = {
+    courses: {
+      A: {
+        groups: [
+          g('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']),
+          g('a2', 'L', [m(2, '08:00', '10:00')], ['a2/1']),
+          g('a3', 'L', [m(3, '08:00', '10:00')], ['a3/1']),
+          g('a1/1', 'T', [m(4, '08:00', '10:00')]),
+          g('a2/1', 'T', [m(5, '08:00', '10:00')]),
+          g('a3/1', 'T', [m(2, '09:00', '11:00')])
+        ]
+      },
+      B: { groups: [g('b1', 'L', [m(2, '09:00', '10:00')])] },
+    }
+  };
   const alt = ['a1', 'a1/1', 'b1'];
   const clash = (gid) => Object.fromEntries(altGroups(data, alt, gid).map((x) => [x.g.id, x.clash]));
   // a2 hits B itself; a3 only through its own tutorial (and a2/1 through its lecture); other types and the current groups are ignored
@@ -93,27 +172,51 @@ test('altGroups: same course+type groups, flagged when they clash with the rest 
   assert.deepEqual(clash('b1'), { b1: false });
 });
 
-const mk = (id, type, meetings, linked = [], extra = {}) => ({ id, type, meetings, linked, primary: !id.includes('/'), full: false, exams: [], lecturer: '', ...extra });
+const mk = (id, type, meetings, linked = [], extra = {}) => ({
+  id,
+  type,
+  meetings,
+  linked,
+  primary: !id.includes('/'),
+  full: false,
+  exams: [],
+  lecturer: '',
+  ...extra
+});
 const course = (groups) => ({ A: { groups }, B: { groups: [mk('b1', 'L', [m(2, '09:00', '10:00')])] } });
 
 test('altGroups: ok=false for a tutorial whose lecture is full or that no lecture links to', () => {
-  const data = { courses: course([
-    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a2', 'L', [m(3, '08:00', '10:00')], ['a2/1'], { full: true }),
-    mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a2/1', 'T', [m(5, '08:00', '10:00')]), mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
-  ]) };
-  const ok = (includeFull) => Object.fromEntries(altGroups(data, ['a1', 'a1/1'], 'a1/1', includeFull).map((x) => [x.g.id, x.ok]));
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']),
+      mk('a2', 'L', [m(3, '08:00', '10:00')], ['a2/1'], { full: true }),
+      mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+      mk('a2/1', 'T', [m(5, '08:00', '10:00')]),
+      mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
+    ])
+  };
+  const ok = (includeFull) =>
+    Object.fromEntries(altGroups(data, ['a1', 'a1/1'], 'a1/1', includeFull).map((x) => [x.g.id, x.ok]));
   assert.deepEqual(ok(false), { 'a1/1': true, 'a2/1': false, 'a9/1': false });
   assert.equal(ok(true)['a2/1'], true);
   assert.equal(altGroups(data, ['a1', 'a1/1'], 'a1')[1].ok, true); // a full lecture can still be pinned
 });
 
 test('backups: a lecture backup is listed with its own tutorial, not matched against the chosen tutorial', () => {
-  const data = { courses: course([
-    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a2', 'L', [m(3, '08:00', '10:00')], ['a2/1']), mk('a3', 'L', [m(2, '09:00', '10:00')], ['a3/1']),
-    mk('a4', 'L', [m(5, '08:00', '10:00')], ['a4/1']), mk('a5', 'L', [m(5, '12:00', '14:00')], ['a5/1']),
-    mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a2/1', 'T', [m(4, '12:00', '13:00')]), mk('a3/1', 'T', [m(4, '14:00', '15:00')]),
-    mk('a4/1', 'T', [m(4, '16:00', '17:00')], [], { full: true }), mk('a5/1', 'T', [m(6, '08:00', '09:00')]),
-  ]) };
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']),
+      mk('a2', 'L', [m(3, '08:00', '10:00')], ['a2/1']),
+      mk('a3', 'L', [m(2, '09:00', '10:00')], ['a3/1']),
+      mk('a4', 'L', [m(5, '08:00', '10:00')], ['a4/1']),
+      mk('a5', 'L', [m(5, '12:00', '14:00')], ['a5/1']),
+      mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+      mk('a2/1', 'T', [m(4, '12:00', '13:00')]),
+      mk('a3/1', 'T', [m(4, '14:00', '15:00')]),
+      mk('a4/1', 'T', [m(4, '16:00', '17:00')], [], { full: true }),
+      mk('a5/1', 'T', [m(6, '08:00', '09:00')]),
+    ])
+  };
   const res = { groups: ['a1', 'a1/1', 'b1'], alts: {} };
   // a3 clashes with b1, a4's tutorial is full
   assert.deepEqual(backups(data, res, 'a1'), ['a2 + a2/1', 'a5 + a5/1']);
@@ -122,23 +225,37 @@ test('backups: a lecture backup is listed with its own tutorial, not matched aga
 });
 
 test('backups: a tutorial backup must belong to the chosen lecture', () => {
-  const data = { courses: course([
-    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1', 'a1/2']), mk('a2', 'L', [m(3, '08:00', '10:00')], ['a2/1']),
-    mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a1/2', 'T', [m(5, '08:00', '10:00')]), mk('a2/1', 'T', [m(5, '12:00', '13:00')]),
-  ]) };
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1', 'a1/2']),
+      mk('a2', 'L', [m(3, '08:00', '10:00')], ['a2/1']),
+      mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+      mk('a1/2', 'T', [m(5, '08:00', '10:00')]),
+      mk('a2/1', 'T', [m(5, '12:00', '13:00')]),
+    ])
+  };
   assert.deepEqual(backups(data, { groups: ['a1', 'a1/1', 'b1'] }, 'a1/1'), ['a1/2']);
 });
 
 test('year pairs: shown-semester result, empty halves, totals and placement', () => {
   const single = { courses: ['A'], groups: ['a1'], breakdown: { compact: 0.9 } };
-  const pair = { a: { courses: ['A'], groups: ['a1'], breakdown: { compact: 0.8, progress: 2 } }, b: null, credits: { a: 5, b: 0 }, missing: [], warnings: [] };
-  assert.equal(isPair(single), false); assert.equal(isPair(pair), true); assert.equal(isPair(null), false);
+  const pair = {
+    a: { courses: ['A'], groups: ['a1'], breakdown: { compact: 0.8, progress: 2 } },
+    b: null,
+    credits: { a: 5, b: 0 },
+    missing: [],
+    warnings: []
+  };
+  assert.equal(isPair(single), false);
+  assert.equal(isPair(pair), true);
+  assert.equal(isPair(null), false);
   assert.equal(semResult(single, 'ב'), single);
   assert.equal(semResult(pair, 'א').breakdown.compact, 0.8);
   assert.deepEqual(semResult(pair, 'ב').courses, []); // a null half still renders and summarises
   assert.equal(semResult({ ...pair, a: { courses: [], groups: [], breakdown: {} } }, 'א').breakdown.compact, 1); // the empty א׳ plan has no breakdown
   const full = { ...pair, b: { courses: ['B'], groups: ['b1'], breakdown: {} }, credits: { a: 5, b: 2.5 } };
-  assert.deepEqual(resCourses(full), ['A', 'B']); assert.deepEqual(resGroups(full), ['a1', 'b1']);
+  assert.deepEqual(resCourses(full), ['A', 'B']);
+  assert.deepEqual(resGroups(full), ['a1', 'b1']);
   assert.deepEqual(yearTotals(full), { courses: 2, credits: 7.5 });
   assert.deepEqual([placedIn(full, 'A'), placedIn(full, 'B'), placedIn(full, 'C')], ['א', 'ב', null]);
   assert.deepEqual(resCourses(single), ['A']);
@@ -149,16 +266,18 @@ test('a block wraps the end time in .blk-end so narrow blocks can drop it', () =
     courses: {
       A: {
         name: 'Test Course',
-        groups: [{
-          id: 'a1',
-          type: 'הרצאה',
-          meetings: [{ day: 2, start: '08:00', end: '10:00' }],
-          linked: [],
-          primary: true,
-          full: false,
-          exams: [],
-          lecturer: '',
-        }],
+        groups: [
+          {
+            id: 'a1',
+            type: 'הרצאה',
+            meetings: [{ day: 2, start: '08:00', end: '10:00' }],
+            linked: [],
+            primary: true,
+            full: false,
+            exams: [],
+            lecturer: '',
+          }
+        ],
       },
     },
   };
@@ -187,9 +306,25 @@ test('hourRange: a busy block outside lesson hours extends the range (blocks are
 });
 
 test('renderWeek: a busy block is a non-interactive div with escaped label and screen-reader text; empty label falls back', () => {
-  const html = renderWeek({ data: { courses: {} }, res: null, range: { from: 8, to: 21, days: 5 }, colors: new Map(), dashed: new Set(), pins: [], friends: [], day: null,
-    blocks: [{ day: 2, start: '18:00', end: '20:00', label: '<b>עבודה</b>' }, { day: 3, start: '09:00', end: '10:00', label: '' }, { day: 6, start: '09:00', end: '10:00', label: 'x' }] });
-  assert.match(html, /<div class="off" style="--s:600;--d:120"><span class="off-l" aria-hidden="true">&lt;b&gt;עבודה&lt;\/b&gt;<\/span>\s*<span class="sr">זמן תפוס: &lt;b&gt;עבודה&lt;\/b&gt; 18:00–20:00<\/span>/);
+  const html = renderWeek({
+    data: { courses: {} },
+    res: null,
+    range: { from: 8, to: 21, days: 5 },
+    colors: new Map(),
+    dashed: new Set(),
+    pins: [],
+    friends: [],
+    day: null,
+    blocks: [
+      { day: 2, start: '18:00', end: '20:00', label: '<b>עבודה</b>' },
+      { day: 3, start: '09:00', end: '10:00', label: '' },
+      { day: 6, start: '09:00', end: '10:00', label: 'x' }
+    ]
+  });
+  assert.match(
+    html,
+    /<div class="off" style="--s:600;--d:120"><span class="off-l" aria-hidden="true">&lt;b&gt;עבודה&lt;\/b&gt;<\/span>\s*<span class="sr">זמן תפוס: &lt;b&gt;עבודה&lt;\/b&gt; 18:00–20:00<\/span>/
+  );
   assert.match(html, /aria-hidden="true">זמן תפוס<\/span>\s*<span class="sr">זמן תפוס: 09:00–10:00<\/span>/);
   assert.equal(html.split('class="off"').length - 1, 2); // the Friday block is outside a 5-day range
   assert.ok(!html.includes('<b>עבודה'));
@@ -198,7 +333,12 @@ test('renderWeek: a busy block is a non-interactive div with escaped label and s
 
 test('summary reads a one-day exam gap ("לפחות יום אחד") as "1"', () => {
   const data = { courses: { A: { credits: 3, groups: [{ id: 'a1', meetings: [m(1, '08:00', '10:00')] }] } } };
-  const res = { courses: ['A'], groups: ['a1'], breakdown: { compact: 1 }, explanation: 'בלי חלונות · לפחות יום אחד בין בחינות' };
+  const res = {
+    courses: ['A'],
+    groups: ['a1'],
+    breakdown: { compact: 1 },
+    explanation: 'בלי חלונות · לפחות יום אחד בין בחינות'
+  };
   assert.equal(summary(res, data, []).examGap, '1');
 });
 
@@ -210,34 +350,66 @@ test('summary lists Friday as free when the student wished it off', () => {
 });
 
 test('altGroups: with split on, a tutorial no lecture links to can be pinned (a lecture can pair with it); off, it cannot', () => {
-  const data = { courses: course([
-    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
-  ]) };
-  const ok = (split) => Object.fromEntries(altGroups(data, ['a1', 'a1/1'], 'a1/1', false, split).map((x) => [x.g.id, x.ok]));
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']),
+      mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+      mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
+    ])
+  };
+  const ok = (split) =>
+    Object.fromEntries(altGroups(data, ['a1', 'a1/1'], 'a1/1', false, split).map((x) => [x.g.id, x.ok]));
   assert.deepEqual(ok(false), { 'a1/1': true, 'a9/1': false });
   assert.deepEqual(ok(true), { 'a1/1': true, 'a9/1': true });
 });
 
 test('pinWith: a new pin replaces the course\'s pins it can\'t pair with; with split on a group of another type stays', async () => {
   const { pinWith } = await import('../web/ui-grid.js');
-  const data = { courses: course([
-    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a2', 'L', [m(2, '08:00', '10:00')]), mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
-  ]) };
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']),
+      mk('a2', 'L', [m(2, '08:00', '10:00')]),
+      mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+      mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
+    ])
+  };
   assert.deepEqual(pinWith(data, ['a1'], 'a1/1'), ['a1', 'a1/1'], 'linked: both stay');
-  assert.deepEqual(pinWith(data, ['a1'], 'a9/1'), ['a9/1'], 'split off: the unlinked tutorial replaces the lecture pin');
+  assert.deepEqual(
+    pinWith(data, ['a1'], 'a9/1'),
+    ['a9/1'],
+    'split off: the unlinked tutorial replaces the lecture pin'
+  );
   assert.deepEqual(pinWith(data, ['a1'], 'a9/1', true), ['a1', 'a9/1'], 'split on: the lecture pin holds');
   assert.deepEqual(pinWith(data, ['a1'], 'a2', true), ['a2'], 'the same type still replaces');
 });
 
 test('pinsWithoutSplit: pins that only work with split on lose their sub-group pins, the lecture stays; everything else is untouched', async () => {
   const { pinsWithoutSplit } = await import('../web/solver-core.js');
-  const data = { courses: course([
-    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a1/1', 'T', [m(4, '08:00', '10:00')]), mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
-  ]) };
-  assert.deepEqual(pinsWithoutSplit([data], ['a1', 'a9/1', 'b1']), ['a1', 'b1'], 'lecture + unlinked tutorial: the tutorial pin goes');
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']),
+      mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+      mk('a9/1', 'T', [m(5, '12:00', '13:00')]),
+    ])
+  };
+  assert.deepEqual(
+    pinsWithoutSplit([data], ['a1', 'a9/1', 'b1']),
+    ['a1', 'b1'],
+    'lecture + unlinked tutorial: the tutorial pin goes'
+  );
   assert.deepEqual(pinsWithoutSplit([null, data], ['a9/1']), [], 'a lone unlinked tutorial pin worked only with split');
   assert.deepEqual(pinsWithoutSplit([data], ['a1', 'a1/1']), ['a1', 'a1/1'], 'a linked pair is fine without split');
   assert.deepEqual(pinsWithoutSplit([data], ['zz', 'b1']), ['zz', 'b1'], 'stale and unrelated pins stay');
-  const clash = { courses: course([mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']), mk('a1/1', 'T', [m(1, '09:00', '11:00')]), mk('a9/1', 'T', [m(1, '09:00', '11:00')])]) };
-  assert.deepEqual(pinsWithoutSplit([clash], ['a1', 'a9/1']), ['a1', 'a9/1'], 'infeasible with split too: not the split\'s doing, kept');
+  const clash = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']),
+      mk('a1/1', 'T', [m(1, '09:00', '11:00')]),
+      mk('a9/1', 'T', [m(1, '09:00', '11:00')])
+    ])
+  };
+  assert.deepEqual(
+    pinsWithoutSplit([clash], ['a1', 'a9/1']),
+    ['a1', 'a9/1'],
+    'infeasible with split too: not the split\'s doing, kept'
+  );
 });

@@ -12,15 +12,21 @@ export const isThrottled = (html) => html.includes('יותר מידי שאילת
 // Returns the text of each row's direct .col children. Wrapper rows show up too;
 // callers filter by column count and content.
 export function tableRows(el) {
-  return el.querySelectorAll('.row').map((row) =>
-    row.childNodes.filter((n) => n.classList?.contains('col')).map((n) => clean(n.text)));
+  return el
+    .querySelectorAll('.row')
+    .map((row) => row.childNodes.filter((n) => n.classList?.contains('col')).map((n) => clean(n.text)));
 }
 
 export function parseProgram(html) {
   const root = parse(html);
   const text = clean(root.text);
   const min = text.match(/לפחות\s*([\d.]+)/);
-  const title = clean(root.querySelectorAll('h2').map((h) => h.text).find((t) => t.includes('רשימת קורסים')) ?? '');
+  const title = clean(
+    root
+      .querySelectorAll('h2')
+      .map((h) => h.text)
+      .find((t) => t.includes('רשימת קורסים')) ?? ''
+  );
   const name = title.split(':')[1]?.split(',')[0].trim() ?? '';
   const courses = tableRows(root)
     .filter((c) => c.length >= 3 && /^\d{4,6}$/.test(c[0]))
@@ -39,13 +45,18 @@ export function parseDay(text) {
 
 // Each group starts with <div class="TextAlignRight"> "קורס מסוג …" and is followed by its meetings table.
 export function parseGroups(html) {
-  return html.split('<div class="TextAlignRight">').slice(1)
+  return html
+    .split('<div class="TextAlignRight">')
+    .slice(1)
     .filter((chunk) => chunk.includes('קורס מסוג'))
     .map((chunk) => {
       const root = parse(chunk);
       const text = clean(root.text);
       const need = (m, field) => {
-        if (!m) throw new Error(`parseGroups: field "${field}" not found, yedion layout changed? Near: "${text.slice(0, 120)}"`);
+        if (!m)
+          throw new Error(
+            `parseGroups: field "${field}" not found, yedion layout changed? Near: "${text.slice(0, 120)}"`
+          );
         return m;
       };
       const type = need(text.match(/קורס מסוג\s*(\S+)/), 'קורס מסוג')[1];
@@ -97,14 +108,27 @@ export function parseExams(html) {
       courseId,
       lecturer,
       kind: kindText.startsWith('בוחן') ? 'בוחן אמצע' : 'בחינה',
-      moeds: [[d1, t1], [d2, t2], [d3, t3]]
-        .map(([d, t], i) => ({ moed: i + 1, date: toIsoDate(d), time: !t || EMPTY_TIME.test(t) ? null : t.slice(0, 5) }))
+      moeds: [
+        [d1, t1],
+        [d2, t2],
+        [d3, t3]
+      ]
+        .map(([d, t], i) => ({
+          moed: i + 1,
+          date: toIsoDate(d),
+          time: !t || EMPTY_TIME.test(t) ? null : t.slice(0, 5)
+        }))
         .filter((m) => m.date),
     }));
 }
 
 // JSON Action=700: the tracks of one department in one cohort year.
-export const parseTracks = (text) => (JSON.parse(text).Answer ?? []).map((t) => ({ code: Number(t.Code), name: clean(t.Name) }));
+export const parseTracks = (text) =>
+  (JSON.parse(text).Answer ?? []).map((t) => ({ code: Number(t.Code), name: clean(t.Name) }));
 
 // S_PROG: the lists (code and name) that a track page links to, in page order.
-export const parseTrackLists = (html) => [...html.matchAll(/<div class="col">([^<]*)<\/div>\s*<div class="col"><A href="[^"]*-N\d+,-N(\d+)"/g)].map((m) => ({ code: Number(m[2]), name: clean(m[1]) }));
+export const parseTrackLists = (html) =>
+  [...html.matchAll(/<div class="col">([^<]*)<\/div>\s*<div class="col"><A href="[^"]*-N\d+,-N(\d+)"/g)].map((m) => ({
+    code: Number(m[2]),
+    name: clean(m[1])
+  }));
