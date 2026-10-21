@@ -1,5 +1,5 @@
 // One printable A4 page per department that has an open conflict between official sources (docs/ISSUES.md section 21).
-// Usage: npm run report:conflicts  ->  out/conflicts/<dept>.html. Reads web/settings.json (programs[id].conflicts) and scripts/programs.json.
+// Usage: npm run report:conflicts  ->  docs/conflicts/<dept>.html. Reads web/settings.json (programs[id].conflicts) and scripts/programs.json.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { cleanSettings } from '../web/settings.js';
@@ -8,7 +8,7 @@ import { esc } from '../web/ui-text.js';
 export const COLUMNS = ['מה מצאנו', 'תוכנית הלימודים', 'הידיעון', 'מה הכלי עושה היום', 'ההחלטה שלכם'];
 const UNKNOWN = 'לבדיקת המחלקה'; // a source the repo does not show is never guessed
 
-// Fonts by relative path from out/conflicts/, so a page opens from disk with Rubik (same faces as rules-report.mjs).
+// Fonts by relative path from docs/conflicts/, so a page opens from disk with Rubik (same faces as rules-report.mjs).
 const CSS = `@page { size: A4; margin: 12mm }
 @font-face { font-family:"Rubik"; font-weight:300 900; src:url(../../web/fonts/rubik-hebrew-wght-normal.woff2) format("woff2"); unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F; }
 @font-face { font-family:"Rubik"; font-weight:300 900; src:url(../../web/fonts/rubik-latin-wght-normal.woff2) format("woff2"); unicode-range:U+0000-00FF,U+2000-206F,U+20AC; }
@@ -52,6 +52,6 @@ export function sheets(settings, programs) {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const read = (f) => JSON.parse(readFileSync(new URL(f, import.meta.url), 'utf8'));
   const out = sheets(cleanSettings(read('../web/settings.json')), read('./programs.json'));
-  mkdirSync('out/conflicts', { recursive: true });
-  for (const s of out) { writeFileSync(`out/conflicts/${s.dept}.html`, s.html); console.log(`out/conflicts/${s.dept}.html  ${s.deptName}`); }
+  mkdirSync('docs/conflicts', { recursive: true });
+  for (const s of out) { writeFileSync(`docs/conflicts/${s.dept}.html`, s.html); console.log(`docs/conflicts/${s.dept}.html  ${s.deptName}`); }
 }

@@ -206,7 +206,7 @@ npm test                      # בדיקות יחידה
 npx playwright install webkit
 npm run test:browser          # דפדפן אמיתי: נגישות (axe), זרימות מלאות והסיור
 npm run report:rules          # דף כללים לכל תוכנית ומחזור, לאישור המחלקה (out/rules/)
-npm run report:conflicts      # דף סתירות לכל מחלקה (out/conflicts/)
+npm run report:conflicts      # דף סתירות לכל מחלקה (docs/conflicts/)
 npx http-server web -p 8080 -c-1
 ```
 
