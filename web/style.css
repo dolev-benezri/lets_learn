@@ -8,7 +8,7 @@
 :root {
   color-scheme:light;
   --bg:#F3F5FA; --surface:#FFFFFF; --surface-2:#F1F3F9; --chrome:var(--surface); --border:#E6E9F0; --border-strong:#CDD4E0;
-  --border-input:#8A94A6; /* 3.1:1 on white: input outlines are UI components (WCAG 1.4.11) */
+  --border-input:#838DA0; /* 3.1:1 on --bg, 3.3:1 on white: input outlines are UI components (WCAG 1.4.11) */
   --text:#0F172A; --text-2:#475569; --text-3:#5E6D83;
   --primary:#2457E6; --primary-hover:#1D47C4; --primary-press:#1E40AF; --primary-soft:#EAF0FE; --on-primary:#FFFFFF;
   --success:#0B6E4F; --success-soft:#E7F6EF; --warning:#B54708; --warning-soft:#FEF4E6; --danger:#C0262D; --danger-soft:#FDECEC;
