@@ -8,7 +8,7 @@ globalThis.document = { getElementById: () => el(), querySelector: () => null, q
 const made = [];
 globalThis.Worker = class { constructor() { made.push(this); } postMessage(m) { this.sent = m; } terminate() {} };
 Object.assign(globalThis, { matchMedia: () => ({ matches: false, addEventListener() {} }), CSS: { escape: (s) => s }, innerHeight: 800, scrollBy() {}, scrollTo() {}, addEventListener() {} });
-globalThis.localStorage = { getItem: (k) => (k === 'afeka-sched-v1-terms' ? '1' : null), setItem() {}, removeItem() {} };
+globalThis.localStorage = { getItem: (k) => (k === 'afeka-sched-v1-terms' ? '2' : null), setItem() {}, removeItem() {} };
 const { app, normalize, refresh } = appMod;
 const { ui } = await import('../web/ui-common.js');
 const { scheduleRun } = await import('../web/ui-search.js');
