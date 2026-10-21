@@ -53,5 +53,6 @@
 - הספריות pdf.js (ייבוא PDF וייבוא ציונים), panzoom (מפת ההתקדמות) וה-popover polyfill הן עותקים מקומיים ב-`web/vendor/`. גם tesseract.js 7.0.0 (הסקריפט, ה-worker, ה-core ונתוני השפה עברית ואנגלית) מוגשת מ-`web/vendor/tesseract/` ונטענת רק כשבוחרים תמונה בעורך החבר; מקור וגיבוב של כל קובץ ב-`web/vendor/tesseract/SOURCES.txt`. האתר לא פונה לשום כתובת מחוץ לעצמו. קובץ שנבחר נקרא בדפדפן ולא נשלח.
 - **מדיניות אבטחה (CSP)** בשני הדפים: הכול מהאתר עצמו, בלי plugins ובלי שינוי של `base`. אף מקור חיצוני לא מותר, לא ב-`index.html` ולא ב-`legal.html`; `index.html` מוסיף רק `'wasm-unsafe-eval'` ו-`blob:` בשביל ה-OCR. בדיקה ב-`test/app.test.mjs` אוכפת את זה.
 - הפונט מתארח מקומית ואין בקשות ל-Google Fonts.
+- פירוט מלא, כולל גרסאות ורישיונות: [SECURITY](SECURITY.md).
 
 </div>
