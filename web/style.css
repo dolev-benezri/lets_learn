@@ -723,6 +723,8 @@ body:has(#friendEd[open]) { overflow:hidden; }
 }
 /* phone polish (U-10, U-11, U-14, U-16) */
 .nw, .reglist bdi { white-space:nowrap; }
+.reglist { grid-template-columns:minmax(0,1fr); } /* a row never widens the list */
+.reglist .hint bdi { white-space:normal; } /* the long backup and alternative lists wrap at their commas */
 @media (pointer:coarse) { .btn.sm { min-height:var(--tap); } }
 @media (max-width:599px) {
   .actions .lbl { white-space:normal; line-height:1.1; text-align:center; } /* "רשימה להרשמה" takes two lines at 320 instead of spilling */

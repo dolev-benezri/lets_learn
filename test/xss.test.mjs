@@ -41,7 +41,7 @@ ls['afeka-sched-v1-terms'] = TERMS_VERSION; // the terms were accepted: the rend
 const { renderTop, renderBanner, renderView, showAlt } = await import('../web/ui-view.js');
 const { renderMe, identityPick } = await import('../web/ui-me.js');
 const { renderSide, coursesSummary } = await import('../web/ui-side.js');
-const { renderDrawer, renderPrefs } = await import('../web/ui-drawer.js');
+const { renderDrawer, renderPrefs, registrationText } = await import('../web/ui-drawer.js');
 const { openPop, groupIndex, resCourses } = await import('../web/ui-grid.js');
 const { openFriendEditor } = await import('../web/ui-friend-editor.js');
 const { layoutMap, geometry } = await import('../web/map-layout.js');
@@ -421,6 +421,44 @@ test('a split alternative says so: the note on top of the week, the course names
   ui.last = { ...ui.last, results: real };
   renderView();
   assert.ok(!els.altLabel.textContent.includes('מופרדת') && !els.week.innerHTML.includes('הפרדת הרצאה ותרגול'));
+});
+
+test('a split course is marked in the registration list and in the copied text: "מופרד · דורש אישור ההכוון" (a pair marks the semester it is in)', () => {
+  const real = ui.last.results, r = real[0], id = resCourses(r)[0];
+  const mark = (x) => (x.a ? { ...x, a: { ...x.a, split: x.a.courses.includes(id) ? [id] : [] }, b: x.b && { ...x.b, split: x.b.courses.includes(id) ? [id] : [] }, split: [id] } : { ...x, split: [id] });
+  ui.last = { ...ui.last, results: [mark(r), ...real.slice(1)] };
+  const n = writes.length;
+  run('reg-split', () => { ui.panel = 'reg'; renderDrawer(); });
+  const root = parse(writes.slice(n).filter((w) => w.scope === 'reg-split').map((w) => w.html).join(''));
+  const tags = root.querySelectorAll('.reglist .tag.warn');
+  assert.equal(tags.length, 1, 'one row carries the mark');
+  assert.equal(tags[0].text, 'מופרד · דורש אישור ההכוון');
+  assert.equal(root.querySelectorAll('xss-t').length, 0);
+  const lines = registrationText(current()).split('\n').filter((l) => l.startsWith(`${id} `));
+  assert.ok(lines.length && lines.every((l) => l.includes(' (מופרד · דורש אישור ההכוון): ')), lines.join('|'));
+  assert.equal(registrationText(current()).split('דורש אישור ההכוון').length - 1, lines.length, 'no other course is marked');
+  ui.last = { ...ui.last, results: real };
+  const m = writes.length;
+  run('reg-plain', () => { renderDrawer(); });
+  assert.ok(!writes.slice(m).some((w) => w.html.includes('דורש אישור ההכוון')) && !registrationText(current()).includes('דורש אישור ההכוון'));
+});
+
+test('progress rank: a split alternative gets no rank pill and does not shift the regular ones (ranked among themselves)', () => {
+  const real = ui.last.results, pill = (res, cur) => { ui.last = { ...ui.last, results: res }; ui.cur = cur; const n = writes.length; run('rank', () => { renderView(); });
+    return writes.slice(n).filter((w) => w.id === 'pills').map((w) => w.html).join(''); };
+  const withP = (x, p) => (x.a ? { ...x, a: { ...x.a, breakdown: { ...x.a.breakdown, progress: p } }, b: x.b && { ...x.b, breakdown: { ...x.b.breakdown, progress: p } } }
+    : { ...x, breakdown: { ...x.breakdown, progress: p } });
+  assert.ok(real.length >= 2, 'the data has two plans');
+  const id = resCourses(real[0])[0];
+  const [r0, r1] = [withP(real[0], 0.5), withP(real[1], 0.4)];
+  const split = { ...withP(real[0], 0.99), split: [id], ...(real[0].a ? { a: { ...withP(real[0], 0.99).a, split: [id] } } : {}) };
+  const list = [r0, r1, split];
+  assert.match(pill(list, 0), /מקדמת הכי הרבה בתואר/, 'the best regular plan stays first even though the split one scores higher');
+  assert.match(pill(list, 1), /מקום 2 מתוך 2 בהתקדמות/, 'ranked among the 2 regular plans only');
+  const last = pill(list, 2);
+  assert.ok(!/בהתקדמות|מקדמת הכי/.test(last) && last.includes('class="pill'), 'the split alternative shows no rank');
+  ui.last = { ...ui.last, results: real }; ui.cur = 0;
+  renderView();
 });
 
 test('the advisor summary fills #print, prints it alone and puts the page back when printing ends (afterprint or the print query turning off)', () => {
