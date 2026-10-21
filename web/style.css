@@ -1926,7 +1926,8 @@ body:has(#friendEd[open]) { overflow:hidden; }
 #friendEd .blk[aria-pressed="true"] { outline:3px solid var(--primary); outline-offset:-3px; z-index:1; }
 @media (max-width:899px) { .fe-body { grid-template-columns:minmax(260px, 320px) minmax(0, 1fr); } }
 @media (max-width:599px) {
-  /* phone: a true full-screen page. Header = close | title | save, name below; two full-width tabs (groups / timetable), one shown at a time, each scrolling on its own */
+  /* phone: a true full-screen page. Header = close | title | save, name below; two full-width tabs (groups /
+     timetable), one shown at a time, each scrolling on its own */
   #friendEd { padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
   .fe-head {
     display:grid;
@@ -2100,7 +2101,8 @@ body:has(#friendEd[open]) { overflow:hidden; }
 body:not(.gated) .tour-btn + .theme-btn {
   margin-inline-start:0;
 } /* on the gate the tour button is hidden: the theme button keeps its auto margin */
-/* below 800px the step bar has no room for the two words (640px is what 200% zoom leaves of a desktop): both buttons keep only their icon, the label stays as the name */
+/* below 800px the step bar has no room for the two words (640px is what 200% zoom leaves of a desktop): both buttons
+   keep only their icon, the label stays as the name */
 @media (max-width:799px) { .tour-btn, .theme-btn { width:var(--tap); padding:0; }
   .tour-btn .lbl, .theme-btn .lbl {
     position:absolute;

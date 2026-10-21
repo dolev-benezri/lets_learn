@@ -15,7 +15,8 @@ const NOTEXT = 'לא נמצא טקסט בקובץ, נסו להעתיק ולהד�
 const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳' };
 
 const dlg = document.getElementById('friendEd');
-const phone = matchMedia('(max-width:599px)'); // phone: the editor is two full-screen tabs (CSS shows one, driven by #feRoot[data-tab]); wider: both side by side
+// phone: the editor is two full-screen tabs (CSS shows one, driven by #feRoot[data-tab]); wider: both side by side
+const phone = matchMedia('(max-width:599px)');
 let ed = null; // the open editor: { friend, onSave, returnFocusId, draft, sem, day, sel, cid, busy, colors }
 const $ = (id) => dlg.querySelector(`#${id}`);
 const semData = () => app.sem[ed.sem];

@@ -95,7 +95,8 @@ export function columnOf(box, headers) {
 }
 
 // Every meeting starts on the hour and lasts 60n-10 minutes, so a block's top sits on an hour line and its height is n*H - H/6.
-// Fits the hour height H (px) that makes all blocks fit that lattice; null without blocks. ponytail: assumes the grid's first row starts at the header's bottom.
+// Fits the hour height H (px) that makes all blocks fit that lattice; null without blocks. ponytail: assumes the grid's
+// first row starts at the header's bottom.
 export function gridHours(blocks, headers) {
   if (!blocks.length || !headers.length) return null;
   const top = Math.max(...headers.map((r) => r.y + r.h)),
