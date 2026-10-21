@@ -3,6 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { webkit } from 'playwright';
+import { readFile } from 'node:fs/promises';
 
 const SITE = process.env.SITE_URL;
 const SIZES = { phone: { width: 375, height: 812 }, desktop: { width: 1280, height: 800 } };
@@ -10,6 +11,19 @@ const PASSED = ['10016', '30003', '30130', '30133', '30135', '30137', '90901', '
 const STUDENT = { v: 1, year: 2027, semester: 'א', program: 30, startYear: 2026, programSet: true, passed: PASSED,
   profile: { year: 2, amirnet: 134, specs: [], summer: false } };
 const DONE = { 'afeka-sched-v1-terms': '2', 'afeka-sched-v1-onboarded': '1', 'afeka-sched-v1-entry': '1', 'afeka-sched-v1': JSON.stringify(STUDENT) };
+
+// A one-page PDF with two rows in the grade sheet's shape (code, name, credits, grade); synthetic, never a real sheet.
+function gradeSheetPdf(lines) {
+  const stream = `BT /F1 12 Tf 40 760 Td 16 TL ${lines.map((l) => `(${l}) Tj T*`).join(' ')} ET`;
+  const objs = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
+  let pdf = '%PDF-1.4\n'; const at = [];
+  objs.forEach((o, i) => { at.push(pdf.length); pdf += `${i + 1} 0 obj\n${o}\nendobj\n`; });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${at.map((n) => `${String(n).padStart(10, '0')} 00000 n \n`).join('')}`;
+  return Buffer.from(`${pdf}trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`, 'latin1');
+}
 
 let browser;
 before(async () => { browser = await webkit.launch(); });
@@ -24,6 +38,7 @@ async function visit(t, size, seed = null, hash = '') {
   page.on('request', (r) => { if (!/^(data|blob):/.test(r.url()) && new URL(r.url()).origin !== new URL(SITE).origin) outside.push(r.url()); });
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript((items) => {
+    navigator.clipboard.writeText = () => Promise.reject(new Error('no clipboard')); // the copy button then shows its text dialog
     window.__prints = 0; window.print = () => { window.__prints++; };
     if (items && !sessionStorage.getItem('__seeded')) { sessionStorage.setItem('__seeded', '1'); for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v); }
   }, seed);
@@ -54,13 +69,15 @@ for (const size of Object.keys(SIZES)) {
     }
     await page.locator('[data-act="acceptTerms"]').focus();
     await page.keyboard.press('Enter');
-    // Track, then year (keyboard on the tiles, too).
+    // Track, then year: focus the tile and press Enter.
     const tile = page.locator('[data-act="pickTrack"]').first();
     await tile.waitFor();
     assert.ok(await page.locator('[data-act="pickTrack"]').count() > 1, 'more than one track');
-    await page.locator('[data-act="pickTrack"][value="30"]').click();
+    await page.locator('[data-act="pickTrack"][value="30"]').focus();
+    await page.keyboard.press('Enter');
     await page.locator('[data-act="pickYear"]').first().waitFor();
-    await page.locator('[data-act="pickYear"][value="2"]').click();
+    await page.locator('[data-act="pickYear"][value="2"]').focus();
+    await page.keyboard.press('Enter');
     // The grade-sheet entry screen offers the manual entry.
     const manual = page.getByRole('button', { name: 'הזנה ידנית' });
     await manual.waitFor();
@@ -127,7 +144,6 @@ for (const size of Object.keys(SIZES)) {
     await page.locator('[data-act="panel"][data-panel="reg"]').click();
     const [download] = await Promise.all([page.waitForEvent('download'), page.locator('[data-act="ics"]').click()]);
     assert.match(download.suggestedFilename(), /^afeka-\d{4}\.ics$/);
-    const { readFile } = await import('node:fs/promises');
     const ics = (await readFile(await download.path(), 'utf8')).replace(/\r?\n[ \t]/g, ''); // unfold the 75-character lines
     const disclaimer = await page.evaluate(async () => (await import('./ui-text.js')).DISCLAIMER);
     assert.ok(ics.startsWith('BEGIN:VCALENDAR') && ics.includes('BEGIN:VEVENT'), 'a calendar with events');
@@ -141,5 +157,41 @@ for (const size of Object.keys(SIZES)) {
     assert.notEqual(second, first);
     await page.locator('.theme-btn').click();
     assert.equal(await theme(), first);
+  });
+}
+
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: by keyboard, the advisor summary and a text dialog open and Escape closes the dialog`, async (t) => {
+    const page = await visit(t, size, DONE);
+    await weekReady(page);
+    await page.locator('#advisorBtn').focus();
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => window.__prints === 1);
+    assert.equal(await page.locator('#print').getAttribute('hidden'), null);
+
+    await page.locator('[data-act="panel"][data-panel="reg"]').focus();
+    await page.keyboard.press('Space');
+    await page.locator('#drawer[open]').waitFor();
+    await page.locator('[data-act="copyReg"]').focus();
+    await page.keyboard.press('Enter');
+    const text = page.locator('dialog[open]:has(textarea)'); // showText: the copy failed, so the text is offered to copy by hand
+    await text.waitFor();
+    assert.ok((await text.locator('textarea').inputValue()).length > 10, 'the list is in the text box');
+    await page.keyboard.press('Escape');
+    await text.waitFor({ state: 'detached' });
+  });
+
+  test(`${size}: Escape closes the grade-sheet preview and nothing is applied`, async (t) => {
+    const student = { ...STUDENT, passed: [] };
+    const page = await visit(t, size, { 'afeka-sched-v1-terms': '2', 'afeka-sched-v1': JSON.stringify(student) }, '#me');
+    await page.locator('#gradeFile').waitFor({ state: 'attached' });
+    const pdf = gradeSheetPdf(['10016 Calculus 4.0 85', '30003 Physics 3.5 90']);
+    await page.locator('#gradeFile').setInputFiles({ name: 'sheet.pdf', mimeType: 'application/pdf', buffer: pdf });
+    const preview = page.locator('dialog.dlg-rows[open]');
+    await preview.waitFor({ timeout: 30000 });
+    assert.equal(await preview.locator('tbody tr').count(), 2, 'both rows are offered');
+    await page.keyboard.press('Escape');
+    await preview.waitFor({ state: 'detached' });
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).passed), [], 'a cancelled import changes nothing');
   });
 }
