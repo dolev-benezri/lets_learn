@@ -130,6 +130,7 @@ function renderGrid() {
   const clash = clashIds(ids, data), week = $('feWeek');
   week.setAttribute('aria-label', `מערכת סמסטר ${SEM_NAME[ed.sem]}`);
   week.innerHTML = renderWeek({ data, res: { groups: ed.draft }, range, colors: ed.colors, dashed: new Set(), pins: [], friends: [], day: ed.day });
+  week.tabIndex = week.querySelector('.blk') ? -1 : 0; // a scrollable region with nothing focusable inside must itself take the keyboard (WCAG 2.1.1)
   $('feDays').innerHTML = Array.from({ length: range.days }, (_, i) => i + 1).map((d) => `<button type="button" data-fe="day" data-day="${d}"
     aria-pressed="${d === ed.day}">${DAYS[d]}׳</button>`).join('');
   for (const b of week.querySelectorAll('.blk')) {
