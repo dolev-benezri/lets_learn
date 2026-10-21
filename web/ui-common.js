@@ -37,7 +37,7 @@ export const markEntered = () => { try { localStorage.setItem(ENTRY, '1'); } cat
 
 // The terms gate (ui-me.js gateHtml): shown before the first question until accepted; a new TERMS_VERSION asks everyone again.
 // A blocked storage still lets this visit through (the flag), and asks again next visit.
-export const TERMS_VERSION = '1';
+export const TERMS_VERSION = '2';
 const TERMS = 'afeka-sched-v1-terms';
 let accepted = false;
 export const termsOk = () => { try { if (localStorage.getItem(TERMS) === TERMS_VERSION) return true; } catch { /* storage unavailable */ } return accepted; };

@@ -344,7 +344,7 @@ test('the terms come before the first question', async () => {
   terms(me('terms-none', () => { delete ls['afeka-sched-v1-terms']; app.state.programSet = false; }));
   const landing = { name: 'x', groups: [] }; app.friendLanding = landing; me('terms-landing', () => {});
   assert.ok(gated() && app.friendLanding === landing, 'a friend link waits in app.friendLanding while the gate shows'); app.friendLanding = null;
-  terms(me('terms-old', () => { ls['afeka-sched-v1-terms'] = '0'; }));
+  terms(me('terms-old', () => { ls['afeka-sched-v1-terms'] = '1'; }));
   terms(me('terms-year', () => { ls['afeka-sched-v1-terms'] = '0'; app.state.programSet = true; })); // the year question waits too
   assert.ok(me('terms-ok', () => { ls['afeka-sched-v1-terms'] = TERMS_VERSION; app.state.programSet = false; }).includes('מה המסלול שלך?'));
   app.state.programSet = programSet; document.body.dataset.view = 'plan';
