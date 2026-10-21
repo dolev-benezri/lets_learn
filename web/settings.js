@@ -13,13 +13,27 @@ export const SETTINGS_DEFAULT = { supportEmail: '', counselingUrl: '', notice: '
 
 function httpsUrl(v) {
   if (typeof v !== 'string') return '';
-  try { const u = new URL(v); return u.protocol === 'https:' && u.href.startsWith('https://') ? u.href : ''; } catch { return ''; }
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' && u.href.startsWith('https://') ? u.href : '';
+  } catch {
+    return '';
+  }
 }
 
 function cleanTurns(raw) {
   if (!Array.isArray(raw)) return [];
-  return raw.filter((t) => isObj(t) && str(t.id) && t.id.length <= TURN_ID_MAX && str(t.label) && MOMENT.test(t.opensAt)
-    && validDate(t.opensAt)).map((t) => ({ id: t.id, label: t.label, opensAt: t.opensAt }));
+  return raw
+    .filter(
+      (t) =>
+        isObj(t) &&
+        str(t.id) &&
+        t.id.length <= TURN_ID_MAX &&
+        str(t.label) &&
+        MOMENT.test(t.opensAt) &&
+        validDate(t.opensAt)
+    )
+    .map((t) => ({ id: t.id, label: t.label, opensAt: t.opensAt }));
 }
 
 // The optional columns of the department's conflict sheet (scripts/conflict-sheets.mjs): what the plan, the yedion and the tool say.
@@ -33,12 +47,22 @@ function sourceTexts(x) {
 function cleanProgram(raw) {
   const out = {};
   if (isObj(raw.approved)) {
-    const a = Object.fromEntries(Object.entries(raw.approved).filter(([y, d]) => /^\d{4}$/.test(y) && DAY.test(d) && validDate(d)));
+    const a = Object.fromEntries(
+      Object.entries(raw.approved).filter(([y, d]) => /^\d{4}$/.test(y) && DAY.test(d) && validDate(d))
+    );
     if (Object.keys(a).length) out.approved = a;
   }
   if (Array.isArray(raw.conflicts)) {
     const c = raw.conflicts
-      .filter((x) => isObj(x) && Array.isArray(x.cohorts) && x.cohorts.length && x.cohorts.every(Number.isInteger) && trimmed(x.text) && trimmed(x.text).length <= 300)
+      .filter(
+        (x) =>
+          isObj(x) &&
+          Array.isArray(x.cohorts) &&
+          x.cohorts.length &&
+          x.cohorts.every(Number.isInteger) &&
+          trimmed(x.text) &&
+          trimmed(x.text).length <= 300
+      )
       .map((x) => ({ cohorts: [...x.cohorts], text: x.text.trim(), ...sourceTexts(x) }));
     if (c.length) out.conflicts = c;
   }
