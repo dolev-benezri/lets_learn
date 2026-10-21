@@ -1,4 +1,5 @@
-// Progress map, pure part: which courses to draw, the band/column layout, the neural-style geometry and the viewport math. No DOM, unit-tested (test/ui-map.test.mjs).
+// Progress map, pure part: which courses to draw, the band/column layout, the neural-style geometry and the viewport
+// math. No DOM, unit-tested (test/ui-map.test.mjs).
 import { classify, specLists } from './rules.js';
 
 // ---------- layout (pure) ----------
@@ -31,9 +32,11 @@ export function courseYears(data) {
   }
   return m;
 }
-// Electives the student has no stake in stay off the map: in no required list (a year, English, the final project…), not chosen "חובה"/"אולי", not passed or being retaken.
+// Electives the student has no stake in stay off the map: in no required list (a year, English, the final project…),
+// not chosen "חובה"/"אולי", not passed or being retaken.
 const REQUIRED = /חובה|פרויקט גמר/;
-// Specialization lists never count by their name: only the chosen areas' mandatory courses are required, and their electives are the student's pool (not aside).
+// Specialization lists never count by their name: only the chosen areas' mandatory courses are required, and their
+// electives are the student's pool (not aside).
 export const asideIds = (data, statuses, choices = {}, specs = []) => {
   const sp = specLists(data, specs);
   const req = new Set([
@@ -373,7 +376,8 @@ export const edgeEnds = (a, b) => {
     { x: b.x - d * b.hw, y: b.y }
   ];
 };
-// Two nodes in one column: edgePath would be a straight line through the column, so bow out to the right (further for a longer hop, clear of the names between).
+// Two nodes in one column: edgePath would be a straight line through the column, so bow out to the right (further for a
+// longer hop, clear of the names between).
 export const sameColPath = (a, b) => {
   const x1 = a.x + a.hw,
     x2 = b.x + b.hw,

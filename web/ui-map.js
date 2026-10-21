@@ -269,7 +269,8 @@ async function mount(keep = null) {
     q('[data-pm="zout"]').disabled = s <= o.minScale + 0.01;
   };
   g.addEventListener('panzoomchange', ends);
-  root.addEventListener('wheel', (e) => pz.zoomWithWheel(e, { step: wheelStep(e) }), { passive: false }); // zooms toward the pointer; trackpad pinch arrives as ctrl+wheel
+  // zooms toward the pointer; trackpad pinch arrives as ctrl+wheel
+  root.addEventListener('wheel', (e) => pz.zoomWithWheel(e, { step: wheelStep(e) }), { passive: false });
   root.addEventListener('pointerdown', (e) => {
     M.down = { x: e.clientX, y: e.clientY };
   });
@@ -292,7 +293,8 @@ async function mount(keep = null) {
       pz.pan(keep.x, keep.y, { animate: false, force: true });
       ends();
     } else M.fit();
-    if (M.sel) requestAnimationFrame(() => tok === M.tok && ensureVisible(M.els.nodes.get(M.sel))); // after Panzoom applied the fit; a card left open across a filter change must not cover its node
+    // after Panzoom applied the fit; a card left open across a filter change must not cover its node
+    if (M.sel) requestAnimationFrame(() => tok === M.tok && ensureVisible(M.els.nodes.get(M.sel)));
     root.classList.add('ready');
   }); // after Panzoom's own start-position timeout
 }

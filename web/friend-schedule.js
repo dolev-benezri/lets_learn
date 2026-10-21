@@ -205,7 +205,8 @@ function score(g, row) {
       0.5;
 }
 
-// Rows -> { found: group ids, unknown: codes with no matching group, ambiguous: rows where two groups fit equally, quality: sum of the fits, weak: matches made on a shaky name (day and times only) }.
+// Rows -> { found: group ids, unknown: codes with no matching group, ambiguous: rows where two groups fit equally,
+// quality: sum of the fits, weak: matches made on a shaky name (day and times only) }.
 // A row with a course code looks only there; a grid block (name only) looks through every course with a similar name, and the meetings decide.
 export function matchRows(rows, courses) {
   const found = [],
