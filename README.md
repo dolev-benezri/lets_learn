@@ -205,7 +205,7 @@ npm test
 npx http-server web -p 8080 -c-1
 ```
 
-הרצה ובדיקות: [DEVELOPING](docs/DEVELOPING.md) · מבנה הקוד: [ARCHITECTURE](docs/ARCHITECTURE.md) · תפעול: [OPERATIONS](docs/OPERATIONS.md) · תרומה: [CONTRIBUTING](CONTRIBUTING.md) · כל התיעוד: [docs](docs/README.md)
+הרצה ובדיקות: [DEVELOPING](docs/DEVELOPING.md) · מבנה הקוד: [ARCHITECTURE](docs/ARCHITECTURE.md) · תפעול: [OPERATIONS](docs/OPERATIONS.md) · אבטחה: [SECURITY](docs/SECURITY.md) · תרומה: [CONTRIBUTING](CONTRIBUTING.md) · כל התיעוד: [docs](docs/README.md)
 
 ---
 
