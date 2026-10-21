@@ -7,28 +7,65 @@ import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
 import { approvedOn } from './settings.js';
 import { creditsGoal, courseCount, conflictsFor, approvedText } from './ui-text.js';
-import { STATUS, FAILS, YEARS, termsOk, onboarded, entered, markEntered, gated, needsProgram, status, seg, details, toast, heb, nameHtml, listTitle, $, ui } from './ui-common.js';
+import {
+  STATUS,
+  FAILS,
+  YEARS,
+  termsOk,
+  onboarded,
+  entered,
+  markEntered,
+  gated,
+  needsProgram,
+  status,
+  seg,
+  details,
+  toast,
+  heb,
+  nameHtml,
+  listTitle,
+  $,
+  ui
+} from './ui-common.js';
 
 // ---------- status page (#me) ----------
 // "התור שלי בהרשמה": only when settings.json lists turns. A saved turn that is no longer listed shows as "לא יודע/ת" and warns about nothing.
-const turnPick = (cur) => (app.settings.turns.length ? `<label class="field pick">התור שלי בהרשמה <select data-chg="turn" data-k="turn"><option value="">לא יודע/ת</option>
-  ${app.settings.turns.map((t) => `<option value="${esc(t.id)}"${t.id === cur ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>` : '');
+const turnPick = (cur) =>
+  (app.settings.turns.length
+    ? `<label class="field pick">התור שלי בהרשמה <select data-chg="turn" data-k="turn"><option value="">לא יודע/ת</option>
+  ${app.settings.turns.map((t) => `<option value="${esc(t.id)}"${t.id === cur ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>`
+    : '');
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
-  const s = app.state, n = s.failed[id] ?? 0, k = `${li}-${id}`, nm = heb(app.data.courses[id].name);
-  if (status(id) === 'exempt') return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${nameHtml(app.data.courses[id].name)}</b> <span class="tag ok">פטור</span></div>`;
+  const s = app.state,
+    n = s.failed[id] ?? 0,
+    k = `${li}-${id}`,
+    nm = heb(app.data.courses[id].name);
+  if (status(id) === 'exempt')
+    return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${nameHtml(app.data.courses[id].name)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
-  return `<div class="crs" data-st="${st}">${seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`, true)
-    }${st === 'passed' && s.exempt?.includes(id) ? ' <span class="tag ok">פטור</span>' // exempt on the grade sheet: no grade
-      : st === 'passed' ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
-      aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>` : ''}${n
-      ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
+  return `<div class="crs" data-st="${st}">${seg(
+    `st-${k}`,
+    nm,
+    STATUS,
+    st,
+    `data-chg="status" data-id="${esc(id)}"`,
+    true
+  )}${
+    st === 'passed' && s.exempt?.includes(id)
+      ? ' <span class="tag ok">פטור</span>' // exempt on the grade sheet: no grade
+      : st === 'passed'
+        ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
+      aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>`
+        : ''
+  }${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
 }
 
-
-
 // The weighted-average line; its container is always rendered so a grade change can refresh just this line.
-export const avgLine = () => { const { avg, credits } = gradeAverage(app.data, app.state); return avg === null ? '' : `ממוצע: <b>${esc(Math.round(avg * 10) / 10)}</b> (על ${esc(credits)} נ״ז)`; };
+export const avgLine = () => {
+  const { avg, credits } = gradeAverage(app.data, app.state);
+  return avg === null ? '' : `ממוצע: <b>${esc(Math.round(avg * 10) / 10)}</b> (על ${esc(credits)} נ״ז)`;
+};
 
 // The status page (#me): profile and progress beside the course lists on wide screens, one column on phones.
 // Rendered only while shown; every change saves at once, so leaving the page loses nothing.
@@ -36,46 +73,89 @@ export const avgLine = () => { const { avg, credits } = gradeAverage(app.data, a
 // state.specDraft, and only while it still matches the saved state (a reset or an import drops it).
 
 // mode: 'none', 'alone' (one standalone area, e.g. vehicle) or 'pick' (rule.pick areas). Only the data's own areas and pick count are ever saved.
-export const specSave = (data, mode, picks) => (mode === 'alone' ? [specRule(data).alone[0]] : mode === 'pick' ? validSpecs(data, picks) : []);
+export const specSave = (data, mode, picks) =>
+  (mode === 'alone' ? [specRule(data).alone[0]] : mode === 'pick' ? validSpecs(data, picks) : []);
 export function specView(data, saved) {
-  const rule = specRule(data), kept = ui.specPick ?? (app.state.specDraft && { mode: 'pick', picks: app.state.specDraft }); // after a refresh only the draft is left
+  const rule = specRule(data),
+    // after a refresh only the draft is left
+    kept = ui.specPick ?? (app.state.specDraft && { mode: 'pick', picks: app.state.specDraft });
   if (kept && specSave(data, kept.mode, kept.picks).join() === saved.join()) return kept;
-  return saved.length === 1 && rule.pick > 1 && rule.alone.includes(saved[0]) ? { mode: 'alone', picks: [] } : saved.length ? { mode: 'pick', picks: saved } : { mode: 'none', picks: [] };
+  return saved.length === 1 && rule.pick > 1 && rule.alone.includes(saved[0])
+    ? { mode: 'alone', picks: [] }
+    : saved.length
+      ? { mode: 'pick', picks: saved }
+      : { mode: 'none', picks: [] };
 }
 const PICK_WORD = { 1: 'תחום אחד', 2: 'שני תחומים', 3: 'שלושה תחומים' };
 const specForm = (saved) => {
-  const { specializations: areas = [] } = app.data, rule = specRule(app.data), { mode, picks } = specView(app.data, saved), full = picks.length >= rule.pick;
-  const aloneName = areas.find((s) => s.id === rule.alone[0])?.name, word = PICK_WORD[rule.pick] ?? `${rule.pick} תחומים`;
-  const modes = [['none', 'עוד לא בחרתי'], ...(rule.pick > 1 && aloneName ? [['alone', `${aloneName} בלבד`]] : []), ['pick', word]].map(([v, t]) => [v, esc(t)]);
+  const { specializations: areas = [] } = app.data,
+    rule = specRule(app.data),
+    { mode, picks } = specView(app.data, saved),
+    full = picks.length >= rule.pick;
+  const aloneName = areas.find((s) => s.id === rule.alone[0])?.name,
+    word = PICK_WORD[rule.pick] ?? `${rule.pick} תחומים`;
+  const modes = [
+    ['none', 'עוד לא בחרתי'],
+    ...(rule.pick > 1 && aloneName ? [['alone', `${aloneName} בלבד`]] : []),
+    ['pick', word]
+  ].map(([v, t]) => [v, esc(t)]);
   return `${seg('p-spec', 'התמחות', modes, mode, 'data-chg="specMode"', true)}
-    ${mode === 'pick' ? `<fieldset class="specs"><legend class="sr">${esc(word)}</legend>${areas.map((p) => `<label class="check"><input type="checkbox"
-      data-chg="specPick" data-id="${esc(p.id)}" data-k="spec-${esc(p.id)}"${picks.includes(p.id) ? ' checked' : ''}${!picks.includes(p.id)
-      && full ? ' disabled' : ''}> ${esc(p.name)}</label>`).join('')}</fieldset>
-      ${saved.length ? '' : `<p class="hint" role="status">בחרו ${esc(word)}</p>`}` : ''}
+    ${
+      mode === 'pick'
+        ? `<fieldset class="specs"><legend class="sr">${esc(word)}</legend>${areas
+            .map(
+              (p) => `<label class="check"><input type="checkbox"
+      data-chg="specPick" data-id="${esc(p.id)}" data-k="spec-${esc(p.id)}"${picks.includes(p.id) ? ' checked' : ''}${
+        !picks.includes(p.id) && full ? ' disabled' : ''
+      }> ${esc(p.name)}</label>`
+            )
+            .join('')}</fieldset>
+      ${saved.length ? '' : `<p class="hint" role="status">בחרו ${esc(word)}</p>`}`
+        : ''
+    }
     <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה עוד לא נבדק מול תוכנית הלימודים הרשמית.</p>' : ''}`;
 };
 
 // Degree checklist: what each requirement still needs, from the same numbers as the progress bar (progressInfo).
 function checklist(data, state) {
   const { rows, untracked } = progressInfo(data, app.cls.statuses, new Set(), state.profile.specs);
-  const gap = untracked ? `<p class="hint">עוד ${esc(untracked)} נ״ז של התואר לא מופיעים ברשימות שבנתונים (קורסים שכבר לא נפתחים), ולכן לא נספרים כאן.</p>` : '';
-  const row = (r) => `<li${r.done >= r.need ? ' class="ok"' : ''}><span>${esc(heb(r.name))}</span> <b>${r.done >= r.need ? '✓ ' : ''}${esc(r.done)} מתוך ${esc(r.need)} נ״ז</b></li>`;
-  return details('checklist', 'מה נשאר לסיום התואר', `<ul class="plain checklist">${rows.map(row).join('')}</ul>${gap}`, rows.length);
+  const gap = untracked
+    ? `<p class="hint">עוד ${esc(untracked)} נ״ז של התואר לא מופיעים ברשימות שבנתונים (קורסים שכבר לא נפתחים), ולכן לא נספרים כאן.</p>`
+    : '';
+  const row = (r) =>
+    `<li${r.done >= r.need ? ' class="ok"' : ''}><span>${esc(heb(r.name))}</span> <b>${r.done >= r.need ? '✓ ' : ''}${esc(r.done)} מתוך ${esc(r.need)} נ״ז</b></li>`;
+  return details(
+    'checklist',
+    'מה נשאר לסיום התואר',
+    `<ul class="plain checklist">${rows.map(row).join('')}</ul>${gap}`,
+    rows.length
+  );
 }
 
 // The two questions that fix who the schedule is for: the track (only when the catalog has more than one) and the study year, which also picks the cohort.
 export function identityPick(year, visible) {
-  const { programs } = app.catalog, cur = programs.find((p) => p.id === app.state.program) ?? programs[0];
-  const none = needsProgram(), opt = (p) => `<option value="${esc(p.id)}"${!none && p.id === cur.id ? ' selected' : ''}>${esc(heb(p.name))}</option>`;
-  const track = programs.length < 2 ? '' : `<label class="field pick">מסלול <select data-chg="program" data-k="program">${none
-    ? '<option value="" selected disabled>בחרו מסלול</option>' : ''}${programs.map(opt).join('')}</select></label>`;
-  const own = !year || cur.startYears.includes(app.data.year - year + 1); // no data for that cohort: the plan runs on the nearest one, and the page says so
-  const note = own ? '' : `<p class="hint" role="status">אין עדיין נתונים למחזור של שנה ${esc(YEARS.find(([n]) => n === year)[1])}. התכנון לפי מחזור ${app.state.startYear}.</p>`;
+  const { programs } = app.catalog,
+    cur = programs.find((p) => p.id === app.state.program) ?? programs[0];
+  const none = needsProgram(),
+    opt = (p) =>
+      `<option value="${esc(p.id)}"${!none && p.id === cur.id ? ' selected' : ''}>${esc(heb(p.name))}</option>`;
+  const track =
+    programs.length < 2
+      ? ''
+      : `<label class="field pick">מסלול <select data-chg="program" data-k="program">${
+          none ? '<option value="" selected disabled>בחרו מסלול</option>' : ''
+        }${programs.map(opt).join('')}</select></label>`;
+  // no data for that cohort: the plan runs on the nearest one, and the page says so
+  const own = !year || cur.startYears.includes(app.data.year - year + 1);
+  const note = own
+    ? ''
+    : `<p class="hint" role="status">אין עדיין נתונים למחזור של שנה ${esc(YEARS.find(([n]) => n === year)[1])}. התכנון לפי מחזור ${app.state.startYear}.</p>`;
   return track + seg('p-year', 'שנת לימודים', YEARS.slice(0, yearsOf(app.data)), year, 'data-chg="pyear"', visible) + note;
 }
 
 // The gate: the track first (tiles), then the year; "שינוי" (ui.gateTrack) shows the track tiles again. The tiles are buttons, not radios:
-// an arrow key on a radio would commit at once, and a button also re-picks the loaded track. They run the profile card's handlers (ACT.pickTrack, ACT.pickYear).
+// an arrow key on a radio would commit at once, and a button also re-picks the loaded track. They run the profile
+// card's handlers (ACT.pickTrack, ACT.pickYear).
 function termsHtml() {
   return `<div class="me-head"><h2 id="meTitle" tabindex="-1">לפני שמתחילים</h2></div>
     <div class="gate-terms"><p>זה כלי עזר לתכנון בלבד. הוא לא רושם אתכם לקורסים: ההרשמה נעשית רק באפקה-נט.</p>
@@ -87,33 +167,59 @@ function termsHtml() {
 }
 function gateHtml() {
   if (!termsOk()) return termsHtml();
-  const { programs } = app.catalog, many = programs.length > 1, pickTrack = needsProgram() || ui.gateTrack;
-  const head = (n, q) => `<div class="me-head">${many ? `<p class="gate-step">שאלה ${n} מתוך 2</p>` : ''}<h2 id="meTitle" tabindex="-1">${q}</h2></div>`;
+  const { programs } = app.catalog,
+    many = programs.length > 1,
+    pickTrack = needsProgram() || ui.gateTrack;
+  const head = (n, q) =>
+    `<div class="me-head">${many ? `<p class="gate-step">שאלה ${n} מתוך 2</p>` : ''}<h2 id="meTitle" tabindex="-1">${q}</h2></div>`;
   if (pickTrack) {
-    const tile = (p) => `<button type="button" class="tile" value="${esc(p.id)}" data-act="pickTrack" data-k="pick-${esc(p.id)}">${esc(heb(p.name))}</button>`;
+    const tile = (p) =>
+      `<button type="button" class="tile" value="${esc(p.id)}" data-act="pickTrack" data-k="pick-${esc(p.id)}">${esc(heb(p.name))}</button>`;
     return `<p class="gate-intro">בונים מערכת שעות לאפקה: חלופות בלי התנגשויות, עם חברים ודרישות קדם. שתי שאלות ומתחילים.</p>${head(1, 'מה המסלול שלך?')}
       <div class="tiles" role="group" aria-labelledby="meTitle">${programs.map(tile).join('')}</div>`;
   }
   const name = programs.find((p) => p.id === app.state.program)?.name ?? '';
-  return `${head(2, 'באיזו שנה את/ה?')}${many ? `<p class="gate-track">מסלול: <b>${esc(heb(name))}</b>
-      <button type="button" class="btn ghost" data-act="gateTrack" data-k="gateTrack">שינוי</button></p>` : ''}
-    <div class="tiles years" role="group" aria-labelledby="meTitle">${YEARS.slice(0, yearsOf(app.data)).map(([n, t]) =>
-      `<button type="button" class="tile" value="${n}" data-act="pickYear" data-k="year-${n}">${t}</button>`).join('')}</div>
+  return `${head(2, 'באיזו שנה את/ה?')}${
+    many
+      ? `<p class="gate-track">מסלול: <b>${esc(heb(name))}</b>
+      <button type="button" class="btn ghost" data-act="gateTrack" data-k="gateTrack">שינוי</button></p>`
+      : ''
+  }
+    <div class="tiles years" role="group" aria-labelledby="meTitle">${YEARS.slice(0, yearsOf(app.data))
+      .map(
+        ([n, t]) =>
+          `<button type="button" class="tile" value="${n}" data-act="pickYear" data-k="year-${n}">${t}</button>`
+      )
+      .join('')}</div>
     <p class="hint">שנת הלימודים קובעת את יעד הנ״ז ואת דרישות האנגלית, ורק אחריה נבנית המערכת.</p>`;
 }
 
 // The entry screen: a first visit (step 1 never left) before the choice. The choice opens the course list and moves focus to it.
 export const entryScreen = () => !entered() && !onboarded();
-export function enterList() { const first = entryScreen(); markEntered(); refresh(); if (first) $('meCourses')?.focus(); }
+export function enterList() {
+  const first = entryScreen();
+  markEntered();
+  refresh();
+  if (first) $('meCourses')?.focus();
+}
 
 export function renderMe() {
   const el = $('me');
-  if (el.hidden) { el.innerHTML = ''; return; }
+  if (el.hidden) {
+    el.innerHTML = '';
+    return;
+  }
   const { data, state, cls } = app;
-  if (gated()) { el.innerHTML = `<div class="gate">${gateHtml()}</div>`; return; } // every step waits for the track and the study year: one question per screen, nothing else
+  if (gated()) {
+    el.innerHTML = `<div class="gate">${gateHtml()}</div>`;
+    return;
+  } // every step waits for the track and the study year: one question per screen, nothing else
   const approved = approvedOn(app.settings, data.program, data.startYear);
-  const unverified = approved ? `<p class="hint">${esc(approvedText(approved))}</p>`
-    : data.verified === false ? '<p class="hint warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</p>' : '';
+  const unverified = approved
+    ? `<p class="hint">${esc(approvedText(approved))}</p>`
+    : data.verified === false
+      ? '<p class="hint warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</p>'
+      : '';
   const pr = progress(data, state);
   const pct = Math.min(100, Math.round(pr.ratio * 100));
   // Years already studied are open; later years and the other lists sit in a collapsed section.
@@ -121,18 +227,29 @@ export function renderMe() {
   const open = state.profile.year ?? studyYear(data, state) - 1;
   const lists = data.lists.map((l, i) => ({ ...l, i, year: l.name.match(/חובה שנה (\S)'/)?.[1] }));
   const past = (l) => l.year && ' אבגדה'.indexOf(l.year) <= open;
-  const group = (l) => `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(listTitle(l)))} <span>${l.minCredits
-    ? `(לפחות ${l.minCredits} נ״ז)` : ''}</span></h3>${l.year ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}"
-    data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>` : ''}</div><div class="chips">${l.courses.map((id) => chip(id,
-    l.i)).join('')}</div></div>`;
-  const sp = specLists(data, state.profile.specs), isSpec = (l) => sp.all.has(l.code);
-  const others = lists.filter((l) => !past(l) && !isSpec(l)), specOthers = lists.filter((l) => isSpec(l) && !sp.chosen.has(l.code));
-  const premarked = (y) => (y < 2 ? '' : y === 2 ? ' (שנה א׳ מסומנת מראש)' : ` (שנים א׳–${'אבגד'[y - 2]}׳ מסומנות מראש)`); // ensurePassed (app.js)
+  const group = (l) =>
+    `<div class="year"><div class="year-head"><h3>${l.year ? `שנה ${esc(l.year)}׳` : esc(heb(listTitle(l)))} <span>${
+      l.minCredits ? `(לפחות ${l.minCredits} נ״ז)` : ''
+    }</span></h3>${
+      l.year
+        ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}"
+    data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>`
+        : ''
+    }</div><div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
+  const sp = specLists(data, state.profile.specs),
+    isSpec = (l) => sp.all.has(l.code);
+  const others = lists.filter((l) => !past(l) && !isSpec(l)),
+    specOthers = lists.filter((l) => isSpec(l) && !sp.chosen.has(l.code));
+  const premarked = (y) =>
+    // ensurePassed (app.js)
+    (y < 2 ? '' : y === 2 ? ' (שנה א׳ מסומנת מראש)' : ` (שנים א׳–${'אבגד'[y - 2]}׳ מסומנות מראש)`);
   const step = onboarded()
     ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
     : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${premarked(studyYear(data, state))}, ואז לחצו ״הבא: קורסים״.`;
   const entry = entryScreen();
-  const importBtn = (cls) => `<button type="button" class="btn${cls}" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
+  const importBtn = (
+    cls
+  ) => `<button type="button" class="btn${cls}" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
     <input type="file" id="gradeFile" hidden accept="application/pdf" data-chg="gradeFile">`;
   const gradeMsg = `<p class="hint" id="gradeMsg" role="status">${esc(ui.gradeMsg)}</p>`;
   const profile = `<section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
@@ -143,7 +260,9 @@ export function renderMe() {
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
           <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p>
-          ${conflictsFor(app.settings, state.program, state.startYear).map((t) => `<p class="hint warn-text">יש סתירה בין המקורות הרשמיים לגבי ${esc(t)}. בדקו מול המחלקה.</p>`).join('')}</section>`;
+          ${conflictsFor(app.settings, state.program, state.startYear)
+            .map((t) => `<p class="hint warn-text">יש סתירה בין המקורות הרשמיים לגבי ${esc(t)}. בדקו מול המחלקה.</p>`)
+            .join('')}</section>`;
   const prog = `<section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
           <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span
             class="hint">יעד 70% (תקנון 11.4.4)</span></div>
@@ -177,7 +296,10 @@ export function renderMe() {
         ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
         <p class="hint">כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון.</p>
         ${lists.filter(past).map(group).join('')}
-        ${lists.filter((l) => sp.chosen.has(l.code)).map(group).join('')}
+        ${lists
+          .filter((l) => sp.chosen.has(l.code))
+          .map(group)
+          .join('')}
         ${details('others', 'שנים מתקדמות וקורסים נוספים', others.map(group).join(''), others.length)}
         ${details('specOthers', 'התמחויות אחרות', specOthers.map(group).join(''), specOthers.length)}
       </section>
@@ -187,20 +309,37 @@ export function renderMe() {
 
 // ---------- grade-sheet import (PDF read on this device only, never stored) ----------
 const GRADE_NONE = 'לא זוהו קורסים. האם זה גליון הציונים מהפורטל?';
-const setGradeMsg = (m) => { ui.gradeMsg = m; const el = $('gradeMsg'); if (el) el.textContent = m; };
+const setGradeMsg = (m) => {
+  ui.gradeMsg = m;
+  const el = $('gradeMsg');
+  if (el) el.textContent = m;
+};
 export async function importGrades(file) {
   const { data, state } = app;
   setGradeMsg('קוראים את הגליון…');
   let found;
-  try { found = parseGradeSheet(await readGradeSheet(file), data); } catch (e) { return setGradeMsg(e.user ? e.message : 'לא הצלחנו לקרוא את הקובץ.'); }
+  try {
+    found = parseGradeSheet(await readGradeSheet(file), data);
+  } catch (e) {
+    return setGradeMsg(e.user ? e.message : 'לא הצלחנו לקרוא את הקובץ.');
+  }
   const rows = found.filter((r) => r.result !== 'pending');
   if (!rows.length) return setGradeMsg(GRADE_NONE);
   const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
   const todo = gradeChanges(found, state);
-  if (!todo.length) { setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.`); return enterList(); }
-  const label = (r) => `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}`;
-  const pick = await askRows('ייבוא מגליון ציונים', 'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.', ['קורס', 'ציון', 'שינוי'],
-    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]), { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) });
+  if (!todo.length) {
+    setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.`);
+    return enterList();
+  }
+  const label = (r) =>
+    `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}`;
+  const pick = await askRows(
+    'ייבוא מגליון ציונים',
+    'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.',
+    ['קורס', 'ציון', 'שינוי'],
+    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]),
+    { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) }
+  );
   if (!pick) return setGradeMsg('');
   for (const i of pick) {
     const r = todo[i];
