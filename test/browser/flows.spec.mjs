@@ -7,12 +7,20 @@ import { readFile } from 'node:fs/promises';
 import { SITE, SIZES, STUDENT, DONE, gradeSheetPdf, visit as visitIn } from './helpers.mjs';
 
 let browser;
-before(async () => { browser = await webkit.launch(); });
-after(async () => { await browser?.close(); });
+before(async () => {
+  browser = await webkit.launch();
+});
+after(async () => {
+  await browser?.close();
+});
 
 const visit = (t, size, seed, hash) => visitIn(browser, t, size, seed, hash);
 const weekReady = (page) => page.locator('#week .blk').first().waitFor({ timeout: 30000 });
-const focused = (page) => page.evaluate(() => { const e = document.activeElement; return e.dataset?.k ?? e.dataset?.act ?? e.getAttribute('href') ?? e.tagName; });
+const focused = (page) =>
+  page.evaluate(() => {
+    const e = document.activeElement;
+    return e.dataset?.k ?? e.dataset?.act ?? e.getAttribute('href') ?? e.tagName;
+  });
 
 for (const size of Object.keys(SIZES)) {
   test(`${size}: terms gate by keyboard, track, year, manual entry, tick a course, an alternative shows`, async (t) => {
@@ -21,7 +29,10 @@ for (const size of Object.keys(SIZES)) {
     // Tab from the top reaches the checkbox, and once it is ticked (Space) the button; Enter on the button leaves the gate.
     // Playwright's WebKit never puts links in the Tab order (Safari's default), so the two links are only checked to be real links that take focus.
     const seen = new Set();
-    for (let i = 0; i < 30 && !seen.has('termsTick'); i++) { await page.keyboard.press('Tab'); seen.add(await focused(page)); }
+    for (let i = 0; i < 30 && !seen.has('termsTick'); i++) {
+      await page.keyboard.press('Tab');
+      seen.add(await focused(page));
+    }
     assert.ok(seen.has('termsTick'), `focus order saw ${[...seen]}`);
     assert.ok(await page.locator('[data-act="acceptTerms"]').isDisabled(), 'the button waits for the tick');
     await page.keyboard.press('Space');
@@ -46,7 +57,12 @@ for (const size of Object.keys(SIZES)) {
     // The grade-sheet entry screen offers the manual entry.
     const manual = page.getByRole('button', { name: 'הזנה ידנית' });
     await manual.waitFor();
-    assert.ok(await page.getByRole('button', { name: /ייבוא מגליון ציונים/ }).first().isVisible());
+    assert.ok(
+      await page
+        .getByRole('button', { name: /ייבוא מגליון ציונים/ })
+        .first()
+        .isVisible()
+    );
     await manual.click();
     // Tick a course as passed (a segmented radio label), then step 4.
     const before = await page.locator('.crs[data-st="passed"]').count(); // year ב׳ starts with year א׳ marked
@@ -64,19 +80,30 @@ for (const size of Object.keys(SIZES)) {
     const split = page.locator('input[data-chg="split"]');
     await split.waitFor({ state: 'attached' });
     const dialog = page.locator('dialog[open]');
-    for (const [how, close] of [['Cancel button', () => page.getByRole('button', { name: 'ביטול' }).click()], ['Escape', () => page.keyboard.press('Escape')]]) {
+    for (const [how, close] of [
+      ['Cancel button', () => page.getByRole('button', { name: 'ביטול' }).click()],
+      ['Escape', () => page.keyboard.press('Escape')]
+    ]) {
       await split.check();
       await dialog.waitFor();
       assert.equal(await dialog.getAttribute('role'), 'alertdialog');
       await close();
       await dialog.waitFor({ state: 'detached' });
-      await page.waitForFunction(() => !document.querySelector('input[data-chg="split"]').checked, null, { timeout: 3000 }).catch(() => assert.fail(`${how} leaves the option on`));
+      await page
+        .waitForFunction(() => !document.querySelector('input[data-chg="split"]').checked, null, { timeout: 3000 })
+        .catch(() => assert.fail(`${how} leaves the option on`));
     }
     await split.check();
     await page.getByRole('button', { name: 'הבנתי, להציג' }).click();
     await dialog.waitFor({ state: 'detached' });
-    await page.waitForFunction(() => document.querySelector('input[data-chg="split"]').checked, null, { timeout: 3000 });
-    await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).constraints.split === true, null, { timeout: 3000 }); // saved
+    await page.waitForFunction(() => document.querySelector('input[data-chg="split"]').checked, null, {
+      timeout: 3000
+    });
+    await page.waitForFunction(
+      () => JSON.parse(localStorage.getItem('afeka-sched-v1')).constraints.split === true,
+      null,
+      { timeout: 3000 }
+    ); // saved
   });
 
   test(`${size}: Escape closes the registration panel, the map and the friend editor`, async (t) => {
@@ -148,7 +175,12 @@ for (const size of Object.keys(SIZES)) {
 
   test(`${size}: Escape closes the grade-sheet preview and nothing is applied`, async (t) => {
     const student = { ...STUDENT, passed: [] };
-    const page = await visit(t, size, { 'afeka-sched-v1-terms': '2', 'afeka-sched-v1': JSON.stringify(student) }, '#me');
+    const page = await visit(
+      t,
+      size,
+      { 'afeka-sched-v1-terms': '2', 'afeka-sched-v1': JSON.stringify(student) },
+      '#me'
+    );
     await page.locator('#gradeFile').waitFor({ state: 'attached' });
     const pdf = gradeSheetPdf(['10016 Calculus 4.0 85', '30003 Physics 3.5 90']);
     await page.locator('#gradeFile').setInputFiles({ name: 'sheet.pdf', mimeType: 'application/pdf', buffer: pdf });
@@ -157,6 +189,10 @@ for (const size of Object.keys(SIZES)) {
     assert.equal(await preview.locator('tbody tr').count(), 2, 'both rows are offered');
     await page.keyboard.press('Escape');
     await preview.waitFor({ state: 'detached' });
-    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).passed), [], 'a cancelled import changes nothing');
+    assert.deepEqual(
+      await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).passed),
+      [],
+      'a cancelled import changes nothing'
+    );
   });
 }

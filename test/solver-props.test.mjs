@@ -10,7 +10,8 @@ const SEEDS = 300;
 const rnd = (seed) => {
   let s = Math.imul(seed + 1, 2654435761) >>> 1;
   const next = () => ((s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff) / 2 ** 31);
-  next(); next();
+  next();
+  next();
   return next;
 };
 
@@ -18,8 +19,22 @@ const rnd = (seed) => {
 const toM = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
 const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const grp = (id, meetings) => ({ id, type: 'הרצאה', primary: true, full: false, linked: [], meetings, exams: [] });
-const yc = (name, credits, groups, prereqs) => ({ name, credits, offered: groups.length > 0, prereqs, groups, exams: [] });
-const semData = (semester, courses) => ({ year: 2027, startYear: 2026, semester, examsPublished: false, lists: [{ code: 1, name: "חובה שנה א'", minCredits: 0, courses: Object.keys(courses) }], courses });
+const yc = (name, credits, groups, prereqs) => ({
+  name,
+  credits,
+  offered: groups.length > 0,
+  prereqs,
+  groups,
+  exams: []
+});
+const semData = (semester, courses) => ({
+  year: 2027,
+  startYear: 2026,
+  semester,
+  examsPublished: false,
+  lists: [{ code: 1, name: "חובה שנה א'", minCredits: 0, courses: Object.keys(courses) }],
+  courses
+});
 const W = { progress: 3, freeDays: 1, compact: 1, timeWindow: 0, friends: 0, examSpread: 0 };
 
 export function fixture(seed) {
@@ -28,7 +43,9 @@ export function fixture(seed) {
   const pick = (a) => a[int(0, a.length - 1)];
   const n = int(5, 8);
   const ids = Array.from({ length: n }, (_, i) => `C${i}`);
-  const credits = {}, offeredIn = {}, prereqs = {};
+  const credits = {},
+    offeredIn = {},
+    prereqs = {};
   ids.forEach((id, j) => {
     credits[id] = int(1, 4);
     offeredIn[id] = pick([['א'], ['ב'], ['א', 'ב']]);
@@ -62,7 +79,8 @@ export function fixture(seed) {
       courses[sem][id] = yc(id, credits[id], groups, prereqs[id]);
     }
   }
-  const dataA = semData('א', courses.א), dataB = semData('ב', courses.ב);
+  const dataA = semData('א', courses.א),
+    dataB = semData('ב', courses.ב);
 
   const choices = {};
   for (const id of ids) choices[id] = r() < 0.3 ? 'must' : 'optional';
@@ -75,26 +93,49 @@ export function fixture(seed) {
 
   // A pin goes on a group the student can actually take there: course not passed, offered that semester, all of its
   // prerequisites (קדם and מקביל) already passed.
-  const pins = [], pinned = []; // one pin per semester, never the same course twice
+  const pins = [],
+    pinned = []; // one pin per semester, never the same course twice
   if (r() < 0.25) {
     const free = (id) => prereqs[id].every((p) => p.anyOf.some((a) => passed.includes(a.id)));
-    for (const [sem, data] of [['א', dataA], ['ב', dataB]]) {
-      const ok = ids.filter((id) => !passed.includes(id) && offeredIn[id].includes(sem) && free(id) && !pinned.includes(id));
-      if (ok.length && r() < 0.6) { const id = pick(ok); pinned.push(id); pins.push(pick(data.courses[id].groups).id); }
+    for (const [sem, data] of [
+      ['א', dataA],
+      ['ב', dataB]
+    ]) {
+      const ok = ids.filter(
+        (id) => !passed.includes(id) && offeredIn[id].includes(sem) && free(id) && !pinned.includes(id)
+      );
+      if (ok.length && r() < 0.6) {
+        const id = pick(ok);
+        pinned.push(id);
+        pins.push(pick(data.courses[id].groups).id);
+      }
     }
   }
   return { dataA, dataB, state, constraints, pins, ids, credits };
 }
 
-const clash = (x, y) => x.some((a) => y.some((b) => a.day === b.day && toM(a.start) < toM(b.end) && toM(b.start) < toM(a.end)));
+const clash = (x, y) =>
+  x.some((a) => y.some((b) => a.day === b.day && toM(a.start) < toM(b.end) && toM(b.start) < toM(a.end)));
 
 function check(seed) {
   const { dataA, dataB, state, constraints, pins, ids } = fixture(seed);
-  const { results } = searchYear({ dataA, dataB, state, yearList: new Set(), pins, constraints, weights: W, timeLimitMs: 2000 });
+  const { results } = searchYear({
+    dataA,
+    dataB,
+    state,
+    yearList: new Set(),
+    pins,
+    constraints,
+    weights: W,
+    timeLimitMs: 2000
+  });
   const passed = new Set(state.passed);
-  const groupMeetings = (data) => Object.fromEntries(Object.values(data.courses).flatMap((c) => c.groups.map((g) => [g.id, g.meetings])));
-  const gmA = groupMeetings(dataA), gmB = groupMeetings(dataB);
-  const courseOfGroup = (data, gid) => Object.keys(data.courses).find((id) => data.courses[id].groups.some((g) => g.id === gid));
+  const groupMeetings = (data) =>
+    Object.fromEntries(Object.values(data.courses).flatMap((c) => c.groups.map((g) => [g.id, g.meetings])));
+  const gmA = groupMeetings(dataA),
+    gmB = groupMeetings(dataB);
+  const courseOfGroup = (data, gid) =>
+    Object.keys(data.courses).find((id) => data.courses[id].groups.some((g) => g.id === gid));
   const semOfPin = (p) => (p in gmA ? 'א' : 'ב');
 
   // A pin wins over semesterOf, which only applies to a course the student chose to move.
@@ -108,37 +149,74 @@ function check(seed) {
   const cand = ids.filter((id) => wantSem(id) !== 'ב' && modeFor(stA[id]?.status, state.choices[id], false));
   const stY = classify(dataB, { ...state, passed: [...state.passed, ...cand] }).statuses;
   // A ב׳ pin makes its course must for the year (ruling, final review I1).
-  const mustIds = ids.filter((id) => modeFor(stA[id]?.status, state.choices[id], false) === 'must' || modeFor(stY[id]?.status, state.choices[id], false) === 'must'
-    || (pinSem[id] === 'ב' && modeFor(stY[id]?.status, state.choices[id], false)));
+  const mustIds = ids.filter(
+    (id) =>
+      modeFor(stA[id]?.status, state.choices[id], false) === 'must' ||
+      modeFor(stY[id]?.status, state.choices[id], false) === 'must' ||
+      (pinSem[id] === 'ב' && modeFor(stY[id]?.status, state.choices[id], false))
+  );
 
   for (const p of results) {
-    const A = p.a.courses, B = p.b?.courses ?? [];
-    const gA = p.a.groups, gB = p.b?.groups ?? [];
+    const A = p.a.courses,
+      B = p.b?.courses ?? [];
+    const gA = p.a.groups,
+      gB = p.b?.groups ?? [];
     // 1. no time overlap inside a semester (interval comparison)
-    for (const [gs, gm] of [[gA, gmA], [gB, gmB]]) {
+    for (const [gs, gm] of [
+      [gA, gmA],
+      [gB, gmB]
+    ]) {
       const byCourse = {};
       for (const g of gs) byCourse[g] = gm[g];
       const list = Object.values(byCourse);
-      for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) assert.ok(!clash(list[i], list[j]), `overlap ${gs}`);
+      for (let i = 0; i < list.length; i++)
+        for (let j = i + 1; j < list.length; j++) assert.ok(!clash(list[i], list[j]), `overlap ${gs}`);
     }
     // 2. disjoint, and no duplicates inside a semester
     assert.equal(new Set(A).size, A.length, 'duplicate course in א');
     assert.equal(new Set(B).size, B.length, 'duplicate course in ב');
-    assert.deepEqual(A.filter((id) => B.includes(id)), [], 'course in both semesters');
+    assert.deepEqual(
+      A.filter((id) => B.includes(id)),
+      [],
+      'course in both semesters'
+    );
     // 3. קדם: א׳ needs passed; ב׳ needs passed + א׳
     const hard = (data, id) => data.courses[id].prereqs.filter((q) => q.kind === 'קדם');
-    for (const id of A) for (const q of hard(dataA, id)) assert.ok(q.anyOf.some((x) => passed.has(x.id)), `${id} in א without prerequisite`);
-    for (const id of B) for (const q of hard(dataB, id)) assert.ok(q.anyOf.some((x) => passed.has(x.id) || A.includes(x.id)), `${id} in ב without prerequisite`);
+    for (const id of A)
+      for (const q of hard(dataA, id))
+        assert.ok(
+          q.anyOf.some((x) => passed.has(x.id)),
+          `${id} in א without prerequisite`
+        );
+    for (const id of B)
+      for (const q of hard(dataB, id))
+        assert.ok(
+          q.anyOf.some((x) => passed.has(x.id) || A.includes(x.id)),
+          `${id} in ב without prerequisite`
+        );
     // 4. מקביל: passed, or an earlier semester, or the same semester
-    for (const id of A) for (const q of dataA.courses[id].prereqs.filter((x) => x.kind === 'מקביל')) assert.ok(q.anyOf.some((x) => passed.has(x.id) || A.includes(x.id)), `${id} in א without parallel`);
-    for (const id of B) for (const q of dataB.courses[id].prereqs.filter((x) => x.kind === 'מקביל')) assert.ok(q.anyOf.some((x) => passed.has(x.id) || A.includes(x.id) || B.includes(x.id)), `${id} in ב without parallel`);
+    for (const id of A)
+      for (const q of dataA.courses[id].prereqs.filter((x) => x.kind === 'מקביל'))
+        assert.ok(
+          q.anyOf.some((x) => passed.has(x.id) || A.includes(x.id)),
+          `${id} in א without parallel`
+        );
+    for (const id of B)
+      for (const q of dataB.courses[id].prereqs.filter((x) => x.kind === 'מקביל'))
+        assert.ok(
+          q.anyOf.some((x) => passed.has(x.id) || A.includes(x.id) || B.includes(x.id)),
+          `${id} in ב without parallel`
+        );
     // 5. group ids exist in their semester and belong to a chosen course
     for (const g of gA) assert.ok(g in gmA, `א group ${g} unknown`);
     for (const g of gB) assert.ok(g in gmB, `ב group ${g} unknown`);
     for (const g of gA) assert.ok(A.includes(courseOfGroup(dataA, g)), `group ${g} not of a chosen א course`);
     for (const g of gB) assert.ok(B.includes(courseOfGroup(dataB, g)), `group ${g} not of a chosen ב course`);
     // 10. a full group only with includeFull, or when it is the pinned group itself
-    for (const [gs, data] of [[gA, dataA], [gB, dataB]]) {
+    for (const [gs, data] of [
+      [gA, dataA],
+      [gB, dataB]
+    ]) {
       for (const g of gs) {
         const full = Object.values(data.courses).some((c) => c.groups.some((x) => x.id === g && x.full));
         assert.ok(!full || constraints.includeFull || pins.includes(g), `full group ${g} placed`);
@@ -147,7 +225,9 @@ function check(seed) {
     // 6. pins land in their semester; semesterOf is respected (a pin wins over it). An א׳ pin is in every plan; a ב׳ pin
     // the ב׳ search cannot honour is reported: its course is in missing (ruling, final review I1).
     for (const g of pins) {
-      const ok = (semOfPin(g) === 'א' ? gA : gB).includes(g) || (semOfPin(g) === 'ב' && p.missing.includes(courseOfGroup(dataB, g)));
+      const ok =
+        (semOfPin(g) === 'א' ? gA : gB).includes(g) ||
+        (semOfPin(g) === 'ב' && p.missing.includes(courseOfGroup(dataB, g)));
       assert.ok(ok, `pin ${g} missing from ${semOfPin(g)}`);
     }
     for (const id of ids) {
@@ -156,7 +236,8 @@ function check(seed) {
       if (want === 'ב') assert.ok(!A.includes(id), `${id} forced to ב but in א`);
     }
     // 7. every must course is placed or reported missing; missing is not placed
-    for (const id of mustIds) assert.ok(A.includes(id) || B.includes(id) || p.missing.includes(id), `must ${id} neither placed nor missing`);
+    for (const id of mustIds)
+      assert.ok(A.includes(id) || B.includes(id) || p.missing.includes(id), `must ${id} neither placed nor missing`);
     for (const id of p.missing) assert.ok(!A.includes(id) && !B.includes(id), `missing ${id} is placed`);
     for (const id of p.missing) assert.ok(mustIds.includes(id), `missing ${id} is not a must course`);
     // 8, 9. credits add up and respect the cap
@@ -180,5 +261,8 @@ test(`searchYear invariants hold on ${SEEDS} random fixtures`, () => {
       throw new Error(`seed ${seed}: ${e.message}`, { cause: e });
     }
   }
-  assert.ok(withResults > SEEDS / 2, `only ${withResults}/${SEEDS} fixtures produced a plan: the generator is too tight to test anything`);
+  assert.ok(
+    withResults > SEEDS / 2,
+    `only ${withResults}/${SEEDS} fixtures produced a plan: the generator is too tight to test anything`
+  );
 });
