@@ -60,6 +60,7 @@ for (const size of Object.keys(SIZES)) {
     assert.deepEqual(await walk(page), TOUR_INTRO.map((s) => s.text), 'every stop, in order, with its text');
     assert.equal(await page.evaluate(() => document.body.classList.contains('touring')), false);
     assert.equal(await stored(page), 'intro');
+    assert.notEqual(await page.evaluate(() => document.activeElement.tagName), 'BODY', 'focus is not lost to the page when the tour ends');
     await page.reload();
     await page.locator('#meTitle').waitFor();
     await nothingFor(page);
@@ -96,6 +97,16 @@ for (const size of Object.keys(SIZES)) {
     await page.locator('.driver-popover-close-btn').click();
     await closed(page);
     assert.equal(await page.locator('.driver-popover').count(), 0);
+  });
+
+  test(`${size}: the plans part waits for step 4 when the results came while another step was open`, async (t) => {
+    const page = await visit(t, { ...DONE, [TOUR_KEY]: 'intro' }, '#me');
+    await page.locator('#meTitle').waitFor();
+    await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // the search finished behind step 1
+    await nothingFor(page, 500);
+    await page.locator('.steps a[data-view="plan"]').click();
+    await opened(page);
+    assert.equal(await progress(page), `1 מתוך ${TOUR_PLANS.length}`);
   });
 
   test(`${size}: the plans part starts once, on the first screen with an alternative`, async (t) => {

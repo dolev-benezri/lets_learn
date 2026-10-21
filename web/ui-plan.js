@@ -8,7 +8,7 @@ import './ui-map.js';
 import { popStale, PAGE_NAME } from './ui-text.js';
 import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
-import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go } from './ui-view.js';
+import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
@@ -54,6 +54,7 @@ function onHash() {
   ui.dayScroll = true; // back on the builder: show the day's first lesson again (no-op while #me is shown)
   scrollToDay();
   focusView();
+  if (hasAlternatives() && !$('layout').hidden) ui.onResult(); // the results came while another step was open: arriving at step 4 is the first time it shows one
 }
 
 function renderAll() {
@@ -64,9 +65,9 @@ function renderAll() {
   renderView();
   renderPrefs();
   scheduleRun();
-  tourCheck(!gated()); // the intro of a first visit, once the gate is done and the step bar is on screen
+  tourCheck(!gated(), shownTitle); // the intro of a first visit, once the gate is done and the step bar is on screen
 }
-ui.onResult = () => tourOnce('plans'); // renderView: step 4 shows an alternative
+ui.onResult = () => tourOnce('plans', shownTitle); // renderView: step 4 shows an alternative
 
 // ---------- wiring (static shell from index.html) ----------
 document.querySelectorAll('[data-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));
