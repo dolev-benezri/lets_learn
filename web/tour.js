@@ -33,7 +33,8 @@ let running = false;
 
 // Runs a part (also the replay). A stop whose element is missing or hidden is skipped, so "1 מתוך N" counts the stops that are shown.
 // Not over an open dialog, not on the print page, not while another tour runs. Returns whether a tour started.
-export async function startTour(part) {
+// `home` (optional): where the focus goes at the end when the element focused at the start is gone (the gate's tile was redrawn).
+export async function startTour(part, home) {
   if (running || document.querySelector('dialog[open]') || document.documentElement.classList.contains('print-summary')) return false;
   running = true;
   document.body.classList.add('touring'); // style.css: the plan buttons show on every step while a stop points at them
@@ -59,7 +60,7 @@ export async function startTour(part) {
         state.popover?.nextButton.focus({ preventScroll: true });
         for (const a of ['aria-haspopup', 'aria-expanded', 'aria-controls']) el?.removeAttribute(a); // Driver restores what the element had when the stop ends
       },
-      onDestroyed: () => { end(); if (origin?.isConnected) origin.focus({ preventScroll: true }); },
+      onDestroyed: () => { end(); (origin?.isConnected && origin !== document.body ? origin : home?.())?.focus({ preventScroll: true }); },
     });
     // Our own keys, before the page's (its arrows switch the alternative): Escape closes, and in RTL left is forward.
     keys = (e) => {
@@ -76,13 +77,13 @@ export async function startTour(part) {
     return true;
   } catch { end(); return false; } // the module did not load (offline, a stale cache): the tour is skipped and asked again next time
 }
-export const tourOnce = (part) => (tourSeen(part) ? false : startTour(part));
+export const tourOnce = (part, home) => (tourSeen(part) ? false : startTour(part, home));
 
 // The intro waits for the gate to be done (ACT.acceptTerms asks, ui-plan.js renderAll answers when the step bar is on screen).
 let introDue = false;
 export const dueIntro = () => { introDue = true; };
-export function tourCheck(ready) {
+export function tourCheck(ready, home) {
   if (!introDue || !ready) return;
   introDue = false;
-  tourOnce('intro');
+  tourOnce('intro', home);
 }

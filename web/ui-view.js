@@ -64,6 +64,9 @@ function colorOrder() {
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
 }
 
+// Whether the search left at least one alternative with a course (renderView's nAlt)
+export const hasAlternatives = () => (ui.last?.results ?? []).some((r) => resCourses(r).length);
+
 export function renderView() {
   const { state } = app;
   const results = ui.last?.results ?? [];
