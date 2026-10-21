@@ -104,3 +104,11 @@ test('cleanSettings: a supportEmail with mailto separators (, % ? & #) is droppe
   for (const bad of ['a@b.c,d@e.f', 'a%40b@c.d', 'a@b.c?cc=x@y.z', 'a@b.c&x=1', 'a@b.c#h', 'a?b@c.d', 'a@b%c.d']) assert.equal(cleanSettings({ supportEmail: bad }).supportEmail, '', bad);
   assert.equal(cleanSettings({ supportEmail: 'help.me+x@afeka.ac.il' }).supportEmail, 'help.me+x@afeka.ac.il');
 });
+
+test("cleanSettings: a conflict keeps plan, yedion and tool texts (each at most 300 characters); a bad one is left out, the conflict stays", () => {
+  const c = cleanSettings({ programs: { 3: { conflicts: [
+    { cohorts: [2024], text: "א", plan: " פ ", yedion: "x".repeat(300), tool: "x".repeat(301) },
+    { cohorts: [2024], text: "ב", plan: 5, yedion: "  " },
+  ] } } }).programs[3].conflicts;
+  assert.deepEqual(c, [{ cohorts: [2024], text: "א", plan: "פ", yedion: "x".repeat(300) }, { cohorts: [2024], text: "ב" }]);
+});
