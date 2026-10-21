@@ -97,6 +97,12 @@ for (const size of Object.keys(SIZES)) {
     await page.locator('.driver-popover-close-btn').click();
     await closed(page);
     assert.equal(await page.locator('.driver-popover').count(), 0);
+    // A mouse or touch replay: WebKit does not focus a clicked button, so the tour must put the focus back itself.
+    await page.click('#tourBtn');
+    await opened(page);
+    await page.keyboard.press('Escape');
+    await closed(page);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'tourBtn', 'focus is on the replay button after a click, then Escape');
   });
 
   test(`${size}: the plans part waits for step 4 when the results came while another step was open`, async (t) => {
