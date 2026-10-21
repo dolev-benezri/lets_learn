@@ -9,7 +9,14 @@ export const MAX_MS = 12000; // "חפש עוד" doubles the time limit up to thi
 export function scheduleRun(again = false) {
   if (!again) ui.moreMul = 1;
   clearTimeout(ui.timer);
-  if (gated()) { ui.gen++; ui.running = false; ui.last = null; ui.worker?.terminate(); setBusy(); return; }
+  if (gated()) {
+    ui.gen++;
+    ui.running = false;
+    ui.last = null;
+    ui.worker?.terminate();
+    setBusy();
+    return;
+  }
   ui.gen++;
   ui.running = true;
   setBusy();
@@ -17,29 +24,81 @@ export function scheduleRun(again = false) {
 }
 function run() {
   const { state, data, cls } = app;
-  const courses = Object.keys(data.courses).map((id) => ({ id, mode: candidateMode(id) })).filter((x) => x.mode === 'must' || x.mode === 'optional');
+  const courses = Object.keys(data.courses)
+    .map((id) => ({ id, mode: candidateMode(id) }))
+    .filter((x) => x.mode === 'must' || x.mode === 'optional');
   const my = ui.gen; // a newer scheduled search keeps the indicator on
-  const byMore = ui.moreMul > 1, ms = Math.min((yearSearch() ? 3000 : 1500) * ui.moreMul, MAX_MS);
+  const byMore = ui.moreMul > 1,
+    ms = Math.min((yearSearch() ? 3000 : 1500) * ui.moreMul, MAX_MS);
   const done = () => {
     ui.running = my !== ui.gen;
-    if (byMore && !ui.running && ui.last) toast(ui.last.partial ? `החיפוש המורחב הסתיים (${+(ms / 1000).toFixed(1)} שניות)` : 'החיפוש הושלם: נבדקו כל האפשרויות');
+    if (byMore && !ui.running && ui.last)
+      toast(
+        ui.last.partial
+          ? `החיפוש המורחב הסתיים (${+(ms / 1000).toFixed(1)} שניות)`
+          : 'החיפוש הושלם: נבדקו כל האפשרויות'
+      );
     const hadMore = document.activeElement?.dataset?.k === 'searchMore';
     keepFocus(renderView);
-    if (hadMore && !document.querySelector('[data-k="searchMore"]')) focusWeek(); // the search finished: the button is gone
+    // the search finished: the button is gone
+    if (hadMore && !document.querySelector('[data-k="searchMore"]')) focusWeek();
   };
   ui.worker?.terminate();
   ui.runError = null;
-  if (gated() || !courses.length) { ui.last = null; done(); return; }
+  if (gated() || !courses.length) {
+    ui.last = null;
+    done();
+    return;
+  }
   try {
     ui.worker = new Worker(new URL('./solver-worker.js', import.meta.url), { type: 'module' });
-  } catch (err) { ui.runError = err.message || 'לא ניתן להפעיל את החיפוש'; ui.last = null; done(); return; }
-  ui.worker.onmessage = (e) => { if (my !== ui.gen) return; ui.last = { ...e.data, ms }; ui.cur = 0; done(); };
-  ui.worker.onerror = (e) => { if (my !== ui.gen) return; ui.runError = e.message || 'שגיאה לא ידועה'; ui.last = null; done(); }; // the old plan no longer matches the settings
-  const pins = state.pins.filter((p) => courses.some((c) => data.courses[c.id].groups.some((g) => g.id === p))); // stale pins stay in state
-  const weights = showWeights(state.weights, state.sortBy, state.friends); // "הצג לפי": the chosen criterion leads, the usual score breaks ties
-  if (yearSearch()) ui.worker.postMessage({ year: { dataA: app.sem['א'], dataB: app.sem['ב'], state, yearList: new Set(yearCourses()), pins: state.pins,
-    constraints: state.constraints, weights, friends: state.friends, timeLimitMs: ms } });
-  else ui.worker.postMessage({ data, courses, statuses: cls.statuses, pins, constraints: state.constraints, weights, friends: state.friends, timeLimitMs: ms });
+  } catch (err) {
+    ui.runError = err.message || 'לא ניתן להפעיל את החיפוש';
+    ui.last = null;
+    done();
+    return;
+  }
+  ui.worker.onmessage = (e) => {
+    if (my !== ui.gen) return;
+    ui.last = { ...e.data, ms };
+    ui.cur = 0;
+    done();
+  };
+  ui.worker.onerror = (e) => {
+    if (my !== ui.gen) return;
+    ui.runError = e.message || 'שגיאה לא ידועה';
+    ui.last = null;
+    done();
+  }; // the old plan no longer matches the settings
+  // stale pins stay in state
+  const pins = state.pins.filter((p) => courses.some((c) => data.courses[c.id].groups.some((g) => g.id === p)));
+  // "הצג לפי": the chosen criterion leads, the usual score breaks ties
+  const weights = showWeights(state.weights, state.sortBy, state.friends);
+  if (yearSearch())
+    ui.worker.postMessage({
+      year: {
+        dataA: app.sem['א'],
+        dataB: app.sem['ב'],
+        state,
+        yearList: new Set(yearCourses()),
+        pins: state.pins,
+        constraints: state.constraints,
+        weights,
+        friends: state.friends,
+        timeLimitMs: ms
+      }
+    });
+  else
+    ui.worker.postMessage({
+      data,
+      courses,
+      statuses: cls.statuses,
+      pins,
+      constraints: state.constraints,
+      weights,
+      friends: state.friends,
+      timeLimitMs: ms
+    });
 }
 export function setBusy() {
   $('board').classList.toggle('is-busy', ui.running);
