@@ -317,3 +317,10 @@ test('normalize: constraints.split is off by default, kept when true, false for 
   assert.equal(normalize({ v: 1, constraints: { split: true } }).constraints.split, true);
   for (const bad of ['yes', 1, null, 'true', [true]]) assert.equal(normalize({ v: 1, constraints: { split: bad } }).constraints.split, false, String(bad));
 });
+
+test('legal.html: dated for this change; the English line says the Amirnet exemption is computed; the list says it goes by the data shown', () => {
+  const html = readFileSync('web/legal.html', 'utf8');
+  assert.match(html, /עדכון אחרון: 22\.10\.2026/);
+  assert.match(html, /רמת האנגלית[^<]*הכלי מחשב פטור רק לפי ציון אמירנט שהזנתם/);
+  assert.match(html, /<h3>מה הכלי בודק<\/h3>\s*<ul>\s*<li>הכול לפי הנתונים שמוצגים בכלי, שנמשכו מהידיעון/);
+});
