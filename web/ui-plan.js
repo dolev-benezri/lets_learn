@@ -5,10 +5,10 @@ import { readHash } from './share.js';
 import { icon } from './ui-grid.js';
 import { trapTab } from './ui-dialog.js';
 import './ui-map.js';
-import { popStale } from './ui-text.js';
+import { popStale, PAGE_NAME } from './ui-text.js';
 import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
-import { renderTop, renderBanner, renderView, scrollToDay, go } from './ui-view.js';
+import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
@@ -18,13 +18,12 @@ let firstVisit = !onboarded() && !location.hash;
 
 // The step follows the hash (app.js routeOf): one page shown at a time (index.html #me, #courses, #prefs, #layout).
 // The top bar keeps only the title off the plans (style.css [data-view]): the alternatives and the plan actions belong to step 4.
-const NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות' };
 function renderRoute() {
   const view = routeOf(location.hash), gate = gated(); // the gate question takes the status page's container
   const page = PAGE[gate ? 'me' : view][0];
   for (const [p] of Object.values(PAGE)) $(p).hidden = p !== page;
   document.body.dataset.view = view;
-  document.title = `${gate ? 'התחלה' : NAME[view]} · המערכת שלי · אפקה`; // a tab title per step (a11y)
+  document.title = `${gate ? 'התחלה' : PAGE_NAME[view]} · המערכת שלי · אפקה`; // a tab title per step (a11y)
   document.body.classList.toggle('gated', gate);
   if (view !== 'me' && app.cls) markOnboarded(); // leaving step 1 any way (step bar, link, "הבא") ends the first-visit redirect
   const at = STEPS.indexOf(gate ? 'me' : view); // the gate question is step 1: nothing is done yet
@@ -33,7 +32,7 @@ function renderRoute() {
     a.classList.toggle('done', k < at);
     if (k === at) a.setAttribute('aria-current', 'step'); else a.removeAttribute('aria-current');
   }
-  if (app.cls) renderMe();
+  if (app.cls) { renderMe(); renderReport(); }
 }
 const focusView = () => shownTitle()?.focus({ preventScroll: true });
 // Back/forward and the nav links switch views without a new search (a search would reset the shown alternative).
@@ -72,13 +71,15 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
   if (el && !el.disabled && ACT[el.dataset.act]) ACT[el.dataset.act](el, e);
 });
-document.addEventListener('change', (e) => {
+document.addEventListener('change', async (e) => {
   const f = CHG[e.target.dataset.chg];
   if (!f) return;
   const shown = (el) => (el.checkVisibility ? el.checkVisibility() : !!el.offsetParent); // closed <details> use content-visibility
   const visibleCards = () => [...$('side').querySelectorAll('.course')].filter(shown);
   const idx = visibleCards().indexOf(e.target.closest('.course'));
-  const how = f(e.target);
+  let how = f(e.target);
+  if (how?.then) how = await how; // CHG.split waits for its confirm dialog
+  if (how === 'none') return; // nothing to redraw (the gate's tick only enables its button)
   if (how === 'view') keepFocus(renderView);
   else if (how === 'save') save();
   else if (how === 'quiet') { save(); scheduleRun(); } else refresh();

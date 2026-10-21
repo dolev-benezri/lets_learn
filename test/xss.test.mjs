@@ -36,11 +36,12 @@ globalThis.history = { replaceState() {} };
 globalThis.location = { hash: '', origin: 'https://x', pathname: '/' };
 
 const { app, normalize, refresh, yearCourses } = app_;
-const { ui, current } = await import('../web/ui-common.js');
+const { ui, current, gated, TERMS_VERSION, termsOk, acceptTerms } = await import('../web/ui-common.js');
+ls['afeka-sched-v1-terms'] = TERMS_VERSION; // the terms were accepted: the renders below get the track question and the pages
 const { renderTop, renderBanner, renderView, showAlt } = await import('../web/ui-view.js');
 const { renderMe, identityPick } = await import('../web/ui-me.js');
 const { renderSide, coursesSummary } = await import('../web/ui-side.js');
-const { renderDrawer, renderPrefs } = await import('../web/ui-drawer.js');
+const { renderDrawer, renderPrefs, registrationText } = await import('../web/ui-drawer.js');
 const { openPop, groupIndex, resCourses } = await import('../web/ui-grid.js');
 const { openFriendEditor } = await import('../web/ui-friend-editor.js');
 const { layoutMap, geometry } = await import('../web/map-layout.js');
@@ -106,6 +107,13 @@ run('map', () => {
 });
 run('map-mini', () => { writes.push({ scope: 'map-mini', id: 'mini', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true }) });
   writes.push({ scope: 'map-mini', id: 'mini-ab', html: miniHtml({ raw: current(), sem: app.sem, data: app.data, colors: new Map(), k: 0, open: true, abbr: true }) }); });
+const { ACT } = await import('../web/ui-actions.js');
+let printed = 0, afterprint = null, printChange = null, listeners = 0;
+const root = { classList: { _s: new Set(), add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); }, contains(c) { return this._s.has(c); } } };
+document.documentElement = root;
+Object.assign(globalThis, { print: () => { printed++; }, addEventListener: (t, fn) => { if (t === 'afterprint') { afterprint = fn; listeners++; } },
+  matchMedia: (q) => ({ matches: false, addEventListener: (t, fn) => { if (q === 'print') { printChange = fn; listeners++; } } }) });
+run('advisor', () => { ACT.advisor(); });
 run('friend-editor', () => { openFriendEditor({ friend: app.state.friends[0], onSave: () => null, returnFocusId: 'x' }); });
 
 test('the search found plans, so the board and the registration list render real data', () => {
@@ -113,7 +121,7 @@ test('the search found plans, so the board and the registration list render real
 });
 
 test('every renderer got the payload and wrote it escaped (no element or on* attribute created from data)', () => {
-  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'prefs-page', 'drawer-reg', 'courses-top', 'pop', 'map', 'map-mini', 'friend-editor'];
+  const scopes = ['top', 'banner', 'me', 'picker', 'view', 'side', 'prefs-page', 'drawer-reg', 'courses-top', 'pop', 'map', 'map-mini', 'friend-editor', 'advisor'];
   for (const s of scopes) {
     const mine = writes.filter((w) => w.scope === s);
     assert.ok(mine.length, `${s}: nothing written`);
@@ -316,4 +324,217 @@ test('step 1 asks for the grade sheet before the course list', () => {
   assert.ok(tagged.innerHTML.includes('פטור') && !tagged.querySelector('.grade'));
   app.state.exempt = [];
   document.body.dataset.view = 'plan';
+});
+
+test('the terms come before the first question', async () => {
+  const me = (s, fn) => { fn(); run(s, () => { renderMe(); }); return writes.filter((w) => w.scope === s && w.id === 'me').at(-1).html; };
+  const programSet = app.state.programSet;
+  fake('me').hidden = false;
+  document.body.dataset.view = 'me';
+  const terms = (html) => {
+    const root = parse(html);
+    assert.ok(html.includes('לפני שמתחילים') && !html.includes('מה המסלול שלך?') && !html.includes('<xss-t>'));
+    for (const s of ['זה כלי עזר לתכנון בלבד. הוא לא רושם אתכם לקורסים: ההרשמה נעשית רק באפקה-נט.', 'החלופות שהכלי מציג הן אפשרויות, לא המלצה.',
+      'לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים, במיוחד בכל חריגה מהמערכת המומלצת של המחלקה.', 'קראתי והבנתי']) assert.ok(html.includes(s), s);
+    assert.equal(root.querySelectorAll('input[type="checkbox"][data-chg="termsTick"]').length, 1);
+    assert.ok(root.querySelector('button[data-act="acceptTerms"]').hasAttribute('disabled'));
+    assert.equal(root.querySelector('button[data-act="acceptTerms"]').text.trim(), 'המשך');
+    assert.ok(root.querySelector('a[href="legal.html#terms"]') && root.querySelector('a[href="legal.html#scope"]'));
+  };
+  terms(me('terms-none', () => { delete ls['afeka-sched-v1-terms']; app.state.programSet = false; }));
+  const landing = { name: 'x', groups: [] }; app.friendLanding = landing; me('terms-landing', () => {});
+  assert.ok(gated() && app.friendLanding === landing, 'a friend link waits in app.friendLanding while the gate shows'); app.friendLanding = null;
+  terms(me('terms-old', () => { ls['afeka-sched-v1-terms'] = '1'; }));
+  terms(me('terms-year', () => { ls['afeka-sched-v1-terms'] = '0'; app.state.programSet = true; })); // the year question waits too
+  assert.ok(me('terms-ok', () => { ls['afeka-sched-v1-terms'] = TERMS_VERSION; app.state.programSet = false; }).includes('מה המסלול שלך?'));
+  app.state.programSet = programSet; document.body.dataset.view = 'plan';
+
+  const { CHG } = await import('../web/ui-actions.js'); // the tick enables the button without a re-render
+  const btn = { disabled: true }, box = { checked: true, closest: () => ({ querySelector: () => btn }) };
+  assert.equal(CHG.termsTick(box), 'none'); assert.equal(btn.disabled, false);
+  box.checked = false; CHG.termsTick(box); assert.equal(btn.disabled, true);
+});
+
+test('storage that throws still lets the visitor through for this visit', () => {
+  const real = globalThis.localStorage, saved = { ...ls };
+  delete ls['afeka-sched-v1-terms'];
+  const boom = () => { throw new Error('blocked'); };
+  globalThis.localStorage = { getItem: boom, setItem: boom, removeItem: boom };
+  try { assert.equal(termsOk(), false); acceptTerms(); assert.equal(termsOk(), true); } finally { globalThis.localStorage = real; Object.assign(ls, saved); }
+});
+
+test('"המשך" stores the acceptance and redraws', async () => {
+  const { ACT } = await import('../web/ui-actions.js');
+  delete ls['afeka-sched-v1-terms'];
+  ACT.acceptTerms();
+  assert.equal(ls['afeka-sched-v1-terms'], TERMS_VERSION);
+});
+
+test('the disclaimer under the pills links to the counselling page, escaped; without a URL it is plain text', () => {
+  const html = (url) => { app.settings = { ...app.settings, counselingUrl: url }; const n = writes.length; run('view-disclaimer', () => { renderView(); });
+    return writes.slice(n).filter((w) => w.id === 'disclaimer').map((w) => w.html).join(''); };
+  assert.ok(html('').startsWith('אינו הרשמה') && !html('').includes('<a'));
+  const a = parse(html('https://x.test/y?a=1&b="><xss-t>')).querySelectorAll('a');
+  assert.equal(a.length, 1);
+  assert.equal(a[0].getAttribute('href'), 'https://x.test/y?a=1&b="><xss-t>');
+  assert.equal(a[0].getAttribute('rel'), 'noopener');
+  assert.equal(parse(html('https://x.test/"><xss-t>')).querySelectorAll('xss-t').length, 0);
+  app.settings = { ...app.settings, counselingUrl: '' };
+});
+
+test('registration turns: the label is escaped in the picker; the banner shows only for a listed turn whose time has passed since the fetch', () => {
+  const keep = [app.settings, app.state.profile], turns = [{ id: 't1', label: '<xss-t>' + P, opensAt: '2020-01-01T08:00:00+02:00' }];
+  const meHtml = (t) => { app.settings = { ...keep[0], turns: t }; const n = writes.length; run('me-turn', () => { renderMe(); }); return writes.slice(n).filter((w) => w.id === 'me').map((w) => w.html).join(''); };
+  const picker = parse(meHtml(turns)).querySelector('select[data-chg="turn"]');
+  assert.equal(picker.querySelectorAll('option').length, 2);
+  assert.equal(picker.querySelectorAll('xss-t').length, 0);
+  assert.ok(picker.innerHTML.includes('&lt;xss-t&gt;'));
+  assert.ok(!meHtml([]).includes('data-chg="turn"'), 'no turns, no picker');
+  app.settings = { ...keep[0], turns };
+  const banner = (turn) => { app.state.profile = { ...keep[1], turn }; const n = writes.length; run('banner-turn', () => { renderBanner(); }); return writes.slice(n).filter((w) => w.id === 'banner').map((w) => w.html).join(''); };
+  const saved = [app.status, ...['א', 'ב'].map((k) => app.sem[k]?.fetchedAt)];
+  app.status = null;
+  for (const k of ['א', 'ב']) if (app.sem[k]) app.sem[k].fetchedAt = '2019-12-31T00:00:00Z'; // the year view reads both files
+  assert.ok(banner('t1').includes('הנתונים נמשכו לפני פתיחת התור שלך'));
+  assert.ok(!banner('gone').includes('פתיחת התור'), 'a turn that is no longer listed warns about nothing');
+  assert.ok(!banner(undefined).includes('פתיחת התור'));
+  app.status = { checkedAt: '2020-06-01T00:00:00Z', ok: true, semesters: { [`${app.sem['א'].year}-1/${app.sem['א'].program}-${app.sem['א'].startYear}`]: {}, [`${app.sem['ב'].year}-2/${app.sem['ב'].program}-${app.sem['ב'].startYear}`]: {} } };
+  assert.ok(!banner('t1').includes('פתיחת התור'), 'a later check that covers both semesters: the data is current');
+  app.status = saved[0];
+  ['א', 'ב'].forEach((k, i) => { if (app.sem[k]) app.sem[k].fetchedAt = saved[i + 1]; });
+  [app.settings, app.state.profile] = keep;
+});
+
+test('a split alternative says so: the note on top of the week, the course names in the info line (escaped), the label', () => {
+  const r = ui.last.results[0], id = resCourses(r)[0], name = (app.sem['א'].courses[id] ?? app.sem['ב'].courses[id]).name;
+  const real = ui.last.results;
+  ui.last = { ...ui.last, results: [{ ...r, split: [id] }, ...real.slice(1)] };
+  const n = writes.length;
+  run('view-split', () => { renderView(); });
+  const html = writes.slice(n).map((w) => w.html).join('');
+  const week = parse(writes.slice(n).filter((w) => w.id === 'week').map((w) => w.html).join(''));
+  assert.ok(week.querySelector('.notice').text.includes('חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)'));
+  const line = week.querySelectorAll('.split-line').map((p) => p.text).join('|');
+  assert.ok(line.includes('מופרדים: ') && line.includes('· דורש אישור ההכוון') && line.includes(name), line);
+  assert.ok(html.includes('&lt;xss-t&gt;') && parse(html).querySelectorAll('xss-t').length === 0);
+  assert.match(els.altLabel.textContent, / · מופרדת$/);
+  ui.last = { ...ui.last, results: real };
+  renderView();
+  assert.ok(!els.altLabel.textContent.includes('מופרדת') && !els.week.innerHTML.includes('הפרדת הרצאה ותרגול'));
+});
+
+test('a split course is marked in the registration list and in the copied text: "מופרד · דורש אישור ההכוון" (a pair marks the semester it is in)', () => {
+  const real = ui.last.results, r = real[0], id = resCourses(r)[0];
+  const mark = (x) => (x.a ? { ...x, a: { ...x.a, split: x.a.courses.includes(id) ? [id] : [] }, b: x.b && { ...x.b, split: x.b.courses.includes(id) ? [id] : [] }, split: [id] } : { ...x, split: [id] });
+  ui.last = { ...ui.last, results: [mark(r), ...real.slice(1)] };
+  const n = writes.length;
+  run('reg-split', () => { ui.panel = 'reg'; renderDrawer(); });
+  const root = parse(writes.slice(n).filter((w) => w.scope === 'reg-split').map((w) => w.html).join(''));
+  const tags = root.querySelectorAll('.reglist .tag.warn');
+  assert.equal(tags.length, 1, 'one row carries the mark');
+  assert.equal(tags[0].text, 'מופרד · דורש אישור ההכוון');
+  assert.equal(root.querySelectorAll('xss-t').length, 0);
+  const lines = registrationText(current()).split('\n').filter((l) => l.startsWith(`${id} `));
+  assert.ok(lines.length && lines.every((l) => l.includes(' (מופרד · דורש אישור ההכוון): ')), lines.join('|'));
+  assert.equal(registrationText(current()).split('דורש אישור ההכוון').length - 1, lines.length, 'no other course is marked');
+  ui.last = { ...ui.last, results: real };
+  const m = writes.length;
+  run('reg-plain', () => { renderDrawer(); });
+  assert.ok(!writes.slice(m).some((w) => w.html.includes('דורש אישור ההכוון')) && !registrationText(current()).includes('דורש אישור ההכוון'));
+});
+
+test('progress rank: a split alternative gets no rank pill and does not shift the regular ones (ranked among themselves)', () => {
+  const real = ui.last.results, pill = (res, cur) => { ui.last = { ...ui.last, results: res }; ui.cur = cur; const n = writes.length; run('rank', () => { renderView(); });
+    return writes.slice(n).filter((w) => w.id === 'pills').map((w) => w.html).join(''); };
+  const withP = (x, p) => (x.a ? { ...x, a: { ...x.a, breakdown: { ...x.a.breakdown, progress: p } }, b: x.b && { ...x.b, breakdown: { ...x.b.breakdown, progress: p } } }
+    : { ...x, breakdown: { ...x.breakdown, progress: p } });
+  assert.ok(real.length >= 2, 'the data has two plans');
+  const id = resCourses(real[0])[0];
+  const [r0, r1] = [withP(real[0], 0.5), withP(real[1], 0.4)];
+  const split = { ...withP(real[0], 0.99), split: [id], ...(real[0].a ? { a: { ...withP(real[0], 0.99).a, split: [id] } } : {}) };
+  const list = [r0, r1, split];
+  assert.match(pill(list, 0), /מקדמת הכי הרבה בתואר/, 'the best regular plan stays first even though the split one scores higher');
+  assert.match(pill(list, 1), /מקום 2 מתוך 2 בהתקדמות/, 'ranked among the 2 regular plans only');
+  const last = pill(list, 2);
+  assert.ok(!/בהתקדמות|מקדמת הכי/.test(last) && last.includes('class="pill'), 'the split alternative shows no rank');
+  ui.last = { ...ui.last, results: real }; ui.cur = 0;
+  renderView();
+});
+
+test('the advisor summary fills #print, prints it alone and puts the page back when printing ends (afterprint or the print query turning off)', () => {
+  const cls = root.classList;
+  assert.equal(printed, 1);
+  assert.ok(fake('print').hidden === false && cls.contains('print-summary') && fake('print').innerHTML.includes('סיכום לפגישה עם יועץ לימודים'));
+  afterprint();
+  assert.ok(fake('print').hidden === true && !cls.contains('print-summary'));
+  ACT.advisor(); // a second click: listeners are not stacked, and the second signal clears too
+  assert.equal(printed, 2); assert.equal(listeners, 2);
+  assert.ok(cls.contains('print-summary'));
+  printChange({ matches: true }); assert.ok(cls.contains('print-summary'), 'entering print media changes nothing');
+  printChange({ matches: false }); assert.ok(fake('print').hidden === true && !cls.contains('print-summary'));
+});
+
+test('a stale summary state is cleared at the start of the next ACT.advisor, also when there is nothing to print', () => {
+  const cls = root.classList;
+  ACT.advisor(); assert.ok(cls.contains('print-summary'));
+  const last = ui.last; ui.last = null; // no alternative: nothing prints, but the leftovers are gone
+  const n = printed; ACT.advisor();
+  ui.last = last;
+  assert.equal(printed, n); assert.ok(fake('print').hidden === true && !cls.contains('print-summary'));
+});
+
+test('the footer links to the counselling page only when settings give one (escaped by the DOM, https-validated upstream)', () => {
+  const link = (url) => { app.settings = { ...app.settings, counselingUrl: url }; renderTop(); return [fake('counsel').hidden, fake('counselLink').href]; };
+  assert.deepEqual(link(''), [true, fake('counselLink').href]);
+  assert.deepEqual(link('https://x.test/y'), [false, 'https://x.test/y']);
+  app.settings = { ...app.settings, counselingUrl: '' };
+});
+
+test('remote notice: above every step, a red alert without a close button, escaped; absent when empty', () => {
+  const keep = app.settings, banner = () => { const n = writes.length; run('banner-notice', () => { renderBanner(); }); return writes.slice(n).filter((w) => w.id === 'notice').map((w) => w.html).join(''); };
+  app.settings = { ...keep, notice: '<xss-n>' + P };
+  const html = banner(), first = parse(html).querySelector('.banner');
+  assert.ok(first.classList.contains('err') && first.getAttribute('role') === 'alert' && first.text.includes('<xss-n>'), 'the notice is the first banner');
+  assert.equal(first.querySelectorAll('button').length, 0, 'no close button');
+  assert.ok(html.includes('&lt;xss-n&gt;') && parse(html).querySelectorAll('xss-n').length === 0);
+  const page = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  assert.ok(page.indexOf('id="notice"') > 0 && page.indexOf('id="notice"') < page.indexOf('id="layout"'), 'the notice sits above every step, outside the plans step');
+  const wrote = () => { const n = writes.length; run('banner-notice', () => { renderBanner(); }); return writes.slice(n).filter((w) => w.id === 'notice').length; };
+  assert.equal(wrote(), 0, 'the same notice again: nothing rewritten, so a screen reader does not announce it twice');
+  app.settings = { ...keep, notice: 'שונה' };
+  assert.equal(wrote(), 1, 'a changed notice is written once');
+  assert.equal(wrote(), 0);
+  app.settings = { ...keep, notice: '' };
+  assert.ok(!banner().includes('xss-n'));
+  app.settings = keep;
+});
+
+test('conflict line on step 1: under the profile, escaped, only for this program and cohort', () => {
+  const keep = app.settings, me = () => { const n = writes.length; run('me-conflict', () => { renderMe(); }); return writes.slice(n).filter((w) => w.id === 'me').map((w) => w.html).join(''); };
+  const { program, startYear } = app.state;
+  app.settings = { ...keep, programs: { [program]: { conflicts: [{ cohorts: [startYear], text: '<xss-c>' + P }, { cohorts: [startYear + 100], text: 'xss-other' }] } } };
+  const html = me(), line = parse(html).querySelector('.warn-text.hint');
+  assert.ok(html.includes('&lt;xss-c&gt;') && parse(html).querySelectorAll('xss-c').length === 0);
+  assert.ok(line.text.startsWith('יש סתירה בין המקורות הרשמיים לגבי ') && line.text.endsWith('. בדקו מול המחלקה.'), line.text);
+  assert.ok(!html.includes('xss-other'));
+  app.settings = keep;
+  assert.ok(!me().includes('יש סתירה'));
+});
+
+test('report a mistake: a real mailto link in the footer and the popover, only when supportEmail is set; the href is escaped', () => {
+  const keep = app.settings, gid = gids[0], btn = { dataset: { gid }, getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 }) };
+  const pop = () => { const n = writes.length; run('pop-report', () => openPop(btn, { data: app.sem['א'], res: null, includeFull: false, pins: [], friends: [], colors: new Map(), lecturers: {} })); return writes.slice(n).map((w) => w.html).join(''); };
+  app.settings = { ...keep, supportEmail: '' };
+  renderTop();
+  assert.equal(fake('report').hidden, true);
+  assert.ok(!pop().includes('mailto:'));
+  app.settings = { ...keep, supportEmail: 'a"b@c.d?x=1&y=<2>' };
+  renderTop();
+  assert.equal(fake('report').hidden, false);
+  assert.ok(fake('reportLink').href.startsWith('mailto:'));
+  const html = pop(), a = parse(html).querySelector('a[href^="mailto:"]');
+  assert.ok(a && a.text.includes('דיווח על טעות'), 'the popover link');
+  assert.ok(!/mailto:[^"]*[<>]/.test(html) && a.getAttribute("href").startsWith("mailto:a%22b@c.d%3F"), "nothing breaks out of the attribute");
+  assert.ok(new URLSearchParams(a.getAttribute('href').split('?')[1]).get('body').includes('קבוצה'), 'the group is filled in');
+  app.settings = keep;
 });

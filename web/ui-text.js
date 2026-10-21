@@ -1,5 +1,14 @@
 // Pure copy and label helpers for the sidebar, drawers and popover (leaf module: no DOM, no imports, node-testable).
 const D = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
+// The line under every alternative and in every calendar event; "יועץ לימודים" links to the counselling page when settings.json sets one (already https-validated).
+export const DISCLAIMER = 'אינו הרשמה ואינו המלצה. לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.';
+// Split lecture and tutorial (opt-in): the warning before it is switched on, and what a split alternative says about itself.
+export const SPLIT_WARNING = 'הפרדה בין הרצאה לתרגול עלולה ליצור פער בין החומר שנלמד בהרצאה לחומר שבתרגול, כי הקצב שלהם מתואם. הפרדה כזו מותרת רק באישור ההכוון האקדמי.';
+export const SPLIT_TAG = 'מופרד · דורש אישור ההכוון'; // beside each split course in the registration list
+export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
+export const splitLine = (names) => `מופרדים: ${names.join(', ')} · דורש אישור ההכוון`; // names are raw: the caller escapes
+export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export const disclaimerHtml = (url) => (url ? DISCLAIMER.replace('יועץ לימודים', () => `<a href="${esc(url)}" target="_blank" rel="noopener">יועץ לימודים</a>`) : DISCLAIMER);
 const typeName = (t) => String(t).replace('סופי-', '');
 
 // "271001601/1" -> "01/1", "270600301" -> "01": the part of a 9-digit Afeka group id a student actually recognises.
@@ -113,4 +122,51 @@ export function hebYear(gregorian) {
   for (const [v, l] of GEMATRIA) while (n >= v) { out += l; n -= v; }
   out = out.replace('יה', 'טו').replace('יו', 'טז');
   return out.length > 1 ? `${out.slice(0, -1)}״${out.slice(-1)}` : `${out}׳`;
+}
+
+// How fresh one group's seat count is: "מלא · נכון ל-08:08". A group may carry its own fetchedAt and seatsLeft (an official feed); the data file's time is the fallback.
+// Times are instants shown in Israel time, 24h, whatever offset the ISO string was written with.
+const HHMM = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const instant = (iso) => { const t = typeof iso === 'string' ? new Date(iso) : null; return t && !Number.isNaN(t.getTime()) ? t : null; };
+// The instant a data file is known to be current: its last change (fetchedAt), or a later successful check by the scraper (status.json: checkedAt, ok, semesters)
+// that covers this file. A failed, missing or unrelated check says nothing, so fetchedAt stays. Returns the original ISO string, or undefined.
+const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
+export function freshAt(data, status) {
+  const covered = status?.ok === true && !!status.semesters?.[`${data.year}-${SEM_CODE[data.semester]}/${data.program}-${data.startYear}`];
+  const change = instant(data.fetchedAt), check = covered ? instant(status.checkedAt) : null;
+  return check && (!change || check > change) ? status.checkedAt : change ? data.fetchedAt : undefined;
+}
+// Not today in Israel time: the date comes first ("נכון ל-16.10, 21:08"), so an old count never reads as today's.
+const DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit' });
+export function groupFresh(g, fileFetchedAt, now = new Date()) {
+  const left = Number.isInteger(g.seatsLeft) && g.seatsLeft >= 0 ? g.seatsLeft : null;
+  const state = g.full || left === 0 ? 'מלא' : left === null ? 'פנוי' : left === 1 ? 'נשאר מקום אחד' : `נשארו ${left} מקומות`;
+  const t = instant(g.fetchedAt) ?? instant(fileFetchedAt);
+  const day = t && DAY.format(t) !== DAY.format(now) ? `${DAY.format(t).replace('/', '.')}, ` : '';
+  return t ? `${state} · נכון ל-${day}${HHMM.format(t)}` : state;
+}
+
+// The warning before my registration turn: my turn has opened, but the data was fetched before it did (seats may have gone since).
+export const TURN_WARNING = 'שימו לב: הנתונים נמשכו לפני פתיחת התור שלך. ייתכנו שינויים במקומות הפנויים.';
+export function turnWarning(turns, turnId, fetchedAt, now = new Date()) {
+  const opens = instant(turns?.find((t) => t.id === turnId)?.opensAt), fetched = instant(fetchedAt);
+  return opens && fetched && fetched < opens && now >= opens ? TURN_WARNING : null;
+}
+
+// Open conflicts between official sources (settings.json programs[id].conflicts) for one program and cohort: the texts to show on step 1.
+export function conflictsFor(settings, program, startYear) {
+  const list = Object.hasOwn(settings?.programs ?? {}, program) ? settings.programs[program].conflicts : null;
+  return (list ?? []).filter((c) => c.cohorts.includes(startYear)).map((c) => c.text);
+}
+
+// "דיווח על טעות": a mailto with the subject and a body the tool fills (ctx: program, startYear, semester, group?, page).
+// The address goes through encodeURIComponent (so "?", "&", "," and "#" in it cannot add a header or a recipient), keeping only "@".
+// Each field is clipped to 40 characters: a Hebrew letter is 6 characters once encoded, and mail apps drop links over ~2000.
+export const PAGE_NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות' };
+const clip = (v) => [...String(v)].slice(0, 40).join('');
+export function reportMailto(email, ctx) {
+  const lines = [['תוכנית', ctx.program], ['מחזור', ctx.startYear], ['סמסטר', ctx.semester], ['קבוצה', ctx.group], ['עמוד', ctx.page]]
+    .filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => `${k}: ${clip(v)}`);
+  const body = `מה הטעות?\n\n\n${lines.join('\n')}`.replace(/\n/g, '\r\n'); // mail links use CRLF line breaks (%0D%0A)
+  return `mailto:${encodeURIComponent(email).replace('%40', '@')}?subject=${encodeURIComponent('דיווח על טעות במערכת השעות')}&body=${encodeURIComponent(body)}`;
 }

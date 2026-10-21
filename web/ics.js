@@ -1,5 +1,7 @@
 // Calendar export (RFC 5545), pure: the shown plan as weekly lessons and its exams, for Google Calendar, iPhone and Outlook. No DOM, unit-tested (test/ics.test.mjs).
 
+import { DISCLAIMER } from './ui-text.js';
+
 // Afeka academic calendar (https://www.afeka.ac.il/about-afeka/general-information/academic-calendar/), checked 2026-10-03.
 // end = the last day of classes; off = days without classes inside the semester (a date or an inclusive [from, to]). Add a year at the rollover (README).
 export const SEMESTER_DATES = {
@@ -48,14 +50,15 @@ export function toIcs(parts, now = new Date()) {
           const first = firstOn(dates.start, m.day), skip = off.filter((d) => d >= first && d <= dates.end && new Date(utc(d)).getUTCDay() + 1 === m.day);
           event(`${g.id}-${m.day}-${m.start.replace(':', '')}`, [`DTSTART:${compact(first, m.start)}`, `DTEND:${compact(first, m.end)}`,
             `RRULE:FREQ=WEEKLY;UNTIL=${compact(dates.end)}T235959`, ...skip.map((d) => `EXDATE:${compact(d, m.start)}`),
-            `SUMMARY:${text(c.name)}`, `LOCATION:${text(m.room)}`, `DESCRIPTION:${text(`קבוצה ${g.id}${g.lecturer ? ` · ${g.lecturer}` : ''}`)}`]);
+            `SUMMARY:${text(c.name)}`, `LOCATION:${text(m.room)}`, `DESCRIPTION:${text(`קבוצה ${g.id}${g.lecturer ? ` · ${g.lecturer}` : ''}
+${DISCLAIMER}`)}`]);
         }
         for (const e of g.exams.filter((x) => x.date)) {
           const key = `${cid}-${e.kind}-${e.moed}`;
           if (seenExam.has(key)) continue;
           seenExam.add(key);
           const when = e.time ? [`DTSTART:${compact(e.date, e.time)}`, `DTEND:${compact(e.date, addHours(e.time, 3))}`] : [`DTSTART;VALUE=DATE:${compact(e.date)}`];
-          event(`exam-${cid}-${seenExam.size}-${e.moed}-${compact(e.date)}`, [...when, `SUMMARY:${text(`${e.kind}: ${c.name} (מועד ${e.moed})`)}`]);
+          event(`exam-${cid}-${seenExam.size}-${e.moed}-${compact(e.date)}`, [...when, `SUMMARY:${text(`${e.kind}: ${c.name} (מועד ${e.moed})`)}`, `DESCRIPTION:${text(DISCLAIMER)}`]);
         }
       }
     }

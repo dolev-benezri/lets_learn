@@ -45,6 +45,7 @@
   <div class="actions">
     <button type="button" class="btn" data-act="openMap" data-k="openMap" data-icon="map" aria-haspopup="dialog" title="מפה"><span class="lbl">מפה</span></button>
     <button type="button" class="btn" data-act="panel" data-panel="reg" data-icon="clipboard-list" aria-haspopup="dialog" title="רשימה להרשמה"><span class="lbl">רשימה להרשמה</span></button>
+    <button type="button" id="advisorBtn" class="btn" data-act="advisor" data-icon="file" title="סיכום ליועץ"><span class="lbl">סיכום ליועץ</span></button>
     <button type="button" class="btn primary" data-act="share" data-icon="share" title="שתף"><span class="lbl">שתף</span></button>
   </div>
 </header>
@@ -57,6 +58,7 @@
     class="lbl">מצב כהה</span></span><span class="to-light"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path
     d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="lbl">מצב בהיר</span></span></button>
 </nav>
+<div id="notice" class="notice-top"></div><!-- the remote notice (settings.json): above every step, unlike #banner which lives in the plans step -->
 <div id="layout" class="layout">
   <main>
     <div id="banner"></div>
@@ -66,6 +68,7 @@
       <div id="semnote"></div>
       <div id="showby" class="showby"></div>
       <div class="board-top"><div id="pills" class="pills" tabindex="0" role="region" aria-label="סיכום החלופה"></div><span id="busy" class="busy" hidden>מחשב…</span></div>
+      <p id="disclaimer" class="disclaimer"></p>
       <div id="daysel" class="daysel" role="group" aria-label="בחירת יום"></div>
       <div id="week" tabindex="-1"></div>
       <p id="live" class="sr" aria-live="polite"></p>
@@ -83,8 +86,11 @@
 <footer class="site-foot">
   <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.</p>
 <p><a href="legal.html#terms">תנאי שימוש</a> · <a href="legal.html#privacy">פרטיות ועוגיות</a> · <a href="legal.html#accessibility">הצהרת נגישות</a> · <a
-    href="https://github.com/dolev-benezri/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a></p>
+    href="https://github.com/dolev-benezri/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a><span id="report" hidden> · <a id="reportLink">דיווח על טעות</a></span><span
+    id="counsel" hidden> · <a
+    id="counselLink" target="_blank" rel="noopener">הכוון אקדמי</a></span></p>
 </footer>
+<section id="print" aria-label="סיכום לפגישה עם יועץ לימודים" hidden></section><!-- filled and printed by ACT.advisor; screen: never shown (style.css) -->
 <dialog id="drawer" class="drawer" aria-labelledby="drawerTitle"></dialog>
 <dialog id="friendEd" class="dlg-full" aria-labelledby="feTitle"></dialog>
 <div id="pop" class="pop" popover role="dialog"></div>

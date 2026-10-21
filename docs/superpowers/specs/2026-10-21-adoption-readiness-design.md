@@ -42,21 +42,21 @@ Not promised: a legally airtight result. The binding wording is for the college'
    alternative, regulation warnings, split courses, the disclaimer line.
 6. **Freshness per group.** Each group shows "מלא" or "פנוי" and "נכון ל-HH:MM" (from the data file's fetch time; per group when the data
    carries it). With an official feed, `seatsLeft` shows "נשארו N מקומות". Registration goes by turns (by year or average; exact hours to be
-   given by academic counseling): the student picks their turn in step 1; turns live in `status.json` (`turns`: id, label, opensAt). If the data
+   given by academic counseling): the student picks their turn in step 1; turns live in `web/settings.json` (`turns`: id, label, opensAt). If the data
    was fetched before the student's turn opened, a banner: "שימו לב: הנתונים נמשכו לפני פתיחת התור שלך. ייתכנו שינויים במקומות הפנויים."
-   No turns in the status file: no picker, no banner.
+   No turns in the settings file: no picker, no banner.
 7. **"מה הכלי בודק ומה לא"**, a section in web/legal.html. Checks: overlaps, prerequisites as the yedion lists them, the regulation sections
    implemented (list from docs/ARCHITECTURE.md). Does not check: live seats (except as item 6 says), personal approvals, exemptions missing from
    the grade sheet, English level, anything the yedion does not publish.
 8. **Conflict warning.** Programs with an open conflict between official sources (docs/ISSUES.md section 21) show in step 1: "יש סתירה בין
-   המקורות הרשמיים לגבי X. בדקו מול המחלקה." The conflicts live in `scripts/programs.json` per program and cohort, so the tool and the sheets
+   המקורות הרשמיים לגבי X. בדקו מול המחלקה." The conflicts live in `web/settings.json` per program and cohort, so the tool and the sheets
    (item 19) read one list.
 9. **Report a mistake.** A button that opens a `mailto:` with subject and a body the tool fills (program, cohort, semester, group, page).
    The address is one config value. A form into IT's ticket system comes later, only if IT asks.
-10. **Remote notice.** `status.json` gains `notice` (text, optional). When set, a red banner at the top of every page: the holder of the tool
+10. **Remote notice.** `web/settings.json` holds `notice` (text, optional; not status.json, the scraper rewrites that file). When set, a red banner at the top of every page: the holder of the tool
     warns everyone without a deploy.
 11. **Rules report and department sign-off.** A script writes one printable HTML page per program and cohort: required credits, required and
-    elective lists, prerequisites, specializations, as the tool reads them. `programs.json` gains `approved` (date, optional) per program and
+    elective lists, prerequisites, specializations, as the tool reads them. `web/settings.json` holds `approved` (date, optional) per program and
     cohort; the tool shows "אושר על ידי המחלקה, <date>" or keeps the existing "not verified" warning, more visible.
 
 ## Handover package

@@ -1,8 +1,11 @@
 import { classify, withAfterA, cleanProfile, studyYear, yearsOf, modeFor, specLists, specRule, validSpecs, summerOnly } from './rules.js';
 import { readHash } from './share.js';
 import { askConfirm } from './ui-dialog.js';
+import { esc, freshAt } from './ui-text.js';
+import { pinsWithoutSplit } from './solver-core.js';
+import { cleanSettings, SETTINGS_DEFAULT } from './settings.js';
 
-export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export { esc };
 
 const KEY = 'afeka-sched-v1';
 const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
@@ -12,8 +15,8 @@ export const DEFAULT = {
   scope: 'year', load: 'even', sortBy: 'best', semesterOf: {}, programSet: false, // programSet: the track was picked (a first visit starts with none)
   specDraft: null, yearIds: [], // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
-  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, maxDays: null, examsSameDay: 'forbid', includeFull: false, blocks: [],
-    lecturers: {} },
+  constraints: { dayOff: [6], dayOffHard: false, notBefore: '', notAfter: '20:00', windowHard: false, maxCredits: null, maxDays: null, examsSameDay: 'forbid', includeFull: false, split: false,
+    blocks: [], lecturers: {} },
 };
 
 // The programs and cohorts the site has data for (data/afeka/catalog.json, written by the scraper). Without it: mechanical engineering 2026, the first program.
@@ -32,7 +35,7 @@ export const cleanBlocks = (a) => Array.isArray(a) ? a.filter((b) => isObj(b) &&
   .slice(0, 12).map((b) => ({ day: b.day, start: b.start, end: b.end, label: b.label })) : [];
 const CONSTRAINT_OK = {
   dayOff: (v) => Array.isArray(v) && v.every((d) => Number.isInteger(d) && d >= 1 && d <= 6),
-  dayOffHard: (v) => typeof v === 'boolean', windowHard: (v) => typeof v === 'boolean', includeFull: (v) => typeof v === 'boolean',
+  dayOffHard: (v) => typeof v === 'boolean', windowHard: (v) => typeof v === 'boolean', includeFull: (v) => typeof v === 'boolean', split: (v) => typeof v === 'boolean',
   notBefore: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   notAfter: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   maxCredits: (v) => v === null || (num(v) && v >= 0),
@@ -132,7 +135,8 @@ export function upsertFriend(friends, p, editing = null) {
 }
 
 export const app = { catalog: FALLBACK_CATALOG, loadFailed: false, state: null, data: null, sem: { 'א': null, 'ב': null }, semNotice: null, cls: null, planIds: new Set(), summerIds: [],
-  friendLanding: null, hashError: null, noSave: false };
+  friendLanding: null, hashError: null, noSave: false, settings: SETTINGS_DEFAULT,
+  termsOk: () => true, pendingBackup: null }; // ui-common.js swaps in the real terms check; a backup link waits in pendingBackup until the terms are accepted
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
 export function yearView(dataA, dataB) {
@@ -157,6 +161,11 @@ export function pickData() {
   const { א: A, ב: B } = app.sem, scope = app.state.scope;
   app.data = summerScope() ? app.sem['קיץ'] : scope === 'year' && B ? { ...yearView(A, B), fetchedAt: A.fetchedAt, examsPublished: A.examsPublished } : (scope === 'ב' && B ? B : A);
 }
+// When the shown data was last known to be current (ui-text.js freshAt). The year view spans two files: the older of the two, so a warning is never missed.
+export const freshOf = (data) => {
+  const files = data.semester === 'שנה' ? [app.sem?.['א'], app.sem?.['ב']].filter(Boolean) : [data];
+  return files.map((d) => freshAt(d, app.status)).filter(Boolean).sort((a, b) => new Date(a) - new Date(b))[0];
+};
 // Summer is planned after the school year: on only when the profile asks for it and the summer file loaded.
 export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ']);
 export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
@@ -256,6 +265,7 @@ const withPersonal = (to, from) => {
   to.scope = 'year';
   to.profile.amirnet = from.profile.amirnet;
   to.profile.summer = from.profile.summer;
+  if (from.profile.turn) to.profile.turn = from.profile.turn; else delete to.profile.turn; // a cleared turn must not come back from the stash
   return to;
 };
 // Evening tracks: a day student is not asked to come before 16:00, so the default hours differ. They follow the track only while the student has not changed them.
@@ -296,9 +306,11 @@ async function init() {
   app.catalog = goodCatalog(cat) ? cat : FALLBACK_CATALOG;
   app.state = load();
   const status = fetch('data/afeka/status.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const settings = fetch('settings.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   let sem;
   try { sem = await fetchSemesters(app.state); } catch { sem = null; }
   app.status = await status;
+  app.settings = cleanSettings(await settings);
   if (!sem) {
     app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
     for (const id of ['week', 'me', 'side', 'prefs']) {
@@ -329,6 +341,8 @@ export async function restoreBackup(payload) {
     try { sem = await fetchSemesters(p); } catch { app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי'; return false; }
     setSemesters(sem);
   }
+  p.constraints.split = false; // a link never switches the split on: that takes the visitor's own confirmation (CHG.split)
+  p.pins = pinsWithoutSplit(Object.values(app.sem), p.pins); // its split-only pins would leave a course with no schedule
   app.state = p;
   uiReset();
   return true;
@@ -336,6 +350,26 @@ export async function restoreBackup(payload) {
 
 // Friend (#f=) and backup (#b=) links: read at load, and again when one is pasted into an open tab (hashchange in ui-plan.js).
 let linkError = null;
+// Ask before replacing saved state, then restore. Returns the hash to keep when the visitor cancelled (stay on the page the link was pasted into).
+const savedExists = () => { try { return localStorage.getItem(KEY) !== null; } catch { return false; } }; // storage unavailable: nothing to replace
+let pendingSaved = false; // whether state was saved before this visit's own first save (refresh() saves before the terms are accepted)
+async function runBackup(payload, hadSaved = savedExists()) {
+  if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
+    if (!await restoreBackup(payload)) linkError = app.hashError; // its own message, cleared by the next good link like a bad link's
+    return '';
+  }
+  return hashOf(document.body.dataset.view);
+}
+// A backup link opened before the terms were accepted: run it now (called after "המשך").
+export async function applyPendingBackup() {
+  const p = app.pendingBackup;
+  app.pendingBackup = null;
+  if (!p) return;
+  const keep = await runBackup(p, pendingSaved);
+  if (keep) history.replaceState(null, '', location.pathname + keep);
+  ensurePassed();
+  refresh();
+}
 export async function applyHash() {
   const h = await readHash(location.hash, app.state);
   let keep = '';
@@ -344,11 +378,8 @@ export async function applyHash() {
     linkError = h.error ?? null;
   }
   if (h?.type === 'backup') {
-    let hadSaved = false;
-    try { hadSaved = localStorage.getItem(KEY) !== null; } catch { /* storage unavailable */ }
-    if (!hadSaved || await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
-      if (!await restoreBackup(h.payload)) linkError = app.hashError; // its own message, cleared by the next good link like a bad link's
-    } else keep = hashOf(document.body.dataset.view); // cancelled: stay on the page the link was pasted into
+    if (app.termsOk()) keep = await runBackup(h.payload);
+    else { app.pendingBackup = h.payload; pendingSaved = savedExists(); } // the terms gate comes first (ACT.acceptTerms runs applyPendingBackup)
   }
   ensurePassed();
   if (h?.type === 'friend') app.friendLanding = h.payload;

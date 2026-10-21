@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote } from '../web/ui-text.js';
+import { groupNumber, groupLabel, meetingText, friendToast, strictnessHint, defaultNotes, popStale, freshness, stalePins, creditsGoal, notFitReason, partialNote, DISCLAIMER, disclaimerHtml, esc, groupFresh, turnWarning, freshAt, conflictsFor, reportMailto } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
@@ -156,4 +156,105 @@ test('compareAlts: the same groups (a year plan whose semester did not change) s
   const x = { courses: ['A'], groups: ['g1', 'g2'], unlocks: 1, freeDays: [], gapH: 1, withFriends: [] };
   assert.deepEqual(compareAlts({ ...x, groups: ['g2', 'g1'] }, x, { courses: { A: { name: 'a' } } }), ['זהה לחלופה 1 בסמסטר הזה']);
   assert.deepEqual(compareAlts({ ...x, courses: [], groups: [] }, { ...x, courses: [], groups: [] }, { courses: {} }), ['זהה לחלופה 1 בסמסטר הזה']);
+});
+
+test('DISCLAIMER is the owner-approved line; disclaimerHtml links "יועץ לימודים" only when a URL is set, escaped', () => {
+  assert.equal(DISCLAIMER, 'אינו הרשמה ואינו המלצה. לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.');
+  assert.equal(disclaimerHtml(''), DISCLAIMER);
+  assert.doesNotMatch(disclaimerHtml(''), /<a/);
+  const h = disclaimerHtml('https://x/y');
+  assert.equal(h.match(/<a /g).length, 1);
+  assert.ok(h.includes('<a href="https://x/y" target="_blank" rel="noopener">יועץ לימודים</a>'));
+  assert.equal(h.replace(/<[^>]+>/g, ''), DISCLAIMER, 'the visible text is the same line');
+  assert.doesNotMatch(disclaimerHtml('https://x/"><b>'), /"><b>/);
+  for (const u of ['https://x/?q=$&', 'https://x/a$`b', "https://x/a$'b", 'https://x/$$']) assert.ok(disclaimerHtml(u).includes(`<a href="${esc(u)}" target`), `$-patterns in ${u} stay literal`);
+});
+
+test('groupFresh: full / free / seats left, then the time in Israel (a group own fetchedAt wins)', () => {
+  const at = '2026-10-16T05:08:00Z', now = new Date('2026-10-16T12:00:00Z');
+  assert.equal(groupFresh({ full: true }, at, now), 'מלא · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, seatsLeft: 3 }, at, now), 'נשארו 3 מקומות · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, seatsLeft: 1 }, at, now), 'נשאר מקום אחד · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false }, at, now), 'פנוי · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, fetchedAt: '2026-10-16T10:30:00Z' }, at, now), 'פנוי · נכון ל-13:30');
+  assert.equal(groupFresh({ full: true, seatsLeft: 5 }, at, now), 'מלא · נכון ל-08:08'); // full wins over a stale count
+  assert.equal(groupFresh({ full: false, seatsLeft: '<x>' }, at, now), 'פנוי · נכון ל-08:08'); // only a whole number is a count
+  assert.equal(groupFresh({ full: false }, undefined, now), 'פנוי'); // no time anywhere: say nothing about when
+  assert.equal(groupFresh({ full: false }, 'not a date', now), 'פנוי');
+  assert.equal(groupFresh({ full: false }, '2026-01-16T05:08:00Z', now), 'פנוי · נכון ל-16.01, 07:08'); // winter: +02:00, another day
+  assert.equal(groupFresh({ full: false }, '2026-10-15T18:08:00Z', now), 'פנוי · נכון ל-15.10, 21:08'); // yesterday
+  assert.equal(groupFresh({ full: false }, '2026-10-16T21:30:00Z', now), 'פנוי · נכון ל-17.10, 00:30'); // 00:30 Israel is already tomorrow
+  assert.equal(groupFresh({ full: false }, '2026-10-16T21:30:00Z', new Date('2026-10-16T22:00:00Z')), 'פנוי · נכון ל-00:30'); // same Israel day, not same UTC day
+});
+
+test('turnWarning: only when the data predates my turn and the turn has opened (instants, not strings)', () => {
+  const turns = [{ id: 'a', label: 'תור א', opensAt: '2026-11-01T08:00:00+02:00' }, { id: 'b', label: 'תור ב', opensAt: '2026-11-02T06:00:00Z' }];
+  const MSG = 'שימו לב: הנתונים נמשכו לפני פתיחת התור שלך. ייתכנו שינויים במקומות הפנויים.';
+  const after = new Date('2026-11-01T07:00:00Z'), before = new Date('2026-11-01T05:00:00Z');
+  assert.equal(turnWarning([], 'a', '2026-10-30T00:00:00Z', after), null);
+  assert.equal(turnWarning(turns, 'zzz', '2026-10-30T00:00:00Z', after), null);
+  assert.equal(turnWarning(turns, undefined, '2026-10-30T00:00:00Z', after), null);
+  assert.equal(turnWarning(turns, 'a', '2026-10-30T00:00:00Z', after), MSG);
+  assert.equal(turnWarning(turns, 'a', '2026-11-01T06:30:00Z', after), null); // fetched after it opened
+  assert.equal(turnWarning(turns, 'a', '2026-10-30T00:00:00Z', before), null); // not open yet
+  assert.equal(turnWarning(turns, 'a', '2026-11-01T05:59:00Z', after), MSG); // 08:00+02:00 is 06:00Z: 05:59Z is before it
+  assert.equal(turnWarning(turns, 'a', '2026-11-01T06:01:00Z', after), null);
+  assert.equal(turnWarning(turns, 'b', '2026-11-02T05:59:00Z', new Date('2026-11-02T06:00:00Z')), MSG);
+  assert.equal(turnWarning(turns, 'a', '2026-11-01T08:30:00+03:00', after), MSG); // +03:00 is 05:30Z
+  assert.equal(turnWarning(turns, 'a', undefined, after), null); // no fetch time: nothing to compare
+});
+
+test('groupFresh: no seats left means full', () => {
+  assert.equal(groupFresh({ full: false, seatsLeft: 0 }, '2026-10-16T05:08:00Z', new Date('2026-10-16T12:00:00Z')), 'מלא · נכון ל-08:08');
+});
+
+test('freshAt: the later of the data change and the last good check that covers this semester', () => {
+  const data = { year: 2027, semester: 'א', program: 30, startYear: 2026, fetchedAt: '2026-10-16T18:08:48.356Z' };
+  const status = (o = {}) => ({ checkedAt: '2026-10-20T04:00:00Z', ok: true, semesters: { '2027-1/30-2026': { hash: 'h', changedAt: 'x' } }, ...o });
+  assert.equal(freshAt(data, status()), '2026-10-20T04:00:00Z'); // a check after the change
+  assert.equal(freshAt(data, status({ checkedAt: '2026-10-10T04:00:00Z' })), data.fetchedAt); // a check before the change
+  assert.equal(freshAt(data, status({ ok: false })), data.fetchedAt);
+  assert.equal(freshAt(data, null), data.fetchedAt);
+  assert.equal(freshAt(data, {}), data.fetchedAt);
+  assert.equal(freshAt(data, status({ semesters: { '2027-2/30-2026': {} } })), data.fetchedAt); // another semester only
+  assert.equal(freshAt(data, status({ semesters: { '2027-1/20-2026': {} } })), data.fetchedAt); // another program only
+  assert.equal(freshAt({ ...data, semester: 'ב' }, status({ semesters: { '2027-2/30-2026': {} } })), '2026-10-20T04:00:00Z');
+  assert.equal(freshAt(data, status({ checkedAt: '2026-10-20T07:00:00+03:00' })), '2026-10-20T07:00:00+03:00'); // instants, not strings
+  assert.equal(freshAt(data, status({ checkedAt: 'soon' })), data.fetchedAt);
+  assert.equal(freshAt({ ...data, fetchedAt: undefined }, status()), '2026-10-20T04:00:00Z');
+  assert.equal(freshAt({ ...data, fetchedAt: undefined }, null), undefined);
+});
+
+test('conflictsFor: only the texts whose cohorts include the start year; [] for an unknown program or no settings', () => {
+  const st = { programs: { 22: { conflicts: [{ cohorts: [2026, 2027], text: 'א' }, { cohorts: [2024], text: 'ב' }] }, 20: { approved: { 2024: '2026-07-01' } } } };
+  assert.deepEqual(conflictsFor(st, 22, 2026), ['א']);
+  assert.deepEqual(conflictsFor(st, 22, 2024), ['ב']);
+  assert.deepEqual(conflictsFor(st, 22, 2025), []);
+  assert.deepEqual(conflictsFor(st, 20, 2024), [], 'a program with no conflicts');
+  assert.deepEqual(conflictsFor(st, 99, 2024), [], 'an unknown program');
+  assert.deepEqual(conflictsFor(undefined, 22, 2026), []);
+  assert.deepEqual(conflictsFor({}, 22, 2026), []);
+  assert.deepEqual(conflictsFor(st, 'constructor', 2026), []);
+});
+
+test('reportMailto: subject, a body with every field, under 1800 characters even with long fields', () => {
+  const ctx = { program: 'הנדסה מכנית (30)', startYear: 2026, semester: 'א', group: 'הרצאה · קבוצה 01 · קורס 10013', page: 'מערכות' };
+  const url = reportMailto('a@b', ctx);
+  assert.ok(url.startsWith('mailto:a@b?subject='), url);
+  const q = new URLSearchParams(url.slice(url.indexOf('?') + 1));
+  assert.equal(q.get('subject'), 'דיווח על טעות במערכת השעות');
+  for (const v of Object.values(ctx)) assert.ok(q.get('body').includes(String(v)), `${v} in the body`);
+  assert.ok(url.length < 1800);
+  assert.ok(url.includes('%0D%0A') && !q.get('body').replaceAll('\r\n', '').includes('\n'), 'line breaks are CRLF (%0D%0A)');
+  const { group, ...noGroup } = ctx;
+  assert.ok(!new URLSearchParams(reportMailto('a@b', noGroup).split('?')[1]).get('body').includes('קבוצה'), 'no group line without a group');
+  const long = 'ש'.repeat(500), big = reportMailto('a@b', { program: long, startYear: 2026, semester: 'א', group: long, page: long });
+  assert.ok(big.length < 1800, `a long field is clipped (${big.length})`);
+});
+
+test('reportMailto: the address cannot add a header, a second recipient or a fragment', () => {
+  const url = reportMailto('a@b.c?cc=x@y&bcc=z@w,q@r#h', { program: 'p', startYear: 1, semester: 'א', page: 'x' });
+  const i = url.indexOf('?subject=');
+  assert.ok(i > 0 && !/[?&,#]/.test(url.slice('mailto:'.length, i)), url);
+  assert.equal([...new URLSearchParams(url.slice(i + 1)).keys()].join(), 'subject,body');
 });
