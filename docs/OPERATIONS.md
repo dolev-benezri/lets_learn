@@ -125,7 +125,7 @@
 - `npm test`: בדיקות היחידה (`node --test "test/*.test.mjs"`). כוללות את הקריאה של `settings.json`, את מדיניות ה-CSP, את אורך השורות ב-`web/` (עד 200 תווים) ואת הסורק. חייב להיות ירוק לפני כל פריסה (גם `deploy.yml` מריץ אותו).
 - `npm run test:browser`: דפדפן אמיתי (Playwright WebKit): נגישות (axe), זרימות מלאות והסיור. דורש `npm ci` והתקנת הדפדפן של Playwright.
 - `npm run report:rules`: דף A4 לכל תוכנית ומחזור עם הרשימות, הנ״ז ודרישות הקדם שהכלי קורא, וקו חתימה למחלקה, ב-`out/rules/` (`index.html` הוא התוכן). קורא רק את `web/data/afeka/` ואת `settings.json`, בלי רשת.
-- `npm run report:conflicts`: דף אחד לכל מחלקה שיש לה סתירה פתוחה, ב-`out/conflicts/<מספר מחלקה>.html`, עם עמודה ריקה להחלטה. נבנה מ-`programs[id].conflicts`.
+- `npm run report:conflicts`: דף אחד לכל מחלקה שיש לה סתירה פתוחה, ב-`docs/conflicts/<מספר מחלקה>.html` (נשמר ב-git, כדי לעקוב אחרי הפערים עד שהמחלקה עונה), עם עמודה ריקה להחלטה. נבנה מ-`programs[id].conflicts`.
 - התיקייה `out/` לא נכנסת ל-git (`.gitignore`). פותחים את הקובץ בדפדפן ומדפיסים.
 
 ## אחרי כל פריסה

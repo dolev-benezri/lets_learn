@@ -62,3 +62,9 @@ test('the shipped settings: every section-21 conflict fills plan, yedion and too
   }
   assert.deepEqual(sheets(st, progs).map((s) => s.dept), [10, 11, 19, 20, 30]);
 });
+
+test('docs/conflicts holds the sheets the shipped settings build (run npm run report:conflicts after a change)', () => {
+  const st = cleanSettings(JSON.parse(readFileSync(new URL('../web/settings.json', import.meta.url), 'utf8')));
+  const progs = JSON.parse(readFileSync(new URL('../scripts/programs.json', import.meta.url), 'utf8'));
+  for (const s of sheets(st, progs)) assert.equal(readFileSync(new URL(`../docs/conflicts/${s.dept}.html`, import.meta.url), 'utf8'), s.html, `docs/conflicts/${s.dept}.html is stale`);
+});
