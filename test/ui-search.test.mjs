@@ -3,12 +3,47 @@ import assert from 'node:assert/strict';
 import { mini } from './fixtures/mini-data.mjs';
 
 const appMod = await import('../web/app.js'); // before the DOM stub: app.js starts init() when it sees a document
-const el = () => ({ dataset: {}, matches: () => false, classList: { toggle() {}, add() {}, remove() {} }, setAttribute() {}, addEventListener() {}, hidden: false, querySelector: () => null, querySelectorAll: () => [] });
-globalThis.document = { getElementById: () => el(), querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, activeElement: null, body: { dataset: { view: 'plan' } } };
+const el = () => ({
+  dataset: {},
+  matches: () => false,
+  classList: { toggle() {}, add() {}, remove() {} },
+  setAttribute() {},
+  addEventListener() {},
+  hidden: false,
+  querySelector: () => null,
+  querySelectorAll: () => []
+});
+globalThis.document = {
+  getElementById: () => el(),
+  querySelector: () => null,
+  querySelectorAll: () => [],
+  addEventListener() {},
+  activeElement: null,
+  body: { dataset: { view: 'plan' } }
+};
 const made = [];
-globalThis.Worker = class { constructor() { made.push(this); } postMessage(m) { this.sent = m; } terminate() {} };
-Object.assign(globalThis, { matchMedia: () => ({ matches: false, addEventListener() {} }), CSS: { escape: (s) => s }, innerHeight: 800, scrollBy() {}, scrollTo() {}, addEventListener() {} });
-globalThis.localStorage = { getItem: (k) => (k === 'afeka-sched-v1-terms' ? '2' : null), setItem() {}, removeItem() {} };
+globalThis.Worker = class {
+  constructor() {
+    made.push(this);
+  }
+  postMessage(m) {
+    this.sent = m;
+  }
+  terminate() {}
+};
+Object.assign(globalThis, {
+  matchMedia: () => ({ matches: false, addEventListener() {} }),
+  CSS: { escape: (s) => s },
+  innerHeight: 800,
+  scrollBy() {},
+  scrollTo() {},
+  addEventListener() {}
+});
+globalThis.localStorage = {
+  getItem: (k) => (k === 'afeka-sched-v1-terms' ? '2' : null),
+  setItem() {},
+  removeItem() {}
+};
 const { app, normalize, refresh } = appMod;
 const { ui } = await import('../web/ui-common.js');
 const { scheduleRun } = await import('../web/ui-search.js');
@@ -25,7 +60,13 @@ test('ui-search: an answer or an error from a superseded worker is ignored', asy
   await started();
   assert.equal(made.length, 1);
   scheduleRun(); // the user changed a setting: the next search waits 300 ms, the first worker is still alive
-  made[0].onmessage({ data: { results: [{ score: 1, courses: ['A'], groups: ['A1', 'A1/1'], explanation: '' }], partial: false, diagnosis: [] } });
+  made[0].onmessage({
+    data: {
+      results: [{ score: 1, courses: ['A'], groups: ['A1', 'A1/1'], explanation: '' }],
+      partial: false,
+      diagnosis: []
+    }
+  });
   assert.equal(ui.last, null, 'the old answer must not replace the results');
   assert.equal(ui.running, true, 'the busy indicator stays on until the newest search answers');
   await started();
@@ -59,7 +100,10 @@ test('summer is a third tab of the year (issue 10): קיץ plans the summer, א�
   const { semTabs, scopeOf } = await import('../web/ui-common.js');
   app.sem = { 'א': mini(), 'ב': mini(), 'קיץ': mini() };
   app.state = normalize({ v: 1, programSet: true, profile: { year: 2, summer: true } });
-  assert.deepEqual(semTabs().map(([v]) => v), ['א', 'ב', 'קיץ']);
+  assert.deepEqual(
+    semTabs().map(([v]) => v),
+    ['א', 'ב', 'קיץ']
+  );
   assert.equal(CHG.sem({ value: 'קיץ' }), undefined, 'a new search: the summer is planned on top of the shown year');
   assert.equal(app.state.scope, 'קיץ');
   assert.equal(scopeOf(app.state.scope), 'year', 'the "לתכנן" choice still reads "שנה"');
@@ -67,7 +111,10 @@ test('summer is a third tab of the year (issue 10): קיץ plans the summer, א�
   assert.deepEqual([app.state.scope, ui.sem], ['year', 'ב']);
   assert.equal(CHG.sem({ value: 'א' }), 'view', 'between א׳ and ב׳ only the view changes');
   app.state.profile.summer = false;
-  assert.deepEqual(semTabs().map(([v]) => v), ['א', 'ב']);
+  assert.deepEqual(
+    semTabs().map(([v]) => v),
+    ['א', 'ב']
+  );
 });
 
 test('CHG.split: ticking asks first and a cancel unticks the box; unticking asks nothing; the search carries constraints.split', async () => {
@@ -75,7 +122,10 @@ test('CHG.split: ticking asks first and a cancel unticks the box; unticking asks
   Object.assign(app.state.profile, { year: 1 });
   app.state.scope = 'א';
   const asked = [];
-  globalThis.confirm = (t) => { asked.push(t); return false; };
+  globalThis.confirm = (t) => {
+    asked.push(t);
+    return false;
+  };
   const box = { checked: true };
   assert.equal(await CHG.split(box), 'none', 'cancelled: nothing to redraw');
   assert.deepEqual([box.checked, app.state.constraints.split, asked.length], [false, false, 1]);
@@ -89,7 +139,9 @@ test('CHG.split: ticking asks first and a cancel unticks the box; unticking asks
   scheduleRun();
   await started();
   assert.equal(made.at(-1).sent.constraints.split, true);
-  globalThis.confirm = () => { throw new Error('unticking must not ask'); };
+  globalThis.confirm = () => {
+    throw new Error('unticking must not ask');
+  };
   box.checked = false;
   await CHG.split(box);
   assert.equal(app.state.constraints.split, false);
@@ -99,11 +151,30 @@ test('CHG.split: ticking asks first and a cancel unticks the box; unticking asks
 
 test('split goes off (untick, reset prefs): the unlinked tutorial pin is dropped, the lecture pin stays; split off pins are unchanged', async () => {
   const { ACT } = await import('../web/ui-actions.js');
-  const mk = (id, type, day, linked = []) => ({ id, type, meetings: [{ day, start: '08:00', end: '10:00' }], linked, primary: !id.includes('/'), full: false, exams: [], lecturer: '' });
+  const mk = (id, type, day, linked = []) => ({
+    id,
+    type,
+    meetings: [{ day, start: '08:00', end: '10:00' }],
+    linked,
+    primary: !id.includes('/'),
+    full: false,
+    exams: [],
+    lecturer: ''
+  });
   const d = mini();
-  d.courses.S = { name: 'S', credits: 3, offered: true, prereqs: [], groups: [mk('S1', 'L', 1, ['S1/1']), mk('S1/1', 'T', 2), mk('S9/1', 'T', 3)] };
+  d.courses.S = {
+    name: 'S',
+    credits: 3,
+    offered: true,
+    prereqs: [],
+    groups: [mk('S1', 'L', 1, ['S1/1']), mk('S1/1', 'T', 2), mk('S9/1', 'T', 3)]
+  };
   app.sem = { 'א': d, 'ב': null, 'קיץ': null };
-  const fresh = (split, pins) => { app.state = normalize({ v: 1 }); app.state.constraints.split = split; app.state.pins = pins; };
+  const fresh = (split, pins) => {
+    app.state = normalize({ v: 1 });
+    app.state.constraints.split = split;
+    app.state.pins = pins;
+  };
   fresh(true, ['S1', 'S9/1', 'zz']);
   globalThis.confirm = () => true;
   await CHG.split({ checked: false });

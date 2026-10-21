@@ -7,8 +7,12 @@ import { SIZES, DONE, TOUR_SEEN, visit as visitIn } from './helpers.mjs';
 import { TOUR_INTRO, TOUR_PLANS, TOUR_KEY } from '../../web/tour.js';
 
 let browser;
-before(async () => { browser = await webkit.launch(); });
-after(async () => { await browser?.close(); });
+before(async () => {
+  browser = await webkit.launch();
+});
+after(async () => {
+  await browser?.close();
+});
 
 const weekReady = (page) => page.locator('#week .blk').first().waitFor({ timeout: 30000 });
 const POP = '.driver-popover';
@@ -16,12 +20,18 @@ const progress = (page) => page.locator('.driver-popover-progress-text').innerTe
 const stored = (page) => page.evaluate((k) => localStorage.getItem(k), TOUR_KEY);
 const opened = (page) => page.locator(POP).waitFor({ timeout: 15000 });
 const closed = (page) => page.locator(POP).waitFor({ state: 'detached' });
-const nothingFor = async (page, ms = 700) => { await page.waitForTimeout(ms); assert.equal(await page.locator(POP).count(), 0, 'no tour'); };
+const nothingFor = async (page, ms = 700) => {
+  await page.waitForTimeout(ms);
+  assert.equal(await page.locator(POP).count(), 0, 'no tour');
+};
 // Next through every stop: returns the text of each, checks the counter and the last button.
 async function walk(page) {
   const texts = [];
   for (let i = 1; ; i++) {
-    await page.waitForFunction((n) => document.querySelector('.driver-popover-progress-text')?.textContent.startsWith(`${n} מתוך`), i);
+    await page.waitForFunction(
+      (n) => document.querySelector('.driver-popover-progress-text')?.textContent.startsWith(`${n} מתוך`),
+      i
+    );
     texts.push(await page.locator('.driver-popover-description').innerText());
     const total = Number((await progress(page)).split(' ').pop());
     if (i === total) break;
@@ -40,7 +50,11 @@ for (const size of Object.keys(SIZES)) {
     const page = await visit(t);
     await page.locator('.gate').waitFor();
     // on the gate the tour button is hidden: the theme button keeps its place at the end of the bar (its auto margin)
-    assert.notEqual(await page.locator('.theme-btn').evaluate((b) => getComputedStyle(b).marginInlineStart), '0px', 'theme button at the end of the bar on the gate');
+    assert.notEqual(
+      await page.locator('.theme-btn').evaluate((b) => getComputedStyle(b).marginInlineStart),
+      '0px',
+      'theme button at the end of the bar on the gate'
+    );
     await page.locator('[data-k="termsTick"]').check();
     await page.locator('[data-act="acceptTerms"]').click();
     await page.locator('[data-act="pickTrack"]').first().waitFor();
@@ -56,13 +70,26 @@ for (const size of Object.keys(SIZES)) {
     assert.equal(await page.locator('.driver-popover-next-btn').innerText(), 'הבא');
     assert.equal(await page.locator('.driver-popover-prev-btn').innerText(), 'הקודם');
     assert.equal(await page.locator('.driver-popover-close-btn').innerText(), 'דלג');
-    await page.waitForFunction(() => document.activeElement.className.includes('driver-popover-next-btn'), null, { timeout: 5000 }); // focus is on "הבא": set a frame after the popover is drawn
+    await page.waitForFunction(() => document.activeElement.className.includes('driver-popover-next-btn'), null, {
+      timeout: 5000
+    }); // focus is on "הבא": set a frame after the popover is drawn
     const box = await page.locator(POP).boundingBox();
-    assert.ok(box.x >= 0 && box.x + box.width <= SIZES[size].width && box.y >= 0 && box.y + box.height <= SIZES[size].height, `the popover is on screen: ${JSON.stringify(box)}`);
-    assert.deepEqual(await walk(page), TOUR_INTRO.map((s) => s.text), 'every stop, in order, with its text');
+    assert.ok(
+      box.x >= 0 && box.x + box.width <= SIZES[size].width && box.y >= 0 && box.y + box.height <= SIZES[size].height,
+      `the popover is on screen: ${JSON.stringify(box)}`
+    );
+    assert.deepEqual(
+      await walk(page),
+      TOUR_INTRO.map((s) => s.text),
+      'every stop, in order, with its text'
+    );
     assert.equal(await page.evaluate(() => document.body.classList.contains('touring')), false);
     assert.equal(await stored(page), 'intro');
-    assert.notEqual(await page.evaluate(() => document.activeElement.tagName), 'BODY', 'focus is not lost to the page when the tour ends');
+    assert.notEqual(
+      await page.evaluate(() => document.activeElement.tagName),
+      'BODY',
+      'focus is not lost to the page when the tour ends'
+    );
     await page.reload();
     await page.locator('#meTitle').waitFor();
     await nothingFor(page);
@@ -79,21 +106,42 @@ for (const size of Object.keys(SIZES)) {
     await replay.focus();
     await page.keyboard.press('Enter');
     await opened(page);
-    await page.waitForFunction(() => document.activeElement.className.includes('driver-popover-next-btn'), null, { timeout: 5000 }); // Enter on the replay button, then focus is in the popover: set a frame after the popover is drawn
-    const ring = await page.evaluate(() => { const st = getComputedStyle(document.activeElement); return st.outlineStyle !== 'none' && parseFloat(st.outlineWidth) >= 2; });
+    await page.waitForFunction(() => document.activeElement.className.includes('driver-popover-next-btn'), null, {
+      timeout: 5000
+    }); // Enter on the replay button, then focus is in the popover: set a frame after the popover is drawn
+    const ring = await page.evaluate(() => {
+      const st = getComputedStyle(document.activeElement);
+      return st.outlineStyle !== 'none' && parseFloat(st.outlineWidth) >= 2;
+    });
     assert.ok(ring, 'the focused button shows a focus ring');
     await page.keyboard.press('Tab'); // Tab stays in the popover: next -> the highlighted button -> "דלג"... never out to the page behind the dimmed layer
-    assert.equal(await page.evaluate(() => !!document.activeElement.closest('.driver-popover, #tourBtn')), true, 'Tab keeps focus in the tour');
+    assert.equal(
+      await page.evaluate(() => !!document.activeElement.closest('.driver-popover, #tourBtn')),
+      true,
+      'Tab keeps focus in the tour'
+    );
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('ArrowLeft'); // RTL: left is forward
-    await page.waitForFunction(() => document.querySelector('.driver-popover-progress-text')?.textContent.startsWith('2 מתוך'));
+    await page.waitForFunction(() =>
+      document.querySelector('.driver-popover-progress-text')?.textContent.startsWith('2 מתוך')
+    );
     assert.match(await page.locator('.driver-popover-description').innerText(), /^המצב שלי/);
-    assert.equal(await page.evaluate(() => document.querySelector('#altLabel').textContent.startsWith('חלופה 1 ')), true, 'the arrow did not switch the alternative');
+    assert.equal(
+      await page.evaluate(() => document.querySelector('#altLabel').textContent.startsWith('חלופה 1 ')),
+      true,
+      'the arrow did not switch the alternative'
+    );
     await page.keyboard.press('ArrowRight');
-    await page.waitForFunction(() => document.querySelector('.driver-popover-progress-text')?.textContent.startsWith('1 מתוך'));
+    await page.waitForFunction(() =>
+      document.querySelector('.driver-popover-progress-text')?.textContent.startsWith('1 מתוך')
+    );
     await page.keyboard.press('Escape');
     await closed(page);
-    assert.equal(await replay.evaluate((b) => b === document.activeElement), true, 'focus is back on the replay button');
+    assert.equal(
+      await replay.evaluate((b) => b === document.activeElement),
+      true,
+      'focus is back on the replay button'
+    );
     await replay.click();
     await opened(page);
     await page.locator('.driver-popover-close-btn').click();
@@ -104,7 +152,11 @@ for (const size of Object.keys(SIZES)) {
     await opened(page);
     await page.keyboard.press('Escape');
     await closed(page);
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'tourBtn', 'focus is on the replay button after a click, then Escape');
+    assert.equal(
+      await page.evaluate(() => document.activeElement.id),
+      'tourBtn',
+      'focus is on the replay button after a click, then Escape'
+    );
   });
 
   test(`${size}: the plans part waits for step 4 when the results came while another step was open`, async (t) => {
@@ -122,7 +174,10 @@ for (const size of Object.keys(SIZES)) {
     await weekReady(page);
     await opened(page);
     assert.equal(await progress(page), `1 מתוך ${TOUR_PLANS.length}`);
-    assert.deepEqual(await walk(page), TOUR_PLANS.map((s) => s.text));
+    assert.deepEqual(
+      await walk(page),
+      TOUR_PLANS.map((s) => s.text)
+    );
     assert.equal(await stored(page), 'intro,plans');
     await page.reload();
     await weekReady(page);

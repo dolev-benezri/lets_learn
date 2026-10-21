@@ -17,19 +17,30 @@ const text = (html) => parse(html).text.replace(/\s+/g, ' ');
 
 test('advisorHtml: the four headings, the title and the disclaimer', () => {
   const html = advisorHtml(world());
-  for (const h of ['סיכום לפגישה עם יועץ לימודים', 'המצב שלי', 'החלופה שבחרתי', 'שימו לב']) assert.ok(html.includes(h), h);
+  for (const h of ['סיכום לפגישה עם יועץ לימודים', 'המצב שלי', 'החלופה שבחרתי', 'שימו לב'])
+    assert.ok(html.includes(h), h);
   assert.ok(text(html).includes(DISCLAIMER));
 });
 
 test('advisorHtml: the situation (program, year, credits of the goal, passed, missing, average)', () => {
   const t = text(advisorHtml(world()));
-  for (const s of ['הנדסת מכונות', 'שנה ב׳', '5 מתוך 10 נ״ז הנדרשים עד סוף שנה א׳', 'פיזיקה-מכניקה', 'חדו"א 1', 'דנה', '90']) assert.ok(t.includes(s), s);
+  for (const s of [
+    'הנדסת מכונות',
+    'שנה ב׳',
+    '5 מתוך 10 נ״ז הנדרשים עד סוף שנה א׳',
+    'פיזיקה-מכניקה',
+    'חדו"א 1',
+    'דנה',
+    '90'
+  ])
+    assert.ok(t.includes(s), s);
   assert.ok(!t.includes('לא נלמד'), 'only the required courses that are not passed');
 });
 
 test('advisorHtml: each course of the result with its groups and meeting times', () => {
   const t = text(advisorHtml(world()));
-  for (const s of ['דינמיקה', 'משוואות', 'קבוצה B1', 'יום ב׳ 10:00–11:50', 'קבוצה Q1', 'יום א׳ 10:00–11:50', '8 נ״ז']) assert.ok(t.includes(s), s);
+  for (const s of ['דינמיקה', 'משוואות', 'קבוצה B1', 'יום ב׳ 10:00–11:50', 'קבוצה Q1', 'יום א׳ 10:00–11:50', '8 נ״ז'])
+    assert.ok(t.includes(s), s);
 });
 
 test('advisorHtml: the date is Israel time (21:30 UTC on 21.10.2026 is already the 22nd)', () => {
@@ -46,7 +57,13 @@ test('advisorHtml: split courses are listed only when there are any', () => {
 
 test('advisorHtml: regulation warnings and a year pair with a heading per semester', () => {
   const w = world({ failed: { A: 3 } });
-  w.res = { a: { courses: ['B'], groups: ['B1'], split: [] }, b: { courses: ['Q'], groups: ['Q1'], split: ['Q'] }, warnings: ['אזהרת זוג'], missing: [], split: ['Q'] };
+  w.res = {
+    a: { courses: ['B'], groups: ['B1'], split: [] },
+    b: { courses: ['Q'], groups: ['Q1'], split: ['Q'] },
+    warnings: ['אזהרת זוג'],
+    missing: [],
+    split: ['Q']
+  };
   w.sem = { 'א': w.data, 'ב': w.data };
   const t = text(advisorHtml(w));
   for (const s of ['סמסטר א׳', 'סמסטר ב׳', 'אזהרת זוג', 'הרחקה (תקנון 11.5.2)', 'משוואות']) assert.ok(t.includes(s), s);
@@ -63,7 +80,9 @@ test('advisorHtml: no result still renders (nothing to list)', () => {
 test('advisorHtml: hostile names come out escaped', () => {
   const P = '<xss-t></xss-t>" onxss=1 \'';
   const w = world({ name: P });
-  w.data.courses.A.name += P; w.data.courses.B.name += P; w.data.courses.Q0.name += P;
+  w.data.courses.A.name += P;
+  w.data.courses.B.name += P;
+  w.data.courses.Q0.name += P;
   w.data.courses.B.groups[0].meetings[0].room = P;
   w.catalog = { programs: [{ id: 30, name: P }] };
   w.cls.warnings.push(P);

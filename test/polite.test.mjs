@@ -1,7 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { pageKind, throttleUntil, nextDelay, stableJson, dataHash, retryAfterMs, changeSummary } from '../scripts/polite.mjs';
+import {
+  pageKind,
+  throttleUntil,
+  nextDelay,
+  stableJson,
+  dataHash,
+  retryAfterMs,
+  changeSummary
+} from '../scripts/polite.mjs';
 const throttled = readFileSync('scripts/fixtures/throttled.html', 'utf8');
 test('pageKind recognises the hourly throttle page and the F5 rejection', () => {
   assert.equal(pageKind(throttled), 'throttled');
@@ -14,12 +22,24 @@ test('throttleUntil reads the retry hour', () => {
   assert.equal(throttleUntil('<html>ok</html>'), null);
 });
 test('nextDelay stays within base ± 500', () => {
-  assert.equal(nextDelay(2500, () => 0), 2000); assert.equal(nextDelay(2500, () => 0.999999), 2999);
-  assert.equal(nextDelay(0, () => 0), 0);
+  assert.equal(
+    nextDelay(2500, () => 0),
+    2000
+  );
+  assert.equal(
+    nextDelay(2500, () => 0.999999),
+    2999
+  );
+  assert.equal(
+    nextDelay(0, () => 0),
+    0
+  );
 });
 test('stableJson drops fetchedAt and is deterministic', () => {
-  const a = stableJson({ fetchedAt: '1', year: 2027, courses: {} }), b = stableJson({ fetchedAt: '2', year: 2027, courses: {} });
-  assert.equal(a, b); assert.ok(!a.includes('fetchedAt'));
+  const a = stableJson({ fetchedAt: '1', year: 2027, courses: {} }),
+    b = stableJson({ fetchedAt: '2', year: 2027, courses: {} });
+  assert.equal(a, b);
+  assert.ok(!a.includes('fetchedAt'));
 });
 test('dataHash is sha256 hex', () => {
   assert.equal(dataHash('abc'), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
@@ -32,11 +52,34 @@ test('retryAfterMs reads seconds and HTTP dates, null otherwise', () => {
 });
 test('changeSummary counts group delta and groups that became full', () => {
   const ds = (groups) => ({ courses: { c: { groups } } });
-  const prev = ds([{ id: 'a', full: false }, { id: 'b', full: false }, { id: 'c', full: true }]);
-  const next = ds([{ id: 'a', full: true }, { id: 'b', full: true }, { id: 'c', full: true }, { id: 'd', full: false }]);
+  const prev = ds([
+    { id: 'a', full: false },
+    { id: 'b', full: false },
+    { id: 'c', full: true }
+  ]);
+  const next = ds([
+    { id: 'a', full: true },
+    { id: 'b', full: true },
+    { id: 'c', full: true },
+    { id: 'd', full: false }
+  ]);
   assert.equal(changeSummary(prev, next), '+1 groups, 2 became full');
   assert.equal(changeSummary(null, next), '+4 groups, 3 became full'); // brand-new file: everything is new
-  assert.equal(changeSummary(prev, { courses: { c: { groups: [{ id: 'a', full: false }, { id: 'b', full: false }, { id: 'c', full: true }], name: 'x' } } }), 'updated');
+  assert.equal(
+    changeSummary(prev, {
+      courses: {
+        c: {
+          groups: [
+            { id: 'a', full: false },
+            { id: 'b', full: false },
+            { id: 'c', full: true }
+          ],
+          name: 'x'
+        }
+      }
+    }),
+    'updated'
+  );
 });
 
 import { msUntil } from '../scripts/polite.mjs';
