@@ -10,5 +10,5 @@ solver-audit/plan-probes/out-*/
 docs/superpowers/design-review/styles/shots/
 NOTES.md
 
-# generated reports (npm run report:rules)
+# generated reports (npm run report:rules, report:conflicts)
 out/

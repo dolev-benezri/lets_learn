@@ -22,6 +22,14 @@ function cleanTurns(raw) {
     && validDate(t.opensAt)).map((t) => ({ id: t.id, label: t.label, opensAt: t.opensAt }));
 }
 
+// The optional columns of the department's conflict sheet (scripts/conflict-sheets.mjs): what the plan, the yedion and the tool say.
+// A missing, blank or over-long one is left out; the conflict itself stays.
+function sourceTexts(x) {
+  const out = {};
+  for (const k of ['plan', 'yedion', 'tool']) if (trimmed(x[k]) && trimmed(x[k]).length <= 300) out[k] = trimmed(x[k]);
+  return out;
+}
+
 function cleanProgram(raw) {
   const out = {};
   if (isObj(raw.approved)) {
@@ -31,7 +39,7 @@ function cleanProgram(raw) {
   if (Array.isArray(raw.conflicts)) {
     const c = raw.conflicts
       .filter((x) => isObj(x) && Array.isArray(x.cohorts) && x.cohorts.length && x.cohorts.every(Number.isInteger) && trimmed(x.text) && trimmed(x.text).length <= 300)
-      .map((x) => ({ cohorts: [...x.cohorts], text: x.text.trim() }));
+      .map((x) => ({ cohorts: [...x.cohorts], text: x.text.trim(), ...sourceTexts(x) }));
     if (c.length) out.conflicts = c;
   }
   return out;

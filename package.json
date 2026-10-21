@@ -11,7 +11,8 @@
     "ui:serve": "python docs/superpowers/design-review/styles/serve.py",
     "ui:shots": "node docs/superpowers/design-review/styles/shoot.mjs",
     "check:export": "node scripts/check-export.mjs",
-    "report:rules": "node scripts/rules-report.mjs"
+    "report:rules": "node scripts/rules-report.mjs",
+    "report:conflicts": "node scripts/conflict-sheets.mjs"
   },
   "dependencies": {
     "node-html-parser": "^6.1.13"
