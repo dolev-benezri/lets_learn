@@ -4,6 +4,7 @@ const D = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
 export const DISCLAIMER = 'אינו הרשמה ואינו המלצה. לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.';
 // Split lecture and tutorial (opt-in): the warning before it is switched on, and what a split alternative says about itself.
 export const SPLIT_WARNING = 'הפרדה בין הרצאה לתרגול עלולה ליצור פער בין החומר שנלמד בהרצאה לחומר שבתרגול, כי הקצב שלהם מתואם. הפרדה כזו מותרת רק באישור ההכוון האקדמי.';
+export const SPLIT_TAG = 'מופרד · דורש אישור ההכוון'; // beside each split course in the registration list
 export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
 export const splitLine = (names) => `מופרדים: ${names.join(', ')} · דורש אישור ההכוון`; // names are raw: the caller escapes
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -135,11 +136,14 @@ export function freshAt(data, status) {
   const change = instant(data.fetchedAt), check = covered ? instant(status.checkedAt) : null;
   return check && (!change || check > change) ? status.checkedAt : change ? data.fetchedAt : undefined;
 }
-export function groupFresh(g, fileFetchedAt) {
+// Not today in Israel time: the date comes first ("נכון ל-16.10, 21:08"), so an old count never reads as today's.
+const DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit' });
+export function groupFresh(g, fileFetchedAt, now = new Date()) {
   const left = Number.isInteger(g.seatsLeft) && g.seatsLeft >= 0 ? g.seatsLeft : null;
   const state = g.full || left === 0 ? 'מלא' : left === null ? 'פנוי' : left === 1 ? 'נשאר מקום אחד' : `נשארו ${left} מקומות`;
   const t = instant(g.fetchedAt) ?? instant(fileFetchedAt);
-  return t ? `${state} · נכון ל-${HHMM.format(t)}` : state;
+  const day = t && DAY.format(t) !== DAY.format(now) ? `${DAY.format(t).replace('/', '.')}, ` : '';
+  return t ? `${state} · נכון ל-${day}${HHMM.format(t)}` : state;
 }
 
 // The warning before my registration turn: my turn has opened, but the data was fetched before it did (seats may have gone since).

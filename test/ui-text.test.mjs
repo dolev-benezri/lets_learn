@@ -171,17 +171,20 @@ test('DISCLAIMER is the owner-approved line; disclaimerHtml links "יועץ לי
 });
 
 test('groupFresh: full / free / seats left, then the time in Israel (a group own fetchedAt wins)', () => {
-  const at = '2026-10-16T05:08:00Z';
-  assert.equal(groupFresh({ full: true }, at), 'מלא · נכון ל-08:08');
-  assert.equal(groupFresh({ full: false, seatsLeft: 3 }, at), 'נשארו 3 מקומות · נכון ל-08:08');
-  assert.equal(groupFresh({ full: false, seatsLeft: 1 }, at), 'נשאר מקום אחד · נכון ל-08:08');
-  assert.equal(groupFresh({ full: false }, at), 'פנוי · נכון ל-08:08');
-  assert.equal(groupFresh({ full: false, fetchedAt: '2026-10-16T10:30:00Z' }, at), 'פנוי · נכון ל-13:30');
-  assert.equal(groupFresh({ full: true, seatsLeft: 5 }, at), 'מלא · נכון ל-08:08'); // full wins over a stale count
-  assert.equal(groupFresh({ full: false, seatsLeft: '<x>' }, at), 'פנוי · נכון ל-08:08'); // only a whole number is a count
-  assert.equal(groupFresh({ full: false }, undefined), 'פנוי'); // no time anywhere: say nothing about when
-  assert.equal(groupFresh({ full: false }, 'not a date'), 'פנוי');
-  assert.equal(groupFresh({ full: false }, '2026-01-16T05:08:00Z'), 'פנוי · נכון ל-07:08'); // winter: +02:00
+  const at = '2026-10-16T05:08:00Z', now = new Date('2026-10-16T12:00:00Z');
+  assert.equal(groupFresh({ full: true }, at, now), 'מלא · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, seatsLeft: 3 }, at, now), 'נשארו 3 מקומות · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, seatsLeft: 1 }, at, now), 'נשאר מקום אחד · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false }, at, now), 'פנוי · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, fetchedAt: '2026-10-16T10:30:00Z' }, at, now), 'פנוי · נכון ל-13:30');
+  assert.equal(groupFresh({ full: true, seatsLeft: 5 }, at, now), 'מלא · נכון ל-08:08'); // full wins over a stale count
+  assert.equal(groupFresh({ full: false, seatsLeft: '<x>' }, at, now), 'פנוי · נכון ל-08:08'); // only a whole number is a count
+  assert.equal(groupFresh({ full: false }, undefined, now), 'פנוי'); // no time anywhere: say nothing about when
+  assert.equal(groupFresh({ full: false }, 'not a date', now), 'פנוי');
+  assert.equal(groupFresh({ full: false }, '2026-01-16T05:08:00Z', now), 'פנוי · נכון ל-16.01, 07:08'); // winter: +02:00, another day
+  assert.equal(groupFresh({ full: false }, '2026-10-15T18:08:00Z', now), 'פנוי · נכון ל-15.10, 21:08'); // yesterday
+  assert.equal(groupFresh({ full: false }, '2026-10-16T21:30:00Z', now), 'פנוי · נכון ל-17.10, 00:30'); // 00:30 Israel is already tomorrow
+  assert.equal(groupFresh({ full: false }, '2026-10-16T21:30:00Z', new Date('2026-10-16T22:00:00Z')), 'פנוי · נכון ל-00:30'); // same Israel day, not same UTC day
 });
 
 test('turnWarning: only when the data predates my turn and the turn has opened (instants, not strings)', () => {
@@ -202,7 +205,7 @@ test('turnWarning: only when the data predates my turn and the turn has opened (
 });
 
 test('groupFresh: no seats left means full', () => {
-  assert.equal(groupFresh({ full: false, seatsLeft: 0 }, '2026-10-16T05:08:00Z'), 'מלא · נכון ל-08:08');
+  assert.equal(groupFresh({ full: false, seatsLeft: 0 }, '2026-10-16T05:08:00Z', new Date('2026-10-16T12:00:00Z')), 'מלא · נכון ל-08:08');
 });
 
 test('freshAt: the later of the data change and the last good check that covers this semester', () => {
