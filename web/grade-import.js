@@ -1,5 +1,6 @@
 // Reads the Afeka portal grade sheet (PDF) into per-course results. The file never leaves the device: pdf.js runs in the page.
 // rowsFromItems / parseGradeSheet are pure (node-tested); readGradeSheet loads pdf.js lazily (6.3.289, a copy in web/vendor: no third-party request).
+import { setStatus } from './rules.js';
 const PDFJS = new URL('./vendor/pdfjs/', import.meta.url).href;
 const BIDI = /[‎‏‪-‮⁦-⁩]/g; // direction marks the portal wraps around tokens
 const MAX_BYTES = 5 * 1024 * 1024,
@@ -76,16 +77,32 @@ export function gradeChanges(found, state) {
       (r) =>
         r.was !== r.to ||
         (r.to === 'passed' && r.grade !== null && state.grades[r.id] !== r.grade) ||
+        (r.failedBefore && !state.failed[r.id]) ||
+        (r.result === 'passed' && r.grade !== null && (state.exempt ?? []).includes(r.id)) ||
         (r.result === 'exempt' && !(state.exempt ?? []).includes(r.id))
     )
     .map((r) => ({ ...r, check: !(r.to === 'failed' && r.was === 'passed') }));
 }
 
-// rows (from rowsFromItems) -> one result per known course: passed > exempt > failed > pending; the highest passing grade wins.
+// The rows the student ticked: status, grade and exemption as the sheet says; a failure before the pass is kept (at least one, never lowered).
+export function applyGradeChanges(state, rows) {
+  for (const r of rows) {
+    setStatus(state, r.id, r.result === 'failed' ? 'failed' : 'passed');
+    if (r.result === 'passed') state.grades[r.id] = r.grade;
+    else delete state.grades[r.id]; // gradeAverage counts graded passes only: a failure or an exemption has no grade
+    state.exempt = state.exempt.filter((x) => x !== r.id).concat(r.result === 'exempt' ? [r.id] : []);
+    if (r.failedBefore) state.failed[r.id] ||= 1;
+  }
+}
+
+// rows (from rowsFromItems) -> one result per known course: passed > exempt > failed > pending; the highest passing grade wins. A passed course
+// with a failed row too is `failedBefore` (the sheet may not list every attempt: no count is inferred).
 export function parseGradeSheet(rows, data) {
-  const out = new Map();
+  const out = new Map(),
+    failed = new Set();
   for (const row of rows) {
     const r = parseRow(row, data);
+    if (r?.result === 'failed') failed.add(r.id);
     const p = r && out.get(r.id);
     if (
       r &&
@@ -93,7 +110,7 @@ export function parseGradeSheet(rows, data) {
     )
       out.set(r.id, r);
   }
-  return [...out.values()];
+  return [...out.values()].map((r) => (r.result === 'passed' && failed.has(r.id) ? { ...r, failedBefore: true } : r));
 }
 
 const fail = (msg) => Object.assign(new Error(msg), { user: true });

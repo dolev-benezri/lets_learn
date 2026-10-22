@@ -1,10 +1,10 @@
 // The status page (#me): profile, specialization form, course lists with their states, grade-sheet import.
 import { app, esc, refresh } from './app.js';
-import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs, recordWarnings, reqContext, reqMet } from './rules.js';
+import { progress, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs, recordWarnings, reqContext, reqMet } from './rules.js';
 import { icon } from './ui-grid.js';
 import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
-import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
+import { readGradeSheet, parseGradeSheet, gradeChanges, applyGradeChanges } from './grade-import.js';
 import { approvedOn } from './settings.js';
 import { creditsGoal, courseCount, conflictsFor, approvedText } from './ui-text.js';
 import {
@@ -358,7 +358,9 @@ export async function importGrades(file) {
     return enterList();
   }
   const label = (r) =>
-    `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}`;
+    `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}${
+      r.failedBefore && !state.failed[r.id] ? ', ונכשלתי בעבר' : ''}${
+      r.result === 'passed' && state.exempt.includes(r.id) ? ' (במקום פטור)' : ''}`;
   const pick = await askRows(
     'ייבוא מגליון ציונים',
     'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.',
@@ -367,13 +369,7 @@ export async function importGrades(file) {
     { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) }
   );
   if (!pick) return setGradeMsg('');
-  for (const i of pick) {
-    const r = todo[i];
-    setStatus(state, r.id, r.result === 'failed' ? 'failed' : 'passed');
-    if (r.result === 'passed') state.grades[r.id] = r.grade;
-    else delete state.grades[r.id]; // gradeAverage counts graded passes only: a failure or an exemption has no grade
-    state.exempt = state.exempt.filter((x) => x !== r.id).concat(r.result === 'exempt' ? [r.id] : []);
-  }
+  applyGradeChanges(state, pick.map((i) => todo[i]));
   setGradeMsg('');
   enterList();
   toast(pick.length === 1 ? 'עודכן קורס אחד' : `עודכנו ${pick.length} קורסים`);
