@@ -568,6 +568,14 @@ test('recordWarnings: a passed course whose prerequisite is failed or unmarked; 
   assert.equal(w({ passed: ['A', 'B'] }).B, undefined);
   assert.deepEqual(w({ passed: null }), {}, 'a fresh state has no record');
 });
+test('recordWarnings: a repeated alternative is named once; a failed alternative is named alone (10-2024)', () => {
+  const d = real('2027-1/10-2024.json');
+  const w = recordWarnings(d, { passed: ['10128', '10010'], failed: { 10016: 1 }, exempt: [] });
+  assert.deepEqual(w['10128'], ['שים לב: מבוא למדעי המחשב הוא קדם, וסומן שנכשלת בו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+  assert.ok(w['10010'].every((t) => !/המחשב או מבוא למדעי המחשב|או מבוא לתכנות פיתון הוא קדם, וסומן/.test(t)), w['10010'].join(' | '));
+  const u = recordWarnings(d, { passed: ['10128'], failed: {}, exempt: [] });
+  assert.deepEqual(u['10128'], ['שים לב: מבוא למדעי המחשב הוא קדם, ולא סומן שעברת אותו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+});
 test('recordWarnings + classify: failing 10336 without 90905 warns and stays a retake (30-2026)', () => {
   const d = real('2027-1/30-2026.json');
   const s = { passed: [], failed: { 10336: 1 }, exempt: [], profile: { year: 1 } };

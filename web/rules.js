@@ -117,8 +117,9 @@ export const reqContext = (state, exempt = amirnetExempt(state.profile?.amirnet)
 // A corequisite is only flagged when never taken: taken together and failed is legitimate. null = nothing to say.
 const SOFT = 'אם קיבלת אישור חריג, אפשר להשאיר.';
 function unmetText(p, failed) {
-  const names = p.anyOf.map((a) => a.name).join(' או '),
-    tried = p.anyOf.some((a) => a.id && failed[a.id]);
+  const fails = p.anyOf.filter((a) => a.id && failed[a.id]),
+    tried = fails.length > 0, // a failed alternative is named alone; a repeated one once
+    names = [...new Set((tried ? fails : p.anyOf).map((a) => a.name))].join(' או ');
   if (p.kind === 'קדם')
     return `שים לב: ${names} הוא קדם, ${tried ? 'וסומן שנכשלת בו' : 'ולא סומן שעברת אותו'}. ${SOFT}`;
   return tried ? null : `שים לב: ${names} הוא קורס מקביל, ולא סומן שלקחת אותו. ${SOFT}`;
