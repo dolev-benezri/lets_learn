@@ -252,3 +252,11 @@ test('a backup from a newer year than the site shows is refused, not aged backwa
   const b = await backupLink('https://x.test/', { ...state, year: 2028, pins: ['G1'] });
   assert.ok((await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' })).error);
 });
+
+test('backup link keeps outsideDone', async () => {
+  const { normalize } = await import('../web/app.js');
+  const at = { year: 2027, semester: 'א' };
+  const s = normalize({ v: 1, passed: [], outsideDone: ['x'] });
+  const b = await backupLink('https://x.test/', s);
+  assert.deepEqual(normalize((await readHash(b.slice(b.indexOf('#')), at)).payload).outsideDone, ['x']);
+});

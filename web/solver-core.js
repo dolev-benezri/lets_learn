@@ -1,5 +1,5 @@
 // Schedule search core. Pure ES module: used by node tests and by solver-worker.js.
-import { classify, modeFor } from './rules.js';
+import { classify, modeFor, reqMet } from './rules.js';
 
 const SLOT_START = 7 * 60; // 07:00
 const SLOT = 30;           // minutes per bit, 32 bits = 07:00-23:00
@@ -718,7 +718,9 @@ export function searchYear({
   const ra = search({ ...argsA, courses: coursesA, topK: A_TOP, distinct: true, timeLimitMs: timeLimitMs * A_SHARE });
   const credits = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
   const name = (id) => dataA.courses[id]?.name ?? id;
-  const settled = (x) => (state.passed ?? []).includes(x.id) || stA[x.id]?.status === 'exempt';
+  // the record before א׳: passed, exempt (Amirnet or sheet) and outside-program courses marked done (rules.js reqMet)
+  const known = { passed: new Set(state.passed ?? []), outside: new Set(state.outsideDone ?? []),
+    exempt: new Set(Object.keys(stA).filter((id) => stA[id].status === 'exempt')) };
   const pairs = [];
   let partial = ra.partial;
   // The top-A_TOP cut ranks א׳ alone, so it can drop the only א׳ plans that open a ב׳ must course. Seed such courses:
@@ -728,9 +730,7 @@ export function searchYear({
   const key = (a) => [...a.courses].sort().join();
   const seen = new Set(ra.results.map(key)), seeds = [];
   for (const m of must) {
-    const open = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם'
-      && !p.anyOf.some(settled)
-      && !p.anyOf.every((x) => x.id === null));
+    const open = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם' && !reqMet(p, known));
     const cands = open.map((p) => p.anyOf.filter((x) => inA.has(x.id)).map((x) => x.id));
     if (!cands.length || cands.some((c) => !c.length)) continue;
     const combos = cands.reduce((acc, c) => acc.flatMap((done) => c.map((x) => [...done, x])), [[]]);
@@ -829,7 +829,7 @@ export function searchYear({
     // Only prerequisites still open before א׳: an anyOf already met by a passed (or exempt) option needs nothing from
     // א׳.
     const needs = [...new Set((b?.courses ?? []).flatMap((id) => dataB.courses[id].prereqs
-      .filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled))
+      .filter((p) => p.kind === 'קדם' && !reqMet(p, known))
       .flatMap((p) => p.anyOf.map((x) => x.id))
       .filter((x) => takenA.has(x))))];
     // Swap the two per-semester progress terms for the year one. Times 2: each half scored progress in [0, 1], so the

@@ -2149,3 +2149,16 @@ test('split on, year mode: the largest real program with every offered course op
   assert.ok(ms < 5500 * SLACK, `${f}: ${size(dataA) + size(dataB)} groups, ${ms} ms, partial ${r.partial}`);
   assert.ok(r.results.length);
 });
+
+test('searchYear: a ב requirement met by an outside alternative in outsideDone assumes nothing from א', () => {
+  const { dataA, dataB } = yearFixture();
+  const req = [{ kind: 'קדם', anyOf: [{ id: 'P', name: 'P' }, { id: null, name: 'O' }] }];
+  dataA.courses.N.prereqs = req;
+  dataB.courses.N.prereqs = req;
+  const run = (outsideDone) =>
+    best(searchYear({ dataA, dataB, state: yState({ semesterOf: { P: 'א' }, outsideDone }), yearList: new Set(), weights: W }));
+  assert.ok(run([]).warnings.some((w) => w.includes('מניח')), 'without the outside course, ב assumes P');
+  const p = run(['O']);
+  assert.ok(inB(p, 'N'));
+  assert.ok(!p.warnings.some((w) => w.includes('מניח')), p.warnings.join(' | '));
+});

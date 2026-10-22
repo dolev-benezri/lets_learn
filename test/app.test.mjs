@@ -538,3 +538,8 @@ test('legal.html: dated for this change; the English line says the exemption is 
   assert.match(html, /רמת האנגלית[^<]*הכלי מחשב פטור רק לפי ציון האנגלית \(אמירנט או פסיכומטרי\) שהזנתם/);
   assert.match(html, /<h3>מה הכלי בודק<\/h3>\s*<ul>\s*<li>הכול לפי הנתונים שמוצגים בכלי, שנמשכו מהידיעון/);
 });
+
+test('a save without outsideDone loads with []; a bad entry is dropped', () => {
+  assert.deepEqual(normalize({ v: 1, passed: ['A'] }).outsideDone, []);
+  assert.deepEqual(normalize({ v: 1, passed: [], outsideDone: ['ok', 3, 'x'.repeat(200)] }).outsideDone, ['ok']);
+});
