@@ -140,8 +140,9 @@ export const shown = () => semResult(current(), ui.sem); // what the grid, pills
 export const shownData = () => (isPair(current()) ? app.sem[ui.sem] : app.data);
 export const yearSearch = () => app.state.scope === 'year' && !!app.sem['ב'];
 export const listIds = () => [...new Set(app.data.lists.flatMap((l) => l.courses))];
-export const status = (id) => app.cls.statuses[id]?.status;
-export const doneIds = () => Object.keys(app.cls.statuses).filter((id) => status(id) === 'done');
+// The record by default; planning views pass planningCls() (app.js: summer assumes the year plan).
+export const status = (id, cls = app.cls) => cls.statuses[id]?.status;
+export const doneIds = (cls = app.cls) => Object.keys(cls.statuses).filter((id) => status(id, cls) === 'done');
 export const planned = (id) => ['must', 'optional'].includes(candidateMode(id));
 export const allGroupIds = () => groupIndex(app.data);
 export const pill = (ic, text, cls = '') => `<span class="pill ${cls}">${icon(ic)}<span>${text}</span></span>`;

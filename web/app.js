@@ -408,8 +408,10 @@ export function yearCourses() {
   const sp = specLists(app.data, app.state.profile.specs);
   return [...list, ...sp.mandatory, ...sp.elective];
 }
+// The classification a plan is built on: the summer assumption in summer, else the record.
+export const planningCls = () => app.clsSummer ?? app.cls;
 export const candidateMode = (id) =>
-  modeFor(app.cls.statuses[id]?.status, app.state.choices[id], yearCourses().includes(id));
+  modeFor(planningCls().statuses[id]?.status, app.state.choices[id], yearCourses().includes(id));
 
 // Rendering lives in ui-plan.js / ui-grid.js; they register here. Focus survives a re-render via data-k keys.
 let renderers = [];
@@ -457,11 +459,11 @@ export function refresh() {
   if (app.state.scope === 'קיץ' && !app.state.profile.summer) app.state.scope = 'year';
   pickData();
   reconcileSpecs();
-  // Summer assumes the shown year plan is passed (as ב assumes א); elsewhere a course taught only in summer says so.
-  const st = summerScope()
-    ? { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.state.yearIds])] }
-    : app.state;
-  app.cls = withAfterA(app.data, st, classify(app.data, st));
+  // app.cls is the record (#me, checklist, map, warnings). Summer plans as if the shown year plan was passed (as ב assumes א):
+  // that assumption lives only in app.clsSummer (planningCls). Elsewhere a course taught only in summer says so.
+  app.cls = withAfterA(app.data, app.state, classify(app.data, app.state));
+  const st = { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.state.yearIds])] };
+  app.clsSummer = summerScope() ? classify(app.data, st) : null;
   if (!summerScope()) summerOnly(app.cls.statuses, app.sem?.['קיץ'], summerOn());
   save();
   keepFocus(() => renderers.forEach((r) => r()));
