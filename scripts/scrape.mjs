@@ -329,8 +329,15 @@ export async function run({
   }
 
   const ids = [...new Set(units.flatMap((u) => u.lists.flatMap((l) => l.courses.map((c) => c.id))))];
+  // A course no list marks נלמד has no groups (it matched in every snapshot, research A2): no request for it.
+  const offered = new Set(units.flatMap((u) => u.lists.flatMap((l) => l.courses.filter((c) => c.offered).map((c) => c.id))));
   const raw = {};
   for (const [i, id] of ids.entries()) {
+    if (!offered.has(id)) {
+      raw[id] = { groups: [], details: null };
+      log(`[${i + 1}/${ids.length}] ${id}: not offered (list), skipped`);
+      continue;
+    }
     const groups = parseGroups(await request(`prgname=S_LOOK_FOR_NOSE&arguments=-N${id}`));
     const args = groups.find((g) => g.primary && g.detailsArgs)?.detailsArgs;
     const details = args ? parseDetails(await request(`prgname=S_CourseDetails&arguments=${args}`)) : null;
