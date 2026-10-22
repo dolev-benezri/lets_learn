@@ -459,6 +459,11 @@ test('the status page has the degree checklist, one row per requirement', () => 
   assert.ok(me.includes('data-key="checklist"') && /מתוך \d/.test(me));
 });
 
+test('the English score field takes Amirnet or the psychometric English section (one 50-150 scale)', () => {
+  const me = writes.filter((w) => w.scope === 'me').map((w) => w.html).join('');
+  assert.match(me, /ציון אנגלית \(אמירנט או פרק האנגלית בפסיכומטרי\) <input[^>]*data-chg="amirnet"/);
+});
+
 test('the preferences page offers a campus-day cap', () => {
   assert.ok(writes.filter((w) => w.scope === 'prefs-page').some((w) => w.html.includes('data-chg="maxDays"')));
 });
