@@ -147,8 +147,13 @@ function checklist(data, state) {
   const gap = untracked
     ? `<p class="hint">עוד ${esc(untracked)} נ״ז של התואר לא מופיעים ברשימות שבנתונים (קורסים שכבר לא נפתחים), ולכן לא נספרים כאן.</p>`
     : '';
-  const row = (r) =>
-    `<li${r.done >= r.need ? ' class="ok"' : ''}><span>${esc(heb(r.name))}</span> <b>${r.done >= r.need ? '✓ ' : ''}${esc(r.done)} מתוך ${esc(r.need)} נ״ז</b></li>`;
+  const row = (r) => {
+    const ok = r.done >= r.need && !r.missingMandatory.length,
+      lack = r.done >= r.need && r.missingMandatory.length
+        ? `<span class="hint warn-text">חסרים קורסי חובה בהתמחות: ${r.missingMandatory.map((id) => esc(heb(data.courses[id].name))).join(', ')}</span>`
+        : '';
+    return `<li${ok ? ' class="ok"' : ''}><span>${esc(heb(r.name))}</span> <b>${ok ? '✓ ' : ''}${esc(r.done)} מתוך ${esc(r.need)} נ״ז</b>${lack}</li>`;
+  };
   return details(
     'checklist',
     'מה נשאר לסיום התואר',

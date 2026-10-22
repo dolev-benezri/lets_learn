@@ -1260,3 +1260,22 @@ test('#me: editing a grade refreshes the regulation warnings in place, without a
   refresh();
   document.body.dataset.view = 'plan';
 });
+
+test('#me checklist: a specialization with its mandatory courses missing is not complete and names them', async () => {
+  const { specLists } = await import('../web/rules.js');
+  const saved = structuredClone(app.state);
+  app.state.profile.specs = ['solid', 'flow'];
+  app.state.profile.year = 4;
+  refresh();
+  app.state.passed = [...specLists(app.data, ['solid', 'flow']).elective];
+  refresh();
+  document.body.dataset.view = 'me';
+  run('spec-miss', () => renderMe());
+  const html = parse(writes.filter((w) => w.scope === 'spec-miss').map((w) => w.html).join(''));
+  const li = html.querySelectorAll('.checklist li').find((x) => x.text.includes('חסרים קורסי חובה בהתמחות'));
+  assert.ok(li, 'the missing mandatory courses are named');
+  assert.ok(!li.classList.contains('ok'), 'and the row is not marked complete');
+  app.state = saved;
+  refresh();
+  document.body.dataset.view = 'plan';
+});
