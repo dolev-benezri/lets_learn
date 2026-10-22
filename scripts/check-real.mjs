@@ -5,6 +5,9 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { classify, modeFor, amirnetExempt, yearsOf } from '../web/rules.js';
+import { search, searchYear, buildOptions, overlaps, compareYearPlans } from '../web/solver-core.js';
+import { DEFAULT } from '../web/app.js';
 
 const DIR = 'web/data/afeka';
 const YEAR = /חובה שנה (\S)'/;
@@ -88,6 +91,195 @@ export function dataFiles(dir = DIR) {
   return out;
 }
 
+// ---------------- layer 3: the record and the solver ----------------
+// The oracle is written from the spec, not from rules.js: one requirement is met by any alternative (passed, exempt by the English
+// score, or an outside one the student marked done); a requirement entirely outside the program is assumed met. Only the English
+// score -> exemption table is borrowed (amirnetExempt): it is data, not the logic under test.
+const recordMet = (state) => {
+  const passed = new Set(state.passed ?? []),
+    exempt = new Set(amirnetExempt(state.profile?.amirnet)),
+    outside = new Set(state.outsideDone ?? []);
+  return (p) =>
+    p.anyOf.every((a) => a.id === null) || p.anyOf.some((a) => (a.id ? passed.has(a.id) || exempt.has(a.id) : outside.has(a.name)));
+};
+export function oracle(data, state) {
+  const passed = new Set(state.passed ?? []),
+    exempt = new Set(amirnetExempt(state.profile?.amirnet)),
+    failed = state.failed ?? {},
+    met = recordMet(state),
+    out = {};
+  for (const [id, c] of Object.entries(data.courses)) {
+    const unmet = (kind) => c.prereqs.some((p) => p.kind === kind && !met(p));
+    out[id] = passed.has(id) ? 'done' : exempt.has(id) ? 'exempt' : !c.offered ? 'notOffered' : failed[id] ? 'retake'
+      : unmet('קדם') ? 'blocked' : unmet('מקביל') ? 'conditional' : 'available';
+  }
+  return out;
+}
+
+const toM = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
+const clash = (a, b) => a.day === b.day && toM(a.start) < toM(b.end) && toM(b.start) < toM(a.end);
+// One semester's plan ({ courses, groups }) against the record: no overlap, no busy time, a first attempt meets its prerequisites, a
+// retake may lack one (a faculty exception: the record warning says so), every corequisite is passed or in the same plan.
+export function checkPlan(data, state, plan, constraints = {}) {
+  const errs = [],
+    where = new Map();
+  for (const [cid, c] of Object.entries(data.courses)) for (const g of c.groups) where.set(g.id, { cid, g });
+  const ms = [];
+  for (const id of plan.groups) {
+    if (!where.has(id)) errs.push(`unknown group ${id}`);
+    else ms.push(...where.get(id).g.meetings.map((m) => ({ ...m, id })));
+  }
+  for (let i = 0; i < ms.length; i++)
+    for (let j = i + 1; j < ms.length; j++) if (clash(ms[i], ms[j])) errs.push(`overlap: ${ms[i].id} and ${ms[j].id}`);
+  for (const m of ms) for (const b of constraints.blocks ?? []) if (clash(m, b)) errs.push(`busy time: ${m.id} on day ${m.day} ${m.start}`);
+  const st = oracle(data, state),
+    met = recordMet(state),
+    inPlan = new Set(plan.courses);
+  for (const cid of plan.courses) {
+    if (st[cid] === 'blocked') errs.push(`prerequisite: ${cid} is planned without its prerequisite (first attempt)`);
+    if (['done', 'exempt', 'notOffered'].includes(st[cid])) errs.push(`${cid} is planned but ${st[cid]}`);
+    for (const p of data.courses[cid].prereqs.filter((x) => x.kind === 'מקביל'))
+      if (!met(p) && !p.anyOf.some((a) => a.id && inPlan.has(a.id)))
+        errs.push(`corequisite: ${cid} needs ${p.anyOf.map((a) => a.id ?? a.name).join(' or ')}`);
+  }
+  return errs;
+}
+// A year plan: א against the record, ב against the record plus א, no course in both, both credit totals.
+export function checkYearPlan({ dataA, dataB, state, plan, constraints = {} }) {
+  const errs = checkPlan(dataA, state, plan.a, constraints).map((e) => `א: ${e}`);
+  if (plan.b) {
+    const stateB = { ...state, passed: [...(state.passed ?? []), ...plan.a.courses] };
+    errs.push(...checkPlan(dataB, stateB, plan.b, constraints).map((e) => `ב: ${e}`));
+    for (const id of plan.b.courses) if (plan.a.courses.includes(id)) errs.push(`${id} planned twice (א and ב)`);
+  }
+  const sum = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
+  if (plan.credits.a !== sum(dataA, plan.a.courses) || plan.credits.b !== sum(dataB, plan.b?.courses ?? []))
+    errs.push(`credits ${JSON.stringify(plan.credits)} do not add up`);
+  return errs;
+}
+// Brute force over every combination of the courses' options (none or one each): the most credits a plan without overlaps and with its
+// corequisites in it can have. Small cases only (exponential).
+export function bestCredits(data, courses, statuses) {
+  const items = courses.map((c) => ({ ...c, os: buildOptions(data.courses[c.id]) }));
+  let best = 0;
+  const go = (i, mask, chosen) => {
+    if (i === items.length) {
+      const ids = new Set(chosen);
+      if (chosen.every((id) => (statuses[id]?.missingParallel ?? []).every((alts) => alts.some((a) => ids.has(a)))))
+        best = Math.max(best, chosen.reduce((s, id) => s + data.courses[id].credits, 0));
+      return;
+    }
+    const it = items[i];
+    if (it.mode !== 'must') go(i + 1, mask, chosen);
+    for (const o of it.os)
+      if (!mask || !overlaps(mask, o.mask)) go(i + 1, mask ? mask.map((v, d) => v | o.mask[d]) : o.mask, [...chosen, it.id]);
+  };
+  go(0, null, []);
+  return best;
+}
+
+// Student scenarios for one file: S1 nothing passed; S2 the mandatory years before the cohort's study year passed; S3 up to three
+// copies of S2 failing one distinct mandatory course of the study year, chosen by `seed` (printed with any failure).
+export function scenarios(data, seed = 1) {
+  const study = Math.min(yearsOf(data), Math.max(1, (data.year ?? 0) - (data.startYear ?? 0) + 1)),
+    year = yearOf(data);
+  const mand = (f) => Object.keys(year).filter((id) => f(year[id]) && data.courses[id]);
+  const base = (passed, failed = {}) => ({
+    passed, failed, exempt: [], outsideDone: [], grades: {}, choices: {}, semesterOf: {}, load: 'even', sortBy: 'best',
+    profile: { year: study, amirnet: null, specs: [], summer: false }
+  });
+  const earlier = mand((y) => y < study);
+  let s = seed;
+  const rnd = () => (s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff) / 2 ** 31;
+  const pool = mand((y) => y === study).filter((id) => data.courses[id].offered && !earlier.includes(id)),
+    fails = [];
+  while (pool.length && fails.length < 3) fails.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+  const yearList = new Set(mand((y) => y === study));
+  return [
+    { name: 'S1', state: base([]) },
+    { name: 'S2', state: base(earlier) },
+    ...fails.map((id) => ({ name: `S3:${id}`, state: base(earlier, { [id]: 1 }) }))
+  ].map((x) => ({ ...x, yearList }));
+}
+
+const candidates = (data, statuses, yearList) =>
+  Object.keys(data.courses)
+    .map((id) => ({ id, mode: modeFor(statuses[id]?.status, undefined, yearList.has(id)) }))
+    .filter((c) => c.mode === 'must' || c.mode === 'optional');
+const run = (data, statuses, courses, constraints, timeLimitMs) =>
+  search({ data, courses, statuses, constraints, weights: DEFAULT.weights, friends: [], topK: 5, timeLimitMs });
+
+// Every check for one semester file: classify against the oracle, a pass never blocks, each plan against the record, and the
+// metamorphic relations on the best plan. Returns failure lines (file, scenario, seed, ids).
+export function checkFile(file, data, { scenarios: only = null, seed = 1, timeLimitMs = 1500 } = {}) {
+  const out = [],
+    C = structuredClone(DEFAULT.constraints);
+  for (const { name, state, yearList } of scenarios(data, seed)) {
+    if (only && !only.some((o) => name.startsWith(o))) continue;
+    const at = `${file} ${name} seed ${seed}`,
+      st = classify(data, state).statuses,
+      want = oracle(data, state);
+    for (const id of Object.keys(want))
+      if (st[id]?.status !== want[id]) out.push(`${at}: classify ${id} = ${st[id]?.status}, oracle ${want[id]}`);
+    // monotone: one more pass never turns an open course into a blocked one
+    const open = Object.keys(st).filter((id) => ['available', 'conditional', 'retake'].includes(st[id].status));
+    for (const y of Object.keys(data.courses).filter((id) => !state.passed.includes(id)).slice(0, 3)) {
+      const after = classify(data, { ...state, passed: [...state.passed, y] }).statuses;
+      for (const id of open) if (after[id].status === 'blocked') out.push(`${at}: passing ${y} blocks ${id}`);
+    }
+    const courses = candidates(data, st, yearList);
+    if (!courses.length) continue;
+    const r = run(data, st, courses, C, timeLimitMs);
+    for (const p of r.results) out.push(...checkPlan(data, state, p, C).map((e) => `${at}: ${e}`));
+    if (!r.results.length) {
+      if (!r.diagnosis?.length) out.push(`${at}: no plan and no reason given`);
+      continue;
+    }
+    const best = r.results[0];
+    const m = Object.values(data.courses).flatMap((c) => c.groups).find((g) => best.groups.includes(g.id) && g.meetings.length)?.meetings[0];
+    if (m) {
+      const busy = { ...C, blocks: [...C.blocks, { day: m.day, start: m.start, end: m.end, label: 'check' }] };
+      for (const p of run(data, st, courses, busy, timeLimitMs).results.slice(0, 1))
+        out.push(...checkPlan(data, state, p, busy).map((e) => `${at} busy over ${m.day} ${m.start}: ${e}`));
+    }
+    // shuffled course and group order: the best plan stays valid; complete searches on both sides find the same best score
+    const shuffled = {
+      ...data,
+      courses: Object.fromEntries(Object.entries(data.courses).reverse().map(([id, c]) => [id, { ...c, groups: [...c.groups].reverse() }]))
+    };
+    const rs = run(shuffled, st, [...courses].reverse(), C, timeLimitMs);
+    if (!rs.results.length) out.push(`${at}: shuffled order finds no plan`);
+    else {
+      out.push(...checkPlan(shuffled, state, rs.results[0], C).map((e) => `${at} shuffled: ${e}`));
+      if (!r.partial && !rs.partial && Math.abs(rs.results[0].score - best.score) > 1e-6)
+        out.push(`${at}: shuffled order changes the best score ${best.score} -> ${rs.results[0].score}`);
+    }
+    // relaxing constraints never loses the last plan (feasibility only: relaxing changes what the score weighs)
+    const loose = { ...C, includeFull: true, blocks: [], maxCredits: null, maxDays: null, dayOffHard: false, windowHard: false };
+    if (!run(data, st, courses, loose, timeLimitMs).results.length) out.push(`${at}: relaxing the constraints loses every plan`);
+  }
+  return out;
+}
+
+// The year view for one cohort (א and ב files): every pair checked, and "most credits" / "most unlocks" ordered by the year's totals.
+export function checkYear(file, dataA, dataB, { seed = 1, timeLimitMs = 3000 } = {}) {
+  const out = [];
+  for (const { name, state, yearList } of scenarios(dataA, seed).slice(0, 2))
+    for (const sortBy of ['credits', 'unlocks']) {
+      const at = `${file} year ${name} ${sortBy}`;
+      const r = searchYear({
+        dataA, dataB, state: { ...state, sortBy }, yearList, constraints: DEFAULT.constraints,
+        weights: { ...DEFAULT.weights, [sortBy]: 1e5 }, friends: [], timeLimitMs
+      });
+      for (const p of r.results)
+        out.push(...checkYearPlan({ dataA, dataB, state, plan: p, constraints: DEFAULT.constraints }).map((e) => `${at}: ${e}`));
+      for (let i = 1; i < r.results.length; i++)
+        if (compareYearPlans(r.results[i - 1], r.results[i], sortBy) > 0) out.push(`${at}: results ${i - 1} and ${i} out of order`);
+      if (!r.results.length && !r.diagnosis?.length) out.push(`${at}: no year plan and no reason given`);
+    }
+  return out;
+}
+
 function main() {
   const t0 = Date.now(),
     all = process.argv.includes('--all'),
@@ -110,7 +302,17 @@ function main() {
     console.log(`warning "${k}": ${ws.length}`);
     for (const w of all ? ws : ws.slice(0, 5)) console.log(`  ${w}`);
   }
-  return errors.length ? 1 : 0;
+  // layer 3: every semester file alone, then every cohort's year (א + ב of the same file name)
+  const t1 = Date.now(),
+    fails = [];
+  for (const files of Object.values(bySem)) for (const [file, d] of files) fails.push(...checkFile(file, d));
+  const sems = Object.keys(bySem).sort(),
+    [a, b] = sems,
+    byName = new Map((bySem[b] ?? []).map(([f, d]) => [f.split('/')[1], d]));
+  for (const [file, dA] of bySem[a] ?? []) if (byName.has(file.split('/')[1])) fails.push(...checkYear(file, dA, byName.get(file.split('/')[1])));
+  console.log(`solver and record: ${n} files, ${fails.length} failure(s), ${Date.now() - t1} ms`);
+  for (const f of fails) console.log(`FAIL ${f}`);
+  return errors.length || fails.length ? 1 : 0;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = main();
