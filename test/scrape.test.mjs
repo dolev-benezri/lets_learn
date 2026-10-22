@@ -541,7 +541,7 @@ import { utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { nightlyTtl, patient } from '../scripts/scrape.mjs';
 
-test('nightlyTtl: exams every run, an offered course\'s groups every other night, an unoffered course (no groups) and everything else weekly', () => {
+test('nightlyTtl: exams every other night until published then weekly; an offered course\'s groups every other night; details 14-16 days; the rest weekly', () => {
   const DAY = 86400e3,
     weekly = (ms) => [7, 8, 9].includes(ms / DAY),
     key = 'prgname=S_LOOK_FOR_NOSE&arguments=-N90903',
@@ -561,17 +561,19 @@ test('nightlyTtl: exams every run, an offered course\'s groups every other night
   ).filter((t) => t === 0).length;
   assert.ok(half > 70 && half < 130, `about half the courses each night (${half}/200)`);
   assert.ok(weekly(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>')));
-  assert.equal(nightlyTtl('PRGNAME=S_EXAMS&ARGUMENTS=R1C28', fx('exams-2026.html')), 0);
+  const exams = 'PRGNAME=S_EXAMS&ARGUMENTS=R1C28';
+  assert.equal(nightlyTtl(exams, fx('exams-nodata.html')), 1.5 * DAY, 'not published yet: every other night');
+  assert.ok(weekly(nightlyTtl(exams, fx('exams-2026.html'))), 'published: weekly');
+  assert.ok([14, 15, 16].includes(nightlyTtl('prgname=S_CourseDetails&arguments=x', OK) / DAY), 'details: 14-16 days');
   for (const k of [
     'prgname=S_SHOW_PROGS&arguments=-N2026,-N30001',
-    'prgname=S_CourseDetails&arguments=x',
     'PRGNAME=S_PROG&HUG=30'
   ])
     assert.ok(weekly(nightlyTtl(k, OK)), k);
 });
 
 test('nightlyTtl: weekly answers expire over 7-9 days by key, so a full refresh does not land on one night (P6)', () => {
-  const keys = Array.from({ length: 60 }, (_, i) => `prgname=S_CourseDetails&arguments=-N${30000 + i}`);
+  const keys = Array.from({ length: 60 }, (_, i) => `prgname=S_SHOW_PROGS&arguments=-N2026,-N${30000 + i}`);
   const days = keys.map((k) => nightlyTtl(k, OK) / 86400e3);
   assert.deepEqual([...new Set(days)].sort(), [7, 8, 9]);
   assert.deepEqual(
