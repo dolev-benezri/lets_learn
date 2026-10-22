@@ -102,14 +102,25 @@ export const studyYear = (data, state) => Math.min(
   state.profile?.year ?? data.year - data.startYear + 1
 );
 
+// One requirement (an anyOf) is met by any alternative: an in-program course passed or exempt, or an outside-program one the
+// student marked done (state.outsideDone, by name). A requirement entirely outside the program is assumed met.
+export const reqMet = (p, { passed, exempt, outside }) =>
+  p.anyOf.some((a) => (a.id ? passed.has(a.id) || exempt.has(a.id) : outside.has(a.name)))
+  || p.anyOf.every((a) => a.id === null);
+export const reqContext = (state, exempt = amirnetExempt(state.profile?.amirnet)) => ({
+  passed: new Set(state.passed),
+  exempt: new Set(exempt),
+  outside: new Set(state.outsideDone ?? [])
+});
+
 export function classify(data, state) {
   const passed = new Set(state.passed);
   const failed = state.failed ?? {};
   const exempt = new Set(amirnetExempt(state.profile?.amirnet));
   const statuses = {};
   const when = data.semester === 'שנה' ? 'השנה' : `בסמסטר ${data.semester}`; // the year view has no single semester
-  const satisfied = (p) => p.anyOf.some((a) => a.id && (passed.has(a.id) || exempt.has(a.id)))
-    || p.anyOf.every((a) => a.id === null);
+  const ctx = reqContext(state, exempt);
+  const satisfied = (p) => reqMet(p, ctx);
   const outsideNotes = (c) => c.prereqs.filter((p) => p.anyOf.every((a) => a.id === null))
     .flatMap((p) => p.anyOf)
     .map((a) => `קדם מחוץ לתוכנית (${a.name}): מניחים שעברת`);
@@ -228,14 +239,15 @@ export function withAfterA(data, state, cls) {
     .filter((id) => ['retake', 'available', 'conditional'].includes(cls.statuses[id].status)
       && data.courses[id].semesters?.includes('א')));
   const second = classify(data, { ...state, passed: [...state.passed, ...candA] }).statuses;
-  const settled = (a) => a.id && ['done', 'exempt'].includes(cls.statuses[a.id]?.status);
+  const of = (st) => Object.keys(cls.statuses).filter((id) => cls.statuses[id].status === st);
+  const ctx = { passed: new Set(of('done')), exempt: new Set(of('exempt')), outside: new Set(state.outsideDone ?? []) };
   const statuses = { ...cls.statuses };
   for (const [id, s] of Object.entries(cls.statuses)) {
     const c = data.courses[id];
     if (s.status !== 'blocked'
       || !c.semesters?.includes('ב')
       || !['available', 'conditional'].includes(second[id].status)) continue;
-    const names = [...new Set(c.prereqs.filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled))
+    const names = [...new Set(c.prereqs.filter((p) => p.kind === 'קדם' && !reqMet(p, ctx))
       .flatMap((p) => p.anyOf.filter((a) => candA.has(a.id)).map((a) => a.name)))];
     statuses[id] = { status: 'afterA', reasons: [`אפשר בסמסטר ב׳ אחרי ${names.join(', ')}`] };
   }

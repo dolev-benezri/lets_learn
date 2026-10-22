@@ -31,6 +31,7 @@ export const DEFAULT = {
   failed: {},
   grades: {},
   exempt: [],
+  outsideDone: [], // outside-program prerequisite alternatives marked done, by name (rules.js reqMet)
   choices: {},
   friends: [],
   pins: [],
@@ -180,6 +181,7 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   if (draft && draft.length === 1 && /^[a-z][a-z0-9]{0,19}$/.test(draft[0])) out.specDraft = draft;
   out.yearIds = strs(raw.yearIds, 60, 20) ?? [];
   out.retakeSeen = strs(raw.retakeSeen, 200, 20) ?? [];
+  out.outsideDone = strs(raw.outsideDone, 100, 120) ?? [];
   if (['year', 'א', 'ב', 'קיץ'].includes(raw.scope)) out.scope = raw.scope;
   if (['א', 'even', 'ב'].includes(raw.load)) out.load = raw.load;
   // older saves: a year or another track was a choice

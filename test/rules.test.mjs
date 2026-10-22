@@ -15,7 +15,8 @@ import {
   englishOptions,
   specRule,
   validSpecs,
-  retakeNotice
+  retakeNotice,
+  reqMet
 } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
@@ -517,4 +518,23 @@ test('missingRequired names the not-passed courses of earlier-year lists that ar
   assert.deepEqual(missingRequired(d, st([])), ['A', 'Q0']);
   const p = progress(d, st(['A']));
   assert.equal(p.earned, p.required, 'the credit figure agrees: nothing is needed');
+});
+
+const real = (p) => JSON.parse(readFileSync(new URL('../web/data/afeka/' + p, import.meta.url), 'utf8'));
+test('reqMet: an outside alternative counts once its name is in outsideDone; all-outside stays met', () => {
+  const p = { kind: 'קדם', anyOf: [{ id: '6000', name: 'מכינה' }, { id: null, name: 'מכינה בדרך לאפקה' }] };
+  const ctx = (o = []) => ({ passed: new Set(), exempt: new Set(), outside: new Set(o) });
+  assert.equal(reqMet(p, ctx()), false);
+  assert.equal(reqMet(p, ctx(['מכינה בדרך לאפקה'])), true);
+  assert.equal(reqMet(p, { ...ctx(), passed: new Set(['6000']) }), true);
+  assert.equal(reqMet({ kind: 'קדם', anyOf: [{ id: null, name: 'x' }] }, ctx()), true);
+});
+test('classify: 6001 in 10-2024 is blocked, and available once both outside alternatives are ticked', () => {
+  const d = real('2027-1/10-2024.json');
+  const s = { passed: [], failed: {}, profile: { year: 1 }, outsideDone: [] };
+  assert.equal(classify(d, s).statuses['6001'].status, 'blocked');
+  s.outsideDone = ['אנגלית - מכינה בדרך לאפקה'];
+  assert.equal(classify(d, s).statuses['6001'].status, 'blocked', 'one of two requirements met');
+  s.outsideDone.push('אנגלית1 - מכינה בדרך לאפקה');
+  assert.equal(classify(d, s).statuses['6001'].status, 'available');
 });
