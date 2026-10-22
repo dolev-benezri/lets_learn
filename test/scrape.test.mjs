@@ -622,6 +622,23 @@ test('cachedRequester: seen gets every answer with the cached one it replaced', 
   ]);
 });
 
+test('cachedRequester budget (H4): past the budget a stale answer waits for the next night; a missing one is still fetched', async () => {
+  const dir = join(dirs().status, '..', 'cache4'),
+    calls = [];
+  const inner = async (q) => (calls.push(q), `<p>${calls.length}</p>`);
+  const r = cachedRequester(inner, dir, { ttl: () => 0, budget: 2 });
+  const tick = () => new Promise((res) => setTimeout(res, 5));
+  await r('prgname=Enter_Search');
+  assert.equal(await r('prgname=S_a&x=1'), '<p>2</p>');
+  await tick();
+  assert.equal(await r('prgname=S_a&x=1'), '<p>3</p>', 'the session replay is not counted: 1 of 2 used, so the stale answer is fetched');
+  assert.equal(await r('prgname=S_a&x=2'), '<p>4</p>', 'not cached: fetched even over budget');
+  await tick();
+  assert.equal(await r('prgname=S_a&x=1'), '<p>3</p>', 'stale but cached, budget spent: kept for the next night');
+  assert.deepEqual(r.deferred, ['prgname=S_a&x=1']);
+  assert.equal(calls.length, 4);
+});
+
 test('cachedRequester with a ttl: a stale answer is fetched again, a fresh one is not', async () => {
   const dir = join(dirs().status, '..', 'cache2'),
     calls = [];
