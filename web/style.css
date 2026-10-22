@@ -486,6 +486,7 @@ main { min-width:0; }
   background:var(--surface);
 }
 .crs .seg legend { font-weight:500; }
+.crs-row { display:flex; flex-wrap:wrap; align-items:center; column-gap:14px; } /* grade and "failed before": one line when the card is wide */
 .profile .spec-sec { margin-top:12px; } .profile .check { margin-top:4px; } .spec-sec .hint { margin-top:6px; }
 .check:has(input:disabled) { opacity:.45; cursor:not-allowed; }
 .specs {

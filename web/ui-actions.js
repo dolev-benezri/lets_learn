@@ -483,6 +483,11 @@ export const CHG = {
   failCount: (el) => {
     app.state.failed[el.dataset.id] = Number(el.value);
   },
+  // a passed course: a failure before passing still counts (regulations 11.4.1, 11.5.x)
+  failedBefore: (el) => {
+    if (el.checked) app.state.failed[el.dataset.id] ||= 1;
+    else delete app.state.failed[el.dataset.id];
+  },
   w: (el) => {
     app.state.weights[el.dataset.w] = Number(el.value);
   },

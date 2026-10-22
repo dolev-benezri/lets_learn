@@ -182,9 +182,11 @@ export function classify(data, state) {
 
   const counts = Object.values(failed).filter((n) => n > 0);
   const warnings = [];
-  if (counts.some((n) => n >= 3)) warnings.push('3 כישלונות באותו קורס: הרחקה (תקנון 11.5.2)');
+  // "may": the faculty decides; the tool only points to the advisor
+  const MAY_EXPEL = 'מצב זה יכול להוות הרחקה מהלימודים. כדאי לשוחח עם ההכוון האקדמי.';
+  if (counts.some((n) => n >= 3)) warnings.push(`שימו לב: 3 כישלונות באותו קורס. לפי התקנון (11.5.2) ${MAY_EXPEL}`);
   // 11.4.1/11.5.1 count courses, not attempts
-  if (counts.length >= 4) warnings.push('ציון נכשל ב-4 קורסים ומעלה במצטבר: הרחקה (תקנון 11.5.1)');
+  if (counts.length >= 4) warnings.push(`שימו לב: ציון נכשל ב-4 קורסים ומעלה. לפי התקנון (11.5.1) ${MAY_EXPEL}`);
   if (!warnings.length) { // expulsion outranks probation
     const avg = gradeAverage(data, state).avg,
       year = studyYear(data, state),
@@ -196,9 +198,24 @@ export function classify(data, state) {
     // 11.4.4: checked at the end of each of years א'-ג'; progress counts the required lists of the years behind
     if (year >= 2 && year <= 4 && prog.required && !prog.short && prog.ratio < 0.7)
       why.push(`הושלמו ${Math.round(prog.ratio * 100)}% מתוכנית השנים הקודמות, פחות מ-70% (11.4.4)`);
-    if (why.length) warnings.push(`מעמד "על תנאי" (תקנון 11.4): ${why.join('; ')}`);
+    if (why.length) warnings.push(`שימו לב: ${why.join('; ')}. לפי התקנון (11.4) מצב זה יכול להוביל למעמד "על תנאי". כדאי לשוחח עם ההכוון האקדמי.`);
   }
   return { statuses, warnings };
+}
+
+// The one-time note on failed courses: those to retake that were not noted yet. `seen` keeps only courses still failed and not
+// passed (a course not offered this semester stays noted), so passing and failing again notes a course again. text: null when nothing is new.
+export function retakeNotice(data, cls, state, name) {
+  const open = (id) => state.failed[id] && !state.passed.includes(id),
+    fresh = Object.keys(cls.statuses).filter((id) => cls.statuses[id].status === 'retake' && !state.retakeSeen.includes(id)),
+    one = fresh.length === 1;
+  return {
+    seen: [...state.retakeSeen.filter(open), ...fresh],
+    text: fresh.length
+      ? `שימו לב: נכשלת ב${fresh.map((id) => name(data.courses[id].name)).join(', ')}. מומלץ לקחת ${one ? 'אותו' : 'אותם'} שוב בסמסטר הבא ` +
+        `שבו ${one ? 'הוא נלמד' : 'הם נלמדים'} (תקנון 11.6.1). כברירת מחדל ${one ? 'הוא נכנס' : 'הם נכנסים'} למערכת כ״חובה״, ואפשר לשנות.`
+      : null
+  };
 }
 
 // Year view only: a blocked course offered in ב׳ whose missing prerequisites are candidates in א׳ becomes afterA

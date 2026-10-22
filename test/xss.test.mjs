@@ -403,6 +403,33 @@ test('a program without specializations shows no specialization picker and no ca
   assert.ok(progressHtml({ prog, opened: 0, year: 3, specs: [], areas: 2 }).includes('בחרו התמחות'));
 });
 
+test('a passed course has "נכשלתי בעבר": ticking counts one failure, unticking deletes it, failed then passed keeps the count', async () => {
+  const { CHG } = await import('../web/ui-actions.js');
+  const { setStatus } = await import('../web/rules.js');
+  const id = app.state.passed.find((x) => !app.state.exempt?.includes(x) && !app.state.failed[x]);
+  const card = (name) => {
+    document.body.dataset.view = 'me';
+    run(name, () => renderMe());
+    const html = writes.filter((w) => w.scope === name).map((w) => w.html).join('');
+    return parse(html).querySelector(`.crs:has(input[data-chg="failedBefore"][data-id="${id}"])`);
+  };
+  const box = (c) => c.querySelector('input[data-chg="failedBefore"]');
+  let c = card('fb-none');
+  assert.ok(c && !box(c).hasAttribute('checked') && !c.querySelector('[data-chg="failCount"]'), 'unticked, no count row');
+  CHG.failedBefore({ checked: true, dataset: { id } });
+  assert.equal(app.state.failed[id], 1);
+  c = card('fb-on');
+  assert.ok(box(c).hasAttribute('checked') && c.querySelectorAll('legend').at(-1).text === 'כמה פעמים?', 'ticked, titled count row');
+  CHG.failedBefore({ checked: false, dataset: { id } });
+  assert.ok(!(id in app.state.failed));
+  setStatus(app.state, id, 'failed');
+  app.state.failed[id] = 2;
+  setStatus(app.state, id, 'passed');
+  assert.equal(app.state.failed[id], 2, 'the count survives the switch to passed');
+  delete app.state.failed[id];
+  document.body.dataset.view = 'plan';
+});
+
 test('a friend name in the summary pills is escaped once, not twice (U1)', () => {
   const res = current(),
     saved = app.state.friends[0].groups;
