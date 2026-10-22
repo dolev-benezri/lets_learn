@@ -186,7 +186,8 @@ export function unitsOf(opt, programs) {
 
 // Answers kept on disk, keyed by the request (so a run can resume or build offline). The session requests are swallowed and replayed before the first real one.
 // ttl(key, html) = how long a cached answer stays good in ms (default: forever); an older one is fetched again.
-export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity } = {}) {
+// seen(key, html, old) hears every answer returned, with the cached answer it replaced (the same html on a cache hit, undefined when nothing was cached).
+export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {} } = {}) {
   const session = [];
   let replayed = false;
   return async (query, form) => {
@@ -196,11 +197,17 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
     }
     const key = query ?? new URLSearchParams(form).toString();
     const file = `${dir}/${createHash('sha1').update(key).digest('hex')}.html`;
+    let old,
+      fresh = false;
     try {
-      const html = await readFile(file, 'utf8');
-      if (offline || Date.now() - (await stat(file)).mtimeMs <= ttl(key, html)) return html;
+      old = await readFile(file, 'utf8');
+      fresh = offline || Date.now() - (await stat(file)).mtimeMs <= ttl(key, old);
     } catch {
       /* not cached */
+    }
+    if (fresh) {
+      seen(key, old, old);
+      return old;
     }
     if (offline) throw new Error(`offline and not in the cache: ${key}`);
     if (!replayed) {
@@ -211,6 +218,7 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
     await mkdir(dir, { recursive: true });
     await writeFile(`${file}.tmp`, html);
     await rename(`${file}.tmp`, file); // a run killed mid-write (CI timeout) leaves no truncated answer behind
+    seen(key, html, old);
     return html;
   };
 }
@@ -229,6 +237,37 @@ export function nightlyTtl(key, html, now = Date.now()) {
   if (key.startsWith('prgname=S_LOOK_FOR_NOSE'))
     return !parseGroups(html).length ? weekly(key) : otherNight(key, now) ? 1.5 * DAY : 0;
   return weekly(key);
+}
+
+// H1 (research A1): the cohorts of one list code mostly answer alike, and when one changed, all of them did. So a cohort whose cached list equals an answer
+// an earlier cohort gave tonight costs no request, and one that equals the answer an earlier cohort just replaced is fetched now. run() asks the cohorts in
+// a fixed order, so the first of each alike group (its representative) keeps the weekly clock. One policy per run: it remembers tonight's answers.
+export function nightlyPolicy(now = Date.now) {
+  const current = new Map(),
+    replaced = new Map();
+  const code = (key) => key.match(/^prgname=S_SHOW_PROGS&arguments=-N\d+,-N(\d+)$/)?.[1];
+  const sig = (html) => {
+    const p = parseProgram(html);
+    return JSON.stringify([p.minCredits, p.courses]); // not the name: it differs by cohort
+  };
+  const add = (map, c, s) => map.set(c, (map.get(c) ?? new Set()).add(s));
+  return {
+    ttl(key, html) {
+      const c = code(key);
+      if (c) {
+        const s = sig(html);
+        if (current.get(c)?.has(s)) return Infinity;
+        if (replaced.get(c)?.has(s)) return 0;
+      }
+      return nightlyTtl(key, html, now());
+    },
+    seen(key, html, old) {
+      const c = code(key);
+      if (!c) return;
+      add(current, c, sig(html));
+      if (old !== undefined && sig(old) !== sig(html)) add(replaced, c, sig(old));
+    }
+  };
 }
 
 // Wait out the site's hourly limit instead of failing: sleep until the hour it names (Jerusalem time), start a new session, ask again. Gives up past maxWaitMs.
@@ -438,11 +477,9 @@ async function main() {
   });
   const made = makeRequester({ delay: Number(opt.delay) });
   const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
+  const policy = opt.nightly ? nightlyPolicy() : {};
   const request = opt.cache
-    ? cachedRequester(live, await yearCache(opt.cache, opt.year), {
-        offline: opt.offline,
-        ttl: opt.nightly ? nightlyTtl : undefined
-      })
+    ? cachedRequester(live, await yearCache(opt.cache, opt.year), { offline: opt.offline, ttl: policy.ttl, seen: policy.seen })
     : live;
   console.log(await run({ opt, request }));
 }
