@@ -15,6 +15,7 @@ import {
   catalogOrder,
   yearCache
 } from '../scripts/scrape.mjs';
+import { parseProgram } from '../scripts/parse.mjs';
 
 const throttled = readFileSync('scripts/fixtures/throttled.html', 'utf8');
 const rejected = readFileSync('scripts/fixtures/rejected.html', 'utf8');
@@ -437,6 +438,26 @@ test('run: programs that share lists and courses fetch each once; exams once per
       .sort(),
     ['2027-1/77-2025', '2027-1/77-2026', '2027-1/78-2026']
   );
+});
+
+test('run: a course that no list marks נלמד costs no group or details request; one offered in any list is fetched', async () => {
+  const notTaught = fx('prog-30001.html').replace('>נלמד<', '>לא נלמד<'); // the first course becomes unoffered
+  const first = parseProgram(notTaught).courses[0],
+    asked = [],
+    real = site();
+  assert.equal(first.offered, false, 'the fixture edit worked');
+  const request = async (query, form) => {
+    if (query?.startsWith('prgname=S_LOOK_FOR_NOSE')) asked.push(query.split('-N')[1]);
+    if (query?.startsWith('prgname=S_SHOW_PROGS')) return query.endsWith('-N30001') ? notTaught : fx('prog-30001.html');
+    return real(query, form);
+  };
+  const go = (lists) =>
+    run({ opt, request, programs: { 30: cfg({ lists }) }, dataDir: join(dirs().status, '..'), log: () => {}, check: noErrors });
+  await go([30001]);
+  assert.ok(asked.length && !asked.includes(first.id), 'unoffered in its only list: skipped');
+  asked.length = 0;
+  await go([30001, 30002]);
+  assert.ok(asked.includes(first.id), 'offered in 30002: fetched');
 });
 
 test('run: a check failing in one program writes nothing for any program', async () => {
