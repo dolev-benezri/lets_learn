@@ -1,6 +1,6 @@
 // The status page (#me): profile, specialization form, course lists with their states, grade-sheet import.
 import { app, esc, refresh } from './app.js';
-import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs } from './rules.js';
+import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs, recordWarnings, reqContext, reqMet } from './rules.js';
 import { icon } from './ui-grid.js';
 import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
@@ -35,6 +35,22 @@ const turnPick = (cur) =>
     ? `<label class="field pick">התור שלי בהרשמה <select data-chg="turn" data-k="turn"><option value="">לא יודע/ת</option>
   ${app.settings.turns.map((t) => `<option value="${esc(t.id)}"${t.id === cur ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>`
     : '');
+// Soft warnings on an impossible record (rules.js recordWarnings), and the courses that may ask about an outside alternative
+// (the yearly mandatory lists up to the study year, and English: electives, seminars and later years would fill the page with
+// questions not due yet), computed once per render.
+let recWarn = {},
+  askOutside = new Set();
+// A not-passed course whose requirement can also be met outside the program (e.g. "מכינה בדרך לאפקה") asks whether it was done:
+// shown while the in-program alternatives leave it unmet, so a ticked box stays to untick.
+function outsideBoxes(id, k) {
+  const s = app.state,
+    inProgram = { ...reqContext(s), outside: new Set() };
+  const names = [...new Set(app.data.courses[id].prereqs
+    .filter((p) => p.kind === 'קדם' && p.anyOf.some((a) => a.id) && !reqMet(p, inProgram))
+    .flatMap((p) => p.anyOf.filter((a) => !a.id).map((a) => a.name)))];
+  return names.map((n, i) => `<label class="check"><input type="checkbox" data-chg="outsideDone" data-name="${esc(n)}"
+    data-k="od-${esc(k)}-${i}"${s.outsideDone.includes(n) ? ' checked' : ''}> עשיתי את ${nameHtml(n)}</label>`).join('');
+}
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
   const s = app.state,
@@ -60,7 +76,8 @@ function chip(id, li) {
       <label class="check"><input type="checkbox" data-chg="failedBefore" data-id="${esc(id)}" data-k="fb-${esc(k)}"
       aria-label="${esc(`נכשלתי בעבר ב${nm}`)}"${n ? ' checked' : ''}> נכשלתי בעבר בקורס זה</label></div>`
         : ''
-  }${n ? seg(`fc-${k}`, st === 'passed' ? 'כמה פעמים?' : 'כמה פעמים נכשלתי?', FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`, true) : ''}</div>`;
+  }${n ? seg(`fc-${k}`, st === 'passed' ? 'כמה פעמים?' : 'כמה פעמים נכשלתי?', FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`, true) : ''}${
+    st === 'none' && askOutside.has(id) ? outsideBoxes(id, k) : ''}${(recWarn[id] ?? []).map((t) => `<p class="hint warn-text">${esc(t)}</p>`).join('')}</div>`;
 }
 
 // The weighted-average line; its container is always rendered so a grade change can refresh just this line.
@@ -212,6 +229,14 @@ export function renderMe() {
     return;
   }
   const { data, state, cls } = app;
+  recWarn = cls ? recordWarnings(data, state) : {};
+  const upTo = studyYear(data, state);
+  askOutside = new Set(data.lists
+    .filter((l) => {
+      const y = ' אבגדה'.indexOf(l.name.match(/חובה שנה (\S)'/)?.[1] ?? ' ');
+      return (y > 0 && y <= upTo) || /חובה.*אנגלית/.test(l.name);
+    })
+    .flatMap((l) => l.courses));
   if (gated()) {
     el.innerHTML = `<div class="gate">${gateHtml()}</div>`;
     return;

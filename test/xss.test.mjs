@@ -1201,3 +1201,41 @@ test('report a mistake: a real mailto link in the footer and the popover, only w
   );
   app.settings = keep;
 });
+
+test('#me: an impossible record warns under the course; an outside alternative has a checkbox that unblocks it', async () => {
+  const { CHG } = await import('../web/ui-actions.js');
+  const d = app.data,
+    saved = structuredClone(app.state);
+  const [withPre, pre] = Object.entries(d.courses)
+    .flatMap(([id, c]) => c.prereqs.filter((p) => p.kind === 'קדם' && p.anyOf.length === 1 && p.anyOf[0].id).map((p) => [id, p.anyOf[0].id]))
+    .find(([id, p]) => d.courses[p] && id !== p);
+  const onPage = new Set(d.lists.flatMap((l) => l.courses));
+  const blockedId = [...onPage].find((id) => d.courses[id] && id !== withPre && id !== pre && !d.courses[id].prereqs.length && !/^600/.test(id));
+  const outName = `מכינה${P}`;
+  // every semester's copy: refresh() rebuilds app.data (the year view merges them)
+  const setPre = (pr) => Object.values(app.sem).forEach((x) => x.courses[blockedId] && (x.courses[blockedId].prereqs = pr));
+  setPre([{ kind: 'קדם', anyOf: [{ id: pre, name: d.courses[pre].name }, { id: null, name: outName }] }]);
+  Object.assign(app.state, { passed: [withPre], failed: {}, exempt: [], outsideDone: [] });
+  app.state.profile.amirnet = null; // no English exemption standing in for the prerequisite
+  refresh();
+  const page = (name) => {
+    document.body.dataset.view = 'me';
+    run(name, () => renderMe());
+    return parse(writes.filter((w) => w.scope === name).map((w) => w.html).join(''));
+  };
+  let html = page('rw-1');
+  assert.ok(html.text.includes('הוא קדם, ולא סומן שעברת אותו'), 'the warning is rendered');
+  const boxOf = (h) => h.querySelectorAll('input[data-chg="outsideDone"]').find((b) => b.getAttribute('data-name') === outName);
+  assert.ok(boxOf(html), 'the outside alternative has a checkbox');
+  assert.equal(app.cls.statuses[blockedId].status, 'blocked');
+  CHG.outsideDone({ checked: true, dataset: { name: outName } });
+  refresh();
+  assert.deepEqual(app.state.outsideDone, [outName]);
+  assert.notEqual(app.cls.statuses[blockedId].status, 'blocked');
+  html = page('rw-2');
+  assert.ok(boxOf(html)?.hasAttribute('checked'), 'a ticked box stays shown, to untick it');
+  setPre([]);
+  app.state = saved;
+  refresh();
+  document.body.dataset.view = 'plan';
+});
