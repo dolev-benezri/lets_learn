@@ -38,6 +38,16 @@ Course card (`web/ui-me.js` `chip`):
 5. Test: ticking adds a failure, unticking removes it, "נכשלתי" then "עברתי" keeps the count (where the existing me-page tests live).
 6. Check in the browser at 375px and desktop: card height, wrap, no horizontal scroll. `npm test`, `npm run test:browser`.
 
+## Added 2026-10-22 (owner, after the first round)
+
+- Probation (11.4) is softened like expulsion: `שימו לב: <why>. לפי התקנון (11.4) מצב זה יכול להוביל למעמד "על תנאי". כדאי לשוחח עם ההכוון האקדמי.`
+- A one-time note when building the plan: leaving "המצב שלי" with a course to retake opens a dialog
+  "שימו לב: נכשלת ב-X. מומלץ לקחת אותו שוב בסמסטר הבא שבו הוא נלמד (תקנון 11.6.1). כברירת מחדל הוא נכנס למערכת כ״חובה״, ואפשר לשנות."
+  with one button, "הבנתי". Several new failures share one dialog. `state.retakeSeen` remembers the noted courses (over refreshes);
+  a course drops out of it when it is passed or no longer failed, so failing it again notes it again.
+  Code: `retakeNotice` in `web/rules.js` (tested in `test/rules.test.mjs`), shown from `renderRoute` in `web/ui-plan.js`
+  with `askConfirm(text, { ok: 'הבנתי', cancel: null })` (`web/ui-dialog.js`: `cancel: null` leaves one button).
+
 ## Not in this change
 
 Exemption from English by the psychometric English section, beside the Amirnet score: needs research on the official thresholds first.

@@ -43,6 +43,7 @@ export const DEFAULT = {
   specDraft: null,
   // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   yearIds: [],
+  retakeSeen: [], // failed courses whose "take it again" note was shown (rules.js retakeNotice)
   weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
   constraints: {
     dayOff: [6],
@@ -178,6 +179,7 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   // shape only (reconcileSpecs checks it against the data); a complete choice lives in profile.specs
   if (draft && draft.length === 1 && /^[a-z][a-z0-9]{0,19}$/.test(draft[0])) out.specDraft = draft;
   out.yearIds = strs(raw.yearIds, 60, 20) ?? [];
+  out.retakeSeen = strs(raw.retakeSeen, 200, 20) ?? [];
   if (['year', 'א', 'ב', 'קיץ'].includes(raw.scope)) out.scope = raw.scope;
   if (['א', 'even', 'ב'].includes(raw.load)) out.load = raw.load;
   // older saves: a year or another track was a choice
