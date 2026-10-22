@@ -254,8 +254,8 @@ export function renderMe() {
   const gradeMsg = `<p class="hint" id="gradeMsg" role="status">${esc(ui.gradeMsg)}</p>`;
   const profile = `<section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
           ${identityPick(state.profile.year, true)}${unverified}
-          <label class="field">ציון אמירנט <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
-            value="${esc(state.profile.amirnet ?? '')}"><span class="hint">ריק אם לא ידוע</span></label>
+          <label class="field">ציון אנגלית (אמירנט או פרק האנגלית בפסיכומטרי) <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
+            value="${esc(state.profile.amirnet ?? '')}"><span class="hint">סולם 50–150. ריק אם לא ידוע. יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.</span></label>
           ${turnPick(state.profile.turn)}
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>

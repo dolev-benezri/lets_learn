@@ -184,7 +184,7 @@ const english = () => {
 test('amirnet 110: 6000/6001 exempt, 6002 unblocked; done wins over exempt', () => {
   const { statuses } = classify(english(), { passed: [], failed: {}, profile: { year: null, amirnet: 110 } });
   assert.deepEqual([statuses[6000].status, statuses[6001].status], ['exempt', 'exempt']);
-  assert.equal(statuses[6000].reasons[0], 'פטור (ציון אמירנט)');
+  assert.equal(statuses[6000].reasons[0], 'פטור (ציון אנגלית)');
   assert.equal(statuses[6002].status, 'available');
   assert.equal(statuses[6003].status, 'blocked');
   assert.equal(
@@ -361,7 +361,7 @@ test('English without an Amirnet score: blocked levels say to enter it, and a do
     }
   };
   const st = classify(d, { passed: [], profile: { amirnet: null } }).statuses;
-  assert.match(st[6001].reasons.at(-1), /הזינו ציון אמירנט/);
+  assert.match(st[6001].reasons.at(-1), /הזינו ציון אנגלית \(אמירנט או פסיכומטרי\)/);
   assert.equal(st[6002].reasons[0], 'חסום: דורש בסיסי ← טרום (תקנון 7.4)');
   assert.equal(classify(d, { passed: [], profile: { amirnet: 90 } }).statuses[6001].status, 'available');
 });
