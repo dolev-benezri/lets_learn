@@ -539,7 +539,7 @@ test('cachedRequester: a cached answer costs no request; the session requests ar
 // ---- nightly cache policy and waiting out the hourly limit ----
 import { utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { nightlyTtl, patient } from '../scripts/scrape.mjs';
+import { nightlyTtl, nightlyPolicy, patient } from '../scripts/scrape.mjs';
 
 test('nightlyTtl: exams every other night until published then weekly; an offered course\'s groups every other night; details 14-16 days; the rest weekly', () => {
   const DAY = 86400e3,
@@ -581,6 +581,45 @@ test('nightlyTtl: weekly answers expire over 7-9 days by key, so a full refresh 
     days,
     'the same key always gets the same ttl'
   );
+});
+
+test('nightlyPolicy (H1): a list that answered like an earlier cohort tonight is kept; one whose representative changed is fetched', () => {
+  const DAY = 86400e3,
+    weekly = (ms) => [7, 8, 9].includes(ms / DAY),
+    A = fx('prog-30001.html'),
+    B = A.replace('>נלמד<', '>לא נלמד<');
+  const key = (start, code = 30001) => `prgname=S_SHOW_PROGS&arguments=-N${start},-N${code}`;
+  const p = nightlyPolicy(() => 20000 * DAY);
+  p.seen(key(2024), A, A);
+  assert.equal(p.ttl(key(2025), A), Infinity, 'same as 2024 tonight: no request');
+  assert.ok(weekly(p.ttl(key(2026), B)), 'answered differently before: its own weekly clock');
+  assert.ok(weekly(p.ttl(key(2025, 30002), A)), 'another code is not affected');
+  const q = nightlyPolicy(() => 20000 * DAY);
+  assert.ok(weekly(q.ttl(key(2025), A)), 'a new policy starts empty');
+  q.seen(key(2024), B, A);
+  assert.equal(q.ttl(key(2025), A), 0, 'its representative changed tonight: fetched now');
+  assert.equal(q.ttl(key(2026), B), Infinity, 'already equal to the new answer: kept');
+  assert.equal(q.ttl('PRGNAME=S_EXAMS&ARGUMENTS=R1C28', fx('exams-nodata.html')), 1.5 * DAY, 'other keys: nightlyTtl');
+});
+
+test('cachedRequester: seen gets every answer with the cached one it replaced', async () => {
+  const dir = join(dirs().status, '..', 'cache3'),
+    got = [];
+  let n = 0;
+  const inner = async (q) => (q?.includes('Enter_Search') ? '' : `<p>${++n}</p>`);
+  const r = cachedRequester(inner, dir, { ttl: (k) => (k.includes('old') ? 0 : Infinity), seen: (...a) => got.push(a) });
+  await r('prgname=Enter_Search');
+  await r('prgname=S_a&x=keep');
+  await r('prgname=S_a&x=keep');
+  await r('prgname=S_a&x=old');
+  await new Promise((res) => setTimeout(res, 5));
+  await r('prgname=S_a&x=old');
+  assert.deepEqual(got, [
+    ['prgname=S_a&x=keep', '<p>1</p>', undefined],
+    ['prgname=S_a&x=keep', '<p>1</p>', '<p>1</p>'],
+    ['prgname=S_a&x=old', '<p>2</p>', undefined],
+    ['prgname=S_a&x=old', '<p>3</p>', '<p>2</p>']
+  ]);
 });
 
 test('cachedRequester with a ttl: a stale answer is fetched again, a fresh one is not', async () => {
