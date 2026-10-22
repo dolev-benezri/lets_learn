@@ -348,12 +348,13 @@ test('waitingOnEarlier: only this year\'s courses blocked by an earlier year\'s 
   app.data = dataset(30, 2026, { lists }); // year 2
   app.cls = {
     statuses: {
-      b: { status: 'blocked', blockedBy: ['a'] },
-      c: { status: 'blocked', blockedBy: ['b'] },
-      d: { status: 'available' }
+      b: { status: 'blocked', blockedBy: [['a']] },
+      c: { status: 'blocked', blockedBy: [['b']] },
+      d: { status: 'blocked', blockedBy: [['c', 'a']] }
     }
   };
-  assert.deepEqual(waitingOnEarlier(), ['b']);
+  assert.deepEqual(waitingOnEarlier(), ['b', 'd'], 'an earlier-year course as a second alternative counts too');
+  app.cls.statuses.d = { status: 'available' };
   app.cls.statuses.b = { status: 'available' };
   assert.deepEqual(waitingOnEarlier(), [], 'a chain inside this year is normal, not a missed mark');
 });

@@ -155,7 +155,8 @@ export function classify(data, state) {
       statuses[id] = {
         status: 'blocked',
         reasons: [],
-        blockedBy: hard.map((p) => p.anyOf.find((a) => a.id)?.id ?? null)
+        // one group per unmet requirement: its in-program alternatives, any one of which would do
+        blockedBy: hard.map((p) => p.anyOf.filter((a) => a.id).map((a) => a.id))
       };
       continue;
     }
@@ -179,15 +180,18 @@ export function classify(data, state) {
     if (s?.status === 'blocked' && !seen.has(id)) {
       seen.add(id);
       // two requirements naming the same course: once
-      return `${c.name} ← ${[...new Set(s.blockedBy)].map((b) => chain(b, seen)).filter(Boolean).join(' + ')}`;
+      return `${c.name} ← ${unique(s.blockedBy).map((g) => anyChain(g, seen)).filter(Boolean).join(' + ')}`;
     }
     return c.name;
   };
+  // a requirement group: its alternatives joined by "או", each traced on its own (one branch's visits don't hide another's)
+  const anyChain = (g, seen = new Set()) => g.map((id) => chain(id, new Set(seen))).filter(Boolean).join(' או ');
+  const unique = (groups) => [...new Map(groups.map((g) => [g.join(), g])).values()];
   // the English level comes from the Amirnet score: without it every level looks blocked
   const noScore = !Number.isFinite(state.profile?.amirnet);
   for (const [id, s] of Object.entries(statuses)) {
     if (s.status !== 'blocked') continue;
-    s.reasons = [...new Set(s.blockedBy.map((b) => `חסום: דורש ${chain(b)} (תקנון 7.4)`))];
+    s.reasons = [...new Set(s.blockedBy.map((g) => `חסום: דורש ${anyChain(g)} (תקנון 7.4)`))];
     if (noScore && ENGLISH.includes(id))
       s.reasons.push(`הזינו ציון אנגלית (אמירנט או פסיכומטרי) ב"המצב שלי" כדי לדעת מאיזו רמה מתחילים (${AMIRNET[0]} ומעלה פוטר מהמכינה)`);
   }

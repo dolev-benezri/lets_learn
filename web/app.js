@@ -387,7 +387,7 @@ export function waitingOnEarlier() {
   const earlier = new Set(earlierYears());
   return yearCourses().filter((id) => {
     const s = app.cls.statuses[id];
-    return s?.status === 'blocked' && s.blockedBy?.some((p) => earlier.has(p));
+    return s?.status === 'blocked' && s.blockedBy?.some((g) => g.some((p) => earlier.has(p)));
   });
 }
 
