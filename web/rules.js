@@ -288,7 +288,10 @@ export function setStatus(state, id, st) {
   state.passed = state.passed.filter((x) => x !== id);
   if (st !== 'passed' && state.exempt) state.exempt = state.exempt.filter((x) => x !== id);
   if (st === 'passed') state.passed.push(id);
-  if (st === 'none') delete state.failed[id];
+  if (st === 'none') {
+    delete state.failed[id];
+    if (state.grades) delete state.grades[id]; // "not taken" has no grade: a later pass starts without one
+  }
   if (st === 'failed') state.failed[id] ||= 1;
 }
 
@@ -329,7 +332,7 @@ export function missingRequired(data, state) {
 // Credit-weighted average over passed courses that have a grade (courses without credits in the data don't count).
 export function gradeAverage(data, state) {
   let sum = 0, credits = 0;
-  for (const id of state.passed ?? []) {
+  for (const id of new Set(state.passed ?? [])) {
     const g = state.grades?.[id], c = data.courses[id]?.credits ?? 0;
     if (g === undefined || !(c > 0)) continue;
     sum += g * c;

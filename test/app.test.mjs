@@ -543,3 +543,8 @@ test('a save without outsideDone loads with []; a bad entry is dropped', () => {
   assert.deepEqual(normalize({ v: 1, passed: ['A'] }).outsideDone, []);
   assert.deepEqual(normalize({ v: 1, passed: [], outsideDone: ['ok', 3, 'x'.repeat(200)] }).outsideDone, ['ok']);
 });
+
+test('normalize drops duplicate passed ids; a missing list stays null (ensurePassed fills it)', () => {
+  assert.deepEqual(normalize({ v: 1, passed: ['A', 'A', 'B'] }).passed, ['A', 'B']);
+  assert.equal(normalize({ v: 1 }).passed, null);
+});

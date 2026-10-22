@@ -13,7 +13,7 @@ import {
   setUiReset,
   DEFAULT
 } from './app.js';
-import { setStatus, cleanProfile, specRule } from './rules.js';
+import { setStatus, cleanProfile, specRule, classify } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { toIcs } from './ics.js';
 import { advisorHtml } from './advisor.js';
@@ -41,7 +41,7 @@ import { pinsWithoutSplit } from './solver-core.js';
 import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { startTour, dueIntro } from './tour.js';
-import { avgLine, specSave, specView, importGrades, renderMe, enterList } from './ui-me.js';
+import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel } from './ui-drawer.js';
 
 // ---------- actions ----------
@@ -477,6 +477,9 @@ export const CHG = {
     el.value = g ?? ''; // snap an invalid entry back
     const avg = $('gradeAvg');
     if (avg) avg.innerHTML = avgLine(); // just this line: re-rendering the page would drop the caret
+    // the average feeds the regulation warnings (11.4.2): only they are recomputed and redrawn, the statuses stay
+    if (app.cls) app.cls.warnings = classify(app.data, app.state).warnings;
+    renderRecordRegWarnings();
     return 'save'; // grades do not touch the solver: no new search
   },
   status: (el) => setStatus(app.state, el.dataset.id, el.value),

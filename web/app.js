@@ -142,7 +142,7 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   }
   if (typeof raw.name === 'string' && raw.name.length <= 60) out.name = raw.name;
   const passed = strs(raw.passed, 200, 20);
-  if (passed) out.passed = passed;
+  if (passed) out.passed = [...new Set(passed)];
   if (isObj(raw.failed))
     out.failed = Object.fromEntries(
       Object.entries(raw.failed)
