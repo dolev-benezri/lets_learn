@@ -3,10 +3,11 @@
 import { app, save, refresh, setRenderers, keepFocus, STEPS, routeOf, applyHash } from './app.js';
 import { readHash } from './share.js';
 import { icon } from './ui-grid.js';
-import { trapTab } from './ui-dialog.js';
+import { trapTab, askConfirm } from './ui-dialog.js';
+import { retakeNotice } from './rules.js';
 import './ui-map.js';
 import { popStale, PAGE_NAME } from './ui-text.js';
-import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, $, ui } from './ui-common.js';
+import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, heb, $, ui } from './ui-common.js';
 import { scheduleRun } from './ui-search.js';
 import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
 import { renderMe } from './ui-me.js';
@@ -28,7 +29,10 @@ function renderRoute() {
   document.title = `${gate ? 'התחלה' : PAGE_NAME[view]} · המערכת שלי · אפקה`; // a tab title per step (a11y)
   document.body.classList.toggle('gated', gate);
   // leaving step 1 any way (step bar, link, "הבא") ends the first-visit redirect
-  if (view !== 'me' && app.cls) markOnboarded();
+  if (view !== 'me' && app.cls) {
+    markOnboarded();
+    retakeNote();
+  }
   const at = STEPS.indexOf(gate ? 'me' : view); // the gate question is step 1: nothing is done yet
   for (const a of document.querySelectorAll('.steps a')) {
     const k = STEPS.indexOf(a.dataset.view);
@@ -40,6 +44,14 @@ function renderRoute() {
     renderMe();
     renderReport();
   }
+}
+// Building the plan after marking a failure: one note per failed course, ever (until it is passed and failed again).
+function retakeNote() {
+  const { seen, text } = retakeNotice(app.data, app.cls, app.state, heb);
+  if (seen.join() === app.state.retakeSeen.join()) return;
+  app.state.retakeSeen = seen; // before the dialog: a second render while it is open shows nothing new
+  save();
+  if (text) askConfirm(text, { ok: 'הבנתי', cancel: null });
 }
 const focusView = () => shownTitle()?.focus({ preventScroll: true });
 // Back/forward and the nav links switch views without a new search (a search would reset the shown alternative).
