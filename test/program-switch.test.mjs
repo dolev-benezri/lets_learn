@@ -670,3 +670,12 @@ test('switchTo: the registration turn stays with me, and a cleared turn is not b
   assert.equal(await switchTo(30, 2026), true);
   assert.ok(!('turn' in app.state.profile), 'the stashed program 30 state still had turn t1');
 });
+
+test('switchTo: going back to the current program cancels a switch still loading (J16)', async () => {
+  reset({ ...mine(), program: 30, startYear: 2026 });
+  serve(() => false, (m) => (m?.[3] === '20' ? 60 : 0));
+  const pending = switchTo(20, 2027);
+  assert.equal(await switchTo(30, 2026), false, 'already there: nothing to load');
+  assert.equal(await pending, false, 'the earlier switch is cancelled');
+  assert.equal(app.state.program, 30);
+});

@@ -108,3 +108,15 @@ test('compareToPrevious: an export that lost half the courses is flagged against
     rmSync(dir, { recursive: true });
   }
 });
+
+test('an exam without a time yet (time: null) passes; a time not HH:mm fails (J18)', () => {
+  const withExam = (time) => ({
+    [FILE]: (d) => {
+      firstGroup(d).exams = [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time }];
+      return d;
+    }
+  });
+  assert.deepEqual(check(withExam(null)).errors, []);
+  assert.deepEqual(check(withExam('09:00')).errors, []);
+  assert.equal(check(withExam('9:00')).errors.length, 1);
+});

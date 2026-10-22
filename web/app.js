@@ -528,9 +528,10 @@ let switchGen = 0;
 // Switch program/cohort: every needed file first, the state only after they all arrived (a failed switch changes nothing). A newer choice cancels an older one.
 export async function switchTo(program, startYear) {
   const prev = app.state;
+  // counted before the early returns: going back to the current program cancels a switch still loading
+  const gen = ++switchGen;
   if (!inCatalog(app.catalog, program, startYear) || (prev.program === program && prev.startYear === startYear))
     return false;
-  const gen = ++switchGen;
   let sem;
   try {
     sem = await fetchSemesters({ ...prev, program, startYear });

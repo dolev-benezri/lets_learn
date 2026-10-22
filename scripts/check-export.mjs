@@ -18,6 +18,8 @@ const TYPES = {
   obj: (x) => x !== null && typeof x === 'object' && !Array.isArray(x),
   strOrNull: (x) => x === null || typeof x === 'string',
   hhmm: (x) => typeof x === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x),
+  // an exam whose hour is not published yet: parseExams gives null on purpose
+  hhmmOrNull: (x) => x === null || TYPES.hhmm(x),
   date: (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}/.test(x) && !Number.isNaN(Date.parse(x)),
   day: (x) => Number.isInteger(x) && x >= 1 && x <= 6,
   seats: (x) => Number.isInteger(x) && x >= 0,
@@ -56,7 +58,7 @@ const FIELDS = {
     fetchedAt: ['date']
   },
   meeting: { day: ['day', 1], start: ['hhmm', 1], end: ['hhmm', 1], room: ['str'] },
-  exam: { kind: ['str', 1], moed: ['int', 1], date: ['date', 1], time: ['str', 1] },
+  exam: { kind: ['str', 1], moed: ['int', 1], date: ['date', 1], time: ['hhmmOrNull', 1] },
   catalog: { year: ['int', 1], programs: ['arr', 1] },
   program: { id: ['int', 1], name: ['str', 1], startYears: ['arr', 1] },
 };
