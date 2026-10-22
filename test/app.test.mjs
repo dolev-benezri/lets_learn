@@ -548,3 +548,21 @@ test('normalize drops duplicate passed ids; a missing list stays null (ensurePas
   assert.deepEqual(normalize({ v: 1, passed: ['A', 'A', 'B'] }).passed, ['A', 'B']);
   assert.equal(normalize({ v: 1 }).passed, null);
 });
+
+// J9: a save from last year moves on like a backup link does, in normalize (local load, stash, backup restore)
+test('normalize moves an old-year save on: study year advanced, last year groups and plan dropped', async () => {
+  const { backupLink, readHash } = await import('../web/share.js');
+  const catalog = { year: 2027, programs: [{ id: 30, startYears: [2026] }] };
+  const old = (year, n = 1) => ({
+    v: 1, program: 30, startYear: 2026, year: 2027 - n, semester: 'א', passed: [], profile: { year },
+    pins: ['g'], friends: [{ name: 'f', groups: ['g'] }], semesterOf: { 10016: 'ב' }, yearIds: ['A'], retakeSeen: ['A']
+  });
+  const local = normalize(old(2), catalog);
+  assert.deepEqual([local.profile.year, local.pins, local.friends, local.semesterOf, local.yearIds, local.retakeSeen], [3, [], [], {}, [], []]);
+  const b = await backupLink('https://x.test/', old(2));
+  const viaLink = normalize((await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' })).payload, catalog);
+  assert.deepEqual(viaLink, local, 'the same result through a backup link (no double advance)');
+  for (const [y, n, want] of [[null, 1, null], [1, 1, 2], [4, 1, 5], [5, 1, 5], [2, 2, 4]])
+    assert.equal(normalize(old(y, n), catalog).profile.year, want, `study year ${y}, ${n} year(s) on`);
+  assert.equal(normalize({ ...old(2), year: 2027 }, catalog).profile.year, 2, 'this year: unchanged');
+});

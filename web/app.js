@@ -211,7 +211,15 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
         .filter(([k, v]) => k.length <= 60 && (v === 'prefer' || v === 'avoid'))
         .slice(0, 30)
     );
-  return out;
+  return migrateYear(out, raw.year, out.year);
+}
+// A save from an earlier academic year (local, stashed or a backup link): the record stays; last year's group ids, plan and notes
+// go, and the student is that many years further on. One place, so a backup is not advanced twice.
+export function migrateYear(state, fromYear, toYear) {
+  if (!(typeof fromYear === 'number' && fromYear < toYear)) return state;
+  Object.assign(state, { pins: [], friends: [], semesterOf: {}, yearIds: [], retakeSeen: [] });
+  if (state.profile.year) state.profile.year = cleanProfile({ year: Math.min(5, state.profile.year + toYear - fromYear) }).year;
+  return state;
 }
 
 // A saved program the catalog lacks is never overwritten: without the real catalog nothing is saved this visit; a program the site dropped is kept aside.
