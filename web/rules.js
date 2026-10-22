@@ -113,6 +113,28 @@ export const reqContext = (state, exempt = amirnetExempt(state.profile?.amirnet)
   outside: new Set(state.outsideDone ?? [])
 });
 
+// The soft warning on a record the regulations would not allow (a faculty exception may): one requirement, unmet by the record.
+// A corequisite is only flagged when never taken: taken together and failed is legitimate. null = nothing to say.
+const SOFT = 'אם קיבלת אישור חריג, אפשר להשאיר.';
+function unmetText(p, failed) {
+  const names = p.anyOf.map((a) => a.name).join(' או '),
+    tried = p.anyOf.some((a) => a.id && failed[a.id]);
+  if (p.kind === 'קדם')
+    return `שים לב: ${names} הוא קדם, ${tried ? 'וסומן שנכשלת בו' : 'ולא סומן שעברת אותו'}. ${SOFT}`;
+  return tried ? null : `שים לב: ${names} הוא קורס מקביל, ולא סומן שלקחת אותו. ${SOFT}`;
+}
+// Courses marked passed (not exempt) or failed whose requirements the record does not meet: { id: [text] }.
+export function recordWarnings(data, state) {
+  const ctx = reqContext(state), failed = state.failed ?? {}, sheet = new Set(state.exempt ?? []), out = {};
+  for (const id of new Set([...(state.passed ?? []), ...Object.keys(failed)])) {
+    const c = data.courses[id];
+    if (!c || sheet.has(id) || ctx.exempt.has(id)) continue;
+    const texts = [...new Set(c.prereqs.filter((p) => !reqMet(p, ctx)).map((p) => unmetText(p, failed)).filter(Boolean))];
+    if (texts.length) out[id] = texts;
+  }
+  return out;
+}
+
 export function classify(data, state) {
   const passed = new Set(state.passed);
   const failed = state.failed ?? {};
@@ -142,10 +164,12 @@ export function classify(data, state) {
       continue;
     }
     if (failed[id]) { // prerequisites were met on the first attempt; a corequisite must still hold with the retake
-      const par = unmetParallel(c);
+      const par = unmetParallel(c),
+        // a retake with a prerequisite the record lacks stays possible (an exception), with the soft warning
+        lacks = c.prereqs.filter((p) => p.kind === 'קדם' && !satisfied(p)).map((p) => unmetText(p, failed));
       statuses[id] = {
         status: 'retake',
-        reasons: [`נכשלת, מוצע ${when} (תקנון 11.6.1)`, ...(par.length ? [parallelNote(par)] : [])],
+        reasons: [`נכשלת, מוצע ${when} (תקנון 11.6.1)`, ...(par.length ? [parallelNote(par)] : []), ...lacks],
         ...(par.length && { missingParallel: parallelIds(par) })
       };
       continue;

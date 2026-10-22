@@ -16,7 +16,8 @@ import {
   specRule,
   validSpecs,
   retakeNotice,
-  reqMet
+  reqMet,
+  recordWarnings
 } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
@@ -551,4 +552,27 @@ test('an OR group whose first alternative is itself blocked renders its chain', 
   const r = classify(data, { passed: [], failed: {} }).statuses.C;
   assert.deepEqual(r.blockedBy, [['B', 'Q']]);
   assert.match(r.reasons[0], /דינמיקה ← פיזיקה-מכניקה או משוואות ← חדו"א 1/);
+});
+
+test('recordWarnings: a passed course whose prerequisite is failed or unmarked; corequisite only when untaken', () => {
+  const d = mini();
+  const w = (s) => recordWarnings(d, { passed: [], failed: {}, exempt: [], ...s });
+  assert.deepEqual(w({ passed: ['B'], failed: { A: 1 } }).B,
+    ['שים לב: פיזיקה-מכניקה הוא קדם, וסומן שנכשלת בו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+  assert.deepEqual(w({ passed: ['B'] }).B,
+    ['שים לב: פיזיקה-מכניקה הוא קדם, ולא סומן שעברת אותו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+  assert.deepEqual(w({ passed: ['P'] }).P,
+    ['שים לב: משוואות הוא קורס מקביל, ולא סומן שלקחת אותו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+  assert.equal(w({ passed: ['P'], failed: { Q: 1 } }).P, undefined, 'taken together and failed is legitimate');
+  assert.equal(w({ passed: ['B'], exempt: ['B'] }).B, undefined, 'an exemption needs no prerequisite');
+  assert.equal(w({ passed: ['A', 'B'] }).B, undefined);
+  assert.deepEqual(w({ passed: null }), {}, 'a fresh state has no record');
+});
+test('recordWarnings + classify: failing 10336 without 90905 warns and stays a retake (30-2026)', () => {
+  const d = real('2027-1/30-2026.json');
+  const s = { passed: [], failed: { 10336: 1 }, exempt: [], profile: { year: 1 } };
+  assert.match(recordWarnings(d, s)['10336'][0], /הוא קדם, ולא סומן שעברת אותו/);
+  const st = classify(d, s).statuses['10336'];
+  assert.equal(st.status, 'retake');
+  assert.ok(st.reasons.some((r) => /הוא קדם, ולא סומן שעברת אותו/.test(r)), st.reasons.join(' | '));
 });
