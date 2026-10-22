@@ -128,13 +128,7 @@ export async function readHash(hash, { year, semester }) {
     if (typeof payload.startYear === 'number') rebuilt.startYear = payload.startYear;
     for (const [k, shape] of Object.entries(PERSISTED)) if (SHAPE[shape](payload[k])) rebuilt[k] = payload[k];
     if (rebuilt.profile) rebuilt.profile = cleanProfile(rebuilt.profile);
-    if (lastYear) {
-      // group ids don't carry across years; the student is a year further on
-      for (const k of ['pins', 'semesterOf', 'friends']) delete rebuilt[k];
-      if (rebuilt.profile?.year)
-        rebuilt.profile.year = cleanProfile({ year: Math.min(5, rebuilt.profile.year + year - payload.year) }).year;
-    }
-
+    // last year's backup moves on to this year at restore (app.js normalize -> migrateYear), like a local save
     return { type: 'backup', payload: rebuilt };
   }
 }

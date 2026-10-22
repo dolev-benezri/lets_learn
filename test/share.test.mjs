@@ -239,11 +239,12 @@ test('a backup from last year keeps the record, drops last year’s groups and m
   const b = await backupLink('https://x.test/', old);
   const r = await readHash(b.slice(b.indexOf('#')), { year: 2028, semester: 'א' });
   assert.equal(r.type, 'backup');
-  assert.deepEqual(r.payload.failed, { 90903: 1 });
-  assert.equal(r.payload.pins, undefined);
-  assert.equal(r.payload.semesterOf, undefined);
-  assert.equal(r.payload.friends, undefined);
-  assert.equal(r.payload.profile.year, 3);
+  // the move to the new year happens at restore (app.js normalize -> migrateYear), as for a local save
+  const { normalize } = await import('../web/app.js');
+  const n = normalize(r.payload, { year: 2028, programs: [{ id: r.payload.program, startYears: [r.payload.startYear ?? 2026] }] });
+  assert.deepEqual(n.failed, { 90903: 1 });
+  assert.deepEqual([n.pins, n.semesterOf, n.friends], [[], {}, []]);
+  assert.equal(n.profile.year, 3);
   const f = await friendLink('https://x.test/', old, ['G1']);
   assert.match((await readHash(f.slice(f.indexOf('#')), { year: 2028, semester: 'א' })).error, /סמסטר אחר/);
 });
