@@ -29,6 +29,9 @@ const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
 const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolev-benezri/lets_learn)';
 const SEMESTER_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
+// Answers fetched in one nightly run: the site allows ~400 an hour, and the 2 session requests and a few retries fit in the rest, so a night never waits
+// for the clock hour (research H4). What is left waits for the next night.
+const NIGHT_BUDGET = 380;
 
 export class ThrottledError extends Error {
   constructor(until) {
@@ -187,10 +190,14 @@ export function unitsOf(opt, programs) {
 // Answers kept on disk, keyed by the request (so a run can resume or build offline). The session requests are swallowed and replayed before the first real one.
 // ttl(key, html) = how long a cached answer stays good in ms (default: forever); an older one is fetched again.
 // seen(key, html, old) hears every answer returned, with the cached answer it replaced (the same html on a cache hit, undefined when nothing was cached).
-export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {} } = {}) {
-  const session = [];
-  let replayed = false;
-  return async (query, form) => {
+// budget = how many answers to fetch (the session replay not counted); past it a stale cached answer is returned as is and its key goes to request.deferred.
+// An answer that is not cached at all is fetched even past the budget.
+export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = Infinity } = {}) {
+  const session = [],
+    deferred = [];
+  let replayed = false,
+    fetched = 0;
+  const request = async (query, form) => {
     if (query === 'prgname=Enter_Search' || form?.PRGNAME === 'Enter_Search') {
       session.push([query, form]);
       return '';
@@ -205,7 +212,8 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
     } catch {
       /* not cached */
     }
-    if (fresh) {
+    if (fresh || (old !== undefined && fetched >= budget)) {
+      if (!fresh) deferred.push(key);
       seen(key, old, old);
       return old;
     }
@@ -214,6 +222,7 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
       replayed = true;
       for (const [q, f] of session) await inner(q, f);
     }
+    fetched++;
     const html = await inner(query, form);
     await mkdir(dir, { recursive: true });
     await writeFile(`${file}.tmp`, html);
@@ -221,6 +230,8 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
     seen(key, html, old);
     return html;
   };
+  request.deferred = deferred;
+  return request;
 }
 
 const DAY = 86400e3;
@@ -479,9 +490,16 @@ async function main() {
   const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
   const policy = opt.nightly ? nightlyPolicy() : {};
   const request = opt.cache
-    ? cachedRequester(live, await yearCache(opt.cache, opt.year), { offline: opt.offline, ttl: policy.ttl, seen: policy.seen })
+    ? cachedRequester(live, await yearCache(opt.cache, opt.year), {
+        offline: opt.offline,
+        ttl: policy.ttl,
+        seen: policy.seen,
+        budget: opt.nightly ? NIGHT_BUDGET : Infinity
+      })
     : live;
-  console.log(await run({ opt, request }));
+  const summary = await run({ opt, request });
+  if (request.deferred?.length) console.error(`deferred ${request.deferred.length} stale answers to the next night`);
+  console.log(summary);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
