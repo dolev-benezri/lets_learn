@@ -29,6 +29,12 @@ const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
 const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolev-benezri/lets_learn)';
 const SEMESTER_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
+// Answers fetched in one nightly run: the site allows ~400 an hour, and the 2 session requests and a few retries fit in the rest, so a night never waits
+// for the clock hour (research H4). What is left waits for the next night.
+const NIGHT_BUDGET = 380;
+// Lists and course details may use only the first 160 of them, so an offered course's groups (~210 a night, the data that changes most) are never the ones
+// left waiting. On the first night after a long gap the lists alone would take 290.
+const SLOW_BUDGET = 160;
 
 export class ThrottledError extends Error {
   constructor(until) {
@@ -186,47 +192,99 @@ export function unitsOf(opt, programs) {
 
 // Answers kept on disk, keyed by the request (so a run can resume or build offline). The session requests are swallowed and replayed before the first real one.
 // ttl(key, html) = how long a cached answer stays good in ms (default: forever); an older one is fetched again.
-export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity } = {}) {
-  const session = [];
-  let replayed = false;
-  return async (query, form) => {
+// seen(key, html, old) hears every answer returned, with the cached answer it replaced (the same html on a cache hit, undefined when nothing was cached).
+// budget(key) = how many answers may have been fetched (the session replay not counted) before this key's is; past it a stale cached answer is returned as is
+// and its key goes to request.deferred.
+// An answer that is not cached at all is fetched even past the budget.
+export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = () => Infinity } = {}) {
+  const session = [],
+    deferred = [];
+  let replayed = false,
+    fetched = 0;
+  const request = async (query, form) => {
     if (query === 'prgname=Enter_Search' || form?.PRGNAME === 'Enter_Search') {
       session.push([query, form]);
       return '';
     }
     const key = query ?? new URLSearchParams(form).toString();
     const file = `${dir}/${createHash('sha1').update(key).digest('hex')}.html`;
+    let old,
+      fresh = false;
     try {
-      const html = await readFile(file, 'utf8');
-      if (offline || Date.now() - (await stat(file)).mtimeMs <= ttl(key, html)) return html;
+      old = await readFile(file, 'utf8');
+      fresh = offline || Date.now() - (await stat(file)).mtimeMs <= ttl(key, old);
     } catch {
       /* not cached */
+    }
+    if (fresh || (old !== undefined && fetched >= budget(key))) {
+      if (!fresh) deferred.push(key);
+      seen(key, old, old);
+      return old;
     }
     if (offline) throw new Error(`offline and not in the cache: ${key}`);
     if (!replayed) {
       replayed = true;
       for (const [q, f] of session) await inner(q, f);
     }
+    fetched++;
     const html = await inner(query, form);
     await mkdir(dir, { recursive: true });
     await writeFile(`${file}.tmp`, html);
     await rename(`${file}.tmp`, file); // a run killed mid-write (CI timeout) leaves no truncated answer behind
+    seen(key, html, old);
     return html;
   };
+  request.deferred = deferred;
+  return request;
 }
 
 const DAY = 86400e3;
-// The nightly policy: the exam table is fetched every run, an offered course's groups every other night (below); lists, course details and track pages weekly; a course with no groups at all weekly too.
+// The nightly policy: an offered course's groups every other night (below); a department's exam table every other night until it is published, then weekly;
+// course details every 14-16 days (research A3: 15 of 415 changed in two weeks); lists, track pages and a course with no groups at all weekly.
 // "Weekly" is 7-9 days by key, so the answers cached by one full pull expire over three nights instead of all on the same one.
-const weekly = (key) => (7 + (createHash('sha1').update(key).digest()[0] % 3)) * DAY;
+const weekly = (key, base = 7) => (base + (createHash('sha1').update(key).digest()[0] % 3)) * DAY;
 // An offered course's groups: half the courses (by key) one night, the other half the next. A night of ~400 group requests at 2.5 s is ~20 CI minutes, and
 // GitLab Free gives 400 a month (cost factor 1, public projects too). Off its night an answer is good for 1.5 days, so after a missed run it is fetched anyway.
 const otherNight = (key, now) => (Math.floor(now / DAY) + createHash('sha1').update(key).digest()[1]) % 2 === 1;
 export function nightlyTtl(key, html, now = Date.now()) {
-  if (key.includes('S_EXAMS')) return 0;
+  if (key.includes('S_EXAMS')) return parseExams(html).length ? weekly(key) : 1.5 * DAY;
+  if (key.includes('S_CourseDetails')) return weekly(key, 14);
   if (key.startsWith('prgname=S_LOOK_FOR_NOSE'))
     return !parseGroups(html).length ? weekly(key) : otherNight(key, now) ? 1.5 * DAY : 0;
   return weekly(key);
+}
+
+// H1 (research A1): the cohorts of one list code mostly answer alike, and when one changed, all of them did. So a cohort whose cached list equals an answer
+// an earlier cohort gave tonight is checked only every 28-30 days (in case the site changes one cohort alone; owner, 22.10), and one that equals the answer
+// an earlier cohort just replaced is fetched now. run() asks the cohorts in
+// a fixed order, so the first of each alike group (its representative) keeps the weekly clock. One policy per run: it remembers tonight's answers.
+export function nightlyPolicy(now = Date.now) {
+  const current = new Map(),
+    replaced = new Map();
+  const code = (key) => key.match(/^prgname=S_SHOW_PROGS&arguments=-N\d+,-N(\d+)$/)?.[1];
+  const sig = (html) => {
+    const p = parseProgram(html);
+    return JSON.stringify([p.minCredits, p.courses]); // not the name: it differs by cohort
+  };
+  const add = (map, c, s) => map.set(c, (map.get(c) ?? new Set()).add(s));
+  return {
+    ttl(key, html) {
+      const c = code(key);
+      if (c) {
+        const s = sig(html);
+        if (current.get(c)?.has(s)) return weekly(key, 28);
+        if (replaced.get(c)?.has(s)) return 0;
+      }
+      return nightlyTtl(key, html, now());
+    },
+    budget: (key) => (key.startsWith('prgname=S_LOOK_FOR_NOSE') || key.includes('S_EXAMS') ? NIGHT_BUDGET : SLOW_BUDGET),
+    seen(key, html, old) {
+      const c = code(key);
+      if (!c) return;
+      add(current, c, sig(html));
+      if (old !== undefined && sig(old) !== sig(html)) add(replaced, c, sig(old));
+    }
+  };
 }
 
 // Wait out the site's hourly limit instead of failing: sleep until the hour it names (Jerusalem time), start a new session, ask again. Gives up past maxWaitMs.
@@ -298,6 +356,19 @@ export async function yearCache(base, year) {
   return dir;
 }
 
+// The published data can come from another cache (a run elsewhere). Until this cache has published itself, a night built partly from its older answers
+// (deferred by the budget) would put the site back in time, so main() holds it. The marker is the checkedAt of the last data this cache published.
+export async function cacheBehind(cacheDir, statusFile) {
+  const published = (await readJson(statusFile))?.checkedAt;
+  if (!published) return false;
+  const mine = await readFile(join(cacheDir, 'published-at'), 'utf8').catch(() => '');
+  return mine.trim() < published;
+}
+
+export async function markPublished(cacheDir, statusFile) {
+  await writeFile(join(cacheDir, 'published-at'), (await readJson(statusFile)).checkedAt);
+}
+
 export async function run({
   opt,
   request,
@@ -305,7 +376,8 @@ export async function run({
   dataDir = 'web/data/afeka',
   now = () => new Date().toISOString(),
   log = console.error,
-  check = validate
+  check = validate,
+  hold = () => false
 }) {
   const units = unitsOf(opt, programs);
 
@@ -329,8 +401,15 @@ export async function run({
   }
 
   const ids = [...new Set(units.flatMap((u) => u.lists.flatMap((l) => l.courses.map((c) => c.id))))];
+  // A course no list marks נלמד has no groups (it matched in every snapshot, research A2): no request for it.
+  const offered = new Set(units.flatMap((u) => u.lists.flatMap((l) => l.courses.filter((c) => c.offered).map((c) => c.id))));
   const raw = {};
   for (const [i, id] of ids.entries()) {
+    if (!offered.has(id)) {
+      raw[id] = { groups: [], details: null };
+      log(`[${i + 1}/${ids.length}] ${id}: not offered (list), skipped`);
+      continue;
+    }
     const groups = parseGroups(await request(`prgname=S_LOOK_FOR_NOSE&arguments=-N${id}`));
     const args = groups.find((g) => g.primary && g.detailsArgs)?.detailsArgs;
     const details = args ? parseDetails(await request(`prgname=S_CourseDetails&arguments=${args}`)) : null;
@@ -400,6 +479,10 @@ export async function run({
   }
   if (failures.length) throw new Error(`checks failed, nothing written:\n${failures.join('\n')}`);
 
+  if (hold()) {
+    log('held: the cache is behind the published data and some answers waited for the next night, so nothing is written tonight');
+    return 'data(afeka): held, nothing written';
+  }
   const summary = await writeResults({ results, statusFile: `${dataDir}/status.json`, now: fetchedAt });
   if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs, Number(opt.year));
   // Curriculum numbers that moved: a hint for a human, never a failed run (the deploy must not wait on it)
@@ -429,13 +512,22 @@ async function main() {
   });
   const made = makeRequester({ delay: Number(opt.delay) });
   const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
-  const request = opt.cache
-    ? cachedRequester(live, await yearCache(opt.cache, opt.year), {
+  const policy = opt.nightly ? nightlyPolicy() : {};
+  const cacheDir = opt.cache && (await yearCache(opt.cache, opt.year)),
+    statusFile = 'web/data/afeka/status.json';
+  const behind = cacheDir && (await cacheBehind(cacheDir, statusFile));
+  const request = cacheDir
+    ? cachedRequester(live, cacheDir, {
         offline: opt.offline,
-        ttl: opt.nightly ? nightlyTtl : undefined
+        ttl: policy.ttl,
+        seen: policy.seen,
+        budget: policy.budget
       })
     : live;
-  console.log(await run({ opt, request }));
+  const summary = await run({ opt, request, hold: () => behind && request.deferred.length > 0 });
+  if (request.deferred?.length) console.error(`deferred ${request.deferred.length} stale answers to the next night`);
+  if (cacheDir && !summary.includes('held')) await markPublished(cacheDir, statusFile);
+  console.log(summary);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
