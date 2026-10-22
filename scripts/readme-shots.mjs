@@ -8,6 +8,7 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { TERMS_VERSION } from '../web/ui-common.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')), '..');
 const WEB = path.join(ROOT, 'web'),
@@ -146,7 +147,10 @@ async function shot(name) {
 }
 
 await mkdir(OUT, { recursive: true });
-const DONE = { 'afeka-sched-v1-onboarded': '1', 'afeka-sched-v1-entry': '1', 'afeka-sched-v1-tour': 'intro,plans' }; // the tour seen: it would dim the shots
+// the tour seen (it would dim the shots) and the terms accepted (web/ui-common.js TERMS_VERSION: the gate holds every page back)
+const DONE = {
+  'afeka-sched-v1-onboarded': '1', 'afeka-sched-v1-entry': '1', 'afeka-sched-v1-tour': 'intro,plans', 'afeka-sched-v1-terms': TERMS_VERSION
+};
 
 // The friends: alternatives 1 and 2 of the student without friends.
 await open({ state: student(), flags: DONE, size: DESK, ready: results });

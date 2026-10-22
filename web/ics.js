@@ -21,6 +21,17 @@ const DAY_MS = 864e5;
 const utc = (ymd) => Date.parse(`${ymd}T00:00:00Z`);
 const ymd = (ms) => new Date(ms).toISOString().slice(0, 10);
 const compact = (date, time = '') => date.replaceAll('-', '') + (time ? `T${time.replace(':', '')}00` : '');
+// Lessons and exams are Israel time, not floating (RFC 5545 3.3.5): a calendar in another zone shifts them correctly.
+const TZ = ';TZID=Asia/Jerusalem:';
+// Israel's rules since 2013: summer time from the Friday before the last Sunday of March, to the last Sunday of October, at 02:00.
+const VTIMEZONE = [
+  'BEGIN:VTIMEZONE', 'TZID:Asia/Jerusalem',
+  'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0200', 'TZOFFSETTO:+0300', 'TZNAME:IDT', 'DTSTART:19700327T020000',
+  'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=FR;BYMONTHDAY=23,24,25,26,27,28,29', 'END:DAYLIGHT',
+  'BEGIN:STANDARD', 'TZOFFSETFROM:+0300', 'TZOFFSETTO:+0200', 'TZNAME:IST', 'DTSTART:19701025T020000',
+  'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD',
+  'END:VTIMEZONE'
+];
 // The first date on or after `start` that falls on `day` (1 = Sunday ... 6 = Friday, as in the data).
 export const firstOn = (start, day) =>
   ymd(utc(start) + ((day - 1 - new Date(utc(start)).getUTCDay() + 7) % 7) * DAY_MS);
@@ -77,10 +88,11 @@ export function toIcs(parts, now = new Date()) {
           const first = firstOn(dates.start, m.day),
             skip = off.filter((d) => d >= first && d <= dates.end && new Date(utc(d)).getUTCDay() + 1 === m.day);
           event(`${g.id}-${m.day}-${m.start.replace(':', '')}`, [
-            `DTSTART:${compact(first, m.start)}`,
-            `DTEND:${compact(first, m.end)}`,
-            `RRULE:FREQ=WEEKLY;UNTIL=${compact(dates.end)}T235959`,
-            ...skip.map((d) => `EXDATE:${compact(d, m.start)}`),
+            `DTSTART${TZ}${compact(first, m.start)}`,
+            `DTEND${TZ}${compact(first, m.end)}`,
+            // UNTIL is UTC with a zoned start; the end day's late evening in UTC is still after its last lesson
+            `RRULE:FREQ=WEEKLY;UNTIL=${compact(dates.end)}T235959Z`,
+            ...skip.map((d) => `EXDATE${TZ}${compact(d, m.start)}`),
             `SUMMARY:${text(c.name)}`,
             `LOCATION:${text(m.room)}`,
             `DESCRIPTION:${text(`קבוצה ${g.id}${g.lecturer ? ` · ${g.lecturer}` : ''}
@@ -92,7 +104,7 @@ ${DISCLAIMER}`)}`
           if (seenExam.has(key)) continue;
           seenExam.add(key);
           const when = e.time
-            ? [`DTSTART:${compact(e.date, e.time)}`, `DTEND:${compact(e.date, addHours(e.time, 3))}`]
+            ? [`DTSTART${TZ}${compact(e.date, e.time)}`, `DTEND${TZ}${compact(e.date, addHours(e.time, 3))}`]
             : [`DTSTART;VALUE=DATE:${compact(e.date)}`];
           event(`exam-${cid}-${seenExam.size}-${e.moed}-${compact(e.date)}`, [
             ...when,
@@ -105,6 +117,7 @@ ${DISCLAIMER}`)}`
   }
   return [
       ...['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//afeka-scheduler//HE', 'CALSCALE:GREGORIAN'],
+      ...VTIMEZONE,
       ...lines,
       'END:VCALENDAR'
     ]

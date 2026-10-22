@@ -29,9 +29,9 @@ test('toIcs: one weekly event per meeting from the first matching day, escaped t
     out = toIcs([part({ courses: { 101: course(3) } }, dates)], NOW);
   assert.match(out, /^BEGIN:VCALENDAR\r\n/);
   assert.match(out, /END:VCALENDAR\r\n$/);
-  assert.match(out, /DTSTART:20261027T090000\r\n/); // 25.10.2026 is a Sunday: the first Tuesday (day 3) is 27.10
-  assert.match(out, /DTEND:20261027T105000\r\n/);
-  assert.match(out, /RRULE:FREQ=WEEKLY;UNTIL=20270122T235959/);
+  assert.match(out, /DTSTART;TZID=Asia\/Jerusalem:20261027T090000\r\n/); // 25.10.2026 is a Sunday: the first Tuesday (day 3) is 27.10
+  assert.match(out, /DTEND;TZID=Asia\/Jerusalem:20261027T105000\r\n/);
+  assert.match(out, /RRULE:FREQ=WEEKLY;UNTIL=20270122T235959Z/);
   assert.match(out, /SUMMARY:פיזיקה\\, א\\; "ב"/);
   assert.match(out, /UID:g1-3-0900@afeka-scheduler/);
   assert.match(out, /DTSTART;VALUE=DATE:20270201/);
@@ -40,7 +40,7 @@ test('toIcs: one weekly event per meeting from the first matching day, escaped t
     'lines folded at 75 octets'
   );
   assert.doesNotMatch(out, /EXDATE/, 'a Tuesday meeting never falls on Chanukah (Sunday 06.12.26)');
-  assert.match(toIcs([part({ courses: { 101: course(1) } }, dates)], NOW), /EXDATE:20261206T090000/);
+  assert.match(toIcs([part({ courses: { 101: course(1) } }, dates)], NOW), /EXDATE;TZID=Asia\/Jerusalem:20261206T090000/);
 });
 
 test('toIcs: a holiday range skips every meeting inside it (Passover 21-29.04.27, a Wednesday meeting: 21.04 and 28.04)', () => {
@@ -61,8 +61,8 @@ test('toIcs: a holiday range skips every meeting inside it (Passover 21-29.04.27
     }
   };
   const out = toIcs([part(data, SEMESTER_DATES[2027]['ב'])], NOW);
-  for (const d of ['20270421', '20270428', '20270512']) assert.match(out, new RegExp(`EXDATE:${d}T120000`)); // and Independence Day
-  assert.match(out, /DTSTART:20270317T120000/);
+  for (const d of ['20270421', '20270428', '20270512']) assert.match(out, new RegExp(`EXDATE;TZID=Asia/Jerusalem:${d}T120000`)); // and Independence Day
+  assert.match(out, /DTSTART;TZID=Asia\/Jerusalem:20270317T120000/);
 });
 
 test('toIcs: an exam with a time is a three-hour event; long names fold and unfold back', () => {
@@ -71,7 +71,7 @@ test('toIcs: an exam with a time is a three-hour event; long names fold and unfo
   };
   data.courses[7].name = 'א'.repeat(60);
   const out = toIcs([part(data, SEMESTER_DATES[2027]['א'])], NOW);
-  assert.match(out, /DTSTART:20270220T090000\r\nDTEND:20270220T120000/);
+  assert.match(out, /DTSTART;TZID=Asia\/Jerusalem:20270220T090000\r\nDTEND;TZID=Asia\/Jerusalem:20270220T120000/);
   assert.ok(out.replace(/\r\n /g, '').includes(`SUMMARY:${'א'.repeat(60)}`));
 });
 
@@ -97,7 +97,7 @@ test('toIcs: two exam kinds on one date get two UIDs; a bare CR is escaped; a la
     uids = out.match(/UID:exam[^\r]*/g);
   assert.equal(new Set(uids).size, uids.length);
   assert.ok(!/\r(?!\n)/.test(out), 'no bare CR');
-  assert.match(out, /DTEND:20270220T235900/);
+  assert.match(out, /DTEND;TZID=Asia\/Jerusalem:20270220T235900/);
 });
 
 test('toIcs: every event (lessons and exams, dated or timed) has a DESCRIPTION that ends with the disclaimer', () => {
@@ -123,4 +123,12 @@ test('toIcs: every event (lessons and exams, dated or timed) has a DESCRIPTION t
     events[0].includes(`DESCRIPTION:קבוצה g1 · כהן\\n${DISCLAIMER}\r\n`),
     'the lesson keeps its group line, then the escaped newline'
   );
+});
+
+test('times are Israel time (TZID with a VTIMEZONE), not floating; UNTIL is UTC (J17)', () => {
+  const out = toIcs([part({ courses: { 101: course(3) } }, SEMESTER_DATES[2027]['א'])], NOW);
+  assert.match(out, /BEGIN:VTIMEZONE\r\nTZID:Asia\/Jerusalem\r\n/);
+  assert.match(out, /TZOFFSETTO:\+0300/);
+  assert.doesNotMatch(out.split('END:VTIMEZONE')[1], /\r\nDT(START|END):\d{8}T/, 'no floating lesson or exam time');
+  assert.match(out, /UNTIL=\d{8}T\d{6}Z/);
 });
