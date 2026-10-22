@@ -14,7 +14,8 @@ import {
   gradeAverage,
   englishOptions,
   specRule,
-  validSpecs
+  validSpecs,
+  retakeNotice
 } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
@@ -22,6 +23,22 @@ const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
 
 test('failed offered course is retake', () => {
   assert.equal(classify(mini(), me).statuses.A.status, 'retake');
+});
+
+test('retakeNotice: a failed course is noted once, again only after passing and failing again', () => {
+  const st = { passed: ['Q0'], failed: { A: 1 }, retakeSeen: [] },
+    note = () => retakeNotice(mini(), classify(mini(), st), st, (t) => t);
+  let n = note();
+  assert.match(n.text, /^שימו לב: נכשלת בפיזיקה-מכניקה\. מומלץ לקחת אותו שוב בסמסטר הבא שבו הוא נלמד \(תקנון 11\.6\.1\)/);
+  st.retakeSeen = n.seen;
+  assert.equal(note().text, null, 'once');
+  st.passed.push('A');
+  st.retakeSeen = note().seen;
+  assert.deepEqual(st.retakeSeen, [], 'passed: forgotten');
+  st.passed = ['Q0'];
+  st.failed.Q = 1;
+  n = note();
+  assert.match(n.text, /נכשלת בפיזיקה-מכניקה, משוואות\. מומלץ לקחת אותם שוב/, 'failed again: noted again, with the new one');
 });
 
 test('direct and transitive dependents are blocked with a chain', () => {
@@ -55,14 +72,14 @@ test('failure warnings follow the regulations', () => {
   const w = (state) => classify(mini(), { passed: ['A', 'Q0'], failed: {}, ...state }).warnings.join(); // year ב׳, year א׳ done
   assert.equal(w({}), '');
   assert.equal(w({ failed: { A: 2, B: 1 } }), '', '11.4.1 counts courses, not attempts');
-  assert.match(w({ failed: { A: 1, B: 1, C: 1 } }), /על תנאי.*11\.4\.1/);
+  assert.match(w({ failed: { A: 1, B: 1, C: 1 } }), /11\.4\.1.*יכול להוביל למעמד "על תנאי".*ההכוון האקדמי/);
   assert.doesNotMatch(w({ failed: { A: 2, B: 2 } }), /הרחקה/, '11.5.1 counts courses, not attempts');
   assert.match(w({ failed: { A: 1, B: 1, C: 1, P: 1 } }), /11\.5\.1.*יכול להוות הרחקה.*ההכוון האקדמי/);
   assert.doesNotMatch(w({ failed: { A: 1, B: 1, C: 1, P: 1 } }), /על תנאי/, 'expulsion outranks probation');
   assert.match(w({ failed: { A: 3 } }), /11\.5\.2/);
-  assert.match(w({ grades: { A: 60, Q0: 62 } }), /על תנאי.*ממוצע מצטבר 61\.0.*11\.4\.2/);
+  assert.match(w({ grades: { A: 60, Q0: 62 } }), /ממוצע מצטבר 61\.0.*11\.4\.2.*על תנאי/);
   assert.equal(w({ grades: { A: 60, Q0: 70 } }), '', 'average 65 is not below 65');
-  assert.match(w({ passed: ['Q0'] }), /על תנאי.*50%.*11\.4\.4/, 'half of year א׳ done at the start of year ב׳');
+  assert.match(w({ passed: ['Q0'] }), /50%.*11\.4\.4.*על תנאי/, 'half of year א׳ done at the start of year ב׳');
   assert.equal(w({ passed: ['Q0'], profile: { year: 1 } }), '', 'no earlier year in year א׳');
   const d = mini();
   d.courses.A.credits = undefined; // a year א׳ course without credits in the data: 70% can't be judged

@@ -34,7 +34,12 @@ function node(tag, props, ...kids) {
 
 // Resolves true on the confirm button, false on cancel / Escape / backdrop. The safe choice (cancel) has initial focus.
 // Without <dialog> support it falls back to window.confirm, and to "yes" when even that is missing (as the old code did).
+// cancel: null leaves only the ok button: a note to read, not a choice (the fallback is window.alert).
 export async function askConfirm(text, { ok = 'אישור', cancel = 'ביטול' } = {}) {
+  if (!supported() && cancel === null) {
+    if (typeof alert === 'function') alert(text);
+    return true;
+  }
   if (!supported()) return typeof confirm === 'function' ? confirm(text) : true;
   const v = await open((d) => {
     d.setAttribute('role', 'alertdialog');
@@ -47,7 +52,7 @@ export async function askConfirm(text, { ok = 'אישור', cancel = 'ביטול
         node(
           'div',
           { className: 'dlg-actions' },
-          node('button', { type: 'submit', className: 'btn', value: '', textContent: cancel }),
+          ...(cancel === null ? [] : [node('button', { type: 'submit', className: 'btn', value: '', textContent: cancel })]),
           node('button', { type: 'submit', className: 'btn primary', value: 'ok', textContent: ok })
         )
       )

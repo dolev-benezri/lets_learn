@@ -198,9 +198,24 @@ export function classify(data, state) {
     // 11.4.4: checked at the end of each of years א'-ג'; progress counts the required lists of the years behind
     if (year >= 2 && year <= 4 && prog.required && !prog.short && prog.ratio < 0.7)
       why.push(`הושלמו ${Math.round(prog.ratio * 100)}% מתוכנית השנים הקודמות, פחות מ-70% (11.4.4)`);
-    if (why.length) warnings.push(`מעמד "על תנאי" (תקנון 11.4): ${why.join('; ')}`);
+    if (why.length) warnings.push(`שימו לב: ${why.join('; ')}. לפי התקנון (11.4) מצב זה יכול להוביל למעמד "על תנאי". כדאי לשוחח עם ההכוון האקדמי.`);
   }
   return { statuses, warnings };
+}
+
+// The one-time note on failed courses: those to retake that were not noted yet. `seen` keeps only courses still failed and not
+// passed (a course not offered this semester stays noted), so passing and failing again notes a course again. text: null when nothing is new.
+export function retakeNotice(data, cls, state, name) {
+  const open = (id) => state.failed[id] && !state.passed.includes(id),
+    fresh = Object.keys(cls.statuses).filter((id) => cls.statuses[id].status === 'retake' && !state.retakeSeen.includes(id)),
+    one = fresh.length === 1;
+  return {
+    seen: [...state.retakeSeen.filter(open), ...fresh],
+    text: fresh.length
+      ? `שימו לב: נכשלת ב${fresh.map((id) => name(data.courses[id].name)).join(', ')}. מומלץ לקחת ${one ? 'אותו' : 'אותם'} שוב בסמסטר הבא ` +
+        `שבו ${one ? 'הוא נלמד' : 'הם נלמדים'} (תקנון 11.6.1). כברירת מחדל ${one ? 'הוא נכנס' : 'הם נכנסים'} למערכת כ״חובה״, ואפשר לשנות.`
+      : null
+  };
 }
 
 // Year view only: a blocked course offered in ב׳ whose missing prerequisites are candidates in א׳ becomes afterA
