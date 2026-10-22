@@ -66,7 +66,7 @@ test('advisorHtml: regulation warnings and a year pair with a heading per semest
   };
   w.sem = { 'א': w.data, 'ב': w.data };
   const t = text(advisorHtml(w));
-  for (const s of ['סמסטר א׳', 'סמסטר ב׳', 'אזהרת זוג', 'הרחקה (תקנון 11.5.2)', 'משוואות']) assert.ok(t.includes(s), s);
+  for (const s of ['סמסטר א׳', 'סמסטר ב׳', 'אזהרת זוג', 'לפי התקנון (11.5.2) מצב זה יכול להוות הרחקה', 'משוואות']) assert.ok(t.includes(s), s);
   assert.ok(t.includes('הפרדת הרצאה'));
 });
 

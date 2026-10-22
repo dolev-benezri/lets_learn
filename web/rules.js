@@ -182,9 +182,11 @@ export function classify(data, state) {
 
   const counts = Object.values(failed).filter((n) => n > 0);
   const warnings = [];
-  if (counts.some((n) => n >= 3)) warnings.push('3 כישלונות באותו קורס: הרחקה (תקנון 11.5.2)');
+  // "may": the faculty decides; the tool only points to the advisor
+  const MAY_EXPEL = 'מצב זה יכול להוות הרחקה מהלימודים. כדאי לשוחח עם ההכוון האקדמי.';
+  if (counts.some((n) => n >= 3)) warnings.push(`שימו לב: 3 כישלונות באותו קורס. לפי התקנון (11.5.2) ${MAY_EXPEL}`);
   // 11.4.1/11.5.1 count courses, not attempts
-  if (counts.length >= 4) warnings.push('ציון נכשל ב-4 קורסים ומעלה במצטבר: הרחקה (תקנון 11.5.1)');
+  if (counts.length >= 4) warnings.push(`שימו לב: ציון נכשל ב-4 קורסים ומעלה. לפי התקנון (11.5.1) ${MAY_EXPEL}`);
   if (!warnings.length) { // expulsion outranks probation
     const avg = gradeAverage(data, state).avg,
       year = studyYear(data, state),

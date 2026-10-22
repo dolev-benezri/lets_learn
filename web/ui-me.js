@@ -53,12 +53,14 @@ function chip(id, li) {
     true
   )}${
     st === 'passed' && s.exempt?.includes(id)
-      ? ' <span class="tag ok">פטור</span>' // exempt on the grade sheet: no grade
+      ? ' <span class="tag ok">פטור</span>' // exempt on the grade sheet: no grade, no attempt
       : st === 'passed'
-        ? `<label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
-      aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>`
+        ? `<div class="crs-row"><label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
+      aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>
+      <label class="check"><input type="checkbox" data-chg="failedBefore" data-id="${esc(id)}" data-k="fb-${esc(k)}"
+      aria-label="${esc(`נכשלתי בעבר ב${nm}`)}"${n ? ' checked' : ''}> נכשלתי בעבר בקורס זה</label></div>`
         : ''
-  }${n ? seg(`fc-${k}`, `כמה פעמים נכשלתי ב${nm}`, FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`) : ''}</div>`;
+  }${n ? seg(`fc-${k}`, st === 'passed' ? 'כמה פעמים?' : 'כמה פעמים נכשלתי?', FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`, true) : ''}</div>`;
 }
 
 // The weighted-average line; its container is always rendered so a grade change can refresh just this line.
@@ -294,7 +296,6 @@ export function renderMe() {
       </div>
       <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses" tabindex="-1">קורסים לפי שנה</h2>
         ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
-        <p class="hint">כישלון נשמר גם אחרי שעברתם, כי הוא נספר בתקנון.</p>
         ${lists.filter(past).map(group).join('')}
         ${lists
           .filter((l) => sp.chosen.has(l.code))

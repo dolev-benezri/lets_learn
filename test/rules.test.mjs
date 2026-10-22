@@ -57,7 +57,7 @@ test('failure warnings follow the regulations', () => {
   assert.equal(w({ failed: { A: 2, B: 1 } }), '', '11.4.1 counts courses, not attempts');
   assert.match(w({ failed: { A: 1, B: 1, C: 1 } }), /על תנאי.*11\.4\.1/);
   assert.doesNotMatch(w({ failed: { A: 2, B: 2 } }), /הרחקה/, '11.5.1 counts courses, not attempts');
-  assert.match(w({ failed: { A: 1, B: 1, C: 1, P: 1 } }), /הרחקה.*11\.5\.1/);
+  assert.match(w({ failed: { A: 1, B: 1, C: 1, P: 1 } }), /11\.5\.1.*יכול להוות הרחקה.*ההכוון האקדמי/);
   assert.doesNotMatch(w({ failed: { A: 1, B: 1, C: 1, P: 1 } }), /על תנאי/, 'expulsion outranks probation');
   assert.match(w({ failed: { A: 3 } }), /11\.5\.2/);
   assert.match(w({ grades: { A: 60, Q0: 62 } }), /על תנאי.*ממוצע מצטבר 61\.0.*11\.4\.2/);
