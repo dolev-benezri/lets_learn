@@ -260,3 +260,32 @@ test('backup link keeps outsideDone', async () => {
   const b = await backupLink('https://x.test/', s);
   assert.deepEqual(normalize((await readHash(b.slice(b.indexOf('#')), at)).payload).outsideDone, ['x']);
 });
+
+// J10: one list of persisted fields (web/state-schema.js); identity/version fields travel in the link's own header
+const IDENTITY = ['v', 'year', 'semester', 'program', 'startYear'];
+test('backup round trip keeps every persisted field; every saved field is in the shared list', async () => {
+  const { normalize, DEFAULT } = await import('../web/app.js');
+  const { PERSISTED } = await import('../web/state-schema.js');
+  for (const k of Object.keys(DEFAULT)) assert.ok(k in PERSISTED || IDENTITY.includes(k), `${k} is neither persisted nor identity`);
+  const FIX = {
+    name: 'דנה', passed: ['10016'], failed: { 10016: 1 }, grades: { 10016: 80 }, exempt: ['10016'], outsideDone: ['x'],
+    choices: { 10016: 'must' }, friends: [{ name: 'f', groups: ['G1'] }], pins: ['G1'],
+    profile: { year: 2, amirnet: 100, specs: [], summer: true }, scope: 'א', load: 'ב', sortBy: 'credits',
+    semesterOf: { 10016: 'ב' }, programSet: true, specDraft: ['solid'], yearIds: ['10016'], retakeSeen: ['10016'],
+    weights: { ...DEFAULT.weights, friends: 1 }, constraints: { ...DEFAULT.constraints, maxCredits: 20 }
+  };
+  for (const k of Object.keys(PERSISTED)) assert.ok(k in FIX, `no fixture for ${k}`);
+  const at = { year: 2027, semester: 'א' };
+  const s = normalize({ ...structuredClone(DEFAULT), ...FIX, v: 1, year: 2027, semester: 'א' });
+  const b = await backupLink('https://x.test/', s);
+  const n = normalize((await readHash(b.slice(b.indexOf('#')), at)).payload);
+  assert.deepEqual(Object.keys(FIX).filter((k) => JSON.stringify(n[k]) !== JSON.stringify(s[k])), []);
+});
+test('backup keeps programSet on its own (default program, no study year: nothing else implies it)', async () => {
+  const { normalize, DEFAULT } = await import('../web/app.js');
+  const at = { year: 2027, semester: 'א' };
+  const s = normalize({ ...structuredClone(DEFAULT), v: 1, passed: [], programSet: true });
+  assert.equal(s.programSet, true);
+  const b = await backupLink('https://x.test/', s);
+  assert.equal(normalize((await readHash(b.slice(b.indexOf('#')), at)).payload).programSet, true);
+});
