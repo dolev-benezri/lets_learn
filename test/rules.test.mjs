@@ -45,7 +45,7 @@ test('retakeNotice: a failed course is noted once, again only after passing and 
 test('direct and transitive dependents are blocked with a chain', () => {
   const { statuses } = classify(mini(), me);
   assert.equal(statuses.B.status, 'blocked');
-  assert.deepEqual(statuses.B.blockedBy, ['A']);
+  assert.deepEqual(statuses.B.blockedBy, [['A']]);
   assert.match(statuses.B.reasons.join(' '), /פיזיקה-מכניקה \(נכשלת\)/);
   assert.equal(statuses.C.status, 'blocked');
   assert.match(statuses.C.reasons.join(' '), /דינמיקה ← פיזיקה-מכניקה \(נכשלת\)/);
@@ -537,4 +537,18 @@ test('classify: 6001 in 10-2024 is blocked, and available once both outside alte
   assert.equal(classify(d, s).statuses['6001'].status, 'blocked', 'one of two requirements met');
   s.outsideDone.push('אנגלית1 - מכינה בדרך לאפקה');
   assert.equal(classify(d, s).statuses['6001'].status, 'available');
+});
+
+test('a blocked course with alternatives names them all (10243: 10224 or 10240)', () => {
+  const r = classify(real('2027-1/10-2024.json'), { passed: [], failed: {}, profile: { year: 1 } }).statuses['10243'];
+  assert.deepEqual(r.blockedBy, [['10224', '10240']]);
+  assert.match(r.reasons[0], /מבוא לראייה ממוחשבת.* או .*רשתות נוירונים ולמידה עמוקה/);
+});
+test('an OR group whose first alternative is itself blocked renders its chain', () => {
+  const data = mini();
+  data.courses.C.prereqs = [{ kind: 'קדם', anyOf: [{ id: 'B', name: 'דינמיקה' }, { id: 'Q', name: 'משוואות' }] }];
+  data.courses.Q.prereqs = [{ kind: 'קדם', anyOf: [{ id: 'Q0', name: 'חדו"א 1' }] }];
+  const r = classify(data, { passed: [], failed: {} }).statuses.C;
+  assert.deepEqual(r.blockedBy, [['B', 'Q']]);
+  assert.match(r.reasons[0], /דינמיקה ← פיזיקה-מכניקה או משוואות ← חדו"א 1/);
 });
