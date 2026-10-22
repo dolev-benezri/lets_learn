@@ -2,7 +2,8 @@
 import { TURN_ID_MAX } from './settings.js';
 const YEAR_LETTERS = { 'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5 }; // evening programs run five years
 
-// Afeka english clearance (checked 2026-10-01): Amirnet 85/100/120/134 exempts the first 1/2/3/4 courses;
+// Afeka english clearance (checked 2026-10-01): an English score of 85/100/120/134 exempts the first 1/2/3/4 courses;
+// Amirnet and the psychometric English section share one 50-150 scale (NITE Amirnet FAQ, 2026-08-12), so one field holds either.
 // exemption gives no credits.
 const ENGLISH = ['6000', '6001', '6002', '6003'];
 const AMIRNET = [85, 100, 120, 134];
@@ -122,7 +123,7 @@ export function classify(data, state) {
       continue;
     }
     if (exempt.has(id)) {
-      statuses[id] = { status: 'exempt', reasons: ['פטור (ציון אמירנט)'] };
+      statuses[id] = { status: 'exempt', reasons: ['פטור (ציון אנגלית)'] };
       continue;
     }
     if (!c.offered) {
@@ -177,7 +178,7 @@ export function classify(data, state) {
     if (s.status !== 'blocked') continue;
     s.reasons = [...new Set(s.blockedBy.map((b) => `חסום: דורש ${chain(b)} (תקנון 7.4)`))];
     if (noScore && ENGLISH.includes(id))
-      s.reasons.push(`הזינו ציון אמירנט ב"המצב שלי" כדי לדעת מאיזו רמה מתחילים (${AMIRNET[0]} ומעלה פוטר מהמכינה)`);
+      s.reasons.push(`הזינו ציון אנגלית (אמירנט או פסיכומטרי) ב"המצב שלי" כדי לדעת מאיזו רמה מתחילים (${AMIRNET[0]} ומעלה פוטר מהמכינה)`);
   }
 
   const counts = Object.values(failed).filter((n) => n > 0);

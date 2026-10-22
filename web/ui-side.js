@@ -123,9 +123,9 @@ export function renderSide(res) {
     rest = cand.filter((id) => !planned(id));
   const musts = plan.filter((id) => candidateMode(id) === 'must').map((id) => app.data.courses[id].name);
   const eng = englishOptions(app.data, app.state.profile.amirnet);
-  const engBody = `<p class="hint">אנגלית נלמדת לפי רמה. ציון אמירנט פוטר מהרמה ומהרמות שמתחתיה (פטור לא נותן נ״ז).</p>
+  const engBody = `<p class="hint">אנגלית נלמדת לפי רמה. ציון אנגלית (אמירנט או פסיכומטרי) פוטר מהרמה ומהרמות שמתחתיה (פטור לא נותן נ״ז).</p>
     <ul class="plain">${eng.map((e) => `<li><b>${esc(heb(e.name))}</b> · פטור בציון ${e.min}+${e.exempt ? ' <span class="tag ok">פטור</span>' : ''}</li>`).join('')}</ul>
-    ${app.state.profile.amirnet === null ? '<p class="hint">אם יש לך ציון אמירנט, <a href="#me">הזינו אותו בפרופיל</a>.</p>' : ''}`;
+    ${app.state.profile.amirnet === null ? '<p class="hint">אם יש לך ציון אנגלית (אמירנט או פסיכומטרי), <a href="#me">הזינו אותו בפרופיל</a>.</p>' : ''}`;
   const taken = new Set(),
     // a course sits in the first list that has it; the unchosen specialization lists come last, folded into one group
     sp = specLists(app.data, app.state.profile.specs);
@@ -166,6 +166,6 @@ export function renderSide(res) {
     ${details('specOthers', `התמחויות אחרות (${specN})`, spec.map(({ l, ids }) => `<h4>${esc(listTitle(l))} (${ids.length})</h4>${cards(ids)}`).join(''), specN)}
     ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked')), locked('blocked').length)}
     ${details('notOffered', `לא נלמד בסמסטר (${locked('notOffered').length})`, rows(locked('notOffered')), locked('notOffered').length)}
-    ${details('exempt', `פטור (ציון אמירנט) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}
+    ${details('exempt', `פטור (ציון אנגלית) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}
     ${details('english', 'אנגלית: רמות ופטור', engBody, eng.length)}`;
 }
