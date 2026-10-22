@@ -255,7 +255,8 @@ export function nightlyTtl(key, html, now = Date.now()) {
 }
 
 // H1 (research A1): the cohorts of one list code mostly answer alike, and when one changed, all of them did. So a cohort whose cached list equals an answer
-// an earlier cohort gave tonight costs no request, and one that equals the answer an earlier cohort just replaced is fetched now. run() asks the cohorts in
+// an earlier cohort gave tonight is checked only every 28-30 days (in case the site changes one cohort alone; owner, 22.10), and one that equals the answer
+// an earlier cohort just replaced is fetched now. run() asks the cohorts in
 // a fixed order, so the first of each alike group (its representative) keeps the weekly clock. One policy per run: it remembers tonight's answers.
 export function nightlyPolicy(now = Date.now) {
   const current = new Map(),
@@ -271,7 +272,7 @@ export function nightlyPolicy(now = Date.now) {
       const c = code(key);
       if (c) {
         const s = sig(html);
-        if (current.get(c)?.has(s)) return Infinity;
+        if (current.get(c)?.has(s)) return weekly(key, 28);
         if (replaced.get(c)?.has(s)) return 0;
       }
       return nightlyTtl(key, html, now());
@@ -355,6 +356,19 @@ export async function yearCache(base, year) {
   return dir;
 }
 
+// The published data can come from another cache (a run elsewhere). Until this cache has published itself, a night built partly from its older answers
+// (deferred by the budget) would put the site back in time, so main() holds it. The marker is the checkedAt of the last data this cache published.
+export async function cacheBehind(cacheDir, statusFile) {
+  const published = (await readJson(statusFile))?.checkedAt;
+  if (!published) return false;
+  const mine = await readFile(join(cacheDir, 'published-at'), 'utf8').catch(() => '');
+  return mine.trim() < published;
+}
+
+export async function markPublished(cacheDir, statusFile) {
+  await writeFile(join(cacheDir, 'published-at'), (await readJson(statusFile)).checkedAt);
+}
+
 export async function run({
   opt,
   request,
@@ -362,7 +376,8 @@ export async function run({
   dataDir = 'web/data/afeka',
   now = () => new Date().toISOString(),
   log = console.error,
-  check = validate
+  check = validate,
+  hold = () => false
 }) {
   const units = unitsOf(opt, programs);
 
@@ -464,6 +479,10 @@ export async function run({
   }
   if (failures.length) throw new Error(`checks failed, nothing written:\n${failures.join('\n')}`);
 
+  if (hold()) {
+    log('held: the cache is behind the published data and some answers waited for the next night, so nothing is written tonight');
+    return 'data(afeka): held, nothing written';
+  }
   const summary = await writeResults({ results, statusFile: `${dataDir}/status.json`, now: fetchedAt });
   if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs, Number(opt.year));
   // Curriculum numbers that moved: a hint for a human, never a failed run (the deploy must not wait on it)
@@ -494,16 +513,20 @@ async function main() {
   const made = makeRequester({ delay: Number(opt.delay) });
   const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
   const policy = opt.nightly ? nightlyPolicy() : {};
-  const request = opt.cache
-    ? cachedRequester(live, await yearCache(opt.cache, opt.year), {
+  const cacheDir = opt.cache && (await yearCache(opt.cache, opt.year)),
+    statusFile = 'web/data/afeka/status.json';
+  const behind = cacheDir && (await cacheBehind(cacheDir, statusFile));
+  const request = cacheDir
+    ? cachedRequester(live, cacheDir, {
         offline: opt.offline,
         ttl: policy.ttl,
         seen: policy.seen,
         budget: policy.budget
       })
     : live;
-  const summary = await run({ opt, request });
+  const summary = await run({ opt, request, hold: () => behind && request.deferred.length > 0 });
   if (request.deferred?.length) console.error(`deferred ${request.deferred.length} stale answers to the next night`);
+  if (cacheDir && !summary.includes('held')) await markPublished(cacheDir, statusFile);
   console.log(summary);
 }
 
