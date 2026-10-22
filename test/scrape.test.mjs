@@ -626,7 +626,7 @@ test('cachedRequester budget (H4): past the budget a stale answer waits for the 
   const dir = join(dirs().status, '..', 'cache4'),
     calls = [];
   const inner = async (q) => (calls.push(q), `<p>${calls.length}</p>`);
-  const r = cachedRequester(inner, dir, { ttl: () => 0, budget: 2 });
+  const r = cachedRequester(inner, dir, { ttl: () => 0, budget: () => 2 });
   const tick = () => new Promise((res) => setTimeout(res, 5));
   await r('prgname=Enter_Search');
   assert.equal(await r('prgname=S_a&x=1'), '<p>2</p>');
@@ -637,6 +637,29 @@ test('cachedRequester budget (H4): past the budget a stale answer waits for the 
   assert.equal(await r('prgname=S_a&x=1'), '<p>3</p>', 'stale but cached, budget spent: kept for the next night');
   assert.deepEqual(r.deferred, ['prgname=S_a&x=1']);
   assert.equal(calls.length, 4);
+});
+
+test('cachedRequester budget per key: a key with a lower limit is deferred while another kind is still fetched', async () => {
+  const dir = join(dirs().status, '..', 'cache5'),
+    calls = [];
+  const inner = async (q) => (calls.push(q), `<p>${calls.length}</p>`);
+  const r = cachedRequester(inner, dir, { ttl: () => 0, budget: (k) => (k.includes('grp') ? 3 : 1) });
+  const tick = () => new Promise((res) => setTimeout(res, 5));
+  await r('prgname=S_a&list=1');
+  await r('prgname=S_a&grp=1');
+  await tick();
+  await r('prgname=S_a&list=1');
+  await r('prgname=S_a&grp=1');
+  assert.deepEqual(r.deferred, ['prgname=S_a&list=1'], 'the list is past its limit of 1; the group (2 of 3) is fetched');
+  assert.equal(calls.length, 3);
+});
+
+test('nightlyPolicy budget: groups and exams may use the whole night (380), lists and details only 160, so groups keep 220', () => {
+  const p = nightlyPolicy();
+  assert.equal(p.budget('prgname=S_LOOK_FOR_NOSE&arguments=-N30101'), 380);
+  assert.equal(p.budget('PRGNAME=S_EXAMS&ARGUMENTS=R1C28'), 380);
+  assert.equal(p.budget('prgname=S_SHOW_PROGS&arguments=-N2026,-N30001'), 160);
+  assert.equal(p.budget('prgname=S_CourseDetails&arguments=x'), 160);
 });
 
 test('cachedRequester with a ttl: a stale answer is fetched again, a fresh one is not', async () => {

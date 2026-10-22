@@ -32,6 +32,9 @@ const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
 // Answers fetched in one nightly run: the site allows ~400 an hour, and the 2 session requests and a few retries fit in the rest, so a night never waits
 // for the clock hour (research H4). What is left waits for the next night.
 const NIGHT_BUDGET = 380;
+// Lists and course details may use only the first 160 of them, so an offered course's groups (~210 a night, the data that changes most) are never the ones
+// left waiting. On the first night after a long gap the lists alone would take 290.
+const SLOW_BUDGET = 160;
 
 export class ThrottledError extends Error {
   constructor(until) {
@@ -190,9 +193,10 @@ export function unitsOf(opt, programs) {
 // Answers kept on disk, keyed by the request (so a run can resume or build offline). The session requests are swallowed and replayed before the first real one.
 // ttl(key, html) = how long a cached answer stays good in ms (default: forever); an older one is fetched again.
 // seen(key, html, old) hears every answer returned, with the cached answer it replaced (the same html on a cache hit, undefined when nothing was cached).
-// budget = how many answers to fetch (the session replay not counted); past it a stale cached answer is returned as is and its key goes to request.deferred.
+// budget(key) = how many answers may have been fetched (the session replay not counted) before this key's is; past it a stale cached answer is returned as is
+// and its key goes to request.deferred.
 // An answer that is not cached at all is fetched even past the budget.
-export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = Infinity } = {}) {
+export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = () => Infinity } = {}) {
   const session = [],
     deferred = [];
   let replayed = false,
@@ -212,7 +216,7 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
     } catch {
       /* not cached */
     }
-    if (fresh || (old !== undefined && fetched >= budget)) {
+    if (fresh || (old !== undefined && fetched >= budget(key))) {
       if (!fresh) deferred.push(key);
       seen(key, old, old);
       return old;
@@ -272,6 +276,7 @@ export function nightlyPolicy(now = Date.now) {
       }
       return nightlyTtl(key, html, now());
     },
+    budget: (key) => (key.startsWith('prgname=S_LOOK_FOR_NOSE') || key.includes('S_EXAMS') ? NIGHT_BUDGET : SLOW_BUDGET),
     seen(key, html, old) {
       const c = code(key);
       if (!c) return;
@@ -494,7 +499,7 @@ async function main() {
         offline: opt.offline,
         ttl: policy.ttl,
         seen: policy.seen,
-        budget: opt.nightly ? NIGHT_BUDGET : Infinity
+        budget: policy.budget
       })
     : live;
   const summary = await run({ opt, request });
