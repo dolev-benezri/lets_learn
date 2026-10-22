@@ -460,6 +460,13 @@ test('run: a course that no list marks נלמד costs no group or details reques
   assert.ok(asked.includes(first.id), 'offered in 30002: fetched');
 });
 
+test('run: a held run writes no file, not even status.json, and says so', async () => {
+  const root = join(dirs().status, '..');
+  const summary = await run({ opt, request: site(), dataDir: root, log: () => {}, check: noErrors, hold: () => true });
+  assert.deepEqual(readdirSync(root), []);
+  assert.match(summary, /held/);
+});
+
 test('run: a check failing in one program writes nothing for any program', async () => {
   const root = join(dirs().status, '..');
   const check = (d) => ({ errors: d.program === 78 ? ['boom'] : [], warnings: [] });
@@ -539,7 +546,7 @@ test('cachedRequester: a cached answer costs no request; the session requests ar
 // ---- nightly cache policy and waiting out the hourly limit ----
 import { utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { nightlyTtl, nightlyPolicy, patient } from '../scripts/scrape.mjs';
+import { nightlyTtl, nightlyPolicy, patient, cacheBehind, markPublished } from '../scripts/scrape.mjs';
 
 test('nightlyTtl: exams every other night until published then weekly; an offered course\'s groups every other night; details 14-16 days; the rest weekly', () => {
   const DAY = 86400e3,
@@ -583,22 +590,23 @@ test('nightlyTtl: weekly answers expire over 7-9 days by key, so a full refresh 
   );
 });
 
-test('nightlyPolicy (H1): a list that answered like an earlier cohort tonight is kept; one whose representative changed is fetched', () => {
+test('nightlyPolicy (H1): a list that answered like an earlier cohort tonight is checked only monthly; one whose representative changed is fetched', () => {
   const DAY = 86400e3,
     weekly = (ms) => [7, 8, 9].includes(ms / DAY),
+    monthly = (ms) => [28, 29, 30].includes(ms / DAY),
     A = fx('prog-30001.html'),
     B = A.replace('>נלמד<', '>לא נלמד<');
   const key = (start, code = 30001) => `prgname=S_SHOW_PROGS&arguments=-N${start},-N${code}`;
   const p = nightlyPolicy(() => 20000 * DAY);
   p.seen(key(2024), A, A);
-  assert.equal(p.ttl(key(2025), A), Infinity, 'same as 2024 tonight: no request');
+  assert.ok(monthly(p.ttl(key(2025), A)), 'same as 2024 tonight: only a monthly check');
   assert.ok(weekly(p.ttl(key(2026), B)), 'answered differently before: its own weekly clock');
   assert.ok(weekly(p.ttl(key(2025, 30002), A)), 'another code is not affected');
   const q = nightlyPolicy(() => 20000 * DAY);
   assert.ok(weekly(q.ttl(key(2025), A)), 'a new policy starts empty');
   q.seen(key(2024), B, A);
   assert.equal(q.ttl(key(2025), A), 0, 'its representative changed tonight: fetched now');
-  assert.equal(q.ttl(key(2026), B), Infinity, 'already equal to the new answer: kept');
+  assert.ok(monthly(q.ttl(key(2026), B)), 'already equal to the new answer: monthly');
   assert.equal(q.ttl('PRGNAME=S_EXAMS&ARGUMENTS=R1C28', fx('exams-nodata.html')), 1.5 * DAY, 'other keys: nightlyTtl');
 });
 
@@ -660,6 +668,20 @@ test('nightlyPolicy budget: groups and exams may use the whole night (380), list
   assert.equal(p.budget('PRGNAME=S_EXAMS&ARGUMENTS=R1C28'), 380);
   assert.equal(p.budget('prgname=S_SHOW_PROGS&arguments=-N2026,-N30001'), 160);
   assert.equal(p.budget('prgname=S_CourseDetails&arguments=x'), 160);
+});
+
+test('cacheBehind: a cache is behind the published data until it has published itself; markPublished records that', async () => {
+  const root = join(dirs().status, '..'),
+    cache = join(root, 'cache6'),
+    status = join(root, 'status.json');
+  mkdirSync(cache, { recursive: true });
+  writeFileSync(status, JSON.stringify({ checkedAt: '2026-10-21T18:13:53.421Z' }));
+  assert.equal(await cacheBehind(cache, status), true, 'never published from this cache');
+  await markPublished(cache, status);
+  assert.equal(await cacheBehind(cache, status), false, 'the data came from this cache');
+  writeFileSync(status, JSON.stringify({ checkedAt: '2026-10-22T18:00:00.000Z' }));
+  assert.equal(await cacheBehind(cache, status), true, 'published since from somewhere else');
+  assert.equal(await cacheBehind(cache, join(root, 'none.json')), false, 'no published data: nothing to fall behind');
 });
 
 test('cachedRequester with a ttl: a stale answer is fetched again, a fresh one is not', async () => {
