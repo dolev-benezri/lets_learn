@@ -2,7 +2,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { dataRules, crossProgram } from '../scripts/check-real.mjs';
+import { dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, bestCredits } from '../scripts/check-real.mjs';
+import { mini } from './fixtures/mini-data.mjs';
+import { fixture } from './fixtures/solver-data.mjs';
+import { search, showWeights } from '../web/solver-core.js';
+import { classify, modeFor } from '../web/rules.js';
 
 const req = (...ids) => ({ kind: 'קדם', anyOf: ids.map((id) => ({ id, name: id ?? 'outside' })) });
 const c = (...prereqs) => ({ name: 'c', credits: 3, offered: true, prereqs, groups: [{ id: 'g' }] });
@@ -43,4 +47,53 @@ test('the 3 sample programs have no data errors', () => {
     const d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
     assert.deepEqual(dataRules(d, f).errors, [], f);
   }
+});
+
+// ---- layer 3: the solver and the record, against an oracle written from the spec ----
+const rec = (s = {}) => ({ passed: [], failed: {}, exempt: [], outsideDone: [], profile: { year: 2, amirnet: null }, ...s });
+test('oracle: mini() statuses from the fixture comment (A -> B -> C chain, P with Q, X outside, N not offered)', () => {
+  assert.deepEqual(oracle(mini(), rec()), {
+    A: 'available', Q0: 'available', B: 'blocked', C: 'blocked', P: 'conditional', Q: 'available', X: 'available', N: 'notOffered'
+  });
+  assert.equal(oracle(mini(), rec({ failed: { B: 1 } })).B, 'retake');
+  assert.equal(oracle(mini(), rec({ passed: ['A'] })).B, 'available');
+});
+test('checkPlan: flags an overlap, a busy-time meeting and a missing corequisite; a retake may lack a prerequisite, not a corequisite', () => {
+  const d = mini();
+  assert.ok(checkPlan(d, rec(), { courses: ['A', 'Q'], groups: ['A1', 'A1/1', 'Q2'] }, {}).some((e) => /overlap/.test(e)));
+  assert.ok(checkPlan(d, rec(), { courses: ['Q'], groups: ['Q1'] }, { blocks: [{ day: 1, start: '10:00', end: '11:00' }] }).some((e) => /busy/.test(e)));
+  assert.ok(checkPlan(d, rec(), { courses: ['P'], groups: ['P1'] }, {}).some((e) => /corequisite/.test(e)));
+  assert.deepEqual(checkPlan(d, rec(), { courses: ['P', 'Q'], groups: ['P1', 'Q1'] }, {}), []);
+  assert.ok(checkPlan(d, rec(), { courses: ['B'], groups: ['B1'] }, {}).some((e) => /prerequisite/.test(e)), 'a first attempt needs A');
+  assert.deepEqual(checkPlan(d, rec({ failed: { B: 1 } }), { courses: ['B'], groups: ['B1'] }, {}), [], 'a retake may (an exception)');
+  assert.ok(checkPlan(d, rec({ failed: { P: 1 } }), { courses: ['P'], groups: ['P1'] }, {}).some((e) => /corequisite/.test(e)));
+});
+test('checkYearPlan: ב checks against the record plus א; a course twice is flagged', () => {
+  const d = mini(),
+    plan = (a, b) => ({ a: { courses: a, groups: [] }, b: { courses: b, groups: [] }, credits: { a: 0, b: 0 }, missing: [] });
+  const sum = (ids) => ids.reduce((s, id) => s + d.courses[id].credits, 0);
+  const p = (a, b) => ({ ...plan(a, b), credits: { a: sum(a), b: sum(b) } });
+  assert.deepEqual(checkYearPlan({ dataA: d, dataB: d, state: rec(), plan: p(['A'], ['B']) }), []);
+  assert.ok(checkYearPlan({ dataA: d, dataB: d, state: rec(), plan: p([], ['B']) }).some((e) => /prerequisite/.test(e)));
+  assert.ok(checkYearPlan({ dataA: d, dataB: d, state: rec(), plan: p(['A'], ['A']) }).some((e) => /twice/.test(e)));
+});
+test('small cases: the solver\'s most-credits plan equals brute force over every feasible combination', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const { dataA, state } = fixture(seed, { min: 3, max: 5 });
+    const st = classify(dataA, state).statuses;
+    const courses = Object.keys(dataA.courses)
+      .map((id) => ({ id, mode: modeFor(st[id]?.status, 'optional', false) }))
+      .filter((c) => c.mode === 'optional');
+    const r = search({ data: dataA, courses, statuses: st, weights: showWeights({}, 'credits', []), topK: 1, timeLimitMs: 5000 });
+    const got = (r.results[0]?.courses ?? []).reduce((s, id) => s + dataA.courses[id].credits, 0);
+    assert.equal(got, bestCredits(dataA, courses, st), `seed ${seed}`);
+  }
+});
+test('sample: 19-2026, 20-2026, 30-2026 semester א pass the record, plan and metamorphic checks', () => {
+  const t0 = Date.now();
+  for (const f of ['2027-1/19-2026.json', '2027-1/20-2026.json', '2027-1/30-2026.json']) {
+    const d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+    assert.deepEqual(checkFile(f, d, { scenarios: ['S1'] }), [], f);
+  }
+  assert.ok(Date.now() - t0 < 20000, `${Date.now() - t0} ms`);
 });
