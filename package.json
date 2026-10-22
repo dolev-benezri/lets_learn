@@ -11,6 +11,7 @@
     "ui:serve": "python docs/superpowers/design-review/styles/serve.py",
     "ui:shots": "node docs/superpowers/design-review/styles/shoot.mjs",
     "check:export": "node scripts/check-export.mjs",
+    "check:real": "node scripts/check-real.mjs",
     "report:rules": "node scripts/rules-report.mjs",
     "report:conflicts": "node scripts/conflict-sheets.mjs"
   },
