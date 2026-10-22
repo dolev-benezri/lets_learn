@@ -146,24 +146,21 @@ export function altGroups(data, groupIds, gid, includeFull = false, split = fals
     });
 }
 
-// Up to 3 other groups of the same course and type that fit the rest of the alternative, aren't full and (for a lecture) have a free
-// tutorial of their own: listed as "L2 + L2/1". A tutorial backup must belong to the course's chosen lecture. Identical-time `alts` are skipped.
+// Up to 3 other groups of the same course and type that fit the rest of the alternative, aren't full and (for a lecture) make a whole option
+// with free groups of their own (tutorial, lab): listed as "L2 + L2/1". A tutorial backup must belong to the course's chosen lecture.
+// Identical-time `alts` are skipped.
 export function backups(data, res, gid) {
   const byId = groupIndex(data),
     { cid, c, g: cur } = byId.get(gid);
   const mates = res.groups.filter((id) => id !== gid && byId.get(id)?.cid === cid).map((id) => byId.get(id).g);
   const out = [];
-  for (const { g, clash } of altGroups(data, res.groups, gid)) {
-    if (g.id === gid || clash || g.full || res.alts?.[gid]?.includes(g.id)) continue;
+  const rest = meetingsMask(res.groups.filter((id) => byId.get(id)?.cid !== cid).flatMap((id) => byId.get(id).g.meetings));
+  for (const { g, clash, ok } of altGroups(data, res.groups, gid)) {
+    if (g.id === gid || clash || g.full || !ok || res.alts?.[gid]?.includes(g.id)) continue;
     if (cur.primary) {
-      const partners = [],
-        types = new Set(g.linked.map((id) => byId.get(id)?.g.type));
-      for (const t of types) {
-        const free = g.linked.map((id) => byId.get(id)?.g).find((y) => y && y.type === t && !y.full);
-        if (free) partners.push(free.id);
-      }
-      if (partners.length < types.size) continue;
-      out.push([g.id, ...partners].join(' + '));
+      // a whole option of the solver (lecture -> tutorial -> lab), none of it full, clear of the rest of the plan
+      const opt = buildOptions(c, { pins: [g.id] }).find((o) => !overlaps(o.mask, rest));
+      if (opt) out.push(opt.groups.join(' + '));
     } else if (mates.every((m) => m.type === g.type || paired(m, g))) out.push(g.id);
   }
   return out.slice(0, 3);
