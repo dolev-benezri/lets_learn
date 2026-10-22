@@ -80,6 +80,12 @@ function chip(id, li) {
     st === 'none' && askOutside.has(id) ? outsideBoxes(id, k) : ''}${(recWarn[id] ?? []).map((t) => `<p class="hint warn-text">${esc(t)}</p>`).join('')}</div>`;
 }
 
+// The regulation warnings (rules.js classify): their container is always rendered so a grade change can refresh just them.
+const regWarnHtml = () => app.cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('');
+export function renderRecordRegWarnings() {
+  const el = $('recordRegWarnings');
+  if (el) el.innerHTML = regWarnHtml();
+}
 // The weighted-average line; its container is always rendered so a grade change can refresh just this line.
 export const avgLine = () => {
   const { avg, credits } = gradeAverage(app.data, app.state);
@@ -320,7 +326,7 @@ export function renderMe() {
           <button type="button" class="btn" data-act="eraseAll" data-k="eraseAll">${icon('trash')} מחק את כל הנתונים שלי</button></section>
       </div>
       <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses" tabindex="-1">קורסים לפי שנה</h2>
-        ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
+        <div id="recordRegWarnings">${regWarnHtml()}</div>
         ${lists.filter(past).map(group).join('')}
         ${lists
           .filter((l) => sp.chosen.has(l.code))

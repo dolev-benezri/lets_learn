@@ -1239,3 +1239,24 @@ test('#me: an impossible record warns under the course; an outside alternative h
   refresh();
   document.body.dataset.view = 'plan';
 });
+
+test('#me: editing a grade refreshes the regulation warnings in place, without a refresh or a search', async () => {
+  const { CHG } = await import('../web/ui-actions.js');
+  const saved = structuredClone(app.state);
+  const id = Object.keys(app.data.courses).find((x) => app.data.courses[x].credits > 0 && !/^600/.test(x));
+  Object.assign(app.state, { passed: [id], failed: {}, grades: { [id]: 90 }, exempt: [] });
+  app.state.profile.year = 1;
+  refresh();
+  document.body.dataset.view = 'me';
+  run('rg-0', () => renderMe());
+  const cls = app.cls;
+  const shown = (name) => writes.filter((w) => w.scope === name && w.id === 'recordRegWarnings').map((w) => w.html).join('');
+  run('rg-60', () => assert.equal(CHG.grade({ dataset: { cid: id }, value: '60', validity: {} }), 'save'));
+  assert.match(shown('rg-60'), /מתחת ל-65/);
+  run('rg-90', () => CHG.grade({ dataset: { cid: id }, value: '90', validity: {} }));
+  assert.doesNotMatch(shown('rg-90'), /מתחת ל-65/);
+  assert.equal(app.cls, cls, 'no refresh: the classification object is the same');
+  app.state = saved;
+  refresh();
+  document.body.dataset.view = 'plan';
+});

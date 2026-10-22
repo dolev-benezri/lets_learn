@@ -576,3 +576,16 @@ test('recordWarnings + classify: failing 10336 without 90905 warns and stays a r
   assert.equal(st.status, 'retake');
   assert.ok(st.reasons.some((r) => /הוא קדם, ולא סומן שעברת אותו/.test(r)), st.reasons.join(' | '));
 });
+
+test('setStatus none clears the grade; a minimal state without grades still works', () => {
+  const s = { passed: ['B'], failed: {}, grades: { B: 90 } };
+  setStatus(s, 'B', 'none');
+  setStatus(s, 'B', 'passed');
+  assert.deepEqual(s.grades, {});
+  const bare = { passed: ['B'], failed: {} };
+  setStatus(bare, 'B', 'none');
+  assert.deepEqual(bare.passed, []);
+});
+test('gradeAverage counts a duplicated pass once', () => {
+  assert.deepEqual(gradeAverage(mini(), { passed: ['B', 'B'], grades: { B: 90 } }), { avg: 90, credits: 4 });
+});
