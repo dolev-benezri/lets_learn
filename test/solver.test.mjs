@@ -2162,3 +2162,43 @@ test('searchYear: a ב requirement met by an outside alternative in outsideDone 
   assert.ok(inB(p, 'N'));
   assert.ok(!p.warnings.some((w) => w.includes('מניח')), p.warnings.join(' | '));
 });
+
+// J5: year plans ranked by the year's totals, not by two separately normalized semester scores
+const rankFixture = () => {
+  const dA = { H: yc('H', 10, [grp('HA', 1)]), L: yc('L', 8, [grp('LA', 1)]), Q: yc('Q', 5, []) };
+  const lb = grp('LB', 2);
+  lb.full = true;
+  const dB = { H: yc('H', 10, []), L: yc('L', 8, [lb]), Q: yc('Q', 5, [grp('QB', 3)]) };
+  const kids = [['H', 4], ['L', 3], ['Q', 1]].flatMap(([p, n]) => Array.from({ length: n }, (_, i) => [`${p}${i}`, yc(`${p}${i}`, 1, [], pre(p))]));
+  for (const [id, c] of kids) dA[id] = dB[id] = c;
+  return { dataA: semData('א', dA), dataB: semData('ב', dB) };
+};
+const rankRun = (sortBy) => {
+  const { dataA, dataB } = rankFixture();
+  const choices = { H: 'optional', L: 'optional', Q: 'optional' };
+  return searchYear({
+    dataA, dataB, state: { passed: [], failed: {}, choices, semesterOf: {}, load: 'even', sortBy },
+    yearList: new Set(['H', 'L', 'Q']), weights: showWeights({}, sortBy, [])
+  });
+};
+test('searchYear "most credits": the 15-credit year plan ranks above the 13-credit one', () => {
+  const r = rankRun('credits').results;
+  assert.deepEqual(r.map((p) => p.credits.a + p.credits.b).slice(0, 2), [15, 13]);
+});
+test('searchYear "most unlocks": the plan that unlocks 5 courses over the year ranks first', () => {
+  const p = rankRun('unlocks').results[0];
+  assert.deepEqual([p.a.courses, p.b.courses], [['H'], ['Q']]);
+  assert.equal(p.unlocks, 5);
+});
+test('searchYear: when only semester ב fails, the diagnosis is ב\'s reason', () => {
+  const x = grp('X1', 1);
+  x.full = true;
+  const r = searchYear({
+    dataA: semData('א', { X: yc('X', 3, []) }),
+    dataB: semData('ב', { X: yc('X', 3, [x]) }),
+    state: { passed: [], failed: {}, choices: { X: 'must' }, semesterOf: {}, load: 'even' },
+    yearList: new Set(['X']), weights: W
+  });
+  assert.equal(r.results.length, 0);
+  assert.match(r.diagnosis[0], /^סמסטר ב׳: .*X/);
+});

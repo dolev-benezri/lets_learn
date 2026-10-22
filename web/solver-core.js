@@ -658,6 +658,14 @@ const LOAD_W = 3, MISSING_W = 5, A_TOP = 50;
 const A_SHARE = 0.6, B_FLOOR = 100, B_K = 5; // B_K: ב׳ plans tried per א׳ alternative; the pair score picks one
 
 // Year plan: top א׳ alternatives, each completed by the best ב׳ alternative with the א׳ courses counted as passed.
+// Year plans compare on year totals: "most credits" by both semesters' credits, "most unlocks" by the courses the whole year opens
+// (two separately normalized semester scores do not add up to that); fewer missing must courses first, the score breaks ties.
+export function compareYearPlans(x, y, sortBy) {
+  const total = (p) => p.credits.a + p.credits.b;
+  const lead = sortBy === 'credits' ? total(y) - total(x) : sortBy === 'unlocks' ? y.unlocks - x.unlocks : 0;
+  return (lead && (x.missing.length - y.missing.length || lead)) || y.score - x.score;
+}
+
 export function searchYear({
   dataA,
   dataB,
@@ -721,7 +729,10 @@ export function searchYear({
   // the record before א׳: passed, exempt (Amirnet or sheet) and outside-program courses marked done (rules.js reqMet)
   const known = { passed: new Set(state.passed ?? []), outside: new Set(state.outsideDone ?? []),
     exempt: new Set(Object.keys(stA).filter((id) => stA[id].status === 'exempt')) };
-  const pairs = [];
+  const pairs = [],
+    downA = downstream(dataA),
+    downB = downstream(dataB);
+  let failB = null;
   let partial = ra.partial;
   // The top-A_TOP cut ranks א׳ alone, so it can drop the only א׳ plans that open a ב׳ must course. Seed such courses:
   // the best א׳ plan for each way to take their open prerequisites (one א׳ candidate of each open anyOf; a
@@ -776,6 +787,7 @@ export function searchYear({
     let rb = search({ ...args, courses: coursesB });
     partial ||= rb.partial;
     if (!rb.results.length) {
+      failB ??= { args, coursesB }; // if no pair comes of it, ב׳'s own reason is the answer
       // Keep the pair and report what is missing, but give up as few must courses as possible: first relax one at a
       // time (the best scoring success wins), and only when no single one is enough fall back to all optional
       // (keeping the pins if that works). Relaxing a pinned course also lifts its pin, since search() forces pins.
@@ -812,17 +824,25 @@ export function searchYear({
     let bestPair = null;
     for (const b of rb.results.length ? rb.results : [null]) {
       const p = pairOf(a, b, takenA);
-      if (p && (!bestPair || p.score > bestPair.score)) bestPair = p;
+      if (p && (!bestPair || compareYearPlans(p, bestPair, state.sortBy) < 0)) bestPair = p;
     }
     if (bestPair) pairs.push(bestPair);
   }
-  pairs.sort((x, y) => y.score - x.score);
-  return { results: pairs.slice(0, topK), partial, diagnosis: pairs.length ? [] : ra.diagnosis };
+  pairs.sort((x, y) => compareYearPlans(x, y, state.sortBy));
+  const diagnosis = pairs.length
+    ? []
+    : failB
+      ? search({ ...failB.args, courses: failB.coursesB, why: true }).diagnosis.map((m) => `סמסטר ב׳: ${m}`)
+      : ra.diagnosis;
+  return { results: pairs.slice(0, topK), partial, diagnosis };
 
   function pairOf(a, b, takenA) {
     // an empty plan is not an answer: let the UI say why nothing fits
     if (!a.courses.length && !b?.courses.length) return null;
     const all = new Set([...a.courses, ...(b?.courses ?? [])]);
+    // the courses this year plan opens over both semesters (not taken in it, not passed): the year's "most unlocks"
+    const unlocks = new Set([...all].flatMap((id) => [...(downA[id] ?? []), ...(downB[id] ?? [])])
+      .filter((x) => !all.has(x) && stA[x]?.status !== 'done')).size;
     const missing = [...must].filter((id) => !all.has(id));
     const ca = credits(dataA, a.courses), cb = credits(dataB, b?.courses ?? []), total = ca + cb;
     const loadScore = total ? 1 - Math.min(Math.abs(ca - SHARE[state.load ?? 'even'] * total) / (total / 2), 1) : 1;
@@ -846,6 +866,7 @@ export function searchYear({
       a,
       b,
       credits: { a: ca, b: cb },
+      unlocks,
       missing,
       split: [...new Set([...a.split, ...(b?.split ?? [])])],
       warnings: [
