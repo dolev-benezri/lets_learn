@@ -659,11 +659,11 @@ const A_SHARE = 0.6, B_FLOOR = 100, B_K = 5; // B_K: ב׳ plans tried per א׳ a
 
 // Year plan: top א׳ alternatives, each completed by the best ב׳ alternative with the א׳ courses counted as passed.
 // Year plans compare on year totals: "most credits" by both semesters' credits, "most unlocks" by the courses the whole year opens
-// (two separately normalized semester scores do not add up to that); fewer missing must courses first, the score breaks ties.
+// (two separately normalized semester scores do not add up to that). Under every sort fewer missing must courses come first
+// (the plan list promises "חובה: בכל מערכת", audit #41); the score breaks ties.
 export function compareYearPlans(x, y, sortBy) {
   const total = (p) => p.credits.a + p.credits.b;
-  if (sortBy !== 'credits' && sortBy !== 'unlocks') return y.score - x.score;
-  const lead = sortBy === 'credits' ? total(y) - total(x) : y.unlocks - x.unlocks;
+  const lead = sortBy === 'credits' ? total(y) - total(x) : sortBy === 'unlocks' ? y.unlocks - x.unlocks : 0;
   return x.missing.length - y.missing.length || lead || y.score - x.score;
 }
 
