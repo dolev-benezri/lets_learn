@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const { stalePins } = await import('../../web/ui-text.js');
+const rd = (s) => JSON.parse(fs.readFileSync(`web/data/afeka/${s}/30-2026.json`));
+const A = rd('2027-1'), B = rd('2027-2'), S = rd('2027-3');
+const both = Object.entries(S.courses).filter(([id, c]) => c.offered && (A.courses[id]?.offered || B.courses[id]?.offered));
+const onlyS = Object.entries(S.courses).filter(([id, c]) => c.offered && !A.courses[id]?.offered && !B.courses[id]?.offered);
+console.log('summer offered:', Object.values(S.courses).filter(c=>c.offered).length, '| also in A/B:', both.length, '| summer-only:', onlyS.length);
+const [id, c] = both[0];
+const gid = c.groups.find((g) => g.primary).id;
+console.log('example', id, c.name, 'summer group', gid);
+console.log('stalePins([summer gid],[A,B]) =>', JSON.stringify(stalePins([gid], [A, B])));
