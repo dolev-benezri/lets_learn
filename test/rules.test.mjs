@@ -576,6 +576,17 @@ test('recordWarnings: a repeated alternative is named once; a failed alternative
   const u = recordWarnings(d, { passed: ['10128'], failed: {}, exempt: [] });
   assert.deepEqual(u['10128'], ['שים לב: מבוא למדעי המחשב הוא קדם, ולא סומן שעברת אותו. אם קיבלת אישור חריג, אפשר להשאיר.']);
 });
+test('classify: a requirement listing the same course twice is blocked by it once (10-2024 10128)', () => {
+  const st = classify(real('2027-1/10-2024.json'), { passed: [], failed: {}, exempt: [], profile: { year: 2 } }).statuses['10128'];
+  assert.deepEqual(st.blockedBy, [['10016']]);
+  assert.deepEqual(st.reasons, ['חסום: דורש מבוא למדעי המחשב (תקנון 7.4)']);
+});
+test('classify: a corequisite listing the same course twice names it once', () => {
+  const d = mini();
+  d.courses.P.prereqs = [{ kind: 'מקביל', anyOf: [{ id: 'Q', name: 'משוואות' }, { id: 'Q', name: 'משוואות' }] }];
+  const r = classify(d, { passed: [], failed: {} }).statuses.P;
+  assert.ok(r.reasons.some((t) => t.startsWith('רק יחד עם משוואות (')), r.reasons.join(' | '));
+});
 test('recordWarnings + classify: failing 10336 without 90905 warns and stays a retake (30-2026)', () => {
   const d = real('2027-1/30-2026.json');
   const s = { passed: [], failed: { 10336: 1 }, exempt: [], profile: { year: 1 } };

@@ -148,7 +148,8 @@ export function classify(data, state) {
     .flatMap((p) => p.anyOf)
     .map((a) => `קדם מחוץ לתוכנית (${a.name}): מניחים שעברת`);
   const unmetParallel = (c) => c.prereqs.filter((p) => p.kind === 'מקביל' && !satisfied(p));
-  const parallelNote = (par) => `רק יחד עם ${par.map((p) => p.anyOf.map((a) => a.name).join(' או ')).join(', ')} (קורס מקביל, תקנון 6.2.3)`;
+  const parallelNote = (par) =>
+    `רק יחד עם ${par.map((p) => [...new Set(p.anyOf.map((a) => a.name))].join(' או ')).join(', ')} (קורס מקביל, תקנון 6.2.3)`;
   const parallelIds = (par) => par.map((p) => p.anyOf.map((a) => a.id).filter(Boolean));
 
   for (const [id, c] of Object.entries(data.courses)) {
@@ -181,7 +182,7 @@ export function classify(data, state) {
         status: 'blocked',
         reasons: [],
         // one group per unmet requirement: its in-program alternatives, any one of which would do
-        blockedBy: hard.map((p) => p.anyOf.filter((a) => a.id).map((a) => a.id))
+        blockedBy: hard.map((p) => [...new Set(p.anyOf.filter((a) => a.id).map((a) => a.id))]) // the data repeats some alternatives
       };
       continue;
     }
