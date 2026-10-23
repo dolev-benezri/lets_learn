@@ -39,3 +39,20 @@ test('withAfterA on a single ב׳ file: mechanical 2026 year 1 opens the year-vi
     assert.equal(alone[id].status, 'blocked', B.courses[id].name);
   }
 });
+
+// GPT review of #42: on a single ב׳ file the statuses go straight to the solver, so a ב׳ course that opens after א׳ but
+// still needs a corequisite in ב׳ must keep missingParallel (the solver enforces it from there).
+test('withAfterA on a single ב׳ file keeps the corequisite the course still needs', () => {
+  const c = (name, prereqs = []) => ({ name, credits: 3, offered: true, groups: [], prereqs });
+  const A = { year: 2027, startYear: 2026, semester: 'א', lists: [], courses: { X: c('X') } };
+  const B = {
+    year: 2027, startYear: 2026, semester: 'ב', lists: [], courses: {
+      Y: c('Y'),
+      Z: c('Z', [{ kind: 'קדם', anyOf: [{ id: 'X', name: 'X' }] }, { kind: 'מקביל', anyOf: [{ id: 'Y', name: 'Y' }] }]),
+    },
+  };
+  const state = { passed: [], failed: {} };
+  const z = withAfterA(B, state, classify(B, state), A).statuses.Z;
+  assert.equal(z.status, 'afterA');
+  assert.deepEqual(z.missingParallel, [['Y']]); // one group per corequisite, its alternatives
+});

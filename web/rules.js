@@ -282,7 +282,13 @@ export function withAfterA(data, state, cls, dataA = null) {
       || !['available', 'conditional'].includes(second[id].status)) continue;
     const names = [...new Set(c.prereqs.filter((p) => p.kind === 'קדם' && !reqMet(p, ctx))
       .flatMap((p) => p.anyOf.filter((a) => candA.has(a.id)).map((a) => a.name)))];
-    statuses[id] = { status: 'afterA', reasons: [`אפשר בסמסטר ב׳ אחרי ${names.join(', ')}`] };
+    // a corequisite still owed in ב׳ stays: on a single ב׳ file these statuses go straight to the solver
+    const par = second[id].missingParallel;
+    statuses[id] = {
+      status: 'afterA',
+      reasons: [`אפשר בסמסטר ב׳ אחרי ${names.join(', ')}`, ...(par ? second[id].reasons.slice(0, 1) : [])],
+      ...(par && { missingParallel: par })
+    };
   }
   return { ...cls, statuses };
 }
