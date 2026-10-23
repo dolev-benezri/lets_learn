@@ -189,7 +189,7 @@ test('switchTo: a later cohort pre-marks year 1 as before; an unanswered year qu
   reset({ ...mine(), profile: { year: null, amirnet: null, specs: [], summer: false } });
   await switchTo(30, 2025);
   assert.equal(app.state.profile.year, null);
-  assert.deepEqual(app.state.passed, ['a'], 'derived year 3: the year-1 list is assumed passed');
+  assert.deepEqual(app.state.passed, ['a', 'b'], 'derived year 3: the year-1 list is assumed passed, the record kept');
 });
 
 test('switchTo: a failed or refused switch changes nothing', async () => {
@@ -248,6 +248,26 @@ test('switchTo: the study year picked (set before the switch, as CHG.pyear does)
     await switchTo(30, cohort);
     assert.deepEqual([app.state.startYear, app.state.profile.year], [cohort, y], `picked year ${y}`);
   }
+});
+
+test('switchTo: another cohort of the same program keeps the record; a failed course is not assumed passed (bot report 1.1)', async () => {
+  serve();
+  reset({ ...mine(), passed: ['b'], failed: { a: 1 }, grades: { a: 50 }, choices: { b: 'no' },
+    profile: { year: 1, amirnet: null, specs: ['solid', 'flow'], summer: false } });
+  app.state.profile.year = 3; // CHG.pyear: year 3 in 2027 = cohort 2025
+  await switchTo(30, 2025);
+  let s = app.state;
+  assert.deepEqual([s.passed, s.failed, s.grades, s.choices, s.profile.specs],
+    [['b'], { a: 1 }, { a: 50 }, { b: 'no' }, ['solid', 'flow']], 'failed a stays failed, not pre-marked');
+  s.grades.b = 80;
+  s.profile.year = 2;
+  await switchTo(30, 2026); // a stash of 2026 exists: the newer record still wins
+  s = app.state;
+  assert.deepEqual([s.passed, s.failed, s.grades], [['b'], { a: 1 }, { a: 50, b: 80 }]);
+  delete s.failed.a;
+  s.profile.year = 3;
+  await switchTo(30, 2025);
+  assert.deepEqual(app.state.passed, ['b', 'a'], 'without a failure the earlier years are assumed passed, as before');
 });
 
 test('switchTo: a newer choice cancels an older one still loading', async () => {

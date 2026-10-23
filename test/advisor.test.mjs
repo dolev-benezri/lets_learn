@@ -37,6 +37,14 @@ test('advisorHtml: the situation (program, year, credits of the goal, passed, mi
   assert.ok(!t.includes('לא נלמד'), 'only the required courses that are not passed');
 });
 
+test('advisorHtml: failed courses not passed again are listed (bot report #6)', () => {
+  assert.ok(!text(advisorHtml(world())).includes('נכשלתי'));
+  const t = text(advisorHtml(world({ failed: { B: 1, A: 1 } })));
+  assert.ok(t.includes('קורסים שנכשלתי בהם ועוד לא עברתי: דינמיקה'), t);
+  const line = t.split('ועוד לא עברתי: ')[1].split('קורסי חובה')[0];
+  assert.ok(!line.includes('חדו"א 1'), `A was passed again: ${line}`);
+});
+
 test('advisorHtml: each course of the result with its groups and meeting times', () => {
   const t = text(advisorHtml(world()));
   for (const s of ['דינמיקה', 'משוואות', 'קבוצה B1', 'יום ב׳ 10:00–11:50', 'קבוצה Q1', 'יום א׳ 10:00–11:50', '8 נ״ז'])
