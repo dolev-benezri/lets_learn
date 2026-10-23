@@ -194,9 +194,9 @@ test('import: a graded pass on an exempt course offers removing the exemption', 
 
 // Audit 2026-10-23 #40: a row with a known course code whose grade is not one the import knows (a grade in words) is
 // counted, so the preview can say it was not imported, instead of dropping it silently.
-test('skippedRows counts a row with a grade in words; parseGradeSheet leaves it out', () => {
+test('skippedRows counts a row with a grade the import does not take (נפסל); parseGradeSheet leaves it out', () => {
   const rows = sheet(
-    cells(1, 700, ['10016', 'תשפ"ו 1/', 'פיזיקה 1', 'ד"ר כהן', 'עבר', '4.0', '4.50']),
+    cells(1, 700, ['10016', 'תשפ"ו 1/', 'פיזיקה 1', 'ד"ר כהן', 'נפסל', '4.0', '4.50']),
     cells(1, 680, ['30003', 'תשפ"ו 1/', 'מבוא', 'ד"ר לוי', '85', '3.0', '3.00']),
     cells(1, 660, ['30133', 'טרם', 'קורס', 'צוות', '3.0', '3.00']),
     cells(1, 640, ['ציון', 'שם הקורס', 'ש"ס'])
@@ -221,4 +221,21 @@ test('a failing grade is kept on file and offered when it changes (it counts in 
   applyGradeChanges(s, rows);
   assert.equal(s.grades['10016'], 45);
   assert.equal(gradeChanges([{ id: '10016', grade: 45, result: 'failed' }], s).length, 0, 'nothing new the second time');
+});
+
+// Audit 2026-10-23 #40, regulation 9.3 (grade types): "עבר" (60 and up) and "השתתף" (a course without a numeric grade) are a pass
+// with no number, so they stay out of the average (13.7); "נכשל" is a failure. "לא נבחן" and "נפסל" are left for the student.
+test('grades in words (9.3): עבר and השתתף pass without a number, נכשל fails', () => {
+  const w = (y, code, word) => cells(1, y, [code, 'תשפ"ו 1/', 'קורס', 'צוות', word, '3.0', '3.00']);
+  const rows = sheet(w(700, '10016', 'עבר'), w(680, '30003', 'השתתף'), w(660, '30130', 'נכשל'), w(640, '30133', 'נפסל'));
+  assert.deepEqual(by(parseGradeSheet(rows, data)), {
+    10016: ['passed', null],
+    30003: ['passed', null],
+    30130: ['failed', null]
+  });
+  assert.equal(skippedRows(rows, data), 1, 'נפסל is said, not imported');
+  const s = st();
+  applyGradeChanges(s, gradeChanges(parseGradeSheet(rows, data), s));
+  assert.deepEqual(s.grades, {}, 'no number, no grade on file');
+  assert.deepEqual([...s.passed].sort(), ['10016', '30003']);
 });
