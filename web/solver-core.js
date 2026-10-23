@@ -662,8 +662,9 @@ const A_SHARE = 0.6, B_FLOOR = 100, B_K = 5; // B_K: ב׳ plans tried per א׳ a
 // (two separately normalized semester scores do not add up to that); fewer missing must courses first, the score breaks ties.
 export function compareYearPlans(x, y, sortBy) {
   const total = (p) => p.credits.a + p.credits.b;
-  const lead = sortBy === 'credits' ? total(y) - total(x) : sortBy === 'unlocks' ? y.unlocks - x.unlocks : 0;
-  return (lead && (x.missing.length - y.missing.length || lead)) || y.score - x.score;
+  if (sortBy !== 'credits' && sortBy !== 'unlocks') return y.score - x.score;
+  const lead = sortBy === 'credits' ? total(y) - total(x) : y.unlocks - x.unlocks;
+  return x.missing.length - y.missing.length || lead || y.score - x.score;
 }
 
 export function searchYear({
