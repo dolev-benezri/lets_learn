@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { classify, modeFor, amirnetExempt, yearsOf } from '../web/rules.js';
-import { search, searchYear, buildOptions, overlaps, compareYearPlans } from '../web/solver-core.js';
+import { search, searchYear, buildOptions, overlaps } from '../web/solver-core.js';
 import { DEFAULT } from '../web/app.js';
 
 const DIR = 'web/data/afeka';
@@ -261,6 +261,41 @@ export function checkFile(file, data, { scenarios: only = null, seed = 1, timeLi
   return out;
 }
 
+// "Most credits" / "most unlocks" year order, recomputed from the data rather than the plans' own totals or compareYearPlans:
+// fewer missing mandatory courses first, then the year's credits (or the courses it opens: not passed, not in the plan, below a
+// planned course through prerequisites, in either semester), more first. Other keys are not checked. Returns failure lines.
+export function yearOrder(dataA, dataB, state, results, sortBy) {
+  if (sortBy !== 'credits' && sortBy !== 'unlocks') return [];
+  const below = (d) => {
+    const rev = {};
+    for (const [id, c] of Object.entries(d.courses))
+      for (const p of c.prereqs) if (p.kind === 'קדם') for (const a of p.anyOf) if (a.id) (rev[a.id] ??= new Set()).add(id);
+    return rev;
+  };
+  const revs = [below(dataA), below(dataB)],
+    passed = new Set(state.passed ?? []);
+  const total = (p) => {
+    const ids = [...p.a.courses, ...(p.b?.courses ?? [])];
+    if (sortBy === 'credits')
+      return p.a.courses.reduce((s, id) => s + dataA.courses[id].credits, 0) + (p.b?.courses ?? []).reduce((s, id) => s + dataB.courses[id].credits, 0);
+    const opened = new Set();
+    for (const rev of revs) {
+      // each semester's file on its own, as the year view reads them
+      const seen = new Set(), stack = [...ids];
+      while (stack.length) for (const x of rev[stack.pop()] ?? []) if (!seen.has(x)) seen.add(x), stack.push(x);
+      seen.forEach((x) => opened.add(x));
+    }
+    return [...opened].filter((x) => !ids.includes(x) && !passed.has(x)).length;
+  };
+  const out = [];
+  for (let i = 1; i < results.length; i++) {
+    const [x, y] = [results[i - 1], results[i]],
+      worse = x.missing.length - y.missing.length || total(y) - total(x);
+    if (worse > 0) out.push(`results ${i - 1} and ${i} out of order (${sortBy})`);
+  }
+  return out;
+}
+
 // The year view for one cohort (א and ב files): every pair checked, and "most credits" / "most unlocks" ordered by the year's totals.
 export function checkYear(file, dataA, dataB, { seed = 1, timeLimitMs = 3000 } = {}) {
   const out = [];
@@ -273,8 +308,7 @@ export function checkYear(file, dataA, dataB, { seed = 1, timeLimitMs = 3000 } =
       });
       for (const p of r.results)
         out.push(...checkYearPlan({ dataA, dataB, state, plan: p, constraints: DEFAULT.constraints }).map((e) => `${at}: ${e}`));
-      for (let i = 1; i < r.results.length; i++)
-        if (compareYearPlans(r.results[i - 1], r.results[i], sortBy) > 0) out.push(`${at}: results ${i - 1} and ${i} out of order`);
+      out.push(...yearOrder(dataA, dataB, state, r.results, sortBy).map((e) => `${at}: ${e}`));
       if (!r.results.length && !r.diagnosis?.length) out.push(`${at}: no year plan and no reason given`);
     }
   return out;
