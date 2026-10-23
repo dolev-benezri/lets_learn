@@ -29,15 +29,19 @@ function run() {
     .map((id) => ({ id, mode: candidateMode(id) }))
     .filter((x) => x.mode === 'must' || x.mode === 'optional');
   const my = ui.gen; // a newer scheduled search keeps the indicator on
+  const year = yearSearch();
   const byMore = ui.moreMul > 1,
-    ms = Math.min((yearSearch() ? 3000 : 1500) * ui.moreMul, MAX_MS);
+    ms = Math.min((year ? 3000 : 1500) * ui.moreMul, MAX_MS);
   const done = () => {
     ui.running = my !== ui.gen;
+    // the year search keeps only the top א׳ alternatives (solver-core.js A_TOP), so ending in time is not exhaustive
     if (byMore && !ui.running && ui.last)
       toast(
         ui.last.partial
           ? `החיפוש המורחב הסתיים (${+(ms / 1000).toFixed(1)} שניות)`
-          : 'החיפוש הושלם: נבדקו כל האפשרויות'
+          : year
+            ? 'החיפוש השנתי הושלם: מוצגות החלופות הטובות ביותר שנמצאו'
+            : 'החיפוש הושלם: נבדקו כל האפשרויות'
       );
     const hadMore = document.activeElement?.dataset?.k === 'searchMore';
     keepFocus(renderView);
