@@ -4,7 +4,7 @@ import { progress, studyYear, yearsOf, gradeAverage, specLists, specRule, validS
 import { icon } from './ui-grid.js';
 import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
-import { readGradeSheet, parseGradeSheet, gradeChanges, applyGradeChanges } from './grade-import.js';
+import { readGradeSheet, parseGradeSheet, skippedRows, gradeChanges, applyGradeChanges } from './grade-import.js';
 import { approvedOn } from './settings.js';
 import { creditsGoal, courseCount, conflictsFor, approvedText } from './ui-text.js';
 import {
@@ -349,18 +349,26 @@ const setGradeMsg = (m) => {
 export async function importGrades(file) {
   const { data, state } = app;
   setGradeMsg('קוראים את הגליון…');
-  let found;
+  let found, skipped;
   try {
-    found = parseGradeSheet(await readGradeSheet(file), data);
+    const sheet = await readGradeSheet(file);
+    found = parseGradeSheet(sheet, data);
+    skipped = skippedRows(sheet, data);
   } catch (e) {
     return setGradeMsg(e.user ? e.message : 'לא הצלחנו לקרוא את הקובץ.');
   }
+  // course rows with a grade the import does not read (e.g. in words) are said, not dropped silently (audit #40)
+  const skipNote = !skipped
+    ? ''
+    : skipped === 1
+      ? ' שורה אחת לא זוהתה ולא תיובא. אפשר לסמן אותה ידנית.'
+      : ` ${skipped} שורות לא זוהו ולא יובאו. אפשר לסמן אותן ידנית.`;
   const rows = found.filter((r) => r.result !== 'pending');
-  if (!rows.length) return setGradeMsg(GRADE_NONE);
+  if (!rows.length) return setGradeMsg(GRADE_NONE + skipNote);
   const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
   const todo = gradeChanges(found, state);
   if (!todo.length) {
-    setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.`);
+    setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.${skipNote}`);
     return enterList();
   }
   const label = (r) =>
@@ -369,7 +377,7 @@ export async function importGrades(file) {
       r.result === 'passed' && state.exempt.includes(r.id) ? ' (במקום פטור)' : ''}`;
   const pick = await askRows(
     'ייבוא מגליון ציונים',
-    'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.',
+    `הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.${skipNote}`,
     ['קורס', 'ציון', 'שינוי'],
     todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]),
     { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) }
