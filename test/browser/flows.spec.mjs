@@ -196,3 +196,39 @@ for (const size of Object.keys(SIZES)) {
     );
   });
 }
+
+// Audit 2026-10-23 #32: a pin made in summer belongs to summer. It must not turn the course into a year "must", and the
+// banner must not call the summer group gone (it is in the summer file).
+const SUMMER_Y1 = {
+  ...DONE,
+  'afeka-sched-v1': JSON.stringify({
+    ...STUDENT,
+    passed: [],
+    profile: { ...STUDENT.profile, year: 1, summer: true },
+    scope: 'קיץ'
+  })
+};
+const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
+const semTab = (page, v) => page.locator(`#semtabs label:has(input[name="sem"][value="${v}"])`).click();
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: a summer pin stays in summer`, async (t) => {
+    const page = await visit(t, size, SUMMER_Y1);
+    await weekReady(page);
+    await page.locator('#week .blk').first().click();
+    const pin = page.locator('#pop .pop-actions [data-act="pin"]');
+    const gid = await pin.getAttribute('data-gid');
+    await pin.click();
+    const placed = (o) => page.locator('#week .blk-pin').first().waitFor({ state: 'attached', ...o }); // a phone shows one day
+    await placed();
+    assert.doesNotMatch((await page.locator('#banner').textContent()) ?? '', /כבר לא קיימת/);
+    const cid = String(Number(gid.slice(2, 7)));
+    assert.equal((await stored(page)).choices[cid], undefined, 'the summer pin does not set a year choice');
+    // the year plan is searched again, then summer on top of it: the pinned group is still placed
+    await semTab(page, 'א');
+    await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+    await page.getByText('נעוץ בקיץ').first().waitFor({ state: 'attached' }); // the year list says why it is not in the year plan
+    await semTab(page, 'קיץ');
+    await placed({ timeout: 30000 });
+    assert.ok((await stored(page)).pins.includes(gid));
+  });
+}

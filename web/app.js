@@ -412,6 +412,11 @@ export function yearCourses() {
 export const planningCls = () => app.clsSummer ?? app.cls;
 export const candidateMode = (id) =>
   modeFor(planningCls().statuses[id]?.status, app.state.choices[id], yearCourses().includes(id));
+// Courses with a pinned summer group are taken in summer: the year and single-semester searches leave them out (audit #32).
+export const summerPinned = () => {
+  const S = summerOn() && !summerScope() ? app.sem['קיץ'] : null;
+  return new Set(S ? Object.keys(S.courses).filter((id) => S.courses[id].groups.some((g) => app.state.pins.includes(g.id))) : []);
+};
 
 // Rendering lives in ui-plan.js / ui-grid.js; they register here. Focus survives a re-render via data-k keys.
 let renderers = [];

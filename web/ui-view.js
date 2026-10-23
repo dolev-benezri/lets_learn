@@ -110,7 +110,7 @@ export function renderBanner() {
       ? app.catalog.programs.find((p) => p.id === L.program)?.name ?? 'לא מוכרת'
       : null;
   // with one semester loaded, the other's pins would look gone
-  const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב']]) : [];
+  const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב'], app.sem['קיץ']]) : [];
   const turn = turnWarning(app.settings.turns, app.state.profile.turn, freshOf(app.data));
   // the remote notice sits above every step (#notice, outside the plans step that holds #banner)
   if ($('notice').dataset.text !== app.settings.notice) {
