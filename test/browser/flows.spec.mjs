@@ -196,3 +196,17 @@ for (const size of Object.keys(SIZES)) {
     );
   });
 }
+
+// Audit 2026-10-23 #35: in the year view the exams flag must not come from א׳ alone: when only ב׳ has published its
+// exams, the "פיזור בחינות" weight still shows.
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: the year view shows the exam weight when only ב׳ has exams`, async (t) => {
+    const page = await visit(t, size, DONE, '#prefs');
+    await page.context().route('**/data/afeka/*-2/*.json', async (route) => {
+      const res = await route.fetch();
+      await route.fulfill({ response: res, json: { ...(await res.json()), examsPublished: true } });
+    });
+    await page.reload();
+    await page.locator('fieldset', { hasText: 'פיזור בחינות' }).first().waitFor({ state: 'attached', timeout: 30000 });
+  });
+}
