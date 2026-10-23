@@ -80,8 +80,9 @@ export async function readHash(hash, { year, semester }) {
 
   // A friend's groups belong to one semester. A backup outlives the year: its record stays, last year's group ids are dropped (below).
   // a newer backup (the site fell back to an older year) is refused below, not aged backwards
+  // A backup's semester does not matter: the restore opens on the default semester (app.js normalize), as a new device does.
   const lastYear = type === 'b' && payload.year < year;
-  if (!lastYear && (payload.year !== year || payload.semester !== semester)) {
+  if (!lastYear && (payload.year !== year || (type === 'f' && payload.semester !== semester))) {
     return { error: `הקישור שייך לסמסטר אחר (${payload.year} ${payload.semester.slice(0, 10)})` };
   }
 

@@ -171,3 +171,9 @@ test("cleanSettings: a conflict keeps plan, yedion and tool texts (each at most 
     { cohorts: [2024], text: "ב" }
   ]);
 });
+
+test('cleanSettings: a placeholder supportEmail on a reserved domain (RFC 2606) is dropped, so no report link goes nowhere', () => {
+  for (const bad of ['support@example.com', 'a@example.org', 'a@mail.example.net', 'a@x.example', 'a@x.test', 'a@x.invalid', 'a@localhost'])
+    assert.equal(cleanSettings({ supportEmail: bad }).supportEmail, '', bad);
+  assert.equal(cleanSettings({ supportEmail: 'help@examples.co.il' }).supportEmail, 'help@examples.co.il');
+});
