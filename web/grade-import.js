@@ -63,7 +63,7 @@ function parseRow(row, data) {
   if (grade !== null) return { id, grade, result: 'passed' };
   if (slot !== 'חייב' && slot) return { id, grade: null, result: 'exempt' };
   if (slot === 'חייב') return { id, grade: null, result: 'pending' };
-  return null;
+  return { id, skipped: true }; // a course row whose grade the import does not know (a grade in words): counted, not imported
 }
 
 // What an import would change, as rows for the confirm dialog: was/to in the app's words; check = pre-checked. A failure on a course marked passed
@@ -102,6 +102,7 @@ export function parseGradeSheet(rows, data) {
     failed = new Set();
   for (const row of rows) {
     const r = parseRow(row, data);
+    if (r?.skipped) continue;
     if (r?.result === 'failed') failed.add(r.id);
     const p = r && out.get(r.id);
     if (
@@ -112,6 +113,8 @@ export function parseGradeSheet(rows, data) {
   }
   return [...out.values()].map((r) => (r.result === 'passed' && failed.has(r.id) ? { ...r, failedBefore: true } : r));
 }
+// Course rows read but not imported (a grade the import does not know, e.g. in words): the preview says how many (audit #40).
+export const skippedRows = (rows, data) => rows.filter((row) => parseRow(row, data)?.skipped).length;
 
 const fail = (msg) => Object.assign(new Error(msg), { user: true });
 // File -> rows. Throws an Error with a user-facing Hebrew message (`user: true`) for limits; pdf.js failures read as "not a readable sheet".

@@ -347,3 +347,23 @@ for (const size of Object.keys(SIZES)) {
     await page.locator('fieldset', { hasText: 'פיזור בחינות' }).first().waitFor({ state: 'attached', timeout: 30000 });
   });
 }
+
+// Audit 2026-10-23 #40: a course row whose grade the import does not know (a word, not a number) is not dropped silently.
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: the grade-sheet preview says how many rows it could not read`, async (t) => {
+    const page = await visit(
+      t,
+      size,
+      { 'afeka-sched-v1-terms': '2', 'afeka-sched-v1': JSON.stringify({ ...STUDENT, passed: [] }) },
+      '#me'
+    );
+    await page.locator('#gradeFile').waitFor({ state: 'attached' });
+    const pdf = gradeSheetPdf(['10016 Calculus 4.0 85', '30135 Statics 3.0 Pass']);
+    await page.locator('#gradeFile').setInputFiles({ name: 'sheet.pdf', mimeType: 'application/pdf', buffer: pdf });
+    const preview = page.locator('dialog.dlg-rows[open]');
+    await preview.waitFor({ timeout: 30000 });
+    assert.equal(await preview.locator('tbody tr').count(), 1, 'the numeric row only');
+    await preview.getByText('שורה אחת לא זוהתה ולא תיובא. אפשר לסמן אותה ידנית.').waitFor();
+    await page.keyboard.press('Escape');
+  });
+}
