@@ -1,5 +1,5 @@
 // Schedule search core. Pure ES module: used by node tests and by solver-worker.js.
-import { classify, modeFor } from './rules.js';
+import { classify, modeFor, reqMet } from './rules.js';
 
 const SLOT_START = 7 * 60; // 07:00
 const SLOT = 30;           // minutes per bit, 32 bits = 07:00-23:00
@@ -658,6 +658,15 @@ const LOAD_W = 3, MISSING_W = 5, A_TOP = 50;
 const A_SHARE = 0.6, B_FLOOR = 100, B_K = 5; // B_K: ב׳ plans tried per א׳ alternative; the pair score picks one
 
 // Year plan: top א׳ alternatives, each completed by the best ב׳ alternative with the א׳ courses counted as passed.
+// Year plans compare on year totals: "most credits" by both semesters' credits, "most unlocks" by the courses the whole year opens
+// (two separately normalized semester scores do not add up to that); fewer missing must courses first, the score breaks ties.
+export function compareYearPlans(x, y, sortBy) {
+  const total = (p) => p.credits.a + p.credits.b;
+  if (sortBy !== 'credits' && sortBy !== 'unlocks') return y.score - x.score;
+  const lead = sortBy === 'credits' ? total(y) - total(x) : y.unlocks - x.unlocks;
+  return x.missing.length - y.missing.length || lead || y.score - x.score;
+}
+
 export function searchYear({
   dataA,
   dataB,
@@ -718,8 +727,13 @@ export function searchYear({
   const ra = search({ ...argsA, courses: coursesA, topK: A_TOP, distinct: true, timeLimitMs: timeLimitMs * A_SHARE });
   const credits = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
   const name = (id) => dataA.courses[id]?.name ?? id;
-  const settled = (x) => (state.passed ?? []).includes(x.id) || stA[x.id]?.status === 'exempt';
-  const pairs = [];
+  // the record before א׳: passed, exempt (Amirnet or sheet) and outside-program courses marked done (rules.js reqMet)
+  const known = { passed: new Set(state.passed ?? []), outside: new Set(state.outsideDone ?? []),
+    exempt: new Set(Object.keys(stA).filter((id) => stA[id].status === 'exempt')) };
+  const pairs = [],
+    downA = downstream(dataA),
+    downB = downstream(dataB);
+  let failB = null;
   let partial = ra.partial;
   // The top-A_TOP cut ranks א׳ alone, so it can drop the only א׳ plans that open a ב׳ must course. Seed such courses:
   // the best א׳ plan for each way to take their open prerequisites (one א׳ candidate of each open anyOf; a
@@ -728,9 +742,7 @@ export function searchYear({
   const key = (a) => [...a.courses].sort().join();
   const seen = new Set(ra.results.map(key)), seeds = [];
   for (const m of must) {
-    const open = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם'
-      && !p.anyOf.some(settled)
-      && !p.anyOf.every((x) => x.id === null));
+    const open = (dataB.courses[m]?.prereqs ?? []).filter((p) => p.kind === 'קדם' && !reqMet(p, known));
     const cands = open.map((p) => p.anyOf.filter((x) => inA.has(x.id)).map((x) => x.id));
     if (!cands.length || cands.some((c) => !c.length)) continue;
     const combos = cands.reduce((acc, c) => acc.flatMap((done) => c.map((x) => [...done, x])), [[]]);
@@ -776,6 +788,7 @@ export function searchYear({
     let rb = search({ ...args, courses: coursesB });
     partial ||= rb.partial;
     if (!rb.results.length) {
+      failB ??= { args, coursesB }; // if no pair comes of it, ב׳'s own reason is the answer
       // Keep the pair and report what is missing, but give up as few must courses as possible: first relax one at a
       // time (the best scoring success wins), and only when no single one is enough fall back to all optional
       // (keeping the pins if that works). Relaxing a pinned course also lifts its pin, since search() forces pins.
@@ -812,24 +825,32 @@ export function searchYear({
     let bestPair = null;
     for (const b of rb.results.length ? rb.results : [null]) {
       const p = pairOf(a, b, takenA);
-      if (p && (!bestPair || p.score > bestPair.score)) bestPair = p;
+      if (p && (!bestPair || compareYearPlans(p, bestPair, state.sortBy) < 0)) bestPair = p;
     }
     if (bestPair) pairs.push(bestPair);
   }
-  pairs.sort((x, y) => y.score - x.score);
-  return { results: pairs.slice(0, topK), partial, diagnosis: pairs.length ? [] : ra.diagnosis };
+  pairs.sort((x, y) => compareYearPlans(x, y, state.sortBy));
+  const diagnosis = pairs.length
+    ? []
+    : failB
+      ? search({ ...failB.args, courses: failB.coursesB, why: true }).diagnosis.map((m) => `סמסטר ב׳: ${m}`)
+      : ra.diagnosis;
+  return { results: pairs.slice(0, topK), partial, diagnosis };
 
   function pairOf(a, b, takenA) {
     // an empty plan is not an answer: let the UI say why nothing fits
     if (!a.courses.length && !b?.courses.length) return null;
     const all = new Set([...a.courses, ...(b?.courses ?? [])]);
+    // the courses this year plan opens over both semesters (not taken in it, not passed): the year's "most unlocks"
+    const unlocks = new Set([...all].flatMap((id) => [...(downA[id] ?? []), ...(downB[id] ?? [])])
+      .filter((x) => !all.has(x) && stA[x]?.status !== 'done')).size;
     const missing = [...must].filter((id) => !all.has(id));
     const ca = credits(dataA, a.courses), cb = credits(dataB, b?.courses ?? []), total = ca + cb;
     const loadScore = total ? 1 - Math.min(Math.abs(ca - SHARE[state.load ?? 'even'] * total) / (total / 2), 1) : 1;
     // Only prerequisites still open before א׳: an anyOf already met by a passed (or exempt) option needs nothing from
     // א׳.
     const needs = [...new Set((b?.courses ?? []).flatMap((id) => dataB.courses[id].prereqs
-      .filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled))
+      .filter((p) => p.kind === 'קדם' && !reqMet(p, known))
       .flatMap((p) => p.anyOf.map((x) => x.id))
       .filter((x) => takenA.has(x))))];
     // Swap the two per-semester progress terms for the year one. Times 2: each half scored progress in [0, 1], so the
@@ -846,6 +867,7 @@ export function searchYear({
       a,
       b,
       credits: { a: ca, b: cb },
+      unlocks,
       missing,
       split: [...new Set([...a.split, ...(b?.split ?? [])])],
       warnings: [

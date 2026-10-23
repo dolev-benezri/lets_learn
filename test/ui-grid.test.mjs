@@ -413,3 +413,20 @@ test('pinsWithoutSplit: pins that only work with split on lose their sub-group p
     'infeasible with split too: not the split\'s doing, kept'
   );
 });
+
+// J15: a backup is a whole valid option (lecture -> tutorial -> lab), never one whose lab is full
+test('backups: a lecture backup follows the whole chain and skips one whose lab is full', () => {
+  const build = (labFull) => ({
+    courses: course([
+      mk('p1', 'L', [m(1, '08:00', '10:00')], ['p1/t']),
+      mk('p1/t', 'T', [m(2, '08:00', '10:00')], ['p1/l']),
+      mk('p1/l', 'M', [m(3, '08:00', '10:00')]),
+      mk('p2', 'L', [m(1, '12:00', '14:00')], ['p2/t']),
+      mk('p2/t', 'T', [m(2, '12:00', '14:00')], ['p2/l']),
+      mk('p2/l', 'M', [m(3, '12:00', '14:00')], [], { full: labFull })
+    ])
+  });
+  const res = { groups: ['p1', 'p1/t', 'p1/l'], alts: {} };
+  assert.deepEqual(backups(build(true), res, 'p1'), [], 'its only lab is full');
+  assert.deepEqual(backups(build(false), res, 'p1'), ['p2 + p2/t + p2/l']);
+});

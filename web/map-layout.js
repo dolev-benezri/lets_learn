@@ -262,7 +262,8 @@ export function progressInfo(data, st, plan = new Set(), specs = []) {
     planned = 0;
   const extra = { reach: 0, done: 0, planned: 0 }; // credits past a list's minimum (or the specialization cap), which count toward the rest of the degree
   const rows = []; // the degree checklist: one row per requirement, with the same clipped numbers the bar adds up
-  const fill = (cap, all, d0, p0, name, need = cap) => {
+  // missingMandatory: the chosen specialization's mandatory courses not done yet; its row is complete only without them
+  const fill = (cap, all, d0, p0, name, need = cap, missingMandatory = []) => {
     const d = Math.min(cap, d0),
       p = Math.min(cap - d, p0);
     extra.reach += Math.max(0, all - cap);
@@ -271,7 +272,8 @@ export function progressInfo(data, st, plan = new Set(), specs = []) {
     reach += Math.min(cap, all);
     done += d;
     planned += p;
-    if (Math.min(need, all) > 0) rows.push({ name, need: Math.min(need, all), done: d, planned: p }); // what the data can reach; the rest is untracked
+    // what the data can reach; the rest is untracked
+    if (Math.min(need, all) > 0) rows.push({ name, need: Math.min(need, all), done: d, planned: p, missingMandatory });
   };
   for (const l of data.lists.filter((x) => !sp.all.has(x.code))) {
     const ids = l.courses.filter((id) => data.courses[id] && !seen.has(id)),
@@ -314,7 +316,8 @@ export function progressInfo(data, st, plan = new Set(), specs = []) {
     pick((id) => isDone(st, id)),
     pick((id) => !isDone(st, id) && plan.has(id)),
     'התמחות',
-    need
+    need,
+    specs.length ? [...sp.mandatory].filter((id) => data.courses[id] && !isDone(st, id)) : []
   );
   // What the minimums and the specialization leave of the degree (computer science: an electives list with minCredits 0) fills from the extra credits.
   const rest = Math.max(0, degree - total - need),
@@ -327,7 +330,8 @@ export function progressInfo(data, st, plan = new Set(), specs = []) {
       name: 'בחירה (מעבר למינימום)',
       need: Math.min(rest, extra.reach),
       done: rd,
-      planned: Math.min(rest - rd, extra.planned)
+      planned: Math.min(rest - rd, extra.planned),
+      missingMandatory: []
     });
   const adds = [...plan].filter((id) => data.courses[id] && !isDone(st, id)).reduce((s, id) => s + credits(id), 0);
   // The bar ends where the data does (all passed = 100%); credits of the degree no list in the data covers are named, not silently unreachable.

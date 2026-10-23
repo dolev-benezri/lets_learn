@@ -12,6 +12,7 @@ import {
   searchYear,
   searchAll,
   showWeights,
+  compareYearPlans,
   PRIMARY
 } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
@@ -2148,4 +2149,65 @@ test('split on, year mode: the largest real program with every offered course op
   // searchYear may run to 1.5x its limit by design (a pair needs both semesters); split off measures the same, so the bound is that plus a second
   assert.ok(ms < 5500 * SLACK, `${f}: ${size(dataA) + size(dataB)} groups, ${ms} ms, partial ${r.partial}`);
   assert.ok(r.results.length);
+});
+
+test('searchYear: a ב requirement met by an outside alternative in outsideDone assumes nothing from א', () => {
+  const { dataA, dataB } = yearFixture();
+  const req = [{ kind: 'קדם', anyOf: [{ id: 'P', name: 'P' }, { id: null, name: 'O' }] }];
+  dataA.courses.N.prereqs = req;
+  dataB.courses.N.prereqs = req;
+  const run = (outsideDone) =>
+    best(searchYear({ dataA, dataB, state: yState({ semesterOf: { P: 'א' }, outsideDone }), yearList: new Set(), weights: W }));
+  assert.ok(run([]).warnings.some((w) => w.includes('מניח')), 'without the outside course, ב assumes P');
+  const p = run(['O']);
+  assert.ok(inB(p, 'N'));
+  assert.ok(!p.warnings.some((w) => w.includes('מניח')), p.warnings.join(' | '));
+});
+
+// J5: year plans ranked by the year's totals, not by two separately normalized semester scores
+const rankFixture = () => {
+  const dA = { H: yc('H', 10, [grp('HA', 1)]), L: yc('L', 8, [grp('LA', 1)]), Q: yc('Q', 5, []) };
+  const lb = grp('LB', 2);
+  lb.full = true;
+  const dB = { H: yc('H', 10, []), L: yc('L', 8, [lb]), Q: yc('Q', 5, [grp('QB', 3)]) };
+  const kids = [['H', 4], ['L', 3], ['Q', 1]].flatMap(([p, n]) => Array.from({ length: n }, (_, i) => [`${p}${i}`, yc(`${p}${i}`, 1, [], pre(p))]));
+  for (const [id, c] of kids) dA[id] = dB[id] = c;
+  return { dataA: semData('א', dA), dataB: semData('ב', dB) };
+};
+const rankRun = (sortBy) => {
+  const { dataA, dataB } = rankFixture();
+  const choices = { H: 'optional', L: 'optional', Q: 'optional' };
+  return searchYear({
+    dataA, dataB, state: { passed: [], failed: {}, choices, semesterOf: {}, load: 'even', sortBy },
+    yearList: new Set(['H', 'L', 'Q']), weights: showWeights({}, sortBy, [])
+  });
+};
+test('compareYearPlans: a missing mandatory course ranks below, also when the year totals tie', () => {
+  const p = (missing, score) => ({ credits: { a: 5, b: 5 }, unlocks: 2, missing, score });
+  for (const key of ['credits', 'unlocks']) {
+    assert.ok(compareYearPlans(p([], 1), p(['M'], 2), key) < 0, key);
+    assert.ok(compareYearPlans(p(['M'], 2), p([], 1), key) > 0, key);
+  }
+  assert.ok(compareYearPlans(p(['M'], 2), p([], 1), 'best') < 0, 'other keys: score only, as before');
+});
+test('searchYear "most credits": the 15-credit year plan ranks above the 13-credit one', () => {
+  const r = rankRun('credits').results;
+  assert.deepEqual(r.map((p) => p.credits.a + p.credits.b).slice(0, 2), [15, 13]);
+});
+test('searchYear "most unlocks": the plan that unlocks 5 courses over the year ranks first', () => {
+  const p = rankRun('unlocks').results[0];
+  assert.deepEqual([p.a.courses, p.b.courses], [['H'], ['Q']]);
+  assert.equal(p.unlocks, 5);
+});
+test('searchYear: when only semester ב fails, the diagnosis is ב\'s reason', () => {
+  const x = grp('X1', 1);
+  x.full = true;
+  const r = searchYear({
+    dataA: semData('א', { X: yc('X', 3, []) }),
+    dataB: semData('ב', { X: yc('X', 3, [x]) }),
+    state: { passed: [], failed: {}, choices: { X: 'must' }, semesterOf: {}, load: 'even' },
+    yearList: new Set(['X']), weights: W
+  });
+  assert.equal(r.results.length, 0);
+  assert.match(r.diagnosis[0], /^סמסטר ב׳: .*X/);
 });

@@ -31,6 +31,7 @@ export const DEFAULT = {
   failed: {},
   grades: {},
   exempt: [],
+  outsideDone: [], // outside-program prerequisite alternatives marked done, by name (rules.js reqMet)
   choices: {},
   friends: [],
   pins: [],
@@ -141,7 +142,7 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   }
   if (typeof raw.name === 'string' && raw.name.length <= 60) out.name = raw.name;
   const passed = strs(raw.passed, 200, 20);
-  if (passed) out.passed = passed;
+  if (passed) out.passed = [...new Set(passed)];
   if (isObj(raw.failed))
     out.failed = Object.fromEntries(
       Object.entries(raw.failed)
@@ -180,6 +181,7 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   if (draft && draft.length === 1 && /^[a-z][a-z0-9]{0,19}$/.test(draft[0])) out.specDraft = draft;
   out.yearIds = strs(raw.yearIds, 60, 20) ?? [];
   out.retakeSeen = strs(raw.retakeSeen, 200, 20) ?? [];
+  out.outsideDone = strs(raw.outsideDone, 100, 120) ?? [];
   if (['year', 'א', 'ב', 'קיץ'].includes(raw.scope)) out.scope = raw.scope;
   if (['א', 'even', 'ב'].includes(raw.load)) out.load = raw.load;
   // older saves: a year or another track was a choice
@@ -209,7 +211,15 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
         .filter(([k, v]) => k.length <= 60 && (v === 'prefer' || v === 'avoid'))
         .slice(0, 30)
     );
-  return out;
+  return migrateYear(out, raw.year, out.year);
+}
+// A save from an earlier academic year (local, stashed or a backup link): the record stays; last year's group ids, plan and notes
+// go, and the student is that many years further on. One place, so a backup is not advanced twice.
+export function migrateYear(state, fromYear, toYear) {
+  if (!(typeof fromYear === 'number' && fromYear < toYear)) return state;
+  Object.assign(state, { pins: [], friends: [], semesterOf: {}, yearIds: [], retakeSeen: [] });
+  if (state.profile.year) state.profile.year = cleanProfile({ year: Math.min(5, state.profile.year + toYear - fromYear) }).year;
+  return state;
 }
 
 // A saved program the catalog lacks is never overwritten: without the real catalog nothing is saved this visit; a program the site dropped is kept aside.
@@ -385,7 +395,7 @@ export function waitingOnEarlier() {
   const earlier = new Set(earlierYears());
   return yearCourses().filter((id) => {
     const s = app.cls.statuses[id];
-    return s?.status === 'blocked' && s.blockedBy?.some((p) => earlier.has(p));
+    return s?.status === 'blocked' && s.blockedBy?.some((g) => g.some((p) => earlier.has(p)));
   });
 }
 
@@ -398,8 +408,10 @@ export function yearCourses() {
   const sp = specLists(app.data, app.state.profile.specs);
   return [...list, ...sp.mandatory, ...sp.elective];
 }
+// The classification a plan is built on: the summer assumption in summer, else the record.
+export const planningCls = () => app.clsSummer ?? app.cls;
 export const candidateMode = (id) =>
-  modeFor(app.cls.statuses[id]?.status, app.state.choices[id], yearCourses().includes(id));
+  modeFor(planningCls().statuses[id]?.status, app.state.choices[id], yearCourses().includes(id));
 
 // Rendering lives in ui-plan.js / ui-grid.js; they register here. Focus survives a re-render via data-k keys.
 let renderers = [];
@@ -447,11 +459,11 @@ export function refresh() {
   if (app.state.scope === 'קיץ' && !app.state.profile.summer) app.state.scope = 'year';
   pickData();
   reconcileSpecs();
-  // Summer assumes the shown year plan is passed (as ב assumes א); elsewhere a course taught only in summer says so.
-  const st = summerScope()
-    ? { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.state.yearIds])] }
-    : app.state;
-  app.cls = withAfterA(app.data, st, classify(app.data, st));
+  // app.cls is the record (#me, checklist, map, warnings). Summer plans as if the shown year plan was passed (as ב assumes א):
+  // that assumption lives only in app.clsSummer (planningCls). Elsewhere a course taught only in summer says so.
+  app.cls = withAfterA(app.data, app.state, classify(app.data, app.state));
+  const st = { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.state.yearIds])] };
+  app.clsSummer = summerScope() ? classify(app.data, st) : null;
   if (!summerScope()) summerOnly(app.cls.statuses, app.sem?.['קיץ'], summerOn());
   save();
   keepFocus(() => renderers.forEach((r) => r()));
@@ -516,9 +528,10 @@ let switchGen = 0;
 // Switch program/cohort: every needed file first, the state only after they all arrived (a failed switch changes nothing). A newer choice cancels an older one.
 export async function switchTo(program, startYear) {
   const prev = app.state;
+  // counted before the early returns: going back to the current program cancels a switch still loading
+  const gen = ++switchGen;
   if (!inCatalog(app.catalog, program, startYear) || (prev.program === program && prev.startYear === startYear))
     return false;
-  const gen = ++switchGen;
   let sem;
   try {
     sem = await fetchSemesters({ ...prev, program, startYear });

@@ -1,5 +1,6 @@
 // State <-> URL hash. Friend links carry only name + group ids (privacy); backups carry everything.
 import { cleanProfile } from './rules.js';
+import { PERSISTED, SHAPE } from './state-schema.js';
 const toB64url = (bytes) => {
   let b64 = '';
   for (let i = 0; i < bytes.length; i += 0x8000) {
@@ -122,37 +123,12 @@ export async function readHash(hash, { year, semester }) {
     if (payload.friends && !Array.isArray(payload.friends)) return { error: 'הקישור פגום' };
     if (payload.pins && !Array.isArray(payload.pins)) return { error: 'הקישור פגום' };
 
-    // Rebuild backup object (only specified keys)
+    // Rebuild backup object: only the saved fields (state-schema.js), each of its shape; normalize() checks the values
     const rebuilt = { v: 1, year: payload.year, semester: payload.semester, program: payload.program };
     if (typeof payload.startYear === 'number') rebuilt.startYear = payload.startYear;
-    if (typeof payload.name === 'string') rebuilt.name = payload.name;
-    if (Array.isArray(payload.passed)) rebuilt.passed = payload.passed;
-    if (payload.failed && typeof payload.failed === 'object' && !Array.isArray(payload.failed))
-      rebuilt.failed = payload.failed;
-    if (payload.grades && typeof payload.grades === 'object' && !Array.isArray(payload.grades))
-      rebuilt.grades = payload.grades; // normalize() drops bad values
-    if (Array.isArray(payload.exempt)) rebuilt.exempt = payload.exempt; // normalize() drops bad values
-    if (payload.choices && typeof payload.choices === 'object' && !Array.isArray(payload.choices))
-      rebuilt.choices = payload.choices;
-    if (payload.friends && Array.isArray(payload.friends)) rebuilt.friends = payload.friends;
-    if (payload.pins && Array.isArray(payload.pins)) rebuilt.pins = payload.pins;
-    if (payload.weights && typeof payload.weights === 'object' && !Array.isArray(payload.weights))
-      rebuilt.weights = payload.weights;
-    if (payload.constraints && typeof payload.constraints === 'object' && !Array.isArray(payload.constraints))
-      rebuilt.constraints = payload.constraints;
-    if (typeof payload.scope === 'string') rebuilt.scope = payload.scope;
-    if (typeof payload.load === 'string') rebuilt.load = payload.load;
-    if (payload.semesterOf && typeof payload.semesterOf === 'object' && !Array.isArray(payload.semesterOf))
-      rebuilt.semesterOf = payload.semesterOf;
-    if (payload.profile && typeof payload.profile === 'object' && !Array.isArray(payload.profile))
-      rebuilt.profile = cleanProfile(payload.profile);
-    if (lastYear) {
-      // group ids don't carry across years; the student is a year further on
-      for (const k of ['pins', 'semesterOf', 'friends']) delete rebuilt[k];
-      if (rebuilt.profile?.year)
-        rebuilt.profile.year = cleanProfile({ year: Math.min(5, rebuilt.profile.year + year - payload.year) }).year;
-    }
-
+    for (const [k, shape] of Object.entries(PERSISTED)) if (SHAPE[shape](payload[k])) rebuilt[k] = payload[k];
+    if (rebuilt.profile) rebuilt.profile = cleanProfile(rebuilt.profile);
+    // last year's backup moves on to this year at restore (app.js normalize -> migrateYear), like a local save
     return { type: 'backup', payload: rebuilt };
   }
 }

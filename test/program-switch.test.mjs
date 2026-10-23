@@ -348,12 +348,13 @@ test('waitingOnEarlier: only this year\'s courses blocked by an earlier year\'s 
   app.data = dataset(30, 2026, { lists }); // year 2
   app.cls = {
     statuses: {
-      b: { status: 'blocked', blockedBy: ['a'] },
-      c: { status: 'blocked', blockedBy: ['b'] },
-      d: { status: 'available' }
+      b: { status: 'blocked', blockedBy: [['a']] },
+      c: { status: 'blocked', blockedBy: [['b']] },
+      d: { status: 'blocked', blockedBy: [['c', 'a']] }
     }
   };
-  assert.deepEqual(waitingOnEarlier(), ['b']);
+  assert.deepEqual(waitingOnEarlier(), ['b', 'd'], 'an earlier-year course as a second alternative counts too');
+  app.cls.statuses.d = { status: 'available' };
   app.cls.statuses.b = { status: 'available' };
   assert.deepEqual(waitingOnEarlier(), [], 'a chain inside this year is normal, not a missed mark');
 });
@@ -668,4 +669,13 @@ test('switchTo: the registration turn stays with me, and a cleared turn is not b
   delete app.state.profile.turn; // cleared on the other program
   assert.equal(await switchTo(30, 2026), true);
   assert.ok(!('turn' in app.state.profile), 'the stashed program 30 state still had turn t1');
+});
+
+test('switchTo: going back to the current program cancels a switch still loading (J16)', async () => {
+  reset({ ...mine(), program: 30, startYear: 2026 });
+  serve(() => false, (m) => (m?.[3] === '20' ? 60 : 0));
+  const pending = switchTo(20, 2027);
+  assert.equal(await switchTo(30, 2026), false, 'already there: nothing to load');
+  assert.equal(await pending, false, 'the earlier switch is cancelled');
+  assert.equal(app.state.program, 30);
 });

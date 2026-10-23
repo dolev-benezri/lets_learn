@@ -1,0 +1,153 @@
+// scripts/check-real.mjs: the data rules (layer 2) on synthetic cases and on a 3-program sample of the real data.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import {
+  dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, checkYear, bestCredits, yearOrder, shuffleSame, SUITES
+} from '../scripts/check-real.mjs';
+import { mini } from './fixtures/mini-data.mjs';
+import { fixture } from './fixtures/solver-data.mjs';
+import { search, showWeights } from '../web/solver-core.js';
+import { classify, modeFor } from '../web/rules.js';
+
+const req = (...ids) => ({ kind: 'קדם', anyOf: ids.map((id) => ({ id, name: id ?? 'outside' })) });
+const c = (...prereqs) => ({ name: 'c', credits: 3, offered: true, prereqs, groups: [{ id: 'g' }] });
+const ds = (courses, lists = []) => ({ courses, lists });
+const bad = (d) => dataRules(d, 'f.json').errors.map((e) => e.match(/course (\S+)/)?.[1] ?? e).sort();
+
+test('a requirement on a course the file does not have, and a course requiring itself, are errors', () => {
+  assert.equal(dataRules(ds({ A: c(req('Z')) }), 'f.json').errors.length >= 1, true);
+  assert.ok(dataRules(ds({ A: c(req('A')) }), 'f.json').errors.some((e) => /itself/.test(e)));
+});
+test('achievability is AND over requirements, OR inside one, a fixed point (not cycle reachability)', () => {
+  assert.deepEqual(bad(ds({ A: c(req('B')), B: c(req('A')) })), ['A', 'B']);
+  assert.deepEqual(bad(ds({ A: c(req('B')), B: c(req('A', 'C')), C: c() })), [], 'B can come through C');
+  assert.deepEqual(bad(ds({ A: c(req('B')), B: c(req('C')), C: c(req('B')) })), ['A', 'B', 'C'], 'a cycle downstream');
+  assert.deepEqual(bad(ds({ A: c(req('B')), B: c(req('C', 'D')), C: c(req('A')), D: c() })), [], 'a nested escape');
+  assert.deepEqual(bad(ds({ A: c(req('B'), req('C')), B: c(), C: c(req('D')), D: c(req('C')) })), ['A', 'C', 'D'], 'one AND part fails');
+  assert.deepEqual(bad(ds({ A: c(req('B', null)), B: c(req('A')) })), [], 'an outside alternative is a route');
+});
+test('a prerequisite only in a later year\'s mandatory list is unachievable, unless another alternative is earlier', () => {
+  const lists = [{ code: 1, name: "חובה שנה א'", courses: ['A', 'E'] }, { code: 2, name: "חובה שנה ב'", courses: ['L'] }];
+  assert.deepEqual(bad(ds({ A: c(req('L')), L: c(), E: c() }, lists)), ['A']);
+  assert.deepEqual(bad(ds({ A: c(req('L', 'E')), L: c(), E: c() }, lists)), []);
+  const onlyA = [{ code: 1, name: "חובה שנה א'", courses: ['A'] }];
+  assert.deepEqual(bad(ds({ A: c(req('X')), X: c() }, onlyA)), [], 'a prerequisite in no year list: placement unknown, not an error');
+});
+test('the same id twice in one requirement is a warning, not an error', () => {
+  const r = dataRules(ds({ A: c(req('B', 'B')), B: c() }), 'f.json');
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.warnings.length, 1);
+});
+test('crossProgram: a course whose prerequisites differ between programs is one warning', () => {
+  const w = crossProgram([['1.json', ds({ A: c(req('B')), B: c() })], ['2.json', ds({ A: c(req('C')), C: c() })], ['3.json', ds({ A: c(req('B')), B: c() })]]);
+  assert.equal(w.length, 1);
+  assert.match(w[0], /A/);
+});
+test('the 3 sample programs have no data errors', () => {
+  for (const f of ['2027-1/19-2026.json', '2027-1/20-2026.json', '2027-1/30-2026.json']) {
+    const d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+    assert.deepEqual(dataRules(d, f).errors, [], f);
+  }
+});
+
+// ---- layer 3: the solver and the record, against an oracle written from the spec ----
+const rec = (s = {}) => ({ passed: [], failed: {}, exempt: [], outsideDone: [], profile: { year: 2, amirnet: null }, ...s });
+test('oracle: mini() statuses from the fixture comment (A -> B -> C chain, P with Q, X outside, N not offered)', () => {
+  assert.deepEqual(oracle(mini(), rec()), {
+    A: 'available', Q0: 'available', B: 'blocked', C: 'blocked', P: 'conditional', Q: 'available', X: 'available', N: 'notOffered'
+  });
+  assert.equal(oracle(mini(), rec({ failed: { B: 1 } })).B, 'retake');
+  assert.equal(oracle(mini(), rec({ passed: ['A'] })).B, 'available');
+});
+test('checkPlan: flags an overlap, a busy-time meeting and a missing corequisite; a retake may lack a prerequisite, not a corequisite', () => {
+  const d = mini();
+  assert.ok(checkPlan(d, rec(), { courses: ['A', 'Q'], groups: ['A1', 'A1/1', 'Q2'] }, {}).some((e) => /overlap/.test(e)));
+  assert.ok(checkPlan(d, rec(), { courses: ['Q'], groups: ['Q1'] }, { blocks: [{ day: 1, start: '10:00', end: '11:00' }] }).some((e) => /busy/.test(e)));
+  assert.ok(checkPlan(d, rec(), { courses: ['P'], groups: ['P1'] }, {}).some((e) => /corequisite/.test(e)));
+  assert.deepEqual(checkPlan(d, rec(), { courses: ['P', 'Q'], groups: ['P1', 'Q1'] }, {}), []);
+  assert.ok(checkPlan(d, rec(), { courses: ['B'], groups: ['B1'] }, {}).some((e) => /prerequisite/.test(e)), 'a first attempt needs A');
+  assert.deepEqual(checkPlan(d, rec({ failed: { B: 1 } }), { courses: ['B'], groups: ['B1'] }, {}), [], 'a retake may (an exception)');
+  assert.ok(checkPlan(d, rec({ failed: { P: 1 } }), { courses: ['P'], groups: ['P1'] }, {}).some((e) => /corequisite/.test(e)));
+});
+test('checkYearPlan: ב checks against the record plus א; a course twice is flagged', () => {
+  const d = mini(),
+    plan = (a, b) => ({ a: { courses: a, groups: [] }, b: { courses: b, groups: [] }, credits: { a: 0, b: 0 }, missing: [] });
+  const sum = (ids) => ids.reduce((s, id) => s + d.courses[id].credits, 0);
+  const p = (a, b) => ({ ...plan(a, b), credits: { a: sum(a), b: sum(b) } });
+  assert.deepEqual(checkYearPlan({ dataA: d, dataB: d, state: rec(), plan: p(['A'], ['B']) }), []);
+  assert.ok(checkYearPlan({ dataA: d, dataB: d, state: rec(), plan: p([], ['B']) }).some((e) => /prerequisite/.test(e)));
+  assert.ok(checkYearPlan({ dataA: d, dataB: d, state: rec(), plan: p(['A'], ['A']) }).some((e) => /twice/.test(e)));
+});
+test('small cases: the solver\'s most-credits plan equals brute force over every feasible combination', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const { dataA, state } = fixture(seed, { min: 3, max: 5 });
+    const st = classify(dataA, state).statuses;
+    const courses = Object.keys(dataA.courses)
+      .map((id) => ({ id, mode: modeFor(st[id]?.status, 'optional', false) }))
+      .filter((c) => c.mode === 'optional');
+    const r = search({ data: dataA, courses, statuses: st, weights: showWeights({}, 'credits', []), topK: 1, timeLimitMs: 5000 });
+    const got = (r.results[0]?.courses ?? []).reduce((s, id) => s + dataA.courses[id].credits, 0);
+    assert.equal(got, bestCredits(dataA, courses, st), `seed ${seed}`);
+  }
+});
+test('yearOrder: the order is recomputed from the data (not the plan\'s own totals or the solver\'s comparator)', () => {
+  const cr = (n, ...prereqs) => ({ ...c(...prereqs), credits: n });
+  const d = ds({ X: cr(5), Y: cr(3), K: cr(1, req('Y')), K2: cr(1, req('K')) });
+  const p = (a, missing = [], claimed = { a: 0, b: 0 }) => ({ a: { courses: a }, b: { courses: [] }, credits: claimed, missing, unlocks: 0, score: 0 });
+  const o = (rs, key) => yearOrder(d, d, { passed: [] }, rs, key).length;
+  assert.equal(o([p(['X']), p(['Y'])], 'credits'), 0);
+  assert.equal(o([p(['Y']), p(['X'])], 'credits'), 1, 'fewer credits first');
+  assert.equal(o([p(['Y'], [], { a: 9, b: 0 }), p(['X'])], 'credits'), 1, 'a plan that claims 9 credits has 3');
+  assert.equal(o([p(['X']), p(['Y'])], 'unlocks'), 1, 'Y opens K and K2, X opens nothing');
+  assert.equal(o([p(['X'], ['M']), p(['Y'])], 'credits'), 1, 'a missing mandatory course ranks below');
+  assert.equal(o([p(['Y']), p(['X'])], 'best'), 0, 'other keys are not checked');
+});
+test('no plan: a solver that finds nothing, with any reason, is caught when the courses fit', () => {
+  const f = '2027-1/19-2026.json',
+    d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+  const never = () => ({ results: [], partial: false, diagnosis: ['a made-up reason'] });
+  assert.ok(checkFile(f, d, { scenarios: ['S2'], solve: never }).some((e) => /brute force finds one/.test(e)));
+  const unsure = () => ({ results: [], partial: true, diagnosis: ['could not tell'] });
+  assert.deepEqual(checkFile(f, d, { scenarios: ['S2'], solve: unsure }), [], 'a search cut off may say it could not tell');
+});
+test('small cases: a shuffled course and group order gives the same set of timetables; a dropped plan is caught', () => {
+  let compared = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const { dataA, state } = fixture(seed, { min: 3, max: 5 });
+    const st = classify(dataA, state).statuses;
+    const courses = Object.keys(dataA.courses)
+      .map((id) => ({ id, mode: modeFor(st[id]?.status, 'optional', false) }))
+      .filter((c) => c.mode === 'optional');
+    if (!courses.length) continue;
+    assert.deepEqual(shuffleSame(dataA, st, courses), [], `seed ${seed}`);
+    // a solver that loses one plan only in the shuffled order
+    const lossy = (a) => {
+      const r = search(a);
+      return a.courses[0].id > a.courses.at(-1).id && r.results.length > 1 ? { ...r, results: r.results.slice(1) } : r;
+    };
+    if (courses.length > 1 && search({ data: dataA, courses, statuses: st, topK: 1e4 }).results.length > 1) {
+      assert.equal(shuffleSame(dataA, st, courses, lossy).length, 1, `seed ${seed}`);
+      compared++;
+    }
+  }
+  assert.ok(compared >= 10, `${compared} seeds with more than one plan`);
+});
+test('the CLI runs the state suites (J2, J6, J7, J9-J12) and the small cases; the year checks reach S3', () => {
+  for (const f of ['share', 'app', 'program-switch', 'ui-search', 'xss', 'grade-import', 'advisor', 'solver-props', 'check-real'])
+    assert.ok(SUITES.includes(`test/${f}.test.mjs`), f);
+  const L = (f) => JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+  const failures = [];
+  const spy = (a) => (failures.push(Object.keys(a.state.failed ?? {}).length), { results: [], partial: false, diagnosis: ['x'] });
+  checkYear('19-2026', L('2027-1/19-2026.json'), L('2027-2/19-2026.json'), { solveYear: spy });
+  assert.ok(failures.some((n) => n > 0), 'an S3 scenario (one failure) reaches the year search');
+});
+test('sample: 19-2026, 20-2026, 30-2026 semester א pass the record, plan and metamorphic checks', () => {
+  const t0 = Date.now();
+  for (const f of ['2027-1/19-2026.json', '2027-1/20-2026.json', '2027-1/30-2026.json']) {
+    const d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+    // S2 too: these cohorts are in study year 2, where S1 (nothing passed) leaves almost nothing to plan
+    assert.deepEqual(checkFile(f, d, { scenarios: ['S1', 'S2'] }), [], f);
+  }
+  assert.ok(Date.now() - t0 < 20000, `${Date.now() - t0} ms`);
+});

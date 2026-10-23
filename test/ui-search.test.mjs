@@ -188,3 +188,29 @@ test('split goes off (untick, reset prefs): the unlinked tutorial pin is dropped
   delete globalThis.confirm;
   clearTimeout(ui.timer);
 });
+
+// J6: summer plans on the year plan (assumed passed), but the record, the checklist and the warnings stay the real ones
+test('summer: the search assumes the year plan; app.cls, completed credits and the 70% warning stay real', async () => {
+  const { progressInfo } = await import('../web/map-layout.js');
+  const { planningCls } = appMod;
+  app.sem = { 'א': mini(), 'ב': null, 'קיץ': { ...mini(), semester: 'קיץ' } };
+  app.state = normalize({ v: 1, passed: [], profile: { year: 2, summer: true }, yearIds: ['A', 'Q0'] });
+  const real = () => ({
+    A: app.cls.statuses.A.status,
+    done: progressInfo(app.data, app.cls.statuses).done,
+    probation: app.cls.warnings.some((w) => /פחות מ-70%/.test(w))
+  });
+  const want = { A: 'available', done: 0, probation: true };
+  for (const scope of ['year', 'קיץ', 'year', 'קיץ']) {
+    app.state.scope = scope;
+    refresh();
+    assert.deepEqual(real(), want, `scope ${scope}`);
+  }
+  assert.equal(planningCls().statuses.A.status, 'done', 'summer plans as if A was passed');
+  scheduleRun();
+  await started();
+  assert.equal(made.at(-1).sent.statuses.A.status, 'done', 'the summer search gets the planning statuses');
+  app.state.scope = 'year';
+  refresh();
+  assert.equal(planningCls(), app.cls, 'outside summer the plan uses the record');
+});

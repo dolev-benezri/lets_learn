@@ -1,8 +1,8 @@
 // Shared by the ui-*.js modules: the mutable UI state (one object, since an imported `let` cannot be assigned), constants and small view helpers.
 import { app, esc, candidateMode, summerOn } from './app.js';
-import { icon, groupIndex, summary, isPair, semResult } from './ui-grid.js';
+import { icon, groupIndex, summary, isPair, semResult, nameHtml } from './ui-grid.js';
 import { showText } from './ui-dialog.js';
-import { specCodes } from './rules.js';
+import { specCodes, reqContext, reqMet } from './rules.js';
 
 export const $ = (id) => document.getElementById(id);
 export const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -140,8 +140,9 @@ export const shown = () => semResult(current(), ui.sem); // what the grid, pills
 export const shownData = () => (isPair(current()) ? app.sem[ui.sem] : app.data);
 export const yearSearch = () => app.state.scope === 'year' && !!app.sem['ב'];
 export const listIds = () => [...new Set(app.data.lists.flatMap((l) => l.courses))];
-export const status = (id) => app.cls.statuses[id]?.status;
-export const doneIds = () => Object.keys(app.cls.statuses).filter((id) => status(id) === 'done');
+// The record by default; planning views pass planningCls() (app.js: summer assumes the year plan).
+export const status = (id, cls = app.cls) => cls.statuses[id]?.status;
+export const doneIds = (cls = app.cls) => Object.keys(cls.statuses).filter((id) => status(id, cls) === 'done');
 export const planned = (id) => ['must', 'optional'].includes(candidateMode(id));
 export const allGroupIds = () => groupIndex(app.data);
 export const pill = (ic, text, cls = '') => `<span class="pill ${cls}">${icon(ic)}<span>${text}</span></span>`;
@@ -193,6 +194,18 @@ export async function copy(text, ok) {
 // Hebrew punctuation for names from the data (ASCII ' and " between letters become geresh and gershayim).
 export { heb } from './ui-text.js';
 export { nameHtml } from './ui-grid.js';
+
+// "עשיתי את <name>": an outside-program alternative of a requirement (e.g. "מכינה בדרך לאפקה"), stored by name in state.outsideDone.
+export const outsideBox = (n, k) => `<label class="check"><input type="checkbox" data-chg="outsideDone" data-name="${esc(n)}"
+    data-k="od-${esc(k)}"${app.state.outsideDone.includes(n) ? ' checked' : ''}> עשיתי את ${nameHtml(n)}</label>`;
+// One box per outside alternative of the course's requirements that its in-program alternatives leave unmet; a ticked box stays to untick.
+export function outsideBoxes(id, k) {
+  const inProgram = { ...reqContext(app.state), outside: new Set() };
+  const names = [...new Set(app.data.courses[id].prereqs
+    .filter((p) => p.kind === 'קדם' && p.anyOf.some((a) => a.id) && !reqMet(p, inProgram))
+    .flatMap((p) => p.anyOf.filter((a) => !a.id).map((a) => a.name)))];
+  return names.map((n, i) => outsideBox(n, `${k}-${i}`)).join('');
+}
 // A specialization list is titled by its area; the other lists keep their name.
 export const listTitle = (l) => {
   const s = app.data.specializations?.find((x) => specCodes(x).some(([, c]) => c === l.code));

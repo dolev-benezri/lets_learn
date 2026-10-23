@@ -1201,3 +1201,115 @@ test('report a mistake: a real mailto link in the footer and the popover, only w
   );
   app.settings = keep;
 });
+
+test('#me: an impossible record warns under the course; an outside alternative has a checkbox that unblocks it', async () => {
+  const { CHG } = await import('../web/ui-actions.js');
+  const d = app.data,
+    saved = structuredClone(app.state);
+  const [withPre, pre] = Object.entries(d.courses)
+    .flatMap(([id, c]) => c.prereqs.filter((p) => p.kind === 'קדם' && p.anyOf.length === 1 && p.anyOf[0].id).map((p) => [id, p.anyOf[0].id]))
+    .find(([id, p]) => d.courses[p] && id !== p);
+  const onPage = new Set(d.lists.flatMap((l) => l.courses));
+  const blockedId = [...onPage].find((id) => d.courses[id] && id !== withPre && id !== pre && !d.courses[id].prereqs.length && !/^600/.test(id));
+  const outName = `מכינה${P}`;
+  // every semester's copy: refresh() rebuilds app.data (the year view merges them)
+  const setPre = (pr) => Object.values(app.sem).forEach((x) => x.courses[blockedId] && (x.courses[blockedId].prereqs = pr));
+  setPre([{ kind: 'קדם', anyOf: [{ id: pre, name: d.courses[pre].name }, { id: null, name: outName }] }]);
+  Object.assign(app.state, { passed: [withPre], failed: {}, exempt: [], outsideDone: [] });
+  app.state.profile.amirnet = null; // no English exemption standing in for the prerequisite
+  refresh();
+  const page = (name) => {
+    document.body.dataset.view = 'me';
+    run(name, () => renderMe());
+    return parse(writes.filter((w) => w.scope === name).map((w) => w.html).join(''));
+  };
+  let html = page('rw-1');
+  assert.ok(html.text.includes('הוא קדם, ולא סומן שעברת אותו'), 'the warning is rendered');
+  const boxOf = (h) => h.querySelectorAll('input[data-chg="outsideDone"]').find((b) => b.getAttribute('data-name') === outName);
+  assert.ok(boxOf(html), 'the outside alternative has a checkbox');
+  assert.equal(app.cls.statuses[blockedId].status, 'blocked');
+  CHG.outsideDone({ checked: true, dataset: { name: outName } });
+  refresh();
+  assert.deepEqual(app.state.outsideDone, [outName]);
+  assert.notEqual(app.cls.statuses[blockedId].status, 'blocked');
+  html = page('rw-2');
+  assert.ok(boxOf(html)?.hasAttribute('checked'), 'a ticked box stays shown, to untick it');
+  setPre([]);
+  app.state = saved;
+  refresh();
+  document.body.dataset.view = 'plan';
+});
+
+test('courses: a blocked elective offers its outside alternative; once ticked, #me keeps the name to untick', async () => {
+  const { CHG } = await import('../web/ui-actions.js');
+  const d = app.data,
+    saved = structuredClone(app.state);
+  const mand = new Set(d.lists.filter((l) => /חובה/.test(l.name)).flatMap((l) => l.courses));
+  const pre = Object.keys(d.courses).find((id) => !d.courses[id].prereqs.length && !/^600/.test(id));
+  const elective = d.lists.flatMap((l) => l.courses)
+    .find((id) => d.courses[id]?.offered && !mand.has(id) && id !== pre && !d.courses[id].prereqs.length);
+  const outName = `קורס חיצוני${P}`;
+  const setPre = (pr) => Object.values(app.sem).forEach((x) => x.courses[elective] && (x.courses[elective].prereqs = pr));
+  setPre([{ kind: 'קדם', anyOf: [{ id: pre, name: d.courses[pre].name }, { id: null, name: outName }] }]);
+  Object.assign(app.state, { passed: [], failed: {}, exempt: [], outsideDone: [] });
+  app.state.profile.amirnet = null;
+  refresh();
+  const side = (name) => {
+    run(name, () => renderSide(current()));
+    return parse(writes.filter((w) => w.scope === name).map((w) => w.html).join(''));
+  };
+  const boxOf = (h) => h.querySelectorAll('input[data-chg="outsideDone"]').find((b) => b.getAttribute('data-name') === outName);
+  assert.equal(app.cls.statuses[elective].status, 'blocked');
+  assert.ok(boxOf(side('ob-1')), 'the blocked list offers the outside alternative');
+  CHG.outsideDone({ checked: true, dataset: { name: outName } });
+  refresh();
+  assert.notEqual(app.cls.statuses[elective].status, 'blocked');
+  document.body.dataset.view = 'me';
+  run('ob-me', () => renderMe());
+  const me = parse(writes.filter((w) => w.scope === 'ob-me').map((w) => w.html).join(''));
+  assert.ok(boxOf(me)?.hasAttribute('checked'), 'the ticked name is shown in #me, to untick it');
+  setPre([]);
+  app.state = saved;
+  refresh();
+  document.body.dataset.view = 'plan';
+});
+
+test('#me: editing a grade refreshes the regulation warnings in place, without a refresh or a search', async () => {
+  const { CHG } = await import('../web/ui-actions.js');
+  const saved = structuredClone(app.state);
+  const id = Object.keys(app.data.courses).find((x) => app.data.courses[x].credits > 0 && !/^600/.test(x));
+  Object.assign(app.state, { passed: [id], failed: {}, grades: { [id]: 90 }, exempt: [] });
+  app.state.profile.year = 1;
+  refresh();
+  document.body.dataset.view = 'me';
+  run('rg-0', () => renderMe());
+  const cls = app.cls;
+  const shown = (name) => writes.filter((w) => w.scope === name && w.id === 'recordRegWarnings').map((w) => w.html).join('');
+  run('rg-60', () => assert.equal(CHG.grade({ dataset: { cid: id }, value: '60', validity: {} }), 'save'));
+  assert.match(shown('rg-60'), /מתחת ל-65/);
+  run('rg-90', () => CHG.grade({ dataset: { cid: id }, value: '90', validity: {} }));
+  assert.doesNotMatch(shown('rg-90'), /מתחת ל-65/);
+  assert.equal(app.cls, cls, 'no refresh: the classification object is the same');
+  app.state = saved;
+  refresh();
+  document.body.dataset.view = 'plan';
+});
+
+test('#me checklist: a specialization with its mandatory courses missing is not complete and names them', async () => {
+  const { specLists } = await import('../web/rules.js');
+  const saved = structuredClone(app.state);
+  app.state.profile.specs = ['solid', 'flow'];
+  app.state.profile.year = 4;
+  refresh();
+  app.state.passed = [...specLists(app.data, ['solid', 'flow']).elective];
+  refresh();
+  document.body.dataset.view = 'me';
+  run('spec-miss', () => renderMe());
+  const html = parse(writes.filter((w) => w.scope === 'spec-miss').map((w) => w.html).join(''));
+  const li = html.querySelectorAll('.checklist li').find((x) => x.text.includes('חסרים קורסי חובה בהתמחות'));
+  assert.ok(li, 'the missing mandatory courses are named');
+  assert.ok(!li.classList.contains('ok'), 'and the row is not marked complete');
+  app.state = saved;
+  refresh();
+  document.body.dataset.view = 'plan';
+});
