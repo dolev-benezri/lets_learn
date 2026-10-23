@@ -147,6 +147,7 @@ test('gradeChanges: a failed row on a course marked passed is offered but not pr
     [
       ['10016', 'passed', 'failed', false],
       ['30003', 'passed', 'passed', true],
+      ['30130', 'failed', 'failed', true], // its failing grade is new on file: it counts in the 11.4.2 average (#34)
       ['30133', 'none', 'passed', true]
     ]
   );
@@ -193,13 +194,67 @@ test('import: a graded pass on an exempt course offers removing the exemption', 
 
 // Audit 2026-10-23 #40: a row with a known course code whose grade is not one the import knows (a grade in words) is
 // counted, so the preview can say it was not imported, instead of dropping it silently.
-test('skippedRows counts a row with a grade in words; parseGradeSheet leaves it out', () => {
+test('skippedRows counts a row with a grade the import does not take (נפסל); parseGradeSheet leaves it out', () => {
   const rows = sheet(
-    cells(1, 700, ['10016', 'תשפ"ו 1/', 'פיזיקה 1', 'ד"ר כהן', 'עבר', '4.0', '4.50']),
+    cells(1, 700, ['10016', 'תשפ"ו 1/', 'פיזיקה 1', 'ד"ר כהן', 'נפסל', '4.0', '4.50']),
     cells(1, 680, ['30003', 'תשפ"ו 1/', 'מבוא', 'ד"ר לוי', '85', '3.0', '3.00']),
     cells(1, 660, ['30133', 'טרם', 'קורס', 'צוות', '3.0', '3.00']),
     cells(1, 640, ['ציון', 'שם הקורס', 'ש"ס'])
   );
   assert.deepEqual(by(parseGradeSheet(rows, data)), { 30003: ['passed', 85] });
   assert.equal(skippedRows(rows, data), 1, 'the words row; not טרם, not the header');
+});
+
+// Audit 2026-10-23 #34, regulation 7.7: "הציון בקורס המאוחר יהיה הציון המחייב, גם אם הוא נמוך מהציון הקודם". The row of the
+// latest year/semester wins, not the highest grade; a row still in progress (חייב) does not replace a grade.
+const dated = (y, when, grade, fail) => cells(1, y, ['10016', when, 'פיזיקה 1', 'צוות', grade, '4.0', '4.50', ...(fail ? ['*'] : [])]);
+test('the latest attempt binds, even when lower (7.7); a later failure binds too', () => {
+  assert.deepEqual(by(parseGradeSheet(sheet(dated(700, 'תשפ"ה 1/', '90'), dated(680, 'תשפ"ו 1/', '70')), data)), { 10016: ['passed', 70] });
+  assert.deepEqual(by(parseGradeSheet(sheet(dated(700, 'תשפ"ו 1/', '70'), dated(680, 'תשפ"ה 2/', '90')), data)), { 10016: ['passed', 70] });
+  assert.deepEqual(by(parseGradeSheet(sheet(dated(700, 'תשפ"ה 1/', '80'), dated(680, 'תשפ"ו 1/', '45', true)), data)), { 10016: ['failed', 45] });
+  assert.deepEqual(by(parseGradeSheet(sheet(dated(700, 'תשפ"ה 1/', '80'), dated(680, 'תשפ"ו 1/', 'חייב')), data)), { 10016: ['passed', 80] });
+});
+test('a failing grade is kept on file and offered when it changes (it counts in the 11.4.2 average)', () => {
+  const s = st({ failed: { 10016: 1 } });
+  const rows = gradeChanges([{ id: '10016', grade: 45, result: 'failed' }], s);
+  assert.equal(rows.length, 1, 'the grade is new');
+  applyGradeChanges(s, rows);
+  assert.equal(s.grades['10016'], 45);
+  assert.equal(gradeChanges([{ id: '10016', grade: 45, result: 'failed' }], s).length, 0, 'nothing new the second time');
+});
+
+// Audit 2026-10-23 #40, regulation 9.3 (grade types): "עבר" (60 and up) and "השתתף" (a course without a numeric grade) are a pass
+// with no number, so they stay out of the average (13.7); "נכשל" is a failure. "לא נבחן" and "נפסל" are left for the student.
+test('grades in words (9.3): עבר and השתתף pass without a number, נכשל fails', () => {
+  const w = (y, code, word) => cells(1, y, [code, 'תשפ"ו 1/', 'קורס', 'צוות', word, '3.0', '3.00']);
+  const rows = sheet(w(700, '10016', 'עבר'), w(680, '30003', 'השתתף'), w(660, '30130', 'נכשל'), w(640, '30133', 'נפסל'));
+  assert.deepEqual(by(parseGradeSheet(rows, data)), {
+    10016: ['passed', null],
+    30003: ['passed', null],
+    30130: ['failed', null]
+  });
+  assert.equal(skippedRows(rows, data), 1, 'נפסל is said, not imported');
+  const s = st();
+  applyGradeChanges(s, gradeChanges(parseGradeSheet(rows, data), s));
+  assert.deepEqual(s.grades, {}, 'no number, no grade on file');
+  assert.deepEqual([...s.passed].sort(), ['10016', '30003']);
+});
+
+// GPT review of #34/#40: only the year/semester field dates a row ('תשפ"ו' beside '1/'): a course name like 'תנ"ך 1' is no date.
+test('a course name that looks like a year is not a date: undated rows keep the old ranking', () => {
+  const named = (y, when, grade) => cells(1, y, ['10016', ...(when ? [when] : []), 'תנ"ך 1', 'צוות', grade, '4.0', '4.50']);
+  assert.deepEqual(by(parseGradeSheet(sheet(named(700, null, '90'), named(680, 'תשפ"ו 1/', '70')), data)), { 10016: ['passed', 90] });
+});
+// A sheet row without a number replaces a number on file: the latest attempt binds (7.7), and a word carries no number (13.7).
+test('a word-only row clears a number on file and an exemption', () => {
+  const s = st({ passed: ['10016', '30003'], failed: { 30130: 1 }, exempt: ['30003'], grades: { 10016: 85, 30130: 45 } });
+  const found = [
+    { id: '10016', grade: null, result: 'passed' },
+    { id: '30003', grade: null, result: 'passed' },
+    { id: '30130', grade: null, result: 'failed' }
+  ];
+  const todo = gradeChanges(found, s);
+  assert.deepEqual(todo.map((r) => r.id), ['10016', '30003', '30130']);
+  applyGradeChanges(s, todo);
+  assert.deepEqual([s.grades, s.exempt], [{}, []]);
 });

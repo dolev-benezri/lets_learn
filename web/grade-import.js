@@ -55,15 +55,16 @@ function parseRow(row, data) {
   // Before the decimal run only when the code leads the row (the older layout); in the real one (year/sem first) that token is the name or lecturer.
   const slot =
     [t[e + 1], c === 0 && d - 1 > c ? t[d - 1] : undefined].find(
-      (x) => x && (INT.test(x) && +x <= 100 || /^(פ\.?פנימ|פטור|חייב)$/.test(x))
+      (x) => x && (INT.test(x) && +x <= 100 || /^(פ\.?פנימ|פטור|חייב|עבר|השתתף|נכשל)$/.test(x))
     ) ?? '';
   const id = t[c],
     grade = INT.test(slot) ? +slot : null;
-  if (t.includes('*')) return { id, grade, result: 'failed' };
-  if (grade !== null) return { id, grade, result: 'passed' };
+  if (t.includes('*') || slot === 'נכשל') return { id, grade, result: 'failed' };
+  // regulation 9.3: "עבר" (60 and up) and "השתתף" (no numeric grade) pass without a number, so the average leaves them out (13.7)
+  if (grade !== null || slot === 'עבר' || slot === 'השתתף') return { id, grade, result: 'passed' };
   if (slot !== 'חייב' && slot) return { id, grade: null, result: 'exempt' };
   if (slot === 'חייב') return { id, grade: null, result: 'pending' };
-  return { id, skipped: true }; // a course row whose grade the import does not know (a grade in words): counted, not imported
+  return { id, skipped: true }; // a course row whose grade the import does not take (e.g. נפסל, לא נבחן): counted, not imported
 }
 
 // What an import would change, as rows for the confirm dialog: was/to in the app's words; check = pre-checked. A failure on a course marked passed
@@ -76,9 +77,9 @@ export function gradeChanges(found, state) {
     .filter(
       (r) =>
         r.was !== r.to ||
-        (r.to === 'passed' && r.grade !== null && state.grades[r.id] !== r.grade) ||
+        (r.result !== 'exempt' && (state.grades[r.id] ?? null) !== r.grade) || // a row without a number clears one on file (7.7)
         (r.failedBefore && !state.failed[r.id]) ||
-        (r.result === 'passed' && r.grade !== null && (state.exempt ?? []).includes(r.id)) ||
+        (r.result === 'passed' && (state.exempt ?? []).includes(r.id)) ||
         (r.result === 'exempt' && !(state.exempt ?? []).includes(r.id))
     )
     .map((r) => ({ ...r, check: !(r.to === 'failed' && r.was === 'passed') }));
@@ -88,30 +89,50 @@ export function gradeChanges(found, state) {
 export function applyGradeChanges(state, rows) {
   for (const r of rows) {
     setStatus(state, r.id, r.result === 'failed' ? 'failed' : 'passed');
-    if (r.result === 'passed') state.grades[r.id] = r.grade;
-    else delete state.grades[r.id]; // gradeAverage counts graded passes only: a failure or an exemption has no grade
+    // a failing grade is kept too: it counts in the 11.4.2 average (rules.js gradeAverage); an exemption has none
+    if (r.grade !== null && r.result !== 'exempt') state.grades[r.id] = r.grade;
+    else delete state.grades[r.id];
     state.exempt = state.exempt.filter((x) => x !== r.id).concat(r.result === 'exempt' ? [r.id] : []);
     if (r.failedBefore) state.failed[r.id] ||= 1;
   }
 }
 
-// rows (from rowsFromItems) -> one result per known course: passed > exempt > failed > pending; the highest passing grade wins. A passed course
-// with a failed row too is `failedBefore` (the sheet may not list every attempt: no count is inferred).
+// When a row's attempt was: its Hebrew year and semester ('תשפ"ו' beside '1/') as one sortable number, or null without them.
+const GEMATRIA = Object.fromEntries([...'אבגדהוזחטיכלמנסעפצקרשת'].map((l, i) => [l, i < 10 ? i + 1 : i < 19 ? (i - 8) * 10 : (i - 17) * 100]));
+const FINALS = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+// the year starts with תש (5700-5799) and the semester keeps its slash: a course name like 'תנ"ך 1' is no date
+const YEAR = /^תש[א-ת]?["״][א-ת]$/,
+  SEM = /^\/([1-3])$|^([1-3])\/$/;
+function attemptOf(row) {
+  const t = row.join(' ').split(/\s+/);
+  const i = t.findIndex((x, k) => YEAR.test(x) && (SEM.test(t[k + 1] ?? '') || SEM.test(t[k - 1] ?? '')));
+  if (i < 0) return null;
+  const year = [...t[i]].reduce((s, l) => s + (GEMATRIA[FINALS[l] ?? l] ?? 0), 0);
+  const m = t[i + 1]?.match(SEM) ?? t[i - 1].match(SEM);
+  return year * 10 + Number(m[1] ?? m[2]);
+}
+
+// rows (from rowsFromItems) -> one result per known course. The latest attempt binds, even when lower (regulation 7.7); a row
+// still in progress (pending, חייב) never replaces a grade. Rows of one semester, or without a date: passed > exempt > failed >
+// pending, the highest passing grade first. A passed course with a failed row too is `failedBefore` (the sheet may not list
+// every attempt: no count is inferred).
 export function parseGradeSheet(rows, data) {
   const out = new Map(),
     failed = new Set();
+  const later = (r, p) => {
+    if (r.result === 'pending' || p.result === 'pending') return RANK[r.result] > RANK[p.result];
+    if (r.when !== null && p.when !== null && r.when !== p.when) return r.when > p.when;
+    return RANK[r.result] > RANK[p.result] || (r.result === 'passed' && p.result === 'passed' && r.grade > p.grade);
+  };
   for (const row of rows) {
     const r = parseRow(row, data);
-    if (r?.skipped) continue;
-    if (r?.result === 'failed') failed.add(r.id);
-    const p = r && out.get(r.id);
-    if (
-      r &&
-      (!p || RANK[r.result] > RANK[p.result] || (r.result === 'passed' && p.result === 'passed' && r.grade > p.grade))
-    )
-      out.set(r.id, r);
+    if (!r || r.skipped) continue;
+    if (r.result === 'failed') failed.add(r.id);
+    const p = out.get(r.id),
+      dated = { ...r, when: attemptOf(row) };
+    if (!p || later(dated, p)) out.set(r.id, dated);
   }
-  return [...out.values()].map((r) => (r.result === 'passed' && failed.has(r.id) ? { ...r, failedBefore: true } : r));
+  return [...out.values()].map(({ when: _, ...r }) => (r.result === 'passed' && failed.has(r.id) ? { ...r, failedBefore: true } : r));
 }
 // Course rows read but not imported (a grade the import does not know, e.g. in words): the preview says how many (audit #40).
 export const skippedRows = (rows, data) => rows.filter((row) => parseRow(row, data)?.skipped).length;
