@@ -204,6 +204,9 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   if (isObj(raw.constraints))
     for (const k of Object.keys(CONSTRAINT_OK))
       if (CONSTRAINT_OK[k](raw.constraints[k])) out.constraints[k] = raw.constraints[k];
+  // "לא לפני" at or after "לא אחרי" leaves no allowed minute: the later bound stays (HH:MM strings compare as times)
+  const { notBefore: nb, notAfter: na } = out.constraints;
+  if (nb && na && nb >= na) out.constraints.notBefore = '';
   if (isObj(raw.constraints)) out.constraints.blocks = cleanBlocks(raw.constraints.blocks);
   if (isObj(raw.constraints?.lecturers))
     out.constraints.lecturers = Object.fromEntries(
