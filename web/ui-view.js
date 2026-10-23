@@ -65,6 +65,7 @@ import {
   needsProgram,
   pill,
   seg,
+  yearSearch,
   $,
   ui
 } from './ui-common.js';
@@ -174,10 +175,11 @@ export function renderView() {
     data = shownData(); // one semester's result and its data file; app.data only when the result is a single semester
   const ids = raw && !none ? resCourses(raw) : []; // the shown alternative's courses (both semesters of a year pair)
   if (summerScope()) app.summerIds = ids;
-  else if (!ui.running) {
+  else if (!ui.running && (yearSearch() || !app.sem['ב'])) {
     state.yearIds = ids;
     save();
-  } // summer is planned on top of the last shown year plan (kept over a refresh)
+  } // summer is planned on top of the last shown year plan (kept over a refresh); a single-semester plan is not one
+  // (without a ב׳ file, א׳ is the whole year)
   app.planIds = new Set([...state.yearIds, ...(summerOn() ? app.summerIds : [])]); // the progress map marks them
   const friends = state.friends.filter((f) => f.active);
   assignColors(colors, res?.courses ?? [], colorOrder());
@@ -200,7 +202,7 @@ export function renderView() {
   $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
   const summerNote = summerScope()
     ? (state.yearIds.length
-      ? `הקיץ מניח שעוברים את ${state.yearIds.length} הקורסים שבמערכת השנה המוצגת.`
+      ? `הקיץ מניח שעוברים את ${state.yearIds.length} הקורסים שבמערכת השנתית האחרונה שהוצגה.`
       : 'עוד אין מערכת לשנה: הקיץ מתוכנן לפי מה שכבר עברת.')
     : '';
   $('semnote').innerHTML =

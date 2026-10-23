@@ -232,3 +232,31 @@ for (const size of Object.keys(SIZES)) {
     assert.ok((await stored(page)).pins.includes(gid));
   });
 }
+
+// Audit 2026-10-23 #43: summer builds on the last year plan, not on a "רק א׳" plan shown after it.
+const idle = (page) =>
+  page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') === 'false', null, { timeout: 30000 });
+// the "לתכנן" choice in the preferences step (on a phone the board's copy of it is hidden)
+const setScope = async (page, v) => {
+  await page.locator('nav.steps a[data-view="prefs"]').click();
+  await page.locator(`label:has(input[name="scope"][value="${v}"])`).click();
+  await page.locator('nav.steps a[data-view="plan"]').click();
+};
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: "רק א׳" does not replace the year plan summer builds on`, async (t) => {
+    const seed = JSON.parse(SUMMER_Y1['afeka-sched-v1']);
+    const page = await visit(t, size, { ...SUMMER_Y1, 'afeka-sched-v1': JSON.stringify({ ...seed, scope: 'year' }) });
+    await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+    await idle(page);
+    const n = (await stored(page)).yearIds.length;
+    assert.ok(n > 0, 'the year plan has courses');
+    await setScope(page, 'א');
+    await idle(page);
+    assert.equal((await stored(page)).yearIds.length, n, 'a single-semester plan is not the year plan');
+    await setScope(page, 'year');
+    await idle(page);
+    await semTab(page, 'קיץ');
+    await idle(page);
+    assert.match(await page.locator('#semnote').textContent(), new RegExp(`${n} הקורסים`));
+  });
+}
