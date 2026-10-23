@@ -1,5 +1,5 @@
 // The auto search: debounce, worker, "חפש עוד" budget.
-import { app, candidateMode, yearCourses, keepFocus, planningCls } from './app.js';
+import { app, candidateMode, yearCourses, keepFocus, planningCls, summerPinned } from './app.js';
 import { gated, yearSearch, toast, focusWeek, $, ui } from './ui-common.js';
 import { renderView } from './ui-view.js';
 import { showWeights } from './solver-core.js';
@@ -24,9 +24,10 @@ export function scheduleRun(again = false) {
 }
 function run() {
   const { state, data } = app,
-    cls = planningCls();
+    cls = planningCls(),
+    inSummer = summerPinned();
   const courses = Object.keys(data.courses)
-    .map((id) => ({ id, mode: candidateMode(id) }))
+    .map((id) => ({ id, mode: inSummer.has(id) ? 'no' : candidateMode(id) }))
     .filter((x) => x.mode === 'must' || x.mode === 'optional');
   const my = ui.gen; // a newer scheduled search keeps the indicator on
   const year = yearSearch();
@@ -84,7 +85,7 @@ function run() {
       year: {
         dataA: app.sem['א'],
         dataB: app.sem['ב'],
-        state,
+        state: { ...state, choices: { ...state.choices, ...Object.fromEntries([...inSummer].map((id) => [id, 'no'])) } },
         yearList: new Set(yearCourses()),
         pins: state.pins,
         constraints: state.constraints,
