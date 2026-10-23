@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, bestCredits } from '../scripts/check-real.mjs';
+import { dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, bestCredits, yearOrder } from '../scripts/check-real.mjs';
 import { mini } from './fixtures/mini-data.mjs';
 import { fixture } from './fixtures/solver-data.mjs';
 import { search, showWeights } from '../web/solver-core.js';
@@ -88,6 +88,18 @@ test('small cases: the solver\'s most-credits plan equals brute force over every
     const got = (r.results[0]?.courses ?? []).reduce((s, id) => s + dataA.courses[id].credits, 0);
     assert.equal(got, bestCredits(dataA, courses, st), `seed ${seed}`);
   }
+});
+test('yearOrder: the order is recomputed from the data (not the plan\'s own totals or the solver\'s comparator)', () => {
+  const cr = (n, ...prereqs) => ({ ...c(...prereqs), credits: n });
+  const d = ds({ X: cr(5), Y: cr(3), K: cr(1, req('Y')), K2: cr(1, req('K')) });
+  const p = (a, missing = [], claimed = { a: 0, b: 0 }) => ({ a: { courses: a }, b: { courses: [] }, credits: claimed, missing, unlocks: 0, score: 0 });
+  const o = (rs, key) => yearOrder(d, d, { passed: [] }, rs, key).length;
+  assert.equal(o([p(['X']), p(['Y'])], 'credits'), 0);
+  assert.equal(o([p(['Y']), p(['X'])], 'credits'), 1, 'fewer credits first');
+  assert.equal(o([p(['Y'], [], { a: 9, b: 0 }), p(['X'])], 'credits'), 1, 'a plan that claims 9 credits has 3');
+  assert.equal(o([p(['X']), p(['Y'])], 'unlocks'), 1, 'Y opens K and K2, X opens nothing');
+  assert.equal(o([p(['X'], ['M']), p(['Y'])], 'credits'), 1, 'a missing mandatory course ranks below');
+  assert.equal(o([p(['Y']), p(['X'])], 'best'), 0, 'other keys are not checked');
 });
 test('sample: 19-2026, 20-2026, 30-2026 semester א pass the record, plan and metamorphic checks', () => {
   const t0 = Date.now();
