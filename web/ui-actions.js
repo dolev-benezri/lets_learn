@@ -11,6 +11,7 @@ import {
   switchTo,
   clearSaved,
   setUiReset,
+  summerScope,
   DEFAULT
 } from './app.js';
 import { setStatus, cleanProfile, specRule, classify } from './rules.js';
@@ -211,7 +212,9 @@ export const ACT = {
     app.state.pins = was
       ? app.state.pins.filter((x) => x !== gid)
       : pinWith(app.data, app.state.pins, gid, app.state.constraints.split);
-    if (!was) app.state.choices[cid] = 'must'; // the solver forces a pinned course in; show it
+    // the solver forces a pinned course in; show it. A summer pin stays in summer: a year "must" would pull the course into
+    // the year plan, which summer then counts as passed
+    if (!was && !summerScope()) app.state.choices[cid] = 'must';
     const fromGid = $('pop').dataset.gid;
     $('pop').hidePopover();
     refresh();

@@ -1,5 +1,5 @@
 // Step 2, the courses page ("הקורסים שלי"): the course list and a one-line summary of the shown alternative.
-import { app, esc, candidateMode, planningCls } from './app.js';
+import { app, esc, candidateMode, planningCls, summerPinned } from './app.js';
 import { englishOptions, specLists } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, isPair, resCourses, placedIn, semResult, summary, freeDaysText } from './ui-grid.js';
@@ -47,8 +47,9 @@ function card(id, res, unlocks, musts) {
     c = data.courses[id],
     mode = candidateMode(id);
   const where = isPair(res) ? placedIn(res, id) : null;
+  const inSummer = summerPinned().has(id); // the searches leave it out: it is planned in summer
   const inAlt = res && (isPair(res) ? !!where : res.courses.includes(id)),
-    out = res && !inAlt && mode !== 'no';
+    out = res && !inAlt && mode !== 'no' && !inSummer;
   const why = out ? outReason(id) : '';
   const required =
     data.lists.some((l) => l.name.startsWith('קורסי חובה') && l.courses.includes(id)) ||
@@ -59,12 +60,13 @@ function card(id, res, unlocks, musts) {
   const offered = c.semesters; // only the year view lists them
   const yearPick =
     // afterA only fits ב׳; a course set to no has nothing to place
-    app.state.scope === 'year' && offered?.length === 2 && s.status !== 'afterA' && ['must', 'optional'].includes(mode);
+    app.state.scope === 'year' && offered?.length === 2 && s.status !== 'afterA' && ['must', 'optional'].includes(mode) && !inSummer;
   const tags = [
     app.state.scope === 'year' && offered?.length === 1 ? `<span class="tag">רק בסמסטר ${esc(offered[0])}׳</span>` : '',
     s.status === 'retake' ? '<span class="tag warn">חזרה</span>' : '',
     s.status === 'conditional' ? '<span class="tag warn">זמין בתנאי</span>' : '',
     unlocks[id] ? `<span class="tag">${unlocks[id] === 1 ? 'פותח קורס אחד' : `פותח ${unlocks[id]} קורסים`}</span>` : '',
+    inSummer ? `<span class="tag ok">${icon('pin')} נעוץ בקיץ</span>` : '',
     inAlt ? `<span class="tag ok">${icon('check')} במערכת${where ? ` · סמסטר ${esc(where)}׳` : ''}</span>` : '',
     out && !dropped ? `<span class="tag">לא נכנס${why ? `: ${esc(why)}` : ''}</span>` : '',
   ].join('');
