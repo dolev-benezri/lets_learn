@@ -2,6 +2,8 @@
 // whatever is missing or the wrong type falls back to the default, so a broken file never breaks the site.
 export const TURN_ID_MAX = 40; // the longest turn id profile.turn (rules.js cleanProfile) keeps
 const EMAIL = /^[^\s@<>",%?&#]+@[^\s@<>",%?&#]+$/; // one plain recipient: no mailto query or recipient separators
+// a placeholder left in settings.json (RFC 2606 reserved names) would send reports nowhere: no link instead
+const RESERVED = /@(localhost|(.+\.)?example\.(com|org|net)|.+\.(example|test|invalid|localhost))$/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const MOMENT = /^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:\d\d)$/; // an instant: the zone is required
 const str = (v) => (typeof v === 'string' ? v : '');
@@ -83,7 +85,7 @@ function cleanPrograms(raw) {
 export function cleanSettings(raw) {
   if (!isObj(raw)) return { ...SETTINGS_DEFAULT, turns: [], programs: {} };
   return {
-    supportEmail: EMAIL.test(str(raw.supportEmail)) ? raw.supportEmail : '',
+    supportEmail: EMAIL.test(str(raw.supportEmail)) && !RESERVED.test(raw.supportEmail) ? raw.supportEmail : '',
     counselingUrl: httpsUrl(raw.counselingUrl),
     notice: trimmed(raw.notice),
     turns: cleanTurns(raw.turns),
