@@ -412,6 +412,11 @@ export function yearCourses() {
 export const planningCls = () => app.clsSummer ?? app.cls;
 export const candidateMode = (id) =>
   modeFor(planningCls().statuses[id]?.status, app.state.choices[id], yearCourses().includes(id));
+// Courses with a pinned summer group are taken in summer: the year and single-semester searches leave them out (audit #32).
+export const summerPinned = () => {
+  const S = summerOn() && !summerScope() ? app.sem['קיץ'] : null;
+  return new Set(S ? Object.keys(S.courses).filter((id) => S.courses[id].groups.some((g) => app.state.pins.includes(g.id))) : []);
+};
 
 // Rendering lives in ui-plan.js / ui-grid.js; they register here. Focus survives a re-render via data-k keys.
 let renderers = [];
@@ -461,7 +466,8 @@ export function refresh() {
   reconcileSpecs();
   // app.cls is the record (#me, checklist, map, warnings). Summer plans as if the shown year plan was passed (as ב assumes א):
   // that assumption lives only in app.clsSummer (planningCls). Elsewhere a course taught only in summer says so.
-  app.cls = withAfterA(app.data, app.state, classify(app.data, app.state));
+  // "רק ב׳" makes the year view's assumption too (audit #42): an א׳ candidate counts as passed for a ב׳ course after it
+  app.cls = withAfterA(app.data, app.state, classify(app.data, app.state), app.state.scope === 'ב' ? app.sem['א'] : null);
   const st = { ...app.state, passed: [...new Set([...(app.state.passed ?? []), ...app.state.yearIds])] };
   app.clsSummer = summerScope() ? classify(app.data, st) : null;
   if (!summerScope()) summerOnly(app.cls.statuses, app.sem?.['קיץ'], summerOn());

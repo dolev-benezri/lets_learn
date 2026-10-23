@@ -19,3 +19,40 @@ test('withAfterA: a prerequisite that is conditional in א׳ (its parallel cours
   assert.equal(r.Z.status, 'afterA');
   assert.deepEqual(r.Z.reasons, ['אפשר בסמסטר ב׳ אחרי X']);
 });
+
+// Audit 2026-10-23 #42: "רק ב׳" shows the ב׳ file alone. With the א׳ file at hand it makes the same assumption as the
+// year view, so a ב׳ course that only waits for an א׳ candidate is not blocked.
+import { readFileSync } from 'node:fs';
+import { normalize } from '../web/app.js';
+const real = (sem) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${sem}/30-2026.json`, import.meta.url), 'utf8'));
+test('withAfterA on a single ב׳ file: mechanical 2026 year 1 opens the year-view courses', () => {
+  const A = real(1), B = real(2);
+  const state = normalize({ v: 1, program: 30, startYear: 2026, profile: { year: 1 } }, { year: 2027, programs: [{ id: 30, startYears: [2026] }] });
+  const ids = ['סטטיקה של גוף קשיח', 'חשבון דיפרנציאלי אינטגרלי2', "משוואות דיפ' רגילות"]
+    .map((n) => Object.keys(B.courses).find((id) => B.courses[id].name === n));
+  assert.equal(ids.filter(Boolean).length, 3);
+  const withA = withAfterA(B, state, classify(B, state), A).statuses;
+  const alone = withAfterA(B, state, classify(B, state)).statuses;
+  for (const id of ids) {
+    assert.equal(withA[id].status, 'afterA', B.courses[id].name);
+    assert.match(withA[id].reasons[0], /^אפשר בסמסטר ב׳ אחרי /);
+    assert.equal(alone[id].status, 'blocked', B.courses[id].name);
+  }
+});
+
+// GPT review of #42: on a single ב׳ file the statuses go straight to the solver, so a ב׳ course that opens after א׳ but
+// still needs a corequisite in ב׳ must keep missingParallel (the solver enforces it from there).
+test('withAfterA on a single ב׳ file keeps the corequisite the course still needs', () => {
+  const c = (name, prereqs = []) => ({ name, credits: 3, offered: true, groups: [], prereqs });
+  const A = { year: 2027, startYear: 2026, semester: 'א', lists: [], courses: { X: c('X') } };
+  const B = {
+    year: 2027, startYear: 2026, semester: 'ב', lists: [], courses: {
+      Y: c('Y'),
+      Z: c('Z', [{ kind: 'קדם', anyOf: [{ id: 'X', name: 'X' }] }, { kind: 'מקביל', anyOf: [{ id: 'Y', name: 'Y' }] }]),
+    },
+  };
+  const state = { passed: [], failed: {} };
+  const z = withAfterA(B, state, classify(B, state), A).statuses.Z;
+  assert.equal(z.status, 'afterA');
+  assert.deepEqual(z.missingParallel, [['Y']]); // one group per corequisite, its alternatives
+});

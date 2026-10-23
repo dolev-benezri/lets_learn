@@ -260,26 +260,35 @@ export function retakeNotice(data, cls, state, name) {
   };
 }
 
-// Year view only: a blocked course offered in ב׳ whose missing prerequisites are candidates in א׳ becomes afterA
-// (second classify pass with those א׳ candidates counted as passed). Pure; searchYear reclassifies ב׳ with the real
-// א׳ result.
-export function withAfterA(data, state, cls) {
-  if (data.semester !== 'שנה') return cls;
-  const candA = new Set(Object.keys(cls.statuses)
-    .filter((id) => ['retake', 'available', 'conditional'].includes(cls.statuses[id].status)
-      && data.courses[id].semesters?.includes('א')));
-  const second = classify(data, { ...state, passed: [...state.passed, ...candA] }).statuses;
-  const of = (st) => Object.keys(cls.statuses).filter((id) => cls.statuses[id].status === st);
+// Year view, and "רק ב׳" given the א׳ file (dataA): a blocked course offered in ב׳ whose missing prerequisites are
+// candidates in א׳ becomes afterA (second classify pass with those א׳ candidates counted as passed). Pure; searchYear
+// reclassifies ב׳ with the real א׳ result.
+export function withAfterA(data, state, cls, dataA = null) {
+  const single = data.semester === 'ב' && !!dataA;
+  if (data.semester !== 'שנה' && !single) return cls;
+  const all = single ? { ...cls.statuses, ...classify(dataA, state).statuses } : cls.statuses; // א׳ decides its candidates
+  const inA = (id) => (single ? !!dataA.courses[id]?.offered : data.courses[id].semesters?.includes('א'));
+  const inB = (c) => (single ? c.offered : c.semesters?.includes('ב'));
+  const candA = new Set(Object.keys(all)
+    .filter((id) => ['retake', 'available', 'conditional'].includes(all[id].status) && inA(id)));
+  const second = classify(data, { ...state, passed: [...(state.passed ?? []), ...candA] }).statuses;
+  const of = (st) => Object.keys(all).filter((id) => all[id].status === st);
   const ctx = { passed: new Set(of('done')), exempt: new Set(of('exempt')), outside: new Set(state.outsideDone ?? []) };
   const statuses = { ...cls.statuses };
   for (const [id, s] of Object.entries(cls.statuses)) {
     const c = data.courses[id];
     if (s.status !== 'blocked'
-      || !c.semesters?.includes('ב')
+      || !inB(c)
       || !['available', 'conditional'].includes(second[id].status)) continue;
     const names = [...new Set(c.prereqs.filter((p) => p.kind === 'קדם' && !reqMet(p, ctx))
       .flatMap((p) => p.anyOf.filter((a) => candA.has(a.id)).map((a) => a.name)))];
-    statuses[id] = { status: 'afterA', reasons: [`אפשר בסמסטר ב׳ אחרי ${names.join(', ')}`] };
+    // a corequisite still owed in ב׳ stays: on a single ב׳ file these statuses go straight to the solver
+    const par = second[id].missingParallel;
+    statuses[id] = {
+      status: 'afterA',
+      reasons: [`אפשר בסמסטר ב׳ אחרי ${names.join(', ')}`, ...(par ? second[id].reasons.slice(0, 1) : [])],
+      ...(par && { missingParallel: par })
+    };
   }
   return { ...cls, statuses };
 }
