@@ -9,7 +9,8 @@ import {
   keepFocus,
   summerOn,
   summerScope,
-  waitingOnEarlier
+  waitingOnEarlier,
+  planningCls
 } from './app.js';
 import { progress, studyYear } from './rules.js';
 import { approvedOn } from './settings.js';
@@ -285,7 +286,7 @@ export function renderView() {
     // a split alternative never ranks, and never pushes a regular one down
     const regular = results.filter((r) => !r.split?.length);
     const myRank = split.length ? null : progressRanks(regular.map((r) => semResult(r, ui.sem)))[regular.indexOf(raw)];
-    const counts = unlockCounts(data, doneIds());
+    const counts = unlockCounts(data, doneIds(planningCls()));
     const blocking = res.courses.filter((cid) => counts[cid] > 0);
     const blockingNames = blocking.slice(0, 3).map((cid) => esc(data.courses[cid].name));
     const blockingText = blockingNames.length

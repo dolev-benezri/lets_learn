@@ -75,6 +75,8 @@ export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), 
   const notes = [
     ...(cls?.warnings ?? []),
     ...(res && 'a' in res ? res.warnings ?? [] : []),
+    // the year view says so on screen (ui-view.js): mandatory courses this year plan could not place in either semester
+    ...(res && 'a' in res && res.missing?.length ? [`קורסי חובה שביקשת ולא נכנסו לאף סמסטר: ${res.missing.map(name).join(', ')}`] : []),
     ...(split.length ? [SPLIT_NOTE, splitLine(split.map(name))] : []),
   ].map(esc);
 

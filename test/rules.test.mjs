@@ -15,7 +15,9 @@ import {
   englishOptions,
   specRule,
   validSpecs,
-  retakeNotice
+  retakeNotice,
+  reqMet,
+  recordWarnings
 } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
 
@@ -44,7 +46,7 @@ test('retakeNotice: a failed course is noted once, again only after passing and 
 test('direct and transitive dependents are blocked with a chain', () => {
   const { statuses } = classify(mini(), me);
   assert.equal(statuses.B.status, 'blocked');
-  assert.deepEqual(statuses.B.blockedBy, ['A']);
+  assert.deepEqual(statuses.B.blockedBy, [['A']]);
   assert.match(statuses.B.reasons.join(' '), /פיזיקה-מכניקה \(נכשלת\)/);
   assert.equal(statuses.C.status, 'blocked');
   assert.match(statuses.C.reasons.join(' '), /דינמיקה ← פיזיקה-מכניקה \(נכשלת\)/);
@@ -517,4 +519,92 @@ test('missingRequired names the not-passed courses of earlier-year lists that ar
   assert.deepEqual(missingRequired(d, st([])), ['A', 'Q0']);
   const p = progress(d, st(['A']));
   assert.equal(p.earned, p.required, 'the credit figure agrees: nothing is needed');
+});
+
+const real = (p) => JSON.parse(readFileSync(new URL('../web/data/afeka/' + p, import.meta.url), 'utf8'));
+test('reqMet: an outside alternative counts once its name is in outsideDone; all-outside stays met', () => {
+  const p = { kind: 'קדם', anyOf: [{ id: '6000', name: 'מכינה' }, { id: null, name: 'מכינה בדרך לאפקה' }] };
+  const ctx = (o = []) => ({ passed: new Set(), exempt: new Set(), outside: new Set(o) });
+  assert.equal(reqMet(p, ctx()), false);
+  assert.equal(reqMet(p, ctx(['מכינה בדרך לאפקה'])), true);
+  assert.equal(reqMet(p, { ...ctx(), passed: new Set(['6000']) }), true);
+  assert.equal(reqMet({ kind: 'קדם', anyOf: [{ id: null, name: 'x' }] }, ctx()), true);
+});
+test('classify: 6001 in 10-2024 is blocked, and available once both outside alternatives are ticked', () => {
+  const d = real('2027-1/10-2024.json');
+  const s = { passed: [], failed: {}, profile: { year: 1 }, outsideDone: [] };
+  assert.equal(classify(d, s).statuses['6001'].status, 'blocked');
+  s.outsideDone = ['אנגלית - מכינה בדרך לאפקה'];
+  assert.equal(classify(d, s).statuses['6001'].status, 'blocked', 'one of two requirements met');
+  s.outsideDone.push('אנגלית1 - מכינה בדרך לאפקה');
+  assert.equal(classify(d, s).statuses['6001'].status, 'available');
+});
+
+test('a blocked course with alternatives names them all (10243: 10224 or 10240)', () => {
+  const r = classify(real('2027-1/10-2024.json'), { passed: [], failed: {}, profile: { year: 1 } }).statuses['10243'];
+  assert.deepEqual(r.blockedBy, [['10224', '10240']]);
+  assert.match(r.reasons[0], /מבוא לראייה ממוחשבת.* או .*רשתות נוירונים ולמידה עמוקה/);
+});
+test('an OR group whose first alternative is itself blocked renders its chain', () => {
+  const data = mini();
+  data.courses.C.prereqs = [{ kind: 'קדם', anyOf: [{ id: 'B', name: 'דינמיקה' }, { id: 'Q', name: 'משוואות' }] }];
+  data.courses.Q.prereqs = [{ kind: 'קדם', anyOf: [{ id: 'Q0', name: 'חדו"א 1' }] }];
+  const r = classify(data, { passed: [], failed: {} }).statuses.C;
+  assert.deepEqual(r.blockedBy, [['B', 'Q']]);
+  assert.match(r.reasons[0], /דינמיקה ← פיזיקה-מכניקה או משוואות ← חדו"א 1/);
+});
+
+test('recordWarnings: a passed course whose prerequisite is failed or unmarked; corequisite only when untaken', () => {
+  const d = mini();
+  const w = (s) => recordWarnings(d, { passed: [], failed: {}, exempt: [], ...s });
+  assert.deepEqual(w({ passed: ['B'], failed: { A: 1 } }).B,
+    ['שים לב: פיזיקה-מכניקה הוא קדם, וסומן שנכשלת בו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+  assert.deepEqual(w({ passed: ['B'] }).B,
+    ['שים לב: פיזיקה-מכניקה הוא קדם, ולא סומן שעברת אותו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+  assert.deepEqual(w({ passed: ['P'] }).P,
+    ['שים לב: משוואות הוא קורס מקביל, ולא סומן שלקחת אותו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+  assert.equal(w({ passed: ['P'], failed: { Q: 1 } }).P, undefined, 'taken together and failed is legitimate');
+  assert.equal(w({ passed: ['B'], exempt: ['B'] }).B, undefined, 'an exemption needs no prerequisite');
+  assert.equal(w({ passed: ['A', 'B'] }).B, undefined);
+  assert.deepEqual(w({ passed: null }), {}, 'a fresh state has no record');
+});
+test('recordWarnings: a repeated alternative is named once; a failed alternative is named alone (10-2024)', () => {
+  const d = real('2027-1/10-2024.json');
+  const w = recordWarnings(d, { passed: ['10128', '10010'], failed: { 10016: 1 }, exempt: [] });
+  assert.deepEqual(w['10128'], ['שים לב: מבוא למדעי המחשב הוא קדם, וסומן שנכשלת בו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+  assert.ok(w['10010'].every((t) => !/המחשב או מבוא למדעי המחשב|או מבוא לתכנות פיתון הוא קדם, וסומן/.test(t)), w['10010'].join(' | '));
+  const u = recordWarnings(d, { passed: ['10128'], failed: {}, exempt: [] });
+  assert.deepEqual(u['10128'], ['שים לב: מבוא למדעי המחשב הוא קדם, ולא סומן שעברת אותו. אם קיבלת אישור חריג, אפשר להשאיר.']);
+});
+test('classify: a requirement listing the same course twice is blocked by it once (10-2024 10128)', () => {
+  const st = classify(real('2027-1/10-2024.json'), { passed: [], failed: {}, exempt: [], profile: { year: 2 } }).statuses['10128'];
+  assert.deepEqual(st.blockedBy, [['10016']]);
+  assert.deepEqual(st.reasons, ['חסום: דורש מבוא למדעי המחשב (תקנון 7.4)']);
+});
+test('classify: a corequisite listing the same course twice names it once', () => {
+  const d = mini();
+  d.courses.P.prereqs = [{ kind: 'מקביל', anyOf: [{ id: 'Q', name: 'משוואות' }, { id: 'Q', name: 'משוואות' }] }];
+  const r = classify(d, { passed: [], failed: {} }).statuses.P;
+  assert.ok(r.reasons.some((t) => t.startsWith('רק יחד עם משוואות (')), r.reasons.join(' | '));
+});
+test('recordWarnings + classify: failing 10336 without 90905 warns and stays a retake (30-2026)', () => {
+  const d = real('2027-1/30-2026.json');
+  const s = { passed: [], failed: { 10336: 1 }, exempt: [], profile: { year: 1 } };
+  assert.match(recordWarnings(d, s)['10336'][0], /הוא קדם, ולא סומן שעברת אותו/);
+  const st = classify(d, s).statuses['10336'];
+  assert.equal(st.status, 'retake');
+  assert.ok(st.reasons.some((r) => /הוא קדם, ולא סומן שעברת אותו/.test(r)), st.reasons.join(' | '));
+});
+
+test('setStatus none clears the grade; a minimal state without grades still works', () => {
+  const s = { passed: ['B'], failed: {}, grades: { B: 90 } };
+  setStatus(s, 'B', 'none');
+  setStatus(s, 'B', 'passed');
+  assert.deepEqual(s.grades, {});
+  const bare = { passed: ['B'], failed: {} };
+  setStatus(bare, 'B', 'none');
+  assert.deepEqual(bare.passed, []);
+});
+test('gradeAverage counts a duplicated pass once', () => {
+  assert.deepEqual(gradeAverage(mini(), { passed: ['B', 'B'], grades: { B: 90 } }), { avg: 90, credits: 4 });
 });

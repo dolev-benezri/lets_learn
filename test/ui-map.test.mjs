@@ -883,3 +883,17 @@ test('mapSvg: every course node carries a plan ring (hidden off-plan), so a swit
     html = mapSvg({ data, st: statuses, L, g, year: 2, unlocks: {}, mode: 'all', plan: new Set() });
   assert.equal((html.match(/class="plan-ring"/g) ?? []).length, (html.match(/<g class="nd /g) ?? []).length);
 });
+
+// J4: a specialization is done only with its mandatory courses, not on elective credits alone
+test('specialization is incomplete when elective credits meet the cap but mandatory courses are missing', async () => {
+  const { classify, specLists } = await import('../web/rules.js');
+  const load = (f) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-1/${f}`, import.meta.url), 'utf8'));
+  const d = load('30-2026.json'),
+    specs = ['solid', 'flow'];
+  const passed = [...specLists(d, specs).elective];
+  const row = progressInfo(d, classify(d, { passed, failed: {} }).statuses, new Set(), specs).rows.find((r) => r.name === 'התמחות');
+  assert.ok(row.done >= row.need, 'credits alone look complete');
+  assert.deepEqual(row.missingMandatory, ['30227', '30235', '30249', '30204', '30213', '30313']);
+  const ds = load('19-2026.json');
+  assert.ok(progressInfo(ds, classify(ds, { passed: [], failed: {} }).statuses, new Set(), []).rows.every((r) => Array.isArray(r.missingMandatory) && !r.missingMandatory.length));
+});

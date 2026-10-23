@@ -1,10 +1,10 @@
 // The status page (#me): profile, specialization form, course lists with their states, grade-sheet import.
 import { app, esc, refresh } from './app.js';
-import { progress, setStatus, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs } from './rules.js';
+import { progress, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs, recordWarnings } from './rules.js';
 import { icon } from './ui-grid.js';
 import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
-import { readGradeSheet, parseGradeSheet, gradeChanges } from './grade-import.js';
+import { readGradeSheet, parseGradeSheet, gradeChanges, applyGradeChanges } from './grade-import.js';
 import { approvedOn } from './settings.js';
 import { creditsGoal, courseCount, conflictsFor, approvedText } from './ui-text.js';
 import {
@@ -24,6 +24,8 @@ import {
   heb,
   nameHtml,
   listTitle,
+  outsideBoxes,
+  outsideBox,
   $,
   ui
 } from './ui-common.js';
@@ -35,6 +37,12 @@ const turnPick = (cur) =>
     ? `<label class="field pick">התור שלי בהרשמה <select data-chg="turn" data-k="turn"><option value="">לא יודע/ת</option>
   ${app.settings.turns.map((t) => `<option value="${esc(t.id)}"${t.id === cur ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>`
     : '');
+// Soft warnings on an impossible record (rules.js recordWarnings), and the courses that may ask about an outside alternative
+// (the yearly mandatory lists up to the study year, and English: electives, seminars and later years would fill the page with
+// questions not due yet), computed once per render.
+let recWarn = {},
+  askOutside = new Set();
+
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
   const s = app.state,
@@ -60,9 +68,16 @@ function chip(id, li) {
       <label class="check"><input type="checkbox" data-chg="failedBefore" data-id="${esc(id)}" data-k="fb-${esc(k)}"
       aria-label="${esc(`נכשלתי בעבר ב${nm}`)}"${n ? ' checked' : ''}> נכשלתי בעבר בקורס זה</label></div>`
         : ''
-  }${n ? seg(`fc-${k}`, st === 'passed' ? 'כמה פעמים?' : 'כמה פעמים נכשלתי?', FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`, true) : ''}</div>`;
+  }${n ? seg(`fc-${k}`, st === 'passed' ? 'כמה פעמים?' : 'כמה פעמים נכשלתי?', FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`, true) : ''}${
+    st === 'none' && askOutside.has(id) ? outsideBoxes(id, k) : ''}${(recWarn[id] ?? []).map((t) => `<p class="hint warn-text">${esc(t)}</p>`).join('')}</div>`;
 }
 
+// The regulation warnings (rules.js classify): their container is always rendered so a grade change can refresh just them.
+const regWarnHtml = () => app.cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('');
+export function renderRecordRegWarnings() {
+  const el = $('recordRegWarnings');
+  if (el) el.innerHTML = regWarnHtml();
+}
 // The weighted-average line; its container is always rendered so a grade change can refresh just this line.
 export const avgLine = () => {
   const { avg, credits } = gradeAverage(app.data, app.state);
@@ -124,8 +139,13 @@ function checklist(data, state) {
   const gap = untracked
     ? `<p class="hint">עוד ${esc(untracked)} נ״ז של התואר לא מופיעים ברשימות שבנתונים (קורסים שכבר לא נפתחים), ולכן לא נספרים כאן.</p>`
     : '';
-  const row = (r) =>
-    `<li${r.done >= r.need ? ' class="ok"' : ''}><span>${esc(heb(r.name))}</span> <b>${r.done >= r.need ? '✓ ' : ''}${esc(r.done)} מתוך ${esc(r.need)} נ״ז</b></li>`;
+  const row = (r) => {
+    const ok = r.done >= r.need && !r.missingMandatory.length,
+      lack = r.done >= r.need && r.missingMandatory.length
+        ? `<span class="hint warn-text">חסרים קורסי חובה בהתמחות: ${r.missingMandatory.map((id) => esc(heb(data.courses[id].name))).join(', ')}</span>`
+        : '';
+    return `<li${ok ? ' class="ok"' : ''}><span>${esc(heb(r.name))}</span> <b>${ok ? '✓ ' : ''}${esc(r.done)} מתוך ${esc(r.need)} נ״ז</b>${lack}</li>`;
+  };
   return details(
     'checklist',
     'מה נשאר לסיום התואר',
@@ -212,6 +232,14 @@ export function renderMe() {
     return;
   }
   const { data, state, cls } = app;
+  recWarn = cls ? recordWarnings(data, state) : {};
+  const upTo = studyYear(data, state);
+  askOutside = new Set(data.lists
+    .filter((l) => {
+      const y = ' אבגדה'.indexOf(l.name.match(/חובה שנה (\S)'/)?.[1] ?? ' ');
+      return (y > 0 && y <= upTo) || /חובה.*אנגלית/.test(l.name);
+    })
+    .flatMap((l) => l.courses));
   if (gated()) {
     el.innerHTML = `<div class="gate">${gateHtml()}</div>`;
     return;
@@ -262,6 +290,9 @@ export function renderMe() {
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
           <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p>
+          ${state.outsideDone.length
+            ? `<p class="hint">סימנת שעשית מחוץ לתוכנית:</p>${state.outsideDone.map((n, i) => outsideBox(n, `me-${i}`)).join('')}`
+            : ''}
           ${conflictsFor(app.settings, state.program, state.startYear)
             .map((t) => `<p class="hint warn-text">יש סתירה בין המקורות הרשמיים לגבי ${esc(t)}. בדקו מול המחלקה.</p>`)
             .join('')}</section>`;
@@ -295,7 +326,7 @@ export function renderMe() {
           <button type="button" class="btn" data-act="eraseAll" data-k="eraseAll">${icon('trash')} מחק את כל הנתונים שלי</button></section>
       </div>
       <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses" tabindex="-1">קורסים לפי שנה</h2>
-        ${cls.warnings.map((w) => `<p class="warnbox">${icon('alert')}<span>${esc(w)}</span></p>`).join('')}
+        <div id="recordRegWarnings">${regWarnHtml()}</div>
         ${lists.filter(past).map(group).join('')}
         ${lists
           .filter((l) => sp.chosen.has(l.code))
@@ -333,7 +364,9 @@ export async function importGrades(file) {
     return enterList();
   }
   const label = (r) =>
-    `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}`;
+    `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}${
+      r.failedBefore && !state.failed[r.id] ? ', ונכשלתי בעבר' : ''}${
+      r.result === 'passed' && state.exempt.includes(r.id) ? ' (במקום פטור)' : ''}`;
   const pick = await askRows(
     'ייבוא מגליון ציונים',
     'הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.',
@@ -342,13 +375,7 @@ export async function importGrades(file) {
     { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) }
   );
   if (!pick) return setGradeMsg('');
-  for (const i of pick) {
-    const r = todo[i];
-    setStatus(state, r.id, r.result === 'failed' ? 'failed' : 'passed');
-    if (r.result === 'passed') state.grades[r.id] = r.grade;
-    else delete state.grades[r.id]; // gradeAverage counts graded passes only: a failure or an exemption has no grade
-    state.exempt = state.exempt.filter((x) => x !== r.id).concat(r.result === 'exempt' ? [r.id] : []);
-  }
+  applyGradeChanges(state, pick.map((i) => todo[i]));
   setGradeMsg('');
   enterList();
   toast(pick.length === 1 ? 'עודכן קורס אחד' : `עודכנו ${pick.length} קורסים`);

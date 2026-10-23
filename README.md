@@ -205,10 +205,14 @@ npm ci
 npm test                      # בדיקות יחידה
 npx playwright install webkit
 npm run test:browser          # דפדפן אמיתי: נגישות (axe), זרימות מלאות והסיור
+npm run check:real            # כל התוכניות האמיתיות: כללי נתונים, הפותר והמצב שלי מול חישוב ישיר, ובדיקות שמירה וייבוא
 npm run report:rules          # דף כללים לכל תוכנית ומחזור, לאישור המחלקה (out/rules/)
 npm run report:conflicts      # דף סתירות לכל מחלקה (docs/conflicts/)
 npx http-server web -p 8080 -c-1
 ```
+
+`npm run check:real` רץ כדקה. מריצים אותו לפני כל מיזוג שנוגע בפותר או בכללים (`web/solver*.js`, `web/rules.js`) ואחרי כל עדכון
+נתונים. יציאה 1 פירושה שגיאת נתונים או כשל בפותר; אזהרות לא מכשילות. מדגם של 3 תוכניות ממנו רץ גם בתוך `npm test`.
 
 הרצה ובדיקות: [DEVELOPING](docs/DEVELOPING.md) · מבנה הקוד: [ARCHITECTURE](docs/ARCHITECTURE.md) · תפעול: [OPERATIONS](docs/OPERATIONS.md) · אבטחה: [SECURITY](docs/SECURITY.md) · נגישות: [WCAG 2.1](docs/ACCESSIBILITY-WCAG21.md) · ניסוי עם סטודנטים: [BETA](docs/BETA.md) · תרומה: [CONTRIBUTING](CONTRIBUTING.md) · כל התיעוד: [docs](docs/README.md)
 

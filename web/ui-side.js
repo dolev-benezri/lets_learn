@@ -1,5 +1,5 @@
 // Step 2, the courses page ("הקורסים שלי"): the course list and a one-line summary of the shown alternative.
-import { app, esc, candidateMode } from './app.js';
+import { app, esc, candidateMode, planningCls } from './app.js';
 import { englishOptions, specLists } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, isPair, resCourses, placedIn, semResult, summary, freeDaysText } from './ui-grid.js';
@@ -17,6 +17,7 @@ import {
   heb,
   nameHtml,
   listTitle,
+  outsideBoxes,
   $,
   ui
 } from './ui-common.js';
@@ -40,7 +41,8 @@ function outWhy(id) {
 }
 
 function card(id, res, unlocks, musts) {
-  const { data, cls } = app;
+  const { data } = app,
+    cls = planningCls();
   const s = cls.statuses[id],
     c = data.courses[id],
     mode = candidateMode(id);
@@ -116,9 +118,11 @@ export function coursesSummary(res) {
 
 export function renderSide(res) {
   const ids = listIds(),
-    unlocks = unlockCounts(app.data, doneIds());
+    pc = planningCls(),
+    st = (id) => status(id, pc),
+    unlocks = unlockCounts(app.data, doneIds(pc));
   const order = { retake: 0, available: 1, afterA: 1, conditional: 1 };
-  const cand = ids.filter((id) => CAND.includes(status(id))).sort((a, b) => order[status(a)] - order[status(b)]);
+  const cand = ids.filter((id) => CAND.includes(st(id))).sort((a, b) => order[st(a)] - order[st(b)]);
   const plan = cand.filter(planned),
     rest = cand.filter((id) => !planned(id));
   const musts = plan.filter((id) => candidateMode(id) === 'must').map((id) => app.data.courses[id].name);
@@ -144,9 +148,11 @@ export function renderSide(res) {
     .map(({ l }) => ({ l, ids: take(l) }))
     .filter((x) => x.ids.length);
   const specN = spec.reduce((n, x) => n + x.ids.length, 0);
-  const locked = (st) => ids.filter((id) => status(id) === st);
-  const rows = (list) => `<ul
-    class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${app.cls.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
+  const locked = (s) => ids.filter((id) => st(id) === s);
+  // a blocked course offers its outside-program alternatives (J3)
+  const rows = (list, ask) => `<ul
+    class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${
+      pc.statuses[id].reasons.map(esc).join('<br>')}</p>${ask ? outsideBoxes(id, `side-${id}`) : ''}</div></li>`).join('')}</ul>`;
   // the search finished without a plan: say so, step 4 says why
   const noPlan = ui.last && !ui.last.results.some((r) => resCourses(r).length);
   $('coursesTop').innerHTML = noPlan
@@ -164,7 +170,7 @@ export function renderSide(res) {
     )}
     ${listsHtml}
     ${details('specOthers', `התמחויות אחרות (${specN})`, spec.map(({ l, ids }) => `<h4>${esc(listTitle(l))} (${ids.length})</h4>${cards(ids)}`).join(''), specN)}
-    ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked')), locked('blocked').length)}
+    ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked'), true), locked('blocked').length)}
     ${details('notOffered', `לא נלמד בסמסטר (${locked('notOffered').length})`, rows(locked('notOffered')), locked('notOffered').length)}
     ${details('exempt', `פטור (ציון אנגלית) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}
     ${details('english', 'אנגלית: רמות ופטור', engBody, eng.length)}`;

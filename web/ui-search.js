@@ -1,5 +1,5 @@
 // The auto search: debounce, worker, "חפש עוד" budget.
-import { app, candidateMode, yearCourses, keepFocus } from './app.js';
+import { app, candidateMode, yearCourses, keepFocus, planningCls } from './app.js';
 import { gated, yearSearch, toast, focusWeek, $, ui } from './ui-common.js';
 import { renderView } from './ui-view.js';
 import { showWeights } from './solver-core.js';
@@ -23,7 +23,8 @@ export function scheduleRun(again = false) {
   ui.timer = setTimeout(run, 300);
 }
 function run() {
-  const { state, data, cls } = app;
+  const { state, data } = app,
+    cls = planningCls();
   const courses = Object.keys(data.courses)
     .map((id) => ({ id, mode: candidateMode(id) }))
     .filter((x) => x.mode === 'must' || x.mode === 'optional');

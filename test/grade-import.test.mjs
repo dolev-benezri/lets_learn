@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rowsFromItems, parseGradeSheet } from '../web/grade-import.js';
+import { rowsFromItems, parseGradeSheet, gradeChanges, applyGradeChanges } from '../web/grade-import.js';
+import { normalize } from '../web/app.js';
 // Synthetic rows only (never a real sheet). Cells are listed in reading order (code first = rightmost), wrapped in bidi marks like the portal does.
 const wrap = (s) => `‫${s}‬`;
 const cells = (page, y, list, dy = 0) =>
@@ -159,4 +160,33 @@ test('gradeChanges: an exemption on a course already marked passed is offered on
     [['90901', 'passed', 'passed']]
   );
   assert.deepEqual(gradeChanges(row, { passed: ['90901'], failed: {}, grades: {}, exempt: ['90901'] }), []);
+});
+
+// J2/J12: a failure before a pass is kept as "failed before"; a graded pass replaces an exemption
+const row = (y, grade, fail) => cells(1, y, ['10016', 'תשפ"ה 1/', 'פיזיקה 1', 'ד"ר כהן', grade, '4.0', '4.50', ...(fail ? ['*'] : [])]);
+const st = (s = {}) => normalize({ v: 1, passed: [], ...s });
+test('a failed row and a passed row of one course: passed with failedBefore, in either order', () => {
+  for (const rows of [[row(700, '45', true), row(680, '85')], [row(700, '85'), row(680, '45', true)]])
+    assert.deepEqual(parseGradeSheet(sheet(...rows), data), [{ id: '10016', grade: 85, result: 'passed', failedBefore: true }]);
+});
+test('import: a failure before a pass is offered once, applied as one failure, never lowers a count', () => {
+  const found = parseGradeSheet(sheet(row(700, '45', true), row(680, '80')), data);
+  const s = st({ passed: ['10016'], grades: { 10016: 80 } });
+  const todo = gradeChanges(found, s);
+  assert.equal(todo.length, 1, 'same status and grade, but the failure is new');
+  applyGradeChanges(s, todo);
+  assert.deepEqual([s.passed, s.failed, s.grades], [['10016'], { 10016: 1 }, { 10016: 80 }]);
+  assert.deepEqual(gradeChanges(found, s), [], 'a reimport changes nothing');
+  for (const n of [2, 3]) {
+    const t = st({ passed: [], failed: { 10016: n } });
+    applyGradeChanges(t, gradeChanges(found, t));
+    assert.equal(t.failed['10016'], n);
+  }
+});
+test('import: a graded pass on an exempt course offers removing the exemption', () => {
+  const s = st({ passed: ['10016'], exempt: ['10016'], grades: { 10016: 80 } });
+  const todo = gradeChanges([{ id: '10016', grade: 80, result: 'passed' }], s);
+  assert.equal(todo.length, 1);
+  applyGradeChanges(s, todo);
+  assert.deepEqual([s.passed, s.exempt, s.grades['10016']], [['10016'], [], 80]);
 });

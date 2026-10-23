@@ -239,11 +239,12 @@ test('a backup from last year keeps the record, drops last year’s groups and m
   const b = await backupLink('https://x.test/', old);
   const r = await readHash(b.slice(b.indexOf('#')), { year: 2028, semester: 'א' });
   assert.equal(r.type, 'backup');
-  assert.deepEqual(r.payload.failed, { 90903: 1 });
-  assert.equal(r.payload.pins, undefined);
-  assert.equal(r.payload.semesterOf, undefined);
-  assert.equal(r.payload.friends, undefined);
-  assert.equal(r.payload.profile.year, 3);
+  // the move to the new year happens at restore (app.js normalize -> migrateYear), as for a local save
+  const { normalize } = await import('../web/app.js');
+  const n = normalize(r.payload, { year: 2028, programs: [{ id: r.payload.program, startYears: [r.payload.startYear ?? 2026] }] });
+  assert.deepEqual(n.failed, { 90903: 1 });
+  assert.deepEqual([n.pins, n.semesterOf, n.friends], [[], {}, []]);
+  assert.equal(n.profile.year, 3);
   const f = await friendLink('https://x.test/', old, ['G1']);
   assert.match((await readHash(f.slice(f.indexOf('#')), { year: 2028, semester: 'א' })).error, /סמסטר אחר/);
 });
@@ -251,4 +252,41 @@ test('a backup from last year keeps the record, drops last year’s groups and m
 test('a backup from a newer year than the site shows is refused, not aged backwards', async () => {
   const b = await backupLink('https://x.test/', { ...state, year: 2028, pins: ['G1'] });
   assert.ok((await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' })).error);
+});
+
+test('backup link keeps outsideDone', async () => {
+  const { normalize } = await import('../web/app.js');
+  const at = { year: 2027, semester: 'א' };
+  const s = normalize({ v: 1, passed: [], outsideDone: ['x'] });
+  const b = await backupLink('https://x.test/', s);
+  assert.deepEqual(normalize((await readHash(b.slice(b.indexOf('#')), at)).payload).outsideDone, ['x']);
+});
+
+// J10: one list of persisted fields (web/state-schema.js); identity/version fields travel in the link's own header
+const IDENTITY = ['v', 'year', 'semester', 'program', 'startYear'];
+test('backup round trip keeps every persisted field; every saved field is in the shared list', async () => {
+  const { normalize, DEFAULT } = await import('../web/app.js');
+  const { PERSISTED } = await import('../web/state-schema.js');
+  for (const k of Object.keys(DEFAULT)) assert.ok(k in PERSISTED || IDENTITY.includes(k), `${k} is neither persisted nor identity`);
+  const FIX = {
+    name: 'דנה', passed: ['10016'], failed: { 10016: 1 }, grades: { 10016: 80 }, exempt: ['10016'], outsideDone: ['x'],
+    choices: { 10016: 'must' }, friends: [{ name: 'f', groups: ['G1'] }], pins: ['G1'],
+    profile: { year: 2, amirnet: 100, specs: [], summer: true }, scope: 'א', load: 'ב', sortBy: 'credits',
+    semesterOf: { 10016: 'ב' }, programSet: true, specDraft: ['solid'], yearIds: ['10016'], retakeSeen: ['10016'],
+    weights: { ...DEFAULT.weights, friends: 1 }, constraints: { ...DEFAULT.constraints, maxCredits: 20 }
+  };
+  for (const k of Object.keys(PERSISTED)) assert.ok(k in FIX, `no fixture for ${k}`);
+  const at = { year: 2027, semester: 'א' };
+  const s = normalize({ ...structuredClone(DEFAULT), ...FIX, v: 1, year: 2027, semester: 'א' });
+  const b = await backupLink('https://x.test/', s);
+  const n = normalize((await readHash(b.slice(b.indexOf('#')), at)).payload);
+  assert.deepEqual(Object.keys(FIX).filter((k) => JSON.stringify(n[k]) !== JSON.stringify(s[k])), []);
+});
+test('backup keeps programSet on its own (default program, no study year: nothing else implies it)', async () => {
+  const { normalize, DEFAULT } = await import('../web/app.js');
+  const at = { year: 2027, semester: 'א' };
+  const s = normalize({ ...structuredClone(DEFAULT), v: 1, passed: [], programSet: true });
+  assert.equal(s.programSet, true);
+  const b = await backupLink('https://x.test/', s);
+  assert.equal(normalize((await readHash(b.slice(b.indexOf('#')), at)).payload).programSet, true);
 });

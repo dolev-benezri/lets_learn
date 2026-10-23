@@ -99,3 +99,12 @@ test('advisorHtml: a met list names no missing course (same logic as the credit 
   const t = text(advisorHtml(w));
   assert.ok(t.includes('5 מתוך 5 נ״ז') && t.includes('קורסי חובה משנים קודמות שחסרים: אין'), t);
 });
+
+test('advisor summary names a mandatory course the year plan could not place (res.missing)', () => {
+  const d = mini();
+  const html = advisorHtml({
+    data: d, state: { passed: [], failed: {}, profile: { year: 1 } },
+    res: { a: { courses: ['A'], groups: ['A2'] }, b: null, missing: ['B'], warnings: [] }, cls: { warnings: [] }
+  });
+  assert.match(html, /קורסי חובה שביקשת ולא נכנסו לאף סמסטר: דינמיקה/);
+});

@@ -102,19 +102,54 @@ export const studyYear = (data, state) => Math.min(
   state.profile?.year ?? data.year - data.startYear + 1
 );
 
+// One requirement (an anyOf) is met by any alternative: an in-program course passed or exempt, or an outside-program one the
+// student marked done (state.outsideDone, by name). A requirement entirely outside the program is assumed met.
+export const reqMet = (p, { passed, exempt, outside }) =>
+  p.anyOf.some((a) => (a.id ? passed.has(a.id) || exempt.has(a.id) : outside.has(a.name)))
+  || p.anyOf.every((a) => a.id === null);
+export const reqContext = (state, exempt = amirnetExempt(state.profile?.amirnet)) => ({
+  passed: new Set(state.passed),
+  exempt: new Set(exempt),
+  outside: new Set(state.outsideDone ?? [])
+});
+
+// The soft warning on a record the regulations would not allow (a faculty exception may): one requirement, unmet by the record.
+// A corequisite is only flagged when never taken: taken together and failed is legitimate. null = nothing to say.
+const SOFT = 'אם קיבלת אישור חריג, אפשר להשאיר.';
+function unmetText(p, failed) {
+  const fails = p.anyOf.filter((a) => a.id && failed[a.id]),
+    tried = fails.length > 0, // a failed alternative is named alone; a repeated one once
+    names = [...new Set((tried ? fails : p.anyOf).map((a) => a.name))].join(' או ');
+  if (p.kind === 'קדם')
+    return `שים לב: ${names} הוא קדם, ${tried ? 'וסומן שנכשלת בו' : 'ולא סומן שעברת אותו'}. ${SOFT}`;
+  return tried ? null : `שים לב: ${names} הוא קורס מקביל, ולא סומן שלקחת אותו. ${SOFT}`;
+}
+// Courses marked passed (not exempt) or failed whose requirements the record does not meet: { id: [text] }.
+export function recordWarnings(data, state) {
+  const ctx = reqContext(state), failed = state.failed ?? {}, sheet = new Set(state.exempt ?? []), out = {};
+  for (const id of new Set([...(state.passed ?? []), ...Object.keys(failed)])) {
+    const c = data.courses[id];
+    if (!c || sheet.has(id) || ctx.exempt.has(id)) continue;
+    const texts = [...new Set(c.prereqs.filter((p) => !reqMet(p, ctx)).map((p) => unmetText(p, failed)).filter(Boolean))];
+    if (texts.length) out[id] = texts;
+  }
+  return out;
+}
+
 export function classify(data, state) {
   const passed = new Set(state.passed);
   const failed = state.failed ?? {};
   const exempt = new Set(amirnetExempt(state.profile?.amirnet));
   const statuses = {};
   const when = data.semester === 'שנה' ? 'השנה' : `בסמסטר ${data.semester}`; // the year view has no single semester
-  const satisfied = (p) => p.anyOf.some((a) => a.id && (passed.has(a.id) || exempt.has(a.id)))
-    || p.anyOf.every((a) => a.id === null);
+  const ctx = reqContext(state, exempt);
+  const satisfied = (p) => reqMet(p, ctx);
   const outsideNotes = (c) => c.prereqs.filter((p) => p.anyOf.every((a) => a.id === null))
     .flatMap((p) => p.anyOf)
     .map((a) => `קדם מחוץ לתוכנית (${a.name}): מניחים שעברת`);
   const unmetParallel = (c) => c.prereqs.filter((p) => p.kind === 'מקביל' && !satisfied(p));
-  const parallelNote = (par) => `רק יחד עם ${par.map((p) => p.anyOf.map((a) => a.name).join(' או ')).join(', ')} (קורס מקביל, תקנון 6.2.3)`;
+  const parallelNote = (par) =>
+    `רק יחד עם ${par.map((p) => [...new Set(p.anyOf.map((a) => a.name))].join(' או ')).join(', ')} (קורס מקביל, תקנון 6.2.3)`;
   const parallelIds = (par) => par.map((p) => p.anyOf.map((a) => a.id).filter(Boolean));
 
   for (const [id, c] of Object.entries(data.courses)) {
@@ -131,10 +166,12 @@ export function classify(data, state) {
       continue;
     }
     if (failed[id]) { // prerequisites were met on the first attempt; a corequisite must still hold with the retake
-      const par = unmetParallel(c);
+      const par = unmetParallel(c),
+        // a retake with a prerequisite the record lacks stays possible (an exception), with the soft warning
+        lacks = c.prereqs.filter((p) => p.kind === 'קדם' && !satisfied(p)).map((p) => unmetText(p, failed));
       statuses[id] = {
         status: 'retake',
-        reasons: [`נכשלת, מוצע ${when} (תקנון 11.6.1)`, ...(par.length ? [parallelNote(par)] : [])],
+        reasons: [`נכשלת, מוצע ${when} (תקנון 11.6.1)`, ...(par.length ? [parallelNote(par)] : []), ...lacks],
         ...(par.length && { missingParallel: parallelIds(par) })
       };
       continue;
@@ -144,7 +181,8 @@ export function classify(data, state) {
       statuses[id] = {
         status: 'blocked',
         reasons: [],
-        blockedBy: hard.map((p) => p.anyOf.find((a) => a.id)?.id ?? null)
+        // one group per unmet requirement: its in-program alternatives, any one of which would do
+        blockedBy: hard.map((p) => [...new Set(p.anyOf.filter((a) => a.id).map((a) => a.id))]) // the data repeats some alternatives
       };
       continue;
     }
@@ -168,15 +206,18 @@ export function classify(data, state) {
     if (s?.status === 'blocked' && !seen.has(id)) {
       seen.add(id);
       // two requirements naming the same course: once
-      return `${c.name} ← ${[...new Set(s.blockedBy)].map((b) => chain(b, seen)).filter(Boolean).join(' + ')}`;
+      return `${c.name} ← ${unique(s.blockedBy).map((g) => anyChain(g, seen)).filter(Boolean).join(' + ')}`;
     }
     return c.name;
   };
+  // a requirement group: its alternatives joined by "או", each traced on its own (one branch's visits don't hide another's)
+  const anyChain = (g, seen = new Set()) => g.map((id) => chain(id, new Set(seen))).filter(Boolean).join(' או ');
+  const unique = (groups) => [...new Map(groups.map((g) => [g.join(), g])).values()];
   // the English level comes from the Amirnet score: without it every level looks blocked
   const noScore = !Number.isFinite(state.profile?.amirnet);
   for (const [id, s] of Object.entries(statuses)) {
     if (s.status !== 'blocked') continue;
-    s.reasons = [...new Set(s.blockedBy.map((b) => `חסום: דורש ${chain(b)} (תקנון 7.4)`))];
+    s.reasons = [...new Set(s.blockedBy.map((g) => `חסום: דורש ${anyChain(g)} (תקנון 7.4)`))];
     if (noScore && ENGLISH.includes(id))
       s.reasons.push(`הזינו ציון אנגלית (אמירנט או פסיכומטרי) ב"המצב שלי" כדי לדעת מאיזו רמה מתחילים (${AMIRNET[0]} ומעלה פוטר מהמכינה)`);
   }
@@ -228,14 +269,15 @@ export function withAfterA(data, state, cls) {
     .filter((id) => ['retake', 'available', 'conditional'].includes(cls.statuses[id].status)
       && data.courses[id].semesters?.includes('א')));
   const second = classify(data, { ...state, passed: [...state.passed, ...candA] }).statuses;
-  const settled = (a) => a.id && ['done', 'exempt'].includes(cls.statuses[a.id]?.status);
+  const of = (st) => Object.keys(cls.statuses).filter((id) => cls.statuses[id].status === st);
+  const ctx = { passed: new Set(of('done')), exempt: new Set(of('exempt')), outside: new Set(state.outsideDone ?? []) };
   const statuses = { ...cls.statuses };
   for (const [id, s] of Object.entries(cls.statuses)) {
     const c = data.courses[id];
     if (s.status !== 'blocked'
       || !c.semesters?.includes('ב')
       || !['available', 'conditional'].includes(second[id].status)) continue;
-    const names = [...new Set(c.prereqs.filter((p) => p.kind === 'קדם' && !p.anyOf.some(settled))
+    const names = [...new Set(c.prereqs.filter((p) => p.kind === 'קדם' && !reqMet(p, ctx))
       .flatMap((p) => p.anyOf.filter((a) => candA.has(a.id)).map((a) => a.name)))];
     statuses[id] = { status: 'afterA', reasons: [`אפשר בסמסטר ב׳ אחרי ${names.join(', ')}`] };
   }
@@ -248,7 +290,10 @@ export function setStatus(state, id, st) {
   state.passed = state.passed.filter((x) => x !== id);
   if (st !== 'passed' && state.exempt) state.exempt = state.exempt.filter((x) => x !== id);
   if (st === 'passed') state.passed.push(id);
-  if (st === 'none') delete state.failed[id];
+  if (st === 'none') {
+    delete state.failed[id];
+    if (state.grades) delete state.grades[id]; // "not taken" has no grade: a later pass starts without one
+  }
   if (st === 'failed') state.failed[id] ||= 1;
 }
 
@@ -289,7 +334,7 @@ export function missingRequired(data, state) {
 // Credit-weighted average over passed courses that have a grade (courses without credits in the data don't count).
 export function gradeAverage(data, state) {
   let sum = 0, credits = 0;
-  for (const id of state.passed ?? []) {
+  for (const id of new Set(state.passed ?? [])) {
     const g = state.grades?.[id], c = data.courses[id]?.credits ?? 0;
     if (g === undefined || !(c > 0)) continue;
     sum += g * c;
