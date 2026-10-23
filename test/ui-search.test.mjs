@@ -231,3 +231,17 @@ test('a longer year search that ends in time does not claim every option was che
   assert.ok(toastEl.textContent, 'a toast was shown');
   assert.doesNotMatch(toastEl.textContent, /נבדקו כל האפשרויות/);
 });
+
+// Audit 2026-10-23 #37: a friend's groups are checked against every loaded semester, not only the one shown, so "N לא
+// נמצאו" does not count the other semester's groups while "רק א׳" (or ב׳, or summer) is on screen.
+test('allGroupIds: a ב׳ group is known while "רק א׳" is shown', async () => {
+  const { allGroupIds } = await import('../web/ui-common.js');
+  const A = mini(), B = mini();
+  B.semester = 'ב';
+  B.courses = { Z: { ...A.courses.A, name: 'ב בלבד', groups: [{ ...A.courses.A.groups[0], id: 'ZB1' }] } };
+  app.sem = { 'א': A, 'ב': B, 'קיץ': null };
+  app.data = A;
+  const known = allGroupIds();
+  assert.ok(known.has('ZB1'), 'the ב׳ group');
+  assert.ok(known.has(A.courses.A.groups[0].id), 'an א׳ group');
+});
