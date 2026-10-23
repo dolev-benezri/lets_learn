@@ -239,3 +239,22 @@ test('grades in words (9.3): עבר and השתתף pass without a number, נכש
   assert.deepEqual(s.grades, {}, 'no number, no grade on file');
   assert.deepEqual([...s.passed].sort(), ['10016', '30003']);
 });
+
+// GPT review of #34/#40: only the year/semester field dates a row ('תשפ"ו' beside '1/'): a course name like 'תנ"ך 1' is no date.
+test('a course name that looks like a year is not a date: undated rows keep the old ranking', () => {
+  const named = (y, when, grade) => cells(1, y, ['10016', ...(when ? [when] : []), 'תנ"ך 1', 'צוות', grade, '4.0', '4.50']);
+  assert.deepEqual(by(parseGradeSheet(sheet(named(700, null, '90'), named(680, 'תשפ"ו 1/', '70')), data)), { 10016: ['passed', 90] });
+});
+// A sheet row without a number replaces a number on file: the latest attempt binds (7.7), and a word carries no number (13.7).
+test('a word-only row clears a number on file and an exemption', () => {
+  const s = st({ passed: ['10016', '30003'], failed: { 30130: 1 }, exempt: ['30003'], grades: { 10016: 85, 30130: 45 } });
+  const found = [
+    { id: '10016', grade: null, result: 'passed' },
+    { id: '30003', grade: null, result: 'passed' },
+    { id: '30130', grade: null, result: 'failed' }
+  ];
+  const todo = gradeChanges(found, s);
+  assert.deepEqual(todo.map((r) => r.id), ['10016', '30003', '30130']);
+  applyGradeChanges(s, todo);
+  assert.deepEqual([s.grades, s.exempt], [{}, []]);
+});
