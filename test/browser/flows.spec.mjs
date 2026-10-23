@@ -367,3 +367,20 @@ for (const size of Object.keys(SIZES)) {
     await page.keyboard.press('Escape');
   });
 }
+
+// Audit 2026-10-23 #34: a failing grade counts in the cumulative average (regulation 9.4.2, 11.4.2), so a failed course takes a
+// grade in #me too, and the average line follows it.
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: a failed course takes a grade, and the average counts it`, async (t) => {
+    const student = { ...STUDENT, passed: ['90903'], failed: { 90901: 1 }, grades: { 90903: 80 } };
+    const page = await visit(t, size, { ...DONE, 'afeka-sched-v1': JSON.stringify(student) }, '#me');
+    const field = page.locator('input[data-chg="grade"][data-cid="90901"]');
+    await field.waitFor({ state: 'attached', timeout: 30000 });
+    await field.fill('40');
+    await field.dispatchEvent('change');
+    await page.locator('#gradeAvg', { hasText: 'ממוצע' }).waitFor({ state: 'attached' });
+    assert.doesNotMatch(await page.locator('#gradeAvg').textContent(), /ממוצע: 80\b/, 'the failing grade is in the average');
+    const s = await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
+    assert.equal(s.grades['90901'], 40);
+  });
+}
