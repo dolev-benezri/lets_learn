@@ -608,3 +608,23 @@ test('setStatus none clears the grade; a minimal state without grades still work
 test('gradeAverage counts a duplicated pass once', () => {
   assert.deepEqual(gradeAverage(mini(), { passed: ['B', 'B'], grades: { B: 90 } }), { avg: 90, credits: 4 });
 });
+
+// Audit 2026-10-23 #34, regulation 5/2/2026: the cumulative average of 11.4.2 is the credit-weighted average of every course
+// taken (9.4.2), failed ones included (13.6 exempts a failed grade only in narrow cases); "פטור"/"השתתף" stay out (13.7).
+// After a retake the later grade binds, even when lower (7.7): the grade on file is the latest attempt's.
+test('gradeAverage counts a failed course\'s grade (11.4.2 with 9.4.2); an exemption stays out (13.7)', () => {
+  const data = { courses: { a: { credits: 4 }, b: { credits: 4 }, c: { credits: 2 }, e: { credits: 3 } }, lists: [] };
+  const state = { passed: ['a', 'c', 'e'], failed: { b: 1, c: 1 }, exempt: ['e'], grades: { a: 80, b: 40, c: 70 } };
+  // a 80 (4) + b 40 (4, failed, not passed again) + c 70 (2, failed once, then passed: the pass binds); e exempt
+  assert.deepEqual(gradeAverage(data, state), { avg: (80 * 4 + 40 * 4 + 70 * 2) / 10, credits: 10 });
+});
+test('setStatus: a grade belongs to its outcome, so switching between passed and failed clears it', () => {
+  const s = { passed: ['a'], failed: {}, exempt: [], grades: { a: 80 } };
+  setStatus(s, 'a', 'failed');
+  assert.equal(s.grades.a, undefined, 'a pass grade is not a failing grade');
+  s.grades.a = 45;
+  setStatus(s, 'a', 'failed'); // the same status again keeps it
+  assert.equal(s.grades.a, 45);
+  setStatus(s, 'a', 'passed');
+  assert.equal(s.grades.a, undefined, 'a failing grade is not a pass grade');
+});
