@@ -77,9 +77,9 @@ export function gradeChanges(found, state) {
     .filter(
       (r) =>
         r.was !== r.to ||
-        (r.grade !== null && r.result !== 'exempt' && state.grades[r.id] !== r.grade) ||
+        (r.result !== 'exempt' && (state.grades[r.id] ?? null) !== r.grade) || // a row without a number clears one on file (7.7)
         (r.failedBefore && !state.failed[r.id]) ||
-        (r.result === 'passed' && r.grade !== null && (state.exempt ?? []).includes(r.id)) ||
+        (r.result === 'passed' && (state.exempt ?? []).includes(r.id)) ||
         (r.result === 'exempt' && !(state.exempt ?? []).includes(r.id))
     )
     .map((r) => ({ ...r, check: !(r.to === 'failed' && r.was === 'passed') }));
@@ -100,14 +100,16 @@ export function applyGradeChanges(state, rows) {
 // When a row's attempt was: its Hebrew year and semester ('תשפ"ו' beside '1/') as one sortable number, or null without them.
 const GEMATRIA = Object.fromEntries([...'אבגדהוזחטיכלמנסעפצקרשת'].map((l, i) => [l, i < 10 ? i + 1 : i < 19 ? (i - 8) * 10 : (i - 17) * 100]));
 const FINALS = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
-const YEAR = /^ת[א-ת]{0,2}["״][א-ת]$/,
-  SEM = /^\/?([1-3])\/?$/;
+// the year starts with תש (5700-5799) and the semester keeps its slash: a course name like 'תנ"ך 1' is no date
+const YEAR = /^תש[א-ת]?["״][א-ת]$/,
+  SEM = /^\/([1-3])$|^([1-3])\/$/;
 function attemptOf(row) {
   const t = row.join(' ').split(/\s+/);
   const i = t.findIndex((x, k) => YEAR.test(x) && (SEM.test(t[k + 1] ?? '') || SEM.test(t[k - 1] ?? '')));
   if (i < 0) return null;
   const year = [...t[i]].reduce((s, l) => s + (GEMATRIA[FINALS[l] ?? l] ?? 0), 0);
-  return year * 10 + Number((t[i + 1]?.match(SEM) ?? t[i - 1].match(SEM))[1]);
+  const m = t[i + 1]?.match(SEM) ?? t[i - 1].match(SEM);
+  return year * 10 + Number(m[1] ?? m[2]);
 }
 
 // rows (from rowsFromItems) -> one result per known course. The latest attempt binds, even when lower (regulation 7.7); a row
