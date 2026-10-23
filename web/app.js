@@ -365,7 +365,7 @@ export function pickData() {
   app.data = summerScope()
     ? app.sem['קיץ']
     : scope === 'year' && B
-      ? { ...yearView(A, B), fetchedAt: A.fetchedAt, examsPublished: A.examsPublished }
+      ? { ...yearView(A, B), fetchedAt: A.fetchedAt, examsPublished: !!(A.examsPublished || B.examsPublished) } // either semester (audit #35)
       : (scope === 'ב' && B
         ? B
         : A);
