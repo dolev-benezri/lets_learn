@@ -566,3 +566,16 @@ test('normalize moves an old-year save on: study year advanced, last year groups
     assert.equal(normalize(old(y, n), catalog).profile.year, want, `study year ${y}, ${n} year(s) on`);
   assert.equal(normalize({ ...old(2), year: 2027 }, catalog).profile.year, 2, 'this year: unchanged');
 });
+
+// Audit 2026-10-23 #38: "לא לפני" later than (or equal to) "לא אחרי" puts every minute of every lesson outside the hours.
+// A backup link or an old save with such a pair keeps "לא אחרי" and drops "לא לפני".
+test('normalize: inverted or equal hours drop notBefore', () => {
+  const hours = (notBefore, notAfter) => {
+    const c = normalize({ v: 1, constraints: { notBefore, notAfter } }).constraints;
+    return [c.notBefore, c.notAfter];
+  };
+  assert.deepEqual(hours('18:00', '10:00'), ['', '10:00']);
+  assert.deepEqual(hours('10:00', '10:00'), ['', '10:00']);
+  assert.deepEqual(hours('08:00', '18:00'), ['08:00', '18:00']);
+  assert.deepEqual(hours('21:00', ''), ['21:00', '']);
+});

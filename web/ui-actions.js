@@ -342,6 +342,21 @@ export const ACT = {
 
 // Text-like inputs only save + re-run (re-rendering them mid-typing would reset the caret).
 const time = (v) => (/^\d{2}:\d{2}$/.test(v) ? v : '');
+// "לא לפני" stays before "לא אחרי" (audit #38): an inverted or equal pair leaves no allowed minute, so the change is
+// refused and the field shows its old value again (normalize drops such a pair from a backup link)
+function hours(el, k) {
+  const c = app.state.constraints,
+    v = time(el.value);
+  const nb = k === 'notBefore' ? v : c.notBefore,
+    na = k === 'notAfter' ? v : c.notAfter;
+  if (nb && na && nb >= na) {
+    el.value = c[k];
+    toast('"לא לפני" צריך להיות מוקדם מ-"לא אחרי".');
+    return 'none';
+  }
+  c[k] = v;
+  return 'quiet';
+}
 // An invalid edit (end not after start, empty time) is not stored; the re-render puts the old value back.
 const blockEdit = (el, k, v) => {
   const b = app.state.constraints.blocks[el.dataset.i];
@@ -525,14 +540,8 @@ export const CHG = {
     app.state.constraints.split = el.checked;
     if (!el.checked) dropSplitPins();
   },
-  notBefore: (el) => {
-    app.state.constraints.notBefore = time(el.value);
-    return 'quiet';
-  },
-  notAfter: (el) => {
-    app.state.constraints.notAfter = time(el.value);
-    return 'quiet';
-  },
+  notBefore: (el) => hours(el, 'notBefore'),
+  notAfter: (el) => hours(el, 'notAfter'),
   maxDays: (el) => {
     app.state.constraints.maxDays = el.value ? Number(el.value) : null;
   },
