@@ -28,6 +28,8 @@ export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), 
     data.courses[id]?.name ?? Object.values(sem).find((d) => d?.courses?.[id])?.courses[id].name ?? id;
   const missing = missingRequired(data, state);
   const passed = state.passed.filter((id) => data.courses[id]);
+  // failed and not passed again: what the advisor most needs to see (bot report #6)
+  const failed = Object.keys(state.failed ?? {}).filter((id) => !state.passed.includes(id) && data.courses[id]);
 
   const me = list(
     [
@@ -37,6 +39,7 @@ export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), 
       `${esc(creditsGoal(prog.earned, prog.required, year))}`,
       avg !== null && `ממוצע: ${avg.toFixed(1)}`,
       `קורסים שעברתי: ${passed.length ? passed.map((id) => esc(name(id))).join(', ') : 'אין'}`,
+      failed.length && `קורסים שנכשלתי בהם ועוד לא עברתי: ${failed.map((id) => esc(name(id))).join(', ')}`,
       `קורסי חובה משנים קודמות שחסרים: ${missing.length ? missing.map((id) => esc(name(id))).join(', ') : 'אין'}`,
     ].filter(Boolean)
   );

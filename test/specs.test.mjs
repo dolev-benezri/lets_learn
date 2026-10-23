@@ -203,8 +203,12 @@ test('yearCourses / candidateMode: from year 3 the chosen areas courses are opti
   assert.equal(candidateMode('am1'), 'no');
   setup(3, []);
   assert.equal(candidateMode('am1'), 'no', 'no area chosen: nothing extra');
+  d.lists.push(L(10, 'פרויקט גמר', ['z']));
+  setup(3, []);
+  assert.equal(candidateMode('z'), 'optional', 'the final project list joins from year 3 (bot report 1.2)');
   setup(2, ['a', 'b']);
   assert.deepEqual(yearCourses(), ['z']);
+  d.lists.pop();
   assert.equal(candidateMode('am1'), 'no', 'year 2 is unchanged');
   setup(3, ['a', 'b'], { am1: 'must', ae1: 'no' });
   assert.deepEqual([candidateMode('am1'), candidateMode('ae1')], ['must', 'no'], 'the student\'s own choice still wins');

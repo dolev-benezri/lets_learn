@@ -412,13 +412,15 @@ export function waitingOnEarlier() {
 }
 
 // The study year's mandatory list (e.g. "שנה ב'"): courses in it default to optional. From year 3 the chosen
-// specialization areas' courses (mandatory and elective) join it.
+// specialization areas' courses (mandatory and elective) join it, and so does the final project list (four-year
+// programs keep it apart from the year lists; its prerequisites still decide when a part opens: bot report 1.2).
 export function yearCourses() {
   const y = studyYear(app.data, app.state),
     list = app.data.lists.find((l) => l.name.includes(`שנה ${' אבגדה'[y]}'`))?.courses ?? [];
   if (y < 3) return list;
-  const sp = specLists(app.data, app.state.profile.specs);
-  return [...list, ...sp.mandatory, ...sp.elective];
+  const sp = specLists(app.data, app.state.profile.specs),
+    project = app.data.lists.filter((l) => /^פרויקט גמר/.test(l.name)).flatMap((l) => l.courses);
+  return [...new Set([...list, ...project, ...sp.mandatory, ...sp.elective])];
 }
 // The classification a plan is built on: the summer assumption in summer, else the record.
 export const planningCls = () => app.clsSummer ?? app.cls;
@@ -520,6 +522,8 @@ function setSemesters(sem) {
 
 // The personal part of the state (who you are, how you plan) survives a program change; what you passed does not.
 const PERSONAL = ['name', 'friends', 'weights', 'constraints', 'load', 'sortBy', 'programSet'];
+// What the student did in the program: kept over a cohort switch of the same program (switchTo), passed apart
+const RECORD = ['failed', 'grades', 'exempt', 'outsideDone', 'choices', 'retakeSeen', 'specDraft'];
 const withPersonal = (to, from) => {
   for (const k of PERSONAL) to[k] = structuredClone(from[k]);
   to.scope = 'year';
@@ -571,9 +575,18 @@ export async function switchTo(program, startYear) {
   // the year just picked (CHG.pyear sets it first), not the stash's older one
   if (back && prev.profile.year !== null) next.profile.year = prev.profile.year;
   app.state = withPersonal(next, prev);
+  // Same program, another cohort = the study year picked (CHG.pyear): the record is the student's, not the cohort's
+  // (bot report 1.1). Earlier years are still assumed passed, except a course on file as failed.
+  const sameProgram = program === prev.program;
+  if (sameProgram) {
+    for (const k of RECORD) app.state[k] = structuredClone(prev[k]);
+    app.state.profile.specs = [...prev.profile.specs];
+  }
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);
   setSemesters(sem);
-  ensurePassed();
+  if (sameProgram)
+    app.state.passed = [...new Set([...(prev.passed ?? []), ...earlierYears().filter((id) => !app.state.failed[id])])];
+  else ensurePassed();
   uiReset();
   return true;
 }
