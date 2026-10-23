@@ -27,6 +27,7 @@
 | [PREREQS.md](PREREQS.md) | מפת דרישות הקדם של הנדסה מכנית, מחזור 2026 (נוצר יחד עם [prereqs.json](prereqs.json) על ידי `scripts/prereq-map.mjs`) |
 | [ISSUES.md](ISSUES.md) | בעיות ידועות ומעקב |
 | [../solver-audit/](../solver-audit/findings.md) | ביקורת מנוע החיפוש (6.10.2026): ממצאים, מפת תלויות, תרשימי זרימה, וסקריפטי שחזור שמוכיחים כל טענה |
+| [AUDIT-2026-10-23.md](AUDIT-2026-10-23.md) | ביקורת חיצונית (23.10.2026): האתר ומנוע החיפוש, 14 ממצאים, וסקריפטי שחזור ב-[audit-2026-10-23/](audit-2026-10-23/) |
 | [superpowers/design-review/](superpowers/design-review/) | סקירת העיצוב (8.10.2026): ביקורת ממשק, סקירת ה-README, מחקר עיצוב, וסגנונות לבחירה (`npm run ui:serve`) |
 
 ## מחקר והיסטוריה
