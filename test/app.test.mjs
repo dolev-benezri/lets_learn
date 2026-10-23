@@ -575,3 +575,12 @@ test('freeName: the name, else the first free numbered one', () => {
   assert.equal(freeName([{ name: 'נועה' }], 'נועה'), 'נועה 2');
   assert.equal(freeName([{ name: 'נועה' }, { name: 'נועה 2' }], 'נועה'), 'נועה 3');
 });
+
+// GPT review of #36: a numbered name stays within normalize's 60 characters, so the added friend survives a reload.
+test('freeName: a long name is cut to fit its number in 60 characters, and the result survives normalize', () => {
+  const long = 'א'.repeat(60);
+  const n = freeName([{ name: long }], long);
+  assert.ok(n.length <= 60 && n.endsWith(' 2') && n !== long, n);
+  const s = normalize({ v: 1, friends: [{ name: long, groups: ['1'] }, { name: n, groups: ['2'] }] });
+  assert.equal(s.friends.length, 2);
+});
