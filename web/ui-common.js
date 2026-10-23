@@ -144,7 +144,9 @@ export const listIds = () => [...new Set(app.data.lists.flatMap((l) => l.courses
 export const status = (id, cls = app.cls) => cls.statuses[id]?.status;
 export const doneIds = (cls = app.cls) => Object.keys(cls.statuses).filter((id) => status(id, cls) === 'done');
 export const planned = (id) => ['must', 'optional'].includes(candidateMode(id));
-export const allGroupIds = () => groupIndex(app.data);
+// Every loaded semester's group ids: a friend's groups in the semester not on screen are not "לא נמצאו" (audit #37)
+export const allGroupIds = () =>
+  new Set(['א', 'ב', 'קיץ'].flatMap((s) => (app.sem?.[s] ? [...groupIndex(app.sem[s]).keys()] : [])));
 export const pill = (ic, text, cls = '') => `<span class="pill ${cls}">${icon(ic)}<span>${text}</span></span>`;
 export const seg = (name, legend, opts, cur, attrs, visible = false) =>
   `<fieldset class="seg"><legend${visible ? '' : ' class="sr"'}>${esc(legend)}</legend><div class="seg-opts">${opts
