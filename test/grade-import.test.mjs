@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rowsFromItems, parseGradeSheet, gradeChanges, applyGradeChanges } from '../web/grade-import.js';
+import { rowsFromItems, parseGradeSheet, skippedRows, gradeChanges, applyGradeChanges } from '../web/grade-import.js';
 import { normalize } from '../web/app.js';
 // Synthetic rows only (never a real sheet). Cells are listed in reading order (code first = rightmost), wrapped in bidi marks like the portal does.
 const wrap = (s) => `‫${s}‬`;
@@ -189,4 +189,17 @@ test('import: a graded pass on an exempt course offers removing the exemption', 
   assert.equal(todo.length, 1);
   applyGradeChanges(s, todo);
   assert.deepEqual([s.passed, s.exempt, s.grades['10016']], [['10016'], [], 80]);
+});
+
+// Audit 2026-10-23 #40: a row with a known course code whose grade is not one the import knows (a grade in words) is
+// counted, so the preview can say it was not imported, instead of dropping it silently.
+test('skippedRows counts a row with a grade in words; parseGradeSheet leaves it out', () => {
+  const rows = sheet(
+    cells(1, 700, ['10016', 'תשפ"ו 1/', 'פיזיקה 1', 'ד"ר כהן', 'עבר', '4.0', '4.50']),
+    cells(1, 680, ['30003', 'תשפ"ו 1/', 'מבוא', 'ד"ר לוי', '85', '3.0', '3.00']),
+    cells(1, 660, ['30133', 'טרם', 'קורס', 'צוות', '3.0', '3.00']),
+    cells(1, 640, ['ציון', 'שם הקורס', 'ש"ס'])
+  );
+  assert.deepEqual(by(parseGradeSheet(rows, data)), { 30003: ['passed', 85] });
+  assert.equal(skippedRows(rows, data), 1, 'the words row; not טרם, not the header');
 });
