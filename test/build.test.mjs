@@ -559,3 +559,42 @@ test('validate: a small program sets its own minimum course count', () => {
   assert.ok(validate(d, null, null).errors.some((e) => e.includes('at least 40')));
   assert.deepEqual(validate(d, null, null, 1).errors, []);
 });
+
+// Audit 2026-10-23 #35: no data file has exams yet (every examsPublished is false), so the exam paths have only met
+// synthetic rows. This runs the real 2026 exam page (scripts/fixtures/exams-2026.html) through parseExams and the build onto
+// a real data file, then the solver's "no two exams on one day" rule: the chain the first night with exams will run.
+import { readFileSync } from 'node:fs';
+import { parseExams } from '../scripts/parse.mjs';
+import { search } from '../web/solver-core.js';
+import { classify } from '../web/rules.js';
+test('real exam page: the build attaches exams to a real data file, and the solver keeps exams on separate days', () => {
+  const real = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/30-2026.json', import.meta.url), 'utf8'));
+  const exams = parseExams(readFileSync(new URL('../scripts/fixtures/exams-2026.html', import.meta.url), 'utf8'));
+  // the built file back into the scraper's shape (meetings carry their semester; prerequisites by name)
+  const raw = Object.fromEntries(Object.entries(real.courses).map(([id, c]) => [id, {
+    groups: c.groups.map(({ exams: _, semester, meetings, ...g }) => ({ ...g, meetings: meetings.map((m) => ({ ...m, semester })) })),
+    details: { credits: c.credits, prereqs: c.prereqs.map((p) => ({ kind: p.kind, population: '', names: p.anyOf.map((a) => a.name) })) }
+  }]));
+  const lists = real.lists.map((l) => ({ ...l, courses: l.courses.map((id) => ({ id, name: real.courses[id]?.name ?? id, offered: true })) }));
+  const d = buildDataset({ ...real, department: 'מכנית', lists, raw, exams });
+  assert.equal(d.examsPublished, true);
+  const withExam = Object.entries(d.courses).filter(([, c]) => c.groups.some((g) => g.primary && g.exams.some((e) => e.moed === 1)));
+  assert.ok(withExam.length >= 5, `courses with a moed א exam: ${withExam.length}`);
+  // by lecturer, not only the course-level fallback: real names normalize alike on both pages
+  const byName = exams.filter((e) => e.semester === 'א' && d.courses[e.courseId]?.groups
+    .some((g) => g.primary && normLecturer(g.lecturer) === normLecturer(e.lecturer)));
+  assert.ok(byName.length >= 1, 'at least one exam row matches a group by lecturer');
+  const ids = withExam.map(([id]) => id);
+  const state = { passed: [], failed: {}, profile: { year: 1 } };
+  const statuses = classify(d, state).statuses;
+  const r = search({
+    data: d, statuses, courses: ids.filter((id) => statuses[id]).map((id) => ({ id, mode: 'optional' })),
+    constraints: { examsSameDay: 'forbid' }, weights: { examSpread: 1 }, topK: 5, timeLimitMs: 2000
+  });
+  assert.ok(r.results.length > 0, 'some plan');
+  for (const p of r.results) {
+    const days = p.groups.flatMap((gid) => Object.values(d.courses).flatMap((c) => c.groups.filter((g) => g.id === gid)))
+      .flatMap((g) => g.exams.filter((e) => e.kind === 'בחינה' && e.moed === 1).map((e) => e.date));
+    assert.equal(new Set(days).size, days.length, `no two moed א exams on one day: ${days}`);
+  }
+});
