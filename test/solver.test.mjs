@@ -1716,6 +1716,18 @@ test('a hard "not after 17:45" drops a lesson that ends at 17:50', () => {
   assert.equal(plans(at('16:00', '17:50'), { notAfter: '17:50', windowHard: true }).results.length, 1);
 });
 
+test('a clash only inside the hard day off blames the day off, not the pair (bot report 2.3)', () => {
+  const d = set({
+    X: { ...one([grp('X1', 2, '10:00', '12:00'), grp('X2', 4, '10:00', '12:00')]), name: 'איקס' },
+    Y: { ...one([grp('Y1', 2, '10:00', '12:00'), grp('Y2', 3, '10:00', '12:00')]), name: 'וואי' }
+  });
+  const why = (c) => search({ data: d, courses: musts('X', 'Y'), weights: W0, constraints: c }).diagnosis.join(' ');
+  assert.match(why({ dayOff: [3, 4], dayOffHard: true }), /איקס ו-וואי מתנגשים בכל צירוף שנשאר בימים ובשעות שסימנתם כ"חובה"/);
+  const both = set({ X: { ...one([grp('X1', 2, '10:00', '12:00')]), name: 'איקס' }, Y: { ...one([grp('Y1', 2, '10:00', '12:00')]), name: 'וואי' } });
+  const t = search({ data: both, courses: musts('X', 'Y'), weights: W0, constraints: { dayOff: [3], dayOffHard: true } }).diagnosis.join(' ');
+  assert.match(t, /מתנגשים בכל צירוף אפשרי/, 'a clash that the day off does not cause keeps the old wording');
+});
+
 test('a soft "not after 20:00" counts a 20:00-20:50 lesson as 50 outside minutes', () => {
   const r = plans(at('20:00', '20:50'), { notAfter: '20:00' }, { ...W0, timeWindow: 1 });
   assert.equal(r.results[0].breakdown.timeWindow, 1 - 50 / 600);

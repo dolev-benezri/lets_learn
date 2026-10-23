@@ -327,8 +327,8 @@ function explain(info, unlocks) {
 }
 
 // freedByBlocks(id): the course would have options if the busy blocks were ignored; freedByFull(id): ... if full
-// groups were allowed.
-function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () => false) {
+// groups were allowed; softOptions(id): its options with the day off and hours as wishes (null: none was a must).
+function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () => false, softOptions = null) {
   const name = (id) => data.courses[id].name;
   const out = [];
   for (const it of items) if (it.mode === 'must' && !it.options.length) {
@@ -349,8 +349,13 @@ function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () =
   }
   const must = items.filter((x) => x.mode === 'must' && x.options.length);
   for (let i = 0; i < must.length; i++) for (let j = i + 1; j < must.length; j++) {
-    if (must[i].options.every((a) => must[j].options.every((b) => overlaps(a.mask, b.mask)))) {
-      out.push(`${name(must[i].id)} ו-${name(must[j].id)} מתנגשים בכל צירוף אפשרי`);
+    const clash = (oi, oj) => oi.every((a) => oj.every((b) => overlaps(a.mask, b.mask)));
+    if (clash(must[i].options, must[j].options)) {
+      const pair = `${name(must[i].id)} ו-${name(must[j].id)}`;
+      // the clash is only inside the day off / hours marked "must": blame those, not the pair (bot report 2.3)
+      out.push(softOptions && !clash(softOptions(must[i].id), softOptions(must[j].id))
+        ? `${pair} מתנגשים בכל צירוף שנשאר בימים ובשעות שסימנתם כ"חובה". הפכו אותם להעדפה כדי לראות מערכות.`
+        : `${pair} מתנגשים בכל צירוף אפשרי`);
     }
   }
   return out;
@@ -598,7 +603,7 @@ export function search({
         : `תקרת ${cap} בקמפוס קטנה מדי: כל קורס שבחרתם צריך יותר ימים. העלו אותה.`]
     };
   }
-  const optionsIf = (id, over) => buildOptions(data.courses[id], {
+  const optionsOf = (id, over) => buildOptions(data.courses[id], {
     pins,
     includeFull: constraints.includeFull,
     forbidden,
@@ -606,14 +611,17 @@ export function search({
     lecturers: constraints.lecturers,
     split: constraints.split,
     ...over
-  }).length > 0;
+  });
+  const optionsIf = (id, over) => optionsOf(id, over).length > 0;
+  const soft = forbiddenBy({ ...constraints, dayOffHard: false, windowHard: false });
   const found = diagnose(
     items,
     data,
     (id) => optionsIf(id, { forbidden: forbiddenBy({ ...constraints, blocks: [] }) }),
     Object.keys(constraints.lecturers ?? {}).length > 0,
     // split on: an unlinked free group is already usable
-    (id) => !constraints.split && optionsIf(id, { includeFull: true })
+    (id) => !constraints.split && optionsIf(id, { includeFull: true }),
+    constraints.dayOffHard || constraints.windowHard ? (id) => optionsOf(id, { forbidden: soft }) : null
   );
   return { results: [], partial: false, diagnosis: found.length ? found : [why ? whyNot() : GENERIC] };
 
