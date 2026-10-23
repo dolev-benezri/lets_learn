@@ -327,12 +327,12 @@ export function shuffleSame(data, statuses, courses, solve = search) {
 }
 
 // The year view for one cohort (א and ב files): every pair checked, and "most credits" / "most unlocks" ordered by the year's totals.
-export function checkYear(file, dataA, dataB, { seed = 1, timeLimitMs = 3000 } = {}) {
+export function checkYear(file, dataA, dataB, { seed = 1, timeLimitMs = 3000, solveYear = searchYear } = {}) {
   const out = [];
-  for (const { name, state, yearList } of scenarios(dataA, seed).slice(0, 2))
+  for (const { name, state, yearList } of scenarios(dataA, seed))
     for (const sortBy of ['credits', 'unlocks']) {
       const at = `${file} year ${name} ${sortBy}`;
-      const r = searchYear({
+      const r = solveYear({
         dataA, dataB, state: { ...state, sortBy }, yearList, constraints: DEFAULT.constraints,
         weights: { ...DEFAULT.weights, [sortBy]: 1e5 }, friends: [], timeLimitMs
       });
@@ -343,6 +343,11 @@ export function checkYear(file, dataA, dataB, { seed = 1, timeLimitMs = 3000 } =
     }
   return out;
 }
+
+// The state checks (backup round trip J10, year migration J9, summer J6, grade edit J7, grade import J2/J12, advisor J11) and the
+// small cases (brute force, shuffled order) live in these unit tests; check:real runs them too.
+export const SUITES = ['share', 'app', 'program-switch', 'ui-search', 'xss', 'grade-import', 'advisor', 'solver-props', 'check-real']
+  .map((f) => `test/${f}.test.mjs`);
 
 function main() {
   const t0 = Date.now(),
@@ -376,7 +381,12 @@ function main() {
   for (const [file, dA] of bySem[a] ?? []) if (byName.has(file.split('/')[1])) fails.push(...checkYear(file, dA, byName.get(file.split('/')[1])));
   console.log(`solver and record: ${n} files, ${fails.length} failure(s), ${Date.now() - t1} ms`);
   for (const f of fails) console.log(`FAIL ${f}`);
-  return errors.length || fails.length ? 1 : 0;
+  const t2 = Date.now(),
+    u = spawnSync(process.execPath, ['--test', ...SUITES], { cwd: new URL('..', import.meta.url), encoding: 'utf8' }),
+    count = (k) => u.stdout.match(new RegExp(`^ℹ ${k} (\\d+)`, 'm'))?.[1] ?? '?';
+  console.log(`state and small cases: ${count('tests')} tests, ${count('fail')} failure(s), ${Date.now() - t2} ms`);
+  for (const l of u.stdout.split(/\r?\n/).filter((l) => l.startsWith('✖'))) console.log(`FAIL ${l}`);
+  return errors.length || fails.length || u.status !== 0 ? 1 : 0;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = main();
