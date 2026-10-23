@@ -669,6 +669,8 @@ details[open] > summary::after { transform:rotate(-135deg); }
   animation:slide 1.1s linear infinite;
 }
 @keyframes slide { from { background-position:-60% 0; } to { background-position:160% 0; } }
+/* the shown plan (or "no plan" message) is from the old settings until the search ends: faded, so it is not read as current */
+.board.is-busy :is(#pills, #semnote, #week) { opacity:.45; transition:opacity .15s; }
 .board-top {
   display:flex;
   align-items:flex-start;

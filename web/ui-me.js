@@ -300,10 +300,12 @@ export function renderMe() {
             .map((t) => `<p class="hint warn-text">יש סתירה בין המקורות הרשמיים לגבי ${esc(t)}. בדקו מול המחלקה.</p>`)
             .join('')}</section>`;
   const prog = `<section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
-          <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b> · ${pct}%</span><span
-            class="hint">יעד 70% (תקנון 11.4.4)</span></div>
-          <div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i
-            style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div></div>
+          <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b>${
+            pr.required ? ` · ${pct}%` : ''}</span>${pr.required ? '<span class="hint">יעד 70% (תקנון 11.4.4)</span>' : ''}</div>
+          ${pr.required // year א׳ has no target: no bar at a meaningless 100%
+            ? `<div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i
+            style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div>`
+            : ''}</div>
           ${checklist(data, state)}
           <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
           ${entry ? '' : importBtn('') + gradeMsg}</section>`;
