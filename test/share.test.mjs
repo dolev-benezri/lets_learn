@@ -46,6 +46,15 @@ test('readHash rejects broken, foreign-semester and empty hashes', async () => {
   assert.match((await readHash(other.slice(other.indexOf('#')), { year: 2027, semester: 'א' })).error, /סמסטר אחר/);
 });
 
+test('a backup from another semester of this year restores on a new device that opens on א׳', async () => {
+  for (const semester of ['ב', 'קיץ']) {
+    const b = await backupLink('https://x.test/', { ...state, semester });
+    const r = await readHash(b.slice(b.indexOf('#')), { year: 2027, semester: 'א' });
+    assert.equal(r.type, 'backup', semester);
+    assert.deepEqual(r.payload.failed, { 90903: 1 });
+  }
+});
+
 test('readHash rejects null, array, and string payloads', async () => {
   const nullEnc = await encode(null);
   const arrayEnc = await encode([1, 2, 3]);
