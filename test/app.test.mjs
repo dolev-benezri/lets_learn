@@ -596,3 +596,21 @@ test('load: a failed catalog load does not save a later-year state back a year',
     app.noSave = false;
   }
 });
+
+// GPT review of #33: localStorage is input too: a save whose year is not a number must not stop the site from loading.
+test('load: a saved year that is not a number does not throw on a failed catalog load', () => {
+  const was = globalThis.localStorage, prevCatalog = app.catalog;
+  globalThis.localStorage = {
+    getItem: () => JSON.stringify({ v: 1, program: 30, startYear: 2026, year: { toString: null } }),
+    setItem() {},
+    removeItem() {}
+  };
+  try {
+    app.catalog = FALLBACK_CATALOG;
+    assert.doesNotThrow(() => load());
+  } finally {
+    globalThis.localStorage = was;
+    app.catalog = prevCatalog;
+    app.noSave = false;
+  }
+});
