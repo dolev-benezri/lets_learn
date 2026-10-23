@@ -101,6 +101,14 @@ test('yearOrder: the order is recomputed from the data (not the plan\'s own tota
   assert.equal(o([p(['X'], ['M']), p(['Y'])], 'credits'), 1, 'a missing mandatory course ranks below');
   assert.equal(o([p(['Y']), p(['X'])], 'best'), 0, 'other keys are not checked');
 });
+test('no plan: a solver that finds nothing, with any reason, is caught when the courses fit', () => {
+  const f = '2027-1/19-2026.json',
+    d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+  const never = () => ({ results: [], partial: false, diagnosis: ['a made-up reason'] });
+  assert.ok(checkFile(f, d, { scenarios: ['S2'], solve: never }).some((e) => /brute force finds one/.test(e)));
+  const unsure = () => ({ results: [], partial: true, diagnosis: ['could not tell'] });
+  assert.deepEqual(checkFile(f, d, { scenarios: ['S2'], solve: unsure }), [], 'a search cut off may say it could not tell');
+});
 test('sample: 19-2026, 20-2026, 30-2026 semester א pass the record, plan and metamorphic checks', () => {
   const t0 = Date.now();
   for (const f of ['2027-1/19-2026.json', '2027-1/20-2026.json', '2027-1/30-2026.json']) {
