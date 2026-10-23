@@ -1,5 +1,6 @@
-// "רק ב׳" (scope 'ב'): app.js pickData shows the ב׳ file alone and classify() runs on it with the record as is.
-// How many of the study year's ב׳ courses are then blocked only by an א׳ course of the same year (not yet passed)?
+// "רק ב׳" (scope 'ב'): app.js pickData shows the ב׳ file alone; refresh() classifies it as the site does
+// (withAfterA with the א׳ file, since the #42 fix). How many of the study year's ב׳ courses are blocked there but
+// plannable in the year view? Before the fix: 297 blocked, 290 of them plannable. After it: 0 plannable.
 import fs from 'node:fs';
 const { classify, withAfterA } = await import('../../web/rules.js');
 const { yearView } = await import('../../web/app.js');
@@ -12,7 +13,7 @@ for (const f of fs.readdirSync(root + '2027-2')) {
     const passed = [...new Set(B.lists.filter((l) => [...before].some((y) => l.name.includes(`שנה ${y}'`))).flatMap((l) => l.courses))];
     const yl = B.lists.find((l) => l.name.includes(`שנה ${' אבגדה'[year]}'`))?.courses ?? [];
     const st = { passed, failed: {}, profile: { year, amirnet: 150 }, outsideDone: [] };
-    const onlyB = classify(B, st).statuses;
+    const onlyB = withAfterA(B, st, classify(B, st), A).statuses;
     const yv = { ...yearView(A, B), fetchedAt: A.fetchedAt };
     const yearSt = withAfterA(yv, st, classify(yv, st)).statuses;
     const inB = yl.filter((id) => B.courses[id]?.offered);
