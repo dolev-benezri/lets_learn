@@ -2,7 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, bestCredits, yearOrder, shuffleSame } from '../scripts/check-real.mjs';
+import {
+  dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, checkYear, bestCredits, yearOrder, shuffleSame, SUITES
+} from '../scripts/check-real.mjs';
 import { mini } from './fixtures/mini-data.mjs';
 import { fixture } from './fixtures/solver-data.mjs';
 import { search, showWeights } from '../web/solver-core.js';
@@ -131,11 +133,21 @@ test('small cases: a shuffled course and group order gives the same set of timet
   }
   assert.ok(compared >= 10, `${compared} seeds with more than one plan`);
 });
+test('the CLI runs the state suites (J2, J6, J7, J9-J12) and the small cases; the year checks reach S3', () => {
+  for (const f of ['share', 'app', 'program-switch', 'ui-search', 'xss', 'grade-import', 'advisor', 'solver-props', 'check-real'])
+    assert.ok(SUITES.includes(`test/${f}.test.mjs`), f);
+  const L = (f) => JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+  const failures = [];
+  const spy = (a) => (failures.push(Object.keys(a.state.failed ?? {}).length), { results: [], partial: false, diagnosis: ['x'] });
+  checkYear('19-2026', L('2027-1/19-2026.json'), L('2027-2/19-2026.json'), { solveYear: spy });
+  assert.ok(failures.some((n) => n > 0), 'an S3 scenario (one failure) reaches the year search');
+});
 test('sample: 19-2026, 20-2026, 30-2026 semester א pass the record, plan and metamorphic checks', () => {
   const t0 = Date.now();
   for (const f of ['2027-1/19-2026.json', '2027-1/20-2026.json', '2027-1/30-2026.json']) {
     const d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
-    assert.deepEqual(checkFile(f, d, { scenarios: ['S1'] }), [], f);
+    // S2 too: these cohorts are in study year 2, where S1 (nothing passed) leaves almost nothing to plan
+    assert.deepEqual(checkFile(f, d, { scenarios: ['S1', 'S2'] }), [], f);
   }
   assert.ok(Date.now() - t0 < 20000, `${Date.now() - t0} ms`);
 });
