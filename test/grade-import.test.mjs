@@ -147,6 +147,7 @@ test('gradeChanges: a failed row on a course marked passed is offered but not pr
     [
       ['10016', 'passed', 'failed', false],
       ['30003', 'passed', 'passed', true],
+      ['30130', 'failed', 'failed', true], // its failing grade is new on file: it counts in the 11.4.2 average (#34)
       ['30133', 'none', 'passed', true]
     ]
   );
@@ -202,4 +203,22 @@ test('skippedRows counts a row with a grade in words; parseGradeSheet leaves it 
   );
   assert.deepEqual(by(parseGradeSheet(rows, data)), { 30003: ['passed', 85] });
   assert.equal(skippedRows(rows, data), 1, 'the words row; not טרם, not the header');
+});
+
+// Audit 2026-10-23 #34, regulation 7.7: "הציון בקורס המאוחר יהיה הציון המחייב, גם אם הוא נמוך מהציון הקודם". The row of the
+// latest year/semester wins, not the highest grade; a row still in progress (חייב) does not replace a grade.
+const dated = (y, when, grade, fail) => cells(1, y, ['10016', when, 'פיזיקה 1', 'צוות', grade, '4.0', '4.50', ...(fail ? ['*'] : [])]);
+test('the latest attempt binds, even when lower (7.7); a later failure binds too', () => {
+  assert.deepEqual(by(parseGradeSheet(sheet(dated(700, 'תשפ"ה 1/', '90'), dated(680, 'תשפ"ו 1/', '70')), data)), { 10016: ['passed', 70] });
+  assert.deepEqual(by(parseGradeSheet(sheet(dated(700, 'תשפ"ו 1/', '70'), dated(680, 'תשפ"ה 2/', '90')), data)), { 10016: ['passed', 70] });
+  assert.deepEqual(by(parseGradeSheet(sheet(dated(700, 'תשפ"ה 1/', '80'), dated(680, 'תשפ"ו 1/', '45', true)), data)), { 10016: ['failed', 45] });
+  assert.deepEqual(by(parseGradeSheet(sheet(dated(700, 'תשפ"ה 1/', '80'), dated(680, 'תשפ"ו 1/', 'חייב')), data)), { 10016: ['passed', 80] });
+});
+test('a failing grade is kept on file and offered when it changes (it counts in the 11.4.2 average)', () => {
+  const s = st({ failed: { 10016: 1 } });
+  const rows = gradeChanges([{ id: '10016', grade: 45, result: 'failed' }], s);
+  assert.equal(rows.length, 1, 'the grade is new');
+  applyGradeChanges(s, rows);
+  assert.equal(s.grades['10016'], 45);
+  assert.equal(gradeChanges([{ id: '10016', grade: 45, result: 'failed' }], s).length, 0, 'nothing new the second time');
 });
