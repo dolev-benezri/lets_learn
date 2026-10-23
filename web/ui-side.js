@@ -17,6 +17,7 @@ import {
   heb,
   nameHtml,
   listTitle,
+  outsideBoxes,
   $,
   ui
 } from './ui-common.js';
@@ -148,8 +149,10 @@ export function renderSide(res) {
     .filter((x) => x.ids.length);
   const specN = spec.reduce((n, x) => n + x.ids.length, 0);
   const locked = (s) => ids.filter((id) => st(id) === s);
-  const rows = (list) => `<ul
-    class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${pc.statuses[id].reasons.map(esc).join('<br>')}</p></div></li>`).join('')}</ul>`;
+  // a blocked course offers its outside-program alternatives (J3)
+  const rows = (list, ask) => `<ul
+    class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${
+      pc.statuses[id].reasons.map(esc).join('<br>')}</p>${ask ? outsideBoxes(id, `side-${id}`) : ''}</div></li>`).join('')}</ul>`;
   // the search finished without a plan: say so, step 4 says why
   const noPlan = ui.last && !ui.last.results.some((r) => resCourses(r).length);
   $('coursesTop').innerHTML = noPlan
@@ -167,7 +170,7 @@ export function renderSide(res) {
     )}
     ${listsHtml}
     ${details('specOthers', `התמחויות אחרות (${specN})`, spec.map(({ l, ids }) => `<h4>${esc(listTitle(l))} (${ids.length})</h4>${cards(ids)}`).join(''), specN)}
-    ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked')), locked('blocked').length)}
+    ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked'), true), locked('blocked').length)}
     ${details('notOffered', `לא נלמד בסמסטר (${locked('notOffered').length})`, rows(locked('notOffered')), locked('notOffered').length)}
     ${details('exempt', `פטור (ציון אנגלית) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}
     ${details('english', 'אנגלית: רמות ופטור', engBody, eng.length)}`;

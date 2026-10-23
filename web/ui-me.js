@@ -1,6 +1,6 @@
 // The status page (#me): profile, specialization form, course lists with their states, grade-sheet import.
 import { app, esc, refresh } from './app.js';
-import { progress, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs, recordWarnings, reqContext, reqMet } from './rules.js';
+import { progress, studyYear, yearsOf, gradeAverage, specLists, specRule, validSpecs, recordWarnings } from './rules.js';
 import { icon } from './ui-grid.js';
 import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
@@ -24,6 +24,8 @@ import {
   heb,
   nameHtml,
   listTitle,
+  outsideBoxes,
+  outsideBox,
   $,
   ui
 } from './ui-common.js';
@@ -40,17 +42,7 @@ const turnPick = (cur) =>
 // questions not due yet), computed once per render.
 let recWarn = {},
   askOutside = new Set();
-// A not-passed course whose requirement can also be met outside the program (e.g. "מכינה בדרך לאפקה") asks whether it was done:
-// shown while the in-program alternatives leave it unmet, so a ticked box stays to untick.
-function outsideBoxes(id, k) {
-  const s = app.state,
-    inProgram = { ...reqContext(s), outside: new Set() };
-  const names = [...new Set(app.data.courses[id].prereqs
-    .filter((p) => p.kind === 'קדם' && p.anyOf.some((a) => a.id) && !reqMet(p, inProgram))
-    .flatMap((p) => p.anyOf.filter((a) => !a.id).map((a) => a.name)))];
-  return names.map((n, i) => `<label class="check"><input type="checkbox" data-chg="outsideDone" data-name="${esc(n)}"
-    data-k="od-${esc(k)}-${i}"${s.outsideDone.includes(n) ? ' checked' : ''}> עשיתי את ${nameHtml(n)}</label>`).join('');
-}
+
 // One row per course: all states visible as radios. The failure count stays once set, also after "passed" (regulations 11.4.1, 11.5.x).
 function chip(id, li) {
   const s = app.state,
@@ -298,6 +290,9 @@ export function renderMe() {
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
           <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p>
+          ${state.outsideDone.length
+            ? `<p class="hint">סימנת שעשית מחוץ לתוכנית:</p>${state.outsideDone.map((n, i) => outsideBox(n, `me-${i}`)).join('')}`
+            : ''}
           ${conflictsFor(app.settings, state.program, state.startYear)
             .map((t) => `<p class="hint warn-text">יש סתירה בין המקורות הרשמיים לגבי ${esc(t)}. בדקו מול המחלקה.</p>`)
             .join('')}</section>`;

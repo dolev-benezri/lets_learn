@@ -1240,6 +1240,40 @@ test('#me: an impossible record warns under the course; an outside alternative h
   document.body.dataset.view = 'plan';
 });
 
+test('courses: a blocked elective offers its outside alternative; once ticked, #me keeps the name to untick', async () => {
+  const { CHG } = await import('../web/ui-actions.js');
+  const d = app.data,
+    saved = structuredClone(app.state);
+  const mand = new Set(d.lists.filter((l) => /חובה/.test(l.name)).flatMap((l) => l.courses));
+  const pre = Object.keys(d.courses).find((id) => !d.courses[id].prereqs.length && !/^600/.test(id));
+  const elective = d.lists.flatMap((l) => l.courses)
+    .find((id) => d.courses[id]?.offered && !mand.has(id) && id !== pre && !d.courses[id].prereqs.length);
+  const outName = `קורס חיצוני${P}`;
+  const setPre = (pr) => Object.values(app.sem).forEach((x) => x.courses[elective] && (x.courses[elective].prereqs = pr));
+  setPre([{ kind: 'קדם', anyOf: [{ id: pre, name: d.courses[pre].name }, { id: null, name: outName }] }]);
+  Object.assign(app.state, { passed: [], failed: {}, exempt: [], outsideDone: [] });
+  app.state.profile.amirnet = null;
+  refresh();
+  const side = (name) => {
+    run(name, () => renderSide(current()));
+    return parse(writes.filter((w) => w.scope === name).map((w) => w.html).join(''));
+  };
+  const boxOf = (h) => h.querySelectorAll('input[data-chg="outsideDone"]').find((b) => b.getAttribute('data-name') === outName);
+  assert.equal(app.cls.statuses[elective].status, 'blocked');
+  assert.ok(boxOf(side('ob-1')), 'the blocked list offers the outside alternative');
+  CHG.outsideDone({ checked: true, dataset: { name: outName } });
+  refresh();
+  assert.notEqual(app.cls.statuses[elective].status, 'blocked');
+  document.body.dataset.view = 'me';
+  run('ob-me', () => renderMe());
+  const me = parse(writes.filter((w) => w.scope === 'ob-me').map((w) => w.html).join(''));
+  assert.ok(boxOf(me)?.hasAttribute('checked'), 'the ticked name is shown in #me, to untick it');
+  setPre([]);
+  app.state = saved;
+  refresh();
+  document.body.dataset.view = 'plan';
+});
+
 test('#me: editing a grade refreshes the regulation warnings in place, without a refresh or a search', async () => {
   const { CHG } = await import('../web/ui-actions.js');
   const saved = structuredClone(app.state);
