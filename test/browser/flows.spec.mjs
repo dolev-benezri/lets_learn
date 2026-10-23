@@ -274,3 +274,28 @@ for (const size of Object.keys(SIZES)) {
     await page.locator('article.course h3', { hasText: 'סטטיקה של גוף קשיח' }).first().waitFor({ state: 'attached', timeout: 30000 });
   });
 }
+
+// Audit 2026-10-23 #38: "לא לפני" at or after "לא אחרי" is refused at the field, and the old value comes back.
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: an inverted hour is refused`, async (t) => {
+    const page = await visit(t, size, DONE, '#prefs');
+    const nb = page.locator('input[data-chg="notBefore"]'),
+      na = page.locator('input[data-chg="notAfter"]');
+    await na.fill('10:00');
+    await na.dispatchEvent('change');
+    await nb.fill('18:00');
+    await nb.dispatchEvent('change');
+    await page.locator('#toast', { hasText: '"לא לפני" צריך להיות מוקדם מ-"לא אחרי".' }).waitFor();
+    assert.equal(await nb.inputValue(), '');
+    const c = (await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')))).constraints;
+    assert.deepEqual([c.notBefore, c.notAfter], ['', '10:00']);
+  });
+}
+
+// Audit 2026-10-23 #44: the credit cap applies to each semester's plan (also in the year view), and the label says so.
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: the credit cap is labelled per semester`, async (t) => {
+    const page = await visit(t, size, DONE, '#prefs');
+    await page.locator('label', { hasText: 'תקרת נ״ז לסמסטר' }).locator('input[data-chg="maxCredits"]').waitFor();
+  });
+}
