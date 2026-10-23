@@ -260,3 +260,17 @@ for (const size of Object.keys(SIZES)) {
     assert.match(await page.locator('#semnote').textContent(), new RegExp(`${n} הקורסים`));
   });
 }
+
+// Audit 2026-10-23 #42: "רק ב׳" counts the א׳ candidates as passed, as the year view does, so a ב׳ course that waits only
+// for one of them can be planned.
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: "רק ב׳" lists סטטיקה של גוף קשיח as plannable`, async (t) => {
+    const seed = JSON.parse(SUMMER_Y1['afeka-sched-v1']);
+    const page = await visit(t, size, {
+      ...SUMMER_Y1,
+      'afeka-sched-v1': JSON.stringify({ ...seed, profile: { ...seed.profile, summer: false }, scope: 'ב' })
+    });
+    await idle(page);
+    await page.locator('article.course h3', { hasText: 'סטטיקה של גוף קשיח' }).first().waitFor({ state: 'attached', timeout: 30000 });
+  });
+}
