@@ -214,3 +214,20 @@ test('summer: the search assumes the year plan; app.cls, completed credits and t
   refresh();
   assert.equal(planningCls(), app.cls, 'outside summer the plan uses the record');
 });
+
+test('a longer year search that ends in time does not claim every option was checked (the א׳ cut is not exhaustive)', async () => {
+  const toastEl = el(), get = document.getElementById;
+  document.getElementById = (id) => (id === 'toast' ? toastEl : get(id));
+  app.sem = { 'א': mini(), 'ב': mini(), 'קיץ': null };
+  app.state = normalize({ v: 1, programSet: true, passed: [], profile: { year: 1 } });
+  app.state.scope = 'year';
+  refresh();
+  ui.moreMul = 2;
+  scheduleRun(true);
+  await started();
+  made.at(-1).onmessage({ data: { results: [], partial: false, diagnosis: [] } });
+  await new Promise((r) => setTimeout(r, 60)); // toast() fills the text after 50 ms
+  document.getElementById = get;
+  assert.ok(toastEl.textContent, 'a toast was shown');
+  assert.doesNotMatch(toastEl.textContent, /נבדקו כל האפשרויות/);
+});
