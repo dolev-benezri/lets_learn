@@ -235,7 +235,7 @@ export function classify(data, state) {
       prog = progress(data, state);
     const why = [];
     if (counts.length >= 3) why.push('ציון נכשל ב-3 קורסים במצטבר (11.4.1)');
-    // grades of passed courses only: never too low
+    // every graded course taken, failed ones too (gradeAverage)
     if (avg !== null && avg < 65) why.push(`ממוצע מצטבר ${avg.toFixed(1)}, מתחת ל-65 (11.4.2)`);
     // 11.4.4: checked at the end of each of years א'-ג'; progress counts the required lists of the years behind
     if (year >= 2 && year <= 4 && prog.required && !prog.short && prog.ratio < 0.7)
@@ -296,13 +296,13 @@ export function withAfterA(data, state, cls, dataA = null) {
 // Direct status choice. Failures stay on file once passed: regulations 11.4.1 and 11.5.x count every failure. An
 // exemption lasts while passed.
 export function setStatus(state, id, st) {
+  const was = state.passed.includes(id) ? 'passed' : state.failed[id] ? 'failed' : 'none';
+  // a grade belongs to its outcome: a pass grade is not a failing grade, nor the other way round ("not taken" has none)
+  if (st !== was && state.grades) delete state.grades[id];
   state.passed = state.passed.filter((x) => x !== id);
   if (st !== 'passed' && state.exempt) state.exempt = state.exempt.filter((x) => x !== id);
   if (st === 'passed') state.passed.push(id);
-  if (st === 'none') {
-    delete state.failed[id];
-    if (state.grades) delete state.grades[id]; // "not taken" has no grade: a later pass starts without one
-  }
+  if (st === 'none') delete state.failed[id];
   if (st === 'failed') state.failed[id] ||= 1;
 }
 
@@ -340,12 +340,16 @@ export function missingRequired(data, state) {
     .flatMap(({ l }) => l.courses.filter((id) => !passed.has(id) && data.courses[id])))];
 }
 
-// Credit-weighted average over passed courses that have a grade (courses without credits in the data don't count).
+// The cumulative average (11.4.2): credit-weighted over every course taken that has a grade on file (9.4.2), a failed course not
+// passed again included (13.6 leaves a failed grade out only case by case). The grade on file is the latest attempt's (7.7).
+// Exemptions ("פטור", "השתתף" carry no number, 13.7) and courses without credits in the data stay out.
 export function gradeAverage(data, state) {
   let sum = 0, credits = 0;
-  for (const id of new Set(state.passed ?? [])) {
+  const exempt = new Set(state.exempt ?? []),
+    failedNow = Object.keys(state.failed ?? {}).filter((id) => state.failed[id] > 0);
+  for (const id of new Set([...(state.passed ?? []), ...failedNow])) {
     const g = state.grades?.[id], c = data.courses[id]?.credits ?? 0;
-    if (g === undefined || !(c > 0)) continue;
+    if (g === undefined || exempt.has(id) || !(c > 0)) continue;
     sum += g * c;
     credits += c;
   }

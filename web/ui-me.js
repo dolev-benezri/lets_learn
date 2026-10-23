@@ -62,11 +62,14 @@ function chip(id, li) {
   )}${
     st === 'passed' && s.exempt?.includes(id)
       ? ' <span class="tag ok">פטור</span>' // exempt on the grade sheet: no grade, no attempt
-      : st === 'passed'
+      : st === 'passed' || st === 'failed' // a failing grade counts in the average too (regulation 9.4.2, 11.4.2)
         ? `<div class="crs-row"><label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
-      aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>
+      aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>${
+          st === 'passed'
+            ? `
       <label class="check"><input type="checkbox" data-chg="failedBefore" data-id="${esc(id)}" data-k="fb-${esc(k)}"
-      aria-label="${esc(`נכשלתי בעבר ב${nm}`)}"${n ? ' checked' : ''}> נכשלתי בעבר בקורס זה</label></div>`
+      aria-label="${esc(`נכשלתי בעבר ב${nm}`)}"${n ? ' checked' : ''}> נכשלתי בעבר בקורס זה</label>`
+            : ''}</div>`
         : ''
   }${n ? seg(`fc-${k}`, st === 'passed' ? 'כמה פעמים?' : 'כמה פעמים נכשלתי?', FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`, true) : ''}${
     st === 'none' && askOutside.has(id) ? outsideBoxes(id, k) : ''}${(recWarn[id] ?? []).map((t) => `<p class="hint warn-text">${esc(t)}</p>`).join('')}</div>`;
@@ -379,7 +382,7 @@ export async function importGrades(file) {
     'ייבוא מגליון ציונים',
     `הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.${skipNote}`,
     ['קורס', 'ציון', 'שינוי'],
-    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]),
+    todo.map((r) => [data.courses[r.id].name, r.grade === null ? '—' : String(r.grade), label(r)]),
     { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) }
   );
   if (!pick) return setGradeMsg('');
