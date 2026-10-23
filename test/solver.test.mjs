@@ -12,6 +12,7 @@ import {
   searchYear,
   searchAll,
   showWeights,
+  compareYearPlans,
   PRIMARY
 } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
@@ -2181,6 +2182,14 @@ const rankRun = (sortBy) => {
     yearList: new Set(['H', 'L', 'Q']), weights: showWeights({}, sortBy, [])
   });
 };
+test('compareYearPlans: a missing mandatory course ranks below, also when the year totals tie', () => {
+  const p = (missing, score) => ({ credits: { a: 5, b: 5 }, unlocks: 2, missing, score });
+  for (const key of ['credits', 'unlocks']) {
+    assert.ok(compareYearPlans(p([], 1), p(['M'], 2), key) < 0, key);
+    assert.ok(compareYearPlans(p(['M'], 2), p([], 1), key) > 0, key);
+  }
+  assert.ok(compareYearPlans(p(['M'], 2), p([], 1), 'best') < 0, 'other keys: score only, as before');
+});
 test('searchYear "most credits": the 15-credit year plan ranks above the 13-credit one', () => {
   const r = rankRun('credits').results;
   assert.deepEqual(r.map((p) => p.credits.a + p.credits.b).slice(0, 2), [15, 13]);
