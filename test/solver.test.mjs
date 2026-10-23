@@ -2188,7 +2188,14 @@ test('compareYearPlans: a missing mandatory course ranks below, also when the ye
     assert.ok(compareYearPlans(p([], 1), p(['M'], 2), key) < 0, key);
     assert.ok(compareYearPlans(p(['M'], 2), p([], 1), key) > 0, key);
   }
-  assert.ok(compareYearPlans(p(['M'], 2), p([], 1), 'best') < 0, 'other keys: score only, as before');
+});
+// Audit 2026-10-23 #41: the plan list promises "חובה: בכל מערכת", so under every sort a complete year plan ranks above one
+// that misses a must, whatever its score (r2-missing-case.mjs: חשמל ערב 2026 year 1).
+test('compareYearPlans: a complete plan beats a higher score that misses a must, for every sort', () => {
+  const x = { score: 17.41, missing: ['20126'], credits: { a: 15, b: 18.5 }, unlocks: 0 };
+  const y = { score: 16.28, missing: [], credits: { a: 18.5, b: 16 }, unlocks: 0 };
+  for (const s of ['best', 'friends', 'credits', 'unlocks']) assert.ok(compareYearPlans(x, y, s) > 0, s);
+  assert.ok(compareYearPlans({ ...x, missing: [] }, y, 'best') < 0, 'the same missing count: the score decides');
 });
 test('searchYear "most credits": the 15-credit year plan ranks above the 13-credit one', () => {
   const r = rankRun('credits').results;
