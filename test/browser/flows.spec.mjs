@@ -196,3 +196,36 @@ for (const size of Object.keys(SIZES)) {
     );
   });
 }
+
+// Audit 2026-10-23 #36: a friend link with the name of another friend (other groups) asks before replacing; "add as
+// another friend" keeps both, "replace" swaps the groups.
+// (no top-level await in a spec: node:test then hangs after the run)
+const twoGroups = async () =>
+  Object.values(JSON.parse(await readFile(new URL('../../web/data/afeka/2027-1/30-2026.json', import.meta.url), 'utf8')).courses)
+    .flatMap((c) => c.groups.map((g) => g.id))
+    .slice(0, 2);
+// opens the friend editor step, pastes a link from "נועה" with other groups, and answers the dialog
+async function noaLink(t, size, button) {
+  const [G1, G2] = await twoGroups();
+  const NOA = { ...STUDENT, friends: [{ name: 'נועה', groups: [G1], weight: 1, active: true }] };
+  const page = await visit(t, size, { ...DONE, 'afeka-sched-v1': JSON.stringify(NOA) }, '#prefs');
+  const link = await page.evaluate(
+    async ([st, g]) => (await import('./share.js')).friendLink(location.origin + location.pathname, st, g),
+    [{ ...NOA, name: 'נועה' }, [G2]]
+  ); // made in the page by the site's own share.js, as a friend's browser would
+  await page.locator('#friendUrl').fill(link);
+  await page.locator('[data-k="addFriend"]').click();
+  const dlg = page.locator('dialog[open]');
+  await dlg.getByText('כבר יש חבר בשם נועה. להחליף אותו בקישור החדש?').waitFor();
+  await dlg.getByRole('button', { name: button }).click();
+  await dlg.waitFor({ state: 'detached' });
+  await page.waitForFunction((g) => localStorage.getItem('afeka-sched-v1').includes(g), G2);
+  const { friends } = await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
+  return friends.map((f) => [f.name, { [G1]: 'G1', [G2]: 'G2' }[f.groups.join()] ?? f.groups.join()]);
+}
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: a friend link with a taken name asks; cancel adds a second friend, replace swaps the groups`, async (t) => {
+    assert.deepEqual(await noaLink(t, size, 'להוסיף כחבר נוסף'), [['נועה', 'G1'], ['נועה 2', 'G2']]);
+    assert.deepEqual(await noaLink(t, size, 'להחליף'), [['נועה', 'G2']]);
+  });
+}

@@ -566,3 +566,12 @@ test('normalize moves an old-year save on: study year advanced, last year groups
     assert.equal(normalize(old(y, n), catalog).profile.year, want, `study year ${y}, ${n} year(s) on`);
   assert.equal(normalize({ ...old(2), year: 2027 }, catalog).profile.year, 2, 'this year: unchanged');
 });
+
+// Audit 2026-10-23 #36: a friend link whose name is taken by another friend is added under a free name when the student
+// does not want the other one replaced.
+import { freeName } from '../web/app.js';
+test('freeName: the name, else the first free numbered one', () => {
+  assert.equal(freeName([], 'נועה'), 'נועה');
+  assert.equal(freeName([{ name: 'נועה' }], 'נועה'), 'נועה 2');
+  assert.equal(freeName([{ name: 'נועה' }, { name: 'נועה 2' }], 'נועה'), 'נועה 3');
+});
