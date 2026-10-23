@@ -285,6 +285,13 @@ export function friendName(friends, p) {
   while (friends.some((f) => f.name === `חבר ${n}`)) n++;
   return `חבר ${n}`;
 }
+// `name` if no friend has it, else the first free "name 2", "name 3"… (a link that should not replace a namesake)
+export function freeName(friends, name) {
+  let n = 1;
+  const at = () => (n === 1 ? name : `${name.slice(0, 60 - ` ${n}`.length).trimEnd()} ${n}`); // normalize keeps names up to 60
+  while (friends.some((f) => f.name === at())) n++;
+  return at();
+}
 export function upsertFriend(friends, p, editing = null) {
   const at = (n) => friends.findIndex((f) => f.name === n);
   let ti = editing == null ? -1 : at(editing);

@@ -579,3 +579,21 @@ test('normalize: inverted or equal hours drop notBefore', () => {
   assert.deepEqual(hours('08:00', '18:00'), ['08:00', '18:00']);
   assert.deepEqual(hours('21:00', ''), ['21:00', '']);
 });
+
+// Audit 2026-10-23 #36: a friend link whose name is taken by another friend is added under a free name when the student
+// does not want the other one replaced.
+import { freeName } from '../web/app.js';
+test('freeName: the name, else the first free numbered one', () => {
+  assert.equal(freeName([], 'נועה'), 'נועה');
+  assert.equal(freeName([{ name: 'נועה' }], 'נועה'), 'נועה 2');
+  assert.equal(freeName([{ name: 'נועה' }, { name: 'נועה 2' }], 'נועה'), 'נועה 3');
+});
+
+// GPT review of #36: a numbered name stays within normalize's 60 characters, so the added friend survives a reload.
+test('freeName: a long name is cut to fit its number in 60 characters, and the result survives normalize', () => {
+  const long = 'א'.repeat(60);
+  const n = freeName([{ name: long }], long);
+  assert.ok(n.length <= 60 && n.endsWith(' 2') && n !== long, n);
+  const s = normalize({ v: 1, friends: [{ name: long, groups: ['1'] }, { name: n, groups: ['2'] }] });
+  assert.equal(s.friends.length, 2);
+});

@@ -5,6 +5,7 @@ import {
   cleanBlocks,
   upsertFriend,
   friendName,
+  freeName,
   save,
   refresh,
   keepFocus,
@@ -46,8 +47,15 @@ import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderR
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel } from './ui-drawer.js';
 
 // ---------- actions ----------
-export function addFriend(p) {
-  const name = friendName(app.state.friends, p);
+export async function addFriend(p) {
+  let name = friendName(app.state.friends, p);
+  // the same name with other groups is another friend (or the same one, changed): ask before replacing (audit #36)
+  const key = (g) => [...g].sort().join();
+  if (
+    app.state.friends.some((f) => f.name === name && key(f.groups) !== key(p.groups)) &&
+    !(await askConfirm(`כבר יש חבר בשם ${name}. להחליף אותו בקישור החדש?`, { ok: 'להחליף', cancel: 'להוסיף כחבר נוסף' }))
+  )
+    name = freeName(app.state.friends, name);
   const r = upsertFriend(app.state.friends, { name, groups: p.groups });
   if (r.error) {
     ui.friendMsg = r.error;
