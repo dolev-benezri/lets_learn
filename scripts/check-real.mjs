@@ -309,6 +309,23 @@ export function yearOrder(dataA, dataB, state, results, sortBy) {
   return out;
 }
 
+// Small exhaustive cases: the courses and groups in reverse order give the same set of timetables (a plan read as each course's
+// meetings, so interchangeable groups compare equal). Not told apart when either search is cut off or fills topK. Failure lines.
+export function shuffleSame(data, statuses, courses, solve = search) {
+  const topK = 1e4,
+    key = (d, p) => p.courses.map((id) => `${id}:${d.courses[id].groups.filter((g) => p.groups.includes(g.id))
+      .flatMap((g) => g.meetings.map((m) => `${m.day} ${m.start}-${m.end}`)).sort().join(',')}`).sort().join('|');
+  const shuffled = {
+    ...data,
+    courses: Object.fromEntries(Object.entries(data.courses).reverse().map(([id, c]) => [id, { ...c, groups: [...c.groups].reverse() }]))
+  };
+  const go = (d, cs) => solve({ data: d, courses: cs, statuses, weights: DEFAULT.weights, friends: [], topK, timeLimitMs: 5000 });
+  const r = go(data, courses), rs = go(shuffled, [...courses].reverse());
+  if (r.partial || rs.partial || r.results.length >= topK || rs.results.length >= topK) return [];
+  const a = new Set(r.results.map((p) => key(data, p))), b = new Set(rs.results.map((p) => key(shuffled, p)));
+  return a.size === b.size && [...a].every((k) => b.has(k)) ? [] : [`shuffled order: ${a.size} timetables, then ${b.size}`];
+}
+
 // The year view for one cohort (א and ב files): every pair checked, and "most credits" / "most unlocks" ordered by the year's totals.
 export function checkYear(file, dataA, dataB, { seed = 1, timeLimitMs = 3000 } = {}) {
   const out = [];

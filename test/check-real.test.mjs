@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, bestCredits, yearOrder } from '../scripts/check-real.mjs';
+import { dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, bestCredits, yearOrder, shuffleSame } from '../scripts/check-real.mjs';
 import { mini } from './fixtures/mini-data.mjs';
 import { fixture } from './fixtures/solver-data.mjs';
 import { search, showWeights } from '../web/solver-core.js';
@@ -108,6 +108,28 @@ test('no plan: a solver that finds nothing, with any reason, is caught when the 
   assert.ok(checkFile(f, d, { scenarios: ['S2'], solve: never }).some((e) => /brute force finds one/.test(e)));
   const unsure = () => ({ results: [], partial: true, diagnosis: ['could not tell'] });
   assert.deepEqual(checkFile(f, d, { scenarios: ['S2'], solve: unsure }), [], 'a search cut off may say it could not tell');
+});
+test('small cases: a shuffled course and group order gives the same set of timetables; a dropped plan is caught', () => {
+  let compared = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const { dataA, state } = fixture(seed, { min: 3, max: 5 });
+    const st = classify(dataA, state).statuses;
+    const courses = Object.keys(dataA.courses)
+      .map((id) => ({ id, mode: modeFor(st[id]?.status, 'optional', false) }))
+      .filter((c) => c.mode === 'optional');
+    if (!courses.length) continue;
+    assert.deepEqual(shuffleSame(dataA, st, courses), [], `seed ${seed}`);
+    // a solver that loses one plan only in the shuffled order
+    const lossy = (a) => {
+      const r = search(a);
+      return a.courses[0].id > a.courses.at(-1).id && r.results.length > 1 ? { ...r, results: r.results.slice(1) } : r;
+    };
+    if (courses.length > 1 && search({ data: dataA, courses, statuses: st, topK: 1e4 }).results.length > 1) {
+      assert.equal(shuffleSame(dataA, st, courses, lossy).length, 1, `seed ${seed}`);
+      compared++;
+    }
+  }
+  assert.ok(compared >= 10, `${compared} seeds with more than one plan`);
 });
 test('sample: 19-2026, 20-2026, 30-2026 semester א pass the record, plan and metamorphic checks', () => {
   const t0 = Date.now();
