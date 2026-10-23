@@ -238,7 +238,9 @@ export function load() {
   if (!isObj(saved) || saved.v !== 1 || !Number.isInteger(saved.program)) return s;
   const fallback = app.catalog === FALLBACK_CATALOG,
     moved = s.program !== saved.program;
-  if (fallback && (moved || s.startYear !== saved.startYear)) {
+  // the fallback's year is a guess (DEFAULT.year): saving a later-year state under it would move the year back, and the next
+  // visit with the real catalog would advance the student a second time (audit #33)
+  if (fallback && (moved || s.startYear !== saved.startYear || (Number.isInteger(saved.year) && saved.year > s.year))) {
     app.noSave = true;
     app.hashError = 'רשימת התוכניות לא נטענה. מוצגת הנדסה מכנית, והנתונים השמורים שלכם לא ישתנו עד שהרשימה תיטען.';
   } else if (moved) {

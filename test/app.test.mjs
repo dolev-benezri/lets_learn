@@ -597,3 +597,51 @@ test('freeName: a long name is cut to fit its number in 60 characters, and the r
   const s = normalize({ v: 1, friends: [{ name: long, groups: ['1'] }, { name: n, groups: ['2'] }] });
   assert.equal(s.friends.length, 2);
 });
+
+// Audit 2026-10-23 #33: after a rollover, a visit whose catalog fails to load (the fallback, a year behind) must not save
+// the state back a year: the next visit with the real catalog would advance the student a second time and drop friends.
+import { load, save, FALLBACK_CATALOG } from '../web/app.js';
+test('load: a failed catalog load does not save a later-year state back a year', () => {
+  const was = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) };
+  const cat2028 = { year: 2028, programs: [{ id: 30, name: 'x', startYears: [2026, 2027, 2028] }] };
+  const prevCatalog = app.catalog;
+  try {
+    store.set('afeka-sched-v1', JSON.stringify({
+      v: 1, year: 2028, program: 30, startYear: 2026, profile: { year: 3 }, friends: [{ name: 'a', groups: ['1'] }]
+    }));
+    app.catalog = FALLBACK_CATALOG;
+    const prevState = app.state;
+    app.state = load();
+    save(); // what the visit's first refresh does
+    app.state = prevState;
+    assert.equal(app.noSave, true, 'the fallback visit saves nothing');
+    app.catalog = cat2028;
+    const s = load();
+    assert.equal(s.profile.year, 3);
+    assert.equal(s.friends.length, 1);
+  } finally {
+    globalThis.localStorage = was;
+    app.catalog = prevCatalog;
+    app.noSave = false;
+  }
+});
+
+// GPT review of #33: localStorage is input too: a save whose year is not a number must not stop the site from loading.
+test('load: a saved year that is not a number does not throw on a failed catalog load', () => {
+  const was = globalThis.localStorage, prevCatalog = app.catalog;
+  globalThis.localStorage = {
+    getItem: () => JSON.stringify({ v: 1, program: 30, startYear: 2026, year: { toString: null } }),
+    setItem() {},
+    removeItem() {}
+  };
+  try {
+    app.catalog = FALLBACK_CATALOG;
+    assert.doesNotThrow(() => load());
+  } finally {
+    globalThis.localStorage = was;
+    app.catalog = prevCatalog;
+    app.noSave = false;
+  }
+});
