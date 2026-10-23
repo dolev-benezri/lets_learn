@@ -55,15 +55,16 @@ function parseRow(row, data) {
   // Before the decimal run only when the code leads the row (the older layout); in the real one (year/sem first) that token is the name or lecturer.
   const slot =
     [t[e + 1], c === 0 && d - 1 > c ? t[d - 1] : undefined].find(
-      (x) => x && (INT.test(x) && +x <= 100 || /^(פ\.?פנימ|פטור|חייב)$/.test(x))
+      (x) => x && (INT.test(x) && +x <= 100 || /^(פ\.?פנימ|פטור|חייב|עבר|השתתף|נכשל)$/.test(x))
     ) ?? '';
   const id = t[c],
     grade = INT.test(slot) ? +slot : null;
-  if (t.includes('*')) return { id, grade, result: 'failed' };
-  if (grade !== null) return { id, grade, result: 'passed' };
+  if (t.includes('*') || slot === 'נכשל') return { id, grade, result: 'failed' };
+  // regulation 9.3: "עבר" (60 and up) and "השתתף" (no numeric grade) pass without a number, so the average leaves them out (13.7)
+  if (grade !== null || slot === 'עבר' || slot === 'השתתף') return { id, grade, result: 'passed' };
   if (slot !== 'חייב' && slot) return { id, grade: null, result: 'exempt' };
   if (slot === 'חייב') return { id, grade: null, result: 'pending' };
-  return { id, skipped: true }; // a course row whose grade the import does not know (a grade in words): counted, not imported
+  return { id, skipped: true }; // a course row whose grade the import does not take (e.g. נפסל, לא נבחן): counted, not imported
 }
 
 // What an import would change, as rows for the confirm dialog: was/to in the app's words; check = pre-checked. A failure on a course marked passed

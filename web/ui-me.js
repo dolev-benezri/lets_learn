@@ -382,7 +382,7 @@ export async function importGrades(file) {
     'ייבוא מגליון ציונים',
     `הקובץ נקרא רק במכשיר שלך ולא נשמר. בדקו מה ישתנה וסמנו מה להחיל.${skipNote}`,
     ['קורס', 'ציון', 'שינוי'],
-    todo.map((r) => [data.courses[r.id].name, r.result === 'passed' ? String(r.grade) : '—', label(r)]),
+    todo.map((r) => [data.courses[r.id].name, r.grade === null ? '—' : String(r.grade), label(r)]),
     { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) }
   );
   if (!pick) return setGradeMsg('');
