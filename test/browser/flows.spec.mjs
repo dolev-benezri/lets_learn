@@ -202,6 +202,7 @@ for (const size of Object.keys(SIZES)) {
 for (const size of Object.keys(SIZES)) {
   test(`${size}: the year view shows the exam weight when only ב׳ has exams`, async (t) => {
     const page = await visit(t, size, DONE, '#prefs');
+    await page.waitForLoadState('networkidle'); // a reload over the first fetches makes WebKit report them as errors
     await page.context().route('**/data/afeka/*-2/*.json', async (route) => {
       const res = await route.fetch();
       await route.fulfill({ response: res, json: { ...(await res.json()), examsPublished: true } });
