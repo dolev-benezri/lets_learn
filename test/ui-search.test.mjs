@@ -88,6 +88,15 @@ test('CHG.amirnet: an out-of-range entry keeps the saved score and snaps the fie
   assert.equal(app.state.profile.amirnet, 130);
   CHG.amirnet({ value: '', validity: {} });
   assert.equal(app.state.profile.amirnet, null);
+  app.state = normalize({ v: 1, profile: { year: 2, amirnet: 120 } });
+  const bad = { value: '', validity: { badInput: true } };
+  assert.equal(CHG.amirnet(bad), 'none');
+  assert.equal(app.state.profile.amirnet, 120, 'unreadable input keeps the saved score');
+  app.state = normalize({ v: 1, profile: { year: 2, amirnet: null } });
+  const none = { value: '40', validity: {} };
+  CHG.amirnet(none);
+  assert.equal(app.state.profile.amirnet, null);
+  assert.equal(none.value, '');
 });
 
 test('CHG.myName stores the trimmed name and does not ask for a new search', () => {
