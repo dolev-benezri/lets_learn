@@ -382,7 +382,7 @@ export function miniHtml({ raw, sem, data, colors, k, open, abbr = false }) {
 // roman/Hebrew ordinals kept at the end ("פיזיקה 1" -> פיז 1, "פיזיקה1 לתעו"נ" -> פ״ל 1), one word -> its first 3 letters or, when it already is
 // an acronym (תיב"ם), itself; Latin -> capitals. Punctuation is no word. `extra` lengthens the last word on a clash.
 const ORD = /^(\d+|[IVX]+|[א-ת]['׳])$/;
-function abbrOf(name, extra = 0) {
+export function courseAbbr(name, extra = 0) {
   const tok = String(name ?? '').match(/[\p{L}"'׳״]+|\d+/gu) ?? [];
   const nums = tok.filter((t) => ORD.test(t)),
     suf = nums.length ? ` ${nums.join(' ')}` : '';
@@ -408,13 +408,12 @@ function abbrOf(name, extra = 0) {
   if (/^[A-Za-z]/.test(ws[0])) return l.join('').toUpperCase() + suf;
   return (/[א-ת]/.test(l.at(-1)) ? `${l.slice(0, -1).join('')}״${l.at(-1)}` : l.join('')) + suf;
 }
-export const courseAbbr = (name) => abbrOf(name);
 export function uniqueAbbrs(names) {
   const seen = new Set();
   return names.map((n) => {
-    let a = abbrOf(n),
+    let a = courseAbbr(n),
       e = 0;
-    while (seen.has(a) && e < 6) a = abbrOf(n, ++e);
+    while (seen.has(a) && e < 6) a = courseAbbr(n, ++e);
     seen.add(a);
     return a;
   });

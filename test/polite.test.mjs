@@ -87,7 +87,11 @@ test('msUntil: the next HH:MM on Jerusalem time (UTC+3 in October 2026) plus a m
   const at = (iso, hhmm) => msUntil(hhmm, new Date(iso)) / 1000;
   assert.equal(at('2026-10-02T17:19:31Z', '21:00'), 40 * 60 + 29 + 60, '20:19:31 Jerusalem -> 21:00');
   assert.equal(at('2026-10-02T20:59:00Z', '00:00'), 60 + 60, '23:59 -> 00:00');
-  assert.equal(at('2026-10-02T18:00:00Z', '21:00'), 86400 + 60, 'already 21:00: the next day');
+  assert.equal(at('2026-10-02T18:00:00Z', '21:00'), 60, 'exactly 21:00: now, plus the minute of margin');
+  assert.equal(at('2026-10-02T16:00:02Z', '19:00'), 60, '19:00:02: the hour just passed');
+  assert.equal(at('2026-10-02T20:59:50Z', '00:00'), 10 + 60, '23:59:50 -> 00:00');
+  assert.equal(at('2026-10-02T18:00:00Z', '08:00'), 11 * 3600 + 60, 'an hour 13 h back: tomorrow (the caller gives up)');
+  assert.equal(at('2026-10-02T18:00:00Z', '19:00'), 22 * 3600 + 60, 'a stale hour 2 h back is no "now": no retry loop while throttled');
 });
 
 import { nextHour } from '../scripts/polite.mjs';

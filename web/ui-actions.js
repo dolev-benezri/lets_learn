@@ -464,7 +464,11 @@ export const CHG = {
   },
   amirnet: (el) => {
     const err = rangeError(el.validity?.badInput ? 'x' : el.value, 50, 150);
-    if (err) toast(err);
+    if (err) {
+      toast(err);
+      el.value = app.state.profile.amirnet ?? ''; // an invalid entry keeps the saved score, like the grade field
+      return 'none';
+    }
     app.state.profile.amirnet = cleanProfile({ amirnet: el.value === '' ? null : Number(el.value) }).amirnet;
   },
   turn: (el) => {

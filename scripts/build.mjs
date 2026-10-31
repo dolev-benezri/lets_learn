@@ -171,9 +171,10 @@ function fieldHealth(d, prev, errors) {
       errors.push(`prerequisite count changed by ${(change * 100).toFixed(1)}% (was ${a}, now ${b})`);
   }
 
-  // The academic year `year` runs from the autumn before it to the September after the spring.
+  // The academic year `year` runs from the autumn before it to the summer exams after it. Afeka's 2027 calendar
+  // (checked 2026-11-01): summer exams start 19.9.27 and the next year opens 31.10.27, so moed B/C fall in October.
   const lo = `${d.year - 1}-09-01`,
-    hi = `${d.year}-09-30`;
+    hi = `${d.year}-11-30`;
   const badExams = courses
     .flatMap((c) => c.groups)
     .flatMap((g) => g.exams)

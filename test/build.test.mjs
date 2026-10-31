@@ -412,6 +412,10 @@ test('validate: exam dates outside the academic year are an error', () => {
   assert.ok(validate(d).errors.some((e) => e.includes('exam')));
   d.courses['20002'].groups[0].exams[0].date = '2027-09-20'; // moed gimel in September is fine
   assert.deepEqual(validate(d).errors, []);
+  d.courses['20002'].groups[0].exams[0].date = '2027-10-20'; // late summer moed
+  assert.deepEqual(validate(d).errors, []);
+  d.courses['20002'].groups[0].exams[0].date = '2027-12-01';
+  assert.ok(validate(d).errors.some((e) => e.includes('exam')));
 });
 
 // ---- anomaly guards: a changed page layout that still parses must not overwrite good data ----
