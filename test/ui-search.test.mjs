@@ -78,6 +78,18 @@ test('ui-search: an answer or an error from a superseded worker is ignored', asy
   clearTimeout(ui.timer);
 });
 
+test('CHG.amirnet: an out-of-range entry keeps the saved score and snaps the field back; empty clears', () => {
+  app.state = normalize({ v: 1, profile: { year: 2, amirnet: 120 } });
+  const f = { value: '999', validity: {} };
+  assert.equal(CHG.amirnet(f), 'none');
+  assert.equal(app.state.profile.amirnet, 120);
+  assert.equal(f.value, 120);
+  CHG.amirnet({ value: '130', validity: {} });
+  assert.equal(app.state.profile.amirnet, 130);
+  CHG.amirnet({ value: '', validity: {} });
+  assert.equal(app.state.profile.amirnet, null);
+});
+
 test('CHG.myName stores the trimmed name and does not ask for a new search', () => {
   app.state = normalize({ v: 1 });
   assert.equal(CHG.myName({ value: '  Dana ' }), 'save');
