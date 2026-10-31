@@ -61,7 +61,8 @@ export function msUntil(hhmm, now = new Date()) {
   const at = (t) => Number(parts.find((p) => p.type === t).value);
   const nowSec = (at('hour') % 24) * 3600 + at('minute') * 60 + at('second');
   let wait = h * 3600 + m * 60 - nowSec;
-  // the named hour is always within the next hour, so one that just passed means now; far back = tomorrow (midnight wrap)
-  if (wait <= 0) wait = wait > -12 * 3600 ? 0 : wait + 86400;
+  // the named hour is always within the next hour, so one that passed minutes ago means now; further back = tomorrow
+  // (midnight wrap, or a stale hour the caller then refuses to wait for)
+  if (wait <= 0) wait = wait > -15 * 60 ? 0 : wait + 86400;
   return (wait + 60) * 1000;
 }
