@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-08T22:18:32.495Z",
+ "fetchedAt": "2026-11-01T23:25:30.977Z",
  "year": 2027,
  "startYear": 2027,
  "program": 11,
@@ -80,7 +80,6 @@
     "10206",
     "10207",
     "10208",
-    "10212",
     "10216",
     "10219",
     "10220",
@@ -653,7 +652,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [
       "271001617/1"
@@ -679,7 +678,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
@@ -1291,27 +1290,6 @@
   },
   "10208": {
    "name": "פיתוח ממשקי משתמש",
-   "credits": 4,
-   "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "10128",
-       "name": "תכנות מונחה עצמים"
-      },
-      {
-       "id": "10128",
-       "name": "תכנות מונחה עצמים"
-      }
-     ]
-    }
-   ],
-   "groups": []
-  },
-  "10212": {
-   "name": "תכנות בפלטפורמת Dot Net",
    "credits": 4,
    "offered": false,
    "prereqs": [

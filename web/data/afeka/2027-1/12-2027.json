@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-21T18:13:53.421Z",
+ "fetchedAt": "2026-11-01T23:25:30.977Z",
  "year": 2027,
  "startYear": 2027,
  "program": 12,
@@ -165,7 +165,6 @@
     "10206",
     "10207",
     "10208",
-    "10212",
     "10216",
     "10220",
     "10224",
@@ -177,7 +176,6 @@
     "10268",
     "10342",
     "10346",
-    "10353",
     "10354",
     "10362"
    ]
@@ -224,7 +222,6 @@
    "courses": [
     "10206",
     "10207",
-    "10212",
     "10216",
     "10220",
     "10252",
@@ -234,7 +231,6 @@
     "10268",
     "10342",
     "10346",
-    "10353",
     "10354",
     "10362"
    ]
@@ -279,13 +275,11 @@
    "courses": [
     "10206",
     "10208",
-    "10212",
     "10216",
     "10263",
     "10266",
     "10268",
     "10342",
-    "10353",
     "10362"
    ]
   },
@@ -338,7 +332,6 @@
     "10263",
     "10266",
     "10268",
-    "10353",
     "10354",
     "10359",
     "10362"
@@ -531,7 +524,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' קלף לואיז",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -549,7 +542,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -567,7 +560,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גרוסו פאולה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -629,7 +622,7 @@
        "day": 6,
        "start": "09:00",
        "end": "12:50",
-       "room": "115 פיקוס"
+       "room": "103 מעב' דואלי פיקוס"
       }
      ],
      "exams": []
@@ -639,7 +632,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר חריזמן קרן (אנה)",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -773,7 +766,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' הרצברג מורג אפרת",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271001002/1"
@@ -831,7 +824,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' הרצברג מורג אפרת",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1111,7 +1104,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' כליף קרן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271001605/1"
@@ -1119,9 +1112,9 @@
      "meetings": [
       {
        "day": 1,
-       "start": "14:00",
-       "end": "16:50",
-       "room": "קריה ה'4"
+       "start": "13:00",
+       "end": "15:50",
+       "room": "201 פיקוס"
       }
      ],
      "exams": []
@@ -1279,7 +1272,7 @@
        "day": 4,
        "start": "10:00",
        "end": "12:50",
-       "room": "202 פיקוס"
+       "room": "103 מעב' דואלי פיקוס"
       }
      ],
      "exams": []
@@ -1307,15 +1300,15 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' כליף קרן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
       {
        "day": 2,
-       "start": "13:00",
-       "end": "15:50",
-       "room": "103 מעב' דואלי פיקוס"
+       "start": "12:00",
+       "end": "14:50",
+       "room": "201 פיקוס"
       }
      ],
      "exams": []
@@ -1351,7 +1344,7 @@
        "day": 3,
        "start": "12:00",
        "end": "14:50",
-       "room": "115 פיקוס"
+       "room": "מפ\"ט אתרוג"
       }
      ],
      "exams": []
@@ -1387,7 +1380,7 @@
        "day": 1,
        "start": "09:00",
        "end": "11:50",
-       "room": "204 פיקוס"
+       "room": "208 פיקוס"
       }
      ],
      "exams": []
@@ -1441,7 +1434,7 @@
        "day": 4,
        "start": "10:00",
        "end": "12:50",
-       "room": "207 פיקוס"
+       "room": "303 פיקוס"
       }
      ],
      "exams": []
@@ -1495,7 +1488,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "מר לבינגר ערן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271011002/1"
@@ -1515,7 +1508,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "מר לבינגר ערן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271011003/1"
@@ -1525,7 +1518,7 @@
        "day": 2,
        "start": "16:00",
        "end": "16:50",
-       "room": "מפ\"ט יעד"
+       "room": "מפ\"ט תאנה"
       }
      ],
      "exams": []
@@ -1575,7 +1568,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "מר לבינגר ערן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1593,7 +1586,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "מר לבינגר ערן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1601,7 +1594,7 @@
        "day": 2,
        "start": "13:00",
        "end": "15:50",
-       "room": "מפ\"ט יעד"
+       "room": "מפ\"ט תאנה"
       }
      ],
      "exams": []
@@ -1717,7 +1710,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גוטנר שי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271011704/1"
@@ -1727,7 +1720,7 @@
        "day": 1,
        "start": "12:00",
        "end": "13:50",
-       "room": "קריה ז'1"
+       "room": "054 פרונטלי בנין מעבדות"
       },
       {
        "day": 4,
@@ -1791,7 +1784,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר גוטנר שי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1799,7 +1792,7 @@
        "day": 1,
        "start": "14:00",
        "end": "14:50",
-       "room": "קריה ז'1"
+       "room": "054 פרונטלי בנין מעבדות"
       },
       {
        "day": 4,
@@ -2202,7 +2195,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271012701/1"
@@ -2624,7 +2617,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בוסני רם",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271014505/1"
@@ -2953,7 +2946,7 @@
        "day": 4,
        "start": "14:00",
        "end": "16:50",
-       "room": "מפ\"ט יעד"
+       "room": "מפ\"ט גפן"
       }
      ],
      "exams": []
@@ -2989,7 +2982,7 @@
        "day": 4,
        "start": "11:00",
        "end": "12:50",
-       "room": "ז'2 קריה - עגלת תחשבים"
+       "room": "מפ\"ט גפן"
       }
      ],
      "exams": []
@@ -3092,7 +3085,7 @@
        "day": 1,
        "start": "13:00",
        "end": "14:50",
-       "room": "מפ\"ט תמר"
+       "room": "מפ\"ט תאנה"
       }
      ],
      "exams": []
@@ -3110,7 +3103,7 @@
        "day": 1,
        "start": "15:00",
        "end": "15:50",
-       "room": "מפ\"ט תמר"
+       "room": "מפ\"ט תאנה"
       }
      ],
      "exams": []
@@ -3253,78 +3246,6 @@
        "start": "17:00",
        "end": "20:50",
        "room": "קריה ה'11 מעב דואלי"
-      }
-     ],
-     "exams": []
-    }
-   ]
-  },
-  "10212": {
-   "name": "תכנות בפלטפורמת Dot Net",
-   "credits": 4,
-   "offered": true,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "10128",
-       "name": "תכנות מונחה עצמים"
-      },
-      {
-       "id": "10128",
-       "name": "תכנות מונחה עצמים"
-      }
-     ]
-    }
-   ],
-   "groups": [
-    {
-     "id": "271021201",
-     "type": "סופי-הרצאה+מעבדה",
-     "primary": true,
-     "lecturer": "מר ברקת ארנון",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271021201/1"
-     ],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "12:00",
-       "end": "12:50",
-       "room": "302 פיקוס"
-      },
-      {
-       "day": 3,
-       "start": "20:00",
-       "end": "20:50",
-       "room": "קריה ז'4"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271021201/1",
-     "type": "מעבדה",
-     "primary": false,
-     "lecturer": "מר ברקת ארנון",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "10:00",
-       "end": "11:50",
-       "room": "302 פיקוס"
-      },
-      {
-       "day": 3,
-       "start": "18:00",
-       "end": "19:50",
-       "room": "קריה ז'4"
       }
      ],
      "exams": []
@@ -4041,7 +3962,7 @@
        "day": 1,
        "start": "10:00",
        "end": "11:50",
-       "room": "מפ\"ט תמר"
+       "room": "055 פרונטלי בניין מעבדות"
       }
      ],
      "exams": []
@@ -4079,7 +4000,7 @@
        "day": 2,
        "start": "13:00",
        "end": "14:50",
-       "room": "מפ\"ט תמר"
+       "room": "208 פיקוס"
       }
      ],
      "exams": []
@@ -4235,7 +4156,7 @@
      "id": "271024301",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "ד\"ר כץ אייל",
+     "lecturer": "ד\"ר כץ אייל,, מר הרשקוביץ שני",
      "full": false,
      "semester": "א",
      "linked": [
@@ -4255,7 +4176,7 @@
      "id": "271024301/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "ד\"ר כץ אייל",
+     "lecturer": "מר הרשקוביץ שני,, ד\"ר כץ אייל",
      "full": false,
      "semester": "א",
      "linked": [],
@@ -4302,7 +4223,7 @@
        "day": 1,
        "start": "13:00",
        "end": "14:50",
-       "room": "קריה אודיטוריום"
+       "room": "מפ\"ט תמר"
       }
      ],
      "exams": []
@@ -4320,7 +4241,7 @@
        "day": 1,
        "start": "15:00",
        "end": "16:50",
-       "room": "קריה אודיטוריום"
+       "room": "מפ\"ט תמר"
       }
      ],
      "exams": []
@@ -4689,7 +4610,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271026601/1"
@@ -4709,7 +4630,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שלומי פיני",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5036,7 +4957,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271033404/1"
@@ -5096,7 +5017,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5254,7 +5175,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מורוז בוריס",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271035101/1"
@@ -5294,7 +5215,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר מורוז בוריס",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5367,66 +5288,6 @@
        "start": "19:00",
        "end": "19:50",
        "room": "קריה ג'4"
-      }
-     ],
-     "exams": []
-    }
-   ]
-  },
-  "10353": {
-   "name": "מחשוב בענן",
-   "credits": 3,
-   "offered": true,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "10143",
-       "name": "הנדסת תוכנה אינטגרטיבית"
-      },
-      {
-       "id": "10143",
-       "name": "הנדסת תוכנה אינטגרטיבית"
-      }
-     ]
-    }
-   ],
-   "groups": [
-    {
-     "id": "271035301",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "מר איזנשטיין איל",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271035301/1"
-     ],
-     "meetings": [
-      {
-       "day": 5,
-       "start": "15:00",
-       "end": "16:50",
-       "room": "ז'2 קריה - עגלת תחשבים"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271035301/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "מר איזנשטיין איל",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 5,
-       "start": "17:00",
-       "end": "18:50",
-       "room": "ז'2 קריה - עגלת תחשבים"
       }
      ],
      "exams": []
@@ -5668,7 +5529,7 @@
        "day": 2,
        "start": "17:00",
        "end": "18:50",
-       "room": "קריה ה'5"
+       "room": "קריה ז'1"
       }
      ],
      "exams": []
@@ -5704,7 +5565,7 @@
        "day": 2,
        "start": "19:00",
        "end": "19:50",
-       "room": "קריה ה'5"
+       "room": "קריה ז'1"
       }
      ],
      "exams": []
@@ -5713,64 +5574,15 @@
   },
   "10362": {
    "name": "ניהול פרויקטי תוכנה בעידן הAI",
-   "credits": 2.5,
-   "offered": true,
-   "prereqs": [
-    {
-     "kind": "מקביל",
-     "anyOf": [
-      {
-       "id": "10151",
-       "name": "ארכיטקטורת מערכות תוכנה"
-      }
-     ]
-    }
-   ],
-   "groups": [
-    {
-     "id": "271036201",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "מר דביר אורי",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271036201/1"
-     ],
-     "meetings": [
-      {
-       "day": 4,
-       "start": "14:00",
-       "end": "15:50",
-       "room": "קריה ה'7"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271036201/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "מר דביר אורי",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 4,
-       "start": "16:00",
-       "end": "16:50",
-       "room": "קריה ה'7"
-      }
-     ],
-     "exams": []
-    }
-   ]
+   "credits": 0,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
   },
   "10400": {
    "name": "סמינר בהנדסת תוכנה",
    "credits": 2.5,
-   "offered": true,
+   "offered": false,
    "prereqs": [
     {
      "kind": "קדם",
@@ -5786,46 +5598,7 @@
      ]
     }
    ],
-   "groups": [
-    {
-     "id": "271040003",
-     "type": "סופי-הרצאה+תרגול",
-     "primary": true,
-     "lecturer": "ד\"ר אביב יצחק",
-     "full": false,
-     "semester": "א",
-     "linked": [
-      "271040003/1"
-     ],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "08:00",
-       "end": "09:50",
-       "room": "קריה ה'7"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271040003/1",
-     "type": "תרגול",
-     "primary": false,
-     "lecturer": "ד\"ר אביב יצחק",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 2,
-       "start": "10:00",
-       "end": "10:50",
-       "room": "קריה ה'7"
-      }
-     ],
-     "exams": []
-    }
-   ]
+   "groups": []
   },
   "10411": {
    "name": "פרויקט גמר חלק א'",
@@ -5930,7 +5703,7 @@
        "day": 4,
        "start": "14:00",
        "end": "16:50",
-       "room": "מפ\"ט אתרוג"
+       "room": "קריה ה'7"
       }
      ],
      "exams": []
@@ -6054,24 +5827,6 @@
        "start": "17:00",
        "end": "18:50",
        "room": "101 פיקוס"
-      }
-     ],
-     "exams": []
-    },
-    {
-     "id": "271082802",
-     "type": "סופי-הרצאה",
-     "primary": true,
-     "lecturer": "ד\"ר שטטר דוד",
-     "full": false,
-     "semester": "א",
-     "linked": [],
-     "meetings": [
-      {
-       "day": 1,
-       "start": "11:00",
-       "end": "12:50",
-       "room": "ז'2 קריה - עגלת תחשבים"
       }
      ],
      "exams": []
@@ -6328,7 +6083,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר פורמה איריס",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "274011206/1"
@@ -6374,7 +6129,7 @@
        "day": 4,
        "start": "08:00",
        "end": "09:50",
-       "room": "מפ\"ט אתרוג"
+       "room": "מפ\"ט יעד"
       }
      ],
      "exams": []
@@ -6384,7 +6139,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' שרון אילת לאה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -6479,7 +6234,7 @@
        "day": 4,
        "start": "09:00",
        "end": "10:50",
-       "room": "303 פיקוס"
+       "room": "207 פיקוס"
       }
      ],
      "exams": []
@@ -6533,7 +6288,7 @@
        "day": 4,
        "start": "11:00",
        "end": "12:50",
-       "room": "303 פיקוס"
+       "room": "207 פיקוס"
       }
      ],
      "exams": []
@@ -6993,7 +6748,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר עבד אלחלים הישאם",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7027,7 +6782,7 @@
        "day": 1,
        "start": "10:00",
        "end": "11:50",
-       "room": "מפ\"ט אתרוג"
+       "room": "ז'2 קריה - עגלת תחשבים"
       }
      ],
      "exams": []
@@ -7052,7 +6807,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר עבד אלחלים הישאם",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7060,7 +6815,7 @@
        "day": 4,
        "start": "08:00",
        "end": "09:50",
-       "room": "מפ\"ט גפן"
+       "room": "קריה ה'7"
       }
      ],
      "exams": []
@@ -7347,13 +7102,19 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ביתן רוני",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090112/1",
       "279090112/2"
      ],
      "meetings": [
+      {
+       "day": 2,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "208 פיקוס"
+      },
       {
        "day": 3,
        "start": "18:00",
@@ -7397,6 +7158,7 @@
      "full": false,
      "semester": "א",
      "linked": [
+      "279090107/1",
       "279090114/1"
      ],
      "meetings": [
@@ -7410,7 +7172,7 @@
        "day": 3,
        "start": "20:00",
        "end": "21:50",
-       "room": "301 פיקוס"
+       "room": "202 פיקוס"
       }
      ],
      "exams": []
@@ -7517,7 +7279,7 @@
        "day": 3,
        "start": "18:00",
        "end": "19:50",
-       "room": "301 פיקוס"
+       "room": "202 פיקוס"
       }
      ],
      "exams": []
@@ -7634,7 +7396,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090124/1"
@@ -7644,7 +7406,7 @@
        "day": 2,
        "start": "16:00",
        "end": "17:50",
-       "room": "מפ\"ט רימון"
+       "room": "מפ\"ט יעד"
       },
       {
        "day": 3,
@@ -7677,7 +7439,7 @@
        "day": 4,
        "start": "08:00",
        "end": "09:50",
-       "room": "202 פיקוס"
+       "room": "103 מעב' דואלי פיקוס"
       }
      ],
      "exams": []
@@ -7713,7 +7475,7 @@
        "day": 2,
        "start": "12:00",
        "end": "13:50",
-       "room": "מפ\"ט רימון"
+       "room": "מפ\"ט יעד"
       }
      ],
      "exams": []
@@ -7723,7 +7485,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7821,7 +7583,7 @@
        "day": 4,
        "start": "14:00",
        "end": "15:50",
-       "room": "מפ\"ט גפן"
+       "room": "מפ\"ט יעד"
       }
      ],
      "exams": []
@@ -7831,7 +7593,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' זלקמן סמירין אולגה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7857,7 +7619,7 @@
        "day": 4,
        "start": "16:00",
        "end": "17:50",
-       "room": "מפ\"ט גפן"
+       "room": "מפ\"ט יעד"
       }
      ],
      "exams": []
@@ -7893,7 +7655,7 @@
        "day": 2,
        "start": "17:00",
        "end": "18:50",
-       "room": "מפ\"ט יעד"
+       "room": "מפ\"ט רימון"
       }
      ],
      "exams": []
@@ -7957,7 +7719,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7965,7 +7727,7 @@
        "day": 4,
        "start": "19:00",
        "end": "20:50",
-       "room": "מפ\"ט גפן"
+       "room": "מפ\"ט יעד"
       }
      ],
      "exams": []
@@ -7975,7 +7737,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' זלקמן סמירין אולגה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8019,7 +7781,7 @@
        "day": 1,
        "start": "15:00",
        "end": "16:50",
-       "room": "114-פיקוס סיסקו וגם פרונטלי"
+       "room": "קריה ה'9"
       }
      ],
      "exams": []
@@ -8055,7 +7817,7 @@
        "day": 1,
        "start": "16:00",
        "end": "17:50",
-       "room": "מפ\"ט תמר"
+       "room": "054 פרונטלי בנין מעבדות"
       }
      ],
      "exams": []
@@ -8073,7 +7835,7 @@
        "day": 2,
        "start": "13:00",
        "end": "14:50",
-       "room": "מפ\"ט זית"
+       "room": "מפ\"ט תמר"
       }
      ],
      "exams": []
@@ -8100,7 +7862,7 @@
      "id": "279090119/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "מר ויינר בועז",
+     "lecturer": "מר גלמן ולדימיר",
      "full": false,
      "semester": "א",
      "linked": [],
@@ -8136,7 +7898,7 @@
      "id": "279090120/2",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "גב' נגר איריס",
+     "lecturer": "גב' זלקמן סמירין אולגה",
      "full": false,
      "semester": "א",
      "linked": [],
@@ -8155,7 +7917,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8245,7 +8007,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8326,7 +8088,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שרייבר ניר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090224/1",
@@ -8337,13 +8099,13 @@
        "day": 3,
        "start": "18:00",
        "end": "19:50",
-       "room": "202 פיקוס"
+       "room": "301 פיקוס"
       },
       {
        "day": 3,
        "start": "20:00",
        "end": "21:50",
-       "room": "202 פיקוס"
+       "room": "301 פיקוס"
       }
      ],
      "exams": []
@@ -8353,7 +8115,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8371,7 +8133,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8407,7 +8169,7 @@
        "day": 2,
        "start": "12:00",
        "end": "13:50",
-       "room": "201 פיקוס"
+       "room": "205 פיקוס"
       },
       {
        "day": 4,
@@ -8433,7 +8195,7 @@
        "day": 1,
        "start": "11:00",
        "end": "12:50",
-       "room": "מפ\"ט גפן"
+       "room": "101 פיקוס"
       },
       {
        "day": 3,
@@ -8449,7 +8211,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090505/1",
@@ -8476,7 +8238,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר וקסמן עזרא",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090508/1",
@@ -8557,7 +8319,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' טל-עזר הלל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090511/1"
@@ -8753,13 +8515,13 @@
        "day": 4,
        "start": "17:00",
        "end": "18:50",
-       "room": "מפ\"ט יעד"
+       "room": "מפ\"ט גפן"
       },
       {
        "day": 4,
        "start": "19:00",
        "end": "20:50",
-       "room": "קריה ה'9"
+       "room": "מפ\"ט גפן"
       }
      ],
      "exams": []
@@ -8780,7 +8542,7 @@
        "day": 1,
        "start": "15:00",
        "end": "16:50",
-       "room": "302 פיקוס"
+       "room": "207 פיקוס"
       },
       {
        "day": 5,
@@ -8796,7 +8558,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר לייטנר אריאלה מירה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090521/1",
@@ -8876,7 +8638,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090524/1"
@@ -8892,7 +8654,7 @@
        "day": 3,
        "start": "11:00",
        "end": "12:50",
-       "room": "מפ\"ט אתרוג"
+       "room": "ז'2 קריה - עגלת תחשבים"
       }
      ],
      "exams": []
@@ -8965,7 +8727,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8983,7 +8745,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9037,7 +8799,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9073,7 +8835,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קגן יעל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9091,7 +8853,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9127,7 +8889,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9217,7 +8979,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' עזרא גלית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9225,7 +8987,7 @@
        "day": 2,
        "start": "14:00",
        "end": "15:50",
-       "room": "מפ\"ט רימון"
+       "room": "מפ\"ט יעד"
       }
      ],
      "exams": []
@@ -9235,7 +8997,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כרמון שי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9297,7 +9059,7 @@
        "day": 3,
        "start": "09:00",
        "end": "10:50",
-       "room": "מפ\"ט אתרוג"
+       "room": "201 פיקוס"
       }
      ],
      "exams": []
@@ -9325,7 +9087,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' עזרא גלית",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9351,7 +9113,7 @@
        "day": 2,
        "start": "17:00",
        "end": "18:50",
-       "room": "200 פיקוס"
+       "room": "115 פיקוס"
       }
      ],
      "exams": []
@@ -9397,7 +9159,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9433,7 +9195,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' עזרא גלית",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9487,7 +9249,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' בילצ'ינסקי דינה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9505,7 +9267,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר פרס חוזה אנטוניו",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9523,7 +9285,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9579,7 +9341,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מגנזיק אבלין",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279091105/1"
@@ -9619,7 +9381,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר וקסמן עזרא",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279091108/1"
@@ -9649,7 +9411,7 @@
        "day": 1,
        "start": "14:00",
        "end": "16:50",
-       "room": "203 פיקוס"
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
       }
      ],
      "exams": []
@@ -9659,7 +9421,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מרגלית תמר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279091110/1"
@@ -9737,7 +9499,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9745,7 +9507,7 @@
        "day": 5,
        "start": "16:00",
        "end": "16:50",
-       "room": "קריה ה'4"
+       "room": "205 פיקוס"
       }
      ],
      "exams": []
@@ -9773,7 +9535,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9809,7 +9571,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9911,7 +9673,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בנק אפרת",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279092305/1"
@@ -9981,7 +9743,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר בנק אפרת",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10035,7 +9797,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מיברג שרה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279092601/1"
@@ -10045,7 +9807,7 @@
        "day": 1,
        "start": "15:00",
        "end": "16:50",
-       "room": "103 מעב' דואלי פיקוס"
+       "room": "303 פיקוס"
       },
       {
        "day": 5,
@@ -10114,7 +9876,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר בנגיאט עמית",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [

@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-21T18:13:53.421Z",
+ "fetchedAt": "2026-11-01T23:25:30.977Z",
  "year": 2027,
  "startYear": 2027,
  "program": 10,
@@ -158,7 +158,6 @@
     "10206",
     "10207",
     "10208",
-    "10212",
     "10216",
     "10220",
     "10224",
@@ -170,7 +169,6 @@
     "10268",
     "10342",
     "10346",
-    "10353",
     "10354",
     "10362"
    ]
@@ -217,7 +215,6 @@
    "courses": [
     "10206",
     "10207",
-    "10212",
     "10216",
     "10220",
     "10252",
@@ -227,7 +224,6 @@
     "10268",
     "10342",
     "10346",
-    "10353",
     "10354",
     "10362"
    ]
@@ -272,13 +268,11 @@
    "courses": [
     "10206",
     "10208",
-    "10212",
     "10216",
     "10263",
     "10266",
     "10268",
     "10342",
-    "10353",
     "10362"
    ]
   },
@@ -331,7 +325,6 @@
     "10263",
     "10266",
     "10268",
-    "10353",
     "10354",
     "10359",
     "10362"
@@ -536,7 +529,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -554,7 +547,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -608,7 +601,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' בללוב נינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -626,7 +619,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1077,7 +1070,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' מרינוב עדי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "271001615/1"
@@ -1153,7 +1146,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' מרינוב עדי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1501,7 +1494,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ארטישצ'ב מריה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "271012101/1"
@@ -1601,7 +1594,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר ארטישצ'ב מריה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2095,7 +2088,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר כהן תום",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3245,27 +3238,6 @@
     }
    ]
   },
-  "10212": {
-   "name": "תכנות בפלטפורמת Dot Net",
-   "credits": 4,
-   "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "10128",
-       "name": "תכנות מונחה עצמים"
-      },
-      {
-       "id": "10128",
-       "name": "תכנות מונחה עצמים"
-      }
-     ]
-    }
-   ],
-   "groups": []
-  },
   "10213": {
    "name": "הנדסת דרישות",
    "credits": 3,
@@ -3711,7 +3683,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר כץ אייל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271022401/1"
@@ -3731,7 +3703,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר הרשקוביץ שני",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4986,7 +4958,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "271032401/1"
@@ -5046,7 +5018,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שלומי פיני",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -5344,27 +5316,6 @@
    "prereqs": [],
    "groups": []
   },
-  "10353": {
-   "name": "מחשוב בענן",
-   "credits": 3,
-   "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "10143",
-       "name": "הנדסת תוכנה אינטגרטיבית"
-      },
-      {
-       "id": "10143",
-       "name": "הנדסת תוכנה אינטגרטיבית"
-      }
-     ]
-    }
-   ],
-   "groups": []
-  },
   "10354": {
    "name": "בלוקצ'יין חזון ופרקטיקה",
    "credits": 2.5,
@@ -5568,19 +5519,9 @@
   },
   "10362": {
    "name": "ניהול פרויקטי תוכנה בעידן הAI",
-   "credits": 2.5,
+   "credits": 0,
    "offered": false,
-   "prereqs": [
-    {
-     "kind": "מקביל",
-     "anyOf": [
-      {
-       "id": "10151",
-       "name": "ארכיטקטורת מערכות תוכנה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": []
   },
   "10400": {
@@ -6904,7 +6845,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090201/1",
@@ -6957,7 +6898,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090205/1",
@@ -7171,7 +7112,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090215/1",
@@ -7278,7 +7219,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שלום תמיר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090219/1",
@@ -7305,7 +7246,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' סטאנצ'סקו יוני",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090220/1",
@@ -7447,7 +7388,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7717,7 +7658,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8012,7 +7953,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר פרל אפרת",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091101/1"
@@ -8112,7 +8053,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר וקסמן עזרא",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091117/1"
@@ -8252,7 +8193,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8342,7 +8283,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8490,7 +8431,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בנק אפרת",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092303/1"
@@ -8516,7 +8457,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר בנק אפרת",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

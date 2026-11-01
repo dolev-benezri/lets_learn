@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-08T22:18:32.495Z",
+ "fetchedAt": "2026-11-01T23:25:30.977Z",
  "year": 2027,
  "startYear": 2026,
  "program": 112,
@@ -659,7 +659,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [
       "271001617/1"
@@ -685,7 +685,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [

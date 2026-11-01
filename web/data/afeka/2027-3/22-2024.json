@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-21T18:13:53.421Z",
+ "fetchedAt": "2026-11-01T23:25:30.977Z",
  "year": 2027,
  "startYear": 2024,
  "program": 22,
@@ -1232,7 +1232,7 @@
      "id": "272014011",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "",
+     "lecturer": "מר מלמד יוסף",
      "full": false,
      "semester": "קיץ",
      "linked": [],

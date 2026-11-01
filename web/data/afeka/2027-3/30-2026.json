@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-10-21T18:13:53.421Z",
+ "fetchedAt": "2026-11-01T23:25:30.977Z",
  "year": 2027,
  "startYear": 2026,
  "program": 30,
@@ -288,6 +288,7 @@
    "courses": [
     "30151",
     "30153",
+    "30154",
     "30158",
     "30159",
     "30219",
@@ -752,7 +753,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [
       "271001617/1"
@@ -778,7 +779,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
@@ -1077,7 +1078,7 @@
      ]
     },
     {
-     "kind": "מקביל",
+     "kind": "קדם",
      "anyOf": [
       {
        "id": "30137",
@@ -1416,6 +1417,27 @@
   },
   "30153": {
    "name": "הנדסת ריתוך",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "30137",
+       "name": "תורת החומרים"
+      },
+      {
+       "id": null,
+       "name": "תורת החומרים 2"
+      }
+     ]
+    }
+   ],
+   "groups": []
+  },
+  "30154": {
+   "name": "קורוזיה ואמצעי הגנה",
    "credits": 2.5,
    "offered": false,
    "prereqs": [
