@@ -3,9 +3,12 @@ import assert from 'node:assert/strict';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { checkExport } from '../scripts/check-export.mjs';
+import { REAL_DIR } from './fixtures/real.mjs';
 
-const SRC = 'web/data/afeka';
+const SRC = 'web/data/afeka'; // the live export: only 'the data the site ships passes' reads it
+const FROZEN = fileURLToPath(REAL_DIR);
 const FILE = '2027-1/30-2026.json';
 
 // One program, one cohort, all three semesters: small enough to copy and break in each test.
@@ -13,7 +16,7 @@ function mini(edit = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), 'export-'));
   for (const n of [1, 2, 3]) {
     mkdirSync(`${dir}/2027-${n}`);
-    cpSync(`${SRC}/2027-${n}/30-2026.json`, `${dir}/2027-${n}/30-2026.json`);
+    cpSync(`${FROZEN}/2027-${n}/30-2026.json`, `${dir}/2027-${n}/30-2026.json`);
   }
   const cat = { year: 2027, programs: [{ id: 30, name: 'הנדסת מכונות', startYears: [2026] }] };
   writeFileSync(`${dir}/catalog.json`, JSON.stringify(cat));
@@ -103,7 +106,7 @@ test('compareToPrevious: an export that lost half the courses is flagged against
     }
   });
   try {
-    assert.match(checkExport(dir, { against: SRC }).warnings.join(), /course count dropped/);
+    assert.match(checkExport(dir, { against: FROZEN }).warnings.join(), /course count dropped/);
   } finally {
     rmSync(dir, { recursive: true });
   }

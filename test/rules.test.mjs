@@ -1,6 +1,5 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import {
   classify,
   progress,
@@ -20,6 +19,7 @@ import {
   recordWarnings
 } from '../web/rules.js';
 import { mini } from './fixtures/mini-data.mjs';
+import { real as frozen } from './fixtures/real.mjs';
 
 const me = { passed: ['Q0'], failed: { A: 1 } }; // example: failed physics
 
@@ -459,8 +459,7 @@ test('yearsOf: the study years are the mandatory year lists; studyYear stays ins
 });
 
 // Evening programs (12, 22, 32, 42) run five years: their data has a "קורסי חובה שנה ה'" list.
-const cohort = (id) =>
-  JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-1/${id}-2027.json`, import.meta.url), 'utf8'));
+const cohort = (id) => frozen(`2027-1/${id}-2027.json`);
 test('evening programs have a fifth study year', () => {
   for (const id of [12, 22, 32, 42]) assert.equal(yearsOf(cohort(id)), 5, id);
   assert.equal(yearsOf(cohort(30)), 4);
@@ -521,7 +520,7 @@ test('missingRequired names the not-passed courses of earlier-year lists that ar
   assert.equal(p.earned, p.required, 'the credit figure agrees: nothing is needed');
 });
 
-const real = (p) => JSON.parse(readFileSync(new URL('../web/data/afeka/' + p, import.meta.url), 'utf8'));
+const real = (p) => frozen(p);
 test('reqMet: an outside alternative counts once its name is in outsideDone; all-outside stays met', () => {
   const p = { kind: 'קדם', anyOf: [{ id: '6000', name: 'מכינה' }, { id: null, name: 'מכינה בדרך לאפקה' }] };
   const ctx = (o = []) => ({ passed: new Set(), exempt: new Set(), outside: new Set(o) });

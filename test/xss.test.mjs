@@ -4,10 +4,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parse } from 'node-html-parser';
+import { real } from './fixtures/real.mjs';
 
 const P = '<xss-t></xss-t>" onxss=1 \'';
-const read = (n) =>
-  JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${n}/30-2026.json`, import.meta.url), 'utf8'));
+const read = (n) => real(`2027-${n}/30-2026.json`);
 const TEXT_KEYS = new Set(['name', 'lecturer', 'room', 'label', 'title']);
 const hostile = (v, key = '') =>(
   Array.isArray(v)

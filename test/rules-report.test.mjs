@@ -6,8 +6,9 @@ import path from 'node:path';
 import { rulesHtml, indexHtml, main } from '../scripts/rules-report.mjs';
 import { approvedOn, cleanSettings } from '../web/settings.js';
 import { approvedText, esc, heb } from '../web/ui-text.js';
+import { real, REAL_DIR } from './fixtures/real.mjs';
 
-const data = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+const data = real('2027-1/30-2026.json');
 const entry = { id: 30, name: 'הנדסה מכנית', startYears: [2026] };
 const settings = cleanSettings({
   programs: { 30: { approved: { 2026: '2026-10-05' }, conflicts: [{ cohorts: [2026], text: 'סתירה לדוגמה' }] } }
@@ -89,7 +90,7 @@ test('main: writes a page per found data file and marks a missing one in the ind
       `${root}/data/afeka/catalog.json`,
       JSON.stringify({ year: 2027, programs: [{ id: 30, name: 'הנדסה מכנית', startYears: [2026, 2027] }] })
     );
-    copyFileSync('web/data/afeka/2027-1/30-2026.json', `${root}/data/afeka/2027-1/30-2026.json`);
+    copyFileSync(new URL('2027-1/30-2026.json', REAL_DIR), `${root}/data/afeka/2027-1/30-2026.json`);
     const programs = main(root, `${root}/out`);
     assert.deepEqual(programs[0].files, [
       { startYear: 2026, found: true },

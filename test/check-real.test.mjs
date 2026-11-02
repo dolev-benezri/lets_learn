@@ -7,6 +7,7 @@ import {
 } from '../scripts/check-real.mjs';
 import { mini } from './fixtures/mini-data.mjs';
 import { fixture } from './fixtures/solver-data.mjs';
+import { real } from './fixtures/real.mjs';
 import { search, showWeights } from '../web/solver-core.js';
 import { classify, modeFor } from '../web/rules.js';
 
@@ -105,7 +106,7 @@ test('yearOrder: the order is recomputed from the data (not the plan\'s own tota
 });
 test('no plan: a solver that finds nothing, with any reason, is caught when the courses fit', () => {
   const f = '2027-1/19-2026.json',
-    d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+    d = real(f);
   const never = () => ({ results: [], partial: false, diagnosis: ['a made-up reason'] });
   assert.ok(checkFile(f, d, { scenarios: ['S2'], solve: never }).some((e) => /brute force finds one/.test(e)));
   const unsure = () => ({ results: [], partial: true, diagnosis: ['could not tell'] });
@@ -136,7 +137,7 @@ test('small cases: a shuffled course and group order gives the same set of timet
 test('the CLI runs the state suites (J2, J6, J7, J9-J12) and the small cases; the year checks reach S3', () => {
   for (const f of ['share', 'app', 'program-switch', 'ui-search', 'xss', 'grade-import', 'advisor', 'solver-props', 'check-real'])
     assert.ok(SUITES.includes(`test/${f}.test.mjs`), f);
-  const L = (f) => JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
+  const L = real;
   const failures = [];
   const spy = (a) => (failures.push(Object.keys(a.state.failed ?? {}).length), { results: [], partial: false, diagnosis: ['x'] });
   checkYear('19-2026', L('2027-1/19-2026.json'), L('2027-2/19-2026.json'), { solveYear: spy });

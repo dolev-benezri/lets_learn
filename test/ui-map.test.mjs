@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { real } from './fixtures/real.mjs';
 import {
   layoutMap,
   planPaths,
@@ -25,8 +25,7 @@ import { unlockCounts } from '../web/solver-core.js';
 import { yearView } from '../web/app.js';
 import { classify, withAfterA } from '../web/rules.js';
 
-const read = (s) =>
-  JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${s}/30-2026.json`, import.meta.url), 'utf8'));
+const read = (s) => real(`2027-${s}/30-2026.json`);
 const A = read(1),
   B = read(2);
 const data = { ...yearView(A, B), fetchedAt: A.fetchedAt };
@@ -711,7 +710,7 @@ test('progressInfo: everything passed reaches 100%; spec credits default to what
 });
 
 test('layout: a fifth-year list (evening programs) gets its own band', () => {
-  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/32-2027.json', import.meta.url), 'utf8'));
+  const d = real('2027-1/32-2027.json');
   assert.ok(layoutMap(d).bands.some((b) => b.year === 5 && b.name === 'שנה ה׳'));
 });
 
@@ -726,7 +725,7 @@ test('geometry runs without Object.groupBy (Safari before 17.4)', () => {
 });
 
 test('progressInfo rows: one per list with a minimum, the area, the rest; they add up to the bar', () => {
-  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/11-2027.json', import.meta.url), 'utf8'));
+  const d = real('2027-1/11-2027.json');
   const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])),
     p = progressInfo(d, all);
   assert.ok(p.rows.length > 2 && p.rows.every((r) => r.need > 0), 'no "0 of 0" rows (English, entrepreneurship)');
@@ -739,7 +738,7 @@ test('progressInfo rows: one per list with a minimum, the area, the rest; they a
     'computer science fills 120 from surplus'
   );
   assert.ok(progressInfo(d, {}).rows.every((r) => r.done === 0));
-  const m = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/30-2027.json', import.meta.url), 'utf8'));
+  const m = real('2027-1/30-2027.json');
   const pm = progressInfo(m, {}, new Set(), ['solid', 'flow']);
   assert.equal(pm.rows.filter((r) => r.name === 'התמחות').length, 1);
   assert.equal(
@@ -749,7 +748,7 @@ test('progressInfo rows: one per list with a minimum, the area, the rest; they a
 });
 
 test('progressInfo rows: an older cohort whose lists hold less than their minimum still completes; the gap is untracked', () => {
-  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/10-2024.json', import.meta.url), 'utf8'));
+  const d = real('2027-1/10-2024.json');
   const all = Object.fromEntries(Object.keys(d.courses).map((c) => [c, { status: 'done' }])),
     p = progressInfo(d, all, new Set(), [d.specializations[0].id]);
   assert.ok(
@@ -887,7 +886,7 @@ test('mapSvg: every course node carries a plan ring (hidden off-plan), so a swit
 // J4: a specialization is done only with its mandatory courses, not on elective credits alone
 test('specialization is incomplete when elective credits meet the cap but mandatory courses are missing', async () => {
   const { classify, specLists } = await import('../web/rules.js');
-  const load = (f) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-1/${f}`, import.meta.url), 'utf8'));
+  const load = (f) => real(`2027-1/${f}`);
   const d = load('30-2026.json'),
     specs = ['solid', 'flow'];
   const passed = [...specLists(d, specs).elective];
