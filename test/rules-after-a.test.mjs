@@ -22,9 +22,9 @@ test('withAfterA: a prerequisite that is conditional in א׳ (its parallel cours
 
 // Audit 2026-10-23 #42: "רק ב׳" shows the ב׳ file alone. With the א׳ file at hand it makes the same assumption as the
 // year view, so a ב׳ course that only waits for an א׳ candidate is not blocked.
-import { readFileSync } from 'node:fs';
 import { normalize } from '../web/app.js';
-const real = (sem) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${sem}/30-2026.json`, import.meta.url), 'utf8'));
+import { real as frozen } from './fixtures/real.mjs';
+const real = (sem) => frozen(`2027-${sem}/30-2026.json`);
 test('withAfterA on a single ב׳ file: mechanical 2026 year 1 opens the year-view courses', () => {
   const A = real(1), B = real(2);
   const state = normalize({ v: 1, program: 30, startYear: 2026, profile: { year: 1 } }, { year: 2027, programs: [{ id: 30, startYears: [2026] }] });

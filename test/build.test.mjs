@@ -571,8 +571,9 @@ import { readFileSync } from 'node:fs';
 import { parseExams } from '../scripts/parse.mjs';
 import { search } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
+import { real as frozen } from './fixtures/real.mjs';
 test('real exam page: the build attaches exams to a real data file, and the solver keeps exams on separate days', () => {
-  const real = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/30-2026.json', import.meta.url), 'utf8'));
+  const real = frozen('2027-1/30-2026.json');
   const exams = parseExams(readFileSync(new URL('../scripts/fixtures/exams-2026.html', import.meta.url), 'utf8'));
   // the built file back into the scraper's shape (meetings carry their semester; prerequisites by name)
   const raw = Object.fromEntries(Object.entries(real.courses).map(([id, c]) => [id, {

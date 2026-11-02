@@ -193,7 +193,8 @@ test('yearView: offered in either semester, groups merged, semesters listed', ()
 
 import { app, pickData, semOfGroup } from '../web/app.js';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-const real = (n) => JSON.parse(readFileSync(new URL(`../web/data/afeka/2027-${n}/30-2026.json`, import.meta.url)));
+import { real as frozen } from './fixtures/real.mjs';
+const real = (n) => frozen(`2027-${n}/30-2026.json`);
 test('pickData: year view, single-semester scopes, and fallback when ב is missing', () => {
   const A = real(1),
     B = real(2);
@@ -469,7 +470,7 @@ test('normalize caps failed and choices like grades, and refuses impossible hour
 
 test('yearCourses: a fifth-year evening student gets the year ה list', async () => {
   const { app: a, yearCourses } = await import('../web/app.js');
-  const d = JSON.parse(readFileSync('web/data/afeka/2027-1/32-2024.json', 'utf8')),
+  const d = frozen('2027-1/32-2024.json'),
     was = [a.data, a.state];
   a.data = d;
   a.state = {

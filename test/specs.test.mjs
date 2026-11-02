@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { specLists } from '../web/rules.js';
 import { asideIds, progressInfo } from '../web/map-layout.js';
 import { progressHtml } from '../web/map-render.js';
 import { app, candidateMode, yearCourses } from '../web/app.js';
+import { real } from './fixtures/real.mjs';
 
 // Areas a and b plus vehicle with its alone-only extra. `shared` is an elective of both a and b; `am2` is mandatory and also sits in an elective list; `ghost` is in no course table.
 const L = (code, name, courses, minCredits = 0) => ({ code, name, courses, minCredits });
@@ -64,7 +64,7 @@ test('specLists: vehicle alone adds its extra mandatory list, vehicle with anoth
 });
 
 test('specLists on the real data: vehicle alone requires 30343, a pair does not, no mandatory course is also an elective', () => {
-  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/30-2026.json', import.meta.url), 'utf8'));
+  const d = real('2027-1/30-2026.json');
   assert.ok(specLists(d, ['vehicle']).mandatory.has('30343'));
   assert.ok(!specLists(d, ['solid', 'vehicle']).mandatory.has('30343'));
   for (const pick of [['vehicle'], ['solid', 'flow'], ['mech', 'aero']]) {
@@ -91,7 +91,7 @@ test('asideIds: with no area chosen every specialization course is aside, with a
 });
 
 test('asideIds on the real data: 30343 is aside until vehicle alone is chosen; the chosen areas leave no aside course among their lists', () => {
-  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/30-2026.json', import.meta.url), 'utf8'));
+  const d = real('2027-1/30-2026.json');
   assert.ok(
     asideIds(d, {}).includes('30343') &&
       asideIds(d, {}, {}, ['solid', 'vehicle']).includes('30343') &&
@@ -164,7 +164,7 @@ test('progressInfo: vehicle alone counts 30121, the extra and its electives, not
 });
 
 test('progressInfo on the real data: 160 in total, 133 of it outside the specializations', () => {
-  const d = JSON.parse(readFileSync(new URL('../web/data/afeka/2027-1/30-2026.json', import.meta.url), 'utf8'));
+  const d = real('2027-1/30-2026.json');
   const p = progressInfo(d, {}, new Set(), ['solid', 'flow']);
   assert.deepEqual([p.total, p.done, p.specLeft], [160, 0, 27]);
   const sp = specLists(d, ['solid', 'flow']),
