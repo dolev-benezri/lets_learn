@@ -48,6 +48,7 @@
 | קובץ | מה יש בו |
 |---|---|
 | [../design-system/afeka-scheduler/](../design-system/afeka-scheduler/MASTER.md) | מערכת העיצוב (`MASTER.md`) וה-override של העמוד (`pages/app.md`) |
-| [media/](media/) | תמונות ה-README, בהיר וכהה |
+| [GUIDE.md](GUIDE.md) | מדריך שימוש באתר, צעד אחר צעד, וכל היכולות |
+| [media/](media/) | תמונות ה-README והמדריך, בהיר וכהה |
 
 </div>
