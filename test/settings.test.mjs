@@ -177,3 +177,24 @@ test('cleanSettings: a placeholder supportEmail on a reserved domain (RFC 2606) 
     assert.equal(cleanSettings({ supportEmail: bad }).supportEmail, '', bad);
   assert.equal(cleanSettings({ supportEmail: 'help@examples.co.il' }).supportEmail, 'help@examples.co.il');
 });
+
+test('the support address: valid in settings.json, the same one in the legal contact and accessibility sections', () => {
+  const { supportEmail } = cleanSettings(JSON.parse(readFileSync('web/settings.json', 'utf8')));
+  assert.ok(supportEmail, 'settings.json holds a usable address');
+  const legal = readFileSync('web/legal.html', 'utf8'),
+    link = `href="mailto:${supportEmail}"`;
+  assert.ok(legal.slice(legal.indexOf('id="contact"')).includes(link), 'contact section');
+  assert.ok(legal.slice(legal.indexOf('נתקלתם בבעיה'), legal.indexOf('id="contact"')).includes(link), 'accessibility section');
+});
+
+test('the privacy section says what a mailed report carries and where it lands', () => {
+  const legal = readFileSync('web/legal.html', 'utf8'),
+    privacy = legal.slice(legal.indexOf('id="privacy"'), legal.indexOf('קישורי שיתוף וגיבוי'));
+  assert.match(privacy, /<b>דיווח במייל:<\/b>[^<]*Gmail/);
+});
+
+test('the footer names one report link, and a removal request goes to the legal contact section', () => {
+  const footer = readFileSync('web/index.html', 'utf8');
+  assert.equal(footer.match(/דיווח על טעות/g).length, 1);
+  assert.match(footer, /<a\s+href="legal\.html#contact">בקשת הסרה<\/a>/);
+});
