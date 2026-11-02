@@ -13,7 +13,8 @@ import {
   searchAll,
   showWeights,
   compareYearPlans,
-  PRIMARY
+  PRIMARY,
+  courseValue
 } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
@@ -317,7 +318,7 @@ test('friends metric rewards shared groups and ignores unknown ids', () => {
   const friends = [{ name: 'דני', groups: ['A2', 'NOPE-123'], weight: 1, active: true }];
   const r = run({ courses: [{ id: 'A', mode: 'must' }], friends, weights: { ...W0, friends: 1 }, topK: 3 });
   assert.deepEqual(r.results[0].groups, ['A2']);
-  assert.equal(r.results[0].breakdown.friends, 1);
+  assert.ok(r.results[0].breakdown.friends > 0);
   assert.match(r.results[0].explanation, /קורס אחד עם דני/);
 });
 
@@ -451,56 +452,152 @@ test('soft time window (notBefore not hard): 08:00–09:50 before 10:00 = 110 ou
   assert.equal(r.results[0].breakdown.timeWindow, 1 - 110 / 600);
 });
 
-test('examSpread: two moed-1 exams 3 days apart = 3/7', () => {
+// Courses Y (exam on `y`) and Z (exam on `z`), no clash in the week. An exam is [date, time].
+const examPair = (y, z, extra = {}) => {
   const data = mini();
-  data.courses.Y = {
-    name: 'Test',
+  const course = (id, name, day, [date, time]) => ({
+    name,
     credits: 1,
     offered: true,
     prereqs: [],
     groups: [
       {
-        id: 'Y1',
+        id: `${id}1`,
         type: 'סופי-הרצאה',
         primary: true,
         lecturer: 'L',
         full: false,
         semester: 'א',
         linked: [],
-        meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
-        exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-04', time: '09:00' }]
+        meetings: [{ day, start: '08:00', end: '09:50', room: 'r' }],
+        exams: [{ kind: 'בחינה', moed: 1, date, time }]
       },
     ]
-  };
-  data.courses.Z = {
-    name: 'Test 2',
-    credits: 1,
-    offered: true,
-    prereqs: [],
-    groups: [
-      {
-        id: 'Z1',
-        type: 'סופי-הרצאה',
-        primary: true,
-        lecturer: 'L',
-        full: false,
-        semester: 'א',
-        linked: [],
-        meetings: [{ day: 3, start: '08:00', end: '09:50', room: 'r' }],
-        exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-07', time: '09:00' }]
-      },
-    ]
-  };
+  });
+  data.courses.Y = course('Y', 'קורס י', 2, y);
+  data.courses.Z = course('Z', 'קורס ז', 3, z);
+  Object.assign(data.courses, extra);
+  return data;
+};
+const YZ = [
+  { id: 'Y', mode: 'must' },
+  { id: 'Z', mode: 'must' }
+];
+
+test('examSpread: exams with a free day between them cost nothing, whatever the gap', () => {
+  const r = run({ data: examPair(['2027-02-04', '09:00'], ['2027-02-07', '09:00']), courses: YZ, weights: { ...W0, examSpread: 1 } });
+  assert.equal(r.results[0].breakdown.examSpread, 1);
+  const two = run({ data: examPair(['2027-02-04', '09:00'], ['2027-02-06', '09:00']), courses: YZ, weights: { ...W0, examSpread: 1 } });
+  assert.equal(two.results[0].breakdown.examSpread, 1);
+});
+
+test('examSpread: a next-day pair costs half of a same-day pair, against the number of candidates', () => {
+  const next = run({ data: examPair(['2027-02-04', '09:00'], ['2027-02-05', '09:00']), courses: YZ, weights: { ...W0, examSpread: 1 } });
+  assert.equal(next.results[0].breakdown.examSpread, 1 - 0.5 / 2);
+  const same = run({ data: examPair(['2027-02-04', '09:00'], ['2027-02-04', '13:00']), courses: YZ, weights: { ...W0, examSpread: 1 } });
+  assert.equal(same.results[0].breakdown.examSpread, 1 - 1 / 2);
+});
+
+test('examSpread does not make a course with a close exam worth leaving out, at the default weights', () => {
+  const data = examPair(['2027-02-04', '09:00'], ['2027-02-05', '09:00']);
   const r = run({
     data,
     courses: [
-      { id: 'Y', mode: 'must' },
-      { id: 'Z', mode: 'must' }
+      { id: 'Y', mode: 'optional' },
+      { id: 'Z', mode: 'optional' }
     ],
-    constraints: { examsSameDay: 'allow' },
-    weights: { ...W0, examSpread: 1 }
+    weights: { ...W0, progress: 5, examSpread: 1 }
   });
-  assert.ok(Math.abs(r.results[0].breakdown.examSpread - 3 / 7) < 0.01);
+  assert.deepEqual(r.results[0].courses.sort(), ['Y', 'Z']);
+});
+
+test('same-day rule: by default only the same date and hour is refused', () => {
+  const at = (z, constraints = {}) => run({ data: examPair(['2027-02-04', '09:00'], z), courses: YZ, constraints }).results.length;
+  assert.equal(at(['2027-02-04', '09:00']), 0, 'one student cannot sit both');
+  assert.equal(at(['2027-02-04', '13:00']), 1);
+  assert.equal(at(['2027-02-04', '09:00'], { examsSameDay: 'hours' }), 0);
+  assert.equal(at(['2027-02-04', '13:00'], { examsSameDay: 'forbid' }), 0, 'the student asked for the date rule');
+  assert.equal(at(['2027-02-04', '09:00'], { examsSameDay: 'allow' }), 1);
+  assert.equal(at(['2027-02-04', null]), 1, 'an exam with no hour is not known to clash');
+});
+
+test('same-hour exams of two must courses: the reason names both, the date and the hour', () => {
+  const r = run({ data: examPair(['2027-02-05', '09:00'], ['2027-02-05', '09:00']), courses: YZ });
+  const t = r.diagnosis.join(' ');
+  for (const part of ['קורס י', 'קורס ז', '05.02.2027 09:00']) assert.ok(t.includes(part), t);
+  assert.ok(!t.includes('לשבוע אחד'), t);
+});
+
+test('same-day rule the student asked for: the reason names both and how to undo it', () => {
+  const r = run({ data: examPair(['2027-02-05', '09:00'], ['2027-02-05', '13:00']), courses: YZ, constraints: { examsSameDay: 'forbid' } });
+  const t = r.diagnosis.join(' ');
+  for (const part of ['קורס י', 'קורס ז', '05.02.2027', 'לאסור 2 בחינות באותו יום']) assert.ok(t.includes(part), t);
+});
+
+test('a plan lists its close exam pairs, with what the screen needs, and its smallest gap', () => {
+  const r = run({ data: examPair(['2027-02-04', '09:00'], ['2027-02-05', '13:00']), courses: YZ });
+  assert.deepEqual(r.results[0].closeExams, [
+    { days: 1, a: { course: 'Y', date: '2027-02-04', time: '09:00' }, b: { course: 'Z', date: '2027-02-05', time: '13:00' } }
+  ]);
+  assert.equal(r.results[0].examGap, 1);
+  const far = run({ data: examPair(['2027-02-04', '09:00'], ['2027-02-06', '09:00']), courses: YZ });
+  assert.deepEqual(far.results[0].closeExams, []);
+  assert.equal(far.results[0].examGap, 2);
+  const same = run({ data: examPair(['2027-02-04', '09:00'], ['2027-02-04', '13:00']), courses: YZ });
+  assert.equal(same.results[0].closeExams[0].days, 0);
+  assert.ok(!same.results[0].explanation.includes('לפחות 0'), same.results[0].explanation);
+  assert.match(same.results[0].explanation, /בחינות באותו יום/);
+});
+
+test('friends: a friend in one course does not shrink the plan', () => {
+  const data = examPair(['2027-02-04', '09:00'], ['2027-02-07', '09:00']);
+  const friends = [{ name: 'דני', groups: ['Y1'], weight: 1, active: true }];
+  for (const w of [1, 3, 5]) {
+    const r = run({
+      data,
+      courses: [
+        { id: 'Y', mode: 'optional' },
+        { id: 'Z', mode: 'optional' }
+      ],
+      friends,
+      weights: { ...W0, progress: 3, friends: w }
+    });
+    assert.deepEqual(r.results[0].courses.sort(), ['Y', 'Z'], `weight ${w}`);
+  }
+});
+
+test('friends metric: shared minutes against the longest minutes of all candidates', () => {
+  const data = examPair(['2027-02-04', '09:00'], ['2027-02-07', '09:00']);
+  const friends = [{ name: 'דני', groups: ['Y1'], weight: 1, active: true }];
+  const r = run({ data, courses: YZ, friends, weights: { ...W0, friends: 1 } });
+  assert.equal(r.results[0].breakdown.friends, 0.5);
+});
+
+test('courseValue: credits, half a point per course it opens, the depth, and at least 1', () => {
+  const course = (credits, prereqId) => ({
+    name: 'c', credits, offered: true, groups: [],
+    prereqs: prereqId ? [{ kind: 'קדם', anyOf: [{ id: prereqId, name: 'p' }] }] : []
+  });
+  const v = courseValue({ courses: { A: course(0), B: course(2, 'A'), C: course(0.5, 'B'), D: course(0.5) } });
+  assert.equal(v.D, 1, 'a half-credit course that opens nothing is still worth 1');
+  assert.equal(v.C, 1);
+  assert.equal(v.B, 2 + 0.5 + 1);
+  assert.equal(v.A, 0 + 0.5 * 2 + 2);
+});
+
+test('searchYear: a must course missing beside a same-hour exam says so, with both names and the hour', () => {
+  const dataA = { ...examPair(['2027-02-05', '09:00'], ['2027-02-05', '09:00']), courses: {} };
+  const dataB = examPair(['2027-07-05', '13:00'], ['2027-07-05', '13:00']);
+  dataB.courses = { Y: dataB.courses.Y, Z: dataB.courses.Z };
+  dataA.examsPublished = dataB.examsPublished = true;
+  const r = searchYear({
+    dataA, dataB, state: { passed: [], failed: {}, choices: { Y: 'must', Z: 'must' } }, yearList: new Set(),
+    constraints: {}, weights: { ...W0, progress: 1 }
+  });
+  const p = r.results[0];
+  assert.equal(p.missing.length, 1);
+  const t = p.warnings.join(' ');
+  for (const part of ['קורס י', 'קורס ז', '05.07.2027 13:00']) assert.ok(t.includes(part), t);
 });
 
 test('examSpread: one exam (nothing to crowd) scores 1, like the bound, never below two crowded exams', () => {
@@ -824,7 +921,7 @@ test('synthetic (published exams): pruning keeps results identical across weight
       notAfter: rnd() < 0.4 ? '17:00' : '',
       windowHard: rnd() < 0.5,
       maxCredits: rnd() < 0.4 ? 8 + Math.floor(rnd() * 8) : null,
-      examsSameDay: pick(['allow', 'forbid']),
+      examsSameDay: pick(['allow', 'forbid', 'hours']),
       includeFull: rnd() < 0.5,
     };
     const pins = rnd() < 0.3 ? [pick(groups)] : [];
@@ -891,7 +988,7 @@ test('synthetic: credits and unlocks keep pruning identical to the exhaustive se
     const constraints = {
       dayOff: rnd() < 0.5 ? [pick([1, 2, 3])] : [],
       maxCredits: rnd() < 0.4 ? 8 + Math.floor(rnd() * 8) : null,
-      examsSameDay: pick(['allow', 'forbid'])
+      examsSameDay: pick(['allow', 'forbid', 'hours'])
     };
     const args = {
       data,

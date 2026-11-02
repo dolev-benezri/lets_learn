@@ -163,6 +163,8 @@ export function buildOptions(course, {
       options.push({
         groups: ids, mask, meetings,
         exams: p.exams.filter((e) => e.kind === 'בחינה' && e.moed === 1).map((e) => e.date),
+        // the same first-sitting start, which one student cannot attend twice; an exam with no hour is not known to clash
+        slots: p.exams.filter((e) => e.kind === 'בחינה' && e.moed === 1 && e.time).map((e) => `${e.date} ${e.time}`),
         allExams: p.exams,
         minutes, sharedMin, sharesWith,
         alts: alts[p.id] ? { [p.id]: alts[p.id] } : {},
@@ -228,15 +230,16 @@ export function chainDepth(data) {
   return Object.fromEntries(Object.keys(data.courses).map((id) => [id, depth(id)]));
 }
 
-// value = credits + BONUS * unlocked courses + DEPTH_BONUS * chain depth. Additive so a 0-credit course that
-// unlocks others still counts. BONUS 1: a 0-credit course unlocking 3 (value >= 3) beats a 2-credit elective.
-// DEPTH_BONUS 2: one more semester of chain (the critical path) is worth about two unlocked courses.
-const BONUS = 1, DEPTH_BONUS = 2;
+// value = credits + BONUS * unlocked courses + DEPTH_BONUS * chain depth, at least VALUE_FLOOR. Additive so a 0-credit
+// course that unlocks others still counts. BONUS and DEPTH_BONUS stay modest: a large unlock bonus inflates the sum over
+// all candidates and shrinks the pull of every course that opens nothing, so more of those were left out (2026-11-02,
+// docs/superpowers/plans/2026-11-02-solver-weights.md). The floor keeps a half-credit course worth something.
+const BONUS = 0.5, DEPTH_BONUS = 1, VALUE_FLOOR = 1;
 // id -> value (no bias). Shared by search (per semester) and searchYear (year progress) so the formula lives once.
 export function courseValue(data, down = downstream(data)) {
   const depth = chainDepth(data);
   return Object.fromEntries(Object.entries(data.courses)
-    .map(([id, c]) => [id, c.credits + BONUS * down[id].size + DEPTH_BONUS * depth[id]]));
+    .map(([id, c]) => [id, Math.max(VALUE_FLOOR, c.credits + BONUS * down[id].size + DEPTH_BONUS * depth[id])]));
 }
 
 const DAY_NAMES = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'];
@@ -257,16 +260,41 @@ function unlockSet(chosen, down, statuses, exclude = chosen) {
   return out;
 }
 
-function metrics(sel, mask, ctx) {
-  const total = sel.reduce((a, o) => a + o.minutes, 0) || 1;
+// Exam dates belong to a course, never a group, so this can only act by leaving a course out. It counts close pairs, against
+// the candidates as progress does: smallest-gap scoring fell with every course added, whatever the dates (2026-11-02).
+function examSpread(dates, n) {
+  let pen = 0;
+  for (let i = 0; i < dates.length; i++)
+    for (let j = i + 1; j < dates.length; j++) {
+      const g = Math.abs(Date.parse(dates[j]) - Date.parse(dates[i])) / 864e5;
+      pen += g === 0 ? 1 : g === 1 ? 0.5 : 0;
+    }
+  return 1 - Math.min(1, pen / n);
+}
 
+// The plan's first sittings closer than two days apart, for the warning on screen.
+function closeExams(sel) {
+  const first = sel
+    .flatMap((o) => o.allExams.filter((e) => e.kind === 'בחינה' && e.moed === 1).map((e) => ({ course: o.course, date: e.date, time: e.time })))
+    .sort((x, y) => x.date.localeCompare(y.date) || String(x.time).localeCompare(String(y.time)));
+  const out = [];
+  for (let i = 0; i < first.length; i++)
+    for (let j = i + 1; j < first.length; j++) {
+      const days = (Date.parse(first[j].date) - Date.parse(first[i].date)) / 864e5;
+      if (days <= 1) out.push({ days, a: first[i], b: first[j] });
+    }
+  return out;
+}
+
+function metrics(sel, mask, ctx) {
   let fw = 0, fs = 0;
   const shared = {};
   for (let i = 0; i < ctx.friends.length; i++) {
     const f = ctx.friends[i];
     const s = sel.reduce((a, o) => a + o.sharedMin[i], 0);
     fw += f.weight;
-    fs += f.weight * (s / total);
+    // against what could be shared, not the plan's own minutes: that ratio rose when a course the friend skips was dropped
+    fs += f.weight * (ctx.friendDen ? s / ctx.friendDen : 0);
     shared[f.name] = sel.filter((o) => o.sharesWith[i]).length;
   }
 
@@ -308,8 +336,7 @@ function metrics(sel, mask, ctx) {
       freeDays: freeDays.length / 5,
       compact: 1 - Math.min(gapMin / 600, 1),
       timeWindow: 1 - Math.min(outside / 600, 1),
-      // fewer than two exams: nothing to crowd (the bound in dfs says the same)
-      examSpread: !ctx.examsPublished ? 0 : minGap === null ? 1 : Math.min(minGap, 7) / 7,
+      examSpread: !ctx.examsPublished ? 0 : examSpread(dates, ctx.candidates),
     },
     info: { shared, freeDays, gapMin, minGap, unlocks },
   };
@@ -321,7 +348,8 @@ function explain(info, unlocks) {
     .map(([name, n]) => `${n === 1 ? 'קורס אחד' : `${n} קורסים`} עם ${name}`);
   if (info.freeDays.length) parts.push(`${info.freeDays.map((d) => `יום ${DAY_NAMES[d]}'`).join(', ')} פנוי`);
   parts.push(info.gapMin ? `חלונות: ${Math.round(info.gapMin / 6) / 10} ש'` : 'בלי חלונות');
-  if (info.minGap !== null) parts.push(`לפחות ${info.minGap === 1 ? 'יום אחד' : `${info.minGap} ימים`} בין בחינות`);
+  if (info.minGap === 0) parts.push('בחינות באותו יום');
+  else if (info.minGap !== null) parts.push(`לפחות ${info.minGap === 1 ? 'יום אחד' : `${info.minGap} ימים`} בין בחינות`);
   if (unlocks) parts.push(unlocks === 1 ? 'פותחת קורס אחד להמשך' : `פותחת ${unlocks} קורסים להמשך`);
   return parts.join(' · ');
 }
@@ -360,6 +388,13 @@ function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () =
   }
   return out;
 }
+
+// An exam's date as a student reads it: 2027-02-15 -> 15.02.2027, with the hour when it is known.
+export const examWhen = (e) => `${e.date.split('-').reverse().join('.')}${e.time ? ` ${e.time}` : ''}`;
+// Why two courses cannot both be planned, by their first sittings.
+const examClashText = (a, b, e, rule) => (rule === 'forbid'
+  ? `${a} ו-${b}: הבחינה הראשונה של שניהם ב-${examWhen({ date: e.date })}, וסומן "לאסור 2 בחינות באותו יום". בטלו את הסימון או סמנו אחד מהם כ"אולי".`
+  : `${a} ו-${b}: הבחינה הראשונה של שניהם ב-${examWhen(e)}, ואי אפשר לגשת לשתיהן. סמנו אחד מהם כ"אולי" או קבעו אותו לסמסטר אחר.`);
 
 const KNOWN = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread', 'credits', 'unlocks'];
 // A "show by" criterion outranks every weighted metric (each is <= weight * 1), so the plan list is ordered by it
@@ -423,6 +458,8 @@ export function search({
     maxValue: maxValue || 1,
     constraints,
     examsPublished: data.examsPublished,
+    candidates: items.length || 1,
+    friendDen: items.reduce((a, it) => a + Math.max(0, ...it.options.map((o) => o.minutes)), 0),
     freeCand: freeDayCandidates(constraints),
     down,
     statuses,
@@ -432,7 +469,11 @@ export function search({
     }),
     ...(weights.unlocks && { maxUnlocks: Math.max(1, restU[0].size) })
   };
-  const noExamClash = data.examsPublished && constraints.examsSameDay !== 'allow';
+  // 'hours' (the default): the same date and start. 'forbid', the student's choice: the same date. 'allow': neither, to name
+  // the reason when nothing fits.
+  const examRule = constraints.examsSameDay ?? 'hours';
+  const noExamClash = data.examsPublished && examRule !== 'allow';
+  const examKeys = (o) => (examRule === 'forbid' ? o.exams : o.slots);
   const conditional = courses
     .filter(({ id }) => statuses[id]?.missingParallel)
     .map(({ id }) => ({ id, needs: statuses[id].missingParallel }));
@@ -440,9 +481,9 @@ export function search({
   const sel = [];
 
   // Branch and bound: an optimistic score for anything reachable from a partial selection. Every metric is either
-  // monotone as courses are added (free days and time window only get worse; progress and credits only gain what is
-  // left; unlocks only gain the union of what is left can open) or bounded by 1 (friends, compact, exam spread with
-  // fewer than 2 exams). Pruning never drops a result that would have entered the top K, so the output is identical
+  // monotone as courses are added (free days, time window and exam spread only get worse; progress, friends and credits
+  // only gain what is left; unlocks only gain the union of what is left can open) or bounded by 1 (compact). Pruning
+  // never drops a result that would have entered the top K, so the output is identical
   // to the exhaustive search (test: "pruning keeps results").
   const W = (k) => weights[k] ?? 0;
   // bound() only knows these metrics: a weighted metric it doesn't know switches pruning off rather than risk a wrong
@@ -452,8 +493,8 @@ export function search({
     && Object.entries(weights).every(([k, w]) => !(w > 0) || KNOWN.includes(k));
   const restValue = new Array(items.length + 1).fill(0);
   for (let i = items.length - 1; i >= 0; i--) restValue[i] = restValue[i + 1] + Math.max(0, value[items[i].id]);
-  // Friends: per friend the ratio is (shared minutes) / (total minutes), so what is left can lift it to at most
-  // (s + R) / (T + R), R = the most shared minutes the remaining items could still add (each item at its best option).
+  // Friends: what is left can add at most R, the most shared minutes the remaining items could still add (each item at
+  // its best option), over the fixed friendDen.
   const fw = activeFriends.reduce((a, f) => a + f.weight, 0);
   const restShared = activeFriends.map(() => new Array(items.length + 1).fill(0));
   for (let i = items.length - 1; i >= 0; i--) {
@@ -466,11 +507,10 @@ export function search({
   const fixedUp = W('compact');
   function friendsUp(i) {
     if (!fw) return 0;
-    const T = sel.reduce((a, o) => a + o.minutes, 0);
     let up = 0;
     for (let f = 0; f < activeFriends.length; f++) {
       const s = sel.reduce((a, o) => a + o.sharedMin[f], 0), R = restShared[f][i];
-      up += activeFriends[f].weight * (T + R ? (s + R) / (T + R) : 0);
+      up += activeFriends[f].weight * (ctx.friendDen ? (s + R) / ctx.friendDen : 0);
     }
     return up / fw;
   }
@@ -492,15 +532,7 @@ export function search({
       for (const x of got) if (!restU[i].has(x)) extra++;
       b += W('unlocks') * (restU[i].size + extra) / ctx.maxUnlocks;
     }
-    if (ctx.examsPublished && W('examSpread')) {
-      const dates = sel.flatMap((o) => o.exams).sort();
-      let g = null;
-      for (let k = 1; k < dates.length; k++) {
-        const x = (Date.parse(dates[k]) - Date.parse(dates[k - 1])) / 864e5;
-        g = g === null ? x : Math.min(g, x);
-      }
-      b += W('examSpread') * (g === null ? 1 : Math.min(g, 7) / 7);
-    }
+    if (ctx.examsPublished && W('examSpread')) b += W('examSpread') * examSpread(sel.flatMap((o) => o.exams), ctx.candidates);
     return b + 1e-9; // float slack: sums here run in a different order than in metrics()
   }
 
@@ -536,6 +568,8 @@ export function search({
       alts: Object.assign({}, ...sel.map((o) => o.alts)),
       split: sel.filter((o) => o.split).map((o) => o.course),
       exams: sel.flatMap((o) => o.allExams.map((e) => ({ course: o.course, ...e }))),
+      closeExams: closeExams(sel),
+      examGap: info.minGap,
     });
     top.sort((a, b) => b.score - a.score);
     if (top.length > topK) top.pop();
@@ -556,13 +590,13 @@ export function search({
       if (constraints.maxCredits != null && credits + it.credits > constraints.maxCredits) continue;
       // monotone: a course never frees a day
       if (constraints.maxDays && daysUsed(merge(mask, o.mask)) > constraints.maxDays) continue;
-      if (noExamClash && o.exams.some((d) => examDates.has(d))) continue;
+      if (noExamClash && examKeys(o).some((d) => examDates.has(d))) continue;
       sel.push(o);
       dfs(
         i + 1,
         merge(mask, o.mask),
         credits + it.credits,
-        noExamClash ? new Set([...examDates, ...o.exams]) : examDates,
+        noExamClash ? new Set([...examDates, ...examKeys(o)]) : examDates,
         val + value[it.id]
       );
       sel.pop();
@@ -623,7 +657,20 @@ export function search({
     (id) => !constraints.split && optionsIf(id, { includeFull: true }),
     constraints.dayOffHard || constraints.windowHard ? (id) => optionsOf(id, { forbidden: soft }) : null
   );
+  if (noExamClash) found.push(...examBlocks());
   return { results: [], partial: false, diagnosis: found.length ? found : [why ? whyNot() : GENERIC] };
+
+  // Two must courses whose first sittings break the rule in every option: nothing else can help, so say which.
+  function examBlocks() {
+    const out = [], must = items.filter((x) => x.mode === 'must' && x.options.length);
+    for (let i = 0; i < must.length; i++)
+      for (let j = i + 1; j < must.length; j++) {
+        const at = must[i].options[0].allExams.find((e) => e.kind === 'בחינה' && e.moed === 1
+          && must[j].options.every((o) => examKeys(o).includes(examRule === 'forbid' ? e.date : `${e.date} ${e.time}`)));
+        if (at) out.push(examClashText(data.courses[must[i].id].name, data.courses[must[j].id].name, at, examRule));
+      }
+    return out;
+  }
 
   // Nothing to blame on one course or one pair: relax one constraint at a time and name the first that alone lets a
   // plan through.
@@ -639,7 +686,9 @@ export function search({
       [c.maxCredits != null, { maxCredits: null },
         'תקרת נ"ז נמוכה מדי לקורסים שסימנתם. העלו אותה או סמנו פחות קורסים כ"חובה".'],
       [noExamClash, { examsSameDay: 'allow' },
-        'בכל מערכת יש שתי בחינות באותו יום. אפשרו בחינות באותו יום או סמנו פחות קורסים.'],
+        examRule === 'forbid'
+          ? 'בכל מערכת יש שתי בחינות באותו יום. בטלו את "לאסור 2 בחינות באותו יום" או סמנו פחות קורסים.'
+          : 'בכל מערכת יש שתי בחינות באותו תאריך ובאותה שעה, ואי אפשר לגשת לשתיהן. סמנו פחות קורסים.'],
       [conditional.length, null,
         'קורס שבחרתם דורש קורס מקביל שלא נכנס למערכת. סמנו גם את הקורס המקביל.'],
     ];
@@ -656,7 +705,7 @@ export function search({
       : 'שום צירוף של הקורסים שבחרתם לא עומד בכל האילוצים יחד. רככו כמה אילוצים יחד.';
   }
 }
-const GENERIC = 'אין מערכת שעומדת בכל האילוצים יחד (בחינות באותו יום, תקרת נ"ז או קורס מקביל). נסה לרכך אילוץ.';
+const GENERIC = 'אין מערכת שעומדת בכל האילוצים יחד (בחינות חופפות, תקרת נ"ז או קורס מקביל). נסה לרכך אילוץ.';
 
 const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };
 const LOAD_W = 3, MISSING_W = 5, A_TOP = 50;
@@ -845,6 +894,18 @@ export function searchYear({
       : ra.diagnosis;
   return { results: pairs.slice(0, topK), partial, diagnosis };
 
+  // A missing must course beside a planned one whose first sitting breaks the exam rule: say so, the student may not guess.
+  function clashesOf(id, d, chosen) {
+    const rule = constraints.examsSameDay ?? 'hours';
+    if (rule === 'allow' || !d.examsPublished || !d.courses[id]) return [];
+    const first = (cid) => d.courses[cid].groups.flatMap((g) => g.exams).find((e) => e.kind === 'בחינה' && e.moed === 1);
+    const mine = first(id);
+    if (!mine) return [];
+    const same = (e) => e && e.date === mine.date && (rule === 'forbid' || (mine.time && e.time === mine.time));
+    const x = chosen.find((cid) => same(first(cid)));
+    return x ? [examClashText(d.courses[id].name, d.courses[x].name, mine, rule)] : [];
+  }
+
   function pairOf(a, b, takenA) {
     // an empty plan is not an answer: let the UI say why nothing fits
     if (!a.courses.length && !b?.courses.length) return null;
@@ -880,7 +941,8 @@ export function searchYear({
       split: [...new Set([...a.split, ...(b?.split ?? [])])],
       warnings: [
         ...(needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : []),
-        ...regrouped
+        ...regrouped,
+        ...missing.flatMap((id) => clashesOf(id, dataA, a.courses).concat(clashesOf(id, dataB, b?.courses ?? [])))
       ],
     };
   }
