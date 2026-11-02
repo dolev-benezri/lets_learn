@@ -87,7 +87,7 @@ function shape(kind, x, at, errors) {
 
 // Every field the site reads without a guard, down to each meeting. Returns false when the file is too broken for validate() to run.
 // Paths start at "$" and come out as "<file>: courses.6001.groups[0].meetings: missing".
-function checkFile(d, label, out) {
+export function checkFile(d, label, out) {
   if (!TYPES.obj(d)) {
     out.push(`${label}: should be a JSON object`);
     return false;
