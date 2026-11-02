@@ -369,6 +369,9 @@ export async function markPublished(cacheDir, statusFile) {
   await writeFile(join(cacheDir, 'published-at'), (await readJson(statusFile)).checkedAt);
 }
 
+// Exam dates pulled by hand from the course pages (scripts/pull-exams.mjs); none for a year with no file.
+export const loadPulledExams = async (year) => (await readJson(new URL(`./exams-${year}.json`, import.meta.url))) ?? [];
+
 export async function run({
   opt,
   request,
@@ -377,7 +380,8 @@ export async function run({
   now = () => new Date().toISOString(),
   log = console.error,
   check = validate,
-  hold = () => false
+  hold = () => false,
+  pulledExams = []
 }) {
   const units = unitsOf(opt, programs);
 
@@ -459,7 +463,7 @@ export async function run({
         department: u.cfg.deptName,
         lists: u.lists,
         raw,
-        exams: examsOf.get(u.cfg.dept),
+        exams: [...examsOf.get(u.cfg.dept), ...pulledExams],
         fetchedAt,
         warnings: buildWarnings,
         specializations: u.cfg.specializations,
@@ -524,7 +528,8 @@ async function main() {
         budget: policy.budget
       })
     : live;
-  const summary = await run({ opt, request, hold: () => behind && request.deferred.length > 0 });
+  const pulledExams = await loadPulledExams(opt.year);
+  const summary = await run({ opt, request, hold: () => behind && request.deferred.length > 0, pulledExams });
   if (request.deferred?.length) console.error(`deferred ${request.deferred.length} stale answers to the next night`);
   if (cacheDir && !summary.includes('held')) await markPublished(cacheDir, statusFile);
   console.log(summary);

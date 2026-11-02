@@ -1,7 +1,7 @@
 // Week grid, block popover and the small pure helpers behind them (hour range, pills summary, scale steps).
 import { app, esc, freshOf } from './app.js';
 import { toMin, meetingsMask, overlaps, buildOptions, freeDayCandidates } from './solver-core.js';
-import { groupLabel, groupNumber, groupFresh, heb, reportMailto, PAGE_NAME } from './ui-text.js';
+import { groupLabel, groupNumber, groupFresh, heb, reportMailto, PAGE_NAME, examWhen } from './ui-text.js';
 // A course name as HTML: escaped, with its Latin runs marked lang="en" so a Hebrew screen reader voice says "IOS", not letters. Entities (&lt;) are not words.
 export const nameHtml = (t) =>
   esc(heb(t)).replace(
@@ -386,7 +386,7 @@ export function openPop(btn, ctx) {
         !ctx.data.examsPublished
           ? 'לוח הבחינות טרם פורסם'
           : exams.length
-            ? exams.map((e) => `מועד ${esc(e.moed)}: <bdi dir="ltr">${esc(e.date)}</bdi>`).join('<br>')
+            ? exams.map((e) => `מועד ${esc(e.moed)}: <bdi dir="ltr">${esc(examWhen(e))}</bdi>`).join('<br>')
             : '—'
       }</dd>
       ${fr.length ? `<dt>חברים בקבוצה</dt><dd>${fr.map((f) => `<span class="av" aria-hidden="true">${esc(initials(f.name))}</span> ${esc(f.name)}`).join('<br>')}</dd>` : ''}

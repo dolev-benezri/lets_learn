@@ -135,7 +135,7 @@ test('parseCourseExams: a sentence in the summary that looks like a moed is not 
 - שורת CLI: `node scripts/pull-exams.mjs [--year 2027]`. הקורסים: כל מי שיש לו קבוצות ב-`web/data/afeka` של השנה. משתמש ב-`patient` וב-`cachedRequester` על תיקייה משלו, `.yedion-exams-cache/`, בלי `ttl`. כך הרצה שנעצרה ממשיכה מאיפה שנעצרה, ו**רענון הוא מחיקת התיקייה**, בלי דגל נוסף. כותב רק בסוף, ורק אם יש שורות, ממוין לפי קורס וסמסטר, שורה לכל רשומה.
 - `scripts/pull-exams.mjs` מוסיף הערת `ponytail:`: קבוצה אחת לכל קורס וסמסטר, כי המרצים לא נבדלו במדגם; אם יימצא קורס עם מועד שונה לפי מרצה, למשוך לפי מרצה.
 - `examsPublished` ב-`build.mjs:89` מחושב מהבחינות שבאמת נכנסו לקובץ: `Object.values(courses).some((c) => c.groups.some((g) => g.exams.length))`.
-- בחלון הקורס (`ui-grid.js:389`) השעה מוצגת אחרי התאריך כשהיא ידועה.
+- `examWhen(e) -> string` ב-`web/ui-text.js` (הבעלים, 02.11): `15.02.2027 09:00`, ובלי שעה כשהיא לא ידועה. בשימוש בחלון הקורס (`ui-grid.js:389`) וברשימת ההרשמה (`ui-drawer.js:244`), המסכים היחידים שמציגים תאריך בחינה.
 
 - [ ] **3.1: בדיקות נכשלות:**
 

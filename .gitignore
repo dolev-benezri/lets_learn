@@ -2,6 +2,7 @@ node_modules/
 .claude/
 .superpowers/
 .yedion-cache/
+.yedion-exams-cache/
 solver-audit/plan-probes/out-*/
 
 # college documents dropped in the root stay local

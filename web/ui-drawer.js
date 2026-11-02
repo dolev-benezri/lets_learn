@@ -14,7 +14,7 @@ import {
   isPair,
   semResult
 } from './ui-grid.js';
-import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG } from './ui-text.js';
+import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen } from './ui-text.js';
 import {
   WEIGHTS,
   SCALE,
@@ -241,7 +241,7 @@ function regPanel() {
       .join('')}
     <section class="dr-sec"><h3>בחינות</h3>${
       data.examsPublished
-        ? `<ul class="plain">${exams.map((e) => `<li>${esc(data.courses[e.course].name)} · מועד ${esc(e.moed)} · <bdi dir="ltr">${esc(e.date)} ${esc(e.time ?? '')}</bdi></li>`).join('')}</ul>`
+        ? `<ul class="plain">${exams.map((e) => `<li>${esc(data.courses[e.course].name)} · מועד ${esc(e.moed)} · <bdi dir="ltr">${esc(examWhen(e))}</bdi></li>`).join('')}</ul>`
         : `<p class="hint">לוח הבחינות של ${hebYear(data.year)} טרם פורסם.</p>`
     }</section>`,
     `<button type="button" class="btn primary" data-act="copyReg" data-k="copyReg">${icon('copy')} העתק הכל</button>

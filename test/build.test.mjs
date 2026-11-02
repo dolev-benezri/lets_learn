@@ -111,6 +111,28 @@ test('buildDataset resolves prereq names to ids, keeps unknown names as id:null,
   assert.deepEqual(d.courses['20816'].prereqs, [{ kind: 'קדם', anyOf: [{ id: '90903', name: 'פיזיקה-מכניקה' }] }]);
 });
 
+const pulled = (date, lecturer = null, courseId = '90903') => ({
+  semester: 'א',
+  courseId,
+  lecturer,
+  kind: 'בחינה',
+  moeds: [{ moed: 1, date, time: null }]
+});
+test('exam rows with no lecturer reach every group without an exam, and a row by lecturer goes first', () => {
+  const input = base();
+  input.raw['90903'].groups.push(g('279090304', { lecturer: '' }));
+  input.exams = [pulled('2027-02-02'), pulled('2027-02-01', 'ד"ר שמעון מאיר')];
+  const d = buildDataset(input);
+  const dates = (id) => d.courses['90903'].groups.find((x) => x.id === id).exams.map((e) => e.date);
+  assert.deepEqual(dates('279090303'), ['2027-02-01']);
+  assert.deepEqual(dates('279090304'), ['2027-02-02']);
+});
+test('examsPublished: true only when an exam reached this file', () => {
+  const build = (exams) => buildDataset({ ...base(), exams }).examsPublished;
+  assert.equal(build([pulled('2027-02-02', null, 'NOT_HERE')]), false);
+  assert.equal(build([]), false);
+  assert.equal(build([pulled('2027-02-02')]), true);
+});
 test('buildDataset attaches exams by lecturer, falls back to course level, ignores other semesters', () => {
   const d = buildDataset(base());
   assert.equal(d.examsPublished, true);
