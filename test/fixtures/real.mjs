@@ -30,6 +30,7 @@ const gitRevParse = (ref) => git(['rev-parse', '--verify', `${ref}^{commit}`]).t
 const gitShow = (sha, path) => git(['show', `${sha}:${path}`]);
 
 // Reads and parses every file before it writes any, so a bad ref or file leaves the copy as it was.
+// A failed write (disk full) can leave it half refreshed: git checkout -- test/fixtures/real restores it.
 export function freeze(ref, { resolve = gitRevParse, show = gitShow, dir = REAL_DIR } = {}) {
   const sha = resolve(ref);
   const data = FILES.map((path) => {
@@ -48,7 +49,7 @@ export function freeze(ref, { resolve = gitRevParse, show = gitShow, dir = REAL_
   return sha;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const ref = process.argv[2];
   if (!ref) {
     console.error('usage: node test/fixtures/real.mjs <git-ref>');

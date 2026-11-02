@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import { FILES, REAL_DIR, real, freeze } from './fixtures/real.mjs';
 import { checkFile } from '../scripts/check-export.mjs';
 
@@ -77,4 +78,12 @@ test('freeze: writes every file and SOURCE', () => {
   assert.equal(readFileSync(new URL('SOURCE', dir), 'utf8'), 'abc\n');
   for (const f of FILES) assert.equal(readFileSync(new URL(f, dir), 'utf8'), '{"a":1}\n', f);
   assert.deepEqual(listed(dir), [...FILES, 'SOURCE'].sort());
+});
+
+test('real.mjs imports with no script path (node -e) without running its CLI', () => {
+  const r = spawnSync(process.execPath, ['--input-type=module', '-e', "await import('./test/fixtures/real.mjs')"], {
+    cwd: fileURLToPath(new URL('../', import.meta.url)),
+    encoding: 'utf8'
+  });
+  assert.equal(r.status, 0, r.stderr);
 });
