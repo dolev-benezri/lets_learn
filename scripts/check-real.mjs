@@ -133,8 +133,9 @@ export function checkPlan(data, state, plan, constraints = {}) {
     for (let j = i + 1; j < ms.length; j++) if (clash(ms[i], ms[j])) errs.push(`overlap: ${ms[i].id} and ${ms[j].id}`);
   for (const m of ms) for (const b of constraints.blocks ?? []) if (clash(m, b)) errs.push(`busy time: ${m.id} on day ${m.day} ${m.start}`);
   if (data.examsPublished && constraints.examsSameDay !== 'allow') {
-    const dates = plan.groups.flatMap((id) => where.get(id)?.g.exams ?? []).filter((e) => e.kind === 'בחינה' && e.moed === 1).map((e) => e.date);
-    for (const d of new Set(dates)) if (dates.indexOf(d) !== dates.lastIndexOf(d)) errs.push(`same-day exams: ${d}`);
+    const first = plan.groups.flatMap((id) => where.get(id)?.g.exams ?? []).filter((e) => e.kind === 'בחינה' && e.moed === 1);
+    const keys = constraints.examsSameDay === 'forbid' ? first.map((e) => e.date) : first.filter((e) => e.time).map((e) => `${e.date} ${e.time}`);
+    for (const d of new Set(keys)) if (keys.indexOf(d) !== keys.lastIndexOf(d)) errs.push(`same-day exams: ${d}`);
   }
   const st = oracle(data, state),
     met = recordMet(state),

@@ -16,8 +16,33 @@ export const disclaimerHtml = (url) =>
   (url
     ? DISCLAIMER.replace('יועץ לימודים', () => `<a href="${esc(url)}" target="_blank" rel="noopener">יועץ לימודים</a>`)
     : DISCLAIMER);
-// An exam's date as a student reads it: 2027-02-15 -> 15.02.2027, with the hour when it is known.
-export const examWhen = (e) => `${e.date.split('-').reverse().join('.')}${e.time ? ` ${e.time}` : ''}`;
+import { examWhen } from './solver-core.js';
+export { examWhen };
+const LEFT_OUT_SHOWN = 6;
+// The candidates a plan left out, which otherwise leave without a word: most year-list courses are optional in the search.
+export function leftOutText(list) {
+  if (!list.length) return '';
+  const line = (c) => `${c.name} (${c.credits} נ״ז)`;
+  if (list.length === 1) return `לא נכנס לחלופה הזו: ${line(list[0])}.`;
+  const total = list.reduce((a, c) => a + c.credits, 0),
+    rest = list.length - LEFT_OUT_SHOWN;
+  return `לא נכנסו לחלופה הזו ${list.length} קורסים, ${total} נ״ז: ${list.slice(0, LEFT_OUT_SHOWN).map(line).join(', ')}${rest > 0 ? ` ועוד ${rest}` : ''}.`;
+}
+// A plan's close first sittings (solver-core.js closeExams), one line each. Exam lengths are not in the data.
+export const closeExamLines = (pairs, nameOf) =>
+  pairs.map(({ days, a, b }) => {
+    const names = `${nameOf(a.course)} ו-${nameOf(b.course)}`;
+    if (days === 1) return `בחינות בימים צמודים: ${nameOf(a.course)} (${examWhen(a)}) ו-${nameOf(b.course)} (${examWhen(b)}).`;
+    const hours = a.time && b.time ? ` בשעות ${a.time} ו-${b.time}` : '';
+    return `שתי בחינות באותו יום: ${names}, ${examWhen({ date: a.date })}${hours}. משך הבחינות לא ידוע, כדאי לבדוק שאין חפיפה.`;
+  });
+// Hours outside the wished hours, from the metric, which stops counting at 10 (solver-core.js metrics).
+export function outsideHoursText(hours) {
+  if (hours < 3) return '';
+  return hours >= 10
+    ? 'במערכת הזו 10 שעות שבועיות או יותר מחוץ לשעות הרצויות.'
+    : `במערכת הזו כ-${Math.round(hours)} שעות שבועיות מחוץ לשעות הרצויות.`;
+}
 const typeName = (t) => String(t).replace('סופי-', '');
 
 // "271001601/1" -> "01/1", "270600301" -> "01": the part of a 9-digit Afeka group id a student actually recognises.

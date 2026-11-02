@@ -108,6 +108,19 @@ test('advisorHtml: a met list names no missing course (same logic as the credit 
   assert.ok(t.includes('5 מתוך 5 נ״ז') && t.includes('קורסי חובה משנים קודמות שחסרים: אין'), t);
 });
 
+test('advisor summary carries the close exam warnings of each semester', () => {
+  const pair = [{ days: 0, a: { course: 'B', date: '2027-02-05', time: '09:00' }, b: { course: 'Q', date: '2027-02-05', time: '13:00' } }];
+  const w = world();
+  const one = text(advisorHtml({ ...w, res: { ...w.res, closeExams: pair } }));
+  assert.ok(one.includes('שתי בחינות באותו יום'), one);
+  assert.ok(one.includes('05.02.2027 בשעות 09:00 ו-13:00'), one);
+  const year = text(advisorHtml({
+    ...w,
+    res: { a: { courses: ['B'], groups: ['B1'], split: [], closeExams: [] }, b: { courses: ['Q'], groups: ['Q1'], split: [], closeExams: pair }, credits: { a: 1, b: 1 }, missing: [], warnings: [] }
+  }));
+  assert.ok(year.includes('שתי בחינות באותו יום'), year);
+});
+
 test('advisor summary names a mandatory course the year plan could not place (res.missing)', () => {
   const d = mini();
   const html = advisorHtml({

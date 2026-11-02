@@ -20,8 +20,10 @@ export const PERSISTED = {
   specDraft: 'arr',
   yearIds: 'arr',
   retakeSeen: 'arr',
+  prefsV: 'int',
+  prefsNote: 'bool',
   weights: 'obj',
   constraints: 'obj'
 };
 const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
-export const SHAPE = { str: (x) => typeof x === 'string', arr: Array.isArray, obj: isObj, bool: (x) => typeof x === 'boolean' };
+export const SHAPE = { str: (x) => typeof x === 'string', arr: Array.isArray, obj: isObj, bool: (x) => typeof x === 'boolean', int: Number.isInteger };

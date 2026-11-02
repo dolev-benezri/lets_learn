@@ -96,7 +96,8 @@ function prefsPanel() {
       <label class="field">לכל היותר ימים בקמפוס <select data-chg="maxDays" data-k="maxDays">${['', 1, 2, 3, 4, 5, 6]
         .map((n) => `<option value="${n}"${(c.maxDays ?? '') === n ? ' selected' : ''}>${n || 'ללא'}</option>`)
         .join('')}</select></label>
-      <label class="check"><input type="checkbox" data-chg="examsAllow" data-k="examsAllow"${c.examsSameDay === 'allow' ? ' checked' : ''}> לאפשר 2 בחינות באותו יום</label>
+      <label class="check"><input type="checkbox" data-chg="examsForbid" data-k="examsForbid"${c.examsSameDay === 'forbid' ? ' checked' : ''}> לאסור 2 בחינות באותו יום</label>
+      <p class="hint">שתי בחינות באותו תאריך ובאותה שעה לא נכנסות בכל מקרה, כי אי אפשר לגשת לשתיהן.</p>
       <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label>
       <label class="check"><input type="checkbox" data-chg="split" data-k="split"${c.split ? ' checked' : ''}> להציג גם הרצאה ותרגול מופרדים</label></section>
     ${

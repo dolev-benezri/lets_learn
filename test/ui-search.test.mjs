@@ -99,6 +99,38 @@ test('CHG.amirnet: an out-of-range entry keeps the saved score and snaps the fie
   assert.equal(none.value, '');
 });
 
+test('the note about the new defaults: undo brings the old weights back, either answer closes it', async () => {
+  const { ACT } = await import('../web/ui-actions.js');
+  app.state = normalize({ v: 1, weights: appMod.OLD_WEIGHTS });
+  assert.equal(app.state.prefsNote, true);
+  ACT.prefsOk();
+  assert.equal(app.state.prefsNote, false);
+  assert.equal(app.state.weights.progress, 5);
+  app.state = normalize({ v: 1, weights: appMod.OLD_WEIGHTS });
+  ACT.prefsUndo();
+  assert.equal(app.state.prefsNote, false);
+  assert.deepEqual(app.state.weights, appMod.OLD_WEIGHTS);
+});
+
+test('resetting the preferences closes the note about the new defaults, so its undo cannot bring old weights back', async () => {
+  const { ACT } = await import('../web/ui-actions.js');
+  app.state = normalize({ v: 1, weights: appMod.OLD_WEIGHTS });
+  globalThis.confirm = () => true;
+  await ACT.resetPrefs();
+  delete globalThis.confirm;
+  clearTimeout(ui.timer);
+  assert.equal(app.state.prefsNote, false);
+});
+
+test('CHG.examsForbid: the student turns the date rule on and off', () => {
+  app.state = normalize({ v: 1 });
+  assert.equal(app.state.constraints.examsSameDay, 'hours');
+  CHG.examsForbid({ checked: true });
+  assert.equal(app.state.constraints.examsSameDay, 'forbid');
+  CHG.examsForbid({ checked: false });
+  assert.equal(app.state.constraints.examsSameDay, 'hours');
+});
+
 test('CHG.myName stores the trimmed name and does not ask for a new search', () => {
   app.state = normalize({ v: 1 });
   assert.equal(CHG.myName({ value: '  Dana ' }), 'save');

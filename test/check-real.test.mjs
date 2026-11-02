@@ -138,10 +138,17 @@ test('checkPlan: two first-sitting exams on one day are flagged, unless the stud
   const on = { kind: 'בחינה', moed: 1, date: '2027-02-01', time: null };
   for (const [cid, gid] of [['A', 'A1'], ['Q', 'Q1']]) d.courses[cid].groups.find((g) => g.id === gid).exams = [on];
   const plan = { courses: ['A', 'Q'], groups: ['A1', 'A1/1', 'Q1'] };
-  assert.ok(checkPlan(d, rec(), plan, {}).some((e) => /same-day exams/.test(e)));
-  assert.ok(!checkPlan(d, rec(), plan, { examsSameDay: 'allow' }).some((e) => /same-day exams/.test(e)));
+  const clash = (c) => checkPlan(d, rec(), plan, c).some((e) => /same-day exams/.test(e));
+  assert.ok(clash({ examsSameDay: 'forbid' }));
+  assert.ok(!clash({}), 'no start hour: not known to clash under the default rule');
+  on.time = '09:00';
+  assert.ok(clash({}), 'the same date and hour');
+  assert.ok(!clash({ examsSameDay: 'allow' }));
+  d.courses.Q.groups.find((g) => g.id === 'Q1').exams = [{ ...on, time: '13:00' }];
+  assert.ok(!clash({}), 'another hour is allowed');
+  assert.ok(clash({ examsSameDay: 'forbid' }));
   d.examsPublished = false;
-  assert.ok(!checkPlan(d, rec(), plan, {}).some((e) => /same-day exams/.test(e)));
+  assert.ok(!clash({ examsSameDay: 'forbid' }));
 });
 test('small cases: a shuffled course and group order gives the same set of timetables; a dropped plan is caught', () => {
   let compared = 0;
