@@ -17,6 +17,7 @@ import {
 } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { REAL_DIR } from './fixtures/real.mjs';
 import { mini } from './fixtures/mini-data.mjs';
 // Wall-clock budgets: a shared CI runner (GitHub sets CI) is 2-3x slower than a dev machine, so there the search gets 3x the time and the budgets scale with it.
 const SLACK = process.env.CI ? 3 : 1,
@@ -195,12 +196,9 @@ test('unlockCounts is transitive', () => {
 test('chainDepth is the longest קדם chain below a course', () => {
   const d = chainDepth(mini());
   assert.deepEqual([d.A, d.B, d.C, d.Q], [2, 1, 0, 0]);
-  const real = new URL('../web/data/afeka/2027-1/30-2026.json', import.meta.url);
-  if (existsSync(real)) {
-    const r = chainDepth(JSON.parse(readFileSync(real, 'utf8')));
-    assert.equal(r['90914'], 4); // was 3 before the specialization lists: 30308 and others lead on to new courses
-    assert.equal(r['30137'], 2); // was 1: a chain through a specialization course now follows
-  }
+  const r = chainDepth(JSON.parse(readFileSync(new URL('2027-1/30-2026.json', REAL_DIR), 'utf8')));
+  assert.equal(r['90914'], 4); // was 3 before the specialization lists: 30308 and others lead on to new courses
+  assert.equal(r['30137'], 2); // was 1: a chain through a specialization course now follows
 });
 
 const W0 = { friends: 0, progress: 0, freeDays: 0, compact: 0, timeWindow: 0, examSpread: 0 };
@@ -571,8 +569,9 @@ test('timeLimitMs: 0 → partial true on large search space', () => {
   if (!r.results.length) assert.match(r.diagnosis[0], /מגבלת הזמן/); // a timeout is not reported as "no solution"
 });
 
-const REAL = new URL('../web/data/afeka/2027-1/30-2026.json', import.meta.url);
-test('real data: all year-2 available courses solve in < 1s with no overlaps', { skip: !existsSync(REAL) }, () => {
+const REAL = new URL('2027-1/30-2026.json', REAL_DIR);
+const REAL2 = new URL('2027-2/30-2026.json', REAL_DIR);
+test('real data: all year-2 available courses solve in < 1s with no overlaps', () => {
   const data = JSON.parse(readFileSync(REAL, 'utf8'));
   const y1 = data.lists.find((l) => l.name.includes("שנה א'")).courses;
   const state = { passed: y1.filter((id) => id !== '90903'), failed: { 90903: 1 } };
@@ -683,7 +682,7 @@ test('unlocks and unlockCounts leave out downstream courses that are already pas
   assert.equal(unlockCounts(mini(), ['C']).A, 1);
 });
 
-test('real data: pruning keeps results identical to the exhaustive search', { skip: !existsSync(REAL) }, () => {
+test('real data: pruning keeps results identical to the exhaustive search', () => {
   const data = JSON.parse(readFileSync(REAL, 'utf8'));
   const y1 = data.lists.find((l) => l.name.includes("שנה א'")).courses;
   const y2 = data.lists.find((l) => l.name.includes("שנה ב'")).courses;
@@ -730,7 +729,6 @@ test('real data: pruning keeps results identical to the exhaustive search', { sk
 
 test(
   'real data: default state (12 optional year-2 courses) finishes without hitting the time limit',
-  { skip: !existsSync(REAL) },
   () => {
     const data = JSON.parse(readFileSync(REAL, 'utf8'));
     const y1 = data.lists.find((l) => l.name.includes("שנה א'")).courses;
@@ -944,10 +942,9 @@ for (const [key, of] of [
 
 test(
   'searchYear: with a criterion, a pair missing a must course never outranks one that misses fewer',
-  { skip: !existsSync(REAL) || !existsSync('web/data/afeka/2027-2/30-2026.json') },
   () => {
     const dataA = JSON.parse(readFileSync(REAL, 'utf8'));
-    const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
+    const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
     const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
     const y2 = dataA.lists.find((l) => l.name.includes("שנה ב'")).courses;
     const choices = Object.fromEntries(y2.map((id) => [id, 'must']));
@@ -1115,10 +1112,9 @@ test('searchYear: load preference moves credits toward the chosen semester', () 
 
 test(
   'searchYear: default state on real data finishes within 3 s',
-  { skip: !existsSync('web/data/afeka/2027-2/30-2026.json') },
   () => {
-    const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
-    const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
+    const dataA = JSON.parse(readFileSync(REAL, 'utf8'));
+    const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
     const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
     const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
     const t = Date.now();
@@ -1138,10 +1134,9 @@ test(
 
 test(
   'searchYear: default weights, no friends, first visit: not partial at the real limit (unlocks are counted only for shown plans)',
-  { skip: !existsSync('web/data/afeka/2027-2/30-2026.json') },
   () => {
-    const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
-    const dataB = JSON.parse(readFileSync('web/data/afeka/2027-2/30-2026.json', 'utf8'));
+    const dataA = JSON.parse(readFileSync(REAL, 'utf8'));
+    const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
     const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
     const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
     const r = searchYear({
@@ -1232,12 +1227,10 @@ test('synthetic: pruning with active friends sharing groups keeps results identi
   }
 });
 
-const REAL2 = 'web/data/afeka/2027-2/30-2026.json';
 test(
   'searchYear: real data with one friend on an actual alternative finishes within 3 s, not partial',
-  { skip: !existsSync(REAL2) },
   () => {
-    const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+    const dataA = JSON.parse(readFileSync(REAL, 'utf8'));
     const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
     const y1 = dataA.lists.find((l) => l.name.includes("שנה א'")).courses;
     const y2 = new Set(dataA.lists.find((l) => l.name.includes("שנה ב'")).courses);
@@ -1455,9 +1448,8 @@ test('S7 a retake offered in both semesters is placed exactly once in every plan
 
 test(
   'searchYear: 20 random real-data states each finish within 3.5 s, at most 2 partial',
-  { skip: !existsSync(REAL2) },
   () => {
-    const dataA = JSON.parse(readFileSync('web/data/afeka/2027-1/30-2026.json', 'utf8'));
+    const dataA = JSON.parse(readFileSync(REAL, 'utf8'));
     const dataB = JSON.parse(readFileSync(REAL2, 'utf8'));
     const list = (n) => dataA.lists.find((l) => l.name.includes(n)).courses;
     const y1 = list("שנה א'"),
@@ -2116,9 +2108,9 @@ test('searchAll year mode: split pairs come after regular pairs, a pair\'s split
 });
 
 test('split on: the largest real file with every offered course optional stays within its time budget', () => {
-  const dir = new URL('../web/data/afeka/2027-1/', import.meta.url);
-  const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')) : [];
-  if (!files.length) return;
+  const dir = new URL('2027-1/', REAL_DIR);
+  const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
+  assert.ok(files.length);
   const size = (d) => Object.values(d.courses ?? {}).reduce((a, c) => a + (c.groups?.length ?? 0), 0);
   const data = files
     .map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')))
@@ -2134,12 +2126,11 @@ test('split on: the largest real file with every offered course optional stays w
 });
 
 test('split on, year mode: the largest real program with every offered course optional stays within its time budget', () => {
-  const dir = (n) => new URL(`../web/data/afeka/2027-${n}/`, import.meta.url);
-  if (!existsSync(dir(1)) || !existsSync(dir(2))) return;
+  const dir = (n) => new URL(`2027-${n}/`, REAL_DIR);
   const read = (n, f) => JSON.parse(readFileSync(new URL(f, dir(n)), 'utf8'));
   const size = (d) => Object.values(d.courses ?? {}).reduce((a, c) => a + (c.groups?.length ?? 0), 0);
   const both = readdirSync(dir(1)).filter((f) => f.endsWith('.json') && existsSync(new URL(f, dir(2))));
-  if (!both.length) return;
+  assert.ok(both.length);
   const [f] = both.sort((x, y) => size(read(1, y)) + size(read(2, y)) - size(read(1, x)) - size(read(2, x)));
   const [dataA, dataB] = [read(1, f), read(2, f)];
   const choices = Object.fromEntries(
