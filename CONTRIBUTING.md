@@ -7,7 +7,7 @@
 - לפני merge: `npm test` ירוק, וסקירה.
 - קבצי האתר (`web/`) לא עוברים 160 תווים בשורה, ו-200 בשורה של מחרוזת תבנית או HTML. בדיקה אוטומטית אוכפת זאת.
 - לא מכניסים לריפו פרטים אישיים, מפתחות או סודות. הסריקה הלילית משתמשת ב-GH_PUSH_TOKEN של GitLab, שלא נשמר בקוד.
-- טעות בנתונים, באג או בקשה: [פותחים פנייה](https://github.com/dolev-benezri/lets_learn/issues/new/choose). רשימת בעיות פתוחות: [docs/ISSUES.md](docs/ISSUES.md).
+- טעות בנתונים, באג או בקשה: [פותחים פנייה](https://github.com/dolev-benezri/lets_learn/issues/new/choose), או כותבים ל-letslearn.schedule@gmail.com. רשימת בעיות פתוחות: [docs/ISSUES.md](docs/ISSUES.md).
 - הרצה ובדיקות: [docs/DEVELOPING.md](docs/DEVELOPING.md).
 
 </div>

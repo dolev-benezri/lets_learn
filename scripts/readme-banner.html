@@ -1,0 +1,34 @@
+<!doctype html>
+<!-- The README banner. scripts/readme-shots.mjs fills the placeholders and renders it at 1280x360, once per colour scheme. Colours and font come from the site. -->
+<html lang="he" dir="rtl" data-theme="{{theme}}">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+<style>
+  html, body { margin:0; padding:0; width:1280px; height:360px; overflow:hidden; background:var(--bg); }
+  .banner {
+    position:relative; width:1280px; height:360px; overflow:hidden; box-sizing:border-box;
+    background:linear-gradient(115deg, var(--primary-soft) 0%, var(--bg) 62%);
+    font-family:"Rubik", sans-serif; color:var(--text);
+  }
+  .copy { position:absolute; top:0; bottom:0; right:64px; width:680px; display:flex; flex-direction:column; justify-content:center; gap:20px; }
+  .name { display:flex; align-items:center; gap:22px; }
+  .name img { width:84px; height:84px; }
+  h1 { margin:0; font-size:88px; line-height:1; font-weight:700; letter-spacing:0; color:var(--text); }
+  p { margin:0; font-size:40px; line-height:1.25; font-weight:400; color:var(--text-2); }
+  .desk, .phone { position:absolute; display:block; border:1px solid var(--border); box-shadow:0 18px 50px rgb(15 23 42 / .22); }
+  .desk { left:-70px; top:44px; width:520px; border-radius:14px; }
+  .phone { left:330px; top:30px; width:190px; border-radius:24px; }
+</style>
+</head>
+<body>
+<div class="banner">
+  <img class="desk" src="{{desk}}" alt="">
+  <img class="phone" src="{{phone}}" alt="">
+  <div class="copy">
+    <div class="name"><img src="icon.svg" alt=""><h1>המערכת שלי</h1></div>
+    <p>כלי לא רשמי לתכנון מערכת שעות באפקה</p>
+  </div>
+</div>
+</body>
+</html>

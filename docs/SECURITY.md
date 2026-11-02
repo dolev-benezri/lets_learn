@@ -81,7 +81,7 @@ style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri '
 
 - ב-[issues של הריפו](https://github.com/dolev-benezri/lets_learn/issues/new/choose), אם אין בדיווח פרטים שמסכנים משתמשים.
 - דיווח רגיש: בלשונית Security של הריפו, "Report a vulnerability", **אם האפשרות מופעלת** (`private vulnerability reporting`; לא נבדק מתוך הקוד, אין לו קובץ ב-`.github/`).
-- אחרת: `<כתובת התמיכה>`.
+- אחרת: letslearn.schedule@gmail.com.
 
 מה שעוזר לנו: מה עשיתם, באיזה דפדפן, ומה ציפיתם לראות. אל תצרפו נתונים אישיים של סטודנטים.
 
