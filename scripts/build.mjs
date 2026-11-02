@@ -70,7 +70,7 @@ export function buildDataset({
     };
     const unmatched = [];
     for (const row of rows) {
-      const hits = prim.filter((g) => normLecturer(g.lecturer) === normLecturer(row.lecturer));
+      const hits = row.lecturer == null ? [] : prim.filter((g) => normLecturer(g.lecturer) === normLecturer(row.lecturer));
       if (hits.length) hits.forEach((g) => add(g, row));
       else unmatched.push(row);
     }
@@ -86,7 +86,7 @@ export function buildDataset({
     startYear,
     program,
     semester,
-    examsPublished: semExams.length > 0,
+    examsPublished: Object.values(courses).some((c) => c.groups.some((g) => g.exams.length)),
     lists: lists.map((l) => ({
       code: l.code,
       name: l.name,

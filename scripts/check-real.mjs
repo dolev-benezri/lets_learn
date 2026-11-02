@@ -132,6 +132,10 @@ export function checkPlan(data, state, plan, constraints = {}) {
   for (let i = 0; i < ms.length; i++)
     for (let j = i + 1; j < ms.length; j++) if (clash(ms[i], ms[j])) errs.push(`overlap: ${ms[i].id} and ${ms[j].id}`);
   for (const m of ms) for (const b of constraints.blocks ?? []) if (clash(m, b)) errs.push(`busy time: ${m.id} on day ${m.day} ${m.start}`);
+  if (data.examsPublished && constraints.examsSameDay !== 'allow') {
+    const dates = plan.groups.flatMap((id) => where.get(id)?.g.exams ?? []).filter((e) => e.kind === 'בחינה' && e.moed === 1).map((e) => e.date);
+    for (const d of new Set(dates)) if (dates.indexOf(d) !== dates.lastIndexOf(d)) errs.push(`same-day exams: ${d}`);
+  }
   const st = oracle(data, state),
     met = recordMet(state),
     inPlan = new Set(plan.courses);
@@ -217,6 +221,8 @@ const candidates = (data, statuses, yearList) =>
     .filter((c) => c.mode === 'must' || c.mode === 'optional');
 const run = (data, statuses, courses, constraints, timeLimitMs, solve = search) =>
   solve({ data, courses, statuses, constraints, weights: DEFAULT.weights, friends: [], topK: 5, timeLimitMs });
+// A search that was cut off and found nothing proves nothing, so only a complete one counts as "no plan".
+const noPlan = (r) => !r.results.length && !r.partial;
 
 // Every check for one semester file: classify against the oracle, a pass never blocks, each plan against the record, and the
 // metamorphic relations on the best plan. Returns failure lines (file, scenario, seed, ids).
@@ -240,12 +246,12 @@ export function checkFile(file, data, { scenarios: only = null, seed = 1, timeLi
     if (!courses.length) continue;
     const r = run(data, st, courses, C, timeLimitMs, solve);
     for (const p of r.results) out.push(...checkPlan(data, state, p, C).map((e) => `${at}: ${e}`));
-    const loose = { ...C, includeFull: true, blocks: [], maxCredits: null, maxDays: null, dayOffHard: false, windowHard: false };
+    const loose = { ...C, includeFull: true, blocks: [], maxCredits: null, maxDays: null, dayOffHard: false, windowHard: false, examsSameDay: 'allow' };
     if (!r.results.length) {
       if (!r.diagnosis?.length) out.push(`${at}: no plan and no reason given`);
       // a complete "no plan" is checked: relaxed together the constraints give a plan, or the courses really cannot fit. A cut-off
       // search says it could not tell.
-      if (!r.partial && !run(data, st, courses, loose, timeLimitMs, solve).results.length && fits(data, courses, st))
+      if (!r.partial && noPlan(run(data, st, courses, loose, timeLimitMs, solve)) && fits(data, courses, st))
         out.push(`${at}: no plan, but brute force finds one`);
       continue;
     }
@@ -262,14 +268,14 @@ export function checkFile(file, data, { scenarios: only = null, seed = 1, timeLi
       courses: Object.fromEntries(Object.entries(data.courses).reverse().map(([id, c]) => [id, { ...c, groups: [...c.groups].reverse() }]))
     };
     const rs = run(shuffled, st, [...courses].reverse(), C, timeLimitMs, solve);
-    if (!rs.results.length) out.push(`${at}: shuffled order finds no plan`);
-    else {
+    if (noPlan(rs)) out.push(`${at}: shuffled order finds no plan`);
+    else if (rs.results.length) {
       out.push(...checkPlan(shuffled, state, rs.results[0], C).map((e) => `${at} shuffled: ${e}`));
       if (!r.partial && !rs.partial && Math.abs(rs.results[0].score - best.score) > 1e-6)
         out.push(`${at}: shuffled order changes the best score ${best.score} -> ${rs.results[0].score}`);
     }
     // relaxing constraints never loses the last plan (feasibility only: relaxing changes what the score weighs)
-    if (!run(data, st, courses, loose, timeLimitMs, solve).results.length) out.push(`${at}: relaxing the constraints loses every plan`);
+    if (noPlan(run(data, st, courses, loose, timeLimitMs, solve))) out.push(`${at}: relaxing the constraints loses every plan`);
   }
   return out;
 }

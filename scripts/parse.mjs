@@ -122,6 +122,18 @@ export function parseExams(html) {
     }));
 }
 
+// S_CourseDetails: the exam dates of one group, one row per kind. Only the block under the label: a course summary can hold any text.
+export function parseCourseExams(html) {
+  const label = parse(html).querySelectorAll('strong').find((s) => s.text.includes('תאריך בחינה'));
+  const rows = new Map();
+  for (const [, moed, kindText, d, t] of clean(label?.parentNode.text ?? '').matchAll(/מועד (\d)\s*:\s*(\D*?)\s*(\d{2}\/\d{2}\/\d{4})(?:\s+(\d{2}:\d{2}))?/g)) {
+    const kind = kindText.startsWith('בוחן') ? 'בוחן אמצע' : 'בחינה';
+    if (!rows.has(kind)) rows.set(kind, []);
+    rows.get(kind).push({ moed: Number(moed), date: toIsoDate(d), time: !t || EMPTY_TIME.test(t) ? null : t });
+  }
+  return [...rows].map(([kind, moeds]) => ({ kind, moeds }));
+}
+
 // JSON Action=700: the tracks of one department in one cohort year.
 export const parseTracks = (text) =>
   (JSON.parse(text).Answer ?? []).map((t) => ({ code: Number(t.Code), name: clean(t.Name) }));

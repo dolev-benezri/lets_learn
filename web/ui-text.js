@@ -16,6 +16,8 @@ export const disclaimerHtml = (url) =>
   (url
     ? DISCLAIMER.replace('יועץ לימודים', () => `<a href="${esc(url)}" target="_blank" rel="noopener">יועץ לימודים</a>`)
     : DISCLAIMER);
+// An exam's date as a student reads it: 2027-02-15 -> 15.02.2027, with the hour when it is known.
+export const examWhen = (e) => `${e.date.split('-').reverse().join('.')}${e.time ? ` ${e.time}` : ''}`;
 const typeName = (t) => String(t).replace('סופי-', '');
 
 // "271001601/1" -> "01/1", "270600301" -> "01": the part of a 9-digit Afeka group id a student actually recognises.

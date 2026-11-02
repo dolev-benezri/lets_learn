@@ -9,6 +9,7 @@ import {
   semestersIn,
   writeResults,
   run,
+  loadPulledExams,
   unitsOf,
   cachedRequester,
   writeCatalog,
@@ -283,6 +284,37 @@ test('run: lists, department, anchor and specializations come from the program c
     run({ opt: { ...opt, program: '78' }, request, programs, dataDir: root, log: () => {} }),
     /no list codes configured for program 78/
   );
+});
+
+test('run passes the pulled exam rows to the build; a year with no file has none', async () => {
+  const root = join(dirs().status, '..'),
+    real = site();
+  const request = async (query, form) => (form?.PRGNAME === 'S_EXAMS' ? '<p>לא נמצאו נתונים</p>' : real(query, form));
+  const programs = {
+    77: {
+      name: 'x',
+      dept: 8,
+      deptName: 'ח',
+      lists: [30001],
+      specializations: [],
+      degree: { total: 100, specCredits: 0 },
+      anchor: { course: '90903', name: 'p', minPrimaryGroups: 1 }
+    }
+  };
+  const moeds = [{ moed: 1, date: '2027-02-04', time: '09:00' }];
+  await run({
+    opt: { ...opt, program: '77' },
+    request,
+    programs,
+    dataDir: root,
+    log: () => {},
+    check: () => ({ errors: [], warnings: [] }),
+    pulledExams: [{ semester: 'א', courseId: '90903', lecturer: null, kind: 'בחינה', moeds }]
+  });
+  const written = JSON.parse(readFileSync(join(root, '2027-1', '77-2026.json'), 'utf8'));
+  assert.equal(written.examsPublished, true);
+  assert.equal(written.courses['90903'].groups.find((x) => x.primary).exams[0].date, '2027-02-04');
+  assert.deepEqual(await loadPulledExams(2099), []);
 });
 
 test('every committed data file carries the specializations, their lists and the degree', () => {

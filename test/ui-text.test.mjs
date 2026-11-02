@@ -13,6 +13,7 @@ import {
   creditsGoal,
   notFitReason,
   partialNote,
+  examWhen,
   DISCLAIMER,
   disclaimerHtml,
   esc,
@@ -135,6 +136,10 @@ test('notFitReason: lines naming the course, else the general ones, else nothing
   assert.equal(notFitReason('לינארית', ['פיזיקה: אין קבוצה'], names), '');
 });
 
+test('examWhen: day.month.year, with the hour when it is known', () => {
+  assert.equal(examWhen({ date: '2027-02-15', time: '09:00' }), '15.02.2027 09:00');
+  assert.equal(examWhen({ date: '2027-02-05', time: null }), '05.02.2027');
+});
 test('partialNote: offers "חפש עוד" below the cap, explains instead at the cap', () => {
   const a = partialNote(1500, 12000);
   assert.equal(a.more, true);

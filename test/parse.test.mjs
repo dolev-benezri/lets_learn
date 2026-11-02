@@ -7,6 +7,7 @@ import {
   parseDay,
   parseDetails,
   parseExams,
+  parseCourseExams,
   toIsoDate,
   isRejected,
   isThrottled
@@ -147,6 +148,29 @@ test('parseExams reads exam rows with moeds', () => {
   assert.ok(mid.moeds.length >= 1);
 });
 
+test('parseCourseExams reads the moeds of a course page', () => {
+  assert.deepEqual(parseCourseExams(fx('details-exams.html')), [{
+    kind: 'בחינה',
+    moeds: [{ moed: 1, date: '2027-01-27', time: '13:00' }, { moed: 2, date: '2027-02-17', time: '17:00' }]
+  }]);
+});
+test('parseCourseExams: no label, or a label with no moed, is no exam', () => {
+  assert.deepEqual(parseCourseExams(fx('details-90903.html')), []);
+  assert.deepEqual(parseCourseExams('<article>נקודות זכות : 3</article>'), []);
+  assert.deepEqual(parseCourseExams('<div><strong> תאריך בחינה : </strong><br></div>'), []);
+});
+test('parseCourseExams: a quiz row is its own kind, and a moed may have no time', () => {
+  const r = parseCourseExams('<div><strong> תאריך בחינה : </strong><br> מועד 1 : בוחן אמצע 10/12/2026 09:00<br> מועד 1 : בחינה 27/01/2027<br> מועד 2 : בחינה 17/02/2027 00:00</div>');
+  assert.deepEqual(r, [
+    { kind: 'בוחן אמצע', moeds: [{ moed: 1, date: '2026-12-10', time: '09:00' }] },
+    { kind: 'בחינה', moeds: [{ moed: 1, date: '2027-01-27', time: null }, { moed: 2, date: '2027-02-17', time: null }] }
+  ]);
+});
+test('parseCourseExams: a sentence in the summary that looks like a moed is not an exam', () => {
+  const page = '<article><div><strong> תאריך בחינה : </strong><br> מועד 1 : בחינה 27/01/2027 13:00</div></article>'
+    + '<article><h1><u>תקציר: </u></h1><div>מועד 2 : בחינה 01/01/2020 08:00</div></article>';
+  assert.deepEqual(parseCourseExams(page)[0].moeds, [{ moed: 1, date: '2027-01-27', time: '13:00' }]);
+});
 test('parseExams returns [] on the no-data page', () => {
   const nodata = '<div class="alert">עימכם הסליחה אבל לא נמצאו נתונים</div>';
   assert.deepEqual(parseExams(nodata), []);

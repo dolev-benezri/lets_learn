@@ -540,6 +540,28 @@ test('lecturer buttons only on a primary group: a tutorial’s lecturer is not f
   assert.ok(!writes.filter((w) => w.scope === 'pop-sub').some((w) => w.html.includes('data-act="lecturer"')));
 });
 
+test('the course popover shows an exam as a date and an hour', () => {
+  const res = current(),
+    r = res.a ?? res,
+    gid = [...r.groups][0],
+    data = structuredClone(app.sem['א']);
+  data.examsPublished = true;
+  const g = Object.values(data.courses).flatMap((c) => c.groups).find((x) => x.id === gid);
+  g.exams = [{ kind: 'בחינה', moed: 1, date: '2027-02-15', time: '09:00' }, { kind: 'בחינה', moed: 2, date: '2027-03-08', time: null }];
+  run('pop-exam', () =>
+    openPop(
+      {
+        dataset: { gid },
+        getBoundingClientRect: () => ({ top: 0, left: 0, width: 10, height: 10, bottom: 10, right: 10 })
+      },
+      { data, res: r, includeFull: false, pins: [], friends: [], colors: new Map(), lecturers: {} }
+    )
+  );
+  const html = writes.filter((w) => w.scope === 'pop-exam').map((w) => w.html).join('');
+  assert.ok(html.includes('מועד 1: <bdi dir="ltr">15.02.2027 09:00</bdi>'), html.slice(0, 200));
+  assert.ok(html.includes('מועד 2: <bdi dir="ltr">08.03.2027</bdi>'));
+});
+
 test('the plans step offers show-by with the four criteria', () => {
   const html = writes
     .filter((w) => w.scope === 'view')
@@ -911,6 +933,31 @@ test('a split alternative says so: the note on top of the week, the course names
   ui.last = { ...ui.last, results: real };
   renderView();
   assert.ok(!els.altLabel.textContent.includes('מופרדת') && !els.week.innerHTML.includes('הפרדת הרצאה ותרגול'));
+});
+
+test('the registration list shows an exam as a date and an hour', () => {
+  const real = ui.last.results,
+    r = real[0],
+    course = resCourses(r)[0],
+    published = app.data.examsPublished,
+    exam = { course, kind: 'בחינה', moed: 1, date: '2027-02-15', time: '09:00' };
+  ui.last = {
+    ...ui.last,
+    results: [r.a ? { ...r, a: { ...r.a, exams: [exam] }, b: r.b && { ...r.b, exams: [] } } : { ...r, exams: [exam] }, ...real.slice(1)]
+  };
+  app.data.examsPublished = true;
+  try {
+    const n = writes.length;
+    run('reg-exam', () => {
+      ui.panel = 'reg';
+      renderDrawer();
+    });
+    const html = writes.slice(n).filter((w) => w.scope === 'reg-exam').map((w) => w.html).join('');
+    assert.ok(html.includes('<bdi dir="ltr">15.02.2027 09:00</bdi>'));
+  } finally {
+    ui.last = { ...ui.last, results: real };
+    app.data.examsPublished = published;
+  }
 });
 
 test('a split course is marked in the registration list and in the copied text: "מופרד · דורש אישור ההכוון" (a pair marks the semester it is in)', () => {
