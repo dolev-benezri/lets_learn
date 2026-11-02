@@ -108,6 +108,7 @@ const until = async (expr, ms = 30000) => {
   }
   return false;
 };
+process.on('exit', () => chrome.kill()); // a failed run must not leave its browser behind
 await send('Page.enable');
 await send('Runtime.enable');
 
@@ -225,6 +226,13 @@ for (const dark of process.argv[2] === 'extras' ? [] : [false, true]) {
   await sleep(500);
   await shot(`04-friends-phone${d}`);
 }
+// Like evaluate, but a page error stops the run: a broken banner or demo must not be saved as if it worked.
+const act = async (expression) => {
+  const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
+  if (r.error || r.result?.exceptionDetails) throw new Error(`page error in: ${expression.slice(0, 80)}`);
+  return r.result?.result?.value;
+};
+
 // The banner, with the screenshots above inside it.
 async function banner(dark) {
   const d = dark ? '-dark' : '';
@@ -237,7 +245,8 @@ async function banner(dark) {
   await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 360, deviceScaleFactor: 2, mobile: false });
   await send('Page.navigate', { url: BASE + 'settings.json' }); // a real page of this origin without the site's CSP, so style.css and the icon resolve
   await sleep(300);
-  await evaluate(`document.open(); document.write(${JSON.stringify(html)}); document.close(); document.fonts.ready.then(() => true)`);
+  await act(`document.open(); document.write(${JSON.stringify(html)}); document.close(); document.fonts.ready.then(() => true)`);
+  if (!await until(`document.querySelector('.name img')?.naturalWidth > 0 && getComputedStyle(document.documentElement).getPropertyValue('--primary') !== ''`)) throw new Error('the banner did not load the site styles');
   await sleep(800);
   const r = await send('Page.captureScreenshot', { format: 'webp', quality: 90 });
   await writeFile(path.join(OUT, `banner${d}.webp`), Buffer.from(r.result.data, 'base64'));
@@ -272,7 +281,7 @@ async function demo(dark) {
     }
   })();
   const tap = async (expr, hold) => {
-    await evaluate(`tap(${expr})`);
+    await act(`tap(${expr})`);
     await sleep(hold);
   };
   await sleep(1300);
@@ -287,7 +296,7 @@ async function demo(dark) {
   await tap(`document.getElementById('next')`, 1200);
   await tap(`document.querySelector('#daysel [data-day="3"]')`, 1300);
   await tap(`document.querySelector('[data-act="openMap"]')`, 300);
-  await until(`!!document.querySelector('dialog[open]')`);
+  if (!await until(`!!document.querySelector('dialog[open]')`)) throw new Error('the map did not open in the demo');
   await sleep(1500);
   recording = false;
   await recorder;
@@ -303,8 +312,10 @@ async function demo(dark) {
   await writeFile(path.join(dir, 'list.txt'), list.join('\n'));
   const out = path.join(OUT, `demo${d}.gif`);
   const vf = 'fps=10,scale=420:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle';
-  const run = spawnSync(FFMPEG, ['-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', path.join(dir, 'list.txt'), '-vf', vf, '-loop', '0', out], { encoding: 'utf8' });
+  const made = path.join(dir, 'demo.gif'); // written beside the frames, so a failed run leaves the old GIF whole
+  const run = spawnSync(FFMPEG, ['-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', path.join(dir, 'list.txt'), '-vf', vf, '-loop', '0', made], { encoding: 'utf8' });
   if (run.status !== 0) throw new Error(`ffmpeg: ${run.error ?? run.stderr}`);
+  await writeFile(out, await readFile(made));
   await rm(dir, { recursive: true, force: true });
   console.log('ok', `demo${d}`, frames.length, 'frames', Math.round((await stat(out)).size / 1024), 'KB');
 }
