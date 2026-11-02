@@ -13,7 +13,8 @@ import {
   clearSaved,
   setUiReset,
   summerScope,
-  DEFAULT
+  DEFAULT,
+  OLD_WEIGHTS
 } from './app.js';
 import { setStatus, cleanProfile, specRule, classify } from './rules.js';
 import { friendLink, backupLink } from './share.js';
@@ -338,6 +339,15 @@ export const ACT = {
     history.replaceState(null, '', location.pathname); // no hash: the reload is a first visit again
     location.reload();
   },
+  prefsOk() {
+    app.state.prefsNote = false;
+    refresh();
+  },
+  prefsUndo() {
+    app.state.weights = structuredClone(OLD_WEIGHTS);
+    app.state.prefsNote = false;
+    refresh();
+  },
   async resetPrefs() {
     if (!await askConfirm('לאפס את ההעדפות לברירת המחדל?', { ok: 'אפס', cancel: 'ביטול' })) return;
     app.state.weights = structuredClone(DEFAULT.weights);
@@ -540,8 +550,8 @@ export const CHG = {
   winHard: (el) => {
     app.state.constraints.windowHard = el.value === 'hard';
   },
-  examsAllow: (el) => {
-    app.state.constraints.examsSameDay = el.checked ? 'allow' : 'forbid';
+  examsForbid: (el) => {
+    app.state.constraints.examsSameDay = el.checked ? 'forbid' : 'hours';
   },
   includeFull: (el) => {
     app.state.constraints.includeFull = el.checked;

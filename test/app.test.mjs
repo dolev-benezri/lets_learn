@@ -57,17 +57,61 @@ test('normalize: bad friends, failed and choices dropped', () => {
   assert.deepEqual(s.friends, [{ name: 'ok', groups: ['g1'], weight: 3, active: true }]);
 });
 
+const OLD_WEIGHTS = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 };
+
+test('the defaults: courses first, a friend is a nudge, only the same exam hour is refused', () => {
+  assert.deepEqual(D.weights, { friends: 1, progress: 5, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 });
+  assert.equal(D.constraints.examsSameDay, 'hours');
+  assert.equal(D.prefsV, 2);
+  assert.equal(D.prefsNote, false);
+});
+
+test('normalize: a save on the exact old default weights moves to the new ones once, and says so', () => {
+  const s = normalize({ v: 1, weights: OLD_WEIGHTS });
+  assert.deepEqual(s.weights, D.weights);
+  assert.equal(s.prefsNote, true);
+  assert.equal(s.prefsV, 2);
+  const again = normalize(JSON.parse(JSON.stringify({ ...s, weights: OLD_WEIGHTS, prefsNote: false })));
+  assert.deepEqual(again.weights, OLD_WEIGHTS, 'undo sticks: the move happens once');
+  assert.equal(again.prefsNote, false);
+});
+
+test('normalize: weights the student changed stay, with no note', () => {
+  const mine = { ...OLD_WEIGHTS, freeDays: 3 };
+  const s = normalize({ v: 1, weights: mine });
+  assert.deepEqual(s.weights, mine);
+  assert.equal(s.prefsNote, false);
+});
+
+test('normalize: a first visit has the new defaults and no note', () => {
+  const s = normalize(null);
+  assert.deepEqual(s.weights, D.weights);
+  assert.equal(s.prefsNote, false);
+  assert.equal(normalize({ v: 1 }).prefsNote, false, 'a save with no weights never had the old ones');
+});
+
+test('normalize: the same-day setting of an old save is not a choice, a new one is', () => {
+  for (const v of ['forbid', 'allow']) assert.equal(normalize({ v: 1, constraints: { examsSameDay: v } }).constraints.examsSameDay, 'hours');
+  assert.equal(normalize({ v: 1, prefsV: 2, constraints: { examsSameDay: 'forbid' } }).constraints.examsSameDay, 'forbid');
+  assert.equal(normalize({ v: 1, prefsV: 2, constraints: { examsSameDay: 'allow' } }).constraints.examsSameDay, 'hours');
+});
+
+test('normalize: an unread note stays over a reload', () => {
+  assert.equal(normalize({ v: 1, prefsV: 2, prefsNote: true }).prefsNote, true);
+});
+
 test('normalize: valid constraints and friends round-trip', () => {
   const s = normalize({
     v: 1,
-    constraints: { dayOff: [2, 5], notBefore: '09:00', maxCredits: 20, examsSameDay: 'allow' },
+    prefsV: 2,
+    constraints: { dayOff: [2, 5], notBefore: '09:00', maxCredits: 20, examsSameDay: 'forbid' },
     friends: [{ name: 'x', groups: ['a'], weight: 0.5, active: false }],
     passed: ['1', '2'],
     pins: ['p']
   });
   assert.deepEqual(
     [s.constraints.dayOff, s.constraints.notBefore, s.constraints.maxCredits, s.constraints.examsSameDay],
-    [[2, 5], '09:00', 20, 'allow']
+    [[2, 5], '09:00', 20, 'forbid']
   );
   assert.deepEqual(s.friends, [{ name: 'x', groups: ['a'], weight: 0.5, active: false }]);
   assert.deepEqual([s.passed, s.pins], [['1', '2'], ['p']]);

@@ -176,6 +176,8 @@ const EMPTY = {
   alts: {},
   unlocks: 0,
   explanation: '',
+  closeExams: [],
+  examGap: null,
   breakdown: { compact: 1, progress: 0 }
 };
 export const semResult = (r, sem) => {
@@ -201,7 +203,7 @@ export function hourRange(meetings) {
   };
 }
 
-// Summary pills for one alternative: credits and free days from its groups, gaps from breakdown, exam gap from explanation.
+// Summary pills for one alternative: credits and free days from its groups, gaps from breakdown.
 export function summary(res, data, friends, constraints = {}) {
   const byId = groupIndex(data);
   const busy = new Set(res.groups.flatMap((g) => byId.get(g)?.g.meetings.map((m) => m.day) ?? []));
@@ -218,9 +220,7 @@ export function summary(res, data, friends, constraints = {}) {
         ).length,
       }))
       .filter((x) => x.n),
-    examGap:
-      res.explanation.match(/לפחות (\S+) ימים בין בחינות/)?.[1] ??
-      (res.explanation.includes('לפחות יום אחד בין בחינות') ? '1' : null),
+    examGap: res.examGap ?? null,
   };
 }
 

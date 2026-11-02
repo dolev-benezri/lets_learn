@@ -10,7 +10,8 @@ import {
   summerOn,
   summerScope,
   waitingOnEarlier,
-  planningCls
+  planningCls,
+  summerPinned
 } from './app.js';
 import { progress, studyYear } from './rules.js';
 import { approvedOn } from './settings.js';
@@ -47,7 +48,10 @@ import {
   compareAlts,
   disclaimerHtml,
   SPLIT_NOTE,
-  splitLine
+  splitLine,
+  leftOutText,
+  closeExamLines,
+  outsideHoursText
 } from './ui-text.js';
 import {
   SCOPE,
@@ -208,6 +212,12 @@ export function renderView() {
   $('semnote').innerHTML =
     (app.semNotice ? note('info', app.semNotice) : '') +
     (summerNote ? note('info', summerNote) : '') +
+    (state.prefsNote
+      ? `<p class="notice asks">${icon('info')}<span>עדכנו את ברירות המחדל של החיפוש: התקדמות בתואר קיבלה יותר משקל וחברים פחות,
+        כדי שקורסים לא ייעלמו מהמערכת. אפשר לשנות ב<a href="#prefs">העדפות</a>.</span>
+        <button type="button" class="btn" data-act="prefsOk" data-k="prefsOk">הבנתי</button>
+        <button type="button" class="btn" data-act="prefsUndo" data-k="prefsUndo">להחזיר את הקודם</button></p>`
+      : '') +
     (pair ? raw.warnings.map((w) => note('info', w)).join('') : '') +
     (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
@@ -277,9 +287,11 @@ export function renderView() {
           : 'בלי חלונות';
     const exams = !data.examsPublished
       ? 'לוח הבחינות טרם פורסם'
-      : s.examGap
-        ? `לפחות ${esc(count(Number(s.examGap), 'יום אחד', 'ימים'))} בין בחינות`
-        : 'פער בין בחינות: לא ידוע';
+      : s.examGap === 0
+        ? 'בחינות באותו יום'
+        : s.examGap
+          ? `לפחות ${esc(count(s.examGap, 'יום אחד', 'ימים'))} בין בחינות`
+          : 'פער בין בחינות: לא ידוע';
     // raw: escaped once in the pill, the live region is text
     const fr = s.withFriends.map((f) => (f.n === 1 ? `קורס אחד עם ${f.name}` : `${f.n} קורסים עם ${f.name}`));
     const yt = pair ? yearTotals(raw) : null;
@@ -308,6 +320,18 @@ export function renderView() {
     if (split.length)
       // not in the phone's swipe row: it wraps
       msg = note('alert', SPLIT_NOTE) + `<p class="split-line">${esc(splitLine(split.map(nameOf)))}</p>` + msg;
+    const inSummer = summerPinned(),
+      planHas = new Set(resCourses(raw)),
+      leftOut = Object.keys(app.data.courses)
+        .filter((id) => ['must', 'optional'].includes(candidateMode(id)) && !inSummer.has(id) && !planHas.has(id) && !raw.missing?.includes(id))
+        .map((id) => ({ name: app.data.courses[id].name, credits: app.data.courses[id].credits }));
+    const outsideH = outsideHoursText((1 - (res.breakdown.timeWindow ?? 1)) * 10);
+    msg +=
+      (leftOut.length ? note('info', leftOutText(leftOut) + (pair ? ' זו החלופה הטובה ביותר שנמצאה, לא בהכרח היחידה.' : '')) : '') +
+      closeExamLines(res.closeExams ?? [], nameOf).map((t) => note('alert', t)).join('') +
+      (outsideH && !state.constraints.windowHard
+        ? `<p class="notice">${icon('clock')}<span>${outsideH} אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.</span></p>`
+        : '');
     // what this alternative changes against the first one (§14ז)
     const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null;
     const vs = best

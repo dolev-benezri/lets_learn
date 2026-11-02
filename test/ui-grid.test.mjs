@@ -63,7 +63,7 @@ test('summary: credits, free days, gaps, friends and exam gap of one alternative
     courses: ['A', 'B'],
     groups: ['a1', 'a1/1', 'b1'],
     breakdown: { compact: 0.85 },
-    explanation: 'x · לפחות 3 ימים בין בחינות'
+    examGap: 3
   };
   const friends = [
     { name: 'נועה', groups: ['b1'], active: true },
@@ -75,9 +75,9 @@ test('summary: credits, free days, gaps, friends and exam gap of one alternative
     freeDays: [4, 5],
     gapH: 1.5,
     withFriends: [{ name: 'נועה', n: 1 }],
-    examGap: '3'
+    examGap: 3
   });
-  assert.equal(summary({ ...res, explanation: 'בלי חלונות' }, data, []).examGap, null);
+  assert.equal(summary({ ...res, examGap: null }, data, []).examGap, null);
 });
 
 test('initials: two first letters, safe on empty names', () => {
@@ -331,15 +331,16 @@ test('renderWeek: a busy block is a non-interactive div with escaped label and s
   assert.ok(!/<button[^>]*class="off/.test(html));
 });
 
-test('summary reads a one-day exam gap ("לפחות יום אחד") as "1"', () => {
+test('summary keeps a same-day exam gap of 0, and a plan with no exam data has none', () => {
   const data = { courses: { A: { credits: 3, groups: [{ id: 'a1', meetings: [m(1, '08:00', '10:00')] }] } } };
   const res = {
     courses: ['A'],
     groups: ['a1'],
     breakdown: { compact: 1 },
-    explanation: 'בלי חלונות · לפחות יום אחד בין בחינות'
+    examGap: 0
   };
-  assert.equal(summary(res, data, []).examGap, '1');
+  assert.equal(summary(res, data, []).examGap, 0);
+  assert.equal(summary({ ...res, examGap: undefined }, data, []).examGap, null);
 });
 
 test('summary lists Friday as free when the student wished it off', () => {

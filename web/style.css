@@ -1124,6 +1124,8 @@ details[open] > summary::after { transform:rotate(-135deg); }
 .fr-empty .icon { width:24px; height:24px; margin-bottom:4px; }
 .fr-empty b { color:var(--text); font-weight:600; }
 #semnote .notice { margin:0 0 12px; }
+.notice.asks { flex-wrap:wrap; }
+.notice.asks > span { flex:1 1 100%; }
 .course > .seg { margin-top:6px; }
 .reg-sem { margin:12px 0 0; font-size:14px; font-weight:600; }
 .reglist { display:grid; gap:8px; margin:12px 0; }

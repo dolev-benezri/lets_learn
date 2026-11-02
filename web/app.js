@@ -45,7 +45,9 @@ export const DEFAULT = {
   // UI leftovers worth keeping over a refresh: a half-made specialization pick, and the year plan the summer tab builds on
   yearIds: [],
   retakeSeen: [], // failed courses whose "take it again" note was shown (rules.js retakeNotice)
-  weights: { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
+  prefsV: 2, // 2: the weights and exam rule of 2026-11-02 (normalize moves older saves once)
+  prefsNote: false, // the move happened and the student has not answered the note yet
+  weights: { friends: 1, progress: 5, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 },
   constraints: {
     dayOff: [6],
     dayOffHard: false,
@@ -54,7 +56,7 @@ export const DEFAULT = {
     windowHard: false,
     maxCredits: null,
     maxDays: null,
-    examsSameDay: 'forbid',
+    examsSameDay: 'hours', // the same date and hour is always refused; 'forbid': no two exams on a date, the student's choice
     includeFull: false,
     split: false,
     blocks: [],
@@ -118,8 +120,12 @@ const CONSTRAINT_OK = {
   notAfter: (v) => v === '' || (typeof v === 'string' && HHMM.test(v)),
   maxCredits: (v) => v === null || (num(v) && v >= 0),
   maxDays: (v) => v === null || (Number.isInteger(v) && v >= 1 && v <= 6),
-  examsSameDay: (v) => v === 'forbid' || v === 'allow',
+  examsSameDay: (v) => v === 'hours' || v === 'forbid',
 };
+
+// The default weights before prefsV 2. A save holding exactly these never chose them, as far as anyone can tell.
+export const OLD_WEIGHTS = { friends: 3, progress: 3, freeDays: 1, compact: 1, timeWindow: 1, examSpread: 1 };
+const sameWeights = (a, b) => Object.keys(b).every((k) => a?.[k] === b[k]) && Object.keys(a ?? {}).length === Object.keys(b).length;
 
 // The one gate for state from localStorage and from backup links: only valid values get through.
 // year/semester are never taken from input (the year is the catalog's); program/startYear only when the catalog lists
@@ -204,6 +210,15 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   if (isObj(raw.constraints))
     for (const k of Object.keys(CONSTRAINT_OK))
       if (CONSTRAINT_OK[k](raw.constraints[k])) out.constraints[k] = raw.constraints[k];
+  // Saves from before prefsV 2: 'forbid' was only the default and no exam data existed, so it was nobody's choice.
+  if (raw.prefsV === 2) out.prefsNote = raw.prefsNote === true;
+  else {
+    out.constraints.examsSameDay = DEFAULT.constraints.examsSameDay;
+    if (sameWeights(raw.weights, OLD_WEIGHTS)) {
+      out.weights = structuredClone(DEFAULT.weights);
+      out.prefsNote = true;
+    }
+  }
   // "לא לפני" at or after "לא אחרי" leaves no allowed minute: the later bound stays (HH:MM strings compare as times)
   const { notBefore: nb, notAfter: na } = out.constraints;
   if (nb && na && nb >= na) out.constraints.notBefore = '';
@@ -521,7 +536,7 @@ function setSemesters(sem) {
 }
 
 // The personal part of the state (who you are, how you plan) survives a program change; what you passed does not.
-const PERSONAL = ['name', 'friends', 'weights', 'constraints', 'load', 'sortBy', 'programSet'];
+const PERSONAL = ['name', 'friends', 'weights', 'prefsNote', 'constraints', 'load', 'sortBy', 'programSet'];
 // What the student did in the program: kept over a cohort switch of the same program (switchTo), passed apart
 const RECORD = ['failed', 'grades', 'exempt', 'outsideDone', 'choices', 'retakeSeen', 'specDraft'];
 const withPersonal = (to, from) => {

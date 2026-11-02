@@ -281,7 +281,7 @@ test('backup round trip keeps every persisted field; every saved field is in the
     name: 'דנה', passed: ['10016'], failed: { 10016: 1 }, grades: { 10016: 80 }, exempt: ['10016'], outsideDone: ['x'],
     choices: { 10016: 'must' }, friends: [{ name: 'f', groups: ['G1'] }], pins: ['G1'],
     profile: { year: 2, amirnet: 100, specs: [], summer: true }, scope: 'א', load: 'ב', sortBy: 'credits',
-    semesterOf: { 10016: 'ב' }, programSet: true, specDraft: ['solid'], yearIds: ['10016'], retakeSeen: ['10016'],
+    semesterOf: { 10016: 'ב' }, programSet: true, specDraft: ['solid'], yearIds: ['10016'], retakeSeen: ['10016'], prefsV: 2, prefsNote: true,
     weights: { ...DEFAULT.weights, friends: 1 }, constraints: { ...DEFAULT.constraints, maxCredits: 20 }
   };
   for (const k of Object.keys(PERSISTED)) assert.ok(k in FIX, `no fixture for ${k}`);

@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  leftOutText,
+  closeExamLines,
+  outsideHoursText,
   groupNumber,
   groupLabel,
   meetingText,
@@ -25,6 +28,40 @@ import {
 } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
+
+test('leftOutText: names and credits, one or many, and a long list is cut with its count', () => {
+  assert.equal(leftOutText([]), '');
+  assert.equal(leftOutText([{ name: 'א', credits: 3.5 }]), 'לא נכנס לחלופה הזו: א (3.5 נ״ז).');
+  assert.equal(
+    leftOutText([{ name: 'א', credits: 3.5 }, { name: 'ב', credits: 1 }]),
+    'לא נכנסו לחלופה הזו 2 קורסים, 4.5 נ״ז: א (3.5 נ״ז), ב (1 נ״ז).'
+  );
+  const many = Array.from({ length: 8 }, (_, i) => ({ name: `ק${i}`, credits: 1 }));
+  const t = leftOutText(many);
+  assert.ok(t.startsWith('לא נכנסו לחלופה הזו 8 קורסים, 8 נ״ז:'), t);
+  assert.ok(t.includes('ק5') && !t.includes('ק6') && t.includes('ועוד 2'), t);
+});
+
+test('closeExamLines: same day with both hours and a caution, next day with both dates, names first', () => {
+  const nm = (id) => ({ Y: 'תרמו', Z: 'הסתברות' })[id];
+  const y = { course: 'Y', date: '2027-01-28', time: '09:00' };
+  assert.deepEqual(closeExamLines([{ days: 0, a: y, b: { course: 'Z', date: '2027-01-28', time: '13:00' } }], nm), [
+    'שתי בחינות באותו יום: תרמו ו-הסתברות, 28.01.2027 בשעות 09:00 ו-13:00. משך הבחינות לא ידוע, כדאי לבדוק שאין חפיפה.'
+  ]);
+  assert.deepEqual(closeExamLines([{ days: 1, a: y, b: { course: 'Z', date: '2027-01-29', time: '13:00' } }], nm), [
+    'בחינות בימים צמודים: תרמו (28.01.2027 09:00) ו-הסתברות (29.01.2027 13:00).'
+  ]);
+  assert.deepEqual(closeExamLines([], nm), []);
+  assert.deepEqual(closeExamLines([{ days: 0, a: { ...y, time: null }, b: { course: 'Z', date: '2027-01-28', time: null } }], nm), [
+    'שתי בחינות באותו יום: תרמו ו-הסתברות, 28.01.2027. משך הבחינות לא ידוע, כדאי לבדוק שאין חפיפה.'
+  ]);
+});
+
+test('outsideHoursText: silent up to 3 hours, and says when the metric is at its ceiling', () => {
+  assert.equal(outsideHoursText(2.9), '');
+  assert.equal(outsideHoursText(3.83), 'במערכת הזו כ-4 שעות שבועיות מחוץ לשעות הרצויות.');
+  assert.equal(outsideHoursText(10), 'במערכת הזו 10 שעות שבועיות או יותר מחוץ לשעות הרצויות.');
+});
 
 test('groupNumber: the short number of a 9-digit group id, tutorial suffix kept', () => {
   assert.equal(groupNumber('270600301'), '01');

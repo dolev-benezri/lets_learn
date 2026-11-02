@@ -598,6 +598,64 @@ test('show-by friends without an active friend points to step 3', () => {
   assert.ok(!text('view-friends').includes('אין עדיין חברים') && !text('view-friends').includes('החברים מוסתרים'));
 });
 
+test('the board says what a plan left out, its close exams and hours, and the new defaults, all escaped', () => {
+  const last = ui.last,
+    prefsNote = app.state.prefsNote,
+    r = last.results[0],
+    [gone, x, y] = r.a.courses;
+  ui.last = {
+    ...last,
+    results: [
+      {
+        ...r,
+        missing: [],
+        a: {
+          ...r.a,
+          courses: r.a.courses.filter((id) => id !== gone),
+          breakdown: { ...r.a.breakdown, timeWindow: 0.5 },
+          examGap: 0,
+          closeExams: [
+            {
+              days: 0,
+              a: { course: x, date: '2027-01-28', time: '09:00' },
+              b: { course: y, date: '2027-01-28', time: '13:00' }
+            },
+            {
+              days: 1,
+              a: { course: x, date: '2027-01-28', time: '09:00' },
+              b: { course: y, date: '2027-01-29', time: null }
+            }
+          ]
+        }
+      }
+    ]
+  };
+  ui.cur = 0;
+  ui.sem = 'א';
+  app.state.prefsNote = true;
+  run('notes', () => {
+    renderView();
+  });
+  ui.last = last;
+  app.state.prefsNote = prefsNote;
+  const html = writes
+    .filter((w) => w.scope === 'notes')
+    .map((w) => w.html)
+    .join('');
+  assert.ok(!html.includes(P), 'names are escaped');
+  for (const part of [
+    'לא נכנס',
+    'שתי בחינות באותו יום',
+    '28.01.2027 בשעות 09:00 ו-13:00',
+    'בחינות בימים צמודים',
+    'כ-5 שעות שבועיות מחוץ לשעות הרצויות',
+    'בחינות באותו יום',
+    'data-act="prefsUndo"',
+    'data-act="prefsOk"'
+  ])
+    assert.ok(html.includes(part), part);
+});
+
 test('step 2 says when the search found no plan, and links to step 4', () => {
   const last = ui.last,
     text = (s) =>
