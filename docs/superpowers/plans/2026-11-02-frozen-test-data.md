@@ -53,7 +53,7 @@ Revised after a Codex review of this plan (2026-11-02): branch ancestry, safe pr
   - `FILES: string[]` — the 13 relative paths, e.g. `'2027-1/30-2026.json'`.
   - `REAL_DIR: URL` — `new URL('./real/', import.meta.url)`.
   - `real(path: string): object` — `JSON.parse(readFileSync(new URL(path, REAL_DIR), 'utf8'))`.
-  - `freeze(ref: string, { resolve = gitRevParse, show = gitShow, dir = REAL_DIR } = {}): string` — `sha = resolve(ref)`; for every `FILES` entry `text = show(sha, 'web/data/afeka/' + path)` and `JSON.parse(text)`; only when all parse, writes each as `JSON.stringify(d) + '\n'` under `dir` and `SOURCE` as `sha + '\n'`; returns `sha`. On any failure it throws an `Error` whose message names the path and the cause, and writes nothing.
+  - `freeze(ref: string, { resolve = gitRevParse, show = gitShow, dir = REAL_DIR } = {}): string` — `sha = resolve(ref)`; for every `FILES` entry `text = show(sha, 'web/data/afeka/' + path)` and `JSON.parse(text)`; only when all parse, writes each as `JSON.stringify(d) + '\n'` under `dir` and `SOURCE` as `sha + '\n'`; returns `sha`. On a resolve, read or parse failure it throws an `Error` whose message names the path and the cause, and writes nothing (a failed disk write can leave a half refresh; git restores it).
   - `gitRevParse(ref)` / `gitShow(sha, path)`: `execFileSync('git', […], { cwd: <repo root from import.meta.url>, encoding: 'utf8', maxBuffer: 64e6 })`; `gitRevParse` trims.
   - CLI: `node test/fixtures/real.mjs <ref>` prints the sha; without a ref prints `usage: node test/fixtures/real.mjs <git-ref>` and exits 1. Guarded by `import.meta.url === pathToFileURL(process.argv[1]).href`.
   - `checkFile(d, label, out): boolean` exported from `scripts/check-export.mjs`.
@@ -146,7 +146,7 @@ Revised after a Codex review of this plan (2026-11-02): branch ancestry, safe pr
   - Prints the `not ok` test names from the output and exits with npm's code.
 
 - [ ] **Step 0: Baseline (before Task 1)** — `git status --porcelain` empty; `npm test > <scratch>/base.txt; echo $?` → exit 1 (the 10336 test). Record `# tests`, `# skipped`.
-- [ ] **Step 1: Suite on the nightly data** — `npm test > <scratch>/full.txt; echo $?` → 0; `# tests` = baseline + 8 (Task 1's tests); `# skipped` ≤ baseline.
+- [ ] **Step 1: Suite on the nightly data** — `npm test > <scratch>/full.txt; echo $?` → 0; `# tests` = baseline + 9 (Task 1's tests, including the import check added after review); `# skipped` ≤ baseline.
 - [ ] **Step 2: Suite on the 21.10 data** — `node <scratch>/probe.mjs old` → exit 0.
 - [ ] **Step 3: Data absent** — `node <scratch>/probe.mjs absent` → the `not ok` names are exactly the 7 live tests. On the first other name: stop, keep the data restored (the script does), fix the missed read in its task's file, commit, rerun.
 - [ ] **Step 4: Trust checks** — `npm run check:real; echo $?` → 0.
