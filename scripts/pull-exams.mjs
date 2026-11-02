@@ -2,7 +2,7 @@
 // By hand, not nightly: exam dates from the course pages into scripts/exams-{year}.json. The nightly build reads that file, so exams cost it no request.
 // Afeka's exam table (S_EXAMS) was empty for 2027 when the course pages already had the dates. If the table is published, its rows go first (buildDataset).
 // node scripts/pull-exams.mjs [--year 2027]   Stopped? Run it again and it continues. To refresh the dates, delete .yedion-exams-cache first.
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { parseCourseExams, parseGroups } from './parse.mjs';
@@ -33,11 +33,12 @@ export async function pullExams({ ids, request, log = console.error }) {
   return rows;
 }
 
-// Every course with groups in the published data of that year.
-function courseIds(year) {
+// Every course with groups in the published data of that year. Semester ב and summer may not be published yet.
+export function courseIds(year, root = 'web/data/afeka') {
   const ids = new Set();
   for (const n of [1, 2, 3]) {
-    const dir = `web/data/afeka/${year}-${n}`;
+    const dir = `${root}/${year}-${n}`;
+    if (!existsSync(dir)) continue;
     for (const f of readdirSync(dir).filter((x) => x.endsWith('.json')))
       for (const [id, c] of Object.entries(JSON.parse(readFileSync(`${dir}/${f}`, 'utf8')).courses)) if (c.groups.length) ids.add(id);
   }

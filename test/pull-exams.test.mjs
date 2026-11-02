@@ -1,8 +1,10 @@
 // scripts/pull-exams.mjs: exam dates by hand from the course pages, kept in the repo so the nightly run needs no extra request.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { detailsToPull, pullExams } from '../scripts/pull-exams.mjs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { courseIds, detailsToPull, pullExams } from '../scripts/pull-exams.mjs';
 import { parseGroups } from '../scripts/parse.mjs';
 import { loadPulledExams } from '../scripts/scrape.mjs';
 
@@ -48,6 +50,14 @@ test('pullExams: one details request per semester; rows carry the course and sem
 test('pullExams: a course with no exam on its page, or no groups, gives no row', async () => {
   const request = async (q) => (q.endsWith('=-N1') ? fx('groups-90903.html') : q.endsWith('=-N2') ? '' : '<p>אין</p>');
   assert.deepEqual(await pullExams({ ids: ['1', '2'], request, log: () => {} }), []);
+});
+
+test('courseIds: a semester not published yet is skipped; a course with no groups is not asked about', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'pull-exams-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(join(root, '2028-1'));
+  writeFileSync(join(root, '2028-1', '30-2028.json'), JSON.stringify({ courses: { 2: { groups: [{}] }, 1: { groups: [{}] }, 3: { groups: [] } } }));
+  assert.deepEqual(courseIds(2028, root), ['1', '2']);
 });
 
 test('scripts/exams-2027.json: every row is one the build and validate accept', async () => {
