@@ -212,7 +212,8 @@ npx http-server web -p 8080 -c-1
 ```
 
 `npm run check:real` רץ כדקה. מריצים אותו לפני כל מיזוג שנוגע בפותר או בכללים (`web/solver*.js`, `web/rules.js`) ואחרי כל עדכון
-נתונים. יציאה 1 פירושה שגיאת נתונים או כשל בפותר; אזהרות לא מכשילות. מדגם של 3 תוכניות ממנו רץ גם בתוך `npm test`.
+נתונים. יציאה 1 פירושה שגיאת נתונים או כשל בפותר; אזהרות לא מכשילות. מדגם של 3 תוכניות ממנו רץ גם בתוך `npm test`. ב-`main` הוא רץ גם אחרי
+כל דחיפה של אתר או נתונים (`.github/workflows/checks.yml`): כשל שולח מייל ולא עוצר את הפריסה.
 
 הרצה ובדיקות: [DEVELOPING](docs/DEVELOPING.md) · מבנה הקוד: [ARCHITECTURE](docs/ARCHITECTURE.md) · תפעול: [OPERATIONS](docs/OPERATIONS.md) · אבטחה: [SECURITY](docs/SECURITY.md) · נגישות: [WCAG 2.1](docs/ACCESSIBILITY-WCAG21.md) · ניסוי עם סטודנטים: [BETA](docs/BETA.md) · תרומה: [CONTRIBUTING](CONTRIBUTING.md) · כל התיעוד: [docs](docs/README.md)
 

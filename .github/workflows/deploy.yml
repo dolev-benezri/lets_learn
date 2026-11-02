@@ -1,12 +1,12 @@
 # Deploy web/ to GitHub Pages. The data is refreshed nightly by ci/gitlab-scrape.yml on GitLab CI,
-# which pushes web/data/afeka to main (that push triggers this workflow).
+# which pushes web/data/afeka to main (that push triggers this workflow). A change to the tests or scripts runs it too, so a break shows at once.
 name: deploy
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['web/**']
+    paths: ['web/**', 'test/**', 'scripts/**', 'package.json', 'package-lock.json', '.github/workflows/**']
 
 permissions:
   contents: read
