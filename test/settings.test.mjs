@@ -177,3 +177,44 @@ test('cleanSettings: a placeholder supportEmail on a reserved domain (RFC 2606) 
     assert.equal(cleanSettings({ supportEmail: bad }).supportEmail, '', bad);
   assert.equal(cleanSettings({ supportEmail: 'help@examples.co.il' }).supportEmail, 'help@examples.co.il');
 });
+
+test('the support address: valid in settings.json, the same one in the legal contact and accessibility sections', () => {
+  const { supportEmail } = cleanSettings(JSON.parse(readFileSync('web/settings.json', 'utf8')));
+  assert.ok(supportEmail, 'settings.json holds a usable address');
+  const legal = readFileSync('web/legal.html', 'utf8'),
+    link = `href="mailto:${supportEmail}"`;
+  const issue = legal.indexOf('נתקלתם בבעיה'),
+    contact = legal.indexOf('id="contact"');
+  assert.ok(issue >= 0 && contact > issue, 'both headings are there, in this order');
+  assert.ok(legal.slice(contact).includes(link), 'contact section');
+  assert.ok(legal.slice(issue, contact).includes(link), 'accessibility section');
+  assert.ok(readFileSync('README.md', 'utf8').includes(supportEmail), 'README');
+});
+
+test('the privacy section says what a mailed report carries and where it lands', () => {
+  const legal = readFileSync('web/legal.html', 'utf8'),
+    start = legal.indexOf('id="privacy"'),
+    end = legal.indexOf('קישורי שיתוף וגיבוי');
+  assert.ok(start >= 0 && end > start, 'both headings are there, in this order');
+  const item = legal.slice(start, end).match(/<b>דיווח במייל:<\/b>[^<]*/)?.[0] ?? '';
+  for (const word of ['התוכנית', 'המחזור', 'הסמסטר', 'העמוד', 'הקבוצה', 'כתובת המייל', 'Gmail']) assert.ok(item.includes(word), word);
+});
+
+test('the privacy section claims nothing a mailed report makes false: mail is excepted, and a request about it has a route', () => {
+  const legal = readFileSync('web/legal.html', 'utf8'),
+    start = legal.indexOf('id="privacy"'),
+    rights = legal.indexOf('<h3>זכויות</h3>'),
+    age = legal.indexOf('<h3>גיל</h3>'),
+    end = legal.indexOf('id="accessibility"');
+  assert.ok(start >= 0 && rights > start && age > rights && end > age, 'the headings are there, in this order');
+  assert.match(legal.slice(start, legal.indexOf('<h3>', start)), /במייל/, 'the short summary');
+  assert.match(legal.slice(rights, age), /פרט למיילים שבחרתם לשלוח/);
+  assert.match(legal.slice(rights, age), /href="#contact"/);
+  assert.match(legal.slice(age, end), /במייל/, 'the age section');
+});
+
+test('the footer names one report link, and a removal request goes to the legal contact section', () => {
+  const footer = readFileSync('web/index.html', 'utf8');
+  assert.equal(footer.match(/דיווח על טעות/g).length, 1);
+  assert.match(footer, /<a\s+href="legal\.html#contact">בקשת הסרה<\/a>/);
+});

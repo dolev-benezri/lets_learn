@@ -579,7 +579,7 @@ test('normalize: constraints.split is off by default, kept when true, false for 
 
 test('legal.html: dated for this change; the English line says the exemption is computed from the Amirnet or psychometric score; the list says it goes by the data shown', () => {
   const html = readFileSync('web/legal.html', 'utf8');
-  assert.match(html, /עדכון אחרון: 23\.10\.2026/);
+  assert.match(html, /עדכון אחרון: 2\.11\.2026/);
   assert.match(html, /רמת האנגלית[^<]*הכלי מחשב פטור רק לפי ציון האנגלית \(אמירנט או פסיכומטרי\) שהזנתם/);
   assert.match(html, /<h3>מה הכלי בודק<\/h3>\s*<ul>\s*<li>הכול לפי הנתונים שמוצגים בכלי, שנמשכו מהידיעון/);
 });
