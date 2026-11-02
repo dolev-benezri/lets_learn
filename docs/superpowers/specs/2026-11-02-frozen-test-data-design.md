@@ -58,7 +58,7 @@ Accepted risks on the live side, left as they are: the `check-real` sample has a
 
 ## Drift guard
 
-One new test: every frozen file passes the same per-file schema check the export check uses (`checkFile` in `scripts/check-export.mjs`, exported for this) with no errors. This checks nested fields down to each meeting, so a build change that adds a required field makes the frozen copy fail and says to refresh it. It does not compare with live files, so it never depends on the nightly.
+One new test: every frozen file passes the same per-file schema check the export check uses (`checkFile` in `scripts/check-export.mjs`, exported for this) with no errors. It checks the fields the site reads without a guard, down to each meeting. It catches a build change only when that change also updates the checker's field list, which is how a new required field is added today; it is a shape check, not `validate()`. A second check confirms each file is the program, cohort and semester its name says. Neither compares with live files, so neither depends on the nightly.
 
 ## Verification
 
