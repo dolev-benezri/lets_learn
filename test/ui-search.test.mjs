@@ -112,6 +112,16 @@ test('the note about the new defaults: undo brings the old weights back, either 
   assert.deepEqual(app.state.weights, appMod.OLD_WEIGHTS);
 });
 
+test('resetting the preferences closes the note about the new defaults, so its undo cannot bring old weights back', async () => {
+  const { ACT } = await import('../web/ui-actions.js');
+  app.state = normalize({ v: 1, weights: appMod.OLD_WEIGHTS });
+  globalThis.confirm = () => true;
+  await ACT.resetPrefs();
+  delete globalThis.confirm;
+  clearTimeout(ui.timer);
+  assert.equal(app.state.prefsNote, false);
+});
+
 test('CHG.examsForbid: the student turns the date rule on and off', () => {
   app.state = normalize({ v: 1 });
   assert.equal(app.state.constraints.examsSameDay, 'hours');

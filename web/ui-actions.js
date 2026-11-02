@@ -355,6 +355,7 @@ export const ACT = {
     app.state.constraints = { ...structuredClone(DEFAULT.constraints), blocks: app.state.constraints.blocks };
     app.state.scope = DEFAULT.scope;
     app.state.load = DEFAULT.load;
+    app.state.prefsNote = false;
     dropSplitPins();
     refresh();
     toast('ההעדפות אופסו');

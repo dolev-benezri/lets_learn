@@ -650,6 +650,7 @@ test('the board says what a plan left out, its close exams and hours, and the ne
     'בחינות בימים צמודים',
     'כ-5 שעות שבועיות מחוץ לשעות הרצויות',
     'בחינות באותו יום',
+    'אלה החלופות הטובות ביותר שנמצאו',
     'data-act="prefsUndo"',
     'data-act="prefsOk"'
   ])

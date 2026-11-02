@@ -327,7 +327,7 @@ export function renderView() {
         .map((id) => ({ name: app.data.courses[id].name, credits: app.data.courses[id].credits }));
     const outsideH = outsideHoursText((1 - (res.breakdown.timeWindow ?? 1)) * 10);
     msg +=
-      (leftOut.length ? note('info', leftOutText(leftOut) + (pair ? ' זו החלופה הטובה ביותר שנמצאה, לא בהכרח היחידה.' : '')) : '') +
+      (leftOut.length ? note('info', leftOutText(leftOut)) : '') +
       closeExamLines(res.closeExams ?? [], nameOf).map((t) => note('alert', t)).join('') +
       (outsideH && !state.constraints.windowHard
         ? `<p class="notice">${icon('clock')}<span>${outsideH} אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.</span></p>`
@@ -352,6 +352,7 @@ export function renderView() {
         pill('file', exams)
       ].join('') +
       (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') +
+      (pair ? '<p class="pill-info">אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.</p>' : '') +
       (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
     live = [
       `חלופה ${ui.cur + 1} מתוך ${nAlt}`,

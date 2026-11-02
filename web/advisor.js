@@ -9,7 +9,8 @@ import {
   groupLabel,
   meetingText,
   hebYear,
-  courseCount
+  courseCount,
+  closeExamLines
 } from './ui-text.js';
 
 const YEAR = ' אבגדה'; // study year number -> letter
@@ -81,6 +82,7 @@ export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), 
     // the year view says so on screen (ui-view.js): mandatory courses this year plan could not place in either semester
     ...(res && 'a' in res && res.missing?.length ? [`קורסי חובה שביקשת ולא נכנסו לאף סמסטר: ${res.missing.map(name).join(', ')}`] : []),
     ...(split.length ? [SPLIT_NOTE, splitLine(split.map(name))] : []),
+    ...parts.flatMap(([, r]) => closeExamLines(r.closeExams ?? [], name)),
   ].map(esc);
 
   return `<h2>סיכום לפגישה עם יועץ לימודים</h2>

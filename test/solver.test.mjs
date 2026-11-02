@@ -318,7 +318,9 @@ test('friends metric rewards shared groups and ignores unknown ids', () => {
   const friends = [{ name: 'דני', groups: ['A2', 'NOPE-123'], weight: 1, active: true }];
   const r = run({ courses: [{ id: 'A', mode: 'must' }], friends, weights: { ...W0, friends: 1 }, topK: 3 });
   assert.deepEqual(r.results[0].groups, ['A2']);
-  assert.ok(r.results[0].breakdown.friends > 0);
+  assert.equal(r.results[0].breakdown.friends, 0.5, 'A2 is half as long as the longest option of the course');
+  const pinned = run({ courses: [{ id: 'A', mode: 'must' }], friends, weights: { ...W0, friends: 1 }, topK: 3, pins: ['A2'] });
+  assert.equal(pinned.results[0].breakdown.friends, 1, 'with the pin, A2 is all that can be shared');
   assert.match(r.results[0].explanation, /קורס אחד עם דני/);
 });
 
@@ -526,6 +528,51 @@ test('same-hour exams of two must courses: the reason names both, the date and t
   const t = r.diagnosis.join(' ');
   for (const part of ['קורס י', 'קורס ז', '05.02.2027 09:00']) assert.ok(t.includes(part), t);
   assert.ok(!t.includes('לשבוע אחד'), t);
+});
+
+test('a same-hour reason needs every option of both courses to clash: one free hour clears it', () => {
+  const two = (id, name, times) => ({
+    name,
+    credits: 1,
+    offered: true,
+    prereqs: [],
+    groups: times.map((time, i) => ({
+      id: `${id}${i}`,
+      type: 'סופי-הרצאה',
+      primary: true,
+      lecturer: `L${i}`,
+      full: false,
+      semester: 'א',
+      linked: [],
+      meetings: [{ day: 2, start: '08:00', end: '09:50', room: 'r' }],
+      exams: [{ kind: 'בחינה', moed: 1, date: '2027-02-05', time }]
+    }))
+  });
+  const data = mini();
+  data.courses.Y = two('Y', 'קורס י', ['09:00', '13:00']);
+  data.courses.Z = two('Z', 'קורס ז', ['09:00', '09:00']);
+  const t = run({ data, courses: YZ }).diagnosis.join(' ');
+  assert.ok(!t.includes('05.02.2027'), t);
+});
+
+test('searchYear: no same-hour warning about a group the search could not use', () => {
+  const dataA = { ...examPair(['2027-02-05', '09:00'], ['2027-02-05', '09:00']), courses: {} };
+  const dataB = examPair(['2027-07-05', '09:00'], ['2027-07-05', '09:00']);
+  const { Y, Z } = dataB.courses;
+  dataB.courses = { Y, Z };
+  // Y's first group is full, with the clashing exam; the group it could use has another hour and overlaps Z in the week
+  Y.groups = [
+    { ...Y.groups[0], id: 'Yfull', full: true },
+    { ...Y.groups[0], id: 'Yfree', lecturer: 'M', meetings: Z.groups[0].meetings, exams: [{ kind: 'בחינה', moed: 1, date: '2027-07-05', time: '13:00' }] }
+  ];
+  dataA.examsPublished = dataB.examsPublished = true;
+  const r = searchYear({
+    dataA, dataB, state: { passed: [], failed: {}, choices: { Y: 'must', Z: 'must' } }, yearList: new Set(),
+    constraints: {}, weights: { ...W0, progress: 1 }
+  });
+  const p = r.results[0];
+  assert.equal(p.missing.length, 1);
+  assert.ok(!p.warnings.join(' ').includes('05.07.2027'), p.warnings.join(' '));
 });
 
 test('same-day rule the student asked for: the reason names both and how to undo it', () => {

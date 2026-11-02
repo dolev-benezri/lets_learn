@@ -665,9 +665,11 @@ export function search({
     const out = [], must = items.filter((x) => x.mode === 'must' && x.options.length);
     for (let i = 0; i < must.length; i++)
       for (let j = i + 1; j < must.length; j++) {
-        const at = must[i].options[0].allExams.find((e) => e.kind === 'בחינה' && e.moed === 1
-          && must[j].options.every((o) => examKeys(o).includes(examRule === 'forbid' ? e.date : `${e.date} ${e.time}`)));
-        if (at) out.push(examClashText(data.courses[must[i].id].name, data.courses[must[j].id].name, at, examRule));
+        const keys = must[i].options.flatMap((a) => must[j].options.map((b) => examKeys(a).find((k) => examKeys(b).includes(k))));
+        // options that clash at different times are left to whyNot, which names no date
+        if (keys.some((k) => !k) || new Set(keys).size > 1) continue;
+        const at = must[i].options[0].allExams.find((e) => (examRule === 'forbid' ? e.date : `${e.date} ${e.time}`) === keys[0]);
+        out.push(examClashText(data.courses[must[i].id].name, data.courses[must[j].id].name, at, examRule));
       }
     return out;
   }
@@ -895,15 +897,18 @@ export function searchYear({
   return { results: pairs.slice(0, topK), partial, diagnosis };
 
   // A missing must course beside a planned one whose first sitting breaks the exam rule: say so, the student may not guess.
-  function clashesOf(id, d, chosen) {
+  // Only by the options it could really use, against the exams the plan really holds.
+  function clashesOf(id, d, planExams) {
     const rule = constraints.examsSameDay ?? 'hours';
     if (rule === 'allow' || !d.examsPublished || !d.courses[id]) return [];
-    const first = (cid) => d.courses[cid].groups.flatMap((g) => g.exams).find((e) => e.kind === 'בחינה' && e.moed === 1);
-    const mine = first(id);
-    if (!mine) return [];
-    const same = (e) => e && e.date === mine.date && (rule === 'forbid' || (mine.time && e.time === mine.time));
-    const x = chosen.find((cid) => same(first(cid)));
-    return x ? [examClashText(d.courses[id].name, d.courses[x].name, mine, rule)] : [];
+    const isFirst = (e) => e.kind === 'בחינה' && e.moed === 1;
+    const opts = buildOptions(d.courses[id], {
+      pins: pinsOf(d), includeFull: constraints.includeFull, forbidden: forbiddenBy(constraints),
+      lecturers: constraints.lecturers, split: constraints.split
+    });
+    const same = (e, x) => e.date === x.date && (rule === 'forbid' || (e.time && e.time === x.time));
+    const x = opts.length && planExams.filter(isFirst).find((p) => opts.every((o) => o.allExams.some((e) => isFirst(e) && same(e, p))));
+    return x ? [examClashText(d.courses[id].name, d.courses[x.course].name, x, rule)] : [];
   }
 
   function pairOf(a, b, takenA) {
@@ -942,7 +947,7 @@ export function searchYear({
       warnings: [
         ...(needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : []),
         ...regrouped,
-        ...missing.flatMap((id) => clashesOf(id, dataA, a.courses).concat(clashesOf(id, dataB, b?.courses ?? [])))
+        ...missing.flatMap((id) => clashesOf(id, dataA, a.exams).concat(clashesOf(id, dataB, b?.exams ?? [])))
       ],
     };
   }
