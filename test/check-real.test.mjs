@@ -112,6 +112,37 @@ test('no plan: a solver that finds nothing, with any reason, is caught when the 
   const unsure = () => ({ results: [], partial: true, diagnosis: ['could not tell'] });
   assert.deepEqual(checkFile(f, d, { scenarios: ['S2'], solve: unsure }), [], 'a search cut off may say it could not tell');
 });
+test('a cut-off search with no plan is not a failure in any run; a complete one still is', () => {
+  const f = '2027-1/19-2026.json',
+    d = real(f),
+    opts = (solve) => ({ scenarios: ['S2'], solve });
+  const cut = { results: [], partial: true, diagnosis: ['could not tell'] };
+  const none = { results: [], partial: false, diagnosis: ['x'] };
+  const relaxed = (a) => a.constraints.includeFull === true;
+  const shuffled = (a) => a.data !== d;
+  assert.deepEqual(checkFile(f, d, opts((a) => (relaxed(a) ? cut : search(a)))), []);
+  assert.deepEqual(checkFile(f, d, opts((a) => (shuffled(a) ? cut : search(a)))), []);
+  assert.deepEqual(checkFile(f, d, opts((a) => (relaxed(a) ? cut : none))), []);
+  assert.ok(checkFile(f, d, opts((a) => (relaxed(a) ? none : search(a)))).some((e) => /relaxing the constraints loses/.test(e)));
+  assert.ok(checkFile(f, d, opts((a) => (shuffled(a) ? none : search(a)))).some((e) => /shuffled order finds no plan/.test(e)));
+});
+test('the relaxed search also allows two exams on one day', () => {
+  const f = '2027-1/19-2026.json',
+    seen = [];
+  checkFile(f, real(f), { scenarios: ['S2'], solve: (a) => (seen.push(a.constraints), search(a)) });
+  assert.ok(seen.some((c) => c.includeFull === true && c.examsSameDay === 'allow'));
+});
+test('checkPlan: two first-sitting exams on one day are flagged, unless the student allows it', () => {
+  const d = structuredClone(mini());
+  d.examsPublished = true;
+  const on = { kind: 'בחינה', moed: 1, date: '2027-02-01', time: null };
+  for (const [cid, gid] of [['A', 'A1'], ['Q', 'Q1']]) d.courses[cid].groups.find((g) => g.id === gid).exams = [on];
+  const plan = { courses: ['A', 'Q'], groups: ['A1', 'A1/1', 'Q1'] };
+  assert.ok(checkPlan(d, rec(), plan, {}).some((e) => /same-day exams/.test(e)));
+  assert.ok(!checkPlan(d, rec(), plan, { examsSameDay: 'allow' }).some((e) => /same-day exams/.test(e)));
+  d.examsPublished = false;
+  assert.ok(!checkPlan(d, rec(), plan, {}).some((e) => /same-day exams/.test(e)));
+});
 test('small cases: a shuffled course and group order gives the same set of timetables; a dropped plan is caught', () => {
   let compared = 0;
   for (let seed = 1; seed <= 40; seed++) {
