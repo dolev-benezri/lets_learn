@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { PDFDocument, rgb } from '../web/vendor/pdf/pdf-lib.esm.min.js';
 import bidiFactory from '../web/vendor/pdf/bidi.min.mjs';
 import * as pdfjs from '../web/vendor/pdfjs/pdf.min.mjs';
-import { buildAdvisorPdf, fontPicker, visualRuns } from '../web/advisor-pdf.js';
+import { buildAdvisorPdf, visualRuns } from '../web/advisor-pdf.js';
 
 // The UMD build sets module.exports; this package is type: module, so require() would read it as an ES module.
 const umd = { exports: {} };
@@ -19,12 +19,11 @@ const libs = { PDFDocument, rgb, fontkit, bidi, fontBytes };
 const faces = Object.fromEntries(
   Object.entries({ he: 'hebrew-400', la: 'latin-400', ar: 'arabic-400', cy: 'cyrillic-400', lx: 'latin-ext-400' }).map(([k, n]) => [k, fontkit.create(fontBytes(n))])
 );
-const keyOf = fontPicker(faces);
-const runs = (line) => visualRuns(line, bidi, keyOf);
-// The line as it stands on the page, left to right: a run fontkit will reverse is held in logical order.
+const runs = (line) => visualRuns(line, bidi, faces);
+// The line as it stands on the page, left to right: the glyphs fontkit really lays out for each run.
 const visual = (line) =>
   runs(line)
-    .map((r) => (r.level % 2 && /[֐-ۿ]/.test(r.draw) ? [...r.draw].reverse().join('') : r.draw))
+    .map((r) => faces[r.font].layout(r.draw).glyphs.flatMap((g) => g.codePoints.map((c) => String.fromCodePoint(c))).join(''))
     .join('');
 const noNotdef = (line) => runs(line).every((r) => faces[r.font].layout(r.draw).glyphs.every((g) => g.id !== 0));
 
@@ -52,6 +51,15 @@ test('Latin and Hebrew in one line keep their order, in the fonts of their own s
 
 test('numbers, times, dates and addresses are not reversed', () => {
   for (const s of ['08:30-10:00', '15.02.2027', 'afeka.ac.il', '62.5']) assert.ok(visual(`בדיקה ${s} סוף`).includes(s), s);
+});
+
+test('Arabic digits and Arabic punctuation come out in order, each as fontkit lays it', () => {
+  assert.equal(visual('מספר ١٢٣'), '١٢٣ רפסמ');
+  assert.equal(visual('שלום ،؟'), '؟، םולש');
+});
+
+test('a mirrored form no font holds stays as it was, with no empty box', () => {
+  assert.ok(noNotdef('א \u2215 ב'));
 });
 
 test('a run is split where the bidi level changes, and spaces stay inside their run', () => {
@@ -125,6 +133,20 @@ test('a line left with no value is left out', async () => {
   const { text } = await read(bytes);
   assert.ok(!text.includes('שם'), text);
   assert.ok(text.includes('ממוצע'));
+});
+
+test('a line that really ends in a colon stays', async () => {
+  const { text } = await read((await buildAdvisorPdf([li('שם: דנה:')], libs)).bytes);
+  assert.ok(text.includes('דנה'), text);
+});
+
+test('combining marks are left out: pdf-lib cannot place them', async () => {
+  const { bytes, dropped } = await buildAdvisorPdf([li('נִקּוּד'), li('A\u0301 סוף')], libs);
+  assert.deepEqual(dropped, []);
+  const { text, items } = await read(bytes);
+  assert.ok(text.includes('נקוד'), text);
+  assert.ok(text.includes('\u00c1'), 'a letter written in two parts joins into one');
+  for (const i of items) assert.ok(i.transform[4] + i.width <= 595.28 - 39);
 });
 
 test('direction marks steer the text and draw nothing', () => {

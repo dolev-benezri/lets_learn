@@ -175,6 +175,7 @@ for (const size of Object.keys(SIZES)) {
     await opened(page);
     await page.keyboard.press('Escape');
     await closed(page);
+    await page.waitForFunction(() => document.activeElement.id === 'tourBtn', null, { timeout: 2000 }).catch(() => {}); // the popover goes first, then the focus
     assert.equal(
       await page.evaluate(() => document.activeElement.id),
       'tourBtn',

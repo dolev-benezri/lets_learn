@@ -12,6 +12,7 @@ import { scheduleRun } from './ui-search.js';
 import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
+import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
 import { tourCheck, tourOnce } from './tour.js';
 
@@ -182,6 +183,7 @@ document.addEventListener('keydown', (e) => {
 });
 $('drawer').addEventListener('close', () => {
   ui.panel = null;
+  dropAdvisorPdf();
   document.body.classList.remove('drawer-open');
   (ui.opener?.isConnected ? ui.opener : $('week')).focus({ preventScroll: true });
 });

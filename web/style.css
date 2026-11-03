@@ -265,6 +265,7 @@ a { color:var(--primary); }
 .btn.ghost { background:transparent; border-color:transparent; }
 .btn.ghost:hover { background:var(--surface-2); }
 .btn:disabled { opacity:.45; cursor:not-allowed; }
+.btn[aria-disabled="true"] { opacity:.6; cursor:progress; } /* not disabled: that would throw keyboard focus away */
 .btn:active:not(:disabled) { background:var(--border); }
 .btn.primary:active:not(:disabled) { background:var(--primary-press); border-color:var(--primary-press); }
 .btn.ghost:active:not(:disabled) { background:var(--border); }
@@ -1134,7 +1135,7 @@ details[open] > summary::after { transform:rotate(-135deg); }
 .advisor-sum ul { padding-inline-start:18px; list-style:disc; }
 .advisor-sum li { margin-top:4px; }
 .advisor-sum li div { font-size:13px; color:var(--text-2); }
-.advisor-hint { flex-basis:100%; }
+.advisor-hint, .advisor-pdf-note { flex-basis:100%; }
 @media (pointer:fine) { .advisor-hint { display:none; } } /* the note is about apps on a phone */
 .reglist { display:grid; gap:8px; margin:12px 0; }
 .reglist li {

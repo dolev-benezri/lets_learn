@@ -5,7 +5,7 @@ const WIDTH = 595.28, // A4, in points
   HEIGHT = 841.89,
   MARGIN = 40,
   INDENT = 14,
-  LINE = 1.4;
+  LINE = 1.3; // a full year of 16 courses and its notes must fit one sheet
 const SIZE = { h2: 17, h3: 12.5, h4: 11, p: 10.5, li: 10.5, course: 10.5, groups: 9.5 };
 const BOLD = new Set(['h2', 'h3', 'h4', 'course']);
 const UNDRAWN = /[­​-‏‪-‮⁠-⁩﻿]/; // direction marks and the like: bidi reads them, the page shows nothing
@@ -13,7 +13,8 @@ const HEBREW = /[֐-׿יִ-ﭏ]/,
   ARABIC = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/,
   CYRILLIC = /[Ѐ-ԯ]/;
 
-// Which font draws a character, by its script and not only by who holds it: the Hebrew font also holds Latin letters, and a run mixing them comes out in the wrong order.
+// Which font draws a character, by its script and not only by who holds it:
+// the Hebrew font also holds Latin letters, and a run mixing them comes out in the wrong order.
 export const fontPicker = (faces) => (c) => {
   const holds = (k) => (faces[k]?.hasGlyphForCodePoint(c.codePointAt(0)) ? k : null);
   if (HEBREW.test(c)) return holds('he');
@@ -23,12 +24,13 @@ export const fontPicker = (faces) => (c) => {
 };
 
 // One line in the order it stands on the page, left to right. Each run has one font and one bidi level; draw is the string for drawText.
-// fontkit reverses a Hebrew or Arabic run itself, so such a run is handed over in logical order. line: no surrogate pairs (see clean).
-export function visualRuns(line, bidi, keyOf) {
+// line: no surrogate pairs (see clean).
+export function visualRuns(line, bidi, faces) {
+  const keyOf = fontPicker(faces);
   const levels = bidi.getEmbeddingLevels(line, 'rtl');
   const ch = line.split('');
   bidi.getMirroredCharactersMap(line, levels.levels).forEach((m, i) => {
-    ch[i] = m;
+    if (keyOf(m)) ch[i] = m; // a mirrored form no font holds would draw an empty box
   });
   const order = ch.map((_, i) => i);
   for (const [a, b] of bidi.getReorderSegments(line, levels)) order.splice(a, b - a + 1, ...order.slice(a, b + 1).reverse());
@@ -41,13 +43,17 @@ export function visualRuns(line, bidi, keyOf) {
     if (prev?.font === font && prev.level === level) prev.draw += ch[i];
     else out.push({ font, level, draw: ch[i] });
   }
-  for (const r of out) if (r.level % 2 && (HEBREW.test(r.draw) || ARABIC.test(r.draw))) r.draw = [...r.draw].reverse().join('');
+  // fontkit reverses what it takes for a right-to-left script (Arabic digits too, Arabic punctuation alone not), so that goes in the other way round
+  for (const r of out) {
+    if ((HEBREW.test(r.draw) || ARABIC.test(r.draw)) && faces[r.font].layout(r.draw).direction === 'rtl') r.draw = [...r.draw].reverse().join('');
+  }
   return out;
 }
 
 // Characters no font holds (an emoji) are left out and reported. This also keeps surrogate pairs out of the bidi step, which counts UTF-16 units.
+// Combining marks go too, in silence: pdf-lib draws advances and not the offsets marks need, so a niqqud would land beside its letter or past the margin.
 const clean = (t, keyOf, dropped) =>
-  Array.from(String(t).replace(/\s+/g, ' ').trim())
+  Array.from(String(t).normalize('NFC').replace(/\p{Mn}/gu, '').replace(/\s+/g, ' ').trim())
     .filter((c) => {
       if (UNDRAWN.test(c) || keyOf(c)) return true;
       dropped.add(c);
@@ -77,7 +83,8 @@ export async function buildAdvisorPdf(blocks, { PDFDocument, rgb, fontkit, bidi,
   if (CYRILLIC.test(all)) files.cy = await load('cyrillic-400');
   const plain = fontPicker({ he: files.he.face, la: files.la.face, ar: { hasGlyphForCodePoint: () => true }, cy: { hasGlyphForCodePoint: () => true } });
   if (Array.from(all).some((c) => !UNDRAWN.test(c) && !plain(c))) files.lx = await load('latin-ext-400');
-  const keyOf = fontPicker(Object.fromEntries(Object.entries(files).map(([k, f]) => [k, f.face])));
+  const faces = Object.fromEntries(Object.entries(files).map(([k, f]) => [k, f.face]));
+  const keyOf = fontPicker(faces);
 
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
@@ -91,7 +98,7 @@ export async function buildAdvisorPdf(blocks, { PDFDocument, rgb, fontkit, bidi,
   bold.la = await embed(await fontBytes('latin-700'));
 
   const widthOf = (runs, fonts, size) => runs.reduce((a, r) => a + fonts[r.font].widthOfTextAtSize(r.draw, size), 0);
-  const fits = (t, fonts, size, max) => widthOf(visualRuns(t, bidi, keyOf), fonts, size) <= max;
+  const fits = (t, fonts, size, max) => widthOf(visualRuns(t, bidi, faces), fonts, size) <= max;
   const wrap = (t, fonts, size, max) => {
     const lines = [];
     let cur = '';
@@ -127,7 +134,7 @@ export async function buildAdvisorPdf(blocks, { PDFDocument, rgb, fontkit, bidi,
   const color = rgb(0, 0, 0);
   for (const row of rows) {
     const t = clean(row.t, keyOf, dropped);
-    if (!t || /:$/.test(t)) continue; // a name of nothing but emoji leaves no value to show
+    if (!t || (t.endsWith(':') && !row.t.trim().endsWith(':'))) continue; // a name of nothing but emoji leaves no value to show
     const size = SIZE[row.k],
       fonts = BOLD.has(row.k) ? bold : regular,
       item = row.k === 'li' || row.k === 'course',
@@ -137,7 +144,7 @@ export async function buildAdvisorPdf(blocks, { PDFDocument, rgb, fontkit, bidi,
     if (row.k === 'h2' || row.k === 'h3' || row.k === 'h4') room(size * LINE + 2 * SIZE.li * LINE); // a heading stays with what follows it
     wrap(t, fonts, size, WIDTH - 2 * MARGIN - indent).forEach((line, n) => {
       room(size * LINE);
-      const runs = visualRuns(line, bidi, keyOf);
+      const runs = visualRuns(line, bidi, faces);
       let x = WIDTH - MARGIN - indent - widthOf(runs, fonts, size);
       for (const r of runs) {
         page.drawText(r.draw, { x, y: y - size, size, font: fonts[r.font], color });

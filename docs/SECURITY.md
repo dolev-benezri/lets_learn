@@ -46,7 +46,7 @@ style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri '
 
 ## ספריות
 
-כל הספריות הן עותקים ב-`web/vendor/`, בלי חבילות npm בזמן ריצה ובלי build. רק ל-Driver.js ול-tesseract.js יש קובץ `SOURCES.txt`, ושם מתועד שהעותקים זהים בית לבית לחבילה ב-npm (גרסה, גיבוב sha512 ו-sha256 לכל קובץ). ל-pdf.js, Panzoom ו-popover polyfill אין קובץ כזה: הגרסה נלקחה מכותרת הקובץ, ואין תיעוד של מקור וגיבוב. מומלץ כצעד המשך להוסיף להם `SOURCES.txt` באותה צורה.
+כל הספריות הן עותקים ב-`web/vendor/`, בלי חבילות npm בזמן ריצה ובלי build. רק ל-Driver.js, ל-tesseract.js ולספריות ה-PDF יש קובץ `SOURCES.txt`, ושם מתועד שהעותקים זהים בית לבית לחבילה ב-npm (גרסה, גיבוב sha512 ו-sha256 לכל קובץ). ל-pdf.js, Panzoom ו-popover polyfill אין קובץ כזה: הגרסה נלקחה מכותרת הקובץ, ואין תיעוד של מקור וגיבוב. מומלץ כצעד המשך להוסיף להם `SOURCES.txt` באותה צורה.
 
 | ספרייה | גרסה | רישיון | תפקיד |
 |---|---|---|---|
@@ -56,6 +56,7 @@ style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri '
 | Panzoom | 4.6.0 (מכותרת הקובץ `web/vendor/panzoom/panzoom.es.js`; אין קובץ SOURCES) | MIT ([LICENSE](../web/vendor/panzoom/LICENSE)) | מפת ההתקדמות |
 | @oddbird/popover-polyfill | 0.7.3 (מכותרת הקובץ `web/vendor/popover/popover.min.js`; אין קובץ SOURCES) | BSD-3-Clause ([LICENSE](../web/vendor/popover/LICENSE)) | חלוניות ב-Safari ישן |
 | Rubik (פונט) | [web/fonts](../web/fonts) | SIL OFL ([OFL.txt](../web/fonts/OFL.txt)) | הפונט של האתר |
+| pdf-lib, @pdf-lib/fontkit, bidi-js, Rubik סטטי | 1.17.1, 1.1.1, 1.0.3, 5.3.0, ראו [web/vendor/pdf/SOURCES.txt](../web/vendor/pdf/SOURCES.txt) | MIT, והגופן SIL OFL | בניית "סיכום ליועץ" כקובץ PDF בדפדפן. ל-pdf-lib ול-fontkit לא יצאה גרסה מאז 2021 ו-2020; הן קוראות רק את הגופנים והמחרוזות של האתר, אף פעם לא קובץ מבחוץ |
 
 ב-`package.json` יש תלות אחת, `node-html-parser`, לסורק בלבד, ושתי תלויות פיתוח, `playwright` ו-`@axe-core/playwright`, לבדיקות הדפדפן. אף אחת מהן לא נשלחת לאתר.
 
