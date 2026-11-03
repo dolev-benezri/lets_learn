@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-02T23:25:05.195Z",
+ "fetchedAt": "2026-11-03T23:23:39.349Z",
  "year": 2027,
  "startYear": 2025,
  "program": 40,
@@ -422,7 +422,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "מר קרמה אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -687,7 +687,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר חריזמן קרן (אנה)",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -757,7 +757,7 @@
        "day": 5,
        "start": "17:00",
        "end": "20:50",
-       "room": "מפ\"ט זית"
+       "room": "מפ\"ט תמר"
       }
      ],
      "exams": [
@@ -1007,7 +1007,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר הוכמן מיכל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271035903/1"
@@ -1045,7 +1045,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר הוכמן מיכל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1247,7 +1247,7 @@
        "day": 4,
        "start": "08:00",
        "end": "09:50",
-       "room": "ז'2 קריה - עגלת תחשבים"
+       "room": "מפ\"ט גפן"
       }
      ],
      "exams": [
@@ -1314,7 +1314,7 @@
        "day": 4,
        "start": "10:00",
        "end": "10:50",
-       "room": "ז'2 קריה - עגלת תחשבים"
+       "room": "מפ\"ט גפן"
       }
      ],
      "exams": []
@@ -2072,7 +2072,7 @@
        "day": 3,
        "start": "17:00",
        "end": "18:50",
-       "room": "303 פיקוס"
+       "room": "מפ\"ט תאנה"
       }
      ],
      "exams": [
@@ -2165,7 +2165,7 @@
        "day": 1,
        "start": "12:00",
        "end": "13:50",
-       "room": "קריה ה'7"
+       "room": "303 פיקוס"
       }
      ],
      "exams": [
@@ -2354,7 +2354,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר קריב גליה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "274010207/1"
@@ -2441,7 +2441,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר קריב גליה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -3015,7 +3015,7 @@
        "day": 4,
        "start": "08:00",
        "end": "09:50",
-       "room": "055 פרונטלי בניין מעבדות"
+       "room": "מפ\"ט אתרוג"
       }
      ],
      "exams": []
@@ -6598,7 +6598,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר שהם יקותיאל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8564,7 +8564,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אליהו רובינסון מיטל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090502/1"
@@ -9079,7 +9079,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אליהו רובינסון מיטל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090520/1",
@@ -9335,7 +9335,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9893,7 +9893,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר פרס חוזה אנטוניו",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10382,7 +10382,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279091403/1"
@@ -10448,7 +10448,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אבן-דר מאנדל ליאת",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279091409/1"
@@ -10550,7 +10550,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

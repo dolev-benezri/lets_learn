@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-02T23:25:05.195Z",
+ "fetchedAt": "2026-11-03T23:23:39.349Z",
  "year": 2027,
  "startYear": 2024,
  "program": 11,
@@ -461,7 +461,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' בללוב נינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -492,7 +492,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3485,7 +3485,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר כץ אייל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "271022401/1"
@@ -3505,7 +3505,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר הרשקוביץ שני",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

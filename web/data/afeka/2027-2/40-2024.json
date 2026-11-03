@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-02T23:25:05.195Z",
+ "fetchedAt": "2026-11-03T23:23:39.349Z",
  "year": 2027,
  "startYear": 2024,
  "program": 40,
@@ -658,7 +658,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' בללוב נינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -689,7 +689,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4125,7 +4125,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "מר קוך גדעון",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "274014203/1"
@@ -4242,7 +4242,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "מר קוך גדעון",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -5083,7 +5083,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר פקר אלי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274024002/1"
@@ -5103,7 +5103,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר פקר אלי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8680,7 +8680,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091401/1"
@@ -9076,7 +9076,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
