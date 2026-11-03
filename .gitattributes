@@ -2,3 +2,4 @@ web/vendor/tesseract/** -text
 web/vendor/driver/** -text
 docs/conflicts/** -text
 test/fixtures/real/** -text
+web/vendor/pdf/** -text

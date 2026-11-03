@@ -1,0 +1,35 @@
+Libraries and fonts that build the advisor summary PDF in the browser, self-hosted so the site makes no request outside its own origin.
+
+Every file is byte-identical to the one in the npm package named below, except LICENSE-fontkit. Each tarball was fetched with `npm pack <package> --ignore-scripts`
+from the npm registry into an empty folder outside the repository and extracted as data (nothing from it was run); its sha512 matched the registry's dist.integrity.
+Files were copied out of the extracted tarball into this folder, unmodified.
+To update: pack the new version the same way, replace the files, rewrite this list (`sha256sum` of every file), and run `npm test` and `npm run test:browser`.
+
+Packages (sha512 = dist.integrity from the registry; published date):
+  pdf-lib@1.17.1            sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==   (MIT, 2021-11-06)
+  @pdf-lib/fontkit@1.1.1    sha512-KjMd7grNapIWS/Dm0gvfHEilSyAmeLvrEGVcqLGi0VYebuqqzTbgF29efCx7tvx+IEbG3zQciRSWl3GkUSvjZg==   (MIT, 2020-11-28)
+  bidi-js@1.0.3             sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==   (MIT, 2023-07-31)
+  @fontsource/rubik@5.3.0   sha512-Nks2mn7vlE1jZVHuVgoKU2Ejqjvd+GJzLRdraCjo1xc79oo7O6vJ8pcvSfmKPGX3/Ln7nt09XWFzPeu2jWf0xQ==   (OFL-1.1, 2026-07-19)
+
+Files (sha256, file here <- path inside the package):
+  72c052d97b4d5d9fa6cdbdcb7ad709f03d4ddb1122390cb3afeba4d88651d969  pdf-lib.esm.min.js                <- pdf-lib: package/dist/pdf-lib.esm.min.js
+  d8df561b9fba98e24f2e5130e40948809281bbbc55a20c412359f1a0a5eb35a6  fontkit.umd.min.js                <- @pdf-lib/fontkit: package/dist/fontkit.umd.min.js
+  bf1c6f8e9a1860c8a7ea4ea438d4b366e0d053d628a24b96fa16833c409df7a9  bidi.min.mjs                      <- bidi-js: package/dist/bidi.min.mjs
+  f2c9fc00fdb66eb99ac156ba52d734af66d8d309f65753ae809ad34ee2883bcb  LICENSE-pdf-lib                   <- pdf-lib: package/LICENSE.md
+  49d4d143fed599deb502a0fe6e02f49832f87e9a3a4cd0502e469596d50faa6d  LICENSE-bidi-js                   <- bidi-js: package/LICENSE.txt
+  46a250495a963b0b84f2736c0185d0e3af8df9d23427bd425b92a8ece020283c  OFL.txt                           <- @fontsource/rubik: package/LICENSE
+  cf22b8198f0886a8d4626121579114f23141070e1fceab02ab3c1c361e163440  LICENSE-fontkit                   <- not in the package, see below
+  128444c16a181f3623096484ca319c8f85d80b1d10c066fde354f4daddefddbd  rubik-hebrew-400-normal.woff      <- @fontsource/rubik: package/files/rubik-hebrew-400-normal.woff
+  f735662108e89127eb13c8c7e8029fc506711387d614a6d56455a3c875ac25f5  rubik-hebrew-700-normal.woff      <- @fontsource/rubik: package/files/rubik-hebrew-700-normal.woff
+  35b62884d9d020826e43a9f04af69a58939e58297dabe454e9bd54c0c852d19b  rubik-latin-400-normal.woff       <- @fontsource/rubik: package/files/rubik-latin-400-normal.woff
+  a99b89b0e140bc0d2619f79993bf294acff8ccc844c80c082d1e900c7e8a2bed  rubik-latin-700-normal.woff       <- @fontsource/rubik: package/files/rubik-latin-700-normal.woff
+  c61e2f6d3459d54e757fc5bdc3f4b651670c5152b72b25a13650197cfd381801  rubik-arabic-400-normal.woff      <- @fontsource/rubik: package/files/rubik-arabic-400-normal.woff
+  51c5e81ba4e36736c1df51be5032e91c2820ce4c501fadfb0d4191ded411f2ed  rubik-cyrillic-400-normal.woff    <- @fontsource/rubik: package/files/rubik-cyrillic-400-normal.woff
+  046ce1202d15d4a8ca8dcd795b1182a45ec038016650d420fc4e21cb77705982  rubik-latin-ext-400-normal.woff   <- @fontsource/rubik: package/files/rubik-latin-ext-400-normal.woff
+
+LICENSE-fontkit: the @pdf-lib/fontkit package declares MIT and ships no license file. This is the LICENSE file of foliojs/fontkit, the project it was forked from.
+
+Why static fonts and not web/fonts: the site's variable Rubik embeds only its lightest weight here, since this fontkit fork cannot select a weight, so it has no bold. The static files have a real bold.
+Why only these files: fontkit is the UMD build, since its ES build imports a bare module name a browser cannot resolve. It sets a global, so it is loaded with a script element. The Arabic, Cyrillic and
+extended Latin fonts are in regular weight only and are fetched only when the text holds such a letter (a student's name).
+These libraries only ever read this site's own fonts and strings, never a file from outside. pdf-lib and fontkit have had no release since 2021 and 2020.
