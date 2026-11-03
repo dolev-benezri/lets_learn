@@ -388,7 +388,7 @@ export function renderView() {
   $('daysel').innerHTML = renderDaySelector(range, res, data, ui.mobileDay);
   if (live && live !== ui.liveText) $('live').textContent = ui.liveText = live;
   renderSide(raw);
-  if (ui.panel === 'reg') renderDrawer();
+  renderDrawer(); // an open panel follows the shown alternative
   setBusy();
   scrollToDay();
   ui.onShown?.();

@@ -33,7 +33,7 @@ export const TOUR_INTRO = [
 export const TOUR_PLANS = [
   { sel: '#switcher', text: 'כל חלופה היא מערכת שלמה בלי התנגשויות. החיצים עוברים ביניהן.' },
   { sel: '#week .blk', text: 'לחיצה על קבוצה מראה מרצה, מקומות פנויים ומתי זה נבדק.' },
-  { sel: '#advisorBtn', text: 'דף מסודר להדפסה, להביא לפגישה עם היועץ.' },
+  { sel: '#advisorBtn', text: 'סיכום מסודר לפגישה עם היועץ: להדפסה או לשליחה.' },
   { sel: '[data-act="panel"][data-panel="reg"]', text: 'רשימת הקבוצות להרשמה, וייצוא ליומן.' },
 ];
 
