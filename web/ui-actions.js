@@ -19,7 +19,6 @@ import {
 import { setStatus, cleanProfile, specRule, classify } from './rules.js';
 import { friendLink, backupLink } from './share.js';
 import { toIcs } from './ics.js';
-import { advisorHtml } from './advisor.js';
 import { groupIndex, openPop, pinWith, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
@@ -45,7 +44,7 @@ import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
-import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel } from './ui-drawer.js';
+import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel, advisorNow } from './ui-drawer.js';
 
 // ---------- actions ----------
 export async function addFriend(p) {
@@ -246,17 +245,8 @@ export const ACT = {
   advisor() {
     // fills #print and prints it alone (style.css @media print); the page is put back when printing ends
     clearPrint(); // anything left over from a print that never reported its end
-    const res = current();
-    if (!res) return;
-    $('print').innerHTML = advisorHtml({
-      state: app.state,
-      data: app.data,
-      res,
-      cls: app.cls,
-      catalog: app.catalog,
-      now: new Date(),
-      sem: app.sem
-    });
+    if (!current()) return;
+    $('print').innerHTML = advisorNow();
     $('print').hidden = false;
     document.documentElement.classList.add('print-summary');
     if (!printWatched) {
@@ -268,6 +258,19 @@ export const ACT = {
       });
     }
     print();
+  },
+  // The system share sheet on a phone (a closed sheet says nothing), otherwise the clipboard.
+  async advisorShare() {
+    const text = document.querySelector('.advisor-sum').innerText;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'סיכום ליועץ', text });
+      } catch (e) {
+        if (e?.name !== 'AbortError') copy(text, 'הסיכום הועתק');
+      }
+      return;
+    }
+    copy(text, 'הסיכום הועתק');
   },
   backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),
   landingAdd: () => addFriend(app.friendLanding),

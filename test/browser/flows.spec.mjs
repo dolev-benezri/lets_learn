@@ -129,9 +129,13 @@ for (const size of Object.keys(SIZES)) {
     const page = await visit(t, size, DONE);
     await weekReady(page);
     await page.locator('#advisorBtn').click();
+    assert.ok((await page.locator('#drawer[open] .advisor-sum').innerText()).trim().length > 100, 'the summary shows on screen');
+    assert.equal(await page.evaluate(() => window.__prints), 0, 'opening it prints nothing: a phone app may have no print at all');
+    await page.locator('[data-act="advisor"]').click();
     await page.waitForFunction(() => window.__prints === 1);
     assert.equal(await page.locator('#print').getAttribute('hidden'), null); // style.css shows it only in print media
     assert.ok((await page.locator('#print').textContent()).trim().length > 100, 'the summary has text');
+    await page.locator('#drawer [data-act="closeDrawer"]').click();
 
     await page.locator('[data-act="panel"][data-panel="reg"]').click();
     const [download] = await Promise.all([page.waitForEvent('download'), page.locator('[data-act="ics"]').click()]);
@@ -153,13 +157,44 @@ for (const size of Object.keys(SIZES)) {
 }
 
 for (const size of Object.keys(SIZES)) {
+  test(`${size}: the advisor summary can be shared, with the system sheet or by copying`, async (t) => {
+    const page = await visit(t, size, DONE);
+    await weekReady(page);
+    await page.evaluate(() => {
+      navigator.share = async (d) => {
+        window.__shared = d;
+      };
+    });
+    await page.locator('#advisorBtn').click();
+    await page.locator('[data-act="advisorShare"]').click();
+    await page.waitForFunction(() => window.__shared);
+    assert.match(await page.evaluate(() => window.__shared.text), /סיכום לפגישה עם יועץ לימודים/);
+    await page.locator('#drawer [data-act="closeDrawer"]').click();
+
+    await page.evaluate(() => {
+      navigator.share = undefined;
+      window.__copied = null;
+      navigator.clipboard.writeText = async (t) => {
+        window.__copied = t;
+      };
+    });
+    await page.locator('#advisorBtn').click();
+    assert.match(await page.locator('[data-act="advisorShare"]').innerText(), /העתק/);
+    await page.locator('[data-act="advisorShare"]').click();
+    await page.waitForFunction(() => window.__copied);
+    assert.match(await page.evaluate(() => window.__copied), /סיכום לפגישה עם יועץ לימודים/);
+  });
+
   test(`${size}: by keyboard, the advisor summary and a text dialog open and Escape closes the dialog`, async (t) => {
     const page = await visit(t, size, DONE);
     await weekReady(page);
     await page.locator('#advisorBtn').focus();
     await page.keyboard.press('Enter');
+    await page.locator('[data-act="advisor"]').focus();
+    await page.keyboard.press('Enter');
     await page.waitForFunction(() => window.__prints === 1);
     assert.equal(await page.locator('#print').getAttribute('hidden'), null);
+    await page.locator('#drawer [data-act="closeDrawer"]').click();
 
     await page.locator('[data-act="panel"][data-panel="reg"]').focus();
     await page.keyboard.press('Space');

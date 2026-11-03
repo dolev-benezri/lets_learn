@@ -1,6 +1,7 @@
 // The preferences page (step 3: preferences and friends) and the registration drawer.
 import { app, esc, seatsAt, DEFAULT } from './app.js';
 import { SEMESTER_DATES } from './ics.js';
+import { advisorHtml } from './advisor.js';
 import {
   DAYS,
   DAY_FULL,
@@ -266,7 +267,20 @@ export function renderPrefs() {
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#">הבא: מערכות</a></div>`;
 }
 
-const PANELS = { reg: regPanel };
+export const advisorNow = () =>
+  advisorHtml({ state: app.state, data: app.data, res: current(), cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
+// On screen first: a browser inside a phone app ignores print() without a word, so the summary and the share button must not depend on it.
+function advisorPanel() {
+  if (!current()) return ['סיכום ליועץ', '<p class="hint">עוד אין מערכת. בחרו קורסים, והסיכום יופיע כאן.</p>'];
+  return [
+    'סיכום ליועץ',
+    `<div class="advisor-sum">${advisorNow()}</div>`,
+    `<button type="button" class="btn primary" data-act="advisor" data-k="advisor">${icon('file')} הדפסה או PDF</button>
+  <button type="button" class="btn" data-act="advisorShare" data-k="advisorShare">${navigator.share ? `${icon('share')} שתף` : `${icon('copy')} העתק`}</button>
+  <p class="hint advisor-hint">לא נפתחת הדפסה? בדפדפן שבתוך אפליקציה היא לא תמיד עובדת. אפשר לשתף, או לפתוח את האתר בספארי או בכרום.</p>`
+  ];
+}
+const PANELS = { reg: regPanel, advisor: advisorPanel };
 export function renderDrawer() {
   if (!ui.panel) return;
   // actions: a row that stays under the header while the body scrolls

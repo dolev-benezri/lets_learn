@@ -1128,6 +1128,14 @@ details[open] > summary::after { transform:rotate(-135deg); }
 .notice.asks > span { flex:1 1 100%; }
 .course > .seg { margin-top:6px; }
 .reg-sem { margin:12px 0 0; font-size:14px; font-weight:600; }
+.advisor-sum h2 { font-size:16px; font-weight:600; }
+.advisor-sum h3 { margin:14px 0 4px; padding-bottom:2px; border-bottom:1px solid var(--border); font-size:14px; font-weight:600; }
+.advisor-sum h4 { margin-top:8px; font-size:13px; font-weight:600; }
+.advisor-sum ul { padding-inline-start:18px; list-style:disc; }
+.advisor-sum li { margin-top:4px; }
+.advisor-sum li div { font-size:13px; color:var(--text-2); }
+.advisor-hint { flex-basis:100%; }
+@media (pointer:fine) { .advisor-hint { display:none; } } /* the note is about apps on a phone */
 .reglist { display:grid; gap:8px; margin:12px 0; }
 .reglist li {
   display:flex;
@@ -1661,7 +1669,7 @@ body.gated .steps a { display:none; } /* nothing to step through before the two 
 .sem-row .seg { flex:1; margin:0; }
 .sem-lbl { flex:none; font-size:12px; color:var(--text-2); }
 /* drawer */
-.dr-actions { padding:0 18px 10px; display:flex; gap:8px; }
+.dr-actions { padding:0 18px 10px; display:flex; flex-wrap:wrap; gap:8px; }
 .dr-actions .btn { flex:1; }
 .dr-sec .hint { margin-top:6px; }
 .drawer.modal::backdrop, .dlg::backdrop { background:var(--scrim); }
