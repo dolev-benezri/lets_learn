@@ -2123,8 +2123,10 @@ body.touring .actions { display:flex; }
 @media (max-width:599px) { body.touring .actions { display:grid; } }
 .tour-pop {
   right:auto;
-  min-width:0;
-  max-width:min(320px, calc(100vw - 24px));
+  /* a set width with a floor, not sized by its text: an iPhone collapsed the box to its padding, one word a line */
+  width:min(320px, calc(100% - 24px));
+  min-width:240px;
+  max-width:none;
   padding:14px;
   background:var(--surface);
   color:var(--text);
@@ -2136,7 +2138,8 @@ body.touring .actions { display:flex; }
   text-align:start;
 }
 /* right:auto above: with direction rtl, Driver's inline left would lose to its right:0 */
-.tour-pop .driver-popover-arrow { display:none; }
+/* hidden, not display:none: Driver keeps the box its width away from the screen edge */
+.tour-pop .driver-popover-arrow { visibility:hidden; }
 .tour-pop .driver-popover-description { font-size:var(--fs); line-height:1.6; }
 .tour-pop .driver-popover-footer { flex-wrap:wrap; gap:8px 12px; margin-top:12px; }
 .tour-pop .driver-popover-progress-text { color:var(--text-2); font-size:var(--fs-sm); }
