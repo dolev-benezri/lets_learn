@@ -636,13 +636,8 @@ async function init() {
       const el = document.getElementById(id);
       el.innerHTML =
         '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b>' +
-        '<p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions">' +
-        '<button class="btn" data-retry>נסה שוב</button> <button class="btn" data-reset>אפס נתונים שמורים</button></p></div></div>';
+        '<p>בדקו את החיבור לאינטרנט ונסו שוב.</p><p class="msg-actions"><button class="btn" data-retry>נסה שוב</button></p></div></div>';
       el.querySelector('[data-retry]').onclick = init;
-      el.querySelector('[data-reset]').onclick = () => {
-        clearSaved();
-        location.reload();
-      };
     }
     dispatchEvent(new Event('hashchange')); // show the view the URL names (ui-plan.js onHash)
     return;

@@ -464,6 +464,26 @@ for (const size of Object.keys(SIZES)) {
   });
 }
 
+// A failed load says nothing against the saved record: the screen offers a retry, and nothing there can erase it.
+for (const size of Object.keys(SIZES)) {
+  for (const [how, fail] of [['a missing file', (r) => r.fulfill({ status: 404 })], ['no network', (r) => r.abort()]]) {
+    test(`${size}: ${how} offers a retry only, and the retry loads with the record kept`, async (t) => {
+      const page = await visit(t, size, DONE);
+      await page.waitForLoadState('networkidle');
+      await page.context().route('**/data/afeka/*-1/*.json', fail);
+      await page.reload();
+      const retry = page.locator('[data-retry]:visible').first();
+      await retry.waitFor({ timeout: 30000 });
+      assert.equal(await page.locator('[data-reset]').count(), 0);
+      assert.doesNotMatch(await page.locator('.msg.bad:visible').first().innerText(), /איפוס|אפס/);
+      await page.context().unroute('**/data/afeka/*-1/*.json', fail);
+      await retry.click();
+      await weekReady(page);
+      assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem('afeka-sched-v1'))).passed, STUDENT.passed);
+    });
+  }
+}
+
 // Audit 2026-10-23 #40: a course row whose grade the import does not know (a word, not a number) is not dropped silently.
 for (const size of Object.keys(SIZES)) {
   test(`${size}: the grade-sheet preview says how many rows it could not read`, async (t) => {
