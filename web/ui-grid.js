@@ -1,6 +1,6 @@
 // Week grid, block popover and the small pure helpers behind them (hour range, pills summary, scale steps).
 import { app, esc, seatsAt } from './app.js';
-import { toMin, meetingsMask, overlaps, buildOptions, forbiddenBy, freeDayCandidates } from './solver-core.js';
+import { toMin, meetingsMask, overlaps, merge, daysUsed, buildOptions, forbiddenBy, freeDayCandidates } from './solver-core.js';
 import { groupLabel, groupNumber, groupFresh, heb, reportMailto, PAGE_NAME, examWhen } from './ui-text.js';
 // A course name as HTML: escaped, with its Latin runs marked lang="en" so a Hebrew screen reader voice says "IOS", not letters. Entities (&lt;) are not words.
 export const nameHtml = (t) =>
@@ -155,17 +155,18 @@ export function backups(data, res, gid, constraints = {}) {
   const mates = res.groups.filter((id) => id !== gid && byId.get(id)?.cid === cid).map((id) => byId.get(id).g);
   const out = [];
   const rest = meetingsMask(res.groups.filter((id) => byId.get(id)?.cid !== cid).flatMap((id) => byId.get(id).g.meetings));
-  const forbidden = forbiddenBy(constraints);
+  const forbidden = forbiddenBy(constraints),
+    fits = (o) => !overlaps(o.mask, rest) && !(constraints.maxDays && daysUsed(merge(rest, o.mask)) > constraints.maxDays);
   for (const g of c.groups) {
     if (g.type !== cur.type || g.id === gid || g.full || res.alts?.[gid]?.includes(g.id)) continue;
     if (cur.primary) {
       if (constraints.lecturers?.[g.lecturer] === 'avoid') continue; // a pin beats avoid in buildOptions
       // a whole option of the solver (lecture -> tutorial -> lab), none of it full, clear of the rest of the plan and of what the student ruled out
-      const opt = buildOptions(c, { pins: [g.id], forbidden }).find((o) => !overlaps(o.mask, rest));
+      const opt = buildOptions(c, { pins: [g.id], forbidden }).find(fits);
       if (opt) out.push(opt.groups.join(' + '));
     } else if (mates.every((m) => m.type === g.type || paired(m, g))) {
       const pins = [...mates.filter((m) => m.type !== g.type).map((m) => m.id), g.id];
-      if (buildOptions(c, { pins, forbidden }).some((o) => !overlaps(o.mask, rest))) out.push(g.id);
+      if (buildOptions(c, { pins, forbidden }).some(fits)) out.push(g.id);
     }
   }
   return out.slice(0, 3);

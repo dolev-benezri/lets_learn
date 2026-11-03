@@ -401,23 +401,6 @@ test('the board counts the assumed courses and the passes over a failed prerequi
   }
 });
 
-test('typing a grade confirms that course; clearing it does not', async () => {
-  const { CHG } = await import('../web/ui-actions.js');
-  const s = app.state,
-    was = { assumed: s.assumed, grades: s.grades },
-    [a, b] = s.passed;
-  s.assumed = [a, b];
-  s.grades = {};
-  const grade = (cid, value) => run('assumed-grade', () => {
-    CHG.grade({ dataset: { cid }, value, validity: {} });
-  });
-  grade(a, '');
-  assert.deepEqual(s.assumed, [a, b]);
-  grade(a, '85');
-  assert.deepEqual(s.assumed, [b]);
-  Object.assign(s, was);
-});
-
 test('the board note is written only on a change: a screen reader does not hear it again', () => {
   boardNote('note-first');
   run('note-again', () => {
@@ -1134,7 +1117,7 @@ test('a split course is marked in the registration list and in the copied text: 
 });
 
 test('blocked times reach the backups, in the registration panel and in the copied text', () => {
-  // the groups the panel and the copied text call backups, for a result of one semester and for a year pair
+  // the groups the panel and the copied text call backups
   const named = (text) => [...text.matchAll(/(?:גיבוי: )([^\]<)]+)/g)].flatMap((x) => x[1].replace(/<[^>]*>/g, '').split(/,\s*|\s\+\s/)).map((x) => x.trim());
   const panel = () => {
     const n = writes.length;

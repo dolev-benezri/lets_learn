@@ -10,6 +10,7 @@ const HOUR = 36e5,
 
 // Why this status is no proof of life, or null when it is.
 export function staleReason(status, now = Date.now(), hours = 48) {
+  if (hours === 0) return 'hours=0: failing on purpose, to test the mail';
   const at = typeof status?.checkedAt === 'string' ? Date.parse(status.checkedAt) : NaN;
   if (Number.isNaN(at)) return 'status.json has no valid checkedAt';
   if (at > now + CLOCK_SLACK) return `checkedAt is in the future: ${status.checkedAt}`;
@@ -33,10 +34,14 @@ export async function fetchStatus(url, { fetch = globalThis.fetch, wait = 30000,
   throw new Error(`status unavailable: ${last.message}`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const hours = Number(process.argv[2] ?? 48);
-  if (!Number.isFinite(hours) || hours < 0) throw new Error(`bad hours: ${process.argv[2]}`);
-  const reason = staleReason(await fetchStatus(STATUS_URL), Date.now(), hours);
+// Throws, which fails the run, when the published data is too old or cannot be read.
+export async function check(hours, { now = Date.now(), ...how } = {}) {
+  if (!Number.isFinite(hours) || hours < 0) throw new Error(`bad hours: ${hours}`);
+  const reason = staleReason(await fetchStatus(STATUS_URL, how), now, hours);
   if (reason) throw new Error(reason);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  await check(Number(process.argv[2] ?? 48));
   console.log('the published data was checked in time');
 }

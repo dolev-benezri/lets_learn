@@ -512,10 +512,7 @@ export const CHG = {
     const err = rangeError(raw, 0, 100);
     if (err) toast(err);
     if (g === undefined) delete app.state.grades[el.dataset.cid];
-    else {
-      app.state.grades[el.dataset.cid] = g;
-      if (app.state.assumed) app.state.assumed = app.state.assumed.filter((id) => id !== el.dataset.cid); // a grade the student knows: no longer a guess
-    }
+    else app.state.grades[el.dataset.cid] = g;
     el.value = g ?? ''; // snap an invalid entry back
     const avg = $('gradeAvg');
     if (avg) avg.innerHTML = avgLine(); // just this line: re-rendering the page would drop the caret

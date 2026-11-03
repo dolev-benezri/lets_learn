@@ -293,6 +293,26 @@ test('backups: a lecture with two tutorials is listed with the one that fits', (
   assert.deepEqual(backups(data, PLAN, 'a1', { blocks }), []);
 });
 
+test('backups: a backup that would pass the cap on campus days is no backup, and one on the same days is', () => {
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1', 'a1/2', 'a1/3']),
+      mk('a2', 'L', [m(1, '12:00', '14:00')], ['a2/1']),
+      mk('a3', 'L', [m(3, '08:00', '10:00')], ['a3/1']),
+      mk('a1/1', 'T', [m(1, '10:00', '11:00')]),
+      mk('a1/2', 'T', [m(5, '08:00', '09:00')]),
+      mk('a1/3', 'T', [m(2, '12:00', '13:00')]),
+      mk('a2/1', 'T', [m(2, '12:00', '13:00')]),
+      mk('a3/1', 'T', [m(4, '08:00', '09:00')])
+    ])
+  };
+  // the plan sits on days 1 and 2 (b1)
+  assert.deepEqual(backups(data, PLAN, 'a1'), ['a2 + a2/1', 'a3 + a3/1']);
+  assert.deepEqual(backups(data, PLAN, 'a1', { maxDays: 2 }), ['a2 + a2/1']);
+  assert.deepEqual(backups(data, PLAN, 'a1/1'), ['a1/2', 'a1/3']);
+  assert.deepEqual(backups(data, PLAN, 'a1/1', { maxDays: 2 }), ['a1/3']);
+});
+
 test('backups: a tutorial backup on a blocked time is no backup', () => {
   const data = {
     courses: course([

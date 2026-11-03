@@ -6,6 +6,9 @@ import { PDFDocument, rgb } from '../web/vendor/pdf/pdf-lib.esm.min.js';
 import bidiFactory from '../web/vendor/pdf/bidi.min.mjs';
 import * as pdfjs from '../web/vendor/pdfjs/pdf.min.mjs';
 import { buildAdvisorPdf, visualRuns } from '../web/advisor-pdf.js';
+import { advisorBlocks } from '../web/advisor.js';
+import { classify } from '../web/rules.js';
+import { mini } from './fixtures/mini-data.mjs';
 
 // The UMD build sets module.exports; this package is type: module, so require() would read it as an ES module.
 const umd = { exports: {} };
@@ -83,6 +86,20 @@ test('the Hebrew text prints in order and every word can be found in the file', 
   assert.equal(new TextDecoder().decode(bytes.slice(0, 5)), '%PDF-');
   const { text } = await read(bytes);
   for (const w of ['סיכום', 'לפגישה', 'קורסים', 'שעברתי', 'דינמיקה', '3.5']) assert.ok(text.includes(w), `${w} in ${text}`);
+});
+
+test('the real summary carries its warnings into the file: what is assumed, the rules, conflicts, a pass over a failed prerequisite', async () => {
+  const data = mini(),
+    state = { passed: ['B', 'Q'], assumed: ['Q'], failed: { A: 1 }, grades: {}, exempt: [], profile: { year: 2 } };
+  const blocks = advisorBlocks({ state, data, cls: classify(data, state), catalog: { programs: [] }, approved: null, conflicts: ['מספר נקודות'] });
+  const wanted = blocks.filter((b) => b.k === 'li').map((b) => b.t);
+  for (const t of ['בהנחה, לא אושרו', 'הכללים לא אושרו על ידי המחלקה', 'יש סתירה בין המקורות', 'וסומן שנכשלת בו'])
+    assert.ok(wanted.some((x) => x.includes(t)), t);
+  const { bytes, dropped } = await buildAdvisorPdf(blocks, libs);
+  assert.deepEqual(dropped, []);
+  const out = await read(bytes);
+  assert.equal(out.pages, 1);
+  for (const w of ['סתירה', 'אושרו', 'בהנחה', 'שנכשלת']) assert.ok(out.text.includes(w), w);
 });
 
 test('a typical year pair is one page', async () => {
