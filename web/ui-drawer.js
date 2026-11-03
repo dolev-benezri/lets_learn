@@ -177,9 +177,10 @@ const lecturerSec = (L) =>
 
 export function registrationText(r) {
   const one = (res, data) => {
-    const alt = (g) =>
-      (res.alts?.[g] ? ` (או ${res.alts[g].join(', ')})` : '') +
-      (backups(data, res, g).length ? ` [גיבוי: ${backups(data, res, g).join(', ')}]` : '');
+    const alt = (g) => {
+      const back = backups(data, res, g, app.state.constraints);
+      return (res.alts?.[g] ? ` (או ${res.alts[g].join(', ')})` : '') + (back.length ? ` [גיבוי: ${back.join(', ')}]` : '');
+    };
     const mark = (cid) => (res.split?.includes(cid) ? ` (${SPLIT_TAG})` : '');
     const gs = (cid) =>
       res.groups
@@ -206,20 +207,21 @@ function regPanel() {
       ${res.split?.includes(cid) ? `<span class="tag warn">${esc(SPLIT_TAG)}</span>` : ''}
       <span class="hint">${esc(cid)} · <span class="nw">${c.credits} נ״ז</span></span>
       <p>${gs
-        .map(
-          (g) => `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
+        .map((g) => {
+          const back = backups(data, res, g.id, app.state.constraints);
+          return `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
         <span class="hint nw">(${esc(groupFresh(g, seatsAt(cid, data)))})</span>${
           res.alts?.[g.id]
             ? ` <span class="hint">(או <bdi
         dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>`
             : ''
         }${
-          backups(data, res, g.id).length
+          back.length
             ? ` <span class="hint">(גיבוי: <bdi
-        dir="ltr">${backups(data, res, g.id).map(esc).join(', ')}</bdi>)</span>`
+        dir="ltr">${back.map(esc).join(', ')}</bdi>)</span>`
             : ''
-        }`
-        )
+        }`;
+        })
         .join(' · ')}</p></div>
       <a class="btn icon-btn ghost" href="${yedion(cid)}" target="_blank" rel="noopener" aria-label="${esc(c.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></li>`;
       })

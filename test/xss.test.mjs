@@ -1069,6 +1069,35 @@ test('a split course is marked in the registration list and in the copied text: 
   );
 });
 
+test('blocked times reach the backups, in the registration panel and in the copied text', () => {
+  // the groups the panel and the copied text call backups, for a result of one semester and for a year pair
+  const named = (text) => [...text.matchAll(/(?:גיבוי: )([^\]<)]+)/g)].flatMap((x) => x[1].replace(/<[^>]*>/g, '').split(/,\s*|\s\+\s/)).map((x) => x.trim());
+  const panel = () => {
+    const n = writes.length;
+    run('reg-backups', () => {
+      ui.panel = 'reg';
+      renderDrawer();
+    });
+    return writes.slice(n).filter((w) => w.scope === 'reg-backups').map((w) => w.html.replace(/<bdi[^>]*>/g, '').replace(/\s+/g, ' ')).join('');
+  };
+  const copied = () => registrationText(current());
+  const before = named(copied());
+  assert.ok(before.length, 'this result lists backups');
+  const target = before[0];
+  const data = [app.data, ...Object.values(app.sem ?? {})].find((d) => d && groupIndex(d).has(target));
+  const saved = app.state.constraints.blocks;
+  // a block over a whole day of that backup: it may stay only if nothing in the option meets it, so it is gone
+  const meeting = groupIndex(data).get(target).g.meetings.find((x) => x.day);
+  app.state.constraints.blocks = [...saved, { day: meeting.day, start: meeting.start, end: meeting.end }];
+  try {
+    assert.ok(!named(copied()).includes(target), 'gone from the copied text');
+    assert.ok(!named(panel()).includes(target), 'gone from the panel');
+  } finally {
+    app.state.constraints.blocks = saved;
+  }
+  assert.ok(named(panel()).includes(target), 'back in the panel without the block');
+});
+
 test('progress rank: a split alternative gets no rank pill and does not shift the regular ones (ranked among themselves)', () => {
   const real = ui.last.results,
     pill = (res, cur) => {
