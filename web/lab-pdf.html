@@ -4,11 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self';
+  script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:;
+  style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <title>בדיקת PDF (זמני)</title>
 <style>
   body { font:16px system-ui,sans-serif; margin:16px; max-width:520px; }
-  button, a.b { display:block; width:100%; box-sizing:border-box; margin:8px 0; padding:12px; font:inherit; text-align:start; color:#000; background:#eee; border:1px solid #888; border-radius:8px; text-decoration:none; }
+  button, a.b { display:block; width:100%; box-sizing:border-box; margin:8px 0; padding:12px; font:inherit; text-align:start; }
+  button, a.b { color:#000; background:#eee; border:1px solid #888; border-radius:8px; text-decoration:none; }
   #log { font:13px monospace; white-space:pre-wrap; direction:ltr; text-align:left; background:#f6f6f6; padding:8px; border:1px solid #ccc; }
   #again[hidden] { display:none; }
 </style>
