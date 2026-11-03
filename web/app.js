@@ -393,6 +393,9 @@ export const freshOf = (data) => {
     .filter(Boolean)
     .sort((a, b) => new Date(a) - new Date(b))[0];
 };
+// When a course's seat counts were read: groups are read every other night, so the last run's time can be a night too new.
+// A status from before groupsAt says what the file says.
+export const seatsAt = (cid, data) => app.status?.groupsAt?.[cid] ?? freshOf(data);
 // Summer is planned after the school year: on only when the profile asks for it and the summer file loaded.
 export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ']);
 export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();

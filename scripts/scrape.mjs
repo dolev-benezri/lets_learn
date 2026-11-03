@@ -148,8 +148,10 @@ const readJson = async (file) => {
 const MAX_LISTED = 6; // the summary is a commit message: a first run over many programs must not make it a wall of text
 // Write every changed data file, then status.json. `results`: [{ key, file, dataset, prev }].
 // A file whose content (ignoring fetchedAt) is unchanged is left alone, so fetchedAt in a data file means "last changed".
-export async function writeResults({ results, statusFile, now }) {
-  const semesters = { ...(await readJson(statusFile))?.semesters };
+// groupsAt (course id -> when its groups were read) goes over the old map like semesters, so a one-program run keeps the rest.
+export async function writeResults({ results, statusFile, now, groupsAt }) {
+  const old = await readJson(statusFile);
+  const semesters = { ...old?.semesters };
   const changes = [];
   for (const { key, file, dataset, prev } of results) {
     const stable = stableJson(dataset),
@@ -162,7 +164,7 @@ export async function writeResults({ results, statusFile, now }) {
     semesters[key] = { hash, changedAt: semesters[key]?.hash === hash ? semesters[key].changedAt : now };
   }
   await mkdir(dirname(statusFile), { recursive: true });
-  await writeFile(statusFile, JSON.stringify({ checkedAt: now, ok: true, semesters }, null, 1));
+  await writeFile(statusFile, JSON.stringify({ checkedAt: now, ok: true, semesters, groupsAt: { ...old?.groupsAt, ...groupsAt } }, null, 1));
   const shown =
     changes.length > MAX_LISTED
       ? [...changes.slice(0, MAX_LISTED), `and ${changes.length - MAX_LISTED} more of ${changes.length} files`]
@@ -196,9 +198,11 @@ export function unitsOf(opt, programs) {
 // budget(key) = how many answers may have been fetched (the session replay not counted) before this key's is; past it a stale cached answer is returned as is
 // and its key goes to request.deferred.
 // An answer that is not cached at all is fetched even past the budget.
+// request.readAt = when each answer returned was really read: its file's time, or now if just fetched.
 export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = () => Infinity } = {}) {
   const session = [],
-    deferred = [];
+    deferred = [],
+    readAt = new Map();
   let replayed = false,
     fetched = 0;
   const request = async (query, form) => {
@@ -212,7 +216,9 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
       fresh = false;
     try {
       old = await readFile(file, 'utf8');
-      fresh = offline || Date.now() - (await stat(file)).mtimeMs <= ttl(key, old);
+      const { mtime } = await stat(file);
+      readAt.set(key, mtime.toISOString());
+      fresh = offline || Date.now() - mtime.getTime() <= ttl(key, old);
     } catch {
       /* not cached */
     }
@@ -231,10 +237,12 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
     await mkdir(dir, { recursive: true });
     await writeFile(`${file}.tmp`, html);
     await rename(`${file}.tmp`, file); // a run killed mid-write (CI timeout) leaves no truncated answer behind
+    readAt.set(key, new Date().toISOString());
     seen(key, html, old);
     return html;
   };
   request.deferred = deferred;
+  request.readAt = readAt;
   return request;
 }
 
@@ -372,6 +380,8 @@ export async function markPublished(cacheDir, statusFile) {
 // Exam dates pulled by hand from the course pages (scripts/pull-exams.mjs); none for a year with no file.
 export const loadPulledExams = async (year) => (await readJson(new URL(`./exams-${year}.json`, import.meta.url))) ?? [];
 
+const groupsKey = (id) => `prgname=S_LOOK_FOR_NOSE&arguments=-N${id}`;
+
 export async function run({
   opt,
   request,
@@ -414,7 +424,7 @@ export async function run({
       log(`[${i + 1}/${ids.length}] ${id}: not offered (list), skipped`);
       continue;
     }
-    const groups = parseGroups(await request(`prgname=S_LOOK_FOR_NOSE&arguments=-N${id}`));
+    const groups = parseGroups(await request(groupsKey(id)));
     const args = groups.find((g) => g.primary && g.detailsArgs)?.detailsArgs;
     const details = args ? parseDetails(await request(`prgname=S_CourseDetails&arguments=${args}`)) : null;
     raw[id] = { groups, details };
@@ -442,6 +452,7 @@ export async function run({
 
   // Build and check every program, cohort and semester before writing any file.
   const fetchedAt = now();
+  const keptOld = new Set();
   const results = [],
     failures = [];
   for (const u of units) {
@@ -479,6 +490,7 @@ export async function run({
       else found.push(...comparisonErrors.map((e) => `${label}: ${e} (use --force to override)`));
       found.forEach(bad);
       if (!soft || !found.length) results.push({ key: label, file, dataset, prev });
+      else for (const d of [dataset, prev]) for (const [id, c] of Object.entries(d?.courses ?? {})) if (c.groups.length) keptOld.add(id);
     }
   }
   if (failures.length) throw new Error(`checks failed, nothing written:\n${failures.join('\n')}`);
@@ -487,7 +499,17 @@ export async function run({
     log('held: the cache is behind the published data and some answers waited for the next night, so nothing is written tonight');
     return 'data(afeka): held, nothing written';
   }
-  const summary = await writeResults({ results, statusFile: `${dataDir}/status.json`, now: fetchedAt });
+  // A label must not read newer than the seats a file shows: a run that leaves out programs or semesters moves no time, and a summer left with its old file
+  // keeps the old time of its courses. Too old is the safe side.
+  const everything = opt['all-programs'] && !opt.programs && opt['all-semesters'];
+  const groupsAt = everything
+    ? Object.fromEntries(
+        Object.entries(raw)
+          .filter(([id, r]) => r.groups.length && !keptOld.has(id))
+          .map(([id]) => [id, request.readAt?.get(groupsKey(id)) ?? fetchedAt])
+      )
+    : {};
+  const summary = await writeResults({ results, statusFile: `${dataDir}/status.json`, now: fetchedAt, groupsAt });
   if (opt['all-programs']) await writeCatalog(`${dataDir}/catalog.json`, units, programs, Number(opt.year));
   // Curriculum numbers that moved: a hint for a human, never a failed run (the deploy must not wait on it)
   const read = (p, y) => JSON.parse(readFileSync(`${dataDir}/${opt.year}-1/${p}-${y}.json`, 'utf8')); // written just above

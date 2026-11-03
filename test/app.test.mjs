@@ -690,3 +690,14 @@ test('load: a saved year that is not a number does not throw on a failed catalog
     app.noSave = false;
   }
 });
+
+import { seatsAt, freshOf } from '../web/app.js';
+test('seatsAt: the time the course was really read; a status from before groupsAt says what the file says', () => {
+  const data = { semester: 'א', year: 2027, program: 30, startYear: 2026, fetchedAt: '2026-11-02T23:25:00.000Z' };
+  app.status = { checkedAt: '2026-11-02T23:25:00.000Z', ok: true, semesters: {}, groupsAt: { 10221: '2026-11-01T23:10:00.000Z' } };
+  assert.equal(seatsAt(10221, data), '2026-11-01T23:10:00.000Z');
+  assert.equal(seatsAt('10221', data), '2026-11-01T23:10:00.000Z', 'an id from the data is a string key');
+  assert.equal(seatsAt(99999, data), freshOf(data));
+  app.status = null;
+  assert.equal(seatsAt(10221, data), data.fetchedAt);
+});

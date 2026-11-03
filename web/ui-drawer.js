@@ -1,5 +1,5 @@
 // The preferences page (step 3: preferences and friends) and the registration drawer.
-import { app, esc, freshOf, DEFAULT } from './app.js';
+import { app, esc, seatsAt, DEFAULT } from './app.js';
 import { SEMESTER_DATES } from './ics.js';
 import {
   DAYS,
@@ -206,7 +206,7 @@ function regPanel() {
       <p>${gs
         .map(
           (g) => `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
-        <span class="hint nw">(${esc(groupFresh(g, freshOf(data)))})</span>${
+        <span class="hint nw">(${esc(groupFresh(g, seatsAt(cid, data)))})</span>${
           res.alts?.[g.id]
             ? ` <span class="hint">(או <bdi
         dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>`
