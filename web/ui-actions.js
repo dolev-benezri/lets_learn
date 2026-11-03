@@ -44,6 +44,7 @@ import { scheduleRun } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
+import { advisorPdfAct } from './ui-advisor-pdf.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel, advisorNow } from './ui-drawer.js';
 
 // ---------- actions ----------
@@ -259,19 +260,8 @@ export const ACT = {
     }
     print();
   },
-  // The system share sheet on a phone (a closed sheet says nothing), otherwise the clipboard.
-  async advisorShare() {
-    const text = document.querySelector('.advisor-sum').innerText;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'סיכום ליועץ', text });
-      } catch (e) {
-        if (e?.name !== 'AbortError') copy(text, 'הסיכום הועתק');
-      }
-      return;
-    }
-    copy(text, 'הסיכום הועתק');
-  },
+  advisorPdf: advisorPdfAct,
+  advisorCopy: () => copy(document.querySelector('.advisor-sum').innerText, 'הסיכום הועתק'),
   backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),
   landingAdd: () => addFriend(app.friendLanding),
   landingDrop() {

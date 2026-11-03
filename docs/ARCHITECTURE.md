@@ -12,7 +12,8 @@
 | `web/app.js` | מצב (כולל `sortBy` של "הצג לפי" ו-`programSet`: האם נבחר מסלול, כי בביקור ראשון אף מסלול לא נבחר מראש), `normalize()`, localStorage, טעינת נתונים, החלפת תוכנית ומחזור, ושלבי הניווט (`STEPS`, `routeOf`, `hashOf`: `#me`, `#courses`, `#prefs`, וכל hash אחר הוא המערכות) |
 | `web/settings.json` | הקובץ שמי שמחזיק בכלי עורך ביד, בלי בנייה ובלי סריקה: `supportEmail` (כתובת ל-"דיווח על טעות"), `counselingUrl` (קישור לעמוד הייעוץ), `notice` (הודעה בראש האתר), `turns` (תורות הרשמה: `id`, `label`, `opensAt`) ו-`programs[id]` עם `approved` (תאריך אישור לכל מחזור) ו-`conflicts` (סתירות פתוחות בין מקורות רשמיים, לכל מחזור; לכל סתירה גם `plan`, `yedion` ו-`tool` רשות, לעמודות של דפי הסתירות). הוא נפרד מ-`status.json` כי הסריקה כותבת אותו מחדש מאפס |
 | `web/settings.js` | `cleanSettings`: בונה את `settings.json` מחדש שדה אחרי שדה. קובץ חסר, שבור או מהסוג הלא נכון מחזיר ברירות מחדל, והאתר עובד כמו קודם |
-| `web/advisor.js` | `advisorHtml`: דף "סיכום ליועץ" להדפסה (טהור, בלי DOM, כל טקסט דרך `esc()`). `ACT.advisor` ב-`ui-actions` ממלא בו את `#print` ומדפיס |
+| `web/advisor-pdf.js`, `web/ui-advisor-pdf.js` | "סיכום ליועץ" כקובץ PDF: הראשון פורס את `advisorBlocks` על A4 (טהור, הספריות מוזרקות), השני בונה את הקובץ כשהלוח נפתח, כי `navigator.share` חייב לרוץ בתוך הלחיצה, ומשתף או מוריד אותו. שום דבר לא נשמר. |
+| `web/advisor.js` | `advisorBlocks`: תוכן "סיכום ליועץ" כמחרוזות פשוטות. `advisorHtml`: הדף להדפסה ולמסך (טהור, בלי DOM, כל טקסט דרך `esc()`). `ACT.advisor` ב-`ui-actions` ממלא בו את `#print` ומדפיס |
 | `web/rules.js` | מנוע התקנון: סיווג קורסים, התקדמות והתמחויות |
 | `web/solver-core.js` | חיפוש: backtracking עם מסכות ביטים וגבולות עליונים לקיצוץ, כולל המדדים `credits` ו-`unlocks` ו-`showWeights` (ו-`solver-worker.js`) |
 | `web/share.js` | קישורי חבר וגיבוי, עם אימות |
@@ -25,7 +26,7 @@
 | `web/style.css` | העיצוב של האתר, מטוקנים (בהיר וכהה). `map.css` הוא העיצוב של מפת ההתקדמות |
 | `web/data/afeka/` | הנתונים שנמשכו: תיקייה לכל סמסטר (`2027-1`, `2027-2`, ו-`2027-3` לקיץ) ובה קובץ לכל תוכנית ומחזור (`30-2026.json`), ו-`catalog.json` (התוכניות והמחזורים) ו-`status.json` (מתי נבדק לאחרונה ומתי השתנה כל סמסטר; האתר מזהיר כשהנתונים ישנים) |
 | `web/fonts/` | Rubik, מתארח מקומית (עם הרישיון `OFL.txt`) |
-| `web/vendor/` | עותקים מקומיים של pdf.js, panzoom, popover polyfill, tesseract.js ו-Driver.js, כל אחד עם הרישיון שלו |
+| `web/vendor/` | עותקים מקומיים של pdf.js, panzoom, popover polyfill, tesseract.js, Driver.js וספריות ה-PDF (`vendor/pdf`), כל אחד עם הרישיון שלו |
 | `test/` | בדיקות `node --test`, ו-`fixtures/mini-data.mjs` (נתונים קטנים לבדיקות) |
 | `ci/` | `gitlab-scrape.yml`: הסריקה הלילית ב-GitLab CI, שדוחפת את הנתונים ל-`main` |
 | `.github/` | `workflows/deploy.yml` (כל הבדיקות, ואז העלאת `web/` ל-GitHub Pages אחרי דחיפה ל-`main` שנוגעת ב-`web/`) ותבניות ה-issues (באג, טעות בנתונים, בקשה) |

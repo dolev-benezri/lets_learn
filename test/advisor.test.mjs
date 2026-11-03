@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse } from 'node-html-parser';
-import { advisorHtml } from '../web/advisor.js';
+import { advisorHtml, advisorBlocks } from '../web/advisor.js';
 import { classify } from '../web/rules.js';
 import { DISCLAIMER } from '../web/ui-text.js';
 import { mini } from './fixtures/mini-data.mjs';
@@ -128,4 +128,19 @@ test('advisor summary names a mandatory course the year plan could not place (re
     res: { a: { courses: ['A'], groups: ['A2'] }, b: null, missing: ['B'], warnings: [] }, cls: { warnings: [] }
   });
   assert.match(html, /קורסי חובה שביקשת ולא נכנסו לאף סמסטר: דינמיקה/);
+});
+
+test('advisorBlocks: plain strings in order, for a renderer that is not HTML', () => {
+  const w = world({ failed: { B: 1 }, name: 'דנה <b>' });
+  const b = advisorBlocks(w);
+  assert.deepEqual(
+    b.filter((x) => x.k === 'h3').map((x) => x.t),
+    ['המצב שלי', 'החלופה שבחרתי', 'שימו לב']
+  );
+  assert.equal(b[0].k, 'h2');
+  assert.ok(b.some((x) => x.k === 'li' && x.t === 'שם: דנה <b>'), 'not escaped: only the HTML renderer escapes');
+  assert.ok(b.some((x) => x.k === 'li' && x.t.startsWith('קורסים שנכשלתי בהם')));
+  const c = b.find((x) => x.k === 'course' && x.name === 'דינמיקה');
+  assert.ok(c.credits > 0);
+  assert.match(c.groups[0], /קבוצה B1: יום ב׳ 10:00–11:50/);
 });

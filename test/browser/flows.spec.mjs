@@ -22,6 +22,55 @@ const focused = (page) =>
     return e.dataset?.k ?? e.dataset?.act ?? e.getAttribute('href') ?? e.tagName;
   });
 
+// Holds the first request for a PDF font until release(), so a test can act while the file is being built.
+const holdFirstFont = (page) => {
+  let release,
+    reached,
+    first = true;
+  const gate = new Promise((r) => (release = r)),
+    arrived = new Promise((r) => (reached = r));
+  page.route('**/vendor/pdf/rubik-hebrew-400-normal.woff', async (route) => {
+    if (first) {
+      first = false;
+      reached();
+      await gate;
+    }
+    await route.continue();
+  });
+  return { release, reached: arrived };
+};
+const pdfReady = (page) => page.locator('[data-act="advisorPdf"]:not([aria-disabled])').waitFor({ timeout: 30000 });
+const stubShare = (page) =>
+  page.evaluate(() => {
+    navigator.canShare = ({ files }) => files?.[0]?.type === 'application/pdf';
+    navigator.share = async (d) => {
+      window.__shared = d;
+      window.__active = navigator.userActivation?.isActive;
+    };
+  });
+// The text of a PDF and the dark pixels of its first page, through pdf.js. The pixels catch a file whose text exists but draws nothing.
+const readPdf = (page, expr) =>
+  page.evaluate(async (expr) => {
+    const file = await eval(expr);
+    const pdfjs = await import('./vendor/pdfjs/pdf.min.mjs');
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdfjs/pdf.worker.min.mjs', location.href).href;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const doc = await pdfjs.getDocument({ data: bytes.slice() }).promise;
+    const pg = await doc.getPage(1);
+    const items = [];
+    for (let n = 1; n <= doc.numPages; n++) items.push(...(await (await doc.getPage(n)).getTextContent()).items);
+    const vp = pg.getViewport({ scale: 1 }),
+      c = document.createElement('canvas');
+    c.width = vp.width;
+    c.height = vp.height;
+    const g = c.getContext('2d');
+    await pg.render({ canvasContext: g, viewport: vp, canvas: c }).promise;
+    const px = g.getImageData(0, 0, c.width, c.height).data;
+    let dark = 0;
+    for (let i = 0; i < px.length; i += 4) if (px[i + 3] > 128 && px[i] < 100) dark++;
+    return { pages: doc.numPages, head: String.fromCharCode(...bytes.slice(0, 5)), text: items.map((i) => i.str).join(' '), dark, name: file.name, type: file.type };
+  }, expr);
+
 for (const size of Object.keys(SIZES)) {
   test(`${size}: terms gate by keyboard, track, year, manual entry, tick a course, an alternative shows`, async (t) => {
     const page = await visit(t, size);
@@ -157,32 +206,59 @@ for (const size of Object.keys(SIZES)) {
 }
 
 for (const size of Object.keys(SIZES)) {
-  test(`${size}: the advisor summary can be shared, with the system sheet or by copying`, async (t) => {
+  test(`${size}: the advisor summary is copied as text, and the PDF button waits for its file`, async (t) => {
     const page = await visit(t, size, DONE);
     await weekReady(page);
+    const hold = holdFirstFont(page);
     await page.evaluate(() => {
-      navigator.share = async (d) => {
-        window.__shared = d;
-      };
-    });
-    await page.locator('#advisorBtn').click();
-    await page.locator('[data-act="advisorShare"]').click();
-    await page.waitForFunction(() => window.__shared);
-    assert.match(await page.evaluate(() => window.__shared.text), /סיכום לפגישה עם יועץ לימודים/);
-    await page.locator('#drawer [data-act="closeDrawer"]').click();
-
-    await page.evaluate(() => {
-      navigator.share = undefined;
       window.__copied = null;
       navigator.clipboard.writeText = async (t) => {
         window.__copied = t;
       };
+      navigator.canShare = () => true;
+      navigator.share = async () => {
+        window.__shares = (window.__shares ?? 0) + 1;
+      };
     });
     await page.locator('#advisorBtn').click();
-    assert.match(await page.locator('[data-act="advisorShare"]').innerText(), /העתק/);
-    await page.locator('[data-act="advisorShare"]').click();
+    const pdf = page.locator('[data-act="advisorPdf"]');
+    await hold.reached;
+    assert.equal(await pdf.getAttribute('aria-disabled'), 'true');
+    assert.match(await pdf.innerText(), /מכין PDF/);
+    await pdf.click({ force: true }); // Playwright waits out aria-disabled; a person can still tap
+    assert.equal(await page.evaluate(() => window.__shares ?? 0), 0, 'nothing to share yet');
+    hold.release();
+    await pdfReady(page);
+    assert.match(await pdf.innerText(), size === 'phone' ? /שתף PDF/ : /הורד PDF/);
+    await page.locator('[data-act="advisorCopy"]').click();
     await page.waitForFunction(() => window.__copied);
     assert.match(await page.evaluate(() => window.__copied), /סיכום לפגישה עם יועץ לימודים/);
+  });
+
+  test(`${size}: focus stays on the PDF button when the file gets ready`, async (t) => {
+    const page = await visit(t, size, DONE);
+    await weekReady(page);
+    const hold = holdFirstFont(page);
+    await page.locator('#advisorBtn').click();
+    await hold.reached;
+    await page.evaluate(() => {
+      window.__button = document.querySelector('[data-act="advisorPdf"]');
+      window.__button.focus();
+    });
+    hold.release();
+    await pdfReady(page);
+    assert.ok(await page.evaluate(() => document.activeElement === window.__button), 'the same element, still focused');
+  });
+
+  test(`${size}: blocked library files leave print and copy, and say so`, async (t) => {
+    const page = await visit(t, size, DONE);
+    await weekReady(page);
+    await page.route('**/vendor/pdf/**', (r) => r.abort());
+    await page.locator('#advisorBtn').click();
+    await page.locator('.advisor-pdf-note:not([hidden])').waitFor();
+    assert.equal(await page.locator('[data-act="advisorPdf"]').count(), 0);
+    assert.equal(await page.locator('[data-act="advisor"]').count(), 1);
+    assert.equal(await page.locator('[data-act="advisorCopy"]').count(), 1);
   });
 
   test(`${size}: by keyboard, the advisor summary and a text dialog open and Escape closes the dialog`, async (t) => {
@@ -195,10 +271,15 @@ for (const size of Object.keys(SIZES)) {
     await page.waitForFunction(() => window.__prints === 1);
     assert.equal(await page.locator('#print').getAttribute('hidden'), null);
     await page.locator('#drawer [data-act="closeDrawer"]').click();
+    await page.waitForFunction(() => document.activeElement?.id === 'advisorBtn'); // the close event is queued: it returns the focus, so wait it out
 
     await page.locator('[data-act="panel"][data-panel="reg"]').focus();
     await page.keyboard.press('Space');
     await page.locator('#drawer[open]').waitFor();
+    // Failed at random under load, never alone (36 runs): if it comes back, this says which panel it reached.
+    await page.locator('[data-act="copyReg"]').waitFor({ timeout: 10000 }).catch(async () => {
+      assert.fail(`no copy button in: ${(await page.locator('#drawer').innerText()).slice(0, 120)}`);
+    });
     await page.locator('[data-act="copyReg"]').focus();
     await page.keyboard.press('Enter');
     const text = page.locator('dialog[open]:has(textarea)'); // showText: the copy failed, so the text is offered to copy by hand
@@ -419,3 +500,161 @@ for (const size of Object.keys(SIZES)) {
     assert.equal(s.grades['90901'], 40);
   });
 }
+
+test('phone: the file is shared alone, inside the tap, with the summary readable in it', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await stubShare(page);
+  await page.locator('#advisorBtn').click();
+  await pdfReady(page);
+  await page.locator('[data-act="advisorPdf"]').click();
+  await page.waitForFunction(() => window.__shared);
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.__shared)), ['files'], 'files only: some targets drop a file that comes with text');
+  assert.notEqual(await page.evaluate(() => window.__active), false, 'no wait between the tap and the share');
+  const pdf = await readPdf(page, 'window.__shared.files[0]');
+  assert.equal(pdf.head, '%PDF-');
+  assert.equal(pdf.pages, 1, 'a full year of 16 courses, with its notes, on one sheet');
+  assert.equal(pdf.name, 'advisor-summary.pdf');
+  assert.equal(pdf.type, 'application/pdf');
+  assert.ok(pdf.text.includes('סיכום') && pdf.text.includes('המצב'), pdf.text.slice(0, 80));
+  assert.ok(pdf.dark > 500, `${pdf.dark} dark pixels`);
+  // a closed sheet is not an error
+  await page.evaluate(() => {
+    navigator.share = () => Promise.reject(new DOMException('cancelled', 'AbortError'));
+  });
+  await page.locator('[data-act="advisorPdf"]').click();
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator('#toast.show').count(), 0);
+  assert.equal(await page.locator('[data-act="advisorCopy"]').count(), 1, 'no target found also reads AbortError: another route stays on screen');
+  // a real refusal says so, and the next route takes a fresh tap
+  await page.evaluate(() => {
+    navigator.share = () => Promise.reject(new DOMException('no', 'NotAllowedError'));
+  });
+  await page.locator('[data-act="advisorPdf"]').click();
+  await page.waitForFunction(() => /להעתיק/.test(document.getElementById('toast').textContent));
+});
+
+test('desktop: the file downloads, with no system sheet even where one exists', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await stubShare(page);
+  await page.locator('#advisorBtn').click();
+  await pdfReady(page);
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('[data-act="advisorPdf"]').click()]);
+  assert.equal(download.suggestedFilename(), 'advisor-summary.pdf');
+  assert.equal((await readFile(await download.path())).subarray(0, 5).toString(), '%PDF-');
+  assert.equal(await page.evaluate(() => window.__shared ?? null), null);
+});
+
+test('phone: an old browser with no file sharing downloads the file', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await page.evaluate(() => {
+    navigator.canShare = undefined;
+  });
+  await page.locator('#advisorBtn').click();
+  await pdfReady(page);
+  assert.match(await page.locator('[data-act="advisorPdf"]').innerText(), /הורד PDF/);
+});
+
+test('the same content builds once; another alternative builds again and an older build loses', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  const fonts = [];
+  page.on('request', (r) => {
+    if (r.url().includes('rubik-hebrew-400')) fonts.push(r.url());
+  });
+  const hold = holdFirstFont(page);
+  await page.locator('#advisorBtn').click();
+  await hold.reached;
+  const before = await page.locator('.advisor-sum').innerText();
+  // whole Hebrew words and numbers: the file holds a time's parts and a word with a quote mark as separate runs
+  const words = (s) => new Set(s.split(/[\s,;:()–-]+/).filter((w) => w.length > 1 && /^([א-ת]+|\d+)$/.test(w)));
+  await page.evaluate(async () => (await import('./ui-view.js')).go(1));
+  await page.waitForFunction((b) => document.querySelector('.advisor-sum').innerText !== b, before);
+  await pdfReady(page);
+  const after = await page.locator('.advisor-sum').innerText();
+  const onlyNew = [...words(after)].filter((x) => !words(before).has(x));
+  const onlyOld = [...words(before)].filter((x) => !words(after).has(x));
+  assert.ok(onlyNew.length, 'the alternatives differ');
+  hold.release();
+  await page.waitForTimeout(300);
+  const pdf = await readPdf(page, 'import("./ui-advisor-pdf.js").then((m) => m.advisorPdfFile())');
+  const inFile = words(pdf.text);
+  for (const w of onlyNew) assert.ok(inFile.has(w), `${w} of the shown alternative is in the file`);
+  for (const w of onlyOld) assert.ok(!inFile.has(w), `${w} of the older build is not`);
+  assert.ok(pdf.text.includes('סיכום'));
+  const count = fonts.length;
+  await page.evaluate(async () => (await import('./ui-drawer.js')).renderDrawer());
+  await pdfReady(page);
+  assert.equal(fonts.length, count, 'a repaint with the same content builds nothing');
+});
+
+test('closing the panel drops the file, even from a build that ends after it', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  const hold = holdFirstFont(page);
+  await page.locator('#advisorBtn').click();
+  await hold.reached;
+  await page.locator('#drawer [data-act="closeDrawer"]').click();
+  hold.release();
+  await page.waitForTimeout(800);
+  const held = () => page.evaluate(async () => Boolean((await import('./ui-advisor-pdf.js')).advisorPdfFile()));
+  assert.equal(await held(), false);
+  await page.locator('#advisorBtn').click();
+  await pdfReady(page);
+  assert.equal(await held(), true);
+  await page.locator('#drawer [data-act="closeDrawer"]').click();
+  await page.waitForTimeout(200); // the close event is queued
+  assert.equal(await held(), false);
+});
+
+test('on a desktop, another panel replacing this one drops the file, even from a build that ends after it', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await page.locator('#advisorBtn').click();
+  await pdfReady(page);
+  await page.locator('[data-act="panel"][data-panel="reg"]').click();
+  const held = () => page.evaluate(async () => Boolean((await import('./ui-advisor-pdf.js')).advisorPdfFile()));
+  assert.equal(await held(), false, 'a finished file is dropped');
+  await page.locator('#advisorBtn').click();
+  await pdfReady(page);
+  await page.locator('#drawer [data-act="closeDrawer"]').click();
+  await page.waitForTimeout(200);
+  const hold = holdFirstFont(page);
+  await page.locator('#advisorBtn').click();
+  await hold.reached;
+  await page.locator('[data-act="panel"][data-panel="reg"]').click();
+  hold.release();
+  await page.waitForTimeout(800);
+  assert.equal(await held(), false, 'and so is a late one');
+});
+
+test('a character no font holds is named in the panel and left out of the file', async (t) => {
+  const student = { ...JSON.parse(DONE['afeka-sched-v1']), name: 'דנה 😀' };
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1': JSON.stringify(student) });
+  await weekReady(page);
+  await page.locator('#advisorBtn').click();
+  await pdfReady(page);
+  assert.match(await page.locator('.advisor-pdf-note').innerText(), /😀/);
+});
+
+test('in the Google app, where print does nothing, there is no print button', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await page.evaluate(() => Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (iPhone) GSA/444.2 Mobile Safari/604.1' }));
+  await page.locator('#advisorBtn').click();
+  assert.equal(await page.locator('[data-act="advisor"]').count(), 0);
+  assert.equal(await page.locator('[data-act="advisorPdf"]').count(), 1);
+});
+
+test('320 px: the panel buttons stay inside the screen', async (t) => {
+  const page = await visit(t, { width: 320, height: 640 }, DONE);
+  await weekReady(page);
+  await page.locator('#advisorBtn').click();
+  await pdfReady(page);
+  for (const a of ['advisorPdf', 'advisor', 'advisorCopy']) {
+    const box = await page.locator(`[data-act="${a}"]`).boundingBox();
+    assert.ok(box.x >= 0 && box.x + box.width <= 320, `${a}: ${JSON.stringify(box)}`);
+  }
+});
