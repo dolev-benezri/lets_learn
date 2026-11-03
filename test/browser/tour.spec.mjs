@@ -46,6 +46,29 @@ async function walk(page) {
 for (const size of Object.keys(SIZES)) {
   const visit = (t, seed, hash) => visitIn(browser, t, size, seed, hash, 'light', true);
 
+  // An iPhone collapsed the box to its padding, one word a line (3.11). This engine does not do that alone: containment gives the text no width to size by.
+  test(`${size}: the bubble keeps a readable width and stays on screen, whatever its text measures`, async (t) => {
+    const page = await visit(t, DONE, '#me');
+    await page.locator('#tourBtn').click();
+    await opened(page);
+    await page.addStyleTag({ content: '.driver-popover-description, .driver-popover-footer { contain:inline-size; }' });
+    for (let i = 1; ; i++) {
+      await page.waitForFunction(
+        (n) => document.querySelector('.driver-popover-progress-text')?.textContent.startsWith(`${n} מתוך`),
+        i
+      );
+      await page.waitForTimeout(400);
+      const box = await page.locator(POP).evaluate((p) => {
+        const r = p.getBoundingClientRect();
+        return { width: r.width, left: r.left, right: r.right, screen: innerWidth };
+      });
+      assert.ok(box.width >= 240, `stop ${i}: ${box.width}px wide`);
+      assert.ok(box.left >= 8 && box.right <= box.screen - 8, `stop ${i}: ${box.left}-${box.right} of ${box.screen}`);
+      if (i === Number((await progress(page)).split(' ').pop())) break;
+      await page.locator('.driver-popover-next-btn').click();
+    }
+  });
+
   test(`${size}: after the gate the tour walks the step bar, never shows twice, and the replay button starts it again`, async (t) => {
     const page = await visit(t);
     await page.locator('.gate').waitFor();
