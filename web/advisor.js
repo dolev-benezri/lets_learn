@@ -1,4 +1,5 @@
-// The one-page summary to bring to an academic advisor (printed from #print). Pure: no DOM; every string reaches HTML through esc().
+// The one-page summary to bring to an academic advisor. advisorBlocks is its content, in plain strings: advisorHtml draws it on screen and for print
+// (#print), and advisor-pdf.js into a file. Pure: no DOM; in HTML every string goes through esc().
 import { progress, gradeAverage, studyYear, missingRequired } from './rules.js';
 import {
   esc,
@@ -17,10 +18,9 @@ const YEAR = ' אבגדה'; // study year number -> letter
 const dateText = (now) =>
   now.toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: 'numeric' });
 const semName = (s) => (s === 'קיץ' ? 'סמסטר קיץ' : `סמסטר ${s}׳`);
-const list = (items) => (items.length ? `<ul>${items.map((t) => `<li>${t}</li>`).join('')}</ul>` : '');
-
 // data: the loaded program (lists, year); sem: { א, ב, קיץ } datasets when a year pair is shown; res: the shown alternative (one semester or a pair).
-export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), sem = {} }) {
+// Blocks: { k: 'h2'|'h3'|'h4'|'p'|'li', t } and { k: 'course', name, credits, groups: string[] }.
+export function advisorBlocks({ state, data, res, cls, catalog, now = new Date(), sem = {} }) {
   const year = studyYear(data, state),
     prog = progress(data, state),
     avg = gradeAverage(data, state).avg;
@@ -31,19 +31,20 @@ export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), 
   const passed = state.passed.filter((id) => data.courses[id]);
   // failed and not passed again: what the advisor most needs to see (bot report #6)
   const failed = Object.keys(state.failed ?? {}).filter((id) => !state.passed.includes(id) && data.courses[id]);
+  const li = (t) => ({ k: 'li', t });
 
-  const me = list(
-    [
-      state.name && `שם: ${esc(state.name)}`,
-      program && `תוכנית: ${esc(program)}`,
-      `שנה ${esc(YEAR[year])}׳ בלימודים`,
-      `${esc(creditsGoal(prog.earned, prog.required, year))}`,
-      avg !== null && `ממוצע: ${avg.toFixed(1)}`,
-      `קורסים שעברתי: ${passed.length ? passed.map((id) => esc(name(id))).join(', ') : 'אין'}`,
-      failed.length && `קורסים שנכשלתי בהם ועוד לא עברתי: ${failed.map((id) => esc(name(id))).join(', ')}`,
-      `קורסי חובה משנים קודמות שחסרים: ${missing.length ? missing.map((id) => esc(name(id))).join(', ') : 'אין'}`,
-    ].filter(Boolean)
-  );
+  const me = [
+    state.name && `שם: ${state.name}`,
+    program && `תוכנית: ${program}`,
+    `שנה ${YEAR[year]}׳ בלימודים`,
+    creditsGoal(prog.earned, prog.required, year),
+    avg !== null && `ממוצע: ${avg.toFixed(1)}`,
+    `קורסים שעברתי: ${passed.length ? passed.map(name).join(', ') : 'אין'}`,
+    failed.length && `קורסים שנכשלתי בהם ועוד לא עברתי: ${failed.map(name).join(', ')}`,
+    `קורסי חובה משנים קודמות שחסרים: ${missing.length ? missing.map(name).join(', ') : 'אין'}`,
+  ]
+    .filter(Boolean)
+    .map(li);
 
   const parts = !res
     ? []
@@ -60,20 +61,19 @@ export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), 
     for (const cid of r.courses) {
       const c = d.courses[cid];
       if (!c) continue;
-      const gs = (r.groups ?? [])
+      const groups = (r.groups ?? [])
         .map((id) => byGroup.get(id))
         .filter((x) => x?.cid === cid)
-        .map(
-          ({ g }) =>
-            `${esc(groupLabel(g))}: ${g.meetings.length ? g.meetings.map((m) => esc(meetingText(m))).join(', ') : 'ללא מפגשים'}`
-        );
-      // one line of groups: a year pair must fit one A4 page
-      rows.push(`<b>${esc(c.name)}</b> (${c.credits} נ״ז)${gs.length ? `<div>${gs.join('; ')}</div>` : ''}`);
+        .map(({ g }) => `${groupLabel(g)}: ${g.meetings.length ? g.meetings.map(meetingText).join(', ') : 'ללא מפגשים'}`);
+      rows.push({ k: 'course', name: c.name, credits: c.credits, groups });
     }
     const credits = r.courses.reduce((a, cid) => a + (d.courses[cid]?.credits ?? 0), 0);
-    return `${'a' in res || label !== 'שנה' ? `<h4>${esc(semName(label))}</h4>` : ''}<p>${esc(courseCount(r.courses.length))}, ${credits} נ״ז</p>${list(rows)}`;
+    return [
+      ...('a' in res || label !== 'שנה' ? [{ k: 'h4', t: semName(label) }] : []),
+      { k: 'p', t: `${courseCount(r.courses.length)}, ${credits} נ״ז` },
+      ...rows
+    ];
   };
-  const chosen = parts.length ? parts.map(block).join('') : '<p>לא נבחרה חלופה.</p>';
 
   const split = res ? [...new Set([...(res.split ?? []), ...parts.flatMap(([, r]) => r.split ?? [])])] : [];
   const notes = [
@@ -83,11 +83,33 @@ export function advisorHtml({ state, data, res, cls, catalog, now = new Date(), 
     ...(res && 'a' in res && res.missing?.length ? [`קורסי חובה שביקשת ולא נכנסו לאף סמסטר: ${res.missing.map(name).join(', ')}`] : []),
     ...(split.length ? [SPLIT_NOTE, splitLine(split.map(name))] : []),
     ...parts.flatMap(([, r]) => closeExamLines(r.closeExams ?? [], name)),
-  ].map(esc);
+    DISCLAIMER
+  ];
 
-  return `<h2>סיכום לפגישה עם יועץ לימודים</h2>
-<p>${esc(dateText(now))} · שנת הלימודים ${esc(hebYear(data.year))}</p>
-<h3>המצב שלי</h3>${me}
-<h3>החלופה שבחרתי</h3>${chosen}
-<h3>שימו לב</h3>${list([...notes, esc(DISCLAIMER)])}`;
+  return [
+    { k: 'h2', t: 'סיכום לפגישה עם יועץ לימודים' },
+    { k: 'p', t: `${dateText(now)} · שנת הלימודים ${hebYear(data.year)}` },
+    { k: 'h3', t: 'המצב שלי' },
+    ...me,
+    { k: 'h3', t: 'החלופה שבחרתי' },
+    ...(parts.length ? parts.flatMap(block) : [{ k: 'p', t: 'לא נבחרה חלופה.' }]),
+    { k: 'h3', t: 'שימו לב' },
+    ...notes.map(li)
+  ];
+}
+
+// one line of groups: a year pair must fit one A4 page
+const courseHtml = (b) => `<b>${esc(b.name)}</b> (${b.credits} נ״ז)${b.groups.length ? `<div>${esc(b.groups.join('; '))}</div>` : ''}`;
+
+export function advisorHtml(args) {
+  let html = '',
+    inList = false;
+  for (const b of advisorBlocks(args)) {
+    const item = b.k === 'li' || b.k === 'course';
+    if (item !== inList) html += item ? '<ul>' : '</ul>';
+    inList = item;
+    if (item) html += `<li>${b.k === 'li' ? esc(b.t) : courseHtml(b)}</li>`;
+    else html += `${b.k === 'h3' ? '\n' : ''}<${b.k}>${esc(b.t)}</${b.k}>${b.k === 'h2' ? '\n' : ''}`;
+  }
+  return inList ? `${html}</ul>` : html;
 }
