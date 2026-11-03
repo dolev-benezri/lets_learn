@@ -136,6 +136,10 @@ export function recordWarnings(data, state) {
   return out;
 }
 
+// The courses marked passed among them, as [id, texts]: what the plan and the advisor summary must also say.
+export const passedWarnings = (data, state) =>
+  Object.entries(recordWarnings(data, state)).filter(([id]) => state.passed.includes(id));
+
 export function classify(data, state) {
   const passed = new Set(state.passed);
   const failed = state.failed ?? {};
@@ -297,6 +301,7 @@ export function withAfterA(data, state, cls, dataA = null) {
 // exemption lasts while passed.
 export function setStatus(state, id, st) {
   const was = state.passed.includes(id) ? 'passed' : state.failed[id] ? 'failed' : 'none';
+  if (state.assumed) state.assumed = state.assumed.filter((x) => x !== id); // the student has now said so
   // a grade belongs to its outcome: a pass grade is not a failing grade, nor the other way round ("not taken" has none)
   if (st !== was && state.grades) delete state.grades[id];
   state.passed = state.passed.filter((x) => x !== id);

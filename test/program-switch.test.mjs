@@ -327,6 +327,71 @@ test('reconcileSpecs: a saved choice that lost an area keeps the areas still off
   }
 });
 
+test('assumed: a first state says what the site assumed, and a known failure is not assumed passed', () => {
+  reset({ ...mine(), passed: null, failed: {}, assumed: null });
+  ensurePassed();
+  assert.deepEqual([app.state.passed, app.state.assumed], [['a'], ['a']]);
+  reset({ ...mine(), passed: null, failed: { a: 1 }, assumed: null });
+  ensurePassed();
+  assert.deepEqual([app.state.passed, app.state.assumed], [[], []]);
+});
+
+test('assumed: a save from before the field: earlier-year passes count as assumed, unless a grade or an exemption backs them', () => {
+  const old = (over) => reset({ ...mine(), passed: ['a', 'z'], failed: {}, grades: {}, exempt: [], assumed: null, ...over });
+  old();
+  ensurePassed();
+  assert.deepEqual(app.state.assumed, ['a'], 'z is no earlier-year course: the student marked it');
+  old({ grades: { a: 80 } });
+  ensurePassed();
+  assert.deepEqual(app.state.assumed, []);
+  old({ exempt: ['a'] });
+  ensurePassed();
+  assert.deepEqual(app.state.assumed, []);
+  old({ assumed: [] });
+  ensurePassed();
+  assert.deepEqual(app.state.assumed, [], 'an answer already given stays');
+});
+
+test('assumed: normalize keeps what is valid, inside passed; a missing or bad field stays open for ensurePassed', () => {
+  const n = (over) => normalize({ v: 1, program: 30, startYear: 2026, year: 2027, passed: ['a', 'b'], ...over }, CATALOG).assumed;
+  assert.deepEqual(n({ assumed: ['a', 'a', 'gone', 5] }), ['a']);
+  assert.deepEqual(n({ assumed: [] }), []);
+  assert.equal(n({}), null);
+  assert.equal(n({ assumed: 'a' }), null);
+  assert.equal(n({ passed: undefined, assumed: ['a'] }), null, 'no record yet: nothing to qualify');
+  // last year's save: the record stays, and moving on assumes nothing new
+  const y = normalize({ v: 1, program: 30, startYear: 2026, year: 2026, passed: ['a'], assumed: [] }, { ...CATALOG, year: 2027 });
+  assert.deepEqual([y.passed, y.assumed], [['a'], []]);
+});
+
+test('assumed: a cohort switch of the program adds only what it newly assumes, a confirmed course stays confirmed', async () => {
+  serve();
+  reset({ ...mine(), startYear: 2026, passed: ['a'], failed: {}, assumed: [], profile: { year: null, amirnet: null, specs: [], summer: false } });
+  await switchTo(30, 2025);
+  assert.deepEqual([app.state.passed, app.state.assumed], [['a'], []]);
+  reset({ ...mine(), startYear: 2027, passed: ['z'], failed: {}, assumed: ['z'], profile: { year: null, amirnet: null, specs: [], summer: false } });
+  await switchTo(30, 2026);
+  assert.deepEqual([app.state.passed, [...app.state.assumed].sort()], [['z', 'a'], ['a', 'z']]);
+});
+
+test('assumed: another program has its own, and going back finds the first one', async () => {
+  serve();
+  reset({ ...mine(), startYear: 2026, passed: ['a'], failed: {}, assumed: [], profile: { year: null, amirnet: null, specs: [], summer: false } });
+  await switchTo(20, 2026);
+  assert.deepEqual(app.state.assumed, ['a'], 'a first state of program 20');
+  await switchTo(30, 2026);
+  assert.deepEqual(app.state.assumed, [], 'the stashed answer');
+});
+
+test('assumed: a backup from before the field is read like an old save', async () => {
+  serve();
+  reset({ ...mine(), startYear: 2026, passed: ['a'], failed: {}, assumed: [] });
+  assert.ok(await restoreBackup({ v: 1, program: 30, startYear: 2026, year: 2027, passed: ['a'] }));
+  assert.equal(app.state.assumed, null);
+  ensurePassed();
+  assert.deepEqual(app.state.assumed, ['a']);
+});
+
 test('ensurePassed: nothing for year 1, the year-1 list from year 2, and a saved list is kept', () => {
   reset({ ...mine(), passed: null, profile: { year: null, amirnet: null, specs: [], summer: false } });
   app.data = dataset(30, 2027);
@@ -352,7 +417,7 @@ test('ensurePassed: every earlier year\'s mandatory list is passed (year 3 = yea
     [2026, ['a']],
     [2027, []]
   ]) {
-    reset({ ...mine(), passed: null, profile: { year: null, amirnet: null, specs: [], summer: false } });
+    reset({ ...mine(), passed: null, failed: {}, profile: { year: null, amirnet: null, specs: [], summer: false } });
     app.data = dataset(30, start, { lists });
     ensurePassed();
     assert.deepEqual(app.state.passed, want, `cohort ${start}`);

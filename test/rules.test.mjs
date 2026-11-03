@@ -137,6 +137,17 @@ test('retake keeps its corequisite: tagged with the parallel course, like a firs
   assert.equal(met.missingParallel, undefined);
 });
 
+test('setStatus: any explicit choice ends the assumption on that course only', () => {
+  for (const st of ['passed', 'failed', 'none']) {
+    const s = { passed: ['A', 'B'], failed: {}, assumed: ['A', 'B'] };
+    setStatus(s, 'A', st);
+    assert.deepEqual(s.assumed, ['B'], st);
+  }
+  const noField = { passed: [], failed: {} };
+  setStatus(noField, 'A', 'passed');
+  assert.ok(!('assumed' in noField));
+});
+
 test('passing a course keeps its failures and they still count toward the regulations', () => {
   const s = { passed: [], failed: { A: 2 } };
   setStatus(s, 'A', 'passed');

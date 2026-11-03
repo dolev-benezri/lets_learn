@@ -464,6 +464,84 @@ for (const size of Object.keys(SIZES)) {
   });
 }
 
+// The outside review's first finding: nothing marked, and the summary and the map claimed courses as passed.
+const UNMARKED = { ...STUDENT, passed: undefined };
+const FIRST = { ...DONE, 'afeka-sched-v1': JSON.stringify(UNMARKED) };
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: with nothing marked the site says what it assumed, and one tap confirms it`, async (t) => {
+    const page = await visit(t, size, FIRST);
+    await weekReady(page);
+    assert.match(await page.locator('#boardNote').innerText(), /קורסים בהנחה, לא אושרו: \d+/);
+    await page.locator('.steps a[data-view="me"]').click();
+    const yes = page.locator('[data-act="confirmAssumed"]');
+    await yes.waitFor();
+    assert.match(await page.locator('.crs .tag.warn', { hasText: 'בהנחה' }).first().innerText(), /בהנחה/);
+    await yes.click();
+    await page.locator('[data-act="confirmAssumed"]').waitFor({ state: 'detached' });
+    assert.equal(await page.locator('.crs .tag.warn', { hasText: 'בהנחה' }).count(), 0);
+    assert.equal(await focused(page), 'H2');
+    assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem('afeka-sched-v1'))).assumed, []);
+    await page.locator('.steps a[data-view="plan"]').click();
+    await weekReady(page);
+    assert.doesNotMatch(await page.locator('#boardNote').innerText(), /בהנחה/);
+  });
+
+  test(`${size}: the steps show where you are, with no tick for a step nobody finished`, async (t) => {
+    const page = await visit(t, size, FIRST);
+    await weekReady(page);
+    assert.equal(await page.locator('.steps a.done').count(), 0);
+    assert.equal(await page.locator('.steps a[data-view="plan"][aria-current="step"]').count(), 1);
+  });
+}
+
+test('a question still open does not end the first-visit welcome', async (t) => {
+  const page = await visit(t, 'phone', { 'afeka-sched-v1-terms': '2' }, '#prefs');
+  await page.locator('.gate').first().waitFor({ timeout: 30000 });
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-onboarded')), null);
+});
+
+for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.phone], ['a phone on its side', { width: 667, height: 375 }]]) {
+  test(`${name}: the board's warnings are seen, nothing overflows, and the week still starts on the first screens`, async (t) => {
+    const page = await visit(t, size, FIRST);
+    await weekReady(page);
+    const note = page.locator('#boardNote');
+    assert.ok(await note.isVisible());
+    assert.match(await note.innerText(), /הכללים לא אושרו על ידי המחלקה/);
+    const m = await page.evaluate(() => ({
+      over: document.documentElement.scrollWidth - innerWidth,
+      note: document.getElementById('boardNote').getBoundingClientRect().height,
+      vh: innerHeight
+    }));
+    assert.ok(m.over <= 0, `overflow ${m.over}`);
+    assert.ok(m.note <= m.vh * 0.45, `the note takes ${m.note} of ${m.vh}`);
+  });
+}
+
+// The phone opens on the day's first lesson, so a line above the controls would be scrolled away before anyone reads it.
+for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.phone]]) {
+  test(`${name}: on arrival the warnings and the day's first lesson are both on the screen`, async (t) => {
+    const page = await visit(t, size, FIRST);
+    await weekReady(page);
+    await page.waitForTimeout(300);
+    const r = await page.evaluate(() => {
+      const box = (e) => e.getBoundingClientRect();
+      const note = box(document.getElementById('boardNote')),
+        sel = box(document.getElementById('daysel')),
+        first = [...document.querySelectorAll('.day.on .blk')].map(box).sort((a, b) => a.top - b.top)[0];
+      return { noteTop: note.top, noteBottom: note.bottom, selBottom: sel.bottom, firstTop: first?.top, vh: innerHeight };
+    });
+    assert.ok(r.noteTop >= r.selBottom - 1, `under the day selector: ${JSON.stringify(r)}`);
+    assert.ok(r.noteBottom <= r.vh, `on the screen: ${JSON.stringify(r)}`);
+    assert.ok(r.firstTop >= r.noteBottom - 1 && r.firstTop <= r.vh - 60, `the lesson too: ${JSON.stringify(r)}`);
+  });
+}
+
+test('a phone on its side keeps the semester notes', async (t) => {
+  const page = await visit(t, { width: 667, height: 375 }, DONE);
+  await weekReady(page);
+  assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('semnote')).display), 'block');
+});
+
 // A failed load says nothing against the saved record: the screen offers a retry, and nothing there can erase it.
 for (const size of Object.keys(SIZES)) {
   for (const [how, fail] of [['a missing file', (r) => r.fulfill({ status: 404 })], ['no network', (r) => r.abort()]]) {

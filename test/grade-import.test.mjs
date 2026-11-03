@@ -129,6 +129,29 @@ test('real layout: a row with no grade cell never takes a digit from the course 
   assert.deepEqual(by(r), {});
 });
 
+test('gradeChanges: a course only assumed passed is offered, and only applying the row confirms it', async () => {
+  const { gradeChanges, applyGradeChanges } = await import('../web/grade-import.js');
+  const state = () => ({ passed: ['A', 'B'], assumed: ['A', 'B'], failed: {}, grades: {}, exempt: [] });
+  const s = state();
+  // a pass without a number on a course already passed: without the assumption this is no change at all
+  const todo = gradeChanges([{ id: 'A', grade: null, result: 'passed' }], s);
+  assert.deepEqual(todo.map((t) => [t.id, t.assumed, t.check]), [['A', true, true]]);
+  assert.deepEqual(s.assumed, ['A', 'B'], 'reading the sheet changes nothing');
+  applyGradeChanges(s, todo);
+  assert.deepEqual(s.assumed, ['B']);
+  assert.deepEqual(gradeChanges([{ id: 'A', grade: null, result: 'passed' }], { ...state(), assumed: [] }), []);
+  const exempt = state();
+  applyGradeChanges(exempt, gradeChanges([{ id: 'A', grade: null, result: 'exempt' }], exempt));
+  assert.deepEqual([exempt.assumed, exempt.exempt], [['B'], ['A']]);
+});
+
+test('gradeChanges: a failure on a course only assumed passed is pre-checked: the sheet outweighs a guess', async () => {
+  const { gradeChanges } = await import('../web/grade-import.js');
+  const row = [{ id: 'A', grade: 40, result: 'failed' }];
+  assert.equal(gradeChanges(row, { passed: ['A'], assumed: ['A'], failed: {}, grades: {}, exempt: [] })[0].check, true);
+  assert.equal(gradeChanges(row, { passed: ['A'], assumed: [], failed: {}, grades: {}, exempt: [] })[0].check, false);
+});
+
 test('gradeChanges: a failed row on a course marked passed is offered but not pre-checked (U4)', async () => {
   const { gradeChanges } = await import('../web/grade-import.js');
   const state = { passed: ['10016', '30003'], failed: { 30130: 1 }, grades: { 30003: 70 } };

@@ -13,7 +13,7 @@ import {
   planningCls,
   summerPinned
 } from './app.js';
-import { progress, studyYear } from './rules.js';
+import { progress, studyYear, passedWarnings } from './rules.js';
 import { approvedOn } from './settings.js';
 import { unlockCounts } from './solver-core.js';
 import {
@@ -51,7 +51,8 @@ import {
   splitLine,
   leftOutText,
   closeExamLines,
-  outsideHoursText
+  outsideHoursText,
+  RULES_UNAPPROVED
 } from './ui-text.js';
 import {
   SCOPE,
@@ -97,16 +98,32 @@ export function renderTop() {
   $('counsel').hidden = !app.settings.counselingUrl;
   if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
   renderReport();
-  $('meta').innerHTML =
-    (f.stale ? `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>` : esc(f.text)) +
-    (approved
-      ? ` · ${esc(approvedText(approved))}`
-      : app.data.verified === false
-        ? ' · <span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>'
-        : '');
+  $('meta').innerHTML = esc(f.text) + (approved ? ` · ${esc(approvedText(approved))}` : '');
+}
+
+// What qualifies every plan on this page, at any width: a phone hides the header's #meta. Written only on a change, so a screen reader is not told again.
+function renderBoardNote() {
+  const f = freshness(app.status, app.data.fetchedAt),
+    approved = approvedOn(app.settings, app.data.program, app.data.startYear),
+    assumed = app.state.assumed?.length ?? 0,
+    warned = passedWarnings(app.data, app.state).length;
+  const html = [
+    f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
+    !approved && app.data.verified === false && '<span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>',
+    !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
+    assumed && `קורסים בהנחה, לא אושרו: ${assumed}. <a href="#me">בדיקה ואישור בשלב 1</a>`,
+    warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים בשלב 1</a>`
+  ]
+    .filter(Boolean)
+    .map((line) => `<p class="hint">${line}</p>`)
+    .join('');
+  if ($('boardNote').dataset.html === html) return;
+  $('boardNote').dataset.html = html;
+  $('boardNote').innerHTML = html;
 }
 
 export function renderBanner() {
+  renderBoardNote();
   const L = app.friendLanding;
   const known = allGroupIds();
   const missing = L ? L.groups.filter((g) => !known.has(g)).length : 0;
@@ -396,7 +413,8 @@ export function renderView() {
 }
 
 // Phone: the day column starts at the earliest hour of any day, so a later-starting day opens on empty hours.
-// On the first view of a result and after each day switch, scroll to the day's first lesson (not on every refresh).
+// On the first view of a result and after each day switch, scroll to the day's first lesson (not on every refresh); from the board's note above it
+// when both fit, so the warnings are read, not scrolled away.
 
 export function scrollToDay() {
   // kept armed until a result is on screen
@@ -408,8 +426,10 @@ export function scrollToDay() {
     (Number(c.style.getPropertyValue('--s')) < Number(a.style.getPropertyValue('--s')) ? c : a));
   // under the sticky day selector
   const head = parseFloat(getComputedStyle($('daysel')).top) + $('daysel').offsetHeight + 8;
-  const top = b.getBoundingClientRect().top;
-  if (top < head || top > innerHeight - 100) scrollBy(0, top - head);
+  const top = b.getBoundingClientRect().top,
+    note = $('boardNote').getBoundingClientRect().top,
+    from = top - note <= innerHeight - 100 - head ? note : top;
+  if (from < head || top > innerHeight - 100) scrollBy(0, from - head);
 }
 
 export function go(d) {

@@ -45,6 +45,45 @@ test('advisorHtml: failed courses not passed again are listed (bot report #6)', 
   assert.ok(!line.includes('חדו"א 1'), `A was passed again: ${line}`);
 });
 
+test('advisorHtml: a course the site assumed is not claimed as passed, and is said to be assumed', () => {
+  const w = world({ passed: ['A'], assumed: ['A'], grades: {} }),
+    t = text(advisorHtml(w)),
+    nameA = w.data.courses.A.name;
+  assert.ok(!t.includes('קורסים שעברתי'), t);
+  assert.ok(t.includes(`קורסים בהנחה, לא אושרו: ${nameA}`), t);
+  assert.ok(t.includes('כולל קורס אחד בהנחה'), t);
+});
+
+test('advisorHtml: confirmed and assumed courses each under their own words', () => {
+  const w = world({ passed: ['A', 'Q'], assumed: ['Q'] }),
+    t = text(advisorHtml(w));
+  assert.ok(t.includes(`קורסים שעברתי: ${w.data.courses.A.name}`), t);
+  assert.ok(t.includes(`קורסים בהנחה, לא אושרו: ${w.data.courses.Q.name}`), t);
+});
+
+test('advisorHtml: nothing assumed reads as before; an assumed course gone from the catalog stays by its id', () => {
+  for (const over of [{}, { assumed: [] }, { assumed: null }]) {
+    const t = text(advisorHtml(world(over)));
+    assert.ok(t.includes('קורסים שעברתי:') && !t.includes('בהנחה'), t);
+  }
+  assert.ok(text(advisorHtml(world({ passed: ['A', 'gone'], assumed: ['gone'] }))).includes('קורסים בהנחה, לא אושרו: gone'));
+});
+
+test('advisorHtml: a course marked passed over a failed prerequisite is named under "שימו לב"', () => {
+  const w = world({ passed: ['B'], failed: { A: 1 }, grades: {} }),
+    t = text(advisorHtml(w));
+  assert.ok(t.includes(`${w.data.courses.B.name}: שים לב`), t);
+  assert.ok(t.includes('וסומן שנכשלת בו'), t);
+  assert.ok(!text(advisorHtml(world())).includes(': שים לב'));
+});
+
+test('advisorHtml: rules no department approved, and open conflicts between sources, are said', () => {
+  const t = text(advisorHtml({ ...world(), approved: null, conflicts: ['מספר נ״ז בחירה'] }));
+  assert.ok(t.includes('הכללים לא אושרו על ידי המחלקה'), t);
+  assert.ok(t.includes('יש סתירה בין המקורות הרשמיים לגבי מספר נ״ז בחירה'), t);
+  assert.ok(!text(advisorHtml({ ...world(), approved: '2026-10-05', conflicts: [] })).includes('לא אושרו על ידי המחלקה'));
+});
+
 test('advisorHtml: each course of the result with its groups and meeting times', () => {
   const t = text(advisorHtml(world()));
   for (const s of ['דינמיקה', 'משוואות', 'קבוצה B1', 'יום ב׳ 10:00–11:50', 'קבוצה Q1', 'יום א׳ 10:00–11:50', '8 נ״ז'])

@@ -16,7 +16,8 @@ import {
   isPair,
   semResult
 } from './ui-grid.js';
-import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen } from './ui-text.js';
+import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen, conflictsFor } from './ui-text.js';
+import { approvedOn } from './settings.js';
 import {
   WEIGHTS,
   SCALE,
@@ -270,7 +271,10 @@ export function renderPrefs() {
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#">הבא: מערכות</a></div>`;
 }
 
-const advisorArgs = () => ({ state: app.state, data: app.data, res: current(), cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
+const advisorArgs = () => ({
+  approved: approvedOn(app.settings, app.data.program, app.data.startYear),
+  conflicts: conflictsFor(app.settings, app.state.program, app.state.startYear),
+  state: app.state, data: app.data, res: current(), cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
 export const advisorNow = () => advisorHtml(advisorArgs());
 // On screen first, with a file to share: a browser inside a phone app ignores print() without a word. The Google app is known to, so it gets no print button.
 function advisorPanel() {

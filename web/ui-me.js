@@ -6,7 +6,7 @@ import { progressInfo } from './map-layout.js';
 import { askRows } from './ui-dialog.js';
 import { readGradeSheet, parseGradeSheet, skippedRows, gradeChanges, applyGradeChanges } from './grade-import.js';
 import { approvedOn } from './settings.js';
-import { creditsGoal, courseCount, conflictsFor, approvedText } from './ui-text.js';
+import { creditsGoal, courseCount, conflictsFor, approvedText, assumedNote, conflictLine } from './ui-text.js';
 import {
   STATUS,
   FAILS,
@@ -59,7 +59,7 @@ function chip(id, li) {
     st,
     `data-chg="status" data-id="${esc(id)}"`,
     true
-  )}${
+  )}${st === 'passed' && s.assumed?.includes(id) ? ' <span class="tag warn">בהנחה</span>' : ''}${
     st === 'passed' && s.exempt?.includes(id)
       ? ' <span class="tag ok">פטור</span>' // exempt on the grade sheet: no grade, no attempt
       : st === 'passed' || st === 'failed' // a failing grade counts in the average too (regulation 9.4.2, 11.4.2)
@@ -280,6 +280,14 @@ export function renderMe() {
     ? 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.'
     : `<b>צעד ראשון:</b> סמנו מה כבר עברתם${premarked(studyYear(data, state))}, ואז לחצו ״הבא: קורסים״.`;
   const entry = entryScreen();
+  // the courses the site marked by itself: the student checks them here (the chips say which) and confirms what is left in one tap
+  const assumedList = state.assumed ?? [],
+    unlisted = assumedList.filter((id) => !data.courses[id]);
+  const assumedBox = assumedList.length
+    ? `<div class="me-assumed"><p class="warnbox">${icon('alert')}<span>קורסים בהנחה, לא אושרו: ${assumedList.length}.
+      סמנו את מה שלא עברתם, ואשרו את השאר.${unlisted.length ? ` (לא בתוכנית: <bdi dir="ltr">${unlisted.map(esc).join(', ')}</bdi>)` : ''}</span></p>
+      <button type="button" class="btn" data-act="confirmAssumed" data-k="confirmAssumed">אישרתי: עברתי את כל השאר</button></div>`
+    : '';
   const importBtn = (
     cls
   ) => `<button type="button" class="btn${cls}" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
@@ -297,11 +305,12 @@ export function renderMe() {
             ? `<p class="hint">סימנת שעשית מחוץ לתוכנית:</p>${state.outsideDone.map((n, i) => outsideBox(n, `me-${i}`)).join('')}`
             : ''}
           ${conflictsFor(app.settings, state.program, state.startYear)
-            .map((t) => `<p class="hint warn-text">יש סתירה בין המקורות הרשמיים לגבי ${esc(t)}. בדקו מול המחלקה.</p>`)
+            .map((t) => `<p class="hint warn-text">${esc(conflictLine(t))} בדקו מול המחלקה.</p>`)
             .join('')}</section>`;
   const prog = `<section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
           <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b>${
-            pr.required ? ` · ${pct}%` : ''}</span>${pr.required ? '<span class="hint">יעד 70% (תקנון 11.4.4)</span>' : ''}</div>
+            pr.required ? ` · ${pct}%` : ''}${
+            assumedList.length ? ` · ${esc(assumedNote(assumedList.length))}` : ''}</span>${pr.required ? '<span class="hint">יעד 70% (תקנון 11.4.4)</span>' : ''}</div>
           ${pr.required // year א׳ has no target: no bar at a meaningless 100%
             ? `<div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i
             style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div>`
@@ -312,7 +321,9 @@ export function renderMe() {
   // A first visit: the import first, the course list only after a choice (enterList).
   if (entry) {
     el.innerHTML = `<div class="me-entry"><div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step"><b>צעד ראשון:</b> סמנו מה
-      כבר עברתם. הכי מהיר: גליון הציונים מהפורטל.</p></div>
+      כבר עברתם. הכי מהיר: גליון הציונים מהפורטל.${assumedList.length
+        ? ` בינתיים הנחנו שעברתם ${courseCount(assumedList.length)} משנים קודמות, וזה יוצג כהנחה עד שתאשרו.`
+        : ''}</p></div>
       <div class="me-entry-cards">${profile}${prog}</div>
       <section class="me-card me-choice" aria-labelledby="meChoice"><h2 id="meChoice">איך מסמנים מה עברתם?</h2>
         <p>על מנת להתייחס לפטורים מקורסים מסוימים, העלו את גליון הציונים הרשמי של המכללה.</p>
@@ -322,7 +333,7 @@ export function renderMe() {
     return;
   }
   el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step">${step}</p></div>
-    <div class="me-grid">
+    ${assumedBox}<div class="me-grid">
       <div class="me-side">
         ${profile}
         ${prog}
@@ -377,7 +388,7 @@ export async function importGrades(file) {
     return enterList();
   }
   const label = (r) =>
-    `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}${
+    `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? (r.assumed ? ' (היה: בהנחה)' : '') : ` (היה: ${r.assumed ? 'בהנחה' : WORD[r.was]})`}${
       r.failedBefore && !state.failed[r.id] ? ', ונכשלתי בעבר' : ''}${
       r.result === 'passed' && state.exempt.includes(r.id) ? ' (במקום פטור)' : ''}`;
   const pick = await askRows(

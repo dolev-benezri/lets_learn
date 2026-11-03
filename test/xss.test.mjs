@@ -117,6 +117,7 @@ const { layoutMap, geometry } = await import('../web/map-layout.js');
 const { mapSvg, miniHtml } = await import('../web/map-render.js');
 await import('../web/ui-map.js'); // the dialog module loads without a browser too
 const { searchYear } = await import('../web/solver-core.js');
+const { passedWarnings } = await import('../web/rules.js');
 
 // ---- hostile world ----
 app.sem['א'] = hostile(read(1));
@@ -343,23 +344,86 @@ test('every renderer got the payload and wrote it escaped (no element or on* att
   }
 });
 
-test('an unverified program says so in the header of both views (L3)', () => {
+// Every line that qualifies a plan: on the board at any width, not in the header a phone hides.
+const passedOver = (id, s) => {
+  const req = app.data.courses[id].prereqs.find((p) => p.kind === 'קדם' && p.anyOf.every((a) => a.id));
+  if (!req) return false;
+  s.passed = [id];
+  s.failed = Object.fromEntries(req.anyOf.map((a) => [a.id, 1]));
+  return passedWarnings(app.data, s).length > 0;
+};
+const boardNote = (scope) => {
+  run(scope, () => {
+    renderBanner();
+  });
+  return writes.filter((w) => w.scope === scope && w.id === 'boardNote').at(-1)?.html ?? '';
+};
+
+test('an unverified program, and stale data, say so on the board and not only in the header (L3, B1)', () => {
+  const wasStatus = app.status;
   app.data.verified = false;
+  assert.ok(boardNote('note-unverified').includes('לא נבדקו מול תוכנית הלימודים הרשמית'));
   run('top-unverified', () => {
     renderTop();
   });
-  const meta = writes.filter((w) => w.scope === 'top-unverified' && w.id === 'meta');
-  assert.ok(meta.length && meta.at(-1).html.includes('לא נבדקו מול תוכנית הלימודים הרשמית'));
+  assert.ok(!writes.filter((w) => w.scope === 'top-unverified' && w.id === 'meta').at(-1).html.includes('warn-text'));
   delete app.data.verified;
-  run('top-verified', () => {
-    renderTop();
+  assert.ok(!boardNote('note-verified').includes('לא נבדקו מול'));
+  app.status = { checkedAt: new Date(Date.now() - 5 * 864e5).toISOString(), ok: true };
+  assert.match(boardNote('note-stale'), /warn-text/);
+  app.status = wasStatus;
+});
+
+test('the board says when no department approved the rules, and says nothing once one did', () => {
+  const was = app.settings;
+  app.settings = { ...was, programs: {} };
+  assert.ok(boardNote('note-unapproved').includes('הכללים לא אושרו על ידי המחלקה. בדקו מול היועץ לפני ההרשמה.'));
+  app.settings = { ...was, programs: { [app.data.program]: { approved: { [app.data.startYear]: '2026-10-05' } } } };
+  assert.ok(!boardNote('note-approved').includes('לא אושרו על ידי המחלקה'));
+  app.settings = was;
+});
+
+test('the board counts the assumed courses and the passes over a failed prerequisite, with a way to step 1', () => {
+  const s = app.state,
+    was = { assumed: s.assumed, passed: s.passed, failed: s.failed };
+  try {
+    s.assumed = s.passed.slice(0, 2);
+    const two = boardNote('note-assumed');
+    assert.ok(two.includes('קורסים בהנחה, לא אושרו: 2.') && two.includes('href="#me"'), two);
+    s.assumed = [];
+    assert.ok(!boardNote('note-none').includes('בהנחה'));
+    // the first requirement of a course, failed, and the course marked passed all the same
+    const id = Object.keys(app.data.courses).find((c) => passedOver(c, s));
+    assert.ok(id, 'this program has such a course');
+    assert.ok(boardNote('note-prereq').includes('קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: 1.'));
+  } finally {
+    Object.assign(s, was);
+  }
+});
+
+test('typing a grade confirms that course; clearing it does not', async () => {
+  const { CHG } = await import('../web/ui-actions.js');
+  const s = app.state,
+    was = { assumed: s.assumed, grades: s.grades },
+    [a, b] = s.passed;
+  s.assumed = [a, b];
+  s.grades = {};
+  const grade = (cid, value) => run('assumed-grade', () => {
+    CHG.grade({ dataset: { cid }, value, validity: {} });
   });
-  assert.ok(
-    !writes
-      .filter((w) => w.scope === 'top-verified' && w.id === 'meta')
-      .at(-1)
-      .html.includes('לא נבדקו')
-  );
+  grade(a, '');
+  assert.deepEqual(s.assumed, [a, b]);
+  grade(a, '85');
+  assert.deepEqual(s.assumed, [b]);
+  Object.assign(s, was);
+});
+
+test('the board note is written only on a change: a screen reader does not hear it again', () => {
+  boardNote('note-first');
+  run('note-again', () => {
+    renderBanner();
+  });
+  assert.equal(writes.filter((w) => w.scope === 'note-again' && w.id === 'boardNote').length, 0);
 });
 
 test('the header names no program until one is picked (a first visit assumes none)', () => {

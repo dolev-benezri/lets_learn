@@ -103,6 +103,7 @@ function ctxOf(mode) {
     aside,
     plan,
     prog: progressInfo(data, st, plan, state.profile?.specs),
+    assumed: new Set(state.assumed ?? []),
     specs: state.profile?.specs ?? [],
     areas: data.specializations?.length ?? 0,
     opened: newlyUnlocked(data, state, plan)

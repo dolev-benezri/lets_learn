@@ -415,6 +415,10 @@ main { min-width:0; }
   width:2px;
   background:var(--text-2);
 }
+.board-note .hint { margin:0 0 4px; }
+.board-note:not(:empty) { margin-bottom:8px; }
+.me-assumed { margin:0 0 12px; }
+.me-assumed .warnbox { margin:0 0 6px; }
 .warnbox {
   display:flex;
   align-items:center;
@@ -1486,19 +1490,6 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
   transition:background-color var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease;
 }
 .steps a[aria-current="step"] .n { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
-.steps a.done .n {
-  background:var(--primary-soft);
-  border-color:var(--primary-line);
-  color:var(--primary);
-  font-size:0;
-}
-.steps .n .icon {
-  display:none;
-  width:14px;
-  height:14px;
-  stroke-width:2.5;
-} /* the inline Lucide check (data-icon), shown on done steps only */
-.steps a.done .n .icon { display:block; }
 .theme-btn { margin-inline-start:auto; border-radius:999px; color:var(--text-2); }
 .theme-btn > span { display:inline-flex; align-items:center; gap:6px; }
 [data-theme="dark"] .to-dark, :root:not([data-theme="dark"]) .to-light {
@@ -2084,7 +2075,7 @@ body:has(#friendEd[open]) { overflow:hidden; }
   .wk-head { display:contents; }
   .day:not(.on) { display:block; }
   .day.on:not(:last-child) { border-inline-end:0; }
-  #semnote, .pill-info { display:none; }
+  .pill-info { display:none; }
 }
 
 /* The advisor summary (ACT.advisor): on screen #print is never shown; on paper it is the only thing, A4, black on white in both themes. */
