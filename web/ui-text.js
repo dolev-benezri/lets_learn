@@ -216,7 +216,7 @@ export function hebYear(gregorian) {
 }
 
 // How fresh one group's seat count is: "מלא · נכון ל-08:08". A group may carry its own fetchedAt and seatsLeft (an
-// official feed); the data file's time is the fallback.
+// official feed); the time the caller passes (app.js seatsAt) is the fallback.
 // Times are instants shown in Israel time, 24h, whatever offset the ISO string was written with.
 const HHMM = new Intl.DateTimeFormat('he-IL', {
   timeZone: 'Asia/Jerusalem',

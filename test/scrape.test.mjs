@@ -865,3 +865,97 @@ test('yearCache moves the flat cache only into a year folder it creates, never i
   assert.deepEqual(readdirSync(join(base, '2027')), []);
   assert.ok(readdirSync(base).includes('b.html'));
 });
+
+test('cachedRequester: readAt is when an answer was really read: the file time on a hit, now on a fetch', async () => {
+  const dir = join(dirs().status, '..', 'cache'),
+    key = 'prgname=S_LOOK_FOR_NOSE&arguments=-N1',
+    answer = async () => '<p>x</p>';
+  const first = cachedRequester(answer, dir),
+    before = Date.now();
+  await first(key);
+  assert.ok(Date.parse(first.readAt.get(key)) >= before, 'just fetched');
+  const [file] = readdirSync(dir),
+    old = new Date('2026-11-01T23:10:00Z');
+  utimesSync(join(dir, file), old, old);
+  const again = cachedRequester(answer, dir);
+  await again(key);
+  assert.equal(again.readAt.get(key), old.toISOString(), 'a cached answer keeps its own time');
+  const deferred = cachedRequester(answer, dir, { ttl: () => 0, budget: () => 0 });
+  await deferred(key);
+  assert.deepEqual(deferred.deferred, [key]);
+  assert.equal(deferred.readAt.get(key), old.toISOString(), 'a stale answer past the budget too');
+});
+
+const NOSE = 'prgname=S_LOOK_FOR_NOSE';
+// All programs here are 77; only 90903 answers with groups.
+const oneCourse = () => {
+  const real = site();
+  return async (query, form) => (query?.startsWith(NOSE) && !query.endsWith('-N90903') ? OK : real(query, form));
+};
+const whole = { ...opt, 'all-programs': true };
+const just77 = { 77: { name: 'x', dept: 8, deptName: 'ח', lists: [30001], cohorts: [2026], specializations: [], degree: { total: 100, specCredits: 0 } } };
+
+test('run: status.groupsAt holds when each course with groups was read, and only those', async () => {
+  const root = join(dirs().status, '..'),
+    request = oneCourse();
+  request.readAt = new Map([[`${NOSE}&arguments=-N90903`, 'read-then']]);
+  await run({ opt: whole, request, programs: just77, dataDir: root, log: () => {}, check: noErrors });
+  assert.deepEqual(json(join(root, 'status.json')).groupsAt, { 90903: 'read-then' });
+});
+
+test('run: a requester with no readAt gives the time of the run', async () => {
+  const root = join(dirs().status, '..');
+  await run({ opt: whole, request: oneCourse(), programs: just77, dataDir: root, log: () => {}, check: noErrors, now: () => 'N' });
+  assert.deepEqual(json(join(root, 'status.json')).groupsAt, { 90903: 'N' });
+});
+
+test('run: a run that leaves out programs or semesters moves no time, since other files still show the older seats', async () => {
+  for (const partial of [{ ...opt, program: '77' }, { ...whole, programs: '77' }, { ...whole, 'all-semesters': false }]) {
+    const root = join(dirs().status, '..');
+    writeFileSync(join(root, 'status.json'), JSON.stringify({ groupsAt: { 90903: 'old' } }));
+    await run({ opt: partial, request: oneCourse(), programs: just77, dataDir: root, log: () => {}, check: noErrors, now: () => 'N' });
+    assert.deepEqual(json(join(root, 'status.json')).groupsAt, { 90903: 'old' });
+  }
+});
+
+test('run: a summer left with its old file keeps the old time of its courses', async () => {
+  const root = join(dirs().status, '..'),
+    real = withSummer();
+  const request = async (query, form) => (query?.startsWith(NOSE) && !query.endsWith('-N90903') ? OK : real(query, form));
+  writeFileSync(join(root, 'status.json'), JSON.stringify({ groupsAt: { 90903: 'old' } }));
+  const check = (d) => ({ errors: d.semester === 'קיץ' ? ['no groups'] : [], warnings: [] });
+  await run({ opt: whole, request, programs: just77, dataDir: root, log: () => {}, check, now: () => 'N' });
+  assert.deepEqual(json(join(root, 'status.json')).groupsAt, { 90903: 'old' });
+});
+
+test('run: a summer that kept its old file protects the courses of that old file too', async () => {
+  const root = join(dirs().status, '..'),
+    real = site();
+  const toSummer = (html) => html.replaceAll('&nbsp;ב<', '&nbsp;קיץ<');
+  const night = (summerCourse) => async (query, form) => {
+    if (!query?.startsWith(NOSE)) return real(query, form);
+    const id = query.match(/-N(\d+)$/)[1];
+    if (id === summerCourse) return toSummer(await real(query, form));
+    return id === '90903' ? real(query, form) : OK;
+  };
+  // the summer file holds 90903; tonight's summer holds another course instead, and fails its checks
+  await run({ opt: whole, request: night('90903'), programs: just77, dataDir: root, log: () => {}, check: noErrors, now: () => 'old' });
+  const other = String(Object.keys(json(join(root, '2027-1', '77-2026.json')).courses).find((id) => id !== '90903'));
+  const check = (d) => ({ errors: d.semester === 'קיץ' ? ['no groups'] : [], warnings: [] });
+  await run({ opt: whole, request: night(other), programs: just77, dataDir: root, log: () => {}, check, now: () => 'N' });
+  assert.equal(json(join(root, 'status.json')).groupsAt[90903], 'old');
+});
+
+test('writeResults: groupsAt stays out of the data file and over the old map, so a one-program run keeps the rest', async () => {
+  const d = dirs();
+  await writeResults({ results: [job(d, '2027-1', ds(2))], statusFile: d.status, now: 'N1', groupsAt: { 1: 'T1', 2: 'T1' } });
+  const before = readFileSync(d.file('2027-1'), 'utf8');
+  await writeResults({
+    results: [job(d, '2027-1', ds(2), JSON.parse(before), 'N2')],
+    statusFile: d.status,
+    now: 'N2',
+    groupsAt: { 2: 'T2' }
+  });
+  assert.deepEqual(json(d.status).groupsAt, { 1: 'T1', 2: 'T2' });
+  assert.equal(readFileSync(d.file('2027-1'), 'utf8'), before, 'a new time alone does not touch the data file');
+});
