@@ -11,6 +11,16 @@ import { buildAdvisorPdf, visualRuns } from '../web/advisor-pdf.js';
 const umd = { exports: {} };
 new Function('module', 'exports', readFileSync('web/vendor/pdf/fontkit.umd.min.js', 'utf8'))(umd, umd.exports);
 const fontkit = umd.exports;
+// pdf.js reads the files back here and needs these; Node 24, which CI runs, does not have them yet
+Uint8Array.prototype.toHex ??= function () {
+  return Array.from(this, (b) => b.toString(16).padStart(2, '0')).join('');
+};
+for (const C of [Map, WeakMap]) {
+  C.prototype.getOrInsertComputed ??= function (key, make) {
+    if (!this.has(key)) this.set(key, make(key));
+    return this.get(key);
+  };
+}
 pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL('web/vendor/pdfjs/pdf.worker.min.mjs').href;
 
 const bidi = bidiFactory();
