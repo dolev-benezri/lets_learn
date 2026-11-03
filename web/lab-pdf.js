@@ -1,6 +1,7 @@
 // Temporary: tests on a real phone which routes can hand over a PDF inside an app's browser. Invented data only. Deleted before the feature ships.
-import { PDFDocument, rgb } from './vendor/pdf/pdf-lib.esm.min.js';
-import bidiFactory from './vendor/pdf/bidi.min.mjs';
+const LIB = './vendor/pdf/'; // a variable, as for the other libraries, so the undefined-names check does not read vendored code
+const { PDFDocument, rgb } = await import(`${LIB}pdf-lib.esm.min.js`);
+const { default: bidiFactory } = await import(`${LIB}bidi.min.mjs`);
 
 const $ = (id) => document.getElementById(id);
 const SAVE = 'lab-pdf-log';
