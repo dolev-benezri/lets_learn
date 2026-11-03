@@ -469,7 +469,22 @@ test('pdf.js, panzoom and tesseract.js load from web/vendor with their licenses;
     'tesseract/tesseract.esm.min.js',
     'tesseract/worker.min.js',
     'tesseract/lang/heb.traineddata.gz',
-    'tesseract/lang/eng.traineddata.gz'
+    'tesseract/lang/eng.traineddata.gz',
+    'pdf/SOURCES.txt',
+    'pdf/pdf-lib.esm.min.js',
+    'pdf/LICENSE-pdf-lib',
+    'pdf/fontkit.umd.min.js',
+    'pdf/LICENSE-fontkit',
+    'pdf/bidi.min.mjs',
+    'pdf/LICENSE-bidi-js',
+    'pdf/OFL.txt',
+    'pdf/rubik-hebrew-400-normal.woff',
+    'pdf/rubik-hebrew-700-normal.woff',
+    'pdf/rubik-latin-400-normal.woff',
+    'pdf/rubik-latin-700-normal.woff',
+    'pdf/rubik-arabic-400-normal.woff',
+    'pdf/rubik-cyrillic-400-normal.woff',
+    'pdf/rubik-latin-ext-400-normal.woff'
   ])
     assert.ok(readFileSync(`web/vendor/${f}`).length > 500, f);
   // The worker picks one core file by browser features; all three LSTM builds must be there, or some phones would fail only at import time.
