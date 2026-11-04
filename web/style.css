@@ -191,6 +191,8 @@ ul { padding:0; list-style:none; }
 button, input { font:inherit; color:inherit; }
 a { color:var(--primary); }
 :focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+/* WebKit on a Mac and on Linux splits a time field into hour and minute parts: the focus sits inside, and :focus-visible does not reach the field. */
+input[type="time"]:focus-within { outline:2px solid var(--primary); outline-offset:2px; }
 .sr {
   position:absolute !important;
   width:1px;
