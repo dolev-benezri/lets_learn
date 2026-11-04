@@ -271,7 +271,7 @@ export function load() {
   if (moved) return withPersonal({ ...normalize(null, app.catalog), program: s.program, startYear: s.startYear }, s);
   // migrateYear took them off: their groups are last year's, so there is nothing to keep, but the student should know
   const friends = saved.friends?.length, pins = saved.pins?.length;
-  if (saved.year < s.year && (friends || pins)) {
+  if (Number.isInteger(saved.year) && saved.year < s.year && (friends || pins)) {
     const what = [friends && `${friends} חברים`, pins && (pins === 1 ? 'קורס נעוץ אחד' : `${pins} קורסים נעוצים`)].filter(Boolean).join(' ו-');
     app.hashError ??= `עברנו לשנת הלימודים החדשה: ${what} מהשנה שעברה הוסרו, כי הקבוצות שלהם לא קיימות יותר.`;
   }

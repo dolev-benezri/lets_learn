@@ -197,7 +197,7 @@ test('switchTo: a failed or refused switch changes nothing', async () => {
   reset(mine());
   const before = JSON.stringify(app.state),
     data = app.data;
-  assert.equal(await switchTo(20, 2027), false);
+  assert.equal(await switchTo(20, 2027), null, 'the file did not load: the student is told');
   assert.equal(await switchTo(99, 2027), false, 'not in the catalog');
   assert.equal(await switchTo(30, 2026), false, 'already there');
   assert.equal(JSON.stringify(app.state), before);
@@ -211,7 +211,7 @@ test('switchTo: only a missing semester ב is tolerated; a missing א fails', as
   assert.equal(app.sem['ב'], null);
   serve((m) => m[2] === '1');
   reset(mine());
-  assert.equal(await switchTo(20, 2026), false);
+  assert.equal(await switchTo(20, 2026), null);
 });
 
 test('switchTo: going back finds the old progress with the current personal settings; reset wipes the stashes', async () => {

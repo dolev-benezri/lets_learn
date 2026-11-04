@@ -420,7 +420,8 @@ export function renderView() {
 
 // Phone: the day column starts at the earliest hour of any day, so a later-starting day opens on empty hours.
 // On the first view of a result and after each day switch, scroll to the day's first lesson (not on every refresh); from the board's note above it
-// when both fit, so the warnings are read, not scrolled away. When they do not fit, arriving shows the note (the lesson is below it) and choosing a day shows the lesson.
+// when both fit, so the warnings are read, not scrolled away. When they do not fit, arriving shows the note (the lesson is below it)
+// and choosing a day shows the lesson.
 
 export function scrollToDay() {
   // kept armed until a result is on screen
