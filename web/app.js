@@ -280,6 +280,7 @@ export function load() {
 // Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.
 const stashKey = (p, y) => `${KEY}:${p}-${y}`;
 const stash = (s) => {
+  if (app.otherTab) return; // this tab's copy is old: over the other tab's stash it would erase what that tab did
   try {
     localStorage.setItem(stashKey(s.program, s.startYear), JSON.stringify(s));
   } catch {
@@ -398,12 +399,14 @@ export function pickData() {
 }
 // When the shown data was last known to be current (ui-text.js freshAt). The year view spans two files: the older of the two, so a warning is never missed.
 export const freshOf = (data) => {
-  const files = data.semester === 'שנה' ? [app.sem?.['א'], app.sem?.['ב']].filter(Boolean) : [data];
+  const files = data.semester === 'שנה' ? [app.sem?.['א'], app.sem?.['ב'], summerOn() && app.sem?.['קיץ']].filter(Boolean) : [data];
   return files
     .map((d) => freshAt(d, app.status))
     .filter(Boolean)
     .sort((a, b) => new Date(a) - new Date(b))[0];
 };
+// The status as the board should read it: "checked" means the files shown, not the last run, which may have left one out.
+export const boardStatus = () => app.status && { ...app.status, checkedAt: freshOf(app.data) ?? app.status.checkedAt };
 // When a course's seat counts were read: groups are read every other night, so the last run's time can be a night too new.
 // A status from before groupsAt says what the file says.
 export const seatsAt = (cid, data) => app.status?.groupsAt?.[cid] ?? freshOf(data);

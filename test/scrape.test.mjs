@@ -212,7 +212,7 @@ test('writeResults: a semester not in this run keeps its status entry', async ()
   assert.deepEqual(Object.keys(json(d.status).semesters), ['2027-1', '2027-2']);
 });
 
-test('writeResults: each file keeps the time of its own last check, an entry from before that field included', async () => {
+test('writeResults: each file keeps the time of its own last check, and an entry from before that field stays without one', async () => {
   const d = dirs();
   await writeResults({ results: [job(d, '2027-1', ds(2)), job(d, '2027-2', ds(2))], statusFile: d.status, now: 'N1' });
   const before = json(d.status);
@@ -225,7 +225,7 @@ test('writeResults: each file keeps the time of its own last check, an entry fro
   });
   const st = json(d.status);
   assert.equal(st.semesters['2027-1'].checkedAt, 'N2');
-  assert.equal(st.semesters['2027-2'].checkedAt, 'N1', 'not rebuilt in this run: the time of the run that wrote the status before');
+  assert.equal(st.semesters['2027-2'].checkedAt, undefined, 'not rebuilt: when it was last checked is not known');
 });
 
 // ---- the whole run, with fixtures instead of the site ----

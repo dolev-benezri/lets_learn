@@ -3,6 +3,7 @@ import {
   app,
   esc,
   freshOf,
+  boardStatus,
   save,
   refresh,
   candidateMode,
@@ -92,7 +93,7 @@ export function renderTop() {
   $('title').innerHTML =
     `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
-  const f = freshness(app.status, app.data.fetchedAt),
+  const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear);
   // the footer link to the counselling page, only when settings.json gives one
   $('counsel').hidden = !app.settings.counselingUrl;
@@ -103,7 +104,7 @@ export function renderTop() {
 
 // What qualifies every plan on this page, at any width: a phone hides the header's #meta. Written only on a change, so a screen reader is not told again.
 function renderBoardNote() {
-  const f = freshness(app.status, app.data.fetchedAt),
+  const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear),
     assumed = app.state.assumed?.length ?? 0,
     warned = passedWarnings(app.data, app.state).length;

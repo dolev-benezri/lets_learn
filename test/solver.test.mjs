@@ -2330,6 +2330,34 @@ test('searchAll year mode: the split search lists only pairs that split, however
   assert.deepEqual(r.results, []);
 });
 
+test('search: the second try of a "prefer" search gets what is left of the time, not all of it again', (t) => {
+  // preferred lecturer: A1 clashes with B, so there is no plan and the search goes again without the wish, over many plans
+  const courses = {
+    A: one([{ ...grp('A1', 1, '08:00', '09:50'), lecturer: 'מועדף' }, { ...grp('A2', 5, '08:00', '09:50'), lecturer: 'אחר' }]),
+    B: one([grp('B1', 1, '08:00', '09:50')])
+  };
+  for (let i = 0; i < 8; i++) {
+    const at = `${String(10 + i).padStart(2, '0')}:00`,
+      end = `${String(10 + i).padStart(2, '0')}:50`;
+    courses[`C${i}`] = one([grp(`C${i}a`, 1, at, end), grp(`C${i}b`, 2, at, end), grp(`C${i}c`, 3, at, end)]);
+  }
+  // the clock: the first search starts at 0 and ends at 2900 of its 3000; whatever runs long after that reads 4000
+  let calls = 0;
+  t.mock.method(Date, 'now', () => {
+    calls++;
+    return calls === 1 ? 0 : calls <= 3 ? 2900 : 4000;
+  });
+  const r = search({
+    data: set(courses),
+    courses: [{ id: 'A', mode: 'must' }, { id: 'B', mode: 'must' }, ...Object.keys(courses).filter((id) => id.startsWith('C')).map((id) => ({ id, mode: 'optional' }))],
+    weights: DEF_W,
+    constraints: { ...DEF_C, lecturers: { 'מועדף': 'prefer' } },
+    timeLimitMs: 3000,
+    prune: false
+  });
+  assert.equal(r.partial, true, `clock calls: ${calls}`);
+});
+
 test('retryLimit: the second try of a "prefer" search gets what is left, and at least a quarter on a slow phone', () => {
   assert.equal(retryLimit(2000, 3000), 2000);
   assert.equal(retryLimit(-50, 3000), 750);

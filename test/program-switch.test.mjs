@@ -4,6 +4,7 @@ import {
   app,
   normalize,
   recordOf,
+  boardStatus,
   switchTo,
   restoreBackup,
   ensurePassed,
@@ -217,6 +218,47 @@ test('recordOf: compares what the student holds: not key order at any depth, not
   app.hashError = null;
   recordOf(JSON.stringify({ ...base, year: 2026, profile: { year: 1 }, pins: ['p1'] }));
   assert.equal(app.hashError, null);
+});
+
+test('switchTo: a tab another tab has changed writes no stash, or it would put its old record over the other tab\'s', async () => {
+  reset(mine());
+  app.otherTab = true;
+  try {
+    assert.equal(await switchTo(20, 2027), true);
+    assert.deepEqual(localStorage.keys().filter((k) => k.includes(':')), []);
+  } finally {
+    app.otherTab = false;
+  }
+});
+
+test('boardStatus: the warning on the board goes by the files shown, the oldest of them, not by the last run', () => {
+  const file = (semester) => ({ year: 2027, semester, program: 30, startYear: 2026, fetchedAt: '2026-10-01T00:00:00Z' });
+  const was = { sem: app.sem, data: app.data, status: app.status, state: app.state };
+  try {
+    app.sem = { 'א': file('א'), 'ב': file('ב'), 'קיץ': file('קיץ') };
+    app.state = { profile: { summer: true } };
+    app.status = {
+      checkedAt: '2026-11-04T00:00:00Z',
+      ok: true,
+      semesters: {
+        '2027-1/30-2026': { checkedAt: '2026-11-04T00:00:00Z' },
+        '2027-2/30-2026': { checkedAt: '2026-11-04T00:00:00Z' },
+        '2027-3/30-2026': { checkedAt: '2026-11-01T00:00:00Z' }
+      }
+    };
+    app.data = app.sem['א'];
+    assert.equal(boardStatus().checkedAt, '2026-11-04T00:00:00Z');
+    app.data = app.sem['קיץ'];
+    assert.equal(boardStatus().checkedAt, '2026-11-01T00:00:00Z');
+    app.data = { semester: 'שנה' };
+    assert.equal(boardStatus().checkedAt, '2026-11-01T00:00:00Z', 'a year with summer on');
+    app.state = { profile: { summer: false } };
+    assert.equal(boardStatus().checkedAt, '2026-11-04T00:00:00Z', 'summer off: its file is not shown');
+    app.status = null;
+    assert.equal(boardStatus(), null);
+  } finally {
+    Object.assign(app, was);
+  }
 });
 
 test('switchTo: a failed or refused switch changes nothing', async () => {

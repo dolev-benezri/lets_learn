@@ -238,8 +238,10 @@ const instant = (iso) => {
 const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 export function freshAt(data, status) {
   const entry = status?.ok === true && status.semesters?.[`${data.year}-${SEM_CODE[data.semester]}/${data.program}-${data.startYear}`];
-  // the run that built this file, not the last run: a status from before that field names only the last one
-  const checkedAt = entry && (entry.checkedAt ?? status.checkedAt);
+  // the run that built this file, not the last run. A status from before that field names only the last run,
+  // and it stands in until the first run that writes the field.
+  const legacy = entry && !Object.values(status.semesters).some((e) => e.checkedAt);
+  const checkedAt = entry && (entry.checkedAt ?? (legacy ? status.checkedAt : null));
   const change = instant(data.fetchedAt),
     check = checkedAt ? instant(checkedAt) : null;
   return check && (!change || check > change) ? checkedAt : change ? data.fetchedAt : undefined;

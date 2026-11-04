@@ -684,12 +684,25 @@ test('the failed-load screen: another tab clearing the record throws nothing', a
   assert.deepEqual(errors, []);
 });
 
-test('a status file it cannot read: every step keeps the retry', async (t) => {
+test('a status file it cannot read does not stop the site', async (t) => {
   const page = await visit(t, 'desktop', DONE);
   await page.waitForLoadState('networkidle');
   await page.context().route('**/data/afeka/status.json', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json', body: '{"checkedAt":"not-a-date","ok":true,"semesters":{"2027-1/30-2026":{"checkedAt":"not-a-date"}}}' })
   );
+  await page.reload();
+  await weekReady(page);
+});
+
+test('a page that fails only while it is drawn: every step keeps the retry', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await page.waitForLoadState('networkidle');
+  // the data is good and already classified; a bug in the drawing is what is left to fail
+  await page.context().route('**/ui-view.js', async (route) => {
+    const res = await route.fetch();
+    const body = (await res.text()).replace('function renderBoardNote() {', "function renderBoardNote() { throw new Error('drawn');");
+    await route.fulfill({ response: res, body });
+  });
   await page.reload();
   await page.locator('[data-retry]:visible').first().waitFor({ timeout: 30000 });
   await page.evaluate(() => {

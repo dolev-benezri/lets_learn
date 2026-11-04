@@ -151,8 +151,8 @@ const MAX_LISTED = 6; // the summary is a commit message: a first run over many 
 // groupsAt (course id -> when its groups were read) goes over the old map like semesters, so a one-program run keeps the rest.
 export async function writeResults({ results, statusFile, now, groupsAt }) {
   const old = await readJson(statusFile);
-  // checkedAt per file: a key this run does not build must not read as checked tonight (web/ui-text.js freshAt). An entry from before this field keeps the time of the run before.
-  const semesters = Object.fromEntries(Object.entries(old?.semesters ?? {}).map(([k, v]) => [k, { checkedAt: old.checkedAt, ...v }]));
+  // checkedAt per file: a key this run does not build must not read as checked tonight (web/ui-text.js freshAt).
+  const semesters = { ...old?.semesters };
   const changes = [];
   for (const { key, file, dataset, prev } of results) {
     const stable = stableJson(dataset),
