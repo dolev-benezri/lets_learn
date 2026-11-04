@@ -16,7 +16,8 @@ import {
   isPair,
   semResult
 } from './ui-grid.js';
-import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen } from './ui-text.js';
+import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen, conflictsFor } from './ui-text.js';
+import { approvedOn } from './settings.js';
 import {
   WEIGHTS,
   SCALE,
@@ -177,9 +178,10 @@ const lecturerSec = (L) =>
 
 export function registrationText(r) {
   const one = (res, data) => {
-    const alt = (g) =>
-      (res.alts?.[g] ? ` (או ${res.alts[g].join(', ')})` : '') +
-      (backups(data, res, g).length ? ` [גיבוי: ${backups(data, res, g).join(', ')}]` : '');
+    const alt = (g) => {
+      const back = backups(data, res, g, app.state.constraints);
+      return (res.alts?.[g] ? ` (או ${res.alts[g].join(', ')})` : '') + (back.length ? ` [גיבוי: ${back.join(', ')}]` : '');
+    };
     const mark = (cid) => (res.split?.includes(cid) ? ` (${SPLIT_TAG})` : '');
     const gs = (cid) =>
       res.groups
@@ -206,20 +208,21 @@ function regPanel() {
       ${res.split?.includes(cid) ? `<span class="tag warn">${esc(SPLIT_TAG)}</span>` : ''}
       <span class="hint">${esc(cid)} · <span class="nw">${c.credits} נ״ז</span></span>
       <p>${gs
-        .map(
-          (g) => `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
+        .map((g) => {
+          const back = backups(data, res, g.id, app.state.constraints);
+          return `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
         <span class="hint nw">(${esc(groupFresh(g, seatsAt(cid, data)))})</span>${
           res.alts?.[g.id]
             ? ` <span class="hint">(או <bdi
         dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>`
             : ''
         }${
-          backups(data, res, g.id).length
+          back.length
             ? ` <span class="hint">(גיבוי: <bdi
-        dir="ltr">${backups(data, res, g.id).map(esc).join(', ')}</bdi>)</span>`
+        dir="ltr">${back.map(esc).join(', ')}</bdi>)</span>`
             : ''
-        }`
-        )
+        }`;
+        })
         .join(' · ')}</p></div>
       <a class="btn icon-btn ghost" href="${yedion(cid)}" target="_blank" rel="noopener" aria-label="${esc(c.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></li>`;
       })
@@ -268,7 +271,10 @@ export function renderPrefs() {
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#">הבא: מערכות</a></div>`;
 }
 
-const advisorArgs = () => ({ state: app.state, data: app.data, res: current(), cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
+const advisorArgs = () => ({
+  approved: approvedOn(app.settings, app.data.program, app.data.startYear),
+  conflicts: conflictsFor(app.settings, app.state.program, app.state.startYear),
+  state: app.state, data: app.data, res: current(), cls: app.cls, catalog: app.catalog, now: new Date(), sem: app.sem });
 export const advisorNow = () => advisorHtml(advisorArgs());
 // On screen first, with a file to share: a browser inside a phone app ignores print() without a word. The Google app is known to, so it gets no print button.
 function advisorPanel() {

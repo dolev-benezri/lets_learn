@@ -1,0 +1,29 @@
+# Fails, and so mails, when the published data stops moving (scripts/check-fresh.mjs). The nightly starts near 23:07 UTC and is cut at 160 minutes, so 05:41 is after any run.
+# GitHub mails a failed scheduled run to whoever last edited the cron line, if Actions notifications are on in that account. It may delay or drop a scheduled run, and it
+# turns the schedule off after 60 days without activity in the repo.
+name: freshness
+
+on:
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: Fail when the last check is older than this many hours (0 fails on purpose, to test the mail)
+        default: '48'
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: node scripts/check-fresh.mjs "$HOURS"
+        env:
+          HOURS: ${{ inputs.hours || '48' }}

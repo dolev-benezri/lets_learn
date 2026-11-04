@@ -155,6 +155,11 @@ export const ACT = {
     app.data.lists[el.dataset.li].courses.forEach((id) => setStatus(app.state, id, 'passed'));
     refresh();
   },
+  confirmAssumed() {
+    app.state.assumed = [];
+    refresh();
+    $('meTitle')?.focus(); // the button is gone
+  },
   statusDone(el, e) {
     e.preventDefault();
     markOnboarded();

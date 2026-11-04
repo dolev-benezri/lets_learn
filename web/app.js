@@ -28,6 +28,7 @@ export const DEFAULT = {
   startYear: 2026,
   name: '',
   passed: null,
+  assumed: null, // the part of `passed` the site marked by itself and the student never confirmed; null: not worked out yet (ensurePassed)
   failed: {},
   grades: {},
   exempt: [],
@@ -149,6 +150,8 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
   if (typeof raw.name === 'string' && raw.name.length <= 60) out.name = raw.name;
   const passed = strs(raw.passed, 200, 20);
   if (passed) out.passed = [...new Set(passed)];
+  const assumed = strs(raw.assumed, 200, 20);
+  if (assumed && out.passed) out.assumed = [...new Set(assumed)].filter((id) => out.passed.includes(id));
   if (isObj(raw.failed))
     out.failed = Object.fromEntries(
       Object.entries(raw.failed)
@@ -408,7 +411,8 @@ export function save() {
   }
 }
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
-// First time: the earlier years' mandatory lists are assumed passed (a year-3 student starts with years א and ב); a first-year student has passed nothing.
+// First time: the earlier years' mandatory lists are assumed passed (a year-3 student starts with years א and ב), except a course on file as failed;
+// a first-year student has passed nothing.
 const earlierYears = () => {
   const before = 'אבגדה'.slice(0, studyYear(app.data, app.state) - 1);
   return [
@@ -418,7 +422,14 @@ const earlierYears = () => {
   ];
 };
 export function ensurePassed() {
-  if (!app.state.passed) app.state.passed = earlierYears();
+  const s = app.state,
+    earlier = earlierYears();
+  if (!s.passed) {
+    s.passed = earlier.filter((id) => !s.failed[id]);
+    s.assumed = [...s.passed];
+  }
+  // a save from before `assumed` cannot say who marked its earlier years: they count as assumed, unless a grade or an exemption backs them
+  s.assumed ??= s.passed.filter((id) => earlier.includes(id) && !(id in s.grades) && !s.exempt.includes(id));
 }
 // This year's courses blocked by an earlier year's course: that year was not (fully) marked as passed. A prereq of this year itself is normal.
 export function waitingOnEarlier() {
@@ -602,9 +613,12 @@ export async function switchTo(program, startYear) {
   }
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);
   setSemesters(sem);
-  if (sameProgram)
-    app.state.passed = [...new Set([...(prev.passed ?? []), ...earlierYears().filter((id) => !app.state.failed[id])])];
-  else ensurePassed();
+  if (sameProgram) {
+    const had = prev.passed ?? [],
+      added = earlierYears().filter((id) => !app.state.failed[id] && !had.includes(id));
+    app.state.passed = [...new Set([...had, ...added])];
+    app.state.assumed = [...new Set([...(prev.assumed ?? []), ...added])];
+  } else ensurePassed();
   uiReset();
   return true;
 }
@@ -636,13 +650,8 @@ async function init() {
       const el = document.getElementById(id);
       el.innerHTML =
         '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b>' +
-        '<p>בדקו את החיבור לאינטרנט ונסו שוב. אם זה חוזר, איפוס הנתונים השמורים עשוי לעזור.</p><p class="msg-actions">' +
-        '<button class="btn" data-retry>נסה שוב</button> <button class="btn" data-reset>אפס נתונים שמורים</button></p></div></div>';
+        '<p>בדקו את החיבור לאינטרנט ונסו שוב.</p><p class="msg-actions"><button class="btn" data-retry>נסה שוב</button></p></div></div>';
       el.querySelector('[data-retry]').onclick = init;
-      el.querySelector('[data-reset]').onclick = () => {
-        clearSaved();
-        location.reload();
-      };
     }
     dispatchEvent(new Event('hashchange')); // show the view the URL names (ui-plan.js onHash)
     return;

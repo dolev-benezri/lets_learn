@@ -6,6 +6,9 @@ import { PDFDocument, rgb } from '../web/vendor/pdf/pdf-lib.esm.min.js';
 import bidiFactory from '../web/vendor/pdf/bidi.min.mjs';
 import * as pdfjs from '../web/vendor/pdfjs/pdf.min.mjs';
 import { buildAdvisorPdf, visualRuns } from '../web/advisor-pdf.js';
+import { advisorBlocks } from '../web/advisor.js';
+import { classify } from '../web/rules.js';
+import { mini } from './fixtures/mini-data.mjs';
 
 // The UMD build sets module.exports; this package is type: module, so require() would read it as an ES module.
 const umd = { exports: {} };
@@ -85,6 +88,20 @@ test('the Hebrew text prints in order and every word can be found in the file', 
   for (const w of ['סיכום', 'לפגישה', 'קורסים', 'שעברתי', 'דינמיקה', '3.5']) assert.ok(text.includes(w), `${w} in ${text}`);
 });
 
+test('the real summary carries its warnings into the file: what is assumed, the rules, conflicts, a pass over a failed prerequisite', async () => {
+  const data = mini(),
+    state = { passed: ['B', 'Q'], assumed: ['Q'], failed: { A: 1 }, grades: {}, exempt: [], profile: { year: 2 } };
+  const blocks = advisorBlocks({ state, data, cls: classify(data, state), catalog: { programs: [] }, approved: null, conflicts: ['מספר נקודות'] });
+  const wanted = blocks.filter((b) => b.k === 'li').map((b) => b.t);
+  for (const t of ['בהנחה, לא אושרו', 'הכללים לא אושרו על ידי המחלקה', 'יש סתירה בין המקורות', 'וסומן שנכשלת בו'])
+    assert.ok(wanted.some((x) => x.includes(t)), t);
+  const { bytes, dropped } = await buildAdvisorPdf(blocks, libs);
+  assert.deepEqual(dropped, []);
+  const out = await read(bytes);
+  assert.equal(out.pages, 1);
+  for (const w of ['סתירה', 'אושרו', 'בהנחה', 'שנכשלת']) assert.ok(out.text.includes(w), w);
+});
+
 test('a typical year pair is one page', async () => {
   const course = (i) => ({ k: 'course', name: `מכניקת זורמים מתקדמת ${i}`, credits: 3.5, groups: [`הרצאה 2100${i}: יום א׳ 08:30–10:00; תרגול 2110${i}: יום ג׳ 14:15–15:45`] });
   const blocks = [
@@ -93,12 +110,15 @@ test('a typical year pair is one page', async () => {
     { k: 'h3', t: 'המצב שלי' },
     ...['שם: דנה לוי', 'תוכנית: הנדסת מכונות', 'שנה ב׳ בלימודים', 'ממוצע: 84.3'].map(li),
     li(`קורסים שעברתי: ${Array.from({ length: 16 }, (_, i) => `חשבון דיפרנציאלי ${i}`).join(', ')}`),
+    li(`קורסים בהנחה, לא אושרו: ${Array.from({ length: 6 }, (_, i) => `אנגלית מתקדמים ${i}`).join(', ')}`),
     { k: 'h3', t: 'החלופה שבחרתי' },
     { k: 'h4', t: 'סמסטר א׳' },
     ...[1, 2, 3, 4, 5, 6].map(course),
     { k: 'h4', t: 'סמסטר ב׳' },
     ...[1, 2, 3, 4, 5, 6].map(course),
     { k: 'h3', t: 'שימו לב' },
+    li('הכללים לא אושרו על ידי המחלקה.'),
+    li('יש סתירה בין המקורות הרשמיים לגבי מספר נקודות הזכות בבחירה.'),
     li('הכלי הוא עזר בלבד. המידע הקובע הוא של המכללה, ויש לבדוק כל שיבוץ בידיעון לפני ההרשמה.')
   ];
   assert.equal((await read((await buildAdvisorPdf(blocks, libs)).bytes)).pages, 1);

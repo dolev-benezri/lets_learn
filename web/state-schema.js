@@ -4,6 +4,7 @@
 export const PERSISTED = {
   name: 'str',
   passed: 'arr',
+  assumed: 'arr',
   failed: 'obj',
   grades: 'obj',
   exempt: 'arr',

@@ -1,6 +1,6 @@
 // The one-page summary to bring to an academic advisor. advisorBlocks is its content, in plain strings: advisorHtml draws it on screen and for print
 // (#print), and advisor-pdf.js into a file. Pure: no DOM; in HTML every string goes through esc().
-import { progress, gradeAverage, studyYear, missingRequired } from './rules.js';
+import { progress, gradeAverage, studyYear, missingRequired, passedWarnings } from './rules.js';
 import {
   esc,
   DISCLAIMER,
@@ -11,7 +11,10 @@ import {
   meetingText,
   hebYear,
   courseCount,
-  closeExamLines
+  closeExamLines,
+  assumedNote,
+  RULES_UNAPPROVED,
+  conflictLine
 } from './ui-text.js';
 
 const YEAR = ' אבגדה'; // study year number -> letter
@@ -19,8 +22,9 @@ const dateText = (now) =>
   now.toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: 'numeric' });
 const semName = (s) => (s === 'קיץ' ? 'סמסטר קיץ' : `סמסטר ${s}׳`);
 // data: the loaded program (lists, year); sem: { א, ב, קיץ } datasets when a year pair is shown; res: the shown alternative (one semester or a pair).
+// approved: the department's sign-off, null when there is none (settings.js approvedOn); conflicts: open conflicts between the official sources.
 // Blocks: { k: 'h2'|'h3'|'h4'|'p'|'li', t } and { k: 'course', name, credits, groups: string[] }.
-export function advisorBlocks({ state, data, res, cls, catalog, now = new Date(), sem = {} }) {
+export function advisorBlocks({ state, data, res, cls, catalog, now = new Date(), sem = {}, approved, conflicts = [] }) {
   const year = studyYear(data, state),
     prog = progress(data, state),
     avg = gradeAverage(data, state).avg;
@@ -28,7 +32,8 @@ export function advisorBlocks({ state, data, res, cls, catalog, now = new Date()
   const name = (id) =>
     data.courses[id]?.name ?? Object.values(sem).find((d) => d?.courses?.[id])?.courses[id].name ?? id;
   const missing = missingRequired(data, state);
-  const passed = state.passed.filter((id) => data.courses[id]);
+  const assumed = new Set(state.assumed ?? []),
+    passed = state.passed.filter((id) => data.courses[id] && !assumed.has(id));
   // failed and not passed again: what the advisor most needs to see (bot report #6)
   const failed = Object.keys(state.failed ?? {}).filter((id) => !state.passed.includes(id) && data.courses[id]);
   const li = (t) => ({ k: 'li', t });
@@ -37,9 +42,10 @@ export function advisorBlocks({ state, data, res, cls, catalog, now = new Date()
     state.name && `שם: ${state.name}`,
     program && `תוכנית: ${program}`,
     `שנה ${YEAR[year]}׳ בלימודים`,
-    creditsGoal(prog.earned, prog.required, year),
+    `${creditsGoal(prog.earned, prog.required, year)}${assumed.size ? ` (${assumedNote(assumed.size)})` : ''}`,
     avg !== null && `ממוצע: ${avg.toFixed(1)}`,
-    `קורסים שעברתי: ${passed.length ? passed.map(name).join(', ') : 'אין'}`,
+    (passed.length || !assumed.size) && `קורסים שעברתי: ${passed.length ? passed.map(name).join(', ') : 'אין'}`,
+    assumed.size && `קורסים בהנחה, לא אושרו: ${[...assumed].map(name).join(', ')}`,
     failed.length && `קורסים שנכשלתי בהם ועוד לא עברתי: ${failed.map(name).join(', ')}`,
     `קורסי חובה משנים קודמות שחסרים: ${missing.length ? missing.map(name).join(', ') : 'אין'}`,
   ]
@@ -77,6 +83,9 @@ export function advisorBlocks({ state, data, res, cls, catalog, now = new Date()
 
   const split = res ? [...new Set([...(res.split ?? []), ...parts.flatMap(([, r]) => r.split ?? [])])] : [];
   const notes = [
+    ...(approved === null ? [RULES_UNAPPROVED] : []),
+    ...conflicts.map(conflictLine),
+    ...passedWarnings(data, state).flatMap(([id, texts]) => texts.map((t) => `${name(id)}: ${t}`)),
     ...(cls?.warnings ?? []),
     ...(res && 'a' in res ? res.warnings ?? [] : []),
     // the year view says so on screen (ui-view.js): mandatory courses this year plan could not place in either semester

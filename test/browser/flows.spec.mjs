@@ -420,7 +420,7 @@ for (const size of Object.keys(SIZES)) {
 // another friend" keeps both, "replace" swaps the groups.
 // (no top-level await in a spec: node:test then hangs after the run)
 const twoGroups = async () =>
-  Object.values(JSON.parse(await readFile(new URL('../../web/data/afeka/2027-1/30-2026.json', import.meta.url), 'utf8')).courses)
+  Object.values(JSON.parse(await readFile(new URL('../fixtures/real/2027-1/30-2026.json', import.meta.url), 'utf8')).courses)
     .flatMap((c) => c.groups.map((g) => g.id))
     .slice(0, 2);
 // opens the friend editor step, pastes a link from "נועה" with other groups, and answers the dialog
@@ -462,6 +462,104 @@ for (const size of Object.keys(SIZES)) {
     await page.reload();
     await page.locator('fieldset', { hasText: 'פיזור בחינות' }).first().waitFor({ state: 'attached', timeout: 30000 });
   });
+}
+
+// The outside review's first finding: nothing marked, and the summary and the map claimed courses as passed.
+const UNMARKED = { ...STUDENT, passed: undefined };
+const FIRST = { ...DONE, 'afeka-sched-v1': JSON.stringify(UNMARKED) };
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: with nothing marked the site says what it assumed, and one tap confirms it`, async (t) => {
+    const page = await visit(t, size, FIRST);
+    await weekReady(page);
+    assert.match(await page.locator('#boardNote').innerText(), /קורסים בהנחה, לא אושרו: \d+/);
+    await page.locator('.steps a[data-view="me"]').click();
+    const yes = page.locator('[data-act="confirmAssumed"]');
+    await yes.waitFor();
+    assert.match(await page.locator('.crs .tag.warn', { hasText: 'בהנחה' }).first().innerText(), /בהנחה/);
+    await yes.click();
+    await page.locator('[data-act="confirmAssumed"]').waitFor({ state: 'detached' });
+    assert.equal(await page.locator('.crs .tag.warn', { hasText: 'בהנחה' }).count(), 0);
+    assert.equal(await focused(page), 'H2');
+    assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem('afeka-sched-v1'))).assumed, []);
+    await page.locator('.steps a[data-view="plan"]').click();
+    await weekReady(page);
+    assert.doesNotMatch(await page.locator('#boardNote').innerText(), /בהנחה/);
+  });
+
+  test(`${size}: the steps show where you are, with no tick for a step nobody finished`, async (t) => {
+    const page = await visit(t, size, FIRST);
+    await weekReady(page);
+    assert.equal(await page.locator('.steps a.done').count(), 0);
+    assert.equal(await page.locator('.steps a[data-view="plan"][aria-current="step"]').count(), 1);
+  });
+}
+
+test('a question still open does not end the first-visit welcome', async (t) => {
+  const page = await visit(t, 'phone', { 'afeka-sched-v1-terms': '2' }, '#prefs');
+  await page.locator('.gate').first().waitFor({ timeout: 30000 });
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-onboarded')), null);
+});
+
+for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.phone], ['a phone on its side', { width: 667, height: 375 }]]) {
+  test(`${name}: the board's warnings are seen, nothing overflows, and the week still starts on the first screens`, async (t) => {
+    const page = await visit(t, size, FIRST);
+    await weekReady(page);
+    const note = page.locator('#boardNote');
+    assert.ok(await note.isVisible());
+    assert.match(await note.innerText(), /הכללים לא אושרו על ידי המחלקה/);
+    const m = await page.evaluate(() => ({
+      over: document.documentElement.scrollWidth - innerWidth,
+      note: document.getElementById('boardNote').getBoundingClientRect().height,
+      vh: innerHeight
+    }));
+    assert.ok(m.over <= 0, `overflow ${m.over}`);
+    assert.ok(m.note <= m.vh * 0.45, `the note takes ${m.note} of ${m.vh}`);
+  });
+}
+
+// The phone opens on the day's first lesson, so a line above the controls would be scrolled away before anyone reads it.
+for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.phone]]) {
+  test(`${name}: on arrival the warnings and the day's first lesson are both on the screen`, async (t) => {
+    const page = await visit(t, size, FIRST);
+    await weekReady(page);
+    await page.waitForTimeout(300);
+    const r = await page.evaluate(() => {
+      const box = (e) => e.getBoundingClientRect();
+      const note = box(document.getElementById('boardNote')),
+        sel = box(document.getElementById('daysel')),
+        first = [...document.querySelectorAll('.day.on .blk')].map(box).sort((a, b) => a.top - b.top)[0];
+      return { noteTop: note.top, noteBottom: note.bottom, selBottom: sel.bottom, firstTop: first?.top, vh: innerHeight };
+    });
+    assert.ok(r.noteTop >= r.selBottom - 1, `under the day selector: ${JSON.stringify(r)}`);
+    assert.ok(r.noteBottom <= r.vh, `on the screen: ${JSON.stringify(r)}`);
+    assert.ok(r.firstTop >= r.noteBottom - 1 && r.firstTop <= r.vh - 60, `the lesson too: ${JSON.stringify(r)}`);
+  });
+}
+
+test('a phone on its side keeps the semester notes', async (t) => {
+  const page = await visit(t, { width: 667, height: 375 }, DONE);
+  await weekReady(page);
+  assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('semnote')).display), 'block');
+});
+
+// A failed load says nothing against the saved record: the screen offers a retry, and nothing there can erase it.
+for (const size of Object.keys(SIZES)) {
+  for (const [how, fail] of [['a missing file', (r) => r.fulfill({ status: 404 })], ['no network', (r) => r.abort()]]) {
+    test(`${size}: ${how} offers a retry only, and the retry loads with the record kept`, async (t) => {
+      const page = await visit(t, size, DONE);
+      await page.waitForLoadState('networkidle');
+      await page.context().route('**/data/afeka/*-1/*.json', fail);
+      await page.reload();
+      const retry = page.locator('[data-retry]:visible').first();
+      await retry.waitFor({ timeout: 30000 });
+      assert.equal(await page.locator('[data-reset]').count(), 0);
+      assert.doesNotMatch(await page.locator('.msg.bad:visible').first().innerText(), /איפוס|אפס/);
+      await page.context().unroute('**/data/afeka/*-1/*.json', fail);
+      await retry.click();
+      await weekReady(page);
+      assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem('afeka-sched-v1'))).passed, STUDENT.passed);
+    });
+  }
 }
 
 // Audit 2026-10-23 #40: a course row whose grade the import does not know (a word, not a number) is not dropped silently.
@@ -570,7 +668,8 @@ test('the same content builds once; another alternative builds again and an olde
   const before = await page.locator('.advisor-sum').innerText();
   // whole Hebrew words and numbers: the file holds a time's parts and a word with a quote mark as separate runs
   const words = (s) => new Set(s.split(/[\s,;:()–-]+/).filter((w) => w.length > 1 && /^([א-ת]+|\d+)$/.test(w)));
-  await page.evaluate(async () => (await import('./ui-view.js')).go(1));
+  // two ahead: on the frozen data the next alternative brings no word of its own
+  await page.evaluate(async () => (await import('./ui-view.js')).go(2));
   await page.waitForFunction((b) => document.querySelector('.advisor-sum').innerText !== b, before);
   await pdfReady(page);
   const after = await page.locator('.advisor-sum').innerText();

@@ -26,7 +26,7 @@ export function meetingsMask(meetings) {
 export const overlaps = (a, b) => a.some((v, d) => (v & b[d]) !== 0);
 export const merge = (a, b) => a.map((v, d) => v | b[d]);
 // campus days of a week mask (index 0 unused)
-const daysUsed = (mask) => mask.filter((m, d) => d >= 1 && m !== 0).length;
+export const daysUsed = (mask) => mask.filter((m, d) => d >= 1 && m !== 0).length;
 
 // Busy blocks, a hard day off and hard hours, tested on ONE meeting in real minutes (the 30-minute slots are for
 // lesson-vs-lesson clashes only).

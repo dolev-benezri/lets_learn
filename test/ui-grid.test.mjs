@@ -237,6 +237,95 @@ test('backups: a tutorial backup must belong to the chosen lecture', () => {
   assert.deepEqual(backups(data, { groups: ['a1', 'a1/1', 'b1'] }, 'a1/1'), ['a1/2']);
 });
 
+// The plan is a1 + a1/1 + b1 (b1: day 2, 09:00-10:00). Each candidate below is clear of it, so only the constraints can turn it down.
+const CANDIDATES = () => ({
+  courses: course([
+    mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1'], { lecturer: 'first' }),
+    mk('a2', 'L', [m(3, '08:00', '10:00')], ['a2/1'], { lecturer: 'second' }),
+    mk('a3', 'L', [m(4, '12:00', '14:00')], ['a3/1'], { lecturer: 'third' }),
+    mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+    mk('a2/1', 'T', [m(5, '08:00', '09:00')]),
+    mk('a3/1', 'T', [m(5, '12:00', '13:00')])
+  ])
+});
+const PLAN = { groups: ['a1', 'a1/1', 'b1'], alts: {} };
+
+test('backups: no constraint means every candidate', () => {
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1'), ['a2 + a2/1', 'a3 + a3/1']);
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', {}), ['a2 + a2/1', 'a3 + a3/1']);
+});
+
+test('backups: a lecture on a blocked time is no backup', () => {
+  const blocks = [{ day: 3, start: '09:00', end: '09:30' }];
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', { blocks }), ['a3 + a3/1']);
+});
+
+test('backups: a lecture whose only tutorial is on a blocked time is no backup', () => {
+  const blocks = [{ day: 5, start: '12:30', end: '13:30' }];
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', { blocks }), ['a2 + a2/1']);
+});
+
+test('backups: a hard day off and hard hours count, a wished day off does not', () => {
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', { dayOff: [3], dayOffHard: true }), ['a3 + a3/1']);
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', { dayOff: [3] }), ['a2 + a2/1', 'a3 + a3/1']);
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', { notBefore: '10:00', windowHard: true }), ['a3 + a3/1']);
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', { notBefore: '10:00' }), ['a2 + a2/1', 'a3 + a3/1']);
+});
+
+test('backups: an avoided lecturer is no backup, though a pin beats avoid in buildOptions', () => {
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', { lecturers: { second: 'avoid' } }), ['a3 + a3/1']);
+  assert.deepEqual(backups(CANDIDATES(), PLAN, 'a1', { lecturers: { second: 'prefer' } }), ['a2 + a2/1', 'a3 + a3/1']);
+});
+
+test('backups: a lecture with two tutorials is listed with the one that fits', () => {
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1']),
+      mk('a2', 'L', [m(3, '08:00', '10:00')], ['a2/1', 'a2/2']),
+      mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+      mk('a2/1', 'T', [m(2, '09:00', '10:00')]), // on b1
+      mk('a2/2', 'T', [m(5, '08:00', '09:00')])
+    ])
+  };
+  assert.deepEqual(backups(data, PLAN, 'a1'), ['a2 + a2/2']);
+  // the same choice when the other tutorial is on a blocked time
+  const blocks = [{ day: 5, start: '08:00', end: '09:00' }];
+  assert.deepEqual(backups(data, PLAN, 'a1', { blocks }), []);
+});
+
+test('backups: a backup that would pass the cap on campus days is no backup, and one on the same days is', () => {
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1', 'a1/2', 'a1/3']),
+      mk('a2', 'L', [m(1, '12:00', '14:00')], ['a2/1']),
+      mk('a3', 'L', [m(3, '08:00', '10:00')], ['a3/1']),
+      mk('a1/1', 'T', [m(1, '10:00', '11:00')]),
+      mk('a1/2', 'T', [m(5, '08:00', '09:00')]),
+      mk('a1/3', 'T', [m(2, '12:00', '13:00')]),
+      mk('a2/1', 'T', [m(2, '12:00', '13:00')]),
+      mk('a3/1', 'T', [m(4, '08:00', '09:00')])
+    ])
+  };
+  // the plan sits on days 1 and 2 (b1)
+  assert.deepEqual(backups(data, PLAN, 'a1'), ['a2 + a2/1', 'a3 + a3/1']);
+  assert.deepEqual(backups(data, PLAN, 'a1', { maxDays: 2 }), ['a2 + a2/1']);
+  assert.deepEqual(backups(data, PLAN, 'a1/1'), ['a1/2', 'a1/3']);
+  assert.deepEqual(backups(data, PLAN, 'a1/1', { maxDays: 2 }), ['a1/3']);
+});
+
+test('backups: a tutorial backup on a blocked time is no backup', () => {
+  const data = {
+    courses: course([
+      mk('a1', 'L', [m(1, '08:00', '10:00')], ['a1/1', 'a1/2', 'a1/3']),
+      mk('a1/1', 'T', [m(4, '08:00', '10:00')]),
+      mk('a1/2', 'T', [m(5, '08:00', '10:00')]),
+      mk('a1/3', 'T', [m(3, '08:00', '10:00')])
+    ])
+  };
+  assert.deepEqual(backups(data, PLAN, 'a1/1'), ['a1/2', 'a1/3']);
+  assert.deepEqual(backups(data, PLAN, 'a1/1', { blocks: [{ day: 5, start: '09:00', end: '09:30' }] }), ['a1/3']);
+});
+
 test('year pairs: shown-semester result, empty halves, totals and placement', () => {
   const single = { courses: ['A'], groups: ['a1'], breakdown: { compact: 0.9 } };
   const pair = {

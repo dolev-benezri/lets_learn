@@ -14,10 +14,12 @@ import {
   resCourses,
   yearTotals
 } from './ui-grid.js';
-import { courseCount } from './ui-text.js';
+import { courseCount, assumedNote } from './ui-text.js';
 import { YEAR_LETTERS, planPaths, G, truncate } from './map-layout.js';
 
 // ---------- text helpers ----------
+// A course the site assumed passed is not one the student said was (app.js ensurePassed).
+const labelOf = (c, id, s) => (s === 'done' && c.assumed?.has(id) ? 'בהנחה' : LABEL[s]);
 const LABEL = {
   done: 'עברתי',
   exempt: 'פטור',
@@ -48,7 +50,7 @@ const nodeLabel = (c, id, yr) => {
   const why = ['blocked', 'notOffered', 'afterA', 'conditional'].includes(s) ? c.st[id].reasons : [];
   return [
     co.name,
-    LABEL[s],
+    labelOf(c, id, s),
     `${co.credits} נ״ז`,
     yearTag(yr),
     requires(c.data, id).length && `דורש: ${requires(c.data, id).join('; ')}`,
@@ -210,7 +212,7 @@ export function listHtml(c) {
                   s = statusOf(c, id),
                   req = requires(c.data, id),
                   o = c.unlocks[id] ?? 0;
-                return `<li class="st-${s}"><div class="li-top"><b>${esc(co.name)}</b><span class="li-st">${LABEL[s]}</span>${
+                return `<li class="st-${s}"><div class="li-top"><b>${esc(co.name)}</b><span class="li-st">${labelOf(c, id, s)}</span>${
                   inPlan(c, id) ? '<span class="li-st li-plan">בתכנון</span>' : ''
                 }<span class="li-cr"><bdi>${esc(co.credits)}</bdi> נ״ז</span>
       <a class="li-link" href="${yedion(id)}" target="_blank" rel="noopener" aria-label="${esc(co.name)} בידיעון (חלון חדש)">${icon('external-link')}</a></div>
@@ -239,7 +241,7 @@ export function cardHtml(c, id) {
     opens = opensDirect(c.data, id),
     r = c.st[id]?.reasons ?? [];
   const yr = c.L.nodes.find((n) => n.key === id)?.year;
-  return `<div class="card-top"><span class="chip st-${s}">${LABEL[s]}</span><button type="button" class="pm-ibtn" data-pm="clear" data-k="pm-clear"
+  return `<div class="card-top"><span class="chip st-${s}">${labelOf(c, id, s)}</span><button type="button" class="pm-ibtn" data-pm="clear" data-k="pm-clear"
     aria-label="סגור את כרטיס הקורס">${icon('x')}</button></div>
     <h3>${esc(co.name)}</h3><p class="card-meta"><bdi>${esc(id)}</bdi> · <bdi>${esc(co.credits)}</bdi> נ״ז${yr ? ` · ${yearTag(yr)}` : ''}</p>
     ${r.length ? `<p class="card-why">${r.map(esc).join('<br>')}</p>` : ''}
@@ -261,13 +263,14 @@ export function progressHtml(c) {
   const { total, done, planned, adds, specLeft } = c.prog;
   if (!total) return '';
   const pct = (v) => Math.round((100 * v) / total),
-    txt = `${done} מתוך ${total} נ״ז`,
+    note = assumedNote(c.assumed?.size),
+    txt = `${done} מתוך ${total} נ״ז${note ? `, ${note}` : ''}`,
     ext = adds
       ? `המערכת שנבחרה מוסיפה ${adds} נ״ז${c.opened ? ` ופותחת ${plural(c.opened, 'קורס אחד', 'קורסים')}` : ''}`
       : '';
   const title =
     'הסכום המשוער של הרשימות בתוכנית (נ״ז מינימום לכל רשימה); לא כולל כללים נוספים שבתקנון. קורס נספר פעם אחת, ורשימה לא נספרת מעבר למינימום שלה.';
-  return `<div class="pm-prog" title="${esc(title)}"><p class="pm-prog-t">הושלמו <b><bdi>${done}</bdi></b> מתוך <b><bdi>${total}</bdi></b> נ״ז${
+  return `<div class="pm-prog" title="${esc(title)}"><p class="pm-prog-t">הושלמו <b><bdi>${done}</bdi></b> מתוך <b><bdi>${total}</bdi></b> נ״ז${note ? ` · ${esc(note)}` : ''}${
     ext
       ? ` · <span
     class="pm-prog-plan">${esc(ext)}</span>`

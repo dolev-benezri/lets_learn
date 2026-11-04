@@ -278,7 +278,7 @@ test('backup round trip keeps every persisted field; every saved field is in the
   const { PERSISTED } = await import('../web/state-schema.js');
   for (const k of Object.keys(DEFAULT)) assert.ok(k in PERSISTED || IDENTITY.includes(k), `${k} is neither persisted nor identity`);
   const FIX = {
-    name: 'דנה', passed: ['10016'], failed: { 10016: 1 }, grades: { 10016: 80 }, exempt: ['10016'], outsideDone: ['x'],
+    name: 'דנה', passed: ['10016'], assumed: ['10016'], failed: { 10016: 1 }, grades: { 10016: 80 }, exempt: ['10016'], outsideDone: ['x'],
     choices: { 10016: 'must' }, friends: [{ name: 'f', groups: ['G1'] }], pins: ['G1'],
     profile: { year: 2, amirnet: 100, specs: [], summer: true }, scope: 'א', load: 'ב', sortBy: 'credits',
     semesterOf: { 10016: 'ב' }, programSet: true, specDraft: ['solid'], yearIds: ['10016'], retakeSeen: ['10016'], prefsV: 2, prefsNote: true,
