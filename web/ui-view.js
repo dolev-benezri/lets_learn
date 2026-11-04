@@ -414,11 +414,12 @@ export function renderView() {
 
 // Phone: the day column starts at the earliest hour of any day, so a later-starting day opens on empty hours.
 // On the first view of a result and after each day switch, scroll to the day's first lesson (not on every refresh); from the board's note above it
-// when both fit, so the warnings are read, not scrolled away.
+// when both fit, so the warnings are read, not scrolled away. When they do not fit, arriving shows the note (the lesson is below it) and choosing a day shows the lesson.
 
 export function scrollToDay() {
   // kept armed until a result is on screen
   if (!ui.dayScroll || !current() || $('layout').hidden || !matchMedia(PHONE).matches) return;
+  const choseDay = ui.dayScroll === 'day';
   ui.dayScroll = false;
   const blocks = [...document.querySelectorAll('.day.on .blk')];
   if (!blocks.length) return;
@@ -428,7 +429,7 @@ export function scrollToDay() {
   const head = parseFloat(getComputedStyle($('daysel')).top) + $('daysel').offsetHeight + 8;
   const top = b.getBoundingClientRect().top,
     note = $('boardNote').getBoundingClientRect().top,
-    from = top - note <= innerHeight - 100 - head ? note : top;
+    from = !$('boardNote').firstChild || (choseDay && top - note > innerHeight - 100 - head) ? top : note;
   if (from < head || top > innerHeight - 100) scrollBy(0, from - head);
 }
 

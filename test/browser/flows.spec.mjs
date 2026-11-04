@@ -536,6 +536,44 @@ for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.
   });
 }
 
+// The owner's call: when the two do not fit (a late first lesson, or a short screen with its toolbars), arriving shows the warnings, and choosing a day shows its lesson.
+// The height is measured, so this holds on any night's data: one pixel short of fitting both.
+test('a short phone: arriving shows the warnings first, and choosing a day shows its lesson', async (t) => {
+  const page = await visit(t, { width: 320, height: 640 }, FIRST);
+  await weekReady(page);
+  await page.waitForTimeout(300);
+  const spots = () =>
+    page.evaluate(() => {
+      const box = (e) => e.getBoundingClientRect(),
+        sel = document.getElementById('daysel');
+      return {
+        noteTop: box(document.getElementById('boardNote')).top,
+        noteBottom: box(document.getElementById('boardNote')).bottom,
+        selBottom: box(sel).bottom,
+        head: parseFloat(getComputedStyle(sel).top) + sel.offsetHeight + 8,
+        firstTop: [...document.querySelectorAll('.day.on .blk')].map((b) => box(b).top).sort((a, b) => a - b)[0],
+        vh: innerHeight
+      };
+    });
+  const tall = await spots();
+  await page.setViewportSize({ width: 320, height: Math.floor(tall.firstTop - tall.noteTop + tall.head + 99) });
+  await page.reload();
+  await weekReady(page);
+  await page.waitForTimeout(300);
+  const arrived = await spots();
+  assert.ok(arrived.noteTop >= arrived.selBottom - 1 && arrived.noteBottom <= arrived.vh, `the warnings: ${JSON.stringify(arrived)}`);
+  let days = 0;
+  for (const day of await page.locator('#daysel [data-act="day"]').all()) {
+    await day.click();
+    await page.waitForTimeout(100);
+    const s = await spots();
+    if (s.firstTop === undefined) continue;
+    days++;
+    assert.ok(s.firstTop >= s.selBottom - 1 && s.firstTop <= s.vh - 60, `the lesson: ${JSON.stringify(s)}`);
+  }
+  assert.ok(days, 'a day with a lesson');
+});
+
 test('a phone on its side keeps the semester notes', async (t) => {
   const page = await visit(t, { width: 667, height: 375 }, DONE);
   await weekReady(page);

@@ -175,7 +175,7 @@ export const ACT = {
   next: () => go(1),
   day(el) {
     ui.mobileDay = Number(el.dataset.day);
-    ui.dayScroll = true;
+    ui.dayScroll = 'day';
     keepFocus(renderView);
   },
   block: (el) =>
