@@ -9,7 +9,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)),
-  WEB = path.join(HERE, '..', '..', 'web');
+  WEB = path.join(HERE, '..', '..', 'web'),
+  DATA = path.join(WEB, 'data', 'afeka') + path.sep,
+  FROZEN = path.join(HERE, '..', 'fixtures', 'real');
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -24,7 +26,9 @@ const TYPES = {
 };
 const server = createServer(async (req, res) => {
   const p = path.join(WEB, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html'));
-  const body = p.startsWith(WEB) ? await readFile(p).catch(() => null) : null;
+  // the student's files come from the frozen copy: a seat that fills up tonight must not fail a test tomorrow
+  const frozen = p.startsWith(DATA) ? path.join(FROZEN, p.slice(DATA.length)) : p;
+  const body = p.startsWith(WEB) ? await readFile(frozen).catch(() => readFile(p)).catch(() => null) : null;
   if (!body) {
     res.writeHead(404).end();
     return;

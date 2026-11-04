@@ -420,7 +420,7 @@ for (const size of Object.keys(SIZES)) {
 // another friend" keeps both, "replace" swaps the groups.
 // (no top-level await in a spec: node:test then hangs after the run)
 const twoGroups = async () =>
-  Object.values(JSON.parse(await readFile(new URL('../../web/data/afeka/2027-1/30-2026.json', import.meta.url), 'utf8')).courses)
+  Object.values(JSON.parse(await readFile(new URL('../fixtures/real/2027-1/30-2026.json', import.meta.url), 'utf8')).courses)
     .flatMap((c) => c.groups.map((g) => g.id))
     .slice(0, 2);
 // opens the friend editor step, pastes a link from "נועה" with other groups, and answers the dialog
@@ -668,7 +668,8 @@ test('the same content builds once; another alternative builds again and an olde
   const before = await page.locator('.advisor-sum').innerText();
   // whole Hebrew words and numbers: the file holds a time's parts and a word with a quote mark as separate runs
   const words = (s) => new Set(s.split(/[\s,;:()–-]+/).filter((w) => w.length > 1 && /^([א-ת]+|\d+)$/.test(w)));
-  await page.evaluate(async () => (await import('./ui-view.js')).go(1));
+  // two ahead: on the frozen data the next alternative brings no word of its own
+  await page.evaluate(async () => (await import('./ui-view.js')).go(2));
   await page.waitForFunction((b) => document.querySelector('.advisor-sum').innerText !== b, before);
   await pdfReady(page);
   const after = await page.locator('.advisor-sum').innerText();
