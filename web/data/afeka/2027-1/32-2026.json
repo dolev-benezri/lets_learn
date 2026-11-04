@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-03T23:23:39.349Z",
+ "fetchedAt": "2026-11-04T23:24:51.547Z",
  "year": 2027,
  "startYear": 2026,
  "program": 32,
@@ -981,7 +981,7 @@
        "day": 3,
        "start": "10:00",
        "end": "12:50",
-       "room": "302 פיקוס"
+       "room": "102 פיקוס"
       }
      ],
      "exams": [
@@ -1488,7 +1488,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שוולב איילת",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "273000303/1"
@@ -1605,7 +1605,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר שוולב איילת",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -2920,7 +2920,7 @@
      ]
     },
     {
-     "kind": "קדם",
+     "kind": "מקביל",
      "anyOf": [
       {
        "id": "30137",
@@ -3365,7 +3365,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' אבינרי אראל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "273013404/1"
@@ -3416,7 +3416,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "פרופ' אבינרי אראל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -3671,7 +3671,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גולן עוז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "273013705/1"
@@ -3758,7 +3758,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר גולן עוז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7294,7 +7294,7 @@
        "day": 5,
        "start": "16:00",
        "end": "17:50",
-       "room": "קריה ז'4"
+       "room": "304 פיקוס"
       }
      ],
      "exams": [
@@ -7597,7 +7597,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7749,7 +7749,7 @@
        "day": 4,
        "start": "11:00",
        "end": "12:50",
-       "room": "מפ\"ט תאנה"
+       "room": "055 פרונטלי בניין מעבדות"
       }
      ],
      "exams": []
@@ -8029,7 +8029,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר פרס חוזה אנטוניו",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8074,7 +8074,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שרייבר ניר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090224/1",
@@ -8114,7 +8114,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8132,7 +8132,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10850,7 +10850,7 @@
        "day": 3,
        "start": "12:00",
        "end": "12:50",
-       "room": "102 פיקוס"
+       "room": "302 פיקוס"
       }
      ],
      "exams": []
@@ -12753,7 +12753,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279092510/1"
@@ -12921,7 +12921,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -13020,7 +13020,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279092801/1"
@@ -13176,7 +13176,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

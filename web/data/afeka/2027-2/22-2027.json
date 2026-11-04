@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-03T23:23:39.349Z",
+ "fetchedAt": "2026-11-04T23:24:51.547Z",
  "year": 2027,
  "startYear": 2027,
  "program": 22,
@@ -447,7 +447,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר חריזמן קרן (אנה)",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -509,7 +509,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -968,7 +968,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שאולוב גריגורי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271082604/1"
@@ -1001,7 +1001,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -1657,7 +1657,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר עמר ניסים",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272012205/1"
@@ -1750,7 +1750,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' ארן ירדן",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2425,7 +2425,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר קלמרו נצח",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "272012805/1"
@@ -2458,7 +2458,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר קלמרו נצח",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3236,7 +3236,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר ברק אורי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6705,7 +6705,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090201/1",
@@ -7221,7 +7221,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר סגל אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090218/1",
@@ -7459,7 +7459,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -11176,7 +11176,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279092503/1"
@@ -11308,7 +11308,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092507/1"
@@ -11410,7 +11410,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -11482,7 +11482,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -11785,7 +11785,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279092902/1"
@@ -11818,7 +11818,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092903/1"
@@ -11902,7 +11902,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -11920,7 +11920,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

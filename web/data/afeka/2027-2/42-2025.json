@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-03T23:23:39.349Z",
+ "fetchedAt": "2026-11-04T23:24:51.547Z",
  "year": 2027,
  "startYear": 2025,
  "program": 42,
@@ -515,7 +515,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר חריזמן קרן (אנה)",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -577,7 +577,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' גולדבלט ליבוביץ נעה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4985,7 +4985,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' פרנקל (בן חנוך) רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274021801/1"
@@ -5018,7 +5018,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' פרנקל (בן חנוך) רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7110,7 +7110,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090201/1",
@@ -7626,7 +7626,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר סגל אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090218/1",
@@ -7864,7 +7864,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9836,7 +9836,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279092503/1"
@@ -9968,7 +9968,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092507/1"
@@ -10070,7 +10070,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -10142,7 +10142,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

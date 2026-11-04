@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-03T23:23:39.349Z",
+ "fetchedAt": "2026-11-04T23:24:51.547Z",
  "year": 2027,
  "startYear": 2024,
  "program": 32,
@@ -1045,7 +1045,7 @@
      ]
     },
     {
-     "kind": "קדם",
+     "kind": "מקביל",
      "anyOf": [
       {
        "id": "30137",
@@ -1273,7 +1273,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אלבוחר אורי",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [
       "273013505/1"
@@ -1312,7 +1312,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר אלבוחר אורי",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
@@ -3711,7 +3711,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": ", מר אולבינסקי אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
