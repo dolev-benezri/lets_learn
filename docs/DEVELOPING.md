@@ -13,7 +13,7 @@ npm ci
 npx http-server web -p 8080 -c-1
 ```
 
-`npx` מוריד את `http-server` בפעם הראשונה: הוא לא חלק מ-`package.json`. Python נדרש רק ל-`npm run ui:serve` ול-`npm run ui:shots`.
+`npx` מוריד את `http-server` בפעם הראשונה: הוא לא חלק מ-`package.json`.
 
 פותחים את http://localhost:8080/. אם הפורט תפוס (`EADDRINUSE`), מחליפים ל-`-p 8081`. כל הפקודות רצות מתוך תיקיית הפרויקט.
 

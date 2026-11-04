@@ -295,8 +295,11 @@ test('keyboard: the first 60 Tab stops of each step show a focus ring, in docume
             ? e.closest('label')?.querySelector('span') ?? e
             : e;
         const st = getComputedStyle(mark);
+        // Only a time field may hold Tab on one element: WebKit on Linux and on a Mac stops at its hour and its minute.
         const backwards =
-          window.__prev && !(window.__prev.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING);
+          window.__prev &&
+          !(window.__prev === e && e.type === 'time') &&
+          !(window.__prev.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING);
         window.__prev = e;
         return {
           id: e.dataset.k ?? e.id ?? e.tagName,

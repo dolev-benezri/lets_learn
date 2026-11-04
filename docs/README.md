@@ -23,12 +23,10 @@
 | [ACCESSIBILITY-AUDIT.md](ACCESSIBILITY-AUDIT.md) | ביקורת נגישות עצמאית מול WCAG 2.2 AA, וסטטוס התיקונים |
 | [ACCESSIBILITY-WCAG21.md](ACCESSIBILITY-WCAG21.md) | בדיקה עצמית מול WCAG 2.1 AA: טבלת קריטריונים, מה תוקן ומה נשאר לאדם (טיוטה, לבדיקת מורשה נגישות) |
 | [LAUNCH-READINESS.md](LAUNCH-READINESS.md) | הערכת המוכנות לפרסום (4.10.2026) והתיקונים שבעקבותיה |
-| [DATA-AUDIT.md](DATA-AUDIT.md) | סקירת נתונים אוטומטית לכל התוכניות (נוצר על ידי `scripts/audit.mjs`) |
-| [PREREQS.md](PREREQS.md) | מפת דרישות הקדם של הנדסה מכנית, מחזור 2026 (נוצר יחד עם [prereqs.json](prereqs.json) על ידי `scripts/prereq-map.mjs`) |
 | [ISSUES.md](ISSUES.md) | בעיות ידועות ומעקב |
 | [../solver-audit/](../solver-audit/findings.md) | ביקורת מנוע החיפוש (6.10.2026): ממצאים, מפת תלויות, תרשימי זרימה, וסקריפטי שחזור שמוכיחים כל טענה |
 | [AUDIT-2026-10-23.md](AUDIT-2026-10-23.md) | ביקורת חיצונית (23.10.2026): האתר ומנוע החיפוש, 14 ממצאים, וסקריפטי שחזור ב-[audit-2026-10-23/](audit-2026-10-23/) |
-| [superpowers/design-review/](superpowers/design-review/) | סקירת העיצוב (8.10.2026): ביקורת ממשק, סקירת ה-README, מחקר עיצוב, וסגנונות לבחירה (`npm run ui:serve`) |
+| [superpowers/design-review/](superpowers/design-review/) | סקירת העיצוב (8.10.2026): ביקורת ממשק, סקירת ה-README, ומחקר עיצוב |
 
 ## מחקר והיסטוריה
 
@@ -38,7 +36,6 @@
 | [research.md](research.md) | מחקר מקדים: מערכות קיימות, מקורות נתונים, תקנון |
 | [research-programs.md](research-programs.md) | גילוי המסלולים והמחזורים באתר הידיעון |
 | [research-degree-rules.md](research-degree-rules.md) | כללי התואר, קודי הרשימות וההתמחויות של הנדסה מכנית (תוכנית 30) |
-| [plan.md](plan.md) | תוכנית הבנייה הראשונה (הוחלפה ב-spec הראשון, נשמרה לתיעוד) |
 | [superpowers/specs/](superpowers/specs/) | ה-specs המאושרים |
 | [superpowers/plans/](superpowers/plans/) | תוכניות המימוש, כולל [הרחבה לתוכניות נוספות](superpowers/plans/2026-10-02-program-expansion.md) |
 | [archive/](archive/README.md) | מחקרים ומסמכים מענפים צדדיים שנסגרו: רענון הנתונים והעלאה לאוויר, ומדריך ההפעלה למכללה |

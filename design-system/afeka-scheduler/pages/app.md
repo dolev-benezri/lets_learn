@@ -124,7 +124,7 @@ Two cards on one page, human wording. Every change saves at once and re-runs the
 - No horizontal page scroll at 375px.
 
 ## Pre-delivery checklist
-- [ ] Light and dark from the same tokens; 0 contrast fails in both (`shoot.mjs` and `shoot.mjs --dark`)
+- [ ] Light and dark from the same tokens; 0 contrast fails in both (`npm run test:browser -- a11y`)
 - [ ] On step 4 the grid is the dominant element at 1440px and first at 375px; the step bar shows on every page
 - [ ] No `<select>` tables and no raw sliders for weights (segmented scales instead); the only select is "הצג לפי"
 - [ ] Auto re-run on every change (debounced), with no search button and no blank flashes
