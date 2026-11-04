@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rowsFromTable, rowsFromWords, rowFromBlock, matchRows, matchGrid } from '../web/friend-schedule.js';
+import { rowsFromTable, rowsFromWords, rowFromBlock, matchRows, matchGrid, mergeScans } from '../web/friend-schedule.js';
 
 const g = (id, type, ...meetings) => ({
   id,
@@ -165,4 +165,21 @@ test('rowsFromWords: a code cut short keeps every near course as a candidate, an
     ]
   );
   assert.deepEqual(matchRows(rows, cs).found, ['X1', 'Y1']);
+});
+
+test('mergeScans: one group per course and type, a table first; beside a table a grid only fills gaps, without its guesses or notes', () => {
+  const courses = {
+    A: { groups: [{ id: 'a1', type: 'הרצאה' }, { id: 'a2', type: 'הרצאה' }, { id: 'a3', type: 'תרגיל' }] },
+    B: { groups: [{ id: 'b1', type: 'הרצאה' }] },
+    C: { groups: [{ id: 'c1', type: 'הרצאה' }] }
+  };
+  const table = { found: ['a1'], unknown: ['x'], ambiguous: 1, weak: 2 };
+  const grid = { found: ['a2', 'a3', 'b1', 'c1'], weakIds: ['c1'], unknown: ['y', 'x'], ambiguous: 4, weak: 8 };
+  assert.deepEqual(mergeScans([table], [grid], courses), { found: ['a1', 'a3', 'b1'], unknown: ['x'], ambiguous: 1, weak: 2 });
+  assert.deepEqual(
+    mergeScans([], [grid], courses),
+    { found: ['a2', 'a3', 'b1', 'c1'], unknown: ['y', 'x'], ambiguous: 4, weak: 8 },
+    'no table: the grid is the whole answer, its guesses and notes too'
+  );
+  assert.deepEqual(mergeScans([{ found: ['a1'], unknown: ['x'], ambiguous: 0, weak: 0 }, { found: ['a1'], unknown: ['x'], ambiguous: 0, weak: 0 }], [], courses).found, ['a1']);
 });

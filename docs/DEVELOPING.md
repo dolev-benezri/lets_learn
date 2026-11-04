@@ -13,6 +13,8 @@ npm ci
 npx http-server web -p 8080 -c-1
 ```
 
+`npx` מוריד את `http-server` בפעם הראשונה: הוא לא חלק מ-`package.json`. Python נדרש רק ל-`npm run ui:serve` ול-`npm run ui:shots`.
+
 פותחים את http://localhost:8080/. אם הפורט תפוס (`EADDRINUSE`), מחליפים ל-`-p 8081`. כל הפקודות רצות מתוך תיקיית הפרויקט.
 
 ## בדיקות
@@ -60,7 +62,8 @@ flowchart RL
 2. **משיכה ובנייה:** `scripts/scrape.mjs` עובר על הידיעון הציבורי (בלי התחברות), `parse.mjs` מפרסר את ה-HTML, `build.mjs` מאחד לפורמט אחד ומריץ `validate()`.
 3. **כתיבה בטוחה:** קבצים נכתבים רק אם כל הבדיקות עוברות, וקובץ שלא השתנה לא נכתב מחדש. `validate()` דורש מספר מינימלי של קורסים ואת קורס העוגן בכל מחזור ובכל סמסטר. `status.json` מתעדכן בכל ריצה מוצלחת, והאתר קורא ממנו את שורת "נבדק לפני..." שבכותרת, ו-`catalog.json` קובע אילו תוכניות ומחזורים מוצגים.
 4. **ריצה לילית:** [ci/gitlab-scrape.yml](../ci/gitlab-scrape.yml) רץ בתזמון של GitLab CI (השרתים של GitHub Actions לא מצליחים להתחבר לידיעון), מוסיף commit ודוחף ל-`main`. הודעת ה-commit היא שורת סיכום אחת, עם עד 6 קבצים ו-"ועוד N מתוך M קבצים".
-5. **פריסה:** push ל-`main` שנוגע ב-`web/` מפעיל את [.github/workflows/deploy.yml](../.github/workflows/deploy.yml), שמפרסם את `web/` ב-GitHub Pages.
+5. **פריסה:** push ל-`main` שנוגע ב-`web/`, ב-`test/`, ב-`scripts/`, ב-`package.json`, ב-`package-lock.json` או ב-`.github/workflows/` מפעיל את [.github/workflows/deploy.yml](../.github/workflows/deploy.yml): כל הבדיקות, ואז פרסום של `web/` ב-GitHub Pages.
+6. **בדיקות שלא עוצרות פריסה ושולחות מייל כשהן נכשלות:** [checks.yml](../.github/workflows/checks.yml) על הנתונים החיים, [browser.yml](../.github/workflows/browser.yml) בדפדפן, אחרי שינוי בקוד האתר, ו-[freshness.yml](../.github/workflows/freshness.yml) פעם ביום, כשהנתונים הפסיקו להתעדכן.
 
 הנתונים נשמרים בקבצים `web/data/afeka/{שנה}-{סמסטר}/{תוכנית}-{מחזור}.json`, למשל `2027-1/30-2026.json`.
 

@@ -1,5 +1,7 @@
 # Design System Master File
 
+> **Out of date on fonts and colors:** this was generated before the site's look was settled. The site uses Rubik, self-hosted, and the palette in `web/style.css`. Its CSP blocks Google Fonts.
+
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
 > If not, strictly follow the rules below.
@@ -40,16 +42,9 @@
 
 ### Typography
 
-- **Heading Font:** Plus Jakarta Sans
-- **Body Font:** Plus Jakarta Sans
+- **Heading Font:** Rubik (`web/fonts/`)
+- **Body Font:** Rubik (`web/fonts/`)
 - **Mood:** friendly, modern, saas, clean, approachable, professional
-- **Google Fonts:** [Plus Jakarta Sans + Plus Jakarta Sans](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap)
-
-**CSS Import:**
-```css
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-```
-
 ### Spacing Variables
 
 *Density: 7/10 — Standard*

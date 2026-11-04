@@ -7,13 +7,14 @@ const VALID = {
   supportEmail: 'help@afeka.ac.il',
   counselingUrl: 'https://www.afeka.ac.il/counseling',
   notice: 'תקלה זמנית',
+  examsNote: 'מועדים',
   turns: [{ id: 't1', label: 'שנה ד׳', opensAt: '2026-09-01T09:00:00+03:00' }],
   programs: { 30: { approved: { 2024: '2026-07-01' }, conflicts: [{ cohorts: [2023, 2024], text: 'סתירה' }] } },
 };
 
 test('cleanSettings: null and non-objects give the defaults', () => {
   for (const bad of [null, undefined, 5, 'x', [], true]) assert.deepEqual(cleanSettings(bad), SETTINGS_DEFAULT);
-  assert.deepEqual(SETTINGS_DEFAULT, { supportEmail: '', counselingUrl: '', notice: '', turns: [], programs: {} });
+  assert.deepEqual(SETTINGS_DEFAULT, { supportEmail: '', counselingUrl: '', notice: '', examsNote: '', turns: [], programs: {} });
 });
 
 test('cleanSettings: each bad field falls back to its default', () => {
@@ -124,6 +125,12 @@ test('cleanSettings: notice and conflict text are trimmed, blank ones vanish, em
 test('cleanSettings: a turn id the profile could not keep (over 40 characters) is dropped', () => {
   const ok = { id: 'x'.repeat(40), label: 'A', opensAt: '2026-09-01T09:00:00Z' };
   assert.deepEqual(cleanSettings({ turns: [ok, { ...ok, id: 'x'.repeat(41) }] }).turns, [ok]);
+});
+
+test('examsNote: trimmed, and empty when it is not a string', () => {
+  assert.equal(cleanSettings({ examsNote: '  x ' }).examsNote, 'x');
+  assert.equal(cleanSettings({ examsNote: 3 }).examsNote, '');
+  assert.equal(SETTINGS_DEFAULT.examsNote, '');
 });
 
 test('the shipped settings.json: a clean, factual conflict for each program section 21 names (22, 20, 32, 12, 11, 112, 19)', () => {

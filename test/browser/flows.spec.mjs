@@ -621,6 +621,29 @@ test('two study years picked fast and neither loads: the year before both comes 
   assert.equal(await page.locator('input[data-chg="pyear"]:checked').getAttribute('value'), '2');
 });
 
+test('the lesson window says where an exam date came from, and nothing when it shows no date', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  let exams = [];
+  await page.context().route('**/data/afeka/2027-1/30-2026.json', async (route) => {
+    const res = await route.fetch(),
+      d = await res.json();
+    for (const c of Object.values(d.courses)) for (const g of c.groups) g.exams = exams;
+    await route.fulfill({ response: res, json: { ...d, examsPublished: true } });
+  });
+  const open = async () => {
+    await page.waitForLoadState('networkidle'); // a reload over a fetch still running is a script error in WebKit
+    await page.reload();
+    await weekReady(page);
+    await page.locator('#week .blk').first().click();
+    await page.locator('#pop dl').waitFor({ timeout: 5000 });
+  };
+  await open();
+  assert.doesNotMatch(await page.locator('#pop').innerText(), /בדקו מול הידיעון/);
+  exams = [{ kind: 'בחינה', moed: 1, date: '2027-02-01', time: '09:00' }];
+  await open();
+  assert.match(await page.locator('#pop').innerText(), /בדקו מול הידיעון/);
+});
+
 const later = (r) => setTimeout(() => r.continue(), 400);
 
 test('a study year picked and taken back while it loads: the last choice wins', async (t) => {

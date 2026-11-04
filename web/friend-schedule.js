@@ -260,3 +260,28 @@ export function matchGrid(blocks, courses) {
   }
   return best ?? { found: [], unknown: [], ambiguous: 0, quality: 0, weak: 0, weakIds: [] };
 }
+
+// What the pages of one scan add up to.
+export function mergeScans(tables, grids, courses) {
+  const result = { found: [], unknown: [], ambiguous: 0, weak: 0 };
+  // placeGroup keeps one group per course and type, so a second one would silently replace the first: the first (a table's) stays.
+  const slots = new Set(),
+    slotOf = new Map(Object.entries(courses).flatMap(([cid, c]) => c.groups.map((g) => [g.id, `${cid}|${g.type}`])));
+  const add = (r, { skip = [], notes = true, unknown = true } = {}) => {
+    for (const g of r.found) {
+      const slot = slotOf.get(g);
+      if (skip.includes(g) || result.found.includes(g) || slots.has(slot)) continue;
+      slots.add(slot);
+      result.found.push(g);
+    }
+    if (unknown) for (const u of r.unknown) if (!result.unknown.includes(u)) result.unknown.push(u);
+    if (notes) {
+      result.ambiguous += r.ambiguous;
+      result.weak += r.weak;
+    }
+  };
+  for (const r of tables) add(r);
+  // beside a table, a grid only fills gaps (readable names only); its guessed names and repeated notes stay out
+  for (const r of grids) add(r, tables.length ? { skip: r.weakIds, notes: false, unknown: false } : {});
+  return result;
+}

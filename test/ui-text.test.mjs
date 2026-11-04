@@ -23,6 +23,7 @@ import {
   groupFresh,
   turnWarning,
   freshAt,
+  examsNoteHtml,
   conflictsFor,
   reportMailto
 } from '../web/ui-text.js';
@@ -327,6 +328,11 @@ test('groupFresh: no seats left means full', () => {
     groupFresh({ full: false, seatsLeft: 0 }, '2026-10-16T05:08:00Z', new Date('2026-10-16T12:00:00Z')),
     'מלא · נכון ל-08:08'
   );
+});
+
+test('examsNoteHtml: the note of settings.json beside the exam dates, escaped, or nothing', () => {
+  assert.equal(examsNoteHtml(''), '');
+  assert.equal(examsNoteHtml('a<b'), '<p class="hint">a&lt;b</p>');
 });
 
 test('freshAt: the later of the data change and the last good check that covers this semester', () => {

@@ -244,6 +244,8 @@ export function freshAt(data, status) {
     check = checkedAt ? instant(checkedAt) : null;
   return check && (!change || check > change) ? checkedAt : change ? data.fetchedAt : undefined;
 }
+// Beside the exam dates: where they came from (settings.json), since they are a by-hand copy and the solver plans by them.
+export const examsNoteHtml = (note) => (note ? `<p class="hint">${esc(note)}</p>` : '');
 // Not today in Israel time: the date comes first ("נכון ל-16.10, 21:08"), so an old count never reads as today's.
 const DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit' });
 export function groupFresh(g, fileFetchedAt, now = new Date()) {
