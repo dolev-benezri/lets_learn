@@ -390,8 +390,15 @@ setUiReset(() => {
   colors.clear();
 });
 // A program or cohort change: switchTo loads the data and resets; this redraws and says so.
-async function changeIdentity(program, startYear) {
-  if (!await switchTo(program, startYear)) {
+// undo: what the choice already changed in the state, taken back when its files do not load.
+async function changeIdentity(program, startYear, undo) {
+  const done = await switchTo(program, startYear);
+  if (done === null) {
+    undo?.();
+    save();
+    toast('לא הצלחנו לטעון את התוכנית שבחרתם, ולכן לא שינינו כלום. בדקו את החיבור ונסו שוב.');
+  }
+  if (!done) {
     refresh();
     return;
   } // refused or failed: the selects go back to the real state
@@ -410,9 +417,12 @@ export const CHG = {
     const p = app.catalog.programs.find((x) => x.id === Number(el.value));
     const was = gated();
     ui.gateTrack = false;
+    const hadProgram = app.state.programSet;
     if (p) app.state.programSet = true; // the loaded track too: switchTo then refuses and changeIdentity just refreshes
     if (p)
-      changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear)).then(
+      changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear), () => {
+        app.state.programSet = hadProgram;
+      }).then(
         () => was && shownTitle()?.focus()
       ); // the picked tile is gone: the next question (or step 1) takes focus, not <body>
     return 'save';
@@ -460,12 +470,18 @@ export const CHG = {
   }, // a pin still wins in the solver
   pyear: (el) => {
     const was = gated(),
-      y = cleanProfile({ year: Number(el.value) }).year;
+      y = cleanProfile({ year: Number(el.value) }).year,
+      before = app.state.profile.year;
     app.state.profile.year = y;
     // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024)
     const p = app.catalog.programs.find((x) => x.id === app.state.program);
     const start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
-    const switching = start && start !== app.state.startYear ? changeIdentity(app.state.program, start) : null;
+    const switching =
+      start && start !== app.state.startYear
+        ? changeIdentity(app.state.program, start, () => {
+            app.state.profile.year = before;
+          })
+        : null;
     // after the refresh: the question is gone, the step's own page shows; keep focus out of <body>
     if (was) queueMicrotask(() => shownTitle()?.focus());
     // a new cohort redraws #me again when its data arrives

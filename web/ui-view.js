@@ -135,12 +135,18 @@ export function renderBanner() {
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב'], app.sem['קיץ']]) : [];
   const turn = turnWarning(app.settings.turns, app.state.profile.turn, freshOf(app.data));
   // the remote notice sits above every step (#notice, outside the plans step that holds #banner)
-  if ($('notice').dataset.text !== app.settings.notice) {
+  const noticeState = `${!!app.saveFailed}|${app.settings.notice}`;
+  if ($('notice').dataset.text !== noticeState) {
     // written only on a change: a role=alert region replaced on every refresh is announced again each time
-    $('notice').dataset.text = app.settings.notice;
-    $('notice').innerHTML = app.settings.notice
-      ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>`
-      : '';
+    $('notice').dataset.text = noticeState;
+    $('notice').innerHTML =
+      (app.settings.notice
+        ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>`
+        : '') +
+      (app.saveFailed
+        ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">השינויים לא נשמרים בדפדפן הזה, ויאבדו כשתסגרו את הדף.</span>
+        <button type="button" class="btn ghost" data-act="backup">העתק קישור גיבוי</button></div>`
+        : '');
   }
   $('banner').innerHTML =
     (app.hashError

@@ -122,6 +122,20 @@ for (const size of Object.keys(SIZES)) {
     assert.equal(await page.locator('.driver-popover-prev-btn').isDisabled(), true, 'no stop before the first');
   });
 
+  test(`${size}: "דלג" on the first tour drops the second one too`, async (t) => {
+    const page = await visit(t, DONE, '#me');
+    await page.locator('#tourBtn').click();
+    await opened(page);
+    await page.locator('.driver-popover-close-btn').click();
+    await closed(page);
+    assert.match(await stored(page), /plans/);
+    await page.evaluate(() => {
+      location.hash = '';
+    });
+    await weekReady(page);
+    await nothingFor(page);
+  });
+
   test(`${size}: Escape and "דלג" close the tour, the focus goes back, the arrows follow the reading direction`, async (t) => {
     const page = await visit(t, { ...DONE, ...TOUR_SEEN });
     await weekReady(page);

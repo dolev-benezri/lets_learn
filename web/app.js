@@ -269,6 +269,12 @@ export function load() {
     app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית, וההתקדמות במחזור הקודם נשמרה בצד.`;
   }
   if (moved) return withPersonal({ ...normalize(null, app.catalog), program: s.program, startYear: s.startYear }, s);
+  // migrateYear took them off: their groups are last year's, so there is nothing to keep, but the student should know
+  const friends = saved.friends?.length, pins = saved.pins?.length;
+  if (saved.year < s.year && (friends || pins)) {
+    const what = [friends && `${friends} חברים`, pins && (pins === 1 ? 'קורס נעוץ אחד' : `${pins} קורסים נעוצים`)].filter(Boolean).join(' ו-');
+    app.hashError ??= `עברנו לשנת הלימודים החדשה: ${what} מהשנה שעברה הוסרו, כי הקבוצות שלהם לא קיימות יותר.`;
+  }
   return s;
 }
 // Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.
@@ -346,6 +352,7 @@ export const app = {
   friendLanding: null,
   hashError: null,
   noSave: false,
+  saveFailed: false,
   settings: SETTINGS_DEFAULT,
   termsOk: () => true,
   pendingBackup: null
@@ -402,13 +409,28 @@ export const seatsAt = (cid, data) => app.status?.groupsAt?.[cid] ?? freshOf(dat
 // Summer is planned after the school year: on only when the profile asks for it and the summer file loaded.
 export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ']);
 export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
+// The site says every change is saved, so a save that fails is told (ui-view.js renderBanner) until one succeeds.
 export function save() {
   if (app.noSave) return;
+  let failed = false;
   try {
     localStorage.setItem(KEY, JSON.stringify(app.state));
   } catch {
-    /* storage unavailable */
+    failed = true;
   }
+  if (failed !== app.saveFailed) {
+    app.saveFailed = failed;
+    app.onSaveChange?.();
+  }
+}
+// Another tab changed the record: this one reloads, or its old copy would write over the change at its next save. A hidden tab waits until it is shown.
+export function followOtherTabs() {
+  const reload = () => location.reload();
+  addEventListener('storage', (e) => {
+    if (e.key !== KEY && e.key !== null) return;
+    if (document.hidden) addEventListener('visibilitychange', reload, { once: true });
+    else reload();
+  });
 }
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
 // First time: the earlier years' mandatory lists are assumed passed (a year-3 student starts with years א and ב), except a course on file as failed;
@@ -532,7 +554,9 @@ async function fetchSemesters(s) {
     // revalidate (ETag) so a nightly update shows up at once
     const res = await fetch(dataPath(s, sem), { cache: 'no-cache' });
     if (!res.ok) throw new Error(res.status);
-    return res.json();
+    const d = await res.json();
+    if (!isObj(d?.courses)) throw new Error('a data file with no courses'); // or the page would stay on its loading skeleton
+    return d;
   };
   const [a, b, c] = await Promise.allSettled([get('א'), get('ב'), get('קיץ')]);
   if (a.status === 'rejected') throw a.reason;
@@ -587,7 +611,7 @@ export async function switchTo(program, startYear) {
   try {
     sem = await fetchSemesters({ ...prev, program, startYear });
   } catch {
-    return false;
+    return gen === switchGen ? null : false; // null: this choice could not load, and the student should hear it (ui-actions.js changeIdentity)
   }
   if (gen !== switchGen) return false;
   stash(prev);
@@ -644,7 +668,7 @@ async function init() {
   }
   app.status = await status;
   app.settings = cleanSettings(await settings);
-  if (!sem) {
+  const failed = () => {
     app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
     for (const id of ['week', 'me', 'side', 'prefs']) {
       const el = document.getElementById(id);
@@ -654,11 +678,16 @@ async function init() {
       el.querySelector('[data-retry]').onclick = init;
     }
     dispatchEvent(new Event('hashchange')); // show the view the URL names (ui-plan.js onHash)
-    return;
-  }
+  };
+  if (!sem) return failed();
   app.loadFailed = false;
-  setSemesters(sem);
-  await applyHash();
+  try {
+    setSemesters(sem);
+    await applyHash();
+  } catch (e) {
+    console.error(e); // a file that loaded and cannot be read: the same way out, not a skeleton forever
+    failed();
+  }
 }
 
 // Replace the state with a backup. Another program or cohort loads its data first; if that fails nothing changes and it returns false.

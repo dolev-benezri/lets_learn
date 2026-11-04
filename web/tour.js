@@ -81,6 +81,7 @@ export async function startTour(part, home) {
       overlayOpacity: 0.6,
       disableActiveInteraction: true,
       allowKeyboardControl: false,
+      onCloseClick: () => skip(),
       onPopoverRender: (p) => {
         // a name for the dialog (no title is shown), and "דלג" as a visible word in the footer instead of the × in the corner
         p.wrapper.removeAttribute('aria-labelledby');
@@ -99,13 +100,18 @@ export async function startTour(part, home) {
         (origin?.isConnected && origin !== document.body ? origin : home?.())?.focus({ preventScroll: true });
       },
     });
+    // "דלג" means no tour: the second part is not offered after a skipped first. Finishing the first still leads to it.
+    const skip = () => {
+      if (part === 'intro') markTour('plans');
+      tour.destroy();
+    };
     // Our own keys, before the page's (its arrows switch the alternative): Escape closes, and in RTL left is forward.
     keys = (e) => {
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || !['Escape', 'ArrowLeft', 'ArrowRight'].includes(e.key))
         return;
       e.preventDefault();
       e.stopImmediatePropagation();
-      if (e.key === 'Escape') tour.destroy();
+      if (e.key === 'Escape') skip();
       else if (e.key === 'ArrowLeft' && tour.hasNextStep()) tour.moveNext();
       else if (e.key === 'ArrowRight' && tour.hasPreviousStep()) tour.movePrevious();
     };
