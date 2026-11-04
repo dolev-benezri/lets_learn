@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { checkExport } from '../scripts/check-export.mjs';
 import { REAL_DIR } from './fixtures/real.mjs';
 
-const SRC = 'web/data/afeka'; // the live export: only 'the data the site ships passes' reads it
+// The live export is checked by npm run check:export in checks.yml, not here: a night's data must not hold back the deploy.
 const FROZEN = fileURLToPath(REAL_DIR);
 const FILE = '2027-1/30-2026.json';
 
@@ -40,10 +40,6 @@ const check = (edit) => {
   }
 };
 const firstGroup = (d) => Object.values(d.courses).flatMap((c) => c.groups)[0];
-
-test('the data the site ships passes', () => {
-  assert.deepEqual(checkExport(SRC).errors, []);
-});
 
 test('a group without meetings is an error that names its path', () => {
   const { errors } = check({

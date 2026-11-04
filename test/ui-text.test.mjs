@@ -340,6 +340,9 @@ test('freshAt: the later of the data change and the last good check that covers 
   assert.equal(freshAt(data, status()), '2026-10-20T04:00:00Z'); // a check after the change
   assert.equal(freshAt(data, status({ checkedAt: '2026-10-10T04:00:00Z' })), data.fetchedAt); // a check before the change
   assert.equal(freshAt(data, status({ ok: false })), data.fetchedAt);
+  // the file's own check, not the time of a run that did not build it
+  assert.equal(freshAt(data, status({ semesters: { '2027-1/30-2026': { checkedAt: '2026-10-17T04:00:00Z' } } })), '2026-10-17T04:00:00Z');
+  assert.equal(freshAt(data, status({ semesters: { '2027-1/30-2026': { checkedAt: '2026-10-10T04:00:00Z' } } })), data.fetchedAt);
   assert.equal(freshAt(data, null), data.fetchedAt);
   assert.equal(freshAt(data, {}), data.fetchedAt);
   assert.equal(freshAt(data, status({ semesters: { '2027-2/30-2026': {} } })), data.fetchedAt); // another semester only

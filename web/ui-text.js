@@ -237,12 +237,12 @@ const instant = (iso) => {
 // that covers this file. A failed, missing or unrelated check says nothing, so fetchedAt stays. Returns the original ISO string, or undefined.
 const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 export function freshAt(data, status) {
-  const covered =
-    status?.ok === true &&
-    !!status.semesters?.[`${data.year}-${SEM_CODE[data.semester]}/${data.program}-${data.startYear}`];
+  const entry = status?.ok === true && status.semesters?.[`${data.year}-${SEM_CODE[data.semester]}/${data.program}-${data.startYear}`];
+  // the run that built this file, not the last run: a status from before that field names only the last one
+  const checkedAt = entry && (entry.checkedAt ?? status.checkedAt);
   const change = instant(data.fetchedAt),
-    check = covered ? instant(status.checkedAt) : null;
-  return check && (!change || check > change) ? status.checkedAt : change ? data.fetchedAt : undefined;
+    check = checkedAt ? instant(checkedAt) : null;
+  return check && (!change || check > change) ? checkedAt : change ? data.fetchedAt : undefined;
 }
 // Not today in Israel time: the date comes first ("נכון ל-16.10, 21:08"), so an old count never reads as today's.
 const DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit' });

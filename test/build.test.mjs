@@ -105,6 +105,22 @@ test('buildDataset dedupes courses, keeps only the target semester, drops dangli
   assert.deepEqual(phys.groups[0].meetings[0], { day: 2, start: '12:00', end: '13:50', room: 'r' });
 });
 
+test('buildDataset: a group that falls out is named in the warnings, and one of another semester is not', () => {
+  const b = base(),
+    warnings = [],
+    at = (semester) => ({ semester, day: 2, start: '12:00', end: '13:50', room: 'r' });
+  b.raw['90903'].groups.push(
+    g('w1', { primary: false, type: 'תרגיל', meetings: [] }),
+    g('w2', { meetings: [at('א'), at('ב')] }),
+    g('w3', { meetings: [at('ב')] })
+  );
+  buildDataset({ ...b, warnings });
+  const text = warnings.join('\n');
+  assert.match(text, /90903: group\(s\) without meetings dropped.*w1/);
+  assert.match(text, /90903: group\(s\) with meetings in two semesters dropped.*w2/);
+  assert.doesNotMatch(text, /w3/);
+});
+
 test('buildDataset resolves prereq names to ids, keeps unknown names as id:null, filters other departments', () => {
   const d = buildDataset(base());
   assert.deepEqual(d.courses['90903'].prereqs, [{ kind: 'קדם', anyOf: [{ id: null, name: 'קורס הכנה פיזיקה' }] }]);

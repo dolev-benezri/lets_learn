@@ -15,11 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2 # the commit before this one: what the prerequisites changed from
       - uses: actions/setup-node@v7
         with:
           node-version: 24
       - run: npm ci --ignore-scripts
       - run: npm run check:real
+        env:
+          CHECK_BASE: HEAD~1
+      - run: npm run check:export -- web/data/afeka
 
   # Only names that do not exist. The other type errors in untyped web/*.js are noise (DOM narrowing, default parameters).
   undefined-names:
