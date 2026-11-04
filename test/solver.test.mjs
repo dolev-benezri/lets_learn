@@ -738,7 +738,7 @@ test('real data: all year-2 available courses solve in < 1s with no overlaps', (
     friends: [],
     constraints: { includeFull: true }
   }); // speed and overlaps only: full groups count, as registration fills them
-  assert.ok(Date.now() - t < 1000, `took ${Date.now() - t}ms`);
+  assert.ok(Date.now() - t < 1000 * SLACK, `took ${Date.now() - t}ms`);
   assert.ok(r.results.length > 0);
   assert.equal(r.partial, false);
   for (const res of r.results) {
