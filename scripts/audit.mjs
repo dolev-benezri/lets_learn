@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Read-only data review for programs nobody from the department has checked: no request to the site, only web/data/afeka.
-//   node scripts/audit.mjs [> docs/DATA-AUDIT.md]
+//   node scripts/audit.mjs
 // Findings are hints for a human (a mandatory course can legitimately wait for the summer), not errors.
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';

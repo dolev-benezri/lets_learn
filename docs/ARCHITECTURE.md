@@ -6,7 +6,7 @@
 
 | נתיב | מה יש בו |
 |---|---|
-| `scripts/` | משיכת נתונים ובנייה: `scrape.mjs` (משיכה מנומסת מהידיעון ל-`web/data/afeka`), `polite.mjs` (קצב, המתנה אחרי חסימה, וסיכום השינויים שהופך להודעת ה-commit), `parse.mjs` (HTML לנתונים), `build.mjs` (קובץ נתונים לתוכנית ולסמסטר), `discover.mjs` (טיוטה של `programs.json` מדפי המסלולים), `audit.mjs` (נוצר ממנו `docs/DATA-AUDIT.md`), `prereq-map.mjs` (נוצרים ממנו `docs/PREREQS.md` ו-`docs/prereqs.json`), `readme-shots.mjs` (צילומי המסך ב-`docs/media/`, בדפדפן Chrome) ו-`programs.json` (התוכניות והמחזורים שנמשכים) |
+| `scripts/` | משיכת נתונים ובנייה: `scrape.mjs` (משיכה מנומסת מהידיעון ל-`web/data/afeka`), `polite.mjs` (קצב, המתנה אחרי חסימה, וסיכום השינויים שהופך להודעת ה-commit), `parse.mjs` (HTML לנתונים), `build.mjs` (קובץ נתונים לתוכנית ולסמסטר), `discover.mjs` (טיוטה של `programs.json` מדפי המסלולים), `audit.mjs` (סקירת נתונים אוטומטית), `readme-shots.mjs` (צילומי המסך ב-`docs/media/`, בדפדפן Chrome) ו-`programs.json` (התוכניות והמחזורים שנמשכים) |
 | `scripts/fixtures/` | דפי HTML ו-JSON אמיתיים מהידיעון, לבדיקות של המשיכה והפענוח |
 | `web/` | האתר: HTML ו-ES modules, בלי build. `index.html` הוא האתר, `legal.html` תנאי השימוש והפרטיות, `icon.svg` ו-`og.png` (נוצר מ-`design-system/og.html`) |
 | `web/app.js` | מצב (כולל `sortBy` של "הצג לפי" ו-`programSet`: האם נבחר מסלול, כי בביקור ראשון אף מסלול לא נבחר מראש), `normalize()`, localStorage, טעינת נתונים, החלפת תוכנית ומחזור, ושלבי הניווט (`STEPS`, `routeOf`, `hashOf`: `#me`, `#courses`, `#prefs`, וכל hash אחר הוא המערכות) |
@@ -32,10 +32,10 @@
 | `.github/` | `workflows/deploy.yml` (כל הבדיקות, ואז העלאת `web/` ל-GitHub Pages אחרי דחיפה ל-`main` שנוגעת באתר, בבדיקות, בסקריפטים או ב-workflows), `workflows/checks.yml`, `browser.yml` ו-`freshness.yml` (בדיקות שלא עוצרות פריסה) ותבניות ה-issues (באג, טעות בנתונים, בקשה) |
 | `docs/` | תיעוד, מחקר, ביקורות, specs ותוכניות. האינדקס: [docs/README.md](README.md) |
 | `design-system/` | מערכת העיצוב: `afeka-scheduler/MASTER.md`, ה-override של העמוד `afeka-scheduler/pages/app.md`, ו-`og.html` (המקור של `web/og.png`) |
-| `solver-audit/` | ביקורת מנוע החיפוש (6.10.2026): `findings.md`, `dependencies.md`, תרשימי הזרימה (`flow-*`), `repro/` (סקריפט לכל ממצא, `run-all.mjs`), `plan-probes/` (בדיקות מקדימות לתוכנית התיקונים) ו-`issues/` (טיוטות ה-issues). לא נטען באתר |
+| `solver-audit/` | ביקורת מנוע החיפוש (6.10.2026): `findings.md`, `dependencies.md`, תרשימי הזרימה (`flow-*`), `repro/` (סקריפט לכל ממצא, `run-all.mjs`; רובם נכשלים היום, כי הם מתעדים באגים שתוקנו מאז) ו-`issues/` (טיוטות ה-issues). לא נטען באתר |
 | בשורש | `README.md` (לסטודנטים), `CONTRIBUTING.md`, `TERMS.md` (תקציר; הנוסח המחייב ב-`web/legal.html`), `LICENSE`, ו-`package.json` (תלות אחת: `node-html-parser`, לפענוח בסקריפטים) |
 
-לא בגיט (`.gitignore` ו-`.git/info/exclude`): `node_modules/`, המטמון של המשיכה (`.yedion-cache/`), כלים מקומיים (`.claude/`, `.superpowers/`), `NOTES.md`, קובצי PDF בשורש (מסמכים של המכללה), חומרי הפגישה (`docs/meeting/`, `docs/meeting-prep.md`), צילומי סקירת העיצוב, והפלטים הגדולים של `solver-audit/plan-probes/out-*/`.
+לא בגיט (`.gitignore` ו-`.git/info/exclude`): `node_modules/`, המטמון של המשיכה (`.yedion-cache/`), כלים מקומיים (`.claude/`, `.superpowers/`), `NOTES.md`, קובצי PDF בשורש (מסמכים של המכללה), וחומרי הפגישה (`docs/meeting/`, `docs/meeting-prep.md`).
 
 ## ליבת הלוגיקה
 

@@ -8,8 +8,6 @@
     "test:browser": "node test/browser/run.mjs",
     "scrape": "node scripts/scrape.mjs",
     "readme:shots": "node scripts/readme-shots.mjs",
-    "ui:serve": "python docs/superpowers/design-review/styles/serve.py",
-    "ui:shots": "node docs/superpowers/design-review/styles/shoot.mjs",
     "check:export": "node scripts/check-export.mjs",
     "check:real": "node scripts/check-real.mjs",
     "check:fresh": "node scripts/check-fresh.mjs",

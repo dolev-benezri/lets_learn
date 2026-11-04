@@ -3,7 +3,7 @@
 Date: 2026-10-06. Code at commit `0ab077e` (main). Node v24.14.0. Nothing in the repository was changed; all evidence is in `solver-audit/repro/`.
 Every claim below names the script that proves it. Run one with `node solver-audit/repro/<script>.mjs`, or all of them with `node solver-audit/repro/run-all.mjs`.
 Script output convention: `CHECK <id> PASS` = verified correct; `BUG <id> REPRODUCED` = defect shown. A script exits 0 only when every line is as reported here, so after a fix its BUG lines flip and it exits 1.
-Not in git: `plan-probes/out-*/` (about 60 MB of rebuilt data). Rebuild with `node solver-audit/plan-probes/data-rebuild-offline.mjs ../../scripts out-before` (needs the local `.yedion-cache`, no network).
+`plan-probes/` was removed in November 2026 and stays in git history at commit 6396846. The one file `repro/` still needs moved to `repro/precision-lib.mjs`.
 
 ## Verdict
 
@@ -180,7 +180,7 @@ Severity: **high** = wrong or impossible schedule, or a crash, reachable with re
 
 ## Corrections after the fix design (2026-10-06, later)
 
-The fix design for `docs/superpowers/plans/2026-10-06-solver-audit-fixes.md` re-read the code and measured more. The proofs are in `solver-audit/plan-probes/`. Each line below names its script and replaces the text above where they differ.
+The fix design for `docs/superpowers/plans/2026-10-06-solver-audit-fixes.md` re-read the code and measured more. The proofs were in `solver-audit/plan-probes/` (removed in November 2026, in git history at commit 6396846). Each line below names its script and replaces the text above where they differ.
 
 - **F-06 / F-20, data side:** `scripts/build.mjs:98-101` (`fieldHealth`) already rejects a meeting with no day, `start >= end`, a start before 07:00 or an end after 23:30 (`test/build.test.mjs:257-284`). The fix texts that say "add it to `validate()`" were stale. Two gaps are left: an end between 23:00 and 23:30, and a start off :00/:30 (`data-p3-hours.mjs`).
 - **F-03 is wider:** the 17 `אקסקלוסיבי` rows in 425 cached detail pages also produce 480 rows that resolve to no course (a false "outside the program" note) and 3 wrong edges to another course, `10224` requiring `30356` (`data-p1-rowtypes.mjs`, `data-p1-wrongedges.mjs`). The current parser, run offline on `.yedion-cache`, reproduces the committed prerequisites in 144/144 files (`data-p4-compare.mjs`).

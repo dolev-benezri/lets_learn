@@ -142,7 +142,7 @@ export function genInstance(rng, o = {}) {
 const METRIC_KEYS = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'];
 // 2026-10-07 (stage 4, issue #4): search() tests busy time and time limits in real minutes, so the reference does too (the compact gap stays in slots).
 // The slot reference below is kept for the record.
-import { referenceMinutes } from '../plan-probes/precision-ref.mjs';
+import { referenceMinutes } from './precision-lib.mjs';
 export const referenceSolve = (inst, o = {}) => referenceMinutes(inst, { ...o, gap: 'slot', f18: 'group' });
 export function referenceSlotSolve(inst, { cap = 4_000_000 } = {}) {
   const { data, statuses = {}, pins = [], constraints: c = {}, weights = {}, bias = {} } = inst;

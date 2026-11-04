@@ -1,4 +1,4 @@
-// precision-ref.mjs - MINUTE-exact exhaustive reference + off-grid instance generator, for the F-04/F-05/F-14/F-18 prototype.
+// precision-lib.mjs - MINUTE-exact exhaustive reference + off-grid instance generator, for the F-04/F-05/F-14/F-18 prototype.
 // Written from the meaning of the problem, not from solver code: lessons are minute intervals, a lesson clashes with another lesson or
 // a busy block when the intervals share a minute, 'outside' minutes are counted one minute at a time, gaps from sorted intervals.
 // Differences from repro/search-lib.mjs referenceSolve (which encodes the CURRENT 30-minute-slot behaviour):
@@ -6,7 +6,7 @@
 //   timeWindow outside minutes                                   : real minutes (minute loop)
 //   compact gap                                                  : gap='slot' | 'g2' (pause - 10 min recess) | 'g1' (whole pause)
 //   an option whose own lessons share a minute                    : dropped (F-18)
-import { mulberry32, mm, hhmm, pick, ri, genInstance, valuesRef } from '../repro/search-lib.mjs';
+import { mulberry32, mm, hhmm, pick, ri, genInstance, valuesRef } from './search-lib.mjs';
 
 export { mulberry32, mm, hhmm };
 const METRIC = ['friends', 'progress', 'freeDays', 'compact', 'timeWindow', 'examSpread'];

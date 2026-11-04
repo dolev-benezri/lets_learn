@@ -89,7 +89,7 @@
   --ppm:1px; /* pixels per minute: touch keeps a 45-minute block at 45px (>= the 44px target) */
 }
 /* dark ("night"): theme.js sets data-theme from the stored choice or the device setting before the first paint.
-   Course tints keep their hue and change tone; every text pair is checked for 4.5:1 (docs/superpowers/design-review/styles/shoot.mjs). */
+   Course tints keep their hue and change tone; axe checks the text contrast in dark too (test/browser/a11y.spec.mjs). */
 :root[data-theme="dark"] {
   color-scheme:dark;
   --bg:#0B1120;
