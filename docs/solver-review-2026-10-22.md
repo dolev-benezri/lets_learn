@@ -71,7 +71,7 @@ one statement per line. Line numbers below are for the files after that layout c
 - **Status:** only the time is affected, never which plans are found. Passing `deadline - Date.now()` to the retry
   would keep it inside the budget.
 
-### 5. "At least 0 days between exams" text (not fixed)
+### 5. "At least 0 days between exams" text (fixed since: `explain` in `web/solver-core.js` says "בחינות באותו יום")
 
 - **Where:** `web/solver-core.js:324` (`explain`).
 - **What:** with `examsSameDay: 'allow'` and two exams on one day, `minGap` is 0 and the plan reads
@@ -87,7 +87,7 @@ one statement per line. Line numbers below are for the files after that layout c
 - **Status:** a small ranking effect only. Using one value per course (for example `vA[id] ?? vB[id]`) in both
   places would make the scale match.
 
-### 7. `withAfterA` and `setStatus` assume `passed` and `failed` exist (not fixed, latent)
+### 7. `withAfterA` and `setStatus` assume `passed` and `failed` exist (fixed since: `withAfterA` is gone, and `web/rules.js` reads both with a default)
 
 - **Where:** `web/rules.js:212` (`[...state.passed, ...candA]`) and `web/rules.js:233-234` (`state.failed[id]`).
 - **What:** `classify` and `searchYear` accept `state.passed` being null (`new Set(null)`, `?? []`), but

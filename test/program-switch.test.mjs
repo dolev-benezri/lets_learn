@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   app,
   normalize,
+  recordOf,
   switchTo,
   restoreBackup,
   ensurePassed,
@@ -190,6 +191,32 @@ test('switchTo: a later cohort pre-marks year 1 as before; an unanswered year qu
   await switchTo(30, 2025);
   assert.equal(app.state.profile.year, null);
   assert.deepEqual(app.state.passed, ['a', 'b'], 'derived year 3: the year-1 list is assumed passed, the record kept');
+});
+
+test('normalize: a state of an earlier year says what it took off, on every path (a saved state, a backup, a stash)', () => {
+  const friend = { id: 'f1', name: 'א', groups: ['1'], active: true };
+  app.hashError = null;
+  const s = normalize({ v: 1, year: 2026, program: 30, startYear: 2026, pins: ['p1', 'p2'], friends: [friend] }, CATALOG);
+  assert.deepEqual([s.pins, s.friends], [[], []]);
+  assert.match(app.hashError, /חבר אחד/);
+  assert.match(app.hashError, /2 קורסים נעוצים/);
+  app.hashError = null;
+  normalize({ v: 1, year: 2026, program: 30, startYear: 2026, pins: [], friends: [] }, CATALOG);
+  assert.equal(app.hashError, null, 'nothing was taken off');
+});
+
+test('recordOf: compares what the student holds: not key order at any depth, not yearIds, and it tells nothing', () => {
+  const base = { v: 1, year: 2027, program: 30, startYear: 2026, profile: { year: 2 } };
+  const lecturers = (o) => JSON.stringify({ ...base, constraints: { lecturers: o } });
+  assert.equal(recordOf(lecturers({ a: 'prefer', b: 'avoid' })), recordOf(lecturers({ b: 'avoid', a: 'prefer' })));
+  assert.equal(recordOf(JSON.stringify({ ...base, yearIds: ['1'] })), recordOf(JSON.stringify(base)));
+  assert.notEqual(recordOf(JSON.stringify({ ...base, name: 'א' })), recordOf(JSON.stringify(base)));
+  app.hashError = 'כבר כאן';
+  recordOf(JSON.stringify({ ...base, year: 2026, profile: { year: 1 }, pins: ['p1'] }));
+  assert.equal(app.hashError, 'כבר כאן');
+  app.hashError = null;
+  recordOf(JSON.stringify({ ...base, year: 2026, profile: { year: 1 }, pins: ['p1'] }));
+  assert.equal(app.hashError, null);
 });
 
 test('switchTo: a failed or refused switch changes nothing', async () => {

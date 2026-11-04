@@ -50,7 +50,7 @@ const SAMPLE = ['2027-1/10-2024.json', '2027-1/19-2026.json', '2027-1/30-2026.js
 test('the 3 sample programs have no data errors', () => {
   for (const f of SAMPLE) assert.deepEqual(dataRules(real(f), f).errors, [], f);
 });
-test('changedSinceHead: compares with CHECK_BASE, which CI sets to the commit before the data it checks', (t) => {
+test('changedSinceHead: compares with CHECK_BASE, which CI sets to the commit the push came from', (t) => {
   t.after(() => delete process.env.CHECK_BASE);
   const f = '2027-1/30-2026.json',
     d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8')),
@@ -59,6 +59,8 @@ test('changedSinceHead: compares with CHECK_BASE, which CI sets to the commit be
   assert.match(changedSinceHead(f, d).join(), /^changed: /);
   process.env.CHECK_BASE = 'no-such-ref';
   assert.deepEqual(changedSinceHead(f, d), []);
+  process.env.CHECK_BASE = ''; // a run by hand has no pushed-from commit
+  assert.match(changedSinceHead(f, d).join(), /^changed: /);
 });
 
 // ---- layer 3: the solver and the record, against an oracle written from the spec ----

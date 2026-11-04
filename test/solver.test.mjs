@@ -11,6 +11,8 @@ import {
   search,
   searchYear,
   searchAll,
+  retryLimit,
+  freeDayCandidates,
   showWeights,
   compareYearPlans,
   PRIMARY,
@@ -2221,6 +2223,121 @@ test('searchAll: split off is search; split on lists split plans after every reg
   );
   const key = (x) => [...x.groups].sort().join();
   assert.ok(r.results.slice(k).every((x) => !r.results.slice(0, k).some((y) => key(y) === key(x))));
+});
+
+test('searchAll: a split plan that scores below every regular one still gets its place', () => {
+  const worse = set({
+    S: one([
+      { ...grp('L', 1, '08:00', '09:50'), linked: ['T1'] },
+      tut('T1', 1, '10:00', '11:50'),
+      tut('T2', 4, '10:00', '11:50')
+    ]),
+    O: one([grp('O1', 3, '08:00', '09:50')])
+  });
+  const r = searchAll({ data: worse, courses: opts('S', 'O'), weights: DEF_W, constraints: { ...DEF_C, split: true }, topK: 1 });
+  assert.deepEqual(r.results.map((x) => x.split), [[], ['S']], JSON.stringify(r.results.map((x) => [x.groups, x.score])));
+  assert.ok(r.results[1].score < r.results[0].score, 'the regular plan would have filled the only place');
+});
+
+test('searchAll year mode: a split pair that scores below every regular one still gets its place', () => {
+  const groups = [{ ...grp('L', 1, '08:00', '09:50'), linked: ['T1'] }, tut('T1', 1, '10:00', '11:50'), tut('T2', 4, '10:00', '11:50')];
+  const dataA = semData('א', { S: yc('S', 3, groups), M: yc('M', 4, [grp('MA', 3)]) });
+  const dataB = semData('ב', { S: yc('S', 3, []), M: yc('M', 4, []) });
+  const year = {
+    dataA,
+    dataB,
+    state: yState({ choices: { S: 'optional', M: 'optional' } }),
+    yearList: new Set(),
+    weights: DEF_W,
+    constraints: { ...DEF_C, split: true },
+    topK: 1
+  };
+  const r = searchAll({ year });
+  assert.ok(r.results.some((p) => p.split.includes('S')), JSON.stringify(r.results.map((p) => p.split)));
+});
+
+test('searchAll: a split plan that needs another lecturer than the preferred one is found, as in a plain search', () => {
+  const d = set({
+    S: one([
+      { ...grp('A1', 1, '08:00', '09:50'), lecturer: 'מועדף' },
+      { ...grp('L', 2, '08:00', '09:50'), lecturer: 'אחר', linked: ['T1'] },
+      tut('T1', 1, '08:00', '09:50'),
+      tut('T2', 3, '10:00', '11:50')
+    ]),
+    O: one([grp('O1', 1, '08:00', '09:50')])
+  });
+  const r = searchAll({
+    data: d,
+    courses: [{ id: 'S', mode: 'must' }, { id: 'O', mode: 'must' }],
+    weights: DEF_W,
+    constraints: { ...DEF_C, split: true, lecturers: { 'מועדף': 'prefer' } }
+  });
+  assert.ok(r.results.some((x) => x.split.includes('S')), JSON.stringify(r));
+});
+
+test('searchAll year mode: a split only in ב׳ gets its place too', () => {
+  const groups = [{ ...grp('L', 1, '08:00', '09:50'), linked: ['T1'] }, tut('T1', 1, '10:00', '11:50'), tut('T2', 4, '10:00', '11:50')];
+  const dataA = semData('א', { M: yc('M', 4, [grp('MA', 3)]), S: yc('S', 3, []) });
+  const dataB = semData('ב', { M: yc('M', 4, []), S: yc('S', 3, groups) });
+  const r = searchAll({
+    year: {
+      dataA,
+      dataB,
+      state: yState({ choices: { S: 'optional', M: 'optional' } }),
+      yearList: new Set(),
+      weights: DEF_W,
+      constraints: { ...DEF_C, split: true },
+      topK: 10
+    }
+  });
+  assert.ok(r.results.some((p) => p.b?.split.includes('S')), JSON.stringify(r.results.map((p) => [p.a.groups, p.b?.groups, p.split])));
+  assert.ok(r.results.some((p) => !p.split.length), 'and the regular pair');
+});
+
+test('searchAll year mode: a split pair keeps its place when a ב׳ must course has to be given up, like the regular pair', () => {
+  const groups = [{ ...grp('L', 1, '08:00', '09:50'), linked: ['T1'] }, tut('T1', 1, '10:00', '11:50'), tut('T2', 4, '10:00', '11:50')];
+  const dataA = semData('א', { M: yc('M', 4, [grp('MA', 3)]), S: yc('S', 3, []), X: yc('X', 2, []) });
+  const dataB = semData('ב', { M: yc('M', 4, []), S: yc('S', 3, groups), X: yc('X', 2, [{ ...grp('XB', 2), full: true }]) });
+  const r = searchAll({
+    year: {
+      dataA,
+      dataB,
+      state: yState({ choices: { S: 'optional', M: 'optional', X: 'must' } }),
+      yearList: new Set(),
+      weights: DEF_W,
+      constraints: { ...DEF_C, split: true },
+      topK: 10
+    }
+  });
+  assert.ok(r.results.every((p) => p.missing.includes('X')), JSON.stringify(r.results.map((p) => p.missing)));
+  assert.ok(r.results.some((p) => !p.split.length), JSON.stringify(r.results.map((p) => p.split)));
+  assert.ok(r.results.some((p) => p.b?.split.includes('S')), JSON.stringify(r.results.map((p) => [p.a.groups, p.b?.groups, p.split])));
+});
+
+test('searchAll year mode: the split search lists only pairs that split, however many regular ones it passes on the way', () => {
+  const dataA = semData('א', { M: yc('M', 4, [grp('MA', 3)]) });
+  const dataB = semData('ב', { M: yc('M', 4, []) });
+  const r = searchYear({
+    dataA,
+    dataB,
+    state: yState({ choices: { M: 'optional' } }),
+    yearList: new Set(),
+    weights: DEF_W,
+    constraints: { ...DEF_C, split: true },
+    topK: 10,
+    onlySplit: true
+  });
+  assert.deepEqual(r.results, []);
+});
+
+test('retryLimit: the second try of a "prefer" search gets what is left, and at least a quarter on a slow phone', () => {
+  assert.equal(retryLimit(2000, 3000), 2000);
+  assert.equal(retryLimit(-50, 3000), 750);
+});
+
+test('freeDayCandidates: Friday counts as a free day only when the student wished it off', () => {
+  assert.deepEqual(freeDayCandidates({ dayOff: [6] }), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(freeDayCandidates({ dayOff: [] }), [1, 2, 3, 4, 5]);
 });
 
 test('searchAll year mode: split pairs come after regular pairs, a pair\'s split is the union of its halves, every plan carries split', () => {

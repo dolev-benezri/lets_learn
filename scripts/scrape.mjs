@@ -201,6 +201,8 @@ export function unitsOf(opt, programs) {
 // paid(key) hears each answer really fetched from the site.
 // An answer that is not cached at all is fetched even past the budget.
 // request.readAt = when each answer returned was really read: its file's time, or now if just fetched.
+export const requesterOptions = (opt) => ({ offline: opt.offline, ...(opt.nightly ? nightlyPolicy() : {}) });
+
 export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = () => Infinity, paid = () => {} } = {}) {
   const session = [],
     deferred = [],
@@ -550,17 +552,11 @@ async function main() {
   });
   const made = makeRequester({ delay: Number(opt.delay) });
   const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
-  const policy = opt.nightly ? nightlyPolicy() : {};
   const cacheDir = opt.cache && (await yearCache(opt.cache, opt.year)),
     statusFile = 'web/data/afeka/status.json';
   const behind = cacheDir && (await cacheBehind(cacheDir, statusFile));
   const request = cacheDir
-    ? cachedRequester(live, cacheDir, {
-        offline: opt.offline,
-        ttl: policy.ttl,
-        seen: policy.seen,
-        budget: policy.budget
-      })
+    ? cachedRequester(live, cacheDir, requesterOptions(opt))
     : live;
   const pulledExams = await loadPulledExams(opt.year);
   const summary = await run({ opt, request, hold: () => behind && request.deferred.length > 0, pulledExams });

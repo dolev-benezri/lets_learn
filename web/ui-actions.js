@@ -118,6 +118,7 @@ const clearPrint = () => {
 };
 export const ACT = {
   shareOut,
+  reloadPage: () => location.reload(),
   async acceptTerms() {
     acceptTerms();
     await applyPendingBackup();
@@ -390,13 +391,27 @@ setUiReset(() => {
   colors.clear();
 });
 // A program or cohort change: switchTo loads the data and resets; this redraws and says so.
-// undo: what the choice already changed in the state, taken back when its files do not load.
-async function changeIdentity(program, startYear, undo) {
+// The study year and programSet as they were before the switches still loading: a newer choice replaces one that never landed, so a failure goes back to here.
+let unsettled = null;
+// The program of the switch still loading: a study year picked meanwhile belongs to it, not to the one in the state.
+let wantedProgram = null;
+const beforeChange = () => {
+  unsettled ??= { year: app.state.profile.year, programSet: app.state.programSet };
+};
+async function changeIdentity(program, startYear) {
+  const same = program === app.state.program && startYear === app.state.startYear;
+  wantedProgram = program;
   const done = await switchTo(program, startYear);
   if (done === null) {
-    undo?.();
+    app.state.profile.year = unsettled.year;
+    app.state.programSet = unsettled.programSet;
     save();
     toast('לא הצלחנו לטעון את התוכנית שבחרתם, ולכן לא שינינו כלום. בדקו את החיבור ונסו שוב.');
+  }
+  // false and not the same identity: a newer choice took over, and it settles
+  if (done !== false || same) {
+    unsettled = null;
+    wantedProgram = null;
   }
   if (!done) {
     refresh();
@@ -417,12 +432,10 @@ export const CHG = {
     const p = app.catalog.programs.find((x) => x.id === Number(el.value));
     const was = gated();
     ui.gateTrack = false;
-    const hadProgram = app.state.programSet;
+    if (p) beforeChange();
     if (p) app.state.programSet = true; // the loaded track too: switchTo then refuses and changeIdentity just refreshes
     if (p)
-      changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear), () => {
-        app.state.programSet = hadProgram;
-      }).then(
+      changeIdentity(p.id, nearest(p.startYears, cohortOf(app.state.profile.year) ?? app.state.startYear)).then(
         () => was && shownTitle()?.focus()
       ); // the picked tile is gone: the next question (or step 1) takes focus, not <body>
     return 'save';
@@ -471,17 +484,13 @@ export const CHG = {
   pyear: (el) => {
     const was = gated(),
       y = cleanProfile({ year: Number(el.value) }).year,
-      before = app.state.profile.year;
+      program = wantedProgram ?? app.state.program,
+      p = app.catalog.programs.find((x) => x.id === program),
+      start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
+    if (start) beforeChange();
     app.state.profile.year = y;
-    // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024)
-    const p = app.catalog.programs.find((x) => x.id === app.state.program);
-    const start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
-    const switching =
-      start && start !== app.state.startYear
-        ? changeIdentity(app.state.program, start, () => {
-            app.state.profile.year = before;
-          })
-        : null;
+    // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024). The current cohort too: going back cancels a switch still loading
+    const switching = start ? changeIdentity(program, start) : null;
     // after the refresh: the question is gone, the step's own page shows; keep focus out of <body>
     if (was) queueMicrotask(() => shownTitle()?.focus());
     // a new cohort redraws #me again when its data arrives

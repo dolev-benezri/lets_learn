@@ -610,7 +610,7 @@ test('cachedRequester: a cached answer costs no request; the session requests ar
 // ---- nightly cache policy and waiting out the hourly limit ----
 import { utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { nightlyTtl, nightlyPolicy, patient, cacheBehind, markPublished } from '../scripts/scrape.mjs';
+import { nightlyTtl, nightlyPolicy, requesterOptions, patient, cacheBehind, markPublished } from '../scripts/scrape.mjs';
 
 test('nightlyTtl: exams every other night until published then weekly; an offered course\'s groups every other night; details 14-16 days; the rest weekly', () => {
   const DAY = 86400e3,
@@ -741,6 +741,12 @@ test('nightlyPolicy budget: the night holds 380 answers, and only lists and deta
   assert.equal(p.budget(details), 0);
   assert.equal(p.budget(groups), 380);
   assert.equal(p.budget(exams), 380);
+});
+
+test('requesterOptions: the nightly command hands the requester the whole policy, so the 160 are counted', () => {
+  const options = requesterOptions({ nightly: true });
+  for (const k of ['ttl', 'seen', 'budget', 'paid']) assert.equal(typeof options[k], 'function', k);
+  assert.deepEqual(requesterOptions({ offline: true }), { offline: true });
 });
 
 test('cachedRequester paid: hears an answer fetched from the site, not one from the cache', async () => {

@@ -41,6 +41,13 @@ const check = (edit) => {
 };
 const firstGroup = (d) => Object.values(d.courses).flatMap((c) => c.groups)[0];
 
+test('a file\'s own checkedAt in status.json must be a date', () => {
+  const { errors } = check({
+    'status.json': (s) => ({ ...s, semesters: { '2027-1/30-2026': { checkedAt: 'not-a-date' } } })
+  });
+  assert.ok(errors.some((e) => e.includes('2027-1/30-2026') && e.includes('checkedAt')), errors.join());
+});
+
 test('a group without meetings is an error that names its path', () => {
   const { errors } = check({
     [FILE]: (d) => {

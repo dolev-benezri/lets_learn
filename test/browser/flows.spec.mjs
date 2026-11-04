@@ -576,23 +576,103 @@ test('a short phone: arriving shows the warnings first, and choosing a day shows
 
 const savedState = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
 
-test('two tabs: a change in one reloads the other, so its old copy does not write over the change', async (t) => {
+test('two tabs: a change in one stops the other from saving over it, until it reloads', async (t) => {
   const a = await visit(t, 'desktop', DONE);
   await weekReady(a);
   const b = await a.context().newPage();
   await b.goto(a.url());
   await weekReady(b);
-  await b.bringToFront();
-  await b.evaluate(() => {
-    window.beforeTheChange = true;
-  });
+  await b.waitForTimeout(500);
+  const note = b.locator('#notice [role="alert"]');
+  const change = (edit) =>
+    a.evaluate((e) => {
+      const s = JSON.parse(localStorage.getItem('afeka-sched-v1'));
+      localStorage.setItem('afeka-sched-v1', JSON.stringify({ ...s, ...e }));
+    }, edit);
+  await change({ yearIds: ['1'] }); // what a tab's shown alternative holds, not the student's record
+  await b.waitForTimeout(300);
+  assert.equal(await note.count(), 0);
   await a.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('afeka-sched-v1'));
-    localStorage.setItem('afeka-sched-v1', JSON.stringify({ ...s, name: 'מהלשונית השנייה' }));
+    localStorage.setItem('afeka-sched-v1', JSON.stringify(Object.fromEntries(Object.entries(s).reverse())));
   });
-  await b.waitForFunction(() => window.beforeTheChange === undefined, null, { timeout: 10000 });
-  await weekReady(b);
+  await b.waitForTimeout(300);
+  assert.equal(await note.count(), 0, 'the same record in another order');
+  await change({ name: 'מהלשונית השנייה' });
+  await note.waitFor({ timeout: 5000 });
+  assert.match(await note.innerText(), /בלשונית אחרת/);
+  await b.evaluate(async () => (await import('./app.js')).save());
   assert.equal((await savedState(b)).name, 'מהלשונית השנייה');
+  await Promise.all([b.waitForEvent('load'), note.locator('[data-act="reloadPage"]').click()]);
+  await weekReady(b);
+  assert.equal(await note.count(), 0);
+  assert.equal(await b.evaluate(async () => (await import('./app.js')).app.state.name), 'מהלשונית השנייה');
+});
+
+test('two study years picked fast and neither loads: the year before both comes back', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  await page.locator('input[data-chg="pyear"]').first().waitFor({ state: 'attached', timeout: 30000 });
+  await page.context().route(/\/30-202[45]\.json$/, (r) => setTimeout(() => r.abort(), 400));
+  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await page.locator('input[data-chg="pyear"][value="4"]').evaluate((e) => e.click());
+  await page.locator('#toast', { hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 10000 });
+  const s = await savedState(page);
+  assert.deepEqual([s.profile.year, s.startYear], [2, 2026]);
+  assert.equal(await page.locator('input[data-chg="pyear"]:checked').getAttribute('value'), '2');
+});
+
+const later = (r) => setTimeout(() => r.continue(), 400);
+
+test('a study year picked and taken back while it loads: the last choice wins', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  await page.locator('input[data-chg="pyear"]').first().waitFor({ state: 'attached', timeout: 30000 });
+  await page.context().route(/\/30-2025\.json$/, later);
+  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await page.locator('input[data-chg="pyear"][value="2"]').evaluate((e) => e.click());
+  await page.waitForTimeout(1200);
+  const s = await savedState(page);
+  assert.deepEqual([s.profile.year, s.startYear], [2, 2026]);
+});
+
+test('a study year picked while a new program loads: it applies to the new program', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  const pick = page.locator('select[data-chg="program"]');
+  await pick.waitFor({ timeout: 30000 });
+  await page.context().route(/\/20-20\d\d\.json$/, later);
+  await pick.selectOption('20');
+  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await page.waitForTimeout(1500);
+  const s = await savedState(page);
+  assert.deepEqual([s.program, s.profile.year, s.startYear], [20, 3, 2025]);
+});
+
+test('the failed-load screen: another tab clearing the record throws nothing', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await page.waitForLoadState('networkidle');
+  await page.context().route('**/data/afeka/*-1/*.json', (r) => r.abort());
+  await page.reload();
+  await page.locator('[data-retry]:visible').first().waitFor({ timeout: 30000 });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const other = await page.context().newPage();
+  await other.goto(page.url());
+  await other.evaluate(() => localStorage.removeItem('afeka-sched-v1'));
+  await page.waitForTimeout(300);
+  assert.deepEqual(errors, []);
+});
+
+test('a status file it cannot read: every step keeps the retry', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await page.waitForLoadState('networkidle');
+  await page.context().route('**/data/afeka/status.json', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: '{"checkedAt":"not-a-date","ok":true,"semesters":{"2027-1/30-2026":{"checkedAt":"not-a-date"}}}' })
+  );
+  await page.reload();
+  await page.locator('[data-retry]:visible').first().waitFor({ timeout: 30000 });
+  await page.evaluate(() => {
+    location.hash = '#me';
+  });
+  await page.locator('#me [data-retry]').waitFor({ timeout: 5000 });
 });
 
 test('a program file that does not load: the student is told, and the study year goes back', async (t) => {
@@ -642,7 +722,8 @@ test('a save that fails says so, with the way out, until a save succeeds', async
 });
 
 test('moving to a new study year says what it took off', async (t) => {
-  const old = { ...STUDENT, year: 2026, pins: ['111'], friends: [{ name: 'א', groups: [] }, { name: 'ב', groups: [] }] };
+  const friend = (id, name) => ({ id, name, groups: ['1'], active: true });
+  const old = { ...STUDENT, year: 2026, pins: ['111'], friends: [friend('f1', 'א'), friend('f2', 'ב')] };
   const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1': JSON.stringify(old) });
   await weekReady(page);
   const text = await page.locator('#banner').innerText();

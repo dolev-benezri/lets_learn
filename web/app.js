@@ -238,6 +238,12 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
 // go, and the student is that many years further on. One place, so a backup is not advanced twice.
 export function migrateYear(state, fromYear, toYear) {
   if (!(typeof fromYear === 'number' && fromYear < toYear)) return state;
+  // their groups are last year's, so there is nothing to keep, but the student should know
+  const friends = state.friends.length, pins = state.pins.length;
+  if (friends || pins) {
+    const what = [friends && (friends === 1 ? 'חבר אחד' : `${friends} חברים`), pins && (pins === 1 ? 'קורס נעוץ אחד' : `${pins} קורסים נעוצים`)];
+    app.hashError ??= `עברנו לשנת הלימודים החדשה: ${what.filter(Boolean).join(' ו-')} מהשנה שעברה הוסרו, כי הקבוצות שלהם לא קיימות יותר.`;
+  }
   Object.assign(state, { pins: [], friends: [], semesterOf: {}, yearIds: [], retakeSeen: [] });
   if (state.profile.year) state.profile.year = cleanProfile({ year: Math.min(5, state.profile.year + toYear - fromYear) }).year;
   return state;
@@ -269,12 +275,6 @@ export function load() {
     app.hashError = `המחזור השמור כבר לא באתר. מוצג מחזור ${s.startYear} של אותה תוכנית, וההתקדמות במחזור הקודם נשמרה בצד.`;
   }
   if (moved) return withPersonal({ ...normalize(null, app.catalog), program: s.program, startYear: s.startYear }, s);
-  // migrateYear took them off: their groups are last year's, so there is nothing to keep, but the student should know
-  const friends = saved.friends?.length, pins = saved.pins?.length;
-  if (Number.isInteger(saved.year) && saved.year < s.year && (friends || pins)) {
-    const what = [friends && `${friends} חברים`, pins && (pins === 1 ? 'קורס נעוץ אחד' : `${pins} קורסים נעוצים`)].filter(Boolean).join(' ו-');
-    app.hashError ??= `עברנו לשנת הלימודים החדשה: ${what} מהשנה שעברה הוסרו, כי הקבוצות שלהם לא קיימות יותר.`;
-  }
   return s;
 }
 // Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.
@@ -353,6 +353,7 @@ export const app = {
   hashError: null,
   noSave: false,
   saveFailed: false,
+  otherTab: false,
   settings: SETTINGS_DEFAULT,
   termsOk: () => true,
   pendingBackup: null
@@ -423,13 +424,29 @@ export function save() {
     app.onSaveChange?.();
   }
 }
-// Another tab changed the record: this one reloads, or its old copy would write over the change at its next save. A hidden tab waits until it is shown.
-export function followOtherTabs() {
-  const reload = () => location.reload();
+// Another tab changed the record: this tab's old copy must not write over it, so it stops saving and asks for a reload (ui-view.js renderBanner).
+// It does not reload by itself: two open windows would reload each other, and an open draft would be lost.
+// yearIds is what a tab's shown alternative holds, not the student's record: each tab writes its own when a search ends.
+const sortedKeys = (v) =>
+  Array.isArray(v) ? v.map(sortedKeys) : isObj(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortedKeys(v[k])])) : v;
+export const recordOf = (json) => {
+  const told = app.hashError; // only a comparison: a year move in the other copy is not news here
+  try {
+    // normalized and sorted, so a key order or what a load fills in does not read as a change
+    const { yearIds: _, ...record } = normalize(JSON.parse(json), app.catalog);
+    return JSON.stringify(sortedKeys(record));
+  } catch {
+    return json;
+  } finally {
+    app.hashError = told;
+  }
+};
+export function watchOtherTabs() {
   addEventListener('storage', (e) => {
-    if (e.key !== KEY && e.key !== null) return;
-    if (document.hidden) addEventListener('visibilitychange', reload, { once: true });
-    else reload();
+    if ((e.key !== KEY && e.key !== null) || recordOf(e.newValue) === recordOf(JSON.stringify(app.state))) return;
+    app.noSave = true;
+    app.otherTab = true;
+    app.onSaveChange?.();
   });
 }
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
@@ -669,6 +686,7 @@ async function init() {
   app.status = await status;
   app.settings = cleanSettings(await settings);
   const failed = () => {
+    app.cls = null; // a failure after the data was classified: ui-plan.js onHash must not route as if all were well
     app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
     for (const id of ['week', 'me', 'side', 'prefs']) {
       const el = document.getElementById(id);
