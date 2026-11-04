@@ -1,0 +1,4 @@
+Panzoom 4.6.0 (MIT, see LICENSE), self-hosted so the site makes no request outside its own origin.
+Added in commit 41e07a3. The package it comes from is @panzoom/panzoom; this copy was not compared with the registry when this note was written (2026-11-04).
+File: panzoom.es.js. Its sha256 is in test/fixtures/vendor-sha256.json, and test/vendor.test.mjs fails if it changes.
+To update: replace the file, rewrite this note, run node scripts/vendor-manifest.mjs and npm test.

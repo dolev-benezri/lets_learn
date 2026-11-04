@@ -11,7 +11,7 @@ const trimmed = (v) => str(v).trim();
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
 const validDate = (s) => typeof s === 'string' && !Number.isNaN(new Date(s).getTime());
 
-export const SETTINGS_DEFAULT = { supportEmail: '', counselingUrl: '', notice: '', turns: [], programs: {} };
+export const SETTINGS_DEFAULT = { supportEmail: '', counselingUrl: '', notice: '', examsNote: '', turns: [], programs: {} };
 
 function httpsUrl(v) {
   if (typeof v !== 'string') return '';
@@ -88,6 +88,7 @@ export function cleanSettings(raw) {
     supportEmail: EMAIL.test(str(raw.supportEmail)) && !RESERVED.test(raw.supportEmail) ? raw.supportEmail : '',
     counselingUrl: httpsUrl(raw.counselingUrl),
     notice: trimmed(raw.notice),
+    examsNote: trimmed(raw.examsNote),
     turns: cleanTurns(raw.turns),
     programs: cleanPrograms(raw.programs),
   };

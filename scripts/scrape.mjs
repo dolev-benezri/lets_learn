@@ -32,8 +32,8 @@ const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
 // Answers fetched in one nightly run: the site allows ~400 an hour, and the 2 session requests and a few retries fit in the rest, so a night never waits
 // for the clock hour (research H4). What is left waits for the next night.
 const NIGHT_BUDGET = 380;
-// Lists and course details may use only the first 160 of them, so an offered course's groups (~210 a night, the data that changes most) are never the ones
-// left waiting. On the first night after a long gap the lists alone would take 290.
+// Lists and course details may be 160 of them, counted on their own, so an offered course's groups (~210 a night, the data that changes most) are never the ones
+// left waiting, and the groups asked before a course's details do not use up its turn. On the first night after a long gap the lists alone would take 290.
 const SLOW_BUDGET = 160;
 
 export class ThrottledError extends Error {
@@ -151,6 +151,7 @@ const MAX_LISTED = 6; // the summary is a commit message: a first run over many 
 // groupsAt (course id -> when its groups were read) goes over the old map like semesters, so a one-program run keeps the rest.
 export async function writeResults({ results, statusFile, now, groupsAt }) {
   const old = await readJson(statusFile);
+  // checkedAt per file: a key this run does not build must not read as checked tonight (web/ui-text.js freshAt).
   const semesters = { ...old?.semesters };
   const changes = [];
   for (const { key, file, dataset, prev } of results) {
@@ -161,7 +162,7 @@ export async function writeResults({ results, statusFile, now, groupsAt }) {
       await writeFile(file, JSON.stringify(dataset, null, 1));
       changes.push(`${key} ${changeSummary(prev, dataset)}`);
     }
-    semesters[key] = { hash, changedAt: semesters[key]?.hash === hash ? semesters[key].changedAt : now };
+    semesters[key] = { hash, changedAt: semesters[key]?.hash === hash ? semesters[key].changedAt : now, checkedAt: now };
   }
   await mkdir(dirname(statusFile), { recursive: true });
   await writeFile(statusFile, JSON.stringify({ checkedAt: now, ok: true, semesters, groupsAt: { ...old?.groupsAt, ...groupsAt } }, null, 1));
@@ -197,9 +198,12 @@ export function unitsOf(opt, programs) {
 // seen(key, html, old) hears every answer returned, with the cached answer it replaced (the same html on a cache hit, undefined when nothing was cached).
 // budget(key) = how many answers may have been fetched (the session replay not counted) before this key's is; past it a stale cached answer is returned as is
 // and its key goes to request.deferred.
+// paid(key) hears each answer really fetched from the site.
 // An answer that is not cached at all is fetched even past the budget.
 // request.readAt = when each answer returned was really read: its file's time, or now if just fetched.
-export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = () => Infinity } = {}) {
+export const requesterOptions = (opt) => ({ offline: opt.offline, ...(opt.nightly ? nightlyPolicy() : {}) });
+
+export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = () => Infinity, paid = () => {} } = {}) {
   const session = [],
     deferred = [],
     readAt = new Map();
@@ -233,6 +237,7 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
       for (const [q, f] of session) await inner(q, f);
     }
     fetched++;
+    paid(key);
     const html = await inner(query, form);
     await mkdir(dir, { recursive: true });
     await writeFile(`${file}.tmp`, html);
@@ -248,7 +253,8 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
 
 const DAY = 86400e3;
 // The nightly policy: an offered course's groups every other night (below); a department's exam table every other night until it is published, then weekly;
-// course details every 14-16 days (research A3: 15 of 415 changed in two weeks); lists, track pages and a course with no groups at all weekly.
+// course details every 14-16 days (research A3: 15 of 415 changed in two weeks); lists and track pages weekly. Only a course a list marks as taught is asked for its
+// groups, so an answer with none may be an error page that passed as 200: it is good for 1.5 days, or the course would be gone from the site for a week.
 // "Weekly" is 7-9 days by key, so the answers cached by one full pull expire over three nights instead of all on the same one.
 const weekly = (key, base = 7) => (base + (createHash('sha1').update(key).digest()[0] % 3)) * DAY;
 // An offered course's groups: half the courses (by key) one night, the other half the next. A night of ~400 group requests at 2.5 s is ~20 CI minutes, and
@@ -258,7 +264,7 @@ export function nightlyTtl(key, html, now = Date.now()) {
   if (key.includes('S_EXAMS')) return parseExams(html).length ? weekly(key) : 1.5 * DAY;
   if (key.includes('S_CourseDetails')) return weekly(key, 14);
   if (key.startsWith('prgname=S_LOOK_FOR_NOSE'))
-    return !parseGroups(html).length ? weekly(key) : otherNight(key, now) ? 1.5 * DAY : 0;
+    return !parseGroups(html).length ? 1.5 * DAY : otherNight(key, now) ? 1.5 * DAY : 0;
   return weekly(key);
 }
 
@@ -275,6 +281,8 @@ export function nightlyPolicy(now = Date.now) {
     return JSON.stringify([p.minCredits, p.courses]); // not the name: it differs by cohort
   };
   const add = (map, c, s) => map.set(c, (map.get(c) ?? new Set()).add(s));
+  const slow = (key) => !key.startsWith('prgname=S_LOOK_FOR_NOSE') && !key.includes('S_EXAMS');
+  let slowPaid = 0;
   return {
     ttl(key, html) {
       const c = code(key);
@@ -285,7 +293,10 @@ export function nightlyPolicy(now = Date.now) {
       }
       return nightlyTtl(key, html, now());
     },
-    budget: (key) => (key.startsWith('prgname=S_LOOK_FOR_NOSE') || key.includes('S_EXAMS') ? NIGHT_BUDGET : SLOW_BUDGET),
+    budget: (key) => (slow(key) && slowPaid >= SLOW_BUDGET ? 0 : NIGHT_BUDGET),
+    paid(key) {
+      if (slow(key)) slowPaid++;
+    },
     seen(key, html, old) {
       const c = code(key);
       if (!c) return;
@@ -433,6 +444,9 @@ export async function run({
     );
   }
 
+  const empty = [...offered].filter((id) => !raw[id].groups.length);
+  if (empty.length) log(`WARN ${empty.length} course(s) marked as taught came back with no groups: ${empty.slice(0, 20).join(', ')}`);
+
   const examsOf = new Map();
   for (const dept of new Set(units.map((u) => u.cfg.dept))) {
     examsOf.set(
@@ -538,17 +552,11 @@ async function main() {
   });
   const made = makeRequester({ delay: Number(opt.delay) });
   const live = opt['wait-throttle'] ? patient(made, { year: opt.year }) : made;
-  const policy = opt.nightly ? nightlyPolicy() : {};
   const cacheDir = opt.cache && (await yearCache(opt.cache, opt.year)),
     statusFile = 'web/data/afeka/status.json';
   const behind = cacheDir && (await cacheBehind(cacheDir, statusFile));
   const request = cacheDir
-    ? cachedRequester(live, cacheDir, {
-        offline: opt.offline,
-        ttl: policy.ttl,
-        seen: policy.seen,
-        budget: policy.budget
-      })
+    ? cachedRequester(live, cacheDir, requesterOptions(opt))
     : live;
   const pulledExams = await loadPulledExams(opt.year);
   const summary = await run({ opt, request, hold: () => behind && request.deferred.length > 0, pulledExams });

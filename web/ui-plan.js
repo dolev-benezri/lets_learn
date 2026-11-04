@@ -1,6 +1,6 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, four step pages (#me, #courses, #prefs, the plans),
 // the registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, save, refresh, setRenderers, keepFocus, STEPS, routeOf, applyHash } from './app.js';
+import { app, save, refresh, setRenderers, keepFocus, STEPS, routeOf, applyHash, watchOtherTabs } from './app.js';
 import { readHash } from './share.js';
 import { icon } from './ui-grid.js';
 import { trapTab, askConfirm } from './ui-dialog.js';
@@ -102,6 +102,8 @@ function renderAll() {
 ui.onResult = () => tourOnce('plans', shownTitle); // renderView: step 4 shows an alternative
 
 // ---------- wiring (static shell from index.html) ----------
+watchOtherTabs();
+app.onSaveChange = () => app.data && renderBanner();
 document.querySelectorAll('[data-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
@@ -172,7 +174,8 @@ document.addEventListener('keydown', (e) => {
   )
     return;
   if (
-    e.target.closest?.('input, textarea, select, [contenteditable]') ||
+    // tabindex=0: a scrollable region the keyboard reaches (#pills), where the arrows scroll
+    e.target.closest?.('input, textarea, select, [contenteditable], [tabindex="0"]') ||
     $('drawer').contains(e.target) ||
     $('pop').matches(':popover-open')
   )

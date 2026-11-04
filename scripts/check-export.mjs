@@ -153,6 +153,9 @@ export function checkExport(dir, { against } = {}) {
       warnings.push(
         'status.json.ok: should be true or false (missing counts as false, the site shows the data as stale)'
       );
+    for (const [key, entry] of Object.entries(status.semesters ?? {}))
+      if (entry?.checkedAt !== undefined && !TYPES.date(entry.checkedAt))
+        errors.push(`status.json.semesters.${key}.checkedAt: not a date (the site shows it as the time of this file's check)`);
   }
   if (!catalog) return { errors, warnings };
   if (!shape('catalog', catalog, 'catalog.json', errors)) return { errors, warnings };

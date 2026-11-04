@@ -37,9 +37,13 @@ export const forbiddenBy = (c = {}) => (m) => !!(m.day && (
   || (c.windowHard && outsideMin(m, { ...c, dayOff: [] }) > 0)));
 
 // Days that count as free when they have no lesson: Sunday-Thursday, and Friday when the student wished it off (the
-// default), so a lesson is never pushed to Friday to free a weekday. The score keeps /5: a plan has a lesson on at
-// least one of these days.
-export const freeDayCandidates = (c = {}) => [1, 2, 3, 4, 5, 6].filter((d) => d <= 5 || c.dayOff?.includes(d));
+// default), so then a lesson is not pushed to Friday to free a weekday. A student who took Friday off that list said
+// Friday is fine, so a Friday lesson may free a weekday, and a plan on Friday alone has all five free. The score keeps
+// /5, so it stays at most 1.
+// The second try of a "prefer" search: what is left of the time, and at least a quarter, so a slow phone does not lose it.
+export const retryLimit = (left, limit) => Math.max(left, limit / 4);
+
+export const freeDayCandidates =(c = {}) => [1, 2, 3, 4, 5, 6].filter((d) => d <= 5 || c.dayOff?.includes(d));
 
 // Minutes of a lesson outside what the student wished: all of it on a wished day off, else what lies before notBefore
 // or after notAfter.
@@ -419,7 +423,8 @@ export function search({
   prune = true,
   bias = {},
   distinct = false,
-  why = true
+  why = true,
+  onlySplit = false
 }) {
   if (!(topK > 0)) return { results: [], partial: false, diagnosis: [] };
   const forbidden = forbiddenBy(constraints);
@@ -541,6 +546,7 @@ export function search({
 
   function leaf(mask) {
     if (!sel.length) return;
+    if (onlySplit && !sel.some((o) => o.split)) return;
     const chosen = new Set(sel.map((o) => o.course));
     // a conditional course is no plan without one course of each of its parallel requirements
     for (const k of conditional)
@@ -611,9 +617,11 @@ export function search({
     const lecturers = Object.fromEntries(Object.entries(constraints.lecturers).filter(([, v]) => v !== 'prefer'));
     return search({
       data, courses, statuses, pins, constraints: { ...constraints, lecturers },
-      weights, friends, topK, timeLimitMs, prune, bias, distinct, why
+      weights, friends, topK, timeLimitMs: retryLimit(deadline - Date.now(), timeLimitMs), prune, bias, distinct, why, onlySplit
     });
   }
+  // nothing to explain: the regular search beside it says why a course does not fit
+  if (onlySplit) return { results: top, partial, diagnosis: [] };
   if (top.length) return { results: top, partial, diagnosis: [] };
   if (partial) return {
     results: top,
@@ -736,7 +744,8 @@ export function searchYear({
   weights = {},
   friends = [],
   topK = 10,
-  timeLimitMs = 3000
+  timeLimitMs = 3000,
+  onlySplit = false
 }) {
   // with a show-by criterion, fewer missing musts still comes first
   const missW = Object.values(weights).some((w) => w >= PRIMARY) ? PRIMARY * 10 : MISSING_W;
@@ -783,7 +792,21 @@ export function searchYear({
   const Wp = weights.progress ?? 0;
 
   const argsA = { data: dataA, statuses: stA, pins: pinsOf(dataA), constraints, weights, friends, bias };
-  const ra = search({ ...argsA, courses: coursesA, topK: A_TOP, distinct: true, timeLimitMs: timeLimitMs * A_SHARE });
+  const searchA = (only, share) =>
+    search({ ...argsA, courses: coursesA, topK: A_TOP, distinct: true, timeLimitMs: timeLimitMs * share, onlySplit: only });
+  // onlySplit: a pair is split by either half. The א׳ plans that split, or regular ones would take every place,
+  // and the regular ones, each with a ב׳ that splits.
+  let ra;
+  if (onlySplit) {
+    const split = searchA(true, A_SHARE / 2),
+      regular = searchA(false, A_SHARE / 2),
+      have = new Set(split.results.map((a) => a.groups.join()));
+    ra = {
+      ...regular,
+      results: [...split.results, ...regular.results.filter((a) => !have.has(a.groups.join()))],
+      partial: split.partial || regular.partial
+    };
+  } else ra = searchA(false, A_SHARE);
   const credits = (d, ids) => ids.reduce((s, id) => s + (d.courses[id]?.credits ?? 0), 0);
   const name = (id) => dataA.courses[id]?.name ?? id;
   // the record before א׳: passed, exempt (Amirnet or sheet) and outside-program courses marked done (rules.js reqMet)
@@ -842,7 +865,7 @@ export function searchYear({
     // why: false: the year search never shows a ב׳ search's own explanation, so it must not spend the budget on one
     const args = {
       data: dataB, statuses: stB, pins: pinsOf(dataB), constraints, weights, friends,
-      topK: B_K, timeLimitMs: left, why: false
+      topK: B_K, timeLimitMs: left, why: false, onlySplit: onlySplit && !a.split.length
     };
     let rb = search({ ...args, courses: coursesB });
     partial ||= rb.partial;
@@ -854,6 +877,7 @@ export function searchYear({
       // ponytail: two or more impossible musts fall straight to all optional; relax pairs if that shows up in real
       // data.
       const mustB = coursesB.filter((c) => c.mode === 'must');
+      if (args.onlySplit && !mustB.length) continue; // nothing to give up: no ב׳ here splits
       const relax = (keep) => {
         const lifted = new Set(coursesB.filter((c) => !keep(c)).map((c) => c.id));
         return search({
@@ -888,13 +912,15 @@ export function searchYear({
     }
     if (bestPair) pairs.push(bestPair);
   }
-  pairs.sort((x, y) => compareYearPlans(x, y, state.sortBy));
-  const diagnosis = pairs.length
+  // the split search: what it passed on the way (a regular א׳ with no ב׳ that fits) must not take a place
+  const listed = onlySplit ? pairs.filter((p) => p.split.length) : pairs;
+  listed.sort((x, y) => compareYearPlans(x, y, state.sortBy));
+  const diagnosis = pairs.length || onlySplit
     ? []
     : failB
       ? search({ ...failB.args, courses: failB.coursesB, why: true }).diagnosis.map((m) => `סמסטר ב׳: ${m}`)
       : ra.diagnosis;
-  return { results: pairs.slice(0, topK), partial, diagnosis };
+  return { results: listed.slice(0, topK), partial, diagnosis };
 
   // A missing must course beside a planned one whose first sitting breaks the exam rule: say so, the student may not guess.
   // Only by the options it could really use, against the exams the plan really holds.
@@ -954,14 +980,14 @@ export function searchYear({
 }
 
 // What the worker runs: `{ year }` or search() args. Split on: the regular search with 60% of the time, then the
-// split search with 40%; its plans that split a course and are not a regular plan are appended, so a split
-// alternative never ranks above a regular one.
+// split search with 40%, which ranks only plans that split a course, so regular plans do not take its places; those
+// that are not a regular plan are appended, so a split alternative never ranks above a regular one.
 export function searchAll(msg) {
   const run = msg.year ? searchYear : search, args = msg.year ?? msg;
   if (!args.constraints?.split) return run(args);
   const t = args.timeLimitMs ?? 3000;
   const reg = run({ ...args, constraints: { ...args.constraints, split: false }, timeLimitMs: t * 0.6 });
-  const sp = run({ ...args, timeLimitMs: t * 0.4 });
+  const sp = run({ ...args, timeLimitMs: t * 0.4, onlySplit: true });
   const key = (r) => JSON.stringify(msg.year
     ? [[...r.a.groups].sort(), [...(r.b?.groups ?? [])].sort()]
     : [...r.groups].sort());

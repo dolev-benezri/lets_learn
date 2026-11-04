@@ -536,6 +536,239 @@ for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.
   });
 }
 
+// The owner's call: when the two do not fit (a late first lesson, or a short screen with its toolbars), arriving shows the warnings, and choosing a day shows its lesson.
+// The height is measured, so this holds on any night's data: one pixel short of fitting both.
+test('a short phone: arriving shows the warnings first, and choosing a day shows its lesson', async (t) => {
+  const page = await visit(t, { width: 320, height: 640 }, FIRST);
+  await weekReady(page);
+  await page.waitForTimeout(300);
+  const spots = () =>
+    page.evaluate(() => {
+      const box = (e) => e.getBoundingClientRect(),
+        sel = document.getElementById('daysel');
+      return {
+        noteTop: box(document.getElementById('boardNote')).top,
+        noteBottom: box(document.getElementById('boardNote')).bottom,
+        selBottom: box(sel).bottom,
+        head: parseFloat(getComputedStyle(sel).top) + sel.offsetHeight + 8,
+        firstTop: [...document.querySelectorAll('.day.on .blk')].map((b) => box(b).top).sort((a, b) => a - b)[0],
+        vh: innerHeight
+      };
+    });
+  const tall = await spots();
+  await page.setViewportSize({ width: 320, height: Math.floor(tall.firstTop - tall.noteTop + tall.head + 99) });
+  await page.reload();
+  await weekReady(page);
+  await page.waitForTimeout(300);
+  const arrived = await spots();
+  assert.ok(arrived.noteTop >= arrived.selBottom - 1 && arrived.noteBottom <= arrived.vh, `the warnings: ${JSON.stringify(arrived)}`);
+  let days = 0;
+  for (const day of await page.locator('#daysel [data-act="day"]').all()) {
+    await day.click();
+    await page.waitForTimeout(100);
+    const s = await spots();
+    if (s.firstTop === undefined) continue;
+    days++;
+    assert.ok(s.firstTop >= s.selBottom - 1 && s.firstTop <= s.vh - 60, `the lesson: ${JSON.stringify(s)}`);
+  }
+  assert.ok(days, 'a day with a lesson');
+});
+
+const savedState = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
+
+test('two tabs: a change in one stops the other from saving over it, until it reloads', async (t) => {
+  const a = await visit(t, 'desktop', DONE);
+  await weekReady(a);
+  const b = await a.context().newPage();
+  await b.goto(a.url());
+  await weekReady(b);
+  await b.waitForTimeout(500);
+  const note = b.locator('#notice [role="alert"]');
+  const change = (edit) =>
+    a.evaluate((e) => {
+      const s = JSON.parse(localStorage.getItem('afeka-sched-v1'));
+      localStorage.setItem('afeka-sched-v1', JSON.stringify({ ...s, ...e }));
+    }, edit);
+  await change({ yearIds: ['1'] }); // what a tab's shown alternative holds, not the student's record
+  await b.waitForTimeout(300);
+  assert.equal(await note.count(), 0);
+  await a.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('afeka-sched-v1'));
+    localStorage.setItem('afeka-sched-v1', JSON.stringify(Object.fromEntries(Object.entries(s).reverse())));
+  });
+  await b.waitForTimeout(300);
+  assert.equal(await note.count(), 0, 'the same record in another order');
+  await change({ name: 'מהלשונית השנייה' });
+  await note.waitFor({ timeout: 5000 });
+  assert.match(await note.innerText(), /בלשונית אחרת/);
+  await b.evaluate(async () => (await import('./app.js')).save());
+  assert.equal((await savedState(b)).name, 'מהלשונית השנייה');
+  await Promise.all([b.waitForEvent('load'), note.locator('[data-act="reloadPage"]').click()]);
+  await weekReady(b);
+  assert.equal(await note.count(), 0);
+  assert.equal(await b.evaluate(async () => (await import('./app.js')).app.state.name), 'מהלשונית השנייה');
+});
+
+test('two study years picked fast and neither loads: the year before both comes back', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  await page.locator('input[data-chg="pyear"]').first().waitFor({ state: 'attached', timeout: 30000 });
+  await page.context().route(/\/30-202[45]\.json$/, (r) => setTimeout(() => r.abort(), 400));
+  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await page.locator('input[data-chg="pyear"][value="4"]').evaluate((e) => e.click());
+  await page.locator('#toast', { hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 10000 });
+  const s = await savedState(page);
+  assert.deepEqual([s.profile.year, s.startYear], [2, 2026]);
+  assert.equal(await page.locator('input[data-chg="pyear"]:checked').getAttribute('value'), '2');
+});
+
+test('the lesson window says where an exam date came from, and nothing when it shows no date', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  let exams = [];
+  await page.context().route('**/data/afeka/2027-1/30-2026.json', async (route) => {
+    const res = await route.fetch(),
+      d = await res.json();
+    for (const c of Object.values(d.courses)) for (const g of c.groups) g.exams = exams;
+    await route.fulfill({ response: res, json: { ...d, examsPublished: true } });
+  });
+  const open = async () => {
+    await page.waitForLoadState('networkidle'); // a reload over a fetch still running is a script error in WebKit
+    await page.reload();
+    await weekReady(page);
+    await page.locator('#week .blk').first().click();
+    await page.locator('#pop dl').waitFor({ timeout: 5000 });
+  };
+  await open();
+  assert.doesNotMatch(await page.locator('#pop').innerText(), /בדקו מול הידיעון/);
+  exams = [{ kind: 'בחינה', moed: 1, date: '2027-02-01', time: '09:00' }];
+  await open();
+  assert.match(await page.locator('#pop').innerText(), /בדקו מול הידיעון/);
+});
+
+const later = (r) => setTimeout(() => r.continue(), 400);
+
+test('a study year picked and taken back while it loads: the last choice wins', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  await page.locator('input[data-chg="pyear"]').first().waitFor({ state: 'attached', timeout: 30000 });
+  await page.context().route(/\/30-2025\.json$/, later);
+  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await page.locator('input[data-chg="pyear"][value="2"]').evaluate((e) => e.click());
+  await page.waitForTimeout(1200);
+  const s = await savedState(page);
+  assert.deepEqual([s.profile.year, s.startYear], [2, 2026]);
+});
+
+test('a study year picked while a new program loads: it applies to the new program', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  const pick = page.locator('select[data-chg="program"]');
+  await pick.waitFor({ timeout: 30000 });
+  await page.context().route(/\/20-20\d\d\.json$/, later);
+  await pick.selectOption('20');
+  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await page.waitForTimeout(1500);
+  const s = await savedState(page);
+  assert.deepEqual([s.program, s.profile.year, s.startYear], [20, 3, 2025]);
+});
+
+test('the failed-load screen: another tab clearing the record throws nothing', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await page.waitForLoadState('networkidle');
+  await page.context().route('**/data/afeka/*-1/*.json', (r) => r.abort());
+  await page.reload();
+  await page.locator('[data-retry]:visible').first().waitFor({ timeout: 30000 });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const other = await page.context().newPage();
+  await other.goto(page.url());
+  await other.evaluate(() => localStorage.removeItem('afeka-sched-v1'));
+  await page.waitForTimeout(300);
+  assert.deepEqual(errors, []);
+});
+
+test('a status file it cannot read does not stop the site', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await page.waitForLoadState('networkidle');
+  await page.context().route('**/data/afeka/status.json', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: '{"checkedAt":"not-a-date","ok":true,"semesters":{"2027-1/30-2026":{"checkedAt":"not-a-date"}}}' })
+  );
+  await page.reload();
+  await weekReady(page);
+});
+
+test('a page that fails only while it is drawn: every step keeps the retry', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await page.waitForLoadState('networkidle');
+  // the data is good and already classified; a bug in the drawing is what is left to fail
+  await page.context().route('**/ui-view.js', async (route) => {
+    const res = await route.fetch();
+    const body = (await res.text()).replace('function renderBoardNote() {', "function renderBoardNote() { throw new Error('drawn');");
+    await route.fulfill({ response: res, body });
+  });
+  await page.reload();
+  await page.locator('[data-retry]:visible').first().waitFor({ timeout: 30000 });
+  await page.evaluate(() => {
+    location.hash = '#me';
+  });
+  await page.locator('#me [data-retry]').waitFor({ timeout: 5000 });
+});
+
+test('a program file that does not load: the student is told, and the study year goes back', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  const year = page.locator('input[data-chg="pyear"]');
+  await year.first().waitFor({ state: 'attached', timeout: 30000 });
+  await page.context().route('**/data/afeka/*/30-2025.json', (r) => r.abort());
+  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await page.locator('#toast', { hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 10000 });
+  assert.equal((await savedState(page)).profile.year, 2);
+  assert.equal(await page.locator('input[data-chg="pyear"]:checked').getAttribute('value'), '2');
+});
+
+test('desktop: the arrows on the scrollable course row leave the alternative alone', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  const cur = () => page.evaluate(async () => (await import('./ui-common.js')).ui.cur);
+  await page.locator('#pills').focus();
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await cur(), 0);
+  await page.evaluate(() => document.activeElement.blur());
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await cur(), 1);
+});
+
+test('a save that fails says so, with the way out, until a save succeeds', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await page.evaluate(async () => {
+    const { save } = await import('./app.js');
+    window.realSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = () => {
+      throw new Error('full');
+    };
+    save();
+  });
+  const notice = page.locator('#notice [role="alert"]');
+  await notice.waitFor({ timeout: 5000 });
+  assert.match(await notice.innerText(), /לא נשמרים/);
+  assert.equal(await notice.locator('[data-act="backup"]').count(), 1);
+  await page.evaluate(async () => {
+    const { save } = await import('./app.js');
+    Storage.prototype.setItem = window.realSetItem;
+    save();
+  });
+  await notice.waitFor({ state: 'detached', timeout: 5000 });
+});
+
+test('moving to a new study year says what it took off', async (t) => {
+  const friend = (id, name) => ({ id, name, groups: ['1'], active: true });
+  const old = { ...STUDENT, year: 2026, pins: ['111'], friends: [friend('f1', 'א'), friend('f2', 'ב')] };
+  const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1': JSON.stringify(old) });
+  await weekReady(page);
+  const text = await page.locator('#banner').innerText();
+  assert.match(text, /2 חברים/);
+  assert.match(text, /קורס נעוץ|קורסים נעוצים/);
+  const again = await page.evaluate(() => localStorage.getItem('afeka-sched-v1'));
+  assert.equal(JSON.parse(again).friends.length, 0);
+});
+
 test('a phone on its side keeps the semester notes', async (t) => {
   const page = await visit(t, { width: 667, height: 375 }, DONE);
   await weekReady(page);
@@ -544,7 +777,12 @@ test('a phone on its side keeps the semester notes', async (t) => {
 
 // A failed load says nothing against the saved record: the screen offers a retry, and nothing there can erase it.
 for (const size of Object.keys(SIZES)) {
-  for (const [how, fail] of [['a missing file', (r) => r.fulfill({ status: 404 })], ['no network', (r) => r.abort()]]) {
+  for (const [how, fail] of [
+    ['a missing file', (r) => r.fulfill({ status: 404 })],
+    ['no network', (r) => r.abort()],
+    ['a file with no courses', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' })],
+    ['a file it cannot read', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"courses":{"1":null}}' })]
+  ]) {
     test(`${size}: ${how} offers a retry only, and the retry loads with the record kept`, async (t) => {
       const page = await visit(t, size, DONE);
       await page.waitForLoadState('networkidle');

@@ -72,8 +72,9 @@ export function crossProgram(files) {
 }
 
 // Prerequisites that changed since the last commit of this file: one warning per course. [] when git or the old file is missing.
+// CHECK_BASE: in CI the checked-out commit already holds the new data, so checks.yml names the commit the push came from (empty on a run by hand).
 export function changedSinceHead(file, data) {
-  const r = spawnSync('git', ['show', `HEAD:${DIR}/${file}`], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const r = spawnSync('git', ['show', `${process.env.CHECK_BASE || 'HEAD'}:${DIR}/${file}`], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (r.status !== 0) return [];
   const old = JSON.parse(r.stdout).courses ?? {};
   return Object.entries(data.courses ?? {})

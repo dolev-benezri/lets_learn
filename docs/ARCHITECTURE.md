@@ -29,7 +29,7 @@
 | `web/vendor/` | עותקים מקומיים של pdf.js, panzoom, popover polyfill, tesseract.js, Driver.js וספריות ה-PDF (`vendor/pdf`), כל אחד עם הרישיון שלו |
 | `test/` | בדיקות `node --test`, ו-`fixtures/mini-data.mjs` (נתונים קטנים לבדיקות) |
 | `ci/` | `gitlab-scrape.yml`: הסריקה הלילית ב-GitLab CI, שדוחפת את הנתונים ל-`main` |
-| `.github/` | `workflows/deploy.yml` (כל הבדיקות, ואז העלאת `web/` ל-GitHub Pages אחרי דחיפה ל-`main` שנוגעת ב-`web/`) ותבניות ה-issues (באג, טעות בנתונים, בקשה) |
+| `.github/` | `workflows/deploy.yml` (כל הבדיקות, ואז העלאת `web/` ל-GitHub Pages אחרי דחיפה ל-`main` שנוגעת באתר, בבדיקות, בסקריפטים או ב-workflows), `workflows/checks.yml`, `browser.yml` ו-`freshness.yml` (בדיקות שלא עוצרות פריסה) ותבניות ה-issues (באג, טעות בנתונים, בקשה) |
 | `docs/` | תיעוד, מחקר, ביקורות, specs ותוכניות. האינדקס: [docs/README.md](README.md) |
 | `design-system/` | מערכת העיצוב: `afeka-scheduler/MASTER.md`, ה-override של העמוד `afeka-scheduler/pages/app.md`, ו-`og.html` (המקור של `web/og.png`) |
 | `solver-audit/` | ביקורת מנוע החיפוש (6.10.2026): `findings.md`, `dependencies.md`, תרשימי הזרימה (`flow-*`), `repro/` (סקריפט לכל ממצא, `run-all.mjs`), `plan-probes/` (בדיקות מקדימות לתוכנית התיקונים) ו-`issues/` (טיוטות ה-issues). לא נטען באתר |

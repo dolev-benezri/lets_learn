@@ -29,11 +29,13 @@ export function buildDataset({
     for (const c of l.courses) {
       if (courses[c.id]) continue;
       const r = raw[c.id] ?? { groups: [], details: null };
-      const noMeetings = r.groups.filter((g) => g.primary && !g.meetings.length).map((g) => g.id);
+      const noMeetings = r.groups.filter((g) => !g.meetings.length).map((g) => g.id);
       if (noMeetings.length)
-        warnings.push(
-          `${c.id}: primary group(s) without meetings dropped (online/unscheduled?): ${noMeetings.join(', ')}`
-        );
+        warnings.push(`${c.id}: group(s) without meetings dropped (online/unscheduled?): ${noMeetings.join(', ')}`);
+      const inHere = (m) => m.semester === semester;
+      const twoSemesters = r.groups.filter((g) => g.meetings.some(inHere) && !g.meetings.every(inHere)).map((g) => g.id);
+      if (twoSemesters.length)
+        warnings.push(`${c.id}: group(s) with meetings in two semesters dropped: ${twoSemesters.join(', ')}`);
       const kept = r.groups.filter((g) => g.meetings.length && g.meetings.every((m) => m.semester === semester));
       const ids = new Set(kept.map((g) => g.id));
       const groups = kept.map(({ detailsArgs, meetings, linked, ...g }) => ({

@@ -14,19 +14,27 @@ jobs:
   real-data:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
       - run: npm ci --ignore-scripts
+      # What the prerequisites changed from: the commit the push came from, not the one before, or a push of several commits hides a change. Empty on a run by hand.
+      - if: github.event_name == 'push'
+        run: git fetch -q --depth=1 origin "$BEFORE" || true # gone after a history rewrite: then there is nothing to compare
+        env:
+          BEFORE: ${{ github.event.before }}
       - run: npm run check:real
+        env:
+          CHECK_BASE: ${{ github.event.before }}
+      - run: npm run check:export -- web/data/afeka
 
   # Only names that do not exist. The other type errors in untyped web/*.js are noise (DOM narrowing, default parameters).
   undefined-names:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
       - run: |

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, checkYear, bestCredits, yearOrder, shuffleSame, SUITES
+  dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, checkYear, bestCredits, yearOrder, shuffleSame, SUITES, changedSinceHead
 } from '../scripts/check-real.mjs';
 import { mini } from './fixtures/mini-data.mjs';
 import { fixture } from './fixtures/solver-data.mjs';
@@ -45,11 +45,22 @@ test('crossProgram: a course whose prerequisites differ between programs is one 
   assert.equal(w.length, 1);
   assert.match(w[0], /A/);
 });
+const SAMPLE = ['2027-1/10-2024.json', '2027-1/19-2026.json', '2027-1/30-2026.json'];
+// Frozen: a night's data must not hold back the deploy (npm run check:real reads the live data, in checks.yml).
 test('the 3 sample programs have no data errors', () => {
-  for (const f of ['2027-1/19-2026.json', '2027-1/20-2026.json', '2027-1/30-2026.json']) {
-    const d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
-    assert.deepEqual(dataRules(d, f).errors, [], f);
-  }
+  for (const f of SAMPLE) assert.deepEqual(dataRules(real(f), f).errors, [], f);
+});
+test('changedSinceHead: compares with CHECK_BASE, which CI sets to the commit the push came from', (t) => {
+  t.after(() => delete process.env.CHECK_BASE);
+  const f = '2027-1/30-2026.json',
+    d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8')),
+    [id] = Object.keys(d.courses);
+  d.courses[id].prereqs = [...d.courses[id].prereqs, { kind: 'קדם', anyOf: [{ id: 'new', name: 'new' }] }];
+  assert.match(changedSinceHead(f, d).join(), /^changed: /);
+  process.env.CHECK_BASE = 'no-such-ref';
+  assert.deepEqual(changedSinceHead(f, d), []);
+  process.env.CHECK_BASE = ''; // a run by hand has no pushed-from commit
+  assert.match(changedSinceHead(f, d).join(), /^changed: /);
 });
 
 // ---- layer 3: the solver and the record, against an oracle written from the spec ----
@@ -181,12 +192,9 @@ test('the CLI runs the state suites (J2, J6, J7, J9-J12) and the small cases; th
   checkYear('19-2026', L('2027-1/19-2026.json'), L('2027-2/19-2026.json'), { solveYear: spy });
   assert.ok(failures.some((n) => n > 0), 'an S3 scenario (one failure) reaches the year search');
 });
-test('sample: 19-2026, 20-2026, 30-2026 semester א pass the record, plan and metamorphic checks', () => {
+test('sample: 10-2024, 19-2026, 30-2026 semester א pass the record, plan and metamorphic checks', () => {
   const t0 = Date.now();
-  for (const f of ['2027-1/19-2026.json', '2027-1/20-2026.json', '2027-1/30-2026.json']) {
-    const d = JSON.parse(readFileSync(new URL(`../web/data/afeka/${f}`, import.meta.url), 'utf8'));
-    // S2 too: these cohorts are in study year 2, where S1 (nothing passed) leaves almost nothing to plan
-    assert.deepEqual(checkFile(f, d, { scenarios: ['S1', 'S2'] }), [], f);
-  }
-  assert.ok(Date.now() - t0 < 20000, `${Date.now() - t0} ms`);
+  // S2 too: these cohorts are past study year 1, where S1 (nothing passed) leaves almost nothing to plan
+  for (const f of SAMPLE) assert.deepEqual(checkFile(f, real(f), { scenarios: ['S1', 'S2'] }), [], f);
+  assert.ok(Date.now() - t0 < 20000 * (process.env.CI ? 3 : 1), `${Date.now() - t0} ms`);
 });

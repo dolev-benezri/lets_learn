@@ -1,0 +1,7 @@
+# The actions are pinned to a full commit: this says when a newer one exists.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

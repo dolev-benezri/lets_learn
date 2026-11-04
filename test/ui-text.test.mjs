@@ -23,6 +23,7 @@ import {
   groupFresh,
   turnWarning,
   freshAt,
+  examsNoteHtml,
   conflictsFor,
   reportMailto
 } from '../web/ui-text.js';
@@ -329,6 +330,11 @@ test('groupFresh: no seats left means full', () => {
   );
 });
 
+test('examsNoteHtml: the note of settings.json beside the exam dates, escaped, or nothing', () => {
+  assert.equal(examsNoteHtml(''), '');
+  assert.equal(examsNoteHtml('a<b'), '<p class="hint">a&lt;b</p>');
+});
+
 test('freshAt: the later of the data change and the last good check that covers this semester', () => {
   const data = { year: 2027, semester: 'א', program: 30, startYear: 2026, fetchedAt: '2026-10-16T18:08:48.356Z' };
   const status = (o = {}) => ({
@@ -340,6 +346,13 @@ test('freshAt: the later of the data change and the last good check that covers 
   assert.equal(freshAt(data, status()), '2026-10-20T04:00:00Z'); // a check after the change
   assert.equal(freshAt(data, status({ checkedAt: '2026-10-10T04:00:00Z' })), data.fetchedAt); // a check before the change
   assert.equal(freshAt(data, status({ ok: false })), data.fetchedAt);
+  // the file's own check, not the time of a run that did not build it
+  assert.equal(freshAt(data, status({ semesters: { '2027-1/30-2026': { checkedAt: '2026-10-17T04:00:00Z' } } })), '2026-10-17T04:00:00Z');
+  assert.equal(freshAt(data, status({ semesters: { '2027-1/30-2026': { checkedAt: '2026-10-10T04:00:00Z' } } })), data.fetchedAt);
+  // a status from before the field: the last run stands for every file, until the first run that writes it
+  assert.equal(freshAt(data, status({ semesters: { '2027-1/30-2026': {}, '2027-2/30-2026': {} } })), '2026-10-20T04:00:00Z');
+  // after that run, a file it did not build is not covered by it
+  assert.equal(freshAt(data, status({ semesters: { '2027-1/30-2026': {}, '2027-2/30-2026': { checkedAt: '2026-10-20T04:00:00Z' } } })), data.fetchedAt);
   assert.equal(freshAt(data, null), data.fetchedAt);
   assert.equal(freshAt(data, {}), data.fetchedAt);
   assert.equal(freshAt(data, status({ semesters: { '2027-2/30-2026': {} } })), data.fetchedAt); // another semester only

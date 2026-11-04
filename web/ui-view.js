@@ -3,6 +3,7 @@ import {
   app,
   esc,
   freshOf,
+  boardStatus,
   save,
   refresh,
   candidateMode,
@@ -92,7 +93,7 @@ export function renderTop() {
   $('title').innerHTML =
     `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
-  const f = freshness(app.status, app.data.fetchedAt),
+  const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear);
   // the footer link to the counselling page, only when settings.json gives one
   $('counsel').hidden = !app.settings.counselingUrl;
@@ -103,7 +104,7 @@ export function renderTop() {
 
 // What qualifies every plan on this page, at any width: a phone hides the header's #meta. Written only on a change, so a screen reader is not told again.
 function renderBoardNote() {
-  const f = freshness(app.status, app.data.fetchedAt),
+  const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear),
     assumed = app.state.assumed?.length ?? 0,
     warned = passedWarnings(app.data, app.state).length;
@@ -135,12 +136,22 @@ export function renderBanner() {
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב'], app.sem['קיץ']]) : [];
   const turn = turnWarning(app.settings.turns, app.state.profile.turn, freshOf(app.data));
   // the remote notice sits above every step (#notice, outside the plans step that holds #banner)
-  if ($('notice').dataset.text !== app.settings.notice) {
+  const noticeState = `${!!app.saveFailed}|${!!app.otherTab}|${app.settings.notice}`;
+  if ($('notice').dataset.text !== noticeState) {
     // written only on a change: a role=alert region replaced on every refresh is announced again each time
-    $('notice').dataset.text = app.settings.notice;
-    $('notice').innerHTML = app.settings.notice
-      ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>`
-      : '';
+    $('notice').dataset.text = noticeState;
+    $('notice').innerHTML =
+      (app.settings.notice
+        ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>`
+        : '') +
+      (app.saveFailed
+        ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">השינויים לא נשמרים בדפדפן הזה, ויאבדו כשתסגרו את הדף.</span>
+        <button type="button" class="btn ghost" data-act="backup">העתק קישור גיבוי</button></div>`
+        : '') +
+      (app.otherTab
+        ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">הנתונים השתנו בלשונית אחרת, ושינויים כאן כבר לא נשמרים.</span>
+        <button type="button" class="btn ghost" data-act="reloadPage">טען מחדש</button></div>`
+        : '');
   }
   $('banner').innerHTML =
     (app.hashError
@@ -414,11 +425,13 @@ export function renderView() {
 
 // Phone: the day column starts at the earliest hour of any day, so a later-starting day opens on empty hours.
 // On the first view of a result and after each day switch, scroll to the day's first lesson (not on every refresh); from the board's note above it
-// when both fit, so the warnings are read, not scrolled away.
+// when both fit, so the warnings are read, not scrolled away. When they do not fit, arriving shows the note (the lesson is below it)
+// and choosing a day shows the lesson.
 
 export function scrollToDay() {
   // kept armed until a result is on screen
   if (!ui.dayScroll || !current() || $('layout').hidden || !matchMedia(PHONE).matches) return;
+  const choseDay = ui.dayScroll === 'day';
   ui.dayScroll = false;
   const blocks = [...document.querySelectorAll('.day.on .blk')];
   if (!blocks.length) return;
@@ -428,7 +441,7 @@ export function scrollToDay() {
   const head = parseFloat(getComputedStyle($('daysel')).top) + $('daysel').offsetHeight + 8;
   const top = b.getBoundingClientRect().top,
     note = $('boardNote').getBoundingClientRect().top,
-    from = top - note <= innerHeight - 100 - head ? note : top;
+    from = !$('boardNote').firstChild || (choseDay && top - note > innerHeight - 100 - head) ? top : note;
   if (from < head || top > innerHeight - 100) scrollBy(0, from - head);
 }
 

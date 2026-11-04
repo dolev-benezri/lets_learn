@@ -212,6 +212,22 @@ test('writeResults: a semester not in this run keeps its status entry', async ()
   assert.deepEqual(Object.keys(json(d.status).semesters), ['2027-1', '2027-2']);
 });
 
+test('writeResults: each file keeps the time of its own last check, and an entry from before that field stays without one', async () => {
+  const d = dirs();
+  await writeResults({ results: [job(d, '2027-1', ds(2)), job(d, '2027-2', ds(2))], statusFile: d.status, now: 'N1' });
+  const before = json(d.status);
+  delete before.semesters['2027-2'].checkedAt;
+  writeFileSync(d.status, JSON.stringify(before));
+  await writeResults({
+    results: [job(d, '2027-1', ds(2), json(d.file('2027-1')), 'N2')],
+    statusFile: d.status,
+    now: 'N2'
+  });
+  const st = json(d.status);
+  assert.equal(st.semesters['2027-1'].checkedAt, 'N2');
+  assert.equal(st.semesters['2027-2'].checkedAt, undefined, 'not rebuilt: when it was last checked is not known');
+});
+
 // ---- the whole run, with fixtures instead of the site ----
 const fx = (n) => readFileSync(`scripts/fixtures/${n}`, 'utf8');
 const site = (onCall = () => {}) => {
@@ -351,6 +367,22 @@ const withSummer = () => {
   };
 };
 const noErrors = () => ({ errors: [], warnings: [] });
+
+test('run: a course the lists mark as taught that comes back with no groups is named in the log', async () => {
+  const root = join(dirs().status, '..'),
+    logs = [],
+    inner = site();
+  let first = true;
+  const request = async (query, form) => {
+    if (query?.startsWith('prgname=S_LOOK_FOR_NOSE') && first) {
+      first = false;
+      return '<html></html>';
+    }
+    return inner(query, form);
+  };
+  await run({ opt, request, dataDir: root, log: (m) => logs.push(m), check: noErrors });
+  assert.ok(logs.some((m) => /^WARN 1 course\(s\) marked as taught came back with no groups: \d+/.test(m)), logs.join('\n'));
+});
 
 test('run: a summer that fails its checks is skipped with a warning; א and ב are still written', async () => {
   const root = join(dirs().status, '..'),
@@ -578,7 +610,7 @@ test('cachedRequester: a cached answer costs no request; the session requests ar
 // ---- nightly cache policy and waiting out the hourly limit ----
 import { utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { nightlyTtl, nightlyPolicy, patient, cacheBehind, markPublished } from '../scripts/scrape.mjs';
+import { nightlyTtl, nightlyPolicy, requesterOptions, patient, cacheBehind, markPublished } from '../scripts/scrape.mjs';
 
 test('nightlyTtl: exams every other night until published then weekly; an offered course\'s groups every other night; details 14-16 days; the rest weekly', () => {
   const DAY = 86400e3,
@@ -599,7 +631,8 @@ test('nightlyTtl: exams every other night until published then weekly; an offere
     nightlyTtl(`prgname=S_LOOK_FOR_NOSE&arguments=-N${10000 + i}`, groups, 20000 * DAY)
   ).filter((t) => t === 0).length;
   assert.ok(half > 70 && half < 130, `about half the courses each night (${half}/200)`);
-  assert.ok(weekly(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>')));
+  // only a course a list marks as taught is asked, so an answer with no groups may be an error page: not kept for a week
+  assert.equal(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>'), 1.5 * DAY);
   const exams = 'PRGNAME=S_EXAMS&ARGUMENTS=R1C28';
   assert.equal(nightlyTtl(exams, fx('exams-nodata.html')), 1.5 * DAY, 'not published yet: every other night');
   assert.ok(weekly(nightlyTtl(exams, fx('exams-2026.html'))), 'published: weekly');
@@ -694,12 +727,35 @@ test('cachedRequester budget per key: a key with a lower limit is deferred while
   assert.equal(calls.length, 3);
 });
 
-test('nightlyPolicy budget: groups and exams may use the whole night (380), lists and details only 160, so groups keep 220', () => {
+test('nightlyPolicy budget: the night holds 380 answers, and only lists and details count against their own 160, so groups never starve them', () => {
   const p = nightlyPolicy();
-  assert.equal(p.budget('prgname=S_LOOK_FOR_NOSE&arguments=-N30101'), 380);
-  assert.equal(p.budget('PRGNAME=S_EXAMS&ARGUMENTS=R1C28'), 380);
-  assert.equal(p.budget('prgname=S_SHOW_PROGS&arguments=-N2026,-N30001'), 160);
-  assert.equal(p.budget('prgname=S_CourseDetails&arguments=x'), 160);
+  const groups = 'prgname=S_LOOK_FOR_NOSE&arguments=-N30101',
+    exams = 'PRGNAME=S_EXAMS&ARGUMENTS=R1C28',
+    list = 'prgname=S_SHOW_PROGS&arguments=-N2026,-N30001',
+    details = 'prgname=S_CourseDetails&arguments=x';
+  for (const k of [groups, exams, list, details]) assert.equal(p.budget(k), 380, k);
+  for (let i = 0; i < 200; i++) p.paid(groups);
+  assert.equal(p.budget(details), 380, 'groups do not spend the 160');
+  for (let i = 0; i < 160; i++) p.paid(i % 2 ? list : details);
+  assert.equal(p.budget(list), 0);
+  assert.equal(p.budget(details), 0);
+  assert.equal(p.budget(groups), 380);
+  assert.equal(p.budget(exams), 380);
+});
+
+test('requesterOptions: the nightly command hands the requester the whole policy, so the 160 are counted', () => {
+  const options = requesterOptions({ nightly: true });
+  for (const k of ['ttl', 'seen', 'budget', 'paid']) assert.equal(typeof options[k], 'function', k);
+  assert.deepEqual(requesterOptions({ offline: true }), { offline: true });
+});
+
+test('cachedRequester paid: hears an answer fetched from the site, not one from the cache', async () => {
+  const dir = join(dirs().status, '..', 'cache7'),
+    paid = [];
+  const r = cachedRequester(async () => '<p>x</p>', dir, { paid: (k) => paid.push(k) });
+  await r('prgname=S_a&x=1');
+  await r('prgname=S_a&x=1');
+  assert.deepEqual(paid, ['prgname=S_a&x=1']);
 });
 
 test('cacheBehind: a cache is behind the published data until it has published itself; markPublished records that', async () => {

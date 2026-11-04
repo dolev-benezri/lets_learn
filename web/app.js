@@ -238,6 +238,12 @@ export function normalize(raw, catalog = FALLBACK_CATALOG) {
 // go, and the student is that many years further on. One place, so a backup is not advanced twice.
 export function migrateYear(state, fromYear, toYear) {
   if (!(typeof fromYear === 'number' && fromYear < toYear)) return state;
+  // their groups are last year's, so there is nothing to keep, but the student should know
+  const friends = state.friends.length, pins = state.pins.length;
+  if (friends || pins) {
+    const what = [friends && (friends === 1 ? 'חבר אחד' : `${friends} חברים`), pins && (pins === 1 ? 'קורס נעוץ אחד' : `${pins} קורסים נעוצים`)];
+    app.hashError ??= `עברנו לשנת הלימודים החדשה: ${what.filter(Boolean).join(' ו-')} מהשנה שעברה הוסרו, כי הקבוצות שלהם לא קיימות יותר.`;
+  }
   Object.assign(state, { pins: [], friends: [], semesterOf: {}, yearIds: [], retakeSeen: [] });
   if (state.profile.year) state.profile.year = cleanProfile({ year: Math.min(5, state.profile.year + toYear - fromYear) }).year;
   return state;
@@ -274,6 +280,7 @@ export function load() {
 // Per program x cohort the state is kept under its own key while another is active, so switching back finds the progress again.
 const stashKey = (p, y) => `${KEY}:${p}-${y}`;
 const stash = (s) => {
+  if (app.otherTab) return; // this tab's copy is old: over the other tab's stash it would erase what that tab did
   try {
     localStorage.setItem(stashKey(s.program, s.startYear), JSON.stringify(s));
   } catch {
@@ -346,6 +353,8 @@ export const app = {
   friendLanding: null,
   hashError: null,
   noSave: false,
+  saveFailed: false,
+  otherTab: false,
   settings: SETTINGS_DEFAULT,
   termsOk: () => true,
   pendingBackup: null
@@ -390,25 +399,58 @@ export function pickData() {
 }
 // When the shown data was last known to be current (ui-text.js freshAt). The year view spans two files: the older of the two, so a warning is never missed.
 export const freshOf = (data) => {
-  const files = data.semester === 'שנה' ? [app.sem?.['א'], app.sem?.['ב']].filter(Boolean) : [data];
+  const files = data.semester === 'שנה' ? [app.sem?.['א'], app.sem?.['ב'], summerOn() && app.sem?.['קיץ']].filter(Boolean) : [data];
   return files
     .map((d) => freshAt(d, app.status))
     .filter(Boolean)
     .sort((a, b) => new Date(a) - new Date(b))[0];
 };
+// The status as the board should read it: "checked" means the files shown, not the last run, which may have left one out.
+export const boardStatus = () => app.status && { ...app.status, checkedAt: freshOf(app.data) ?? app.status.checkedAt };
 // When a course's seat counts were read: groups are read every other night, so the last run's time can be a night too new.
 // A status from before groupsAt says what the file says.
 export const seatsAt = (cid, data) => app.status?.groupsAt?.[cid] ?? freshOf(data);
 // Summer is planned after the school year: on only when the profile asks for it and the summer file loaded.
 export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ']);
 export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
+// The site says every change is saved, so a save that fails is told (ui-view.js renderBanner) until one succeeds.
 export function save() {
   if (app.noSave) return;
+  let failed = false;
   try {
     localStorage.setItem(KEY, JSON.stringify(app.state));
   } catch {
-    /* storage unavailable */
+    failed = true;
   }
+  if (failed !== app.saveFailed) {
+    app.saveFailed = failed;
+    app.onSaveChange?.();
+  }
+}
+// Another tab changed the record: this tab's old copy must not write over it, so it stops saving and asks for a reload (ui-view.js renderBanner).
+// It does not reload by itself: two open windows would reload each other, and an open draft would be lost.
+// yearIds is what a tab's shown alternative holds, not the student's record: each tab writes its own when a search ends.
+const sortedKeys = (v) =>
+  Array.isArray(v) ? v.map(sortedKeys) : isObj(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortedKeys(v[k])])) : v;
+export const recordOf = (json) => {
+  const told = app.hashError; // only a comparison: a year move in the other copy is not news here
+  try {
+    // normalized and sorted, so a key order or what a load fills in does not read as a change
+    const { yearIds: _, ...record } = normalize(JSON.parse(json), app.catalog);
+    return JSON.stringify(sortedKeys(record));
+  } catch {
+    return json;
+  } finally {
+    app.hashError = told;
+  }
+};
+export function watchOtherTabs() {
+  addEventListener('storage', (e) => {
+    if ((e.key !== KEY && e.key !== null) || recordOf(e.newValue) === recordOf(JSON.stringify(app.state))) return;
+    app.noSave = true;
+    app.otherTab = true;
+    app.onSaveChange?.();
+  });
 }
 const dataPath = (s, sem = s.semester) => `data/afeka/${s.year}-${SEM_CODE[sem]}/${s.program}-${s.startYear}.json`;
 // First time: the earlier years' mandatory lists are assumed passed (a year-3 student starts with years א and ב), except a course on file as failed;
@@ -532,7 +574,9 @@ async function fetchSemesters(s) {
     // revalidate (ETag) so a nightly update shows up at once
     const res = await fetch(dataPath(s, sem), { cache: 'no-cache' });
     if (!res.ok) throw new Error(res.status);
-    return res.json();
+    const d = await res.json();
+    if (!isObj(d?.courses)) throw new Error('a data file with no courses'); // or the page would stay on its loading skeleton
+    return d;
   };
   const [a, b, c] = await Promise.allSettled([get('א'), get('ב'), get('קיץ')]);
   if (a.status === 'rejected') throw a.reason;
@@ -587,7 +631,7 @@ export async function switchTo(program, startYear) {
   try {
     sem = await fetchSemesters({ ...prev, program, startYear });
   } catch {
-    return false;
+    return gen === switchGen ? null : false; // null: this choice could not load, and the student should hear it (ui-actions.js changeIdentity)
   }
   if (gen !== switchGen) return false;
   stash(prev);
@@ -644,7 +688,8 @@ async function init() {
   }
   app.status = await status;
   app.settings = cleanSettings(await settings);
-  if (!sem) {
+  const failed = () => {
+    app.cls = null; // a failure after the data was classified: ui-plan.js onHash must not route as if all were well
     app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
     for (const id of ['week', 'me', 'side', 'prefs']) {
       const el = document.getElementById(id);
@@ -654,11 +699,16 @@ async function init() {
       el.querySelector('[data-retry]').onclick = init;
     }
     dispatchEvent(new Event('hashchange')); // show the view the URL names (ui-plan.js onHash)
-    return;
-  }
+  };
+  if (!sem) return failed();
   app.loadFailed = false;
-  setSemesters(sem);
-  await applyHash();
+  try {
+    setSemesters(sem);
+    await applyHash();
+  } catch (e) {
+    console.error(e); // a file that loaded and cannot be read: the same way out, not a skeleton forever
+    failed();
+  }
 }
 
 // Replace the state with a backup. Another program or cohort loads its data first; if that fails nothing changes and it returns false.

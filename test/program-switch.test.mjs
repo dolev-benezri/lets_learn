@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   app,
   normalize,
+  recordOf,
+  boardStatus,
   switchTo,
   restoreBackup,
   ensurePassed,
@@ -192,12 +194,79 @@ test('switchTo: a later cohort pre-marks year 1 as before; an unanswered year qu
   assert.deepEqual(app.state.passed, ['a', 'b'], 'derived year 3: the year-1 list is assumed passed, the record kept');
 });
 
+test('normalize: a state of an earlier year says what it took off, on every path (a saved state, a backup, a stash)', () => {
+  const friend = { id: 'f1', name: 'א', groups: ['1'], active: true };
+  app.hashError = null;
+  const s = normalize({ v: 1, year: 2026, program: 30, startYear: 2026, pins: ['p1', 'p2'], friends: [friend] }, CATALOG);
+  assert.deepEqual([s.pins, s.friends], [[], []]);
+  assert.match(app.hashError, /חבר אחד/);
+  assert.match(app.hashError, /2 קורסים נעוצים/);
+  app.hashError = null;
+  normalize({ v: 1, year: 2026, program: 30, startYear: 2026, pins: [], friends: [] }, CATALOG);
+  assert.equal(app.hashError, null, 'nothing was taken off');
+});
+
+test('recordOf: compares what the student holds: not key order at any depth, not yearIds, and it tells nothing', () => {
+  const base = { v: 1, year: 2027, program: 30, startYear: 2026, profile: { year: 2 } };
+  const lecturers = (o) => JSON.stringify({ ...base, constraints: { lecturers: o } });
+  assert.equal(recordOf(lecturers({ a: 'prefer', b: 'avoid' })), recordOf(lecturers({ b: 'avoid', a: 'prefer' })));
+  assert.equal(recordOf(JSON.stringify({ ...base, yearIds: ['1'] })), recordOf(JSON.stringify(base)));
+  assert.notEqual(recordOf(JSON.stringify({ ...base, name: 'א' })), recordOf(JSON.stringify(base)));
+  app.hashError = 'כבר כאן';
+  recordOf(JSON.stringify({ ...base, year: 2026, profile: { year: 1 }, pins: ['p1'] }));
+  assert.equal(app.hashError, 'כבר כאן');
+  app.hashError = null;
+  recordOf(JSON.stringify({ ...base, year: 2026, profile: { year: 1 }, pins: ['p1'] }));
+  assert.equal(app.hashError, null);
+});
+
+test('switchTo: a tab another tab has changed writes no stash, or it would put its old record over the other tab\'s', async () => {
+  reset(mine());
+  app.otherTab = true;
+  try {
+    assert.equal(await switchTo(20, 2027), true);
+    assert.deepEqual(localStorage.keys().filter((k) => k.includes(':')), []);
+  } finally {
+    app.otherTab = false;
+  }
+});
+
+test('boardStatus: the warning on the board goes by the files shown, the oldest of them, not by the last run', () => {
+  const file = (semester) => ({ year: 2027, semester, program: 30, startYear: 2026, fetchedAt: '2026-10-01T00:00:00Z' });
+  const was = { sem: app.sem, data: app.data, status: app.status, state: app.state };
+  try {
+    app.sem = { 'א': file('א'), 'ב': file('ב'), 'קיץ': file('קיץ') };
+    app.state = { profile: { summer: true } };
+    app.status = {
+      checkedAt: '2026-11-04T00:00:00Z',
+      ok: true,
+      semesters: {
+        '2027-1/30-2026': { checkedAt: '2026-11-04T00:00:00Z' },
+        '2027-2/30-2026': { checkedAt: '2026-11-04T00:00:00Z' },
+        '2027-3/30-2026': { checkedAt: '2026-11-01T00:00:00Z' }
+      }
+    };
+    app.data = app.sem['א'];
+    assert.equal(boardStatus().checkedAt, '2026-11-04T00:00:00Z');
+    app.data = app.sem['קיץ'];
+    assert.equal(boardStatus().checkedAt, '2026-11-01T00:00:00Z');
+    app.data = { semester: 'שנה' };
+    assert.equal(boardStatus().checkedAt, '2026-11-01T00:00:00Z', 'a year with summer on');
+    app.state = { profile: { summer: false } };
+    assert.equal(boardStatus().checkedAt, '2026-11-04T00:00:00Z', 'summer off: its file is not shown');
+    app.status = null;
+    assert.equal(boardStatus(), null);
+  } finally {
+    Object.assign(app, was);
+  }
+});
+
 test('switchTo: a failed or refused switch changes nothing', async () => {
   serve((m) => m[3] === '20');
   reset(mine());
   const before = JSON.stringify(app.state),
     data = app.data;
-  assert.equal(await switchTo(20, 2027), false);
+  assert.equal(await switchTo(20, 2027), null, 'the file did not load: the student is told');
   assert.equal(await switchTo(99, 2027), false, 'not in the catalog');
   assert.equal(await switchTo(30, 2026), false, 'already there');
   assert.equal(JSON.stringify(app.state), before);
@@ -211,7 +280,7 @@ test('switchTo: only a missing semester ב is tolerated; a missing א fails', as
   assert.equal(app.sem['ב'], null);
   serve((m) => m[2] === '1');
   reset(mine());
-  assert.equal(await switchTo(20, 2026), false);
+  assert.equal(await switchTo(20, 2026), null);
 });
 
 test('switchTo: going back finds the old progress with the current personal settings; reset wipes the stashes', async () => {
