@@ -11,6 +11,7 @@ import { parseArgs } from 'node:util';
 import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs';
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
 import { officialDrift, OFFICIAL } from './audit.mjs';
+import { dataRules } from './check-real.mjs';
 import PROGRAMS from './programs.json' with { type: 'json' };
 import {
   pageKind,
@@ -389,6 +390,15 @@ export async function markPublished(cacheDir, statusFile) {
 }
 
 // Exam dates pulled by hand from the course pages (scripts/pull-exams.mjs); none for a year with no file.
+// Data errors this night would add, like a prerequisite cycle: validate() and compareToPrevious() pass those, and students would find a course nobody can take.
+// One the previous file already has stays out of it, or it would freeze the seats of every program until the college fixes its site. check:real keeps reporting it.
+export function newDataErrors(prev, dataset, label) {
+  if (!prev) return [];
+  const key = (e) => e.replace(/ \(.*\)(?= can never be taken|:)/, ''); // without the name: a renamed course is the same error
+  const known = new Set(dataRules(prev, label).errors.map(key));
+  return dataRules(dataset, label).errors.filter((e) => !known.has(key(e)));
+}
+
 export const loadPulledExams = async (year) => (await readJson(new URL(`./exams-${year}.json`, import.meta.url))) ?? [];
 
 const groupsKey = (id) => `prgname=S_LOOK_FOR_NOSE&arguments=-N${id}`;
@@ -500,8 +510,9 @@ export async function run({
       [...buildWarnings, ...warnings].forEach((w) => log(`WARN ${label}: ${w}`));
       const found = errors.map((e) => `${label}: ${e}`);
       const { errors: comparisonErrors } = compareToPrevious(prev, dataset);
-      if (opt.force) comparisonErrors.forEach((e) => log(`SAFETY ${label}: ${e} (--force given, continuing)`));
-      else found.push(...comparisonErrors.map((e) => `${label}: ${e} (use --force to override)`));
+      const overridable = [...comparisonErrors.map((e) => `${label}: ${e}`), ...newDataErrors(prev, dataset, label)];
+      if (opt.force) overridable.forEach((e) => log(`SAFETY ${e} (--force given, continuing)`));
+      else found.push(...overridable.map((e) => `${e} (use --force to override)`));
       found.forEach(bad);
       if (!soft || !found.length) results.push({ key: label, file, dataset, prev });
       else for (const d of [dataset, prev]) for (const [id, c] of Object.entries(d?.courses ?? {})) if (c.groups.length) keptOld.add(id);

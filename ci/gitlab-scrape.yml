@@ -23,9 +23,9 @@ scrape:
     # stdout is one summary line (the commit message); a failed scrape writes nothing and fails the job.
     # The first runs are longer than the job (~1800 requests at 400 an hour): `timeout` stops the scraper before GitLab kills the job, the cache is saved, and the run counts as
     # partial (exit 0, nothing committed, no failure mail) up to 3 in a row; the counter lives in the cache. 160m leaves ~20 min of the 3h for clone, npm ci and the cache upload.
-    # Any other failure still fails the job.
+    # Any other failure still fails the job. SCRAPE_ARGS: empty at night; --force in a run by hand (docs/OPERATIONS.md, "ריצה שנעצרה בבדיקת נתונים").
     - |
-      timeout 160m node scripts/scrape.mjs --all-semesters --all-programs --cache ../.yedion-cache --nightly --wait-throttle > ../summary.txt && rc=0 || rc=$?
+      timeout 160m node scripts/scrape.mjs --all-semesters --all-programs --cache ../.yedion-cache --nightly --wait-throttle $SCRAPE_ARGS > ../summary.txt && rc=0 || rc=$?
       if [ "$rc" = 124 ]; then
         n=$(( $(cat ../.yedion-cache/partial-runs 2>/dev/null || echo 0) + 1 )); echo "$n" > ../.yedion-cache/partial-runs
         echo "partial run $n in a row: the cache keeps what was fetched, the next run continues"
