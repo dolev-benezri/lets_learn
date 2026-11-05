@@ -2,13 +2,12 @@
 // the replay button restarts it, and the plans part starts once on the first alternatives screen. The other specs mark the tour seen (helpers.mjs TOUR_SEEN).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { webkit } from 'playwright';
-import { SIZES, DONE, TOUR_SEEN, visit as visitIn } from './helpers.mjs';
+import { SIZES, DONE, TOUR_SEEN, visit as visitIn, launch } from './helpers.mjs';
 import { TOUR_INTRO, TOUR_PLANS, TOUR_KEY } from '../../web/tour.js';
 
 let browser;
 before(async () => {
-  browser = await webkit.launch();
+  browser = await launch();
 });
 after(async () => {
   await browser?.close();

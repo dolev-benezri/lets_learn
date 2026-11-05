@@ -1,4 +1,5 @@
-// Real-browser checks in Playwright WebKit (the engine of iPhone Safari). Outside `npm test`: it needs the WebKit download (npx playwright install webkit).
+// Real-browser checks in Playwright, in WebKit (the engine of iPhone Safari) unless BROWSER says chromium or firefox. Outside `npm test`: it needs the browser's download
+// (npx playwright install webkit).
 // Serves web/ on a free local port, hands the address to every test/browser/*.spec.mjs as SITE_URL, and runs them with node:test.
 //   npm run test:browser              (all)
 //   npm run test:browser -- a11y      (only the specs whose name contains a11y)

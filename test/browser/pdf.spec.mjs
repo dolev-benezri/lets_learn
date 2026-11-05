@@ -1,12 +1,11 @@
 // PDF import in a real browser: on a browser without the newer JavaScript features, when pdf.js stops answering, and through the OCR path with a stand-in for tesseract.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { webkit } from 'playwright';
-import { STUDENT, gradeSheetPdf, visit as visitIn } from './helpers.mjs';
+import { STUDENT, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
-  browser = await webkit.launch();
+  browser = await launch();
 });
 after(async () => {
   await browser?.close();
