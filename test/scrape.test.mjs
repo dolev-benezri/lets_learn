@@ -14,7 +14,8 @@ import {
   cachedRequester,
   writeCatalog,
   catalogOrder,
-  yearCache
+  yearCache,
+  newDataErrors
 } from '../scripts/scrape.mjs';
 import { parseProgram } from '../scripts/parse.mjs';
 
@@ -1014,4 +1015,42 @@ test('writeResults: groupsAt stays out of the data file and over the old map, so
   });
   assert.deepEqual(json(d.status).groupsAt, { 1: 'T1', 2: 'T2' });
   assert.equal(readFileSync(d.file('2027-1'), 'utf8'), before, 'a new time alone does not touch the data file');
+});
+
+// A prerequisite cycle passes validate() and compareToPrevious(), and the night used to publish it.
+const prereqCourse = (...ids) => ({ credits: 1, groups: [], prereqs: ids.map((id) => ({ kind: 'קדם', anyOf: [{ id }] })) });
+const cleanData = { courses: { A: prereqCourse(), B: prereqCourse('A') }, lists: [] };
+const cycleData = { courses: { A: prereqCourse('B'), B: prereqCourse('A') }, lists: [] };
+
+test('newDataErrors: only what the previous file did not have', () => {
+  assert.deepEqual(newDataErrors(cleanData, cleanData, 'f'), []);
+  assert.ok(newDataErrors(cleanData, cycleData, 'f').some((e) => /^f: course A .*can never be taken/.test(e)));
+  assert.deepEqual(newDataErrors(cycleData, cycleData, 'f'), [], 'already published: it must not hold back the seats of every program');
+  assert.deepEqual(newDataErrors(null, cycleData, 'f'), [], 'a new file has nothing to compare with, like compareToPrevious');
+  const named = (name) => ({ ...cycleData, courses: { ...cycleData.courses, A: { ...cycleData.courses.A, name } } });
+  assert.deepEqual(newDataErrors(named('שם (ישן)'), named('שם חדש'), 'f'), [], 'a renamed course is the same old error');
+});
+
+test('run: a new data error writes nothing, an old one passes, and --force passes it with a line in the log', async () => {
+  const root = join(mkdtempSync(join(tmpdir(), 'gate-')), 'data');
+  // Every course's details now ask for one of two courses of the list. Each of the two can only come from the other, so neither can ever be taken.
+  const cycle = () => {
+    const inner = site();
+    return async (query, form) => {
+      const html = await inner(query, form);
+      return query?.startsWith('prgname=S_CourseDetails')
+        ? html.replaceAll('קורס הכנה פיזיקה', 'מבוא למדעי המחשב').replaceAll('פיזיקה - מכינה בדרך לאפקה', 'מבוא לכימיה')
+        : html;
+    };
+  };
+  const once = (request, o = opt, logs = []) => run({ opt: o, request, dataDir: root, log: (m) => logs.push(m), check: noErrors });
+  await once(site());
+  const file = `${root}/2027-1/30-2026.json`,
+    before = readFileSync(file, 'utf8');
+  await assert.rejects(once(cycle()), /checks failed, nothing written[\s\S]*can never be taken[\s\S]*--force/);
+  assert.equal(readFileSync(file, 'utf8'), before, 'nothing was written');
+  const logs = [];
+  await once(cycle(), { ...opt, force: true }, logs);
+  assert.ok(logs.some((m) => /^SAFETY .*can never be taken/.test(m)), logs.join('\n'));
+  await once(cycle()); // now it is in the published file, so it holds nothing back
 });
