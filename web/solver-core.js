@@ -721,7 +721,7 @@ const SHARE = { 'א': 0.65, even: 0.5, 'ב': 0.35 };
 const LOAD_W = 3, MISSING_W = 5, A_TOP = 50;
 // Phase A gets most of the budget (B is usually cheap and hands its unused time forward); each B search has a floor,
 // and once the budget is spent by more than half again the remaining alternatives are skipped (they are the lowest
-// ranked).
+// ranked). Checked between alternatives, so it is no hard ceiling: 4.6 s measured on a 3 s budget.
 // B_K: ב׳ plans tried per א׳ alternative; the pair score picks one. 20 on real data (2026-11-05, 235 scenarios): against 5 it improved
 // 8 balanced and 52 "courses opened" plans, none worse, about 4 ms more at the median. 50 finds more but costs more.
 // Still a shortlist, not a full search: a larger one spends more time on earlier ב׳ searches and can skip later א׳ alternatives.

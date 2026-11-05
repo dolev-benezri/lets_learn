@@ -133,19 +133,19 @@ test('examsNote: trimmed, and empty when it is not a string', () => {
   assert.equal(SETTINGS_DEFAULT.examsNote, '');
 });
 
-test('the shipped settings.json: a clean, factual conflict for each program section 21 names (22, 20, 32, 12, 11, 112, 19)', () => {
+test('the shipped settings.json: every conflict in it survives cleaning and names cohorts its program has', () => {
   const raw = JSON.parse(readFileSync(new URL('../web/settings.json', import.meta.url), 'utf8')),
     s = cleanSettings(raw);
   const cat = JSON.parse(readFileSync(new URL('../web/data/afeka/catalog.json', import.meta.url), 'utf8'));
-  for (const id of [22, 20, 32, 12, 11, 112, 19]) {
+  // not a fixed list of programs: when a department settles its last conflict it is deleted from the file, and the deploy must not fail for it
+  for (const id of Object.keys(raw.programs ?? {}).filter((p) => raw.programs[p].conflicts?.length)) {
     const list = s.programs[id]?.conflicts ?? [];
-    assert.ok(list.length >= 1, `program ${id} has a conflict`);
     assert.equal(
       list.length,
       raw.programs[id].conflicts.length,
       `none of program ${id}'s conflicts was dropped by cleanSettings`
     );
-    const years = cat.programs.find((p) => p.id === id).startYears;
+    const years = cat.programs.find((p) => p.id === Number(id)).startYears;
     for (const c of list) {
       assert.ok(
         c.cohorts.every((y) => years.includes(y)),
