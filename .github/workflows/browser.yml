@@ -24,7 +24,6 @@ jobs:
         browser: [webkit, chromium, firefox]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    continue-on-error: ${{ matrix.browser != 'webkit' }} # no mail from the new engines until their first runs are read; remove once they are green
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
