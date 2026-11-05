@@ -299,8 +299,14 @@ test('keyboard: the first 60 Tab stops of each step show a focus ring, in docume
           window.__prev &&
           !(window.__prev === e && e.type === 'time') &&
           !(window.__prev.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING);
+        // Tab past the last stop: Firefox leaves the focus where it was. A trap on any other element, or in the other two engines, still fails below.
+        const stops = [...document.querySelectorAll('a[href], button, input, select, textarea, summary, [tabindex]')].filter(
+          (x) => x.tabIndex >= 0 && !x.disabled && x.checkVisibility()
+        );
+        const left = window.__prev === e && e === stops.at(-1);
         window.__prev = e;
         return {
+          left,
           id: e.dataset.k ?? e.id ?? e.tagName,
           ring: st.outlineStyle !== 'none' && parseFloat(st.outlineWidth) >= 2,
           tabindex: e.tabIndex,
@@ -308,7 +314,7 @@ test('keyboard: the first 60 Tab stops of each step show a focus ring, in docume
           body: e === document.body
         };
       });
-      if (s.body) break; // Tab left the page
+      if (s.body || (s.left && process.env.BROWSER === 'firefox')) break; // Tab left the page
       stops.push(s.id);
       if (!s.ring) bad.push(`${hash || 'plan'}: ${s.id}: no focus ring`);
       if (s.tabindex > 0) bad.push(`${hash || 'plan'}: ${s.id}: positive tabindex`);
