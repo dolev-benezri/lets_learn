@@ -3,12 +3,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, checkYear, bestCredits, yearOrder, shuffleSame, SUITES, changedSinceHead
+  dataRules, crossProgram, oracle, checkPlan, checkYearPlan, checkFile, checkYear, bestCredits, yearOrder, shuffleSame, scenarios, SUITES, changedSinceHead
 } from '../scripts/check-real.mjs';
 import { mini } from './fixtures/mini-data.mjs';
 import { fixture } from './fixtures/solver-data.mjs';
 import { real } from './fixtures/real.mjs';
-import { search, showWeights } from '../web/solver-core.js';
+import { DEFAULT } from '../web/app.js';
+import { search, searchYear, showWeights } from '../web/solver-core.js';
 import { classify, modeFor } from '../web/rules.js';
 
 const req = (...ids) => ({ kind: 'קדם', anyOf: ids.map((id) => ({ id, name: id ?? 'outside' })) });
@@ -197,4 +198,23 @@ test('sample: 10-2024, 19-2026, 30-2026 semester א pass the record, plan and me
   // S2 too: these cohorts are past study year 1, where S1 (nothing passed) leaves almost nothing to plan
   for (const f of SAMPLE) assert.deepEqual(checkFile(f, real(f), { scenarios: ['S1', 'S2'] }), [], f);
   assert.ok(Date.now() - t0 < 20000 * (process.env.CI ? 3 : 1), `${Date.now() - t0} ms`);
+});
+
+// A witness on the frozen real data: 5 ב׳ plans per א׳ alternative missed a year plan that opens more courses (docs/ISSUES.md, section 25).
+test('searchYear: enough ב׳ plans per א׳ alternative to find the plan that opens more (30-2026, sorted by courses opened)', () => {
+  const dataA = real('2027-1/30-2026.json'),
+    dataB = real('2027-2/30-2026.json'),
+    { state, yearList } = scenarios(dataA)[1];
+  const best = searchYear({
+    dataA,
+    dataB,
+    state: { ...state, sortBy: 'unlocks' },
+    yearList,
+    constraints: DEFAULT.constraints,
+    weights: { ...DEFAULT.weights, unlocks: 1e5 },
+    friends: [],
+    timeLimitMs: Infinity // the breadth is what is tested, not how fast this machine is
+  }).results[0];
+  assert.equal(best.missing.length, 0);
+  assert.ok(best.unlocks >= 45, `opens ${best.unlocks}`);
 });
