@@ -431,6 +431,8 @@ main { min-width:0; }
   background:var(--danger-soft);
   color:var(--danger);
 }
+.cap-preview { flex-wrap:wrap; }
+.cap-preview > span { flex:1 1 0; min-width:60%; overflow-wrap:anywhere; }
 .notice {
   display:flex;
   align-items:center;

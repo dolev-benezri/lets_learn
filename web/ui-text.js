@@ -82,6 +82,25 @@ export function compareAlts(a, b, data) {
   if (u) out.push(`פותחת ${count(Math.abs(u), 'קורס אחד', 'קורסים')} ${u > 0 ? 'יותר' : 'פחות'}`);
   return out.length ? out : ['אותם קורסים, שיבוץ אחר'];
 }
+// What one more credit would change: the best plan at the higher cap against the best now. now / wider: planFacts() in ui-grid.js.
+export function capPreviewText({ cap, now, wider, nameOf, year = false, partial = false }) {
+  const cut = partial ? ' החיפוש נעצר בגלל מגבלת הזמן, אז התשובה חלקית.' : '';
+  if (!wider || (wider.groups.length === now.groups.length && wider.groups.every((g) => now.groups.includes(g))))
+    return { changed: false, text: `גם עם תקרה של ${cap} נ״ז לא נמצאה מערכת אחרת.${cut}` };
+  const added = wider.courses.filter((c) => !now.courses.includes(c)),
+    gone = now.courses.filter((c) => !wider.courses.includes(c)),
+    more = wider.unlocks - now.unlocks;
+  const parts = [
+    added.length && `נכנס גם ${added.map(nameOf).join(', ')}`,
+    gone.length && `בלי ${gone.map(nameOf).join(', ')}`,
+    more > 0 && (more === 1 ? 'נפתח עוד קורס אחד' : `נפתחים עוד ${more} קורסים`),
+    more < 0 && (more === -1 ? 'נפתח קורס אחד פחות' : `נפתחים ${-more} קורסים פחות`)
+  ].filter(Boolean);
+  return {
+    changed: true,
+    text: `${year ? 'בכל השנה ' : ''}${wider.credits} נ״ז: ${parts.length ? parts.join(', ') : 'אותם קורסים, שיבוץ אחר'}.${cut}`
+  };
+}
 export const count = (n, one, many) => (n === 1 ? one : `${n} ${many}`); // Hebrew has no "1 קבוצות"
 export const courseCount = (n) => count(n, 'קורס אחד', 'קורסים');
 export const groupCount = (n) => count(n, 'קבוצה אחת', 'קבוצות');

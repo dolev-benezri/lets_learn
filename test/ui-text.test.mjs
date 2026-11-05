@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   leftOutText,
+  capPreviewText,
   closeExamLines,
   outsideHoursText,
   groupNumber,
@@ -422,4 +423,26 @@ test('reportMailto: the address cannot add a header, a second recipient or a fra
   const i = url.indexOf('?subject=');
   assert.ok(i > 0 && !/[?&,#]/.test(url.slice('mailto:'.length, i)), url);
   assert.equal([...new URLSearchParams(url.slice(i + 1)).keys()].join(), 'subject,body');
+});
+
+test('capPreviewText: what one more credit adds, what it drops, and when it changes nothing', () => {
+  const nameOf = (id) => ({ a: 'אלגברה', b: 'ביולוגיה', c: 'כימיה' })[id];
+  const now = { groups: ['1', '2'], courses: ['a', 'b'], credits: 20, unlocks: 3 };
+  const same = capPreviewText({ cap: 21, now, wider: { ...now, groups: ['2', '1'] }, nameOf });
+  assert.equal(same.changed, false);
+  assert.match(same.text, /גם עם תקרה של 21 נ״ז/);
+  assert.equal(capPreviewText({ cap: 21, now, wider: null, nameOf }).changed, false);
+  const more = capPreviewText({ cap: 21, now, wider: { groups: ['1', '2', '3'], courses: ['a', 'b', 'c'], credits: 21, unlocks: 5 }, nameOf });
+  assert.equal(more.changed, true);
+  assert.equal(more.text, '21 נ״ז: נכנס גם כימיה, נפתחים עוד 2 קורסים.');
+  const one = capPreviewText({ cap: 21, now, wider: { groups: ['1', '3'], courses: ['a', 'c'], credits: 21, unlocks: 4 }, nameOf });
+  assert.equal(one.text, '21 נ״ז: נכנס גם כימיה, בלי ביולוגיה, נפתח עוד קורס אחד.');
+  const swap = capPreviewText({ cap: 21, now, wider: { ...now, groups: ['1', '9'] }, nameOf });
+  assert.equal(swap.text, '20 נ״ז: אותם קורסים, שיבוץ אחר.');
+  const year = capPreviewText({ cap: 21, now, wider: { ...now, groups: ['1', '9'], credits: 41, unlocks: 2 }, nameOf, year: true });
+  assert.equal(year.text, 'בכל השנה 41 נ״ז: נפתח קורס אחד פחות.');
+  const cut = (wider) => capPreviewText({ cap: 21, now, wider, nameOf, partial: true });
+  assert.match(cut(null).text, /נעצר בגלל מגבלת הזמן/, 'a search cut short does not claim there is no other plan');
+  assert.doesNotMatch(cut(null).text, /לא נמצאה מערכת אחרת\.$/);
+  assert.match(cut({ ...now, groups: ['1', '9'] }).text, /^20 נ״ז: אותם קורסים, שיבוץ אחר\. .*נעצר בגלל מגבלת הזמן/);
 });

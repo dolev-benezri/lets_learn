@@ -994,3 +994,67 @@ test('320 px: the panel buttons stay inside the screen', async (t) => {
     assert.ok(box.x >= 0 && box.x + box.width <= 320, `${a}: ${JSON.stringify(box)}`);
   }
 });
+
+// #11: the cap stays hard. On request one more search runs at cap + 1 and says what it would change; nothing moves until it is applied.
+const CAPPED = (scope) => ({
+  ...DONE,
+  'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope, constraints: { maxCredits: 18 } })
+});
+const capStored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).constraints.maxCredits);
+for (const [name, scope] of [['one semester', 'א'], ['a year', 'year']]) {
+  test(`${name}: one credit above the cap is shown on request and changes nothing until it is applied`, async (t) => {
+    const page = await visit(t, { width: 320, height: 700 }, CAPPED(scope));
+    await weekReady(page);
+    const before = await page.locator('#pills').innerText();
+    await page.locator('[data-act="capProbe"]').focus(); // by keyboard: Safari does not focus a button it clicks
+    await page.keyboard.press('Enter');
+    const apply = page.locator('[data-act="capApply"]');
+    await apply.waitFor({ timeout: 30000 });
+    const line = page.locator('.cap-preview');
+    assert.match(await line.innerText(), /נ״ז:/);
+    assert.ok(await page.evaluate(() => document.activeElement?.closest('.cap-preview')), 'the focus lands on the answer');
+    const inside = await line.evaluate((el) => [el, ...el.querySelectorAll('*')].every((x) => {
+      const r = x.getBoundingClientRect();
+      return r.left >= 0 && r.right <= 320;
+    }));
+    assert.ok(inside, 'the sentence and the button stay on the screen at 320 px');
+    assert.equal(await capStored(page), 18, 'not saved yet');
+    assert.equal(await page.locator('#pills').innerText(), before, 'the plan on the screen did not change');
+    await apply.click();
+    await page.locator('[data-act="capProbe"]').waitFor();
+    assert.equal(await capStored(page), 19);
+    assert.notEqual(await page.locator('#pills').innerText(), before, 'the plan it showed is the plan now');
+    await page.evaluate(() => (location.hash = '#prefs'));
+    assert.equal(await page.locator('[data-k="maxCredits"]').inputValue(), '19', 'the field says the new cap');
+  });
+}
+
+test('any new search drops the answer about the old settings', async (t) => {
+  const page = await visit(t, 'desktop', CAPPED('א'));
+  await weekReady(page);
+  await page.locator('[data-act="capProbe"]').click();
+  await page.locator('[data-act="capApply"]').waitFor({ timeout: 30000 });
+  await page.locator('label:has(input[name="bscope"][value="year"])').click();
+  assert.equal(await page.locator('.cap-preview').count(), 0, 'gone at once, not when the new search ends');
+  await page.locator('[data-act="capProbe"]').waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('[data-act="capApply"]').count(), 0);
+  assert.equal(await capStored(page), 18);
+});
+
+test('a check that fails says so, keeps the plan, and can be tried again', async (t) => {
+  const page = await visit(t, 'desktop', CAPPED('א'));
+  await weekReady(page);
+  await page.route('**/solver-worker.js', (r) => r.abort());
+  await page.locator('[data-act="capProbe"]').click();
+  await page.locator('#toast').filter({ hasText: /הבדיקה לא הצליחה/ }).waitFor({ timeout: 30000 });
+  const again = page.locator('[data-act="capProbe"]');
+  await again.waitFor();
+  assert.equal(await again.getAttribute('aria-disabled'), null);
+  assert.equal(await capStored(page), 18);
+});
+
+test('no cap, no button', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  assert.equal(await page.locator('[data-act="capProbe"]').count(), 0);
+});

@@ -31,6 +31,7 @@ import {
   progressRanks,
   rankText,
   isPair,
+  planFacts,
   semResult,
   resCourses,
   resGroups,
@@ -45,6 +46,7 @@ import {
   partialNote,
   hebYear,
   courseCount,
+  capPreviewText,
   count,
   compareAlts,
   disclaimerHtml,
@@ -194,6 +196,27 @@ function colorOrder() {
 // Whether the search left at least one alternative with a course (renderView's nAlt)
 export const hasAlternatives = () => (ui.last?.results ?? []).some((r) => resCourses(r).length);
 
+// #11: the cap stays hard; on request, what one credit more would change. Beside the left-out line: it wraps on a phone, which the swipe row does not.
+function capLine(best, nameOf) {
+  const p = ui.capProbe;
+  if (app.state.constraints.maxCredits == null || !best || ui.running) return '';
+  if (!p?.res) {
+    const busy = p ? ' aria-disabled="true"' : '';
+    return `<p class="notice cap-preview">${icon('cap')}<button type="button" class="btn" data-act="capProbe" data-k="capProbe"${busy}>${p ? 'בודקים…' : 'מה אם נקודה אחת יותר?'}</button></p>`;
+  }
+  const facts = (r) => r && planFacts(r, app.data),
+    { changed, text } = capPreviewText({
+      cap: p.cap,
+      now: facts(best),
+      wider: facts(p.res.results?.[0]),
+      nameOf,
+      year: isPair(best),
+      partial: p.res.partial
+    });
+  return `<p class="notice cap-preview">${icon('cap')}<span tabindex="-1">${esc(text)}</span>${
+    changed ? `<button type="button" class="btn" data-act="capApply" data-k="capApply">החל תקרה של ${p.cap} נ״ז</button>` : ''
+  }</p>`;
+}
 export function renderView() {
   const { state } = app;
   const results = ui.last?.results ?? [];
@@ -356,6 +379,7 @@ export function renderView() {
     const outsideH = outsideHoursText((1 - (res.breakdown.timeWindow ?? 1)) * 10);
     msg +=
       (leftOut.length ? note('info', leftOutText(leftOut)) : '') +
+      capLine(results[0], nameOf) +
       closeExamLines(res.closeExams ?? [], nameOf).map((t) => note('alert', t)).join('') +
       (outsideH && !state.constraints.windowHard
         ? `<p class="notice">${icon('clock')}<span>${outsideH} אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.</span></p>`
