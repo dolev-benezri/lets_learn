@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { courseIds, detailsToPull, pullExams } from '../scripts/pull-exams.mjs';
+import { courseIds, detailsToPull, pullExams, examsFile } from '../scripts/pull-exams.mjs';
 import { parseGroups } from '../scripts/parse.mjs';
 import { loadPulledExams } from '../scripts/scrape.mjs';
 
@@ -61,7 +61,8 @@ test('courseIds: a semester not published yet is skipped; a course with no group
 });
 
 test('scripts/exams-2027.json: every row is one the build and validate accept', async () => {
-  const rows = await loadPulledExams(2027);
+  const { rows, pulledAt } = await loadPulledExams(2027);
+  assert.ok(!Number.isNaN(Date.parse(pulledAt)), 'the file says when it was pulled');
   assert.ok(rows.length > 0, 'the file exists and has rows');
   for (const r of rows) {
     assert.ok(['א', 'ב', 'קיץ'].includes(r.semester), r.courseId);
@@ -74,4 +75,11 @@ test('scripts/exams-2027.json: every row is one the build and validate accept', 
       assert.ok(m.date >= '2026-09-01' && m.date <= '2027-11-30', `${r.courseId} ${m.date}`);
     }
   }
+});
+
+test('examsFile: one row a line, with the time of the pull', () => {
+  const rows = [{ semester: 'א', courseId: '1' }, { semester: 'ב', courseId: '1' }];
+  const text = examsFile(rows, '2026-11-02T08:22:00.000Z');
+  assert.deepEqual(JSON.parse(text), { pulledAt: '2026-11-02T08:22:00.000Z', rows });
+  assert.equal(text.split('\n').filter((l) => l.startsWith('{"semester"')).length, 2);
 });

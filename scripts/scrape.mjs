@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { parseProgram, parseGroups, parseDetails, parseExams } from './parse.mjs';
+import { parseProgram, parseGroups, parseDetails, parseExams, parseCourseExams, detailsSemester } from './parse.mjs';
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
 import { officialDrift, OFFICIAL } from './audit.mjs';
 import PROGRAMS from './programs.json' with { type: 'json' };
@@ -389,7 +389,10 @@ export async function markPublished(cacheDir, statusFile) {
 }
 
 // Exam dates pulled by hand from the course pages (scripts/pull-exams.mjs); none for a year with no file.
-export const loadPulledExams = async (year) => (await readJson(new URL(`./exams-${year}.json`, import.meta.url))) ?? [];
+export async function loadPulledExams(year) {
+  const file = await readJson(new URL(`./exams-${year}.json`, import.meta.url));
+  return { rows: file?.rows ?? [], pulledAt: file?.pulledAt ?? null };
+}
 
 const groupsKey = (id) => `prgname=S_LOOK_FOR_NOSE&arguments=-N${id}`;
 
@@ -402,7 +405,8 @@ export async function run({
   log = console.error,
   check = validate,
   hold = () => false,
-  pulledExams = []
+  pulledExams = [],
+  pulledAt = null
 }) {
   const units = unitsOf(opt, programs);
 
@@ -428,7 +432,8 @@ export async function run({
   const ids = [...new Set(units.flatMap((u) => u.lists.flatMap((l) => l.courses.map((c) => c.id))))];
   // A course no list marks נלמד has no groups (it matched in every snapshot, research A2): no request for it.
   const offered = new Set(units.flatMap((u) => u.lists.flatMap((l) => l.courses.filter((c) => c.offered).map((c) => c.id))));
-  const raw = {};
+  const raw = {},
+    pageExams = [];
   for (const [i, id] of ids.entries()) {
     if (!offered.has(id)) {
       raw[id] = { groups: [], details: null };
@@ -437,8 +442,15 @@ export async function run({
     }
     const groups = parseGroups(await request(groupsKey(id)));
     const args = groups.find((g) => g.primary && g.detailsArgs)?.detailsArgs;
-    const details = args ? parseDetails(await request(`prgname=S_CourseDetails&arguments=${args}`)) : null;
+    const detailsKey = `prgname=S_CourseDetails&arguments=${args}`,
+      page = args ? await request(detailsKey) : null,
+      details = page ? parseDetails(page) : null;
     raw[id] = { groups, details };
+    // The page holds the exam dates too, at no extra request. Read before the by-hand pull, it is the older of the two. No dates on it says nothing: the pull stays.
+    const readAt = request.readAt?.get(detailsKey);
+    if (page && !(pulledAt && readAt && readAt < pulledAt))
+      for (const { kind, moeds } of parseCourseExams(page))
+        pageExams.push({ semester: detailsSemester(args), courseId: id, lecturer: null, kind, moeds });
     log(
       `[${i + 1}/${ids.length}] ${id}: ${groups.length} groups, ${details ? `${details.credits} credits` : 'no details'}`
     );
@@ -488,7 +500,7 @@ export async function run({
         department: u.cfg.deptName,
         lists: u.lists,
         raw,
-        exams: [...examsOf.get(u.cfg.dept), ...pulledExams],
+        exams: [...examsOf.get(u.cfg.dept), ...pageExams, ...pulledExams], // the first of a kind wins: official, then the page, then the pull
         fetchedAt,
         warnings: buildWarnings,
         specializations: u.cfg.specializations,
@@ -558,8 +570,8 @@ async function main() {
   const request = cacheDir
     ? cachedRequester(live, cacheDir, requesterOptions(opt))
     : live;
-  const pulledExams = await loadPulledExams(opt.year);
-  const summary = await run({ opt, request, hold: () => behind && request.deferred.length > 0, pulledExams });
+  const { rows: pulledExams, pulledAt } = await loadPulledExams(opt.year);
+  const summary = await run({ opt, request, hold: () => behind && request.deferred.length > 0, pulledExams, pulledAt });
   if (request.deferred?.length) console.error(`deferred ${request.deferred.length} stale answers to the next night`);
   if (cacheDir && !summary.includes('held')) await markPublished(cacheDir, statusFile);
   console.log(summary);

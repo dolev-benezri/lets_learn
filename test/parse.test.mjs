@@ -7,7 +7,7 @@ import {
   parseDay,
   parseDetails,
   parseExams,
-  parseCourseExams,
+  parseCourseExams, detailsSemester,
   toIsoDate,
   isRejected,
   isThrottled
@@ -205,4 +205,11 @@ test('parseTracks: the tracks of a department; parseTrackLists: the list codes o
     { code: 20116, name: 'התמחות מערכות הספק ואנרגיה-בחירה' }
   ]);
   assert.deepEqual(parseTrackLists('<html></html>'), []);
+});
+
+test('detailsSemester: the second argument of a details link', () => {
+  assert.equal(detailsSemester('-N90903,-N1,-N1,-N279090301,-N'), 'א');
+  assert.equal(detailsSemester('-N90903,-N2,-N1,-N279090301,-N'), 'ב');
+  assert.equal(detailsSemester('-N90903,-N3,-N1,-N279090301,-N'), 'קיץ');
+  assert.equal(detailsSemester('-N90903,-N7'), undefined);
 });

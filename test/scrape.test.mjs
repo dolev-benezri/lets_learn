@@ -330,7 +330,7 @@ test('run passes the pulled exam rows to the build; a year with no file has none
   const written = JSON.parse(readFileSync(join(root, '2027-1', '77-2026.json'), 'utf8'));
   assert.equal(written.examsPublished, true);
   assert.equal(written.courses['90903'].groups.find((x) => x.primary).exams[0].date, '2027-02-04');
-  assert.deepEqual(await loadPulledExams(2099), []);
+  assert.deepEqual(await loadPulledExams(2099), { rows: [], pulledAt: null });
 });
 
 test('every committed data file carries the specializations, their lists and the degree', () => {
@@ -1014,4 +1014,77 @@ test('writeResults: groupsAt stays out of the data file and over the old map, so
   });
   assert.deepEqual(json(d.status).groupsAt, { 1: 'T1', 2: 'T2' });
   assert.equal(readFileSync(d.file('2027-1'), 'utf8'), before, 'a new time alone does not touch the data file');
+});
+
+// Exam dates from the course pages the night already reads. Order: the official table, then a page read after the by-hand pull, then the pull.
+const EXAM_ID = '10016';
+const PULLED_AT = '2026-11-02T08:22:00.000Z';
+const pulledRow = (semester, ...dates) => ({
+  semester,
+  courseId: EXAM_ID,
+  lecturer: null,
+  kind: 'בחינה',
+  moeds: dates.map((date, i) => ({ moed: i + 1, date, time: '09:00' }))
+});
+const pageWith = (...dates) =>
+  `<p><strong>תאריך בחינה</strong> ${dates.map((d, i) => `מועד ${i + 1}: בחינה ${d.split('-').reverse().join('/')} 09:00`).join(' ')}</p>`;
+async function examRun({ page = '', readAt, pulled = [], pulledAt = PULLED_AT, officialTable = false } = {}) {
+  const root = join(mkdtempSync(join(tmpdir(), 'page-exams-')), 'data');
+  const inner = site(),
+    calls = [];
+  const request = async (query, form) => {
+    calls.push(query ?? JSON.stringify(form));
+    if (!query && !officialTable) return fx('exams-nodata.html');
+    const html = await inner(query, form);
+    return query?.startsWith('prgname=S_CourseDetails') ? html + page : html;
+  };
+  if (readAt) request.readAt = { get: () => readAt };
+  await run({ opt, request, dataDir: root, log: () => {}, check: noErrors, pulledExams: pulled, pulledAt });
+  const data = json(`${root}/2027-1/30-2026.json`);
+  const dates = (id = EXAM_ID) => data.courses[id].groups.find((g) => g.primary).exams.filter((e) => e.kind === 'בחינה').map((e) => e.date);
+  return { calls, dates, data };
+}
+const AFTER = '2026-11-20T00:00:00.000Z',
+  BEFORE = '2026-11-01T00:00:00.000Z';
+
+test('exams: a date changed on the course page wins over the pull, and a moed removed from the page goes', async () => {
+  const pulled = [pulledRow('א', '2027-02-01', '2027-03-01')];
+  const { dates } = await examRun({ page: pageWith('2027-02-09'), readAt: AFTER, pulled });
+  assert.deepEqual(dates(), ['2027-02-09']);
+});
+
+test('exams: a page with no dates leaves the pull as it is', async () => {
+  const pulled = [pulledRow('א', '2027-02-01', '2027-03-01')];
+  const { dates } = await examRun({ readAt: AFTER, pulled });
+  assert.deepEqual(dates(), ['2027-02-01', '2027-03-01']);
+});
+
+test('exams: a page read before the pull does not override it', async () => {
+  const pulled = [pulledRow('א', '2027-02-01')];
+  const { dates } = await examRun({ page: pageWith('2027-02-09'), readAt: BEFORE, pulled });
+  assert.deepEqual(dates(), ['2027-02-01']);
+});
+
+test('exams: with no pull at all a page counts', async () => {
+  const { dates } = await examRun({ page: pageWith('2027-02-09'), readAt: BEFORE, pulledAt: null });
+  assert.deepEqual(dates(), ['2027-02-09']);
+});
+
+test('exams: the official table stays first', async () => {
+  const plain = await examRun({ officialTable: true });
+  const official = Object.keys(plain.data.courses).find((id) => plain.data.courses[id].groups.some((g) => g.primary && g.exams.length));
+  assert.ok(official, 'the fixture table names a course of the list');
+  const { dates } = await examRun({ page: pageWith('2027-02-09'), readAt: AFTER, officialTable: true });
+  assert.deepEqual(dates(official), plain.dates(official));
+  assert.notDeepEqual(dates(official), ['2027-02-09']);
+});
+
+test('exams: reading the dates costs no request', async () => {
+  const pulled = [pulledRow('א', '2027-02-01')];
+  const without = await examRun({ pulled }),
+    withDates = await examRun({ page: pageWith('2027-02-09'), readAt: AFTER, pulled });
+  assert.deepEqual(withDates.calls, without.calls);
+  const count = (start) => withDates.calls.filter((q) => q.startsWith(start)).length;
+  assert.ok(count('prgname=S_LOOK_FOR_NOSE') > 0);
+  assert.equal(count('prgname=S_CourseDetails'), count('prgname=S_LOOK_FOR_NOSE'), 'one details page per course asked for its groups, as before');
 });
