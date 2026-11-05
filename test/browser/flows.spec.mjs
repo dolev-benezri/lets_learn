@@ -2,13 +2,12 @@
 // The student is the fictional one of scripts/readme-shots.mjs (mechanical engineering, cohort 2026, year ב׳). The site must never reach outside its own server.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { webkit } from 'playwright';
 import { readFile } from 'node:fs/promises';
-import { SITE, SIZES, STUDENT, DONE, gradeSheetPdf, visit as visitIn } from './helpers.mjs';
+import { SITE, SIZES, STUDENT, DONE, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
-  browser = await webkit.launch();
+  browser = await launch();
 });
 after(async () => {
   await browser?.close();

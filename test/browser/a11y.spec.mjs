@@ -3,14 +3,13 @@
 // The first-visit tour is marked seen for these specs (helpers.mjs); the tour test below shows it on purpose.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { webkit } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
-import { SITE, SIZES, STUDENT, DONE, gradeSheetPdf, visit as visitIn } from './helpers.mjs';
+import { SITE, SIZES, STUDENT, DONE, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
 import { TOUR_INTRO, TOUR_PLANS } from '../../web/tour.js';
 
 let browser;
 before(async () => {
-  browser = await webkit.launch();
+  browser = await launch();
 });
 after(async () => {
   await browser?.close();

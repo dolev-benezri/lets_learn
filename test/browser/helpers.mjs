@@ -1,7 +1,10 @@
 // Shared by the browser specs: the fictional student, the seeded storage, the synthetic grade-sheet PDF and visit().
 import assert from 'node:assert/strict';
+import * as playwright from 'playwright';
 
 export const SITE = process.env.SITE_URL;
+// BROWSER=chromium or firefox; WebKit, the engine of iPhone Safari, when not set.
+export const launch = () => playwright[process.env.BROWSER || 'webkit'].launch();
 export const SIZES = { phone: { width: 375, height: 812 }, desktop: { width: 1280, height: 800 } };
 export const PASSED = [
   '10016',

@@ -1,4 +1,5 @@
-# The real-browser checks (WebKit, the engine of iPhone Safari): flows, tour and accessibility. They mail the owner when they fail and never stop a deploy.
+# The real-browser checks in three engines (WebKit is the engine of iPhone Safari; Chromium covers Android and desktop Chrome): flows, tour and accessibility. They mail the owner
+# when they fail and never stop a deploy.
 # Not on the nightly data push: they read the frozen copy, so a night changes nothing they check.
 name: browser
 
@@ -16,14 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  webkit:
+  browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [webkit, chromium, firefox]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    continue-on-error: ${{ matrix.browser != 'webkit' }} # no mail from the new engines until their first runs are read; remove once they are green
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
       - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps webkit
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npm run test:browser
+        env:
+          BROWSER: ${{ matrix.browser }}

@@ -31,7 +31,7 @@ npm test
 
 רענון העותק הוא צעד ידני: `node test/fixtures/real.mjs <commit>`. באותו קומיט מעדכנים את ה-commit שהבדיקה `frozen data: SOURCE is ...` מצפה לו, ואת הבדיקות שהנתונים החדשים שוברים. קובץ חדש בעותק נכנס קודם לרשימה `FILES`.
 
-### בדיקות בדפדפן אמיתי (WebKit)
+### בדיקות בדפדפן אמיתי
 
 ```bash
 npm install
@@ -39,7 +39,7 @@ npx playwright install webkit
 npm run test:browser
 ```
 
-מפעיל שרת מקומי על `web/` ומריץ כל קובץ `test/browser/*.spec.mjs` בדפדפן WebKit (המנוע של Safari באייפון), במסך של טלפון (375×812) ובמסך מחשב (1280×800). הבדיקות האלה לא חלק מ-`npm test`. קובץ נתונים שיש לו עותק ב-`test/fixtures/real` מוגש מהעותק, כדי שמקום שהתמלא בלילה לא יכשיל בדיקה. אם האתר פונה לכתובת מחוץ לשרת המקומי, הבדיקה נכשלת. בדיקה על אייפון אמיתי: `docs/IPHONE-CHECKLIST.md`.
+מפעיל שרת מקומי על `web/` ומריץ כל קובץ `test/browser/*.spec.mjs` בדפדפן WebKit (המנוע של Safari באייפון), או בדפדפן ש-`BROWSER` מציין (`chromium`, `firefox`, אחרי `npx playwright install` שלו), במסך של טלפון (375×812) ובמסך מחשב (1280×800). הבדיקות האלה לא חלק מ-`npm test`. קובץ נתונים שיש לו עותק ב-`test/fixtures/real` מוגש מהעותק, כדי שמקום שהתמלא בלילה לא יכשיל בדיקה. אם האתר פונה לכתובת מחוץ לשרת המקומי, הבדיקה נכשלת. בדיקה על אייפון אמיתי: `docs/IPHONE-CHECKLIST.md`.
 
 ## צילומי המסך ב-README
 
@@ -63,7 +63,7 @@ flowchart RL
 3. **כתיבה בטוחה:** קבצים נכתבים רק אם כל הבדיקות עוברות, וקובץ שלא השתנה לא נכתב מחדש. `validate()` דורש מספר מינימלי של קורסים ואת קורס העוגן בכל מחזור ובכל סמסטר. `status.json` מתעדכן בכל ריצה מוצלחת, והאתר קורא ממנו את שורת "נבדק לפני..." שבכותרת, ו-`catalog.json` קובע אילו תוכניות ומחזורים מוצגים.
 4. **ריצה לילית:** [ci/gitlab-scrape.yml](../ci/gitlab-scrape.yml) רץ בתזמון של GitLab CI (השרתים של GitHub Actions לא מצליחים להתחבר לידיעון), מוסיף commit ודוחף ל-`main`. הודעת ה-commit היא שורת סיכום אחת, עם עד 6 קבצים ו-"ועוד N מתוך M קבצים".
 5. **פריסה:** push ל-`main` שנוגע ב-`web/`, ב-`test/`, ב-`scripts/`, ב-`package.json`, ב-`package-lock.json` או ב-`.github/workflows/` מפעיל את [.github/workflows/deploy.yml](../.github/workflows/deploy.yml): כל הבדיקות, ואז פרסום של `web/` ב-GitHub Pages.
-6. **בדיקות שלא עוצרות פריסה ושולחות מייל כשהן נכשלות:** [checks.yml](../.github/workflows/checks.yml) על הנתונים החיים, [browser.yml](../.github/workflows/browser.yml) בדפדפן, אחרי שינוי בקוד האתר, ו-[freshness.yml](../.github/workflows/freshness.yml) פעם ביום, כשהנתונים הפסיקו להתעדכן.
+6. **בדיקות שלא עוצרות פריסה ושולחות מייל כשהן נכשלות:** [checks.yml](../.github/workflows/checks.yml) על הנתונים החיים, [browser.yml](../.github/workflows/browser.yml) ב-WebKit, ב-Chromium וב-Firefox, אחרי שינוי בקוד האתר (בשלב הזה רק כשל ב-WebKit מכשיל את הריצה ושולח מייל; כשל בשני האחרים נראה רק בדף הריצה), ו-[freshness.yml](../.github/workflows/freshness.yml) פעם ביום, כשהנתונים הפסיקו להתעדכן.
 
 הנתונים נשמרים בקבצים `web/data/afeka/{שנה}-{סמסטר}/{תוכנית}-{מחזור}.json`, למשל `2027-1/30-2026.json`.
 
