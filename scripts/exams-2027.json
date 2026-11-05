@@ -1,4 +1,6 @@
-[
+{
+"pulledAt": "2026-11-02T08:22:00.000Z",
+"rows": [
 {"semester":"א","courseId":"10010","lecturer":null,"kind":"בחינה","moeds":[{"moed":1,"date":"2027-01-25","time":"09:00"},{"moed":2,"date":"2027-02-23","time":"09:00"}]},
 {"semester":"ב","courseId":"10010","lecturer":null,"kind":"בחינה","moeds":[{"moed":1,"date":"2027-06-30","time":"13:00"},{"moed":2,"date":"2027-07-21","time":"13:00"}]},
 {"semester":"א","courseId":"10013","lecturer":null,"kind":"בחינה","moeds":[{"moed":1,"date":"2027-02-05","time":"09:00"},{"moed":2,"date":"2027-02-26","time":"09:00"}]},
@@ -316,3 +318,4 @@
 {"semester":"ב","courseId":"90954","lecturer":null,"kind":"בחינה","moeds":[{"moed":1,"date":"2027-07-11","time":"09:00"},{"moed":2,"date":"2027-08-01","time":"09:00"}]},
 {"semester":"א","courseId":"90955","lecturer":null,"kind":"בחינה","moeds":[{"moed":1,"date":"2027-02-07","time":"09:00"},{"moed":2,"date":"2027-02-28","time":"09:00"}]}
 ]
+}

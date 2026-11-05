@@ -1,20 +1,19 @@
 #!/usr/bin/env node
-// By hand, not nightly: exam dates from the course pages into scripts/exams-{year}.json. The nightly build reads that file, so exams cost it no request.
+// By hand, not nightly: exam dates from the course pages into scripts/exams-{year}.json. The nightly build reads that file, so exams cost it no request. It also reads the
+// dates on the one page per course it fetches anyway, so this file matters most for a course's other semesters.
 // Afeka's exam table (S_EXAMS) was empty for 2027 when the course pages already had the dates. If the table is published, its rows go first (buildDataset).
 // node scripts/pull-exams.mjs [--year 2027]   Stopped? Run it again and it continues. To refresh the dates, delete .yedion-exams-cache first.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { parseCourseExams, parseGroups } from './parse.mjs';
+import { detailsSemester, parseCourseExams, parseGroups } from './parse.mjs';
 import { cachedRequester, makeRequester, patient, yearCache } from './scrape.mjs';
-
-const SEMESTER = { '-N1': 'א', '-N2': 'ב', '-N3': 'קיץ' }; // the second argument of a details link
 
 // ponytail: one group per course and semester, since no lecturer differed in a sample of 41 pairs (2026-11-02). Pull by lecturer if a course ever differs.
 export function detailsToPull(groups) {
   const out = new Map();
   for (const g of groups) {
-    const semester = g.primary && g.detailsArgs ? SEMESTER[g.detailsArgs.split(',')[1]] : null;
+    const semester = g.primary && g.detailsArgs ? detailsSemester(g.detailsArgs) : null;
     if (semester && !out.has(semester)) out.set(semester, { semester, args: g.detailsArgs });
   }
   return [...out.values()];
@@ -45,6 +44,10 @@ export function courseIds(year, root = 'web/data/afeka') {
   return [...ids].sort();
 }
 
+// pulledAt: a course page the nightly read later than this wins over the row here (scrape.mjs).
+export const examsFile = (rows, pulledAt) =>
+  `{\n"pulledAt": ${JSON.stringify(pulledAt)},\n"rows": [\n${rows.map((r) => JSON.stringify(r)).join(',\n')}\n]\n}\n`;
+
 async function main() {
   const { year } = parseArgs({ options: { year: { type: 'string', default: '2027' } } }).values;
   const request = cachedRequester(patient(makeRequester(), { year }), await yearCache('.yedion-exams-cache', year));
@@ -52,7 +55,7 @@ async function main() {
   await request(null, { PRGNAME: 'Enter_Search', ARGUMENTS: '-A,,-A,ChangeYear', ChangeYear: year });
   const rows = await pullExams({ ids: courseIds(year), request });
   if (!rows.length) throw new Error('no exam on any course page: nothing written (did the page change?)');
-  writeFileSync(new URL(`./exams-${year}.json`, import.meta.url), `[\n${rows.map((r) => JSON.stringify(r)).join(',\n')}\n]\n`);
+  writeFileSync(new URL(`./exams-${year}.json`, import.meta.url), examsFile(rows, new Date().toISOString()));
   console.log(`${rows.length} rows written to scripts/exams-${year}.json`);
 }
 

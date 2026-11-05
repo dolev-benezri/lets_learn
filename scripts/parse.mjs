@@ -122,6 +122,10 @@ export function parseExams(html) {
     }));
 }
 
+const DETAILS_SEMESTER = { '-N1': 'א', '-N2': 'ב', '-N3': 'קיץ' };
+// The semester a details link is for: its second argument.
+export const detailsSemester = (args) => DETAILS_SEMESTER[args.split(',')[1]];
+
 // S_CourseDetails: the exam dates of one group, one row per kind. Only the block under the label: a course summary can hold any text.
 export function parseCourseExams(html) {
   const label = parse(html).querySelectorAll('strong').find((s) => s.text.includes('תאריך בחינה'));
