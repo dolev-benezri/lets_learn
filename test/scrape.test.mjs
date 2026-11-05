@@ -1053,6 +1053,8 @@ test('run: a new data error writes nothing, an old one passes, and --force passe
   await once(cycle(), { ...opt, force: true }, logs);
   assert.ok(logs.some((m) => /^SAFETY .*can never be taken/.test(m)), logs.join('\n'));
   await once(cycle()); // now it is in the published file, so it holds nothing back
+});
+
 // Exam dates from the course pages the night already reads. Order: the official table, then a page read after the by-hand pull, then the pull.
 const EXAM_ID = '10016';
 const PULLED_AT = '2026-11-02T08:22:00.000Z';
