@@ -298,6 +298,15 @@ Object.assign(globalThis, {
 run('advisor', () => {
   ACT.advisor();
 });
+run('cap-preview', () => {
+  const best = ui.last.results[0];
+  app.state.constraints.maxCredits = 99;
+  const drop = (r) => ({ ...r, groups: [...r.groups, 'x'], courses: r.courses.slice(1) }); // the plan without its first course, whose name holds the payload
+  ui.capProbe = { cap: 100, ms: 0, res: { results: [best.a ? { ...best, a: drop(best.a) } : drop(best)] } };
+  renderView();
+  ui.capProbe = null;
+  app.state.constraints.maxCredits = null;
+});
 run('friend-editor', () => {
   openFriendEditor({ friend: app.state.friends[0], onSave: () => null, returnFocusId: 'x' });
 });
@@ -324,7 +333,8 @@ test('every renderer got the payload and wrote it escaped (no element or on* att
     'map',
     'map-mini',
     'friend-editor',
-    'advisor'
+    'advisor',
+    'cap-preview'
   ];
   for (const s of scopes) {
     const mine = writes.filter((w) => w.scope === s);

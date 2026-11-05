@@ -230,6 +230,8 @@ export const shownTitle = () => $(Object.values(PAGE).find(([p]) => !$(p).hidden
 // state shared by the modules (sem: the shown semester of a year result)
 export const ui = {
   worker: null,
+  capProbe: null, // { gen, cap, ms, res }: the search one credit above the cap, while it holds for these settings
+  probeWorker: null,
   timer: null,
   last: null,
   cur: 0,

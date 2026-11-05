@@ -40,7 +40,7 @@ import {
   ui
 } from './ui-common.js';
 import { pinsWithoutSplit } from './solver-core.js';
-import { scheduleRun } from './ui-search.js';
+import { scheduleRun, probeCap, applyCapProbe } from './ui-search.js';
 import { renderBanner, renderView, go } from './ui-view.js';
 import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
@@ -197,6 +197,20 @@ export const ACT = {
     el.textContent = 'מחפש…';
     el.setAttribute('aria-disabled', 'true');
     scheduleRun(true);
+  },
+  capProbe(el) {
+    // the button says it is working until the answer replaces it
+    if (ui.capProbe || ui.running) return;
+    el.textContent = 'בודקים…';
+    el.setAttribute('aria-disabled', 'true');
+    probeCap();
+  },
+  capApply() {
+    if (ui.running || !applyCapProbe()) return;
+    save();
+    renderPrefs(); // its field shows the cap
+    renderView();
+    document.querySelector('[data-k="capProbe"]')?.focus({ preventScroll: true });
   },
   popClose: () => $('pop').hidePopover(),
   lecturer(el) {

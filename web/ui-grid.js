@@ -195,6 +195,13 @@ export const resCourses = (r) => (isPair(r) ? [...r.a.courses, ...(r.b?.courses 
 export const resGroups = (r) => (isPair(r) ? [...r.a.groups, ...(r.b?.groups ?? [])] : r.groups);
 export const placedIn = (r, id) => (r.a.courses.includes(id) ? 'א' : r.b?.courses.includes(id) ? 'ב' : null);
 export const yearTotals = (r) => ({ courses: resCourses(r).length, credits: r.credits.a + r.credits.b });
+// One plan as capPreviewText reads it, one semester or a year.
+export const planFacts = (r, data) => ({
+  groups: resGroups(r),
+  courses: resCourses(r),
+  credits: isPair(r) ? yearTotals(r).credits : r.courses.reduce((a, c) => a + data.courses[c].credits, 0),
+  unlocks: r.unlocks ?? 0
+});
 
 // Visible hours: earliest..latest meeting, padded by an hour, padding clamped to 08-21. A block is never cut off.
 export function hourRange(meetings) {
