@@ -54,7 +54,8 @@ test('when localStorage throws, a part is seen for the rest of the page load onl
 
 const copy = [...TOUR_INTRO, ...TOUR_PLANS].map((s) => s.text);
 test('every stop text is Hebrew, at most 140 characters, with no emoji', () => {
-  assert.equal(TOUR_INTRO.length, 7);
+  assert.equal(TOUR_INTRO.length, 8);
+  assert.ok(TOUR_INTRO.some((s) => s.text.includes('בהנחה')), 'the intro says what the tag on a course means');
   assert.equal(TOUR_PLANS.length, 4);
   for (const t of copy) {
     assert.ok(t.length <= 140, `too long (${t.length}): ${t}`);
