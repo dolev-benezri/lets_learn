@@ -6,12 +6,14 @@ import { DAYS, icon, typeLabel, groupIndex, hourRange, renderWeek, assignColors 
 import { askConfirm } from './ui-dialog.js';
 import { groupsFromText, placeGroup, findCourse, clashIds } from './friend-import.js';
 import { groupNumber, courseCount } from './ui-text.js';
-import { imageCanvas, withPdf, pageCanvas, bigPage, scanCanvases } from './friend-scan.js';
+import { imageCanvas, pageCanvas, bigPage, scanCanvases } from './friend-scan.js';
+import { withPdf, pdfStep } from './grade-import.js';
 import { rowsFromTable, matchRows } from './friend-schedule.js';
 
 const MAX = 40;
 const LIMIT = `אפשר עד ${MAX} קבוצות לחבר`;
 const NOTEXT = 'לא נמצא טקסט בקובץ, נסו להעתיק ולהדביק';
+const failText = (e) => (e?.user ? e.message : NOTEXT); // a limit that ran out has its own words; every other failure reads as "no text"
 const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳' };
 
 const dlg = document.getElementById('friendEd');
@@ -374,7 +376,7 @@ async function pdfText(file) {
   return withPdf(file, async (doc) => {
     const pages = [];
     for (let i = 1; i <= Math.min(doc.numPages, 30); i++)
-      pages.push((await (await doc.getPage(i)).getTextContent()).items.map((x) => x.str).join(' '));
+      pages.push((await pdfStep((await pdfStep(doc.getPage(i))).getTextContent())).items.map((x) => x.str).join(' '));
     return pages.join(' ');
   });
 }
@@ -426,20 +428,21 @@ async function scanSelected() {
   input.disabled = true;
   $('feFind').disabled = true;
   status('<p>מכין את השקפים…</p>');
-  let out = null;
+  let out = null,
+    failed = null;
   try {
     out = await withPdf(me.pdf, async (doc) =>
       scanCanvases(await Promise.all(n.map((i) => bigPage(doc, i))), allData().courses, progress(me))
     );
-  } catch {
-    /* reads as "no text" */
+  } catch (e) {
+    failed = e;
   }
   if (me !== ed) return;
   me.busy = false;
   input.disabled = false;
   $('feFind').disabled = false;
   if (out) applyScan(out.text, out.result);
-  else status(`<p>${NOTEXT}</p>`);
+  else status(`<p>${failText(failed)}</p>`);
 }
 async function importFile(file) {
   const me = ed,
@@ -457,7 +460,8 @@ async function importFile(file) {
   status(`<p>${isPdf ? 'קורא את הקובץ…' : 'מזהה טקסט…'}</p>`);
   let text = '',
     result = null,
-    scanned = false;
+    scanned = false,
+    failed = null;
   const courses = allData().courses;
   try {
     if (isPdf) {
@@ -470,8 +474,8 @@ async function importFile(file) {
       }
     } else if (file.type.startsWith('image/'))
       ({ text, result } = await scanCanvases([await imageCanvas(file)], courses, progress(me)));
-  } catch {
-    /* any failure reads as "no text" */
+  } catch (e) {
+    failed = e;
   }
   if (me !== ed) return; // closed (or reopened) while working
   busy(false);
@@ -480,12 +484,12 @@ async function importFile(file) {
   if (scanned) {
     try {
       await showPages(file, me);
-    } catch {
-      status(`<p>${NOTEXT}</p>`);
+    } catch (e) {
+      if (me === ed) status(`<p>${failText(e)}</p>`); // closed or reopened while the thumbnails were drawn
     }
   } // pictures only: let the user pick slides
   else if (text.trim() || result) applyScan(text, result ?? { found: [], unknown: [] });
-  else status(`<p>${NOTEXT}</p>`);
+  else status(`<p>${failText(failed)}</p>`);
 }
 
 // ---------- save / close ----------

@@ -46,15 +46,15 @@ style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri '
 
 ## ספריות
 
-כל הספריות הן עותקים ב-`web/vendor/`, בלי חבילות npm בזמן ריצה ובלי build. לכל ספרייה יש `SOURCES.txt`, ו-[test/vendor.test.mjs](../test/vendor.test.mjs) מפיל את `npm test` אם קובץ שונה מרשימת ה-sha256 ב-[test/fixtures/vendor-sha256.json](../test/fixtures/vendor-sha256.json). ב-Driver.js, ב-tesseract.js ובספריות ה-PDF מתועד שם שהעותקים זהים בית לבית לחבילה ב-npm (גרסה, גיבוב sha512 ו-sha256 לכל קובץ). ב-pdf.js, Panzoom ו-popover polyfill הגרסה נלקחה מכותרת הקובץ, והעותק לא הושווה לחבילה ב-npm. מומלץ כצעד המשך להשוות אותם.
+כל הספריות הן עותקים ב-`web/vendor/`, בלי חבילות npm בזמן ריצה ובלי build. לכל ספרייה יש `SOURCES.txt`, ו-[test/vendor.test.mjs](../test/vendor.test.mjs) מפיל את `npm test` אם קובץ שונה מרשימת ה-sha256 ב-[test/fixtures/vendor-sha256.json](../test/fixtures/vendor-sha256.json). ב-Driver.js, ב-tesseract.js, ב-pdf.js ובספריות ה-PDF מתועד שם שהעותקים זהים בית לבית לחבילה ב-npm (גרסה, גיבוב sha512 ו-sha256 לכל קובץ). Panzoom ו-popover polyfill הושוו לחבילה ב-npm ב-5.11.2026, וההבדלים הקטנים כתובים שם.
 
 | ספרייה | גרסה | רישיון | תפקיד |
 |---|---|---|---|
 | Driver.js | 1.9.0 (ראו [web/vendor/driver/SOURCES.txt](../web/vendor/driver/SOURCES.txt)) | MIT | הסיור באתר |
 | tesseract.js (עם `tesseract.js-core` ונתוני שפה עברית ואנגלית) | 7.0.0, ראו [web/vendor/tesseract/SOURCES.txt](../web/vendor/tesseract/SOURCES.txt) | Apache-2.0 (כפי שכתוב שם; עטיפת נתוני השפה MIT) | זיהוי טקסט (OCR) בייבוא מערכת של חבר מתמונה |
-| pdf.js | 6.3.289 (מתוך `pdfjsVersion` ב-`web/vendor/pdfjs/pdf.min.mjs`; ראו [SOURCES.txt](../web/vendor/pdfjs/SOURCES.txt), שלא הושווה למקור) | Apache-2.0 ([LICENSE](../web/vendor/pdfjs/LICENSE)) | ייבוא ציונים מ-PDF |
-| Panzoom | 4.6.0 (מכותרת הקובץ `web/vendor/panzoom/panzoom.es.js`; ראו [SOURCES.txt](../web/vendor/panzoom/SOURCES.txt), שלא הושווה למקור) | MIT ([LICENSE](../web/vendor/panzoom/LICENSE)) | מפת ההתקדמות |
-| @oddbird/popover-polyfill | 0.7.3 (מכותרת הקובץ `web/vendor/popover/popover.min.js`; ראו [SOURCES.txt](../web/vendor/popover/SOURCES.txt), שלא הושווה למקור) | BSD-3-Clause ([LICENSE](../web/vendor/popover/LICENSE)) | חלוניות ב-Safari ישן |
+| pdf.js | 6.3.289, ה-build הישן (legacy) לדפדפנים ישנים; ראו [SOURCES.txt](../web/vendor/pdfjs/SOURCES.txt), זהה לחבילה ב-npm | Apache-2.0 ([LICENSE](../web/vendor/pdfjs/LICENSE)) | ייבוא ציונים מ-PDF |
+| Panzoom | 4.6.0 (מכותרת הקובץ `web/vendor/panzoom/panzoom.es.js`; ראו [SOURCES.txt](../web/vendor/panzoom/SOURCES.txt), הושווה לחבילה ב-npm) | MIT ([LICENSE](../web/vendor/panzoom/LICENSE)) | מפת ההתקדמות |
+| @oddbird/popover-polyfill | 0.7.3 (מכותרת הקובץ `web/vendor/popover/popover.min.js`; ראו [SOURCES.txt](../web/vendor/popover/SOURCES.txt), הושווה לחבילה ב-npm) | BSD-3-Clause ([LICENSE](../web/vendor/popover/LICENSE)) | חלוניות ב-Safari ישן |
 | Rubik (פונט) | [web/fonts](../web/fonts) | SIL OFL ([OFL.txt](../web/fonts/OFL.txt)) | הפונט של האתר |
 | pdf-lib, @pdf-lib/fontkit, bidi-js, Rubik סטטי | 1.17.1, 1.1.1, 1.0.3, 5.3.0, ראו [web/vendor/pdf/SOURCES.txt](../web/vendor/pdf/SOURCES.txt) | MIT, והגופן SIL OFL | בניית "סיכום ליועץ" כקובץ PDF בדפדפן. ל-pdf-lib ול-fontkit לא יצאה גרסה מאז 2021 ו-2020; הן קוראות רק את הגופנים והמחרוזות של האתר, אף פעם לא קובץ מבחוץ |
 

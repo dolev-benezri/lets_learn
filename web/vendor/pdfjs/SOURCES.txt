@@ -1,4 +1,12 @@
-pdf.js 6.3.289 (Apache-2.0, see LICENSE), self-hosted so the site makes no request outside its own origin.
-Added in commit 41e07a3. The package it comes from is pdfjs-dist; this copy was not compared with the registry when this note was written (2026-11-04).
-Files: pdf.min.mjs, pdf.worker.min.mjs. Their sha256 are in test/fixtures/vendor-sha256.json, and test/vendor.test.mjs fails if one changes.
-To update: replace the files, rewrite this note, run node scripts/vendor-manifest.mjs and npm test.
+pdf.js 6.3.289 (Apache-2.0, see LICENSE), self-hosted so the site makes no request outside its own origin. This is the legacy build: the same version, with polyfills for older browsers.
+
+Both files are byte-identical to the ones in the npm package named below. The tarball was fetched on 2026-11-05 with `npm pack pdfjs-dist@6.3.289 --ignore-scripts` into an empty folder
+outside the repository and extracted as data (nothing from it was run); its sha512 matched the registry's dist.integrity. The modern build this replaced was byte-identical to the same package.
+To update: pack the new version the same way, copy legacy/build/pdf.min.mjs and legacy/build/pdf.worker.min.mjs, rewrite this note, run node scripts/vendor-manifest.mjs, npm test and npm run test:browser.
+
+Package (sha512 = dist.integrity from the registry):
+  pdfjs-dist@6.3.289    sha512-ZHjSVpDa3D6izMq8/04lvkhkATUmL9px6ChPaXc1k6nU2Mrhlg1/7F0bdUqCwUjw3NsPTfPZsMDUU6ZIcRaeQw==   (Apache-2.0)
+
+Files (sha256, file here <- path inside the package):
+  f401927e692efc7735e0cd528c490d0dd31b7f0972c122b7040df805be45cce4  pdf.min.mjs          <- package/legacy/build/pdf.min.mjs
+  a33cfe728c584fdba4fcc1fd54bcdc2f9f2f13889ddbb5b2bd1d0f8cbe49b84e  pdf.worker.min.mjs   <- package/legacy/build/pdf.worker.min.mjs

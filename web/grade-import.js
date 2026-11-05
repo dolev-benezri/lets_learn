@@ -5,12 +5,45 @@ const PDFJS = new URL('./vendor/pdfjs/', import.meta.url).href;
 const BIDI = /[‎‏‪-‮⁦-⁩]/g; // direction marks the portal wraps around tokens
 const MAX_BYTES = 5 * 1024 * 1024,
   MAX_PAGES = 10,
+  PDF_STEP_MS = 30000,
   ROW_TOL = 5; // rows sit ~15pt apart; the failure `*` is drawn ~3.5pt below its row
 
 export async function loadPdfjs() {
+  // pdf.js reads a page's text with `for await` over a ReadableStream, which Safari has only from 27 and core-js does not add. Its worker falls back by itself.
+  ReadableStream.prototype[Symbol.asyncIterator] ??= async function* () {
+    const reader = this.getReader();
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        yield value;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  };
   const pdfjs = await import(`${PDFJS}pdf.min.mjs`);
   pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS}pdf.worker.min.mjs`;
   return pdfjs;
+}
+const fail = (msg) => Object.assign(new Error(msg), { user: true });
+// One pdf.js call, bounded. A browser that lacks what pdf.js needs leaves a call unanswered for ever, with no error to catch. Not a whole import:
+// 80 thumbnails or OCR can rightly take minutes.
+export function pdfStep(promise) {
+  let timer;
+  const limit = new Promise((_, no) => {
+    timer = setTimeout(() => no(fail('קריאת הקובץ נמשכה יותר מדי. אפשר לנסות שוב או לסמן ידנית.')), PDF_STEP_MS);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+// pdf.js 6: destroy lives on the loading task, not the document. `fn(doc)` runs while the document is open.
+export async function withPdf(file, fn) {
+  const task = (await loadPdfjs()).getDocument({ data: await file.arrayBuffer() });
+  try {
+    return await fn(await pdfStep(task.promise));
+  } finally {
+    task.destroy().catch(() => {}); // not awaited: a stalled worker must not hold back the message
+  }
 }
 
 // pdf.js-like items [{str, x, y, page}] -> rows of strings in reading order (right to left: x descending). A row = items within ROW_TOL of the same y.
@@ -140,23 +173,21 @@ export function parseGradeSheet(rows, data) {
 // Course rows read but not imported (a grade the import does not know, e.g. in words): the preview says how many (audit #40).
 export const skippedRows = (rows, data) => rows.filter((row) => parseRow(row, data)?.skipped).length;
 
-const fail = (msg) => Object.assign(new Error(msg), { user: true });
 // File -> rows. Throws an Error with a user-facing Hebrew message (`user: true`) for limits; pdf.js failures read as "not a readable sheet".
 export async function readGradeSheet(file) {
   if (file.size > MAX_BYTES) throw fail('הקובץ גדול מדי (עד 5MB).');
-  let task;
   try {
-    task = (await loadPdfjs()).getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
-    const doc = await task.promise;
-    if (doc.numPages > MAX_PAGES) throw fail('הקובץ ארוך מדי (עד 10 עמודים).');
-    const items = [];
-    for (let p = 1; p <= doc.numPages; p++)
-      for (const i of (await (await doc.getPage(p)).getTextContent()).items)
-        if (i.str) items.push({ str: i.str, x: i.transform[4], y: i.transform[5], page: p });
-    return rowsFromItems(items);
+    return await withPdf(file, async (doc) => {
+      if (doc.numPages > MAX_PAGES) throw fail('הקובץ ארוך מדי (עד 10 עמודים).');
+      const items = [];
+      for (let p = 1; p <= doc.numPages; p++) {
+        const page = await pdfStep(doc.getPage(p));
+        for (const i of (await pdfStep(page.getTextContent())).items)
+          if (i.str) items.push({ str: i.str, x: i.transform[4], y: i.transform[5], page: p });
+      }
+      return rowsFromItems(items);
+    });
   } catch (e) {
     throw e.user ? e : fail('לא הצלחנו לקרוא את הקובץ. האם זה PDF של גליון הציונים?');
-  } finally {
-    task?.destroy();
   }
 }
