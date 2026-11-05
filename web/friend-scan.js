@@ -1,6 +1,6 @@
 // Browser side of the picture import: render a PDF page or image to a canvas, OCR it (tesseract.js, Hebrew + English), and turn the text into groups.
 // A table slide (course code + days and hours) is read from the text; a weekly-grid slide is cut into colored blocks (friend-blocks.js).
-import { loadPdfjs } from './grade-import.js';
+import { loadPdfjs, pdfStep } from './grade-import.js';
 import { findBlocks, columnOf, gridHours } from './friend-blocks.js';
 import { rowsFromTable, rowsFromWords, matchRows, matchGrid, mergeScans } from './friend-schedule.js';
 
@@ -25,29 +25,19 @@ export async function imageCanvas(file) {
   return c;
 }
 
-// pdf.js 6: destroy lives on the loading task, not the document. `fn(doc)` runs while the document is open.
-export async function withPdf(file, fn) {
-  const task = (await loadPdfjs()).getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
-  try {
-    return await fn(await task.promise);
-  } finally {
-    task.destroy();
-  }
-}
-
 export async function pageCanvas(doc, n, width) {
-  const page = await doc.getPage(n),
+  const page = await pdfStep(doc.getPage(n)),
     vp1 = page.getViewport({ scale: 1 }),
     vp = page.getViewport({ scale: width / vp1.width });
   const c = canvasOf(vp.width, vp.height);
-  await page.render({ canvas: c, canvasContext: c.getContext('2d'), viewport: vp }).promise;
+  await pdfStep(page.render({ canvas: c, canvasContext: c.getContext('2d'), viewport: vp }).promise);
   return c;
 }
 // A scanned slide is one picture: draw that, upscaled and smoothed. Letting pdf.js resample the page instead blurs small digits (course codes lose a digit).
 export async function bigPage(doc, n) {
-  const page = await doc.getPage(n),
+  const page = await pdfStep(doc.getPage(n)),
     { OPS } = await loadPdfjs(),
-    ops = await page.getOperatorList();
+    ops = await pdfStep(page.getOperatorList());
   const ids = ops.fnArray.flatMap((fn, i) => (fn === OPS.paintImageXObject ? [ops.argsArray[i][0]] : []));
   const img =
     ids.length === 1

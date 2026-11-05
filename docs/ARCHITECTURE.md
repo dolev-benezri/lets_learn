@@ -18,7 +18,7 @@
 | `web/solver-core.js` | חיפוש: backtracking עם מסכות ביטים וגבולות עליונים לקיצוץ, כולל המדדים `credits` ו-`unlocks` ו-`showWeights` (ו-`solver-worker.js`) |
 | `web/share.js` | קישורי חבר וגיבוי, עם אימות |
 | `web/friend-*.js` | ייבוא מערכת חבר: `friend-import` (מספרי קבוצות מטקסט), `friend-scan` (קריאת PDF או תמונה ו-OCR בדפדפן), `friend-schedule` (התאמת שקף טבלה או לוח לקבוצות), `friend-blocks` (מציאת המשבצות הצבעוניות בלוח). העורך עצמו ב-`ui-friend-editor` |
-| `web/grade-import.js` | ייבוא גיליון הציונים (PDF מהפורטל), דרך pdf.js |
+| `web/grade-import.js` | ייבוא גיליון הציונים (PDF מהפורטל), דרך pdf.js. גם המקום היחיד שפותח PDF: `loadPdfjs`, `withPdf` ו-`pdfStep` (מגבלת 30 שניות לכל קריאה ל-pdf.js) |
 | `web/ics.js` | ייצוא ליומן (קובץ `.ics`): השיעורים השבועיים והבחינות, עם תאריכי הסמסטר |
 | `web/ui-*.js` | ממשק, לפי ארבעת השלבים: `ui-plan` (נקודת הכניסה והניתוב בין השלבים), `ui-me` (1, המצב שלי, כולל מסך הפתיחה לבחירת מסלול ושנה), `ui-side` (2, רשימת הקורסים וסיכום החלופה), `ui-drawer` (3, העדפות וחברים; והמגירה של רשימת ההרשמה), `ui-view`, `ui-grid` ו-`ui-search` (4, המערכות: לוח, "הצג לפי", חיפוש). בנוסף `ui-map` (חלון המפה), `ui-friend-editor`, `ui-actions`, `ui-common`, `ui-dialog`, `tour` (הסיור בכניסה הראשונה, Driver.js) ו-`ui-text` (המשפטים והעזרים של הממשק: `DISCLAIMER`, `freshAt` ו-`groupFresh` לטריות הנתונים, `turnWarning` לפני התור שלי בהרשמה, `conflictsFor` לסתירות ב-`settings.json`, `reportMailto` ל-"דיווח על טעות") |
 | `web/map-*.js` | מפת ההתקדמות: `map-layout` (אילו קורסים, סידור וגיאומטריה) ו-`map-render` (ה-SVG ותצוגת הרשימה). החלון עצמו ב-`ui-map` |
