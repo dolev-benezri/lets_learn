@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-04T23:24:51.547Z",
+ "fetchedAt": "2026-11-06T23:17:12.954Z",
  "year": 2027,
  "startYear": 2026,
  "program": 20,
@@ -612,7 +612,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' וולפרט רחל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -864,7 +864,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' הרצברג מורג אפרת",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -2417,7 +2417,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר קלמרו נצח",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272012805/1"
@@ -2450,7 +2450,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר קלמרו נצח",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -3894,7 +3894,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "פרופ' פלקסר אלעזר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "272021003/1"
@@ -3952,7 +3952,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "פרופ' פלקסר אלעזר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4594,7 +4594,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר סידורוב מיכאל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "272033702/1"
@@ -4614,7 +4614,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר סידורוב מיכאל",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4680,32 +4680,9 @@
   },
   "20342": {
    "name": "עיבוד ספרתי של תמונה",
-   "credits": 3,
+   "credits": 0,
    "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "20327",
-       "name": "מעבדה מתקדמת בעיבוד תמונה"
-      },
-      {
-       "id": "20338",
-       "name": "מעבדה מתקדמת בעיבוד ספרתי של אותות"
-      }
-     ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "20332",
-       "name": "מבוא לעיבוד תמונה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": []
   },
   "20343": {
@@ -7333,7 +7310,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שרייבר ניר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090221/1"
@@ -7667,7 +7644,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7955,7 +7932,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8127,7 +8104,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר דרורי אלון",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090307/1",
@@ -8247,7 +8224,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090310/1",
@@ -8737,7 +8714,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090404/1",
@@ -9249,7 +9226,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר טטרואשוילי לובה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091120/1"
@@ -9282,7 +9259,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מגנזיק אבלין",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091121/1"
@@ -9543,7 +9520,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9855,7 +9832,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091411/1"
@@ -10146,7 +10123,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -11201,7 +11178,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' פישלוב דליה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279092504/1"
@@ -11420,7 +11397,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' נמירובסקי אירינה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -11777,7 +11754,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092902/1"
@@ -11894,7 +11871,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

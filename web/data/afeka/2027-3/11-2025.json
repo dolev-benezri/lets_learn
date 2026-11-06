@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-02T23:25:05.195Z",
+ "fetchedAt": "2026-11-06T23:17:12.954Z",
  "year": 2027,
  "startYear": 2025,
  "program": 11,
@@ -541,7 +541,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' נסים רונלי",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [

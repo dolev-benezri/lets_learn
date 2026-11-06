@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-04T23:24:51.547Z",
+ "fetchedAt": "2026-11-06T23:17:12.954Z",
  "year": 2027,
  "startYear": 2025,
  "program": 22,
@@ -669,7 +669,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' נסים רונלי",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
@@ -2181,32 +2181,9 @@
   },
   "20342": {
    "name": "עיבוד ספרתי של תמונה",
-   "credits": 3,
+   "credits": 0,
    "offered": false,
-   "prereqs": [
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "20327",
-       "name": "מעבדה מתקדמת בעיבוד תמונה"
-      },
-      {
-       "id": "20338",
-       "name": "מעבדה מתקדמת בעיבוד ספרתי של אותות"
-      }
-     ]
-    },
-    {
-     "kind": "קדם",
-     "anyOf": [
-      {
-       "id": "20332",
-       "name": "מבוא לעיבוד תמונה"
-      }
-     ]
-    }
-   ],
+   "prereqs": [],
    "groups": []
   },
   "20343": {
@@ -3682,7 +3659,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בן סימון גבריאל",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [
       "279091606/1"

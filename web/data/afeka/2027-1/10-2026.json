@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-04T23:24:51.547Z",
+ "fetchedAt": "2026-11-06T23:17:12.954Z",
  "year": 2027,
  "startYear": 2026,
  "program": 10,
@@ -443,7 +443,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "מר קרמה אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -2403,7 +2403,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר חוטובלי ראובן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271012008/1"
@@ -2490,7 +2490,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר חוטובלי ראובן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -2681,7 +2681,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271012702/1"
@@ -2732,7 +2732,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -4653,7 +4653,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר קרני ירדן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5310,7 +5310,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271026601/1"
@@ -5330,7 +5330,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שלומי פיני",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5709,7 +5709,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271033404/1"
@@ -5775,7 +5775,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271033406/1"
@@ -5808,7 +5808,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5844,7 +5844,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר ערמון דגנית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7954,7 +7954,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר לייטנר אריאלה מירה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090105/1",
@@ -8939,7 +8939,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9365,7 +9365,7 @@
      "id": "279090224/2",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "מר כהן יונתן",
+     "lecturer": "מר גלמן ולדימיר",
      "full": true,
      "semester": "א",
      "linked": [],
@@ -9590,7 +9590,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090510/1",
@@ -10462,7 +10462,7 @@
        "day": 6,
        "start": "08:00",
        "end": "09:50",
-       "room": "קריה ג'6"
+       "room": "115 פיקוס"
       }
      ],
      "exams": []
@@ -10979,7 +10979,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מרגלית תמר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279091110/1"
