@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-06T23:17:12.954Z",
+ "fetchedAt": "2026-11-07T23:17:06.267Z",
  "year": 2027,
  "startYear": 2025,
  "program": 19,
@@ -458,7 +458,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר חריזמן קרן (אנה)",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1332,7 +1332,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר ארטישצ'ב מריה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271012006/1"
@@ -2036,7 +2036,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מורוז בוריס",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271035101/1"
@@ -2102,7 +2102,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר מורוז בוריס",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8947,7 +8947,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בן סימון גבריאל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279091709/1"
@@ -9220,7 +9220,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

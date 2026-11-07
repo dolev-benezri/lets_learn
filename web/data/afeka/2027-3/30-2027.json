@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-06T23:17:12.954Z",
+ "fetchedAt": "2026-11-07T23:17:06.267Z",
  "year": 2027,
  "startYear": 2027,
  "program": 30,
@@ -1267,7 +1267,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "מר זילברמן אילן",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [
       "273013005/1"
@@ -1306,7 +1306,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "מר זילברמן אילן",
-     "full": true,
+     "full": false,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
