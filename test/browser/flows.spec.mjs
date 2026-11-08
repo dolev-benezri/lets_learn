@@ -463,26 +463,17 @@ for (const size of Object.keys(SIZES)) {
   });
 }
 
-// The outside review's first finding: nothing marked, and the summary and the map claimed courses as passed.
+// Nothing marked: earlier years start marked passed, with no "בהנחה" mark (the owner found it ugly, 2026-11-09).
 const UNMARKED = { ...STUDENT, passed: undefined };
 const FIRST = { ...DONE, 'afeka-sched-v1': JSON.stringify(UNMARKED) };
 for (const size of Object.keys(SIZES)) {
-  test(`${size}: with nothing marked the site says what it assumed, and one tap confirms it`, async (t) => {
+  test(`${size}: with nothing marked, neither the board nor step 1 says "בהנחה"`, async (t) => {
     const page = await visit(t, size, FIRST);
     await weekReady(page);
-    assert.match(await page.locator('#boardNote').innerText(), /קורסים בהנחה, לא אושרו: \d+/);
-    await page.locator('.steps a[data-view="me"]').click();
-    const yes = page.locator('[data-act="confirmAssumed"]');
-    await yes.waitFor();
-    assert.match(await page.locator('.crs .tag.warn', { hasText: 'בהנחה' }).first().innerText(), /בהנחה/);
-    await yes.click();
-    await page.locator('[data-act="confirmAssumed"]').waitFor({ state: 'detached' });
-    assert.equal(await page.locator('.crs .tag.warn', { hasText: 'בהנחה' }).count(), 0);
-    assert.equal(await focused(page), 'H2');
-    assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem('afeka-sched-v1'))).assumed, []);
-    await page.locator('.steps a[data-view="plan"]').click();
-    await weekReady(page);
     assert.doesNotMatch(await page.locator('#boardNote').innerText(), /בהנחה/);
+    await page.locator('.steps a[data-view="me"]').click();
+    await page.locator('.crs[data-st="passed"]').first().waitFor();
+    assert.doesNotMatch(await page.locator('#me').innerText(), /בהנחה/);
   });
 
   test(`${size}: the steps show where you are, with no tick for a step nobody finished`, async (t) => {

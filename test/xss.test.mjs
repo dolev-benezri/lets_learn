@@ -393,19 +393,18 @@ test('the board says when no department approved the rules, and says nothing onc
   app.settings = was;
 });
 
-test('the board counts the assumed courses and the passes over a failed prerequisite, with a way to step 1', () => {
+test('the board counts the passes over a failed prerequisite, with a way to step 1, and never says "בהנחה"', () => {
   const s = app.state,
     was = { assumed: s.assumed, passed: s.passed, failed: s.failed };
   try {
     s.assumed = s.passed.slice(0, 2);
-    const two = boardNote('note-assumed');
-    assert.ok(two.includes('קורסים בהנחה, לא אושרו: 2.') && two.includes('href="#me"'), two);
+    assert.ok(!boardNote('note-assumed').includes('בהנחה'));
     s.assumed = [];
-    assert.ok(!boardNote('note-none').includes('בהנחה'));
     // the first requirement of a course, failed, and the course marked passed all the same
     const id = Object.keys(app.data.courses).find((c) => passedOver(c, s));
     assert.ok(id, 'this program has such a course');
-    assert.ok(boardNote('note-prereq').includes('קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: 1.'));
+    const note = boardNote('note-prereq');
+    assert.ok(note.includes('קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: 1.') && note.includes('href="#me"'), note);
   } finally {
     Object.assign(s, was);
   }

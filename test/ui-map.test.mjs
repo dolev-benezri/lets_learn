@@ -1,6 +1,5 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cardHtml, listHtml, nodeAria } from '../web/map-render.js';
 import { real } from './fixtures/real.mjs';
 import {
   layoutMap,
@@ -896,24 +895,4 @@ test('specialization is incomplete when elective credits meet the cap but mandat
   assert.deepEqual(row.missingMandatory, ['30227', '30235', '30249', '30204', '30213', '30313']);
   const ds = load('19-2026.json');
   assert.ok(progressInfo(ds, classify(ds, { passed: [], failed: {} }).statuses, new Set(), []).rows.every((r) => Array.isArray(r.missingMandatory) && !r.missingMandatory.length));
-});
-
-test('a course the site only assumed reads "בהנחה" on the map, in its label, its list row and its card', () => {
-  const data = {
-    courses: { A: { name: 'אלגברה', credits: 3, prereqs: [] }, B: { name: 'בוטניקה', credits: 3, prereqs: [] } },
-    lists: []
-  };
-  const st = { A: { status: 'done', reasons: [] }, B: { status: 'done', reasons: [] } };
-  const L = {
-    bands: [{ name: 'שנה א׳', first: 0, n: 2 }],
-    nodes: [{ type: 'course', id: 'A', key: 'A', col: 0, year: 1 }, { type: 'course', id: 'B', key: 'B', col: 1, year: 1 }]
-  };
-  const c = { data, st, L, unlocks: {}, aside: [], assumed: new Set(['A']) };
-  const row = (id) => listHtml(c).split('<li').find((x) => x.includes(data.courses[id].name));
-  assert.match(row('A'), /class="li-st">בהנחה</);
-  assert.match(row('B'), /class="li-st">עברתי</);
-  assert.match(cardHtml(c, 'A'), /class="chip st-done">בהנחה</);
-  assert.match(cardHtml(c, 'B'), /class="chip st-done">עברתי</);
-  assert.match(nodeAria(c, { id: 'A', year: 1 }), /בהנחה/);
-  assert.doesNotMatch(nodeAria(c, { id: 'B', year: 1 }), /בהנחה/);
 });

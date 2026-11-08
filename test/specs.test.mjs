@@ -173,15 +173,6 @@ test('progressInfo on the real data: 160 in total, 133 of it outside the special
   assert.ok(q.done >= 27 && q.specLeft === 0, 'every course of both areas is done: the part is capped at 27');
 });
 
-test('progressHtml: assumed courses are said beside the sum, also to a screen reader', () => {
-  const prog = { total: 160, done: 40, planned: 0, adds: 0, specLeft: null };
-  const html = progressHtml({ prog, opened: 0, year: 2, specs: [], assumed: new Set(['a', 'b']) });
-  assert.match(html, /כולל 2 קורסים בהנחה/);
-  assert.match(html, /aria-valuetext="[^"]*כולל 2 קורסים בהנחה/);
-  assert.doesNotMatch(progressHtml({ prog, opened: 0, year: 2, specs: [], assumed: new Set() }), /בהנחה/);
-  assert.doesNotMatch(progressHtml({ prog, opened: 0, year: 2, specs: [] }), /בהנחה/);
-});
-
 test('progressHtml: the remaining specialization credits when areas are chosen, a call to choose one from year 2 on when none is', () => {
   const prog = { total: 160, done: 40, planned: 0, adds: 0, specLeft: 12.5 };
   const withSpec = progressHtml({ prog, opened: 0, year: 3, specs: ['solid', 'flow'] });

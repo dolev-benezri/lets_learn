@@ -45,28 +45,13 @@ test('advisorHtml: failed courses not passed again are listed (bot report #6)', 
   assert.ok(!line.includes('חדו"א 1'), `A was passed again: ${line}`);
 });
 
-test('advisorHtml: a course the site assumed is not claimed as passed, and is said to be assumed', () => {
-  const w = world({ passed: ['A'], assumed: ['A'], grades: {} }),
-    t = text(advisorHtml(w)),
-    nameA = w.data.courses.A.name;
-  assert.ok(!t.includes('קורסים שעברתי'), t);
-  assert.ok(t.includes(`קורסים בהנחה, לא אושרו: ${nameA}`), t);
-  assert.ok(t.includes('כולל קורס אחד בהנחה'), t);
-});
-
-test('advisorHtml: confirmed and assumed courses each under their own words', () => {
-  const w = world({ passed: ['A', 'Q'], assumed: ['Q'] }),
-    t = text(advisorHtml(w));
-  assert.ok(t.includes(`קורסים שעברתי: ${w.data.courses.A.name}`), t);
-  assert.ok(t.includes(`קורסים בהנחה, לא אושרו: ${w.data.courses.Q.name}`), t);
-});
-
-test('advisorHtml: nothing assumed reads as before; an assumed course gone from the catalog stays by its id', () => {
-  for (const over of [{}, { assumed: [] }, { assumed: null }]) {
-    const t = text(advisorHtml(world(over)));
-    assert.ok(t.includes('קורסים שעברתי:') && !t.includes('בהנחה'), t);
+test('advisorHtml: a course the site marked by itself reads as passed, with no "בהנחה" mark', () => {
+  for (const over of [{ assumed: ['Q'] }, { assumed: [] }, { assumed: null }]) {
+    const w = world({ passed: ['A', 'Q'], ...over }),
+      t = text(advisorHtml(w));
+    assert.ok(t.includes(`קורסים שעברתי: ${w.data.courses.A.name}, ${w.data.courses.Q.name}`), t);
+    assert.ok(!t.includes('בהנחה'), t);
   }
-  assert.ok(text(advisorHtml(world({ passed: ['A', 'gone'], assumed: ['gone'] }))).includes('קורסים בהנחה, לא אושרו: gone'));
 });
 
 test('advisorHtml: a course marked passed over a failed prerequisite is named under "שימו לב"', () => {

@@ -129,20 +129,31 @@ test('real layout: a row with no grade cell never takes a digit from the course 
   assert.deepEqual(by(r), {});
 });
 
-test('gradeChanges: a course only assumed passed is offered, and only applying the row confirms it', async () => {
+test('gradeChanges: a course only assumed passed, with nothing new on the sheet, is no row; an applied row clears the assumption', async () => {
   const { gradeChanges, applyGradeChanges } = await import('../web/grade-import.js');
   const state = () => ({ passed: ['A', 'B'], assumed: ['A', 'B'], failed: {}, grades: {}, exempt: [] });
+  assert.deepEqual(gradeChanges([{ id: 'A', grade: null, result: 'passed' }], state()), []);
   const s = state();
-  // a pass without a number on a course already passed: without the assumption this is no change at all
-  const todo = gradeChanges([{ id: 'A', grade: null, result: 'passed' }], s);
-  assert.deepEqual(todo.map((t) => [t.id, t.assumed, t.check]), [['A', true, true]]);
-  assert.deepEqual(s.assumed, ['A', 'B'], 'reading the sheet changes nothing');
-  applyGradeChanges(s, todo);
-  assert.deepEqual(s.assumed, ['B']);
-  assert.deepEqual(gradeChanges([{ id: 'A', grade: null, result: 'passed' }], { ...state(), assumed: [] }), []);
+  applyGradeChanges(s, gradeChanges([{ id: 'A', grade: 90, result: 'passed' }], s));
+  assert.deepEqual([s.assumed, s.grades], [['B'], { A: 90 }]);
   const exempt = state();
   applyGradeChanges(exempt, gradeChanges([{ id: 'A', grade: null, result: 'exempt' }], exempt));
   assert.deepEqual([exempt.assumed, exempt.exempt], [['B'], ['A']]);
+});
+
+test('sheetConfirms: a pass with no number still ends the guess, so an older sheet\'s failure is not pre-checked over it', async () => {
+  const { gradeChanges, sheetConfirms } = await import('../web/grade-import.js');
+  const s = { passed: ['A', 'B', 'C'], assumed: ['A', 'B', 'C'], failed: {}, grades: {}, exempt: [] };
+  sheetConfirms(s, [
+    { id: 'A', grade: null, result: 'passed' },
+    { id: 'B', grade: 50, result: 'failed' },
+    { id: 'C', grade: null, result: 'pending' }
+  ]);
+  assert.deepEqual(s.assumed, ['B', 'C'], 'only a pass ends the guess');
+  assert.equal(gradeChanges([{ id: 'A', grade: 40, result: 'failed' }], s)[0].check, false);
+  const none = { passed: ['A'], assumed: null };
+  sheetConfirms(none, [{ id: 'A', grade: null, result: 'passed' }]);
+  assert.equal(none.assumed, null, 'an unknown field stays open for ensurePassed');
 });
 
 test('gradeChanges: a failure on a course only assumed passed is pre-checked: the sheet outweighs a guess', async () => {

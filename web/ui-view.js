@@ -108,13 +108,11 @@ export function renderTop() {
 function renderBoardNote() {
   const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear),
-    assumed = app.state.assumed?.length ?? 0,
     warned = passedWarnings(app.data, app.state).length;
   const html = [
     f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
     !approved && app.data.verified === false && '<span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>',
     !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
-    assumed && `קורסים בהנחה, לא אושרו: ${assumed}. <a href="#me">בדיקה ואישור בשלב 1</a>`,
     warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים בשלב 1</a>`
   ]
     .filter(Boolean)

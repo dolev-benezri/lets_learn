@@ -419,8 +419,6 @@ main { min-width:0; }
 }
 .board-note .hint { margin:0 0 4px; }
 .board-note:not(:empty) { margin-bottom:8px; }
-.me-assumed { margin:0 0 12px; }
-.me-assumed .warnbox { margin:0 0 6px; }
 .warnbox {
   display:flex;
   align-items:center;

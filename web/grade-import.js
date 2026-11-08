@@ -102,7 +102,6 @@ function parseRow(row, data) {
 
 // What an import would change, as rows for the confirm dialog: was/to in the app's words; check = pre-checked. A failure on a course marked passed
 // (passed later elsewhere, or by hand) is offered unchecked: the sheet's failure alone must not undo a pass, though it outweighs a pass only assumed.
-// A course only assumed passed is always a row: applying it (setStatus) is what confirms it.
 export function gradeChanges(found, state) {
   const now = (id) => (state.passed.includes(id) ? 'passed' : state.failed[id] ? 'failed' : 'none'),
     assumed = (id) => (state.assumed ?? []).includes(id);
@@ -111,14 +110,19 @@ export function gradeChanges(found, state) {
     .map((r) => ({ ...r, was: now(r.id), to: r.result === 'failed' ? 'failed' : 'passed' }))
     .filter(
       (r) =>
-        assumed(r.id) ||
         r.was !== r.to ||
         (r.result !== 'exempt' && (state.grades[r.id] ?? null) !== r.grade) || // a row without a number clears one on file (7.7)
         (r.failedBefore && !state.failed[r.id]) ||
         (r.result === 'passed' && (state.exempt ?? []).includes(r.id)) ||
         (r.result === 'exempt' && !(state.exempt ?? []).includes(r.id))
     )
-    .map((r) => ({ ...r, assumed: assumed(r.id), check: !(r.to === 'failed' && r.was === 'passed' && !assumed(r.id)) }));
+    .map((r) => ({ ...r, check: !(r.to === 'failed' && r.was === 'passed' && !assumed(r.id)) }));
+}
+
+// A pass or an exemption on the sheet means the site's guess was right: the course is no longer only assumed, so a failure on an older sheet
+// is not pre-checked over it. Nothing on screen changes, so it needs no row.
+export function sheetConfirms(state, found) {
+  if (state.assumed) state.assumed = state.assumed.filter((id) => !found.some((r) => r.id === id && (r.result === 'passed' || r.result === 'exempt')));
 }
 
 // The rows the student ticked: status, grade and exemption as the sheet says; a failure before the pass is kept (at least one, never lowered).

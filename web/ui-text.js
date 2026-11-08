@@ -7,8 +7,6 @@ export const DISCLAIMER = 'אינו הרשמה ואינו המלצה. לפני �
 export const SPLIT_WARNING =
   'הפרדה בין הרצאה לתרגול עלולה ליצור פער בין החומר שנלמד בהרצאה לחומר שבתרגול, כי הקצב שלהם מתואם. הפרדה כזו מותרת רק באישור ההכוון האקדמי.';
 export const SPLIT_TAG = 'מופרד · דורש אישור ההכוון'; // beside each split course in the registration list
-// A course the site marked passed by itself (app.js ensurePassed). Beside a sum that counts them.
-export const assumedNote = (n) => (n ? `כולל ${courseCount(n)} בהנחה` : '');
 export const RULES_UNAPPROVED = 'הכללים לא אושרו על ידי המחלקה.';
 export const conflictLine = (t) => `יש סתירה בין המקורות הרשמיים לגבי ${t}.`;
 export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';

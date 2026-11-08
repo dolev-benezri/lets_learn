@@ -88,18 +88,19 @@ test('the Hebrew text prints in order and every word can be found in the file', 
   for (const w of ['סיכום', 'לפגישה', 'קורסים', 'שעברתי', 'דינמיקה', '3.5']) assert.ok(text.includes(w), `${w} in ${text}`);
 });
 
-test('the real summary carries its warnings into the file: what is assumed, the rules, conflicts, a pass over a failed prerequisite', async () => {
+test('the real summary carries its warnings into the file: the rules, conflicts, a pass over a failed prerequisite', async () => {
   const data = mini(),
     state = { passed: ['B', 'Q'], assumed: ['Q'], failed: { A: 1 }, grades: {}, exempt: [], profile: { year: 2 } };
   const blocks = advisorBlocks({ state, data, cls: classify(data, state), catalog: { programs: [] }, approved: null, conflicts: ['מספר נקודות'] });
   const wanted = blocks.filter((b) => b.k === 'li').map((b) => b.t);
-  for (const t of ['בהנחה, לא אושרו', 'הכללים לא אושרו על ידי המחלקה', 'יש סתירה בין המקורות', 'וסומן שנכשלת בו'])
+  for (const t of ['הכללים לא אושרו על ידי המחלקה', 'יש סתירה בין המקורות', 'וסומן שנכשלת בו'])
     assert.ok(wanted.some((x) => x.includes(t)), t);
   const { bytes, dropped } = await buildAdvisorPdf(blocks, libs);
   assert.deepEqual(dropped, []);
   const out = await read(bytes);
   assert.equal(out.pages, 1);
-  for (const w of ['סתירה', 'אושרו', 'בהנחה', 'שנכשלת']) assert.ok(out.text.includes(w), w);
+  for (const w of ['סתירה', 'אושרו', 'שנכשלת']) assert.ok(out.text.includes(w), w);
+  assert.ok(!out.text.includes('בהנחה'));
 });
 
 test('a typical year pair is one page', async () => {
@@ -110,7 +111,7 @@ test('a typical year pair is one page', async () => {
     { k: 'h3', t: 'המצב שלי' },
     ...['שם: דנה לוי', 'תוכנית: הנדסת מכונות', 'שנה ב׳ בלימודים', 'ממוצע: 84.3'].map(li),
     li(`קורסים שעברתי: ${Array.from({ length: 16 }, (_, i) => `חשבון דיפרנציאלי ${i}`).join(', ')}`),
-    li(`קורסים בהנחה, לא אושרו: ${Array.from({ length: 6 }, (_, i) => `אנגלית מתקדמים ${i}`).join(', ')}`),
+    li(`קורסים שנכשלתי בהם ועוד לא עברתי: ${Array.from({ length: 6 }, (_, i) => `אנגלית מתקדמים ${i}`).join(', ')}`),
     { k: 'h3', t: 'החלופה שבחרתי' },
     { k: 'h4', t: 'סמסטר א׳' },
     ...[1, 2, 3, 4, 5, 6].map(course),
