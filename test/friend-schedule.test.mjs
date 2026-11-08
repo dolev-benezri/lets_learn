@@ -175,11 +175,89 @@ test('mergeScans: one group per course and type, a table first; beside a table a
   };
   const table = { found: ['a1'], unknown: ['x'], ambiguous: 1, weak: 2 };
   const grid = { found: ['a2', 'a3', 'b1', 'c1'], weakIds: ['c1'], unknown: ['y', 'x'], ambiguous: 4, weak: 8 };
-  assert.deepEqual(mergeScans([table], [grid], courses), { found: ['a1', 'a3', 'b1'], unknown: ['x'], ambiguous: 1, weak: 2 });
+  const noRows = (r) => ({ ...r, rows: undefined });
+  assert.deepEqual(noRows(mergeScans([table], [grid], courses)), { found: ['a1', 'a3', 'b1'], unknown: ['x'], ambiguous: 1, weak: 2, rows: undefined });
   assert.deepEqual(
-    mergeScans([], [grid], courses),
-    { found: ['a2', 'a3', 'b1', 'c1'], unknown: ['y', 'x'], ambiguous: 4, weak: 8 },
+    noRows(mergeScans([], [grid], courses)),
+    { found: ['a2', 'a3', 'b1', 'c1'], unknown: ['y', 'x'], ambiguous: 4, weak: 8, rows: undefined },
     'no table: the grid is the whole answer, its guesses and notes too'
   );
   assert.deepEqual(mergeScans([{ found: ['a1'], unknown: ['x'], ambiguous: 0, weak: 0 }, { found: ['a1'], unknown: ['x'], ambiguous: 0, weak: 0 }], [], courses).found, ['a1']);
+});
+
+// Review rows (the edit page): per row source, hours, candidates, chosen group and confidence.
+const coded = (cid, meets, extra = {}) => ({ cid, code: cid, kinds: [], meets, via: 'code', text: `row ${cid}`, ...extra });
+const oneRow = (row, cs = courses) => matchRows([row], cs).rows[0];
+
+test('review rows: a coded row with the exact day and hours is sure', () => {
+  const r = oneRow(coded('30112', [{ days: [2], start: '13:00', end: '14:50' }]));
+  assert.equal(r.confidence, 'sure');
+  assert.equal(r.chosen, 'A1');
+  assert.deepEqual(r.candidates, ['A1']);
+  assert.deepEqual(r.meets, [{ day: 2, start: '13:00', end: '14:50' }]);
+  assert.deepEqual([r.code, r.via, r.text, r.type], ['30112', 'code', 'row 30112', 'סופי-הרצאה+תרגול']);
+});
+
+test('review rows: hours only close, or a day that is not certain, is weak', () => {
+  assert.equal(oneRow(coded('30112', [{ days: [2], start: '13:00', end: '15:00' }])).confidence, 'weak');
+  assert.equal(oneRow(coded('30112', [{ days: [2, 3], start: '13:00', end: '14:50' }])).confidence, 'weak');
+  assert.equal(oneRow(coded('30112', [{ days: null, start: '13:00', end: '14:50' }])).confidence, 'weak');
+});
+
+test('review rows: a course found by name is weak even with exact hours', () => {
+  const words = [
+    W('1', 960, 200), W('₪2', 880, 200), W('תרמודינמיקה', 780, 200), W('1', 700, 200), W('שני,', 300, 200), W('13:00-14:50,', 220, 200),
+    W('1', 960, 300), W('90904', 880, 300), W('ראשון,', 300, 300), W('14:00-15:50,', 220, 300),
+  ];
+  const rows = rowsFromWords(words, courses);
+  assert.deepEqual(rows.map((r) => r.via), ['name', 'code']);
+  const r = matchRows(rows, courses).rows;
+  assert.deepEqual(r.map((x) => x.chosen), ['A1', 'C1']);
+  assert.equal(r[0].confidence, 'weak');
+});
+
+test('review rows: two groups with equal scores are a tie, both listed', () => {
+  const cs = { 1: { name: 'א', groups: [g('T1', 'הרצאה', [2, '10:00', '11:50']), g('T2', 'הרצאה', [2, '10:00', '11:50'])] } };
+  const r = oneRow(coded('1', [{ days: [2], start: '10:00', end: '11:50' }]), cs);
+  assert.equal(r.confidence, 'tie');
+  assert.deepEqual(r.candidates.slice().sort(), ['T1', 'T2']);
+});
+
+test('review rows: an unknown code is none and keeps its hours', () => {
+  const m = matchRows(rowsFromTable(TABLE, courses), courses);
+  const none = m.rows.find((r) => r.code === '99999');
+  assert.equal(none.confidence, 'none');
+  assert.equal(none.chosen, null);
+  assert.deepEqual(none.meets, [{ day: 1, start: '08:00', end: '09:50' }]);
+  assert.deepEqual(m.rows.map((r) => r.confidence), ['sure', 'sure', 'sure', 'sure', 'weak', 'none']); // the 5th row's day ("שכישי") is not certain
+});
+
+test('review rows: a grid row has no code, its name is the OCR name', () => {
+  const row = rowFromBlock('אנליזה הרמונית (תרגול) 10:00 - 10:50', 4, courses);
+  const r = oneRow(row);
+  assert.deepEqual([r.code, r.via, r.confidence, r.name, r.type], [null, 'grid', 'none', 'אנליזההרמונית', 'תרגול']);
+});
+
+test('review rows: results keep every earlier field and value', () => {
+  const { rows, ...rest } = matchRows(rowsFromTable(TABLE, courses), courses);
+  assert.equal(rows.length, 6);
+  // values the same fixture gave before the rows existed
+  assert.deepEqual(rest, { found: ['A1', 'A1/1', 'B1', 'B1/1', 'C1'], unknown: ['99999'], ambiguous: 0, quality: 149, weak: 0, weakIds: [] });
+});
+
+test('mergeScans: rows for every group taken (grid gap-fillers too) and for each unknown', () => {
+  // the table lacks the physics course; the grid has it, and a group the table already has
+  const table = matchRows(rowsFromTable(TABLE, courses).filter((r) => r.cid !== '90904'), courses);
+  const grid = matchGrid([
+    { text: 'חוזק חומרים 1 (תרגול)', day: 4, off: 1, hours: 1 }, // B1/1, already in the table
+    { text: 'פיזיקה חשמל ומגנטיות (סופי-הרצאה+תרגול)', day: 1, off: 6, hours: 2 }, // C1: new
+  ], courses);
+  const merged = mergeScans([table], [grid], courses);
+  assert.deepEqual(merged.found, ['A1', 'A1/1', 'B1', 'B1/1', 'C1']);
+  assert.deepEqual(merged.rows.map((r) => r.chosen).filter(Boolean), merged.found);
+  assert.equal(merged.rows.find((r) => r.chosen === 'C1').via, 'grid');
+  assert.equal(merged.rows.find((r) => r.chosen === 'B1/1').via, 'code', 'the table row stays, not the grid duplicate');
+  assert.deepEqual(merged.rows.filter((r) => !r.chosen).map((r) => r.code), merged.unknown);
+  const alone = mergeScans([], [matchGrid([{ text: 'חוזק חומרים 1 (סופי-הרצאה+תרגול)', day: 1, off: 0, hours: 2 }], courses)], courses);
+  assert.deepEqual(alone.rows.map((r) => r.chosen), alone.found);
 });
