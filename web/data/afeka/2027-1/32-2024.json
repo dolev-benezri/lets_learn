@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-07T23:17:06.267Z",
+ "fetchedAt": "2026-11-08T23:18:50.710Z",
  "year": 2027,
  "startYear": 2024,
  "program": 32,
@@ -848,7 +848,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר איל משה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "272081607/1"
@@ -1713,7 +1713,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר פוסטילניק לודמילה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "273011705/1"
@@ -6208,7 +6208,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר לייטנר אריאלה מירה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090105/1",
@@ -6736,7 +6736,7 @@
        "day": 3,
        "start": "08:00",
        "end": "09:50",
-       "room": "302 פיקוס"
+       "room": "103 מעב' דואלי פיקוס"
       },
       {
        "day": 4,
@@ -7067,7 +7067,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' זלקמן סמירין אולגה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7598,6 +7598,43 @@
      ]
     },
     {
+     "id": "279090227",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר ביתן רוני",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 2,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "מפ\"ט אולם כנסים"
+      },
+      {
+       "day": 6,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "207 פיקוס"
+      }
+     ],
+     "exams": [
+      {
+       "kind": "בחינה",
+       "moed": 1,
+       "date": "2027-01-27",
+       "time": "13:00"
+      },
+      {
+       "kind": "בחינה",
+       "moed": 2,
+       "date": "2027-02-17",
+       "time": "17:00"
+      }
+     ]
+    },
+    {
      "id": "279090224/1",
      "type": "תרגול",
      "primary": false,
@@ -7660,7 +7697,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אפרת אבישי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090301/1"
@@ -7858,7 +7895,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שפירא יובל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -7948,7 +7985,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שפירא יובל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9976,7 +10013,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מרגלית תמר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279091104/1"
@@ -10240,7 +10277,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12223,7 +12260,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279092510/1"
@@ -12391,7 +12428,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12490,7 +12527,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279092801/1"
@@ -12646,7 +12683,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

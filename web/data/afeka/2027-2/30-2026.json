@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-07T23:17:06.267Z",
+ "fetchedAt": "2026-11-08T23:18:50.710Z",
  "year": 2027,
  "startYear": 2026,
  "program": 30,
@@ -9367,7 +9367,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279090308/1",
@@ -12104,7 +12104,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר חסנוב אולג,, מר אמבר עמית אדם",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -12593,7 +12593,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092503/1"
@@ -12827,7 +12827,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
