@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyEdit, loadSchedule, lessonsOf } from '../web/edit-state.js';
-import { kinds, editQuery, acceptedParallel, displayData, overlaps, FIXED_COURSE } from '../web/edit-search.js';
+import {
+  kinds, editQuery, acceptedParallel, displayData, overlaps, gapMinutes, proposalsFrom, summaryLine, FIXED_COURSE
+} from '../web/edit-search.js';
 import { search } from '../web/solver-core.js';
 import { DEFAULT } from '../web/app.js';
 import { real } from './fixtures/real.mjs';
@@ -196,4 +198,81 @@ test('frozen real data: a registered schedule never takes another full group, an
   assert.equal(typeof q.statuses['30112'].status, 'string');
   const open = search(editQuery(edit(lessons, { movable: ['30112'] }), data, { ...DEFAULT, passed: [] })).results.map(ids).flat();
   assert.equal(full.some((id) => open.includes(id)), true, 'unregistered, full groups show (with their warning)');
+});
+
+// Proposals
+const R = (groups, score = 1) => ({ groups, score });
+const gapData = () => dataOf({
+  A: course('אלף', [grp('A1', 1, '08:00', '10:00'), grp('A2', 2, '08:00', '10:00')]),
+  B: course('בית', [grp('B1', 1, '12:00', '14:00'), grp('B2', 1, '10:00', '12:00'), grp('B3', 1, '12:00', '14:00', { lecturer: 'M' })])
+});
+const gapBase = () => [L('A', 'A1', 1, '08:00', '10:00'), L('B', 'B1', 1, '12:00', '14:00')];
+
+test('gapMinutes: gaps between lessons of a day, overlapping and touching lessons merged first', () => {
+  const t = (d, a, b) => L('A', 'x', d, a, b);
+  assert.equal(gapMinutes([t(1, '08:00', '10:00'), t(1, '12:00', '14:00')]), 120);
+  assert.equal(gapMinutes([t(1, '08:00', '12:00'), t(1, '09:00', '10:00'), t(1, '11:00', '13:00')]), 0);
+  assert.equal(gapMinutes([t(1, '08:00', '10:00'), t(1, '10:00', '12:00'), t(2, '08:00', '09:00'), t(2, '11:00', '12:00')]), 120);
+  assert.equal(gapMinutes([]), 0);
+});
+
+test('proposals: a result equal to the baseline is dropped; a result that only removes a fixed course stays', () => {
+  const e = edit(twoReal());
+  const q = editQuery(e, base(), record);
+  assert.deepEqual(proposalsFrom([R(['A1', 'B1'])], e, q), []);
+  const withFixed = edit([...twoReal(), L('X', null, 6, '08:00', '10:00')], { removed: ['X'] });
+  const out = proposalsFrom([R(['A1', 'B1'])], withFixed, editQuery(withFixed, base(), record));
+  assert.equal(out.length, 1);
+  assert.deepEqual([out[0].removed, out[0].changed, out[0].added], [['X'], [], []]);
+  assert.equal(out[0].lessons.some((l) => l.course === 'X'), false);
+  const kept = edit([...twoReal(), L('X', null, 6, '08:00', '10:00')], { movable: ['A'] });
+  const qk = editQuery(kept, base(), record);
+  assert.ok(proposalsFrom([R(['A2', 'B1', 'fixed:g'])], kept, qk)[0].lessons.some((l) => l.course === 'X'), 'fixed lessons ride along');
+});
+
+test('proposals: fewest changed courses first, then the better score', () => {
+  const e = edit(twoReal());
+  const q = editQuery(e, base(), record);
+  const out = proposalsFrom([R(['A2', 'B2'], 9), R(['A2', 'B1'], 1), R(['A1', 'B2'], 3)], e, q);
+  assert.deepEqual(out.map((p) => p.changed.length), [1, 1, 2]);
+  assert.deepEqual(out.map((p) => p.score), [3, 1, 9]);
+  assert.deepEqual(out[2].changed, ['A', 'B']);
+});
+
+test('proposals: an added course is listed as added', () => {
+  const data = dataOf({ ...base().courses, C: course('גימל', [grp('C1', 5, '08:00', '09:50')]) });
+  const e = edit(twoReal(), { added: ['C'] });
+  const out = proposalsFrom(search(editQuery(e, data, record)).results, e, editQuery(e, data, record));
+  assert.deepEqual([out[0].added, out[0].changed, out[0].removed], [['C'], [], []]);
+});
+
+test('proposals: fewerGaps drops a result whose gaps are not smaller', () => {
+  const goal = { dayOff: null, notAfter: null, fewerGaps: true };
+  const e = edit(gapBase(), { goal });
+  const q = editQuery(e, gapData(), record);
+  assert.deepEqual(proposalsFrom([R(['A1', 'B3'])], e, q), [], 'same 120 minutes of gap');
+  assert.equal(proposalsFrom([R(['A1', 'B2'])], e, q).length, 1);
+  assert.equal(proposalsFrom([R(['A1', 'B3'])], { ...e, goal: { ...goal, fewerGaps: false } }, q).length, 1);
+});
+
+test('proposals from a real search: one movable course, a free-day goal', () => {
+  const e = edit(twoReal(), { movable: ['B'], goal: { dayOff: 3, notAfter: null, fewerGaps: false } });
+  const q = editQuery(e, base(), record);
+  const out = proposalsFrom(search(q).results, e, q);
+  assert.equal(out.length, 1);
+  assert.deepEqual(out[0].changed, ['B']);
+  assert.equal(out[0].lessons.some((l) => l.day === 3), false);
+});
+
+test('summaryLine: a freed day, gaps, an earlier end, the change count and the lecturer', () => {
+  const data = base();
+  const move = { lessons: [L('A', 'A1', 1, '08:00', '09:50'), L('B', 'B2', 4, '08:00', '09:50')], changed: ['B'], added: [], removed: [], score: 1 };
+  assert.equal(summaryLine(twoReal(), move, data), 'יום ג׳ התפנה · קורס אחד זז · אותו מרצה');
+  const gd = gapData();
+  const gp = { lessons: [L('A', 'A1', 1, '08:00', '10:00'), L('B', 'B2', 1, '10:00', '12:00')], changed: ['B'], added: [], removed: [], score: 1 };
+  assert.equal(summaryLine(gapBase(), gp, gd), 'פחות 120 דקות חלון · מסיימים ב-12:00 · קורס אחד זז · אותו מרצה');
+  const other = { lessons: [L('A', 'A1', 1, '08:00', '10:00'), L('B', 'B3', 1, '12:00', '14:00')], changed: ['B'], added: [], removed: [], score: 1 };
+  assert.equal(summaryLine(gapBase(), other, gd), 'קורס אחד זז');
+  const two = { lessons: [], changed: ['A', 'B'], added: ['C'], removed: ['D', 'E'], score: 1 };
+  assert.equal(summaryLine([], two, gd), '2 קורסים זזו · קורס אחד נוסף · 2 קורסים הוסרו');
 });

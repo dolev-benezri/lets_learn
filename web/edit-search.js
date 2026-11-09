@@ -1,6 +1,7 @@
 // The edit page's search (spec: "Search"): the edit state becomes one `search` call. No DOM.
 import { classify } from './rules.js';
 import { toMin } from './solver-core.js';
+import { lessonsOf } from './edit-state.js';
 import { DEFAULT } from './app.js'; // importing app.js has no side effects (no DOM at import): the build defaults live there
 
 export const FIXED = 'fixed:';
@@ -135,4 +136,67 @@ export function overlaps(lessons) {
     }
   });
   return out;
+}
+
+const lessonKey = (l) => [l.course, l.group, l.day, l.start, l.end].join('|');
+const sameLessons = (a, b) => a.length === b.length && a.map(lessonKey).sort().join() === b.map(lessonKey).sort().join();
+const groupsOfCourse = (lessons, course) => uniq(lessons.filter((l) => l.course === course && l.group).map((l) => l.group)).sort().join();
+
+// Total minutes between lessons on the same day, after merging overlapping or touching lessons.
+export function gapMinutes(lessons) {
+  let gap = 0;
+  for (let d = 1; d <= 6; d++) {
+    const spans = lessons.filter((l) => l.day === d).map((l) => [toMin(l.start), toMin(l.end)]).sort((a, b) => a[0] - b[0]);
+    let end = null;
+    for (const [a, b] of spans) {
+      if (end !== null && a > end) gap += a - end;
+      end = end === null ? b : Math.max(end, b);
+    }
+  }
+  return gap;
+}
+
+// Search results -> proposals, fewest changed courses first, then best score. `query` is what editQuery returned.
+export function proposalsFrom(results, edit, query) {
+  const { fixed } = kinds(edit, query.data), gone = new Set(edit.removed);
+  const fixedLs = edit.baseline.filter((l) => fixed.includes(l.course) && !gone.has(l.course));
+  const was = uniq(edit.baseline.map((l) => l.course)), baseGap = gapMinutes(edit.baseline);
+  return results
+    .map((r) => {
+      const lessons = [...lessonsOf(r.groups.filter((id) => id !== 'fixed:g'), query.data), ...fixedLs];
+      const now = uniq(lessons.map((l) => l.course));
+      return {
+        lessons, score: r.score,
+        changed: was.filter((c) => now.includes(c) && groupsOfCourse(lessons, c) !== groupsOfCourse(edit.baseline, c)),
+        added: now.filter((c) => !was.includes(c)),
+        removed: was.filter((c) => !now.includes(c))
+      };
+    })
+    .filter((p) => !sameLessons(p.lessons, edit.baseline) && !(edit.goal.fewerGaps && gapMinutes(p.lessons) >= baseGap))
+    .sort((a, b) => (a.changed.length + a.added.length + a.removed.length) - (b.changed.length + b.added.length + b.removed.length) ||
+      b.score - a.score);
+}
+
+const DAY_LETTER = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳'];
+const countText = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
+const lecturers = (lessons, course, data) =>
+  uniq(lessons.filter((l) => l.course === course && l.group).map((l) => data.courses[course]?.groups.find((g) => g.id === l.group)?.lecturer ?? ''))
+    .sort().join('|');
+
+// "יום ג׳ התפנה · קורס אחד זז · אותו מרצה": what the proposal gains and what it costs.
+export function summaryLine(baseline, p, data) {
+  const parts = [], days = (ls) => uniq(ls.map((l) => l.day));
+  const freed = days(baseline).filter((d) => !days(p.lessons).includes(d)).sort();
+  if (freed.length === 1) parts.push(`יום ${DAY_LETTER[freed[0]]} התפנה`);
+  else if (freed.length) parts.push(`ימים ${freed.map((d) => DAY_LETTER[d]).join(', ')} התפנו`);
+  const gaps = gapMinutes(baseline) - gapMinutes(p.lessons);
+  if (gaps > 0) parts.push(`פחות ${gaps} דקות חלון`);
+  const last = (ls) => ls.reduce((a, l) => (toMin(l.end) > toMin(a) ? l.end : a), '00:00');
+  if (p.lessons.length && baseline.length && toMin(last(p.lessons)) < toMin(last(baseline))) parts.push(`מסיימים ב-${last(p.lessons)}`);
+  if (p.changed.length) parts.push(countText(p.changed.length, 'קורס אחד זז', 'קורסים זזו'));
+  if (p.added.length) parts.push(countText(p.added.length, 'קורס אחד נוסף', 'קורסים נוספו'));
+  if (p.removed.length) parts.push(countText(p.removed.length, 'קורס אחד הוסר', 'קורסים הוסרו'));
+  const same = (c) => lecturers(baseline, c, data) !== '' && lecturers(baseline, c, data) === lecturers(p.lessons, c, data);
+  if (p.changed.length && p.changed.every(same)) parts.push('אותו מרצה');
+  return parts.join(' · ');
 }
