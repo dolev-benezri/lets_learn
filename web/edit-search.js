@@ -1,6 +1,6 @@
 // The edit page's search (spec: "Search"): the edit state becomes one `search` call. No DOM.
 import { classify } from './rules.js';
-import { toMin } from './solver-core.js';
+import { toMin, search } from './solver-core.js';
 import { lessonsOf } from './edit-state.js';
 import { DEFAULT } from './app.js'; // importing app.js has no side effects (no DOM at import): the build defaults live there
 
@@ -173,9 +173,11 @@ export function proposalsFrom(results, edit, query) {
       };
     })
     .filter((p) => !sameLessons(p.lessons, edit.baseline) && !(edit.goal.fewerGaps && gapMinutes(p.lessons) >= baseGap))
-    .sort((a, b) => (a.changed.length + a.added.length + a.removed.length) - (b.changed.length + b.added.length + b.removed.length) ||
-      b.score - a.score);
+    .sort(byChanges);
 }
+
+const changes = (p) => p.changed.length + p.added.length + p.removed.length;
+const byChanges = (a, b) => changes(a) - changes(b) || b.score - a.score;
 
 const DAY_LETTER = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳'];
 const countText = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
@@ -199,4 +201,40 @@ export function summaryLine(baseline, p, data) {
   const same = (c) => lecturers(baseline, c, data) !== '' && lecturers(baseline, c, data) === lecturers(p.lessons, c, data);
   if (p.changed.length && p.changed.every(same)) parts.push('אותו מרצה');
   return parts.join(' · ');
+}
+
+// For each real baseline course that is not movable yet, one short search with only it movable (spec: "A goal with nothing
+// marked movable"). Keeps the courses whose try gave a proposal. timedOut: the overall cap ran out before every course was
+// tried, or a try stopped on its own time limit with nothing found, so "no solution" is not claimed.
+export function tryEach(edit, data, record, run = search, { perMs = 400, totalMs = 4000 } = {}) {
+  const found = [], start = Date.now(), gone = new Set(edit.removed);
+  let timedOut = false;
+  for (const course of kinds(edit, data).real.filter((c) => !edit.movable.includes(c) && !gone.has(c))) {
+    const left = totalMs - (Date.now() - start);
+    if (left <= 0) {
+      timedOut = true;
+      break;
+    }
+    // a try never runs past the overall cap; a search that stops on its limit reports `partial`
+    const e = { ...edit, movable: [...edit.movable, course] }, q = { ...editQuery(e, data, record), timeLimitMs: Math.min(perMs, left) };
+    const r = run(q), proposals = proposalsFrom(r.results, e, q);
+    if (proposals.length) found.push({ course, proposals });
+    else if (r.partial) timedOut = true;
+  }
+  return { found, timedOut };
+}
+
+// What the worker runs. 'tries': nothing is movable and a goal is set. 'search': one search; with no proposal, the tries
+// say which single course would make one possible (`enabling`), and the first search's diagnosis is passed on.
+export function runEdit({ kind, edit, data, record }) {
+  if (kind === 'tries') {
+    const t = tryEach(edit, data, record);
+    return {
+      proposals: t.found.flatMap((f) => f.proposals).sort(byChanges), enabling: t.found.map((f) => f.course), timedOut: t.timedOut, diagnosis: []
+    };
+  }
+  const q = editQuery(edit, data, record), r = search(q), proposals = proposalsFrom(r.results, edit, q);
+  if (proposals.length) return { proposals, enabling: [], timedOut: !!r.partial, diagnosis: r.diagnosis };
+  const t = tryEach(edit, data, record);
+  return { proposals: [], enabling: t.found.map((f) => f.course), timedOut: !!r.partial || t.timedOut, diagnosis: r.diagnosis };
 }

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyEdit, loadSchedule, lessonsOf } from '../web/edit-state.js';
 import {
-  kinds, editQuery, acceptedParallel, displayData, overlaps, gapMinutes, proposalsFrom, summaryLine, FIXED_COURSE
+  kinds, editQuery, acceptedParallel, displayData, overlaps, gapMinutes, proposalsFrom, summaryLine, tryEach, runEdit, FIXED_COURSE
 } from '../web/edit-search.js';
 import { search } from '../web/solver-core.js';
 import { DEFAULT } from '../web/app.js';
@@ -275,4 +275,72 @@ test('summaryLine: a freed day, gaps, an earlier end, the change count and the l
   assert.equal(summaryLine(gapBase(), other, gd), 'קורס אחד זז');
   const two = { lessons: [], changed: ['A', 'B'], added: ['C'], removed: ['D', 'E'], score: 1 };
   assert.equal(summaryLine([], two, gd), '2 קורסים זזו · קורס אחד נוסף · 2 קורסים הוסרו');
+});
+
+// Single-course tries and the edit worker
+const free3 = { dayOff: 3, notAfter: null, fewerGaps: false };
+const tryData = () => dataOf({
+  A: course('אלף', [grp('A1', 1, '08:00', '09:50'), grp('A2', 2, '08:00', '09:50')]),
+  B: course('בית', [grp('B1', 3, '08:00', '09:50'), grp('B2', 4, '08:00', '09:50')])
+});
+
+test('runEdit tries: nothing movable, a free-day goal only B can reach: proposals change only B, enabling [B]', () => {
+  const e = edit(twoReal(), { goal: free3 });
+  const out = runEdit({ kind: 'tries', edit: e, data: tryData(), record });
+  assert.deepEqual(out.enabling, ['B']);
+  assert.ok(out.proposals.length > 0 && out.proposals.every((p) => p.changed.join() === 'B' && !p.lessons.some((l) => l.day === 3)));
+  assert.equal(out.timedOut, false);
+});
+
+test('runEdit search: with A movable and only B able to free the day, no proposal but enabling [B] and a diagnosis', () => {
+  const e = edit(twoReal(), { goal: free3, movable: ['A'] });
+  const out = runEdit({ kind: 'search', edit: e, data: tryData(), record });
+  assert.deepEqual([out.proposals, out.enabling, out.timedOut], [[], ['B'], false]);
+  assert.ok(out.diagnosis.length > 0);
+  const ok = runEdit({ kind: 'search', edit: { ...e, movable: ['A', 'B'] }, data: tryData(), record });
+  assert.ok(ok.proposals.length > 0 && ok.enabling.length === 0);
+});
+
+test('runEdit: a fixed lesson on the goal day leaves no proposal, no enabling course, and no timeout', () => {
+  const e = edit([...twoReal(), L('X', null, 3, '12:00', '13:50')], { goal: free3 });
+  for (const kind of ['tries', 'search']) {
+    const out = runEdit({ kind, edit: e, data: tryData(), record });
+    assert.deepEqual([out.proposals, out.enabling, out.timedOut], [[], [], false], kind);
+  }
+});
+
+test('tryEach: skips courses already movable and removed ones; the overall cap reports a timeout', () => {
+  const seen = [];
+  const spy = (q) => (seen.push(q.courses.map((c) => c.id).join()), { results: [], partial: false, diagnosis: [] });
+  const e = edit(twoReal(), { movable: ['A'], goal: free3 });
+  assert.deepEqual(tryEach(e, tryData(), record, spy), { found: [], timedOut: false });
+  assert.equal(seen.length, 1);
+  const four = dataOf(Object.fromEntries('ABCD'.split('').map((c, i) => [c, course(c, [grp(`${c}1`, i + 1, '08:00', '09:50')])])));
+  const lessons = 'ABCD'.split('').map((c, i) => L(c, `${c}1`, i + 1, '08:00', '09:50'));
+  const slow = () => {
+    const t = Date.now();
+    while (Date.now() - t < 30); // a synchronous busy-wait
+    return { results: [], partial: false, diagnosis: [] };
+  };
+  const r = tryEach(edit(lessons), four, record, slow, { perMs: 10, totalMs: 50 });
+  assert.deepEqual([r.found, r.timedOut], [[], true]);
+  assert.equal(tryEach(edit(lessons), four, record, slow, { perMs: 10, totalMs: 5000 }).timedOut, false);
+});
+
+test('tryEach: a try that stops on its own time limit with nothing found is a timeout, not "no solution"', () => {
+  const partial = () => ({ results: [], partial: true, diagnosis: [] });
+  assert.equal(tryEach(edit(twoReal(), { goal: free3 }), tryData(), record, partial).timedOut, true);
+});
+
+test('tryEach: each try gets at most the time left of the overall cap', () => {
+  const limits = [];
+  const slow = (q) => {
+    limits.push(q.timeLimitMs);
+    const t = Date.now();
+    while (Date.now() - t < 30); // a synchronous busy-wait
+    return { results: [], partial: false, diagnosis: [] };
+  };
+  tryEach(edit(twoReal(), { goal: free3 }), tryData(), record, slow, { perMs: 400, totalMs: 100 });
+  assert.equal(limits.length, 2);
+  assert.ok(limits[0] <= 100 && limits[1] < 100 && limits[1] <= 100 - 25, `${limits}`);
 });
