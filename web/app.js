@@ -560,12 +560,14 @@ export function refresh() {
   keepFocus(() => renderers.forEach((r) => r()));
 }
 
-// Four steps, one page: #me, #courses, #prefs; any other hash (friend and backup links too) is the plans.
+// Four steps, one page: #me, #courses, #prefs (and #edit, the edit page); any other hash (friend and backup links too) is the plans.
 const HASH = { me: '#me', courses: '#courses', prefs: '#prefs', plan: '' };
 export const STEPS = Object.keys(HASH);
-export const routeOf = (h) => STEPS.find((v) => HASH[v] === h && h) ?? 'plan';
+// The edit page (#edit, #edit/changes) is its own route, checked first.
+export const isEditHash = (h) => h === '#edit' || h.startsWith('#edit/');
+export const routeOf = (h) => (isEditHash(h) ? 'edit' : (STEPS.find((v) => HASH[v] === h && h) ?? 'plan'));
 // routeOf's inverse: the hash that shows a view
-export const hashOf = (view) => (Object.hasOwn(HASH, view) ? HASH[view] : '');
+export const hashOf = (view) => (view === 'edit' ? '#edit' : Object.hasOwn(HASH, view) ? HASH[view] : '');
 
 const SKELETON = `<div class="skel" role="status"><span class="sr">טוען את מערכת השעות…</span><div class="skel-grid" aria-hidden="true">${'<div><i></i><i></i><i></i></div>'.repeat(5)}</div></div>`;
 
@@ -691,7 +693,7 @@ async function init() {
   const failed = () => {
     app.cls = null; // a failure after the data was classified: ui-plan.js onHash must not route as if all were well
     app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
-    for (const id of ['week', 'me', 'side', 'prefs']) {
+    for (const id of ['week', 'me', 'side', 'prefs', 'edit']) {
       const el = document.getElementById(id);
       el.innerHTML =
         '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b>' +

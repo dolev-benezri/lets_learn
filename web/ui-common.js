@@ -223,7 +223,8 @@ export const PAGE = {
   me: ['me', 'meTitle'],
   courses: ['courses', 'coursesTitle'],
   prefs: ['prefs', 'prefsTitle'],
-  plan: ['layout', 'weekTitle']
+  plan: ['layout', 'weekTitle'],
+  edit: ['edit', 'editTitle']
 };
 export const shownTitle = () => $(Object.values(PAGE).find(([p]) => !$(p).hidden)?.[1]);
 
