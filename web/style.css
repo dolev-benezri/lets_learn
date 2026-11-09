@@ -2208,3 +2208,25 @@ body.touring .actions { display:flex; }
 .tour-pop .driver-popover-next-btn, .tour-pop .driver-popover-next-btn:hover, .tour-pop .driver-popover-next-btn:focus
   { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
 .tour-pop .driver-popover-next-btn:hover { background:var(--primary-hover); border-color:var(--primary-hover); }
+
+/* the edit page (ui-edit.js): one centered column; review rows are fieldsets of 44px radio rows */
+.edit-col { display:grid; gap:14px; max-width:640px; margin:0 auto; }
+.edit-col .me-card h3 { margin-bottom:6px; }
+.edit-ways .me-choice-btns { margin-top:0; }
+.rv-row { margin:10px 0 0; padding:10px; border:1px solid var(--border-strong); border-radius:var(--radius); }
+.rv-row legend { padding:0 6px; font-size:var(--fs); }
+.rv-row legend .hint { display:block; }
+.rv-opt {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:var(--tap);
+  padding:4px 6px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+}
+.rv-opt:has(input:checked) { background:var(--primary-soft); }
+.rv-opt input { flex:none; width:20px; height:20px; accent-color:var(--primary); }
+.rv-opt:has(input:focus-visible) { outline:2px solid var(--primary); outline-offset:1px; }
+.snap { display:grid; gap:4px; margin:6px 0 12px; }
+.snap li { padding:6px 0; border-bottom:1px solid var(--border); }

@@ -42,7 +42,7 @@ const firstDay = () => {
 // returns an error string (the editor stays open and shows it) or null; returnFocusId: element id to focus after close.
 // mode 'edit' (the edit page's step 1): no name, the semesters א, ב and קיץ. groups, rows (review rows of an earlier visit) and sem
 // start it; onSave({ groups, rows, sem }) gets the chosen semester's groups and a review row for each, and for every unknown row.
-export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null }) {
+export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null, focusFile = false }) {
   if (dlg.open) return;
   const draft = friend ? friend.groups.slice() : mode === 'edit' ? groups.slice() : [];
   ed = {
@@ -69,7 +69,7 @@ export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 
   renderGrid();
   updateBar();
   dlg.showModal();
-  if (mode === 'edit') $('feTitle').focus(); // no field to start in: the heading, so the keyboard stays down on a phone
+  if (mode === 'edit') $(focusFile ? 'feFile' : 'feTitle').focus(); // no field to start in: the heading, so the keyboard stays down on a phone
   else if (!(phone.matches && friend)) $('feName').focus(); // editing on a phone: don't raise the keyboard over the page
 }
 phone.addEventListener('change', () => {
