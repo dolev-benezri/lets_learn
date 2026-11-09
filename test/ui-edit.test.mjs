@@ -41,6 +41,9 @@ test('stepOneHtml: the way in, the registered box, the next button; copy is exac
   assert.equal(a.getAttribute('target'), '_blank');
   assert.equal(a.getAttribute('rel'), 'noopener noreferrer');
   assert.match(root.querySelector('.edit-yedion').text, /באפקה-נט \(נפתח בלשונית חדשה\) אפשר להוריד את מערכת השעות כקובץ אקסל/);
+  // where the file is in the portal, in the portal's own words
+  for (const s of ['בחינות / ציונים / מערכת שעות', 'לוח מערכת שעות', 'ביצוע', 'להפקת דו"ח אקסל'])
+    assert.ok(root.querySelector('.edit-yedion').text.includes(s), s);
   assert.equal(root.querySelectorAll('[data-ed-row]').length, 0, 'nothing to review');
   assert.ok(!/החל|הרשם/.test(root.querySelectorAll('button').map((b) => b.text).join(' ')), 'no apply/register verb on an action');
 });

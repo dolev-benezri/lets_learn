@@ -13,8 +13,10 @@ export const conflictLine = (t) => `יש סתירה בין המקורות הרש
 export const YEDION_URL = 'https://yedionp.afeka.ac.il/yedion/fireflyweb.aspx';
 export const YEDION_HINT =
   `<a href="${YEDION_URL}" target="_blank" rel="noopener noreferrer">באפקה-נט<span class="sr"> (נפתח בלשונית חדשה)</span></a>` +
-  ' אפשר להוריד את מערכת השעות כקובץ אקסל, ואז לטעון אותו כאן.';
-export const SPLIT_NOTE ='חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
+  ' אפשר להוריד את מערכת השעות כקובץ אקסל, ואז לטעון אותו כאן.' +
+  // the path as the portal prints it (seen 2026-11-10): the menu, the page, its run button, then the export button
+  ' שם: בתפריט "בחינות / ציונים / מערכת שעות" בוחרים "לוח מערכת שעות", לוחצים "ביצוע" ואז "להפקת דו"ח אקסל".';
+export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
 // names are raw: the caller escapes
 export const splitLine = (names) => `מופרדים: ${names.join(', ')} · דורש אישור ההכוון`;
 export const esc = (s) =>
