@@ -1,7 +1,7 @@
 // Full-screen editor for a friend's timetable: pick groups (course search, paste, PDF, image) and see them on a week grid.
 // Draft state lives only here until Save. Events are handled on the <dialog> itself and stopped there, so ui-plan.js's
 // document-level click / change / submit / keydown handlers (data-act, data-chg, Escape closes the drawer) never see them.
-import { app, esc, yearView, semOfGroup } from './app.js';
+import { app, esc, yearView, semOfGroup, summerOn } from './app.js';
 import { DAYS, icon, typeLabel, groupIndex, hourRange, renderWeek, assignColors } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { groupsFromText, placeGroup, findCourse, clashIds } from './friend-import.js';
@@ -14,14 +14,19 @@ const MAX = 40;
 const LIMIT = `אפשר עד ${MAX} קבוצות לחבר`;
 const NOTEXT = 'לא נמצא טקסט בקובץ, נסו להעתיק ולהדביק';
 const failText = (e) => (e?.user ? e.message : NOTEXT); // a limit that ran out has its own words; every other failure reads as "no text"
-const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳' };
+const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳', 'קיץ': 'קיץ' };
 
 const dlg = document.getElementById('friendEd');
 // phone: the editor is two full-screen tabs (CSS shows one, driven by #feRoot[data-tab]); wider: both side by side
 const phone = matchMedia('(max-width:599px)');
-let ed = null; // the open editor: { friend, onSave, returnFocusId, draft, sem, day, sel, cid, busy, colors }
+let ed = null; // the open editor: { mode, friend, onSave, returnFocusId, draft, rows, sem, day, sel, cid, busy, colors }
 const $ = (id) => dlg.querySelector(`#${id}`);
 const semData = () => app.sem[ed.sem];
+// The edit variant (mode 'edit') also works in summer, when the student plans it; the friend editor knows only א and ב.
+const sems = () =>
+  (ed.mode === 'edit' ? ['א', 'ב', 'קיץ'] : ['א', 'ב']).filter((s) => app.sem[s] && (s !== 'קיץ' || summerOn()));
+const semOf = (gid, edit = ed?.mode === 'edit') =>
+  semOfGroup(gid) ?? (edit && summerOn() && groupIndex(app.sem['קיץ']).has(gid) ? 'קיץ' : null);
 const offered = (sem) =>
   Object.fromEntries(Object.entries(app.sem[sem]?.courses ?? {}).filter(([, c]) => c.groups.length));
 const meetingsOf = (gid) => groupIndex(semData()).get(gid)?.g.meetings ?? [];
@@ -35,15 +40,19 @@ const firstDay = () => {
 
 // Opens the editor. friend: the manual friend being edited (omit for a new one). onSave({ name, groups, manual }, editingName)
 // returns an error string (the editor stays open and shows it) or null; returnFocusId: element id to focus after close.
-export function openFriendEditor({ friend = null, onSave, returnFocusId }) {
+// mode 'edit' (the edit page's step 1): no name, the semesters א, ב and קיץ. groups, rows (review rows of an earlier visit) and sem
+// start it; onSave({ groups, rows, sem }) gets the chosen semester's groups and a review row for each, and for every unknown row.
+export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null }) {
   if (dlg.open) return;
-  const draft = friend ? friend.groups.slice() : [];
+  const draft = friend ? friend.groups.slice() : mode === 'edit' ? groups.slice() : [];
   ed = {
+    mode,
+    rows: mode === 'edit' ? rows.map((r) => ({ ...r })) : [],
     friend,
     onSave,
     returnFocusId,
     draft,
-    sem: draft.map(semOfGroup).find(Boolean) ?? 'א',
+    sem: sem ?? draft.map((g) => semOf(g, mode === 'edit')).find(Boolean) ?? 'א',
     day: 1,
     sel: null,
     cid: null,
@@ -60,7 +69,8 @@ export function openFriendEditor({ friend = null, onSave, returnFocusId }) {
   renderGrid();
   updateBar();
   dlg.showModal();
-  if (!(phone.matches && friend)) $('feName').focus(); // editing on a phone: don't raise the keyboard over the page
+  if (mode === 'edit') $('feTitle').focus(); // no field to start in: the heading, so the keyboard stays down on a phone
+  else if (!(phone.matches && friend)) $('feName').focus(); // editing on a phone: don't raise the keyboard over the page
 }
 phone.addEventListener('change', () => {
   if (ed) setTab($('feRoot').dataset.tab);
@@ -68,12 +78,12 @@ phone.addEventListener('change', () => {
 
 const shell = () => `<div class="fe" id="feRoot">
   <header class="fe-head">
-    <h2 id="feTitle">${ed.friend ? 'עריכת חבר' : 'מערכת של חבר'}</h2>
-    <div class="fe-name"><label for="feName">שם החבר</label>
+    <h2 id="feTitle" tabindex="-1">${ed.mode === 'edit' ? 'המערכת שלי' : ed.friend ? 'עריכת חבר' : 'מערכת של חבר'}</h2>
+    ${ed.mode === 'edit' ? '' : `<div class="fe-name"><label for="feName">שם החבר</label>
       <input id="feName" type="text" maxlength="60" autocomplete="off" aria-required="true" value="${esc(ed.friend?.name ?? '')}">
-      <p class="err-text" id="feNameErr" role="alert"></p></div>
+      <p class="err-text" id="feNameErr" role="alert"></p></div>`}
     <div class="fe-actions"><button type="button" class="btn" data-fe="cancel">${icon('x')}<span class="fe-lbl">ביטול</span></button>
-      <button type="button" class="btn primary" data-fe="save">${icon('check')} שמור חבר</button></div>
+      <button type="button" class="btn primary" data-fe="save">${icon('check')} ${ed.mode === 'edit' ? 'שמור' : 'שמור חבר'}</button></div>
   </header>
   <p class="err-text fe-err" id="feErr" role="alert"></p>
   <div class="fe-tabs" role="tablist" aria-label="חלקי העורך">
@@ -131,8 +141,8 @@ function setTab(tab) {
 function renderTabs() {
   // the semester switch shows in both panes (the picker's copy only on a phone); setSem keeps both checked
   const html = (name) =>
-    app.sem['ב']
-      ? `<fieldset class="seg"><legend class="sr">סמסטר</legend><div class="seg-opts">${['א', 'ב']
+    sems().length > 1
+      ? `<fieldset class="seg"><legend class="sr">סמסטר</legend><div class="seg-opts">${sems()
           .map(
             (s) =>
               `<label><input type="radio" name="${name}" value="${s}"${s === ed.sem ? ' checked' : ''}><span data-s="${s}"></span></label>`
@@ -145,7 +155,7 @@ function renderTabs() {
 }
 function refreshTabs() {
   for (const el of dlg.querySelectorAll('[data-s]'))
-    el.textContent = `סמסטר ${SEM_NAME[el.dataset.s]} · ${ed.draft.filter((g) => semOfGroup(g) === el.dataset.s).length}`;
+    el.textContent = `סמסטר ${SEM_NAME[el.dataset.s]} · ${ed.draft.filter((g) => semOf(g) === el.dataset.s).length}`;
 }
 function renderCourses() {
   const cs = offered(ed.sem);
@@ -243,7 +253,7 @@ function lanes(blocks) {
 }
 function updateBar() {
   const sel = ed.sel && groupIndex(semData()).get(ed.sel),
-    unk = ed.draft.filter((g) => !semOfGroup(g)).length;
+    unk = ed.draft.filter((g) => !semOf(g)).length;
   $('feCount').textContent = `${ed.draft.length} מתוך ${MAX} קבוצות`;
   $('feSel').textContent = sel ? `נבחרה: ${sel.c.name} · ${typeLabel(sel.g.type)}` : 'בחרו קבוצה בלוח כדי להסיר אותה';
   $('feRemove').disabled = !sel;
@@ -264,7 +274,7 @@ const setPickErr = (text, invalid = false) => setErr('fePickErr', text, invalid 
 // ---------- draft ----------
 // Places gid through its own semester's data (same course + type replaces, only inside one semester). false = refused.
 function put(gid) {
-  const data = app.sem[semOfGroup(gid)];
+  const data = app.sem[semOf(gid)];
   if (!data) return false;
   const next = placeGroup(ed.draft, gid, data);
   if (!next.includes(gid) && !ed.draft.includes(gid)) return false;
@@ -312,9 +322,9 @@ function search() {
   const input = $('feCourse'),
     cid = findCourse(input.value, offered(ed.sem));
   if (!cid) {
-    const other = ed.sem === 'א' ? 'ב' : 'א';
+    const other = sems().find((s) => s !== ed.sem && findCourse(input.value, offered(s)));
     setPickErr(
-      app.sem['ב'] && findCourse(input.value, offered(other))
+      other
         ? `הקורס לא מוצע בסמסטר ${SEM_NAME[ed.sem]}. נסו את סמסטר ${SEM_NAME[other]}`
         : 'לא מצאתי קורס בשם הזה',
       true
@@ -332,9 +342,39 @@ function search() {
 const status = (html) => {
   $('feImpStatus').innerHTML = html;
 };
-const allData = () => (app.sem['ב'] ? yearView(app.sem['א'], app.sem['ב']) : app.sem['א']);
-const importText = (text) => applyFound(groupsFromText(text, allData()));
-function applyFound({ found, unknown, ambiguous = 0, weak = 0 }) {
+const baseData = () => (app.sem['ב'] ? yearView(app.sem['א'], app.sem['ב']) : app.sem['א']);
+const allData = () => (ed.mode === 'edit' && summerOn() ? yearView(baseData(), app.sem['קיץ']) : baseData());
+// A review row for a group nobody read from a file (picked by hand, or named by its id): there is nothing to check.
+const sureRow = (gid) => {
+  const { cid, c, g } = groupIndex(allData()).get(gid);
+  return {
+    code: cid, name: c.name.slice(0, 100), type: g.type.slice(0, 60), text: '', via: 'code', confidence: 'sure', candidates: [gid], chosen: gid,
+    meets: g.meetings.filter((m) => m.day >= 1 && m.day <= 6 && m.start && m.end).map((m) => ({ day: m.day, start: m.start, end: m.end }))
+  };
+};
+// What the edit variant hands back: the chosen semester's groups, the rows of those still placed, every unknown row, a sure row for the rest.
+function editResult() {
+  const groups = ed.draft.filter((g) => semOf(g) === ed.sem), have = new Set();
+  const rows = ed.rows.filter((r) => (r.chosen ? groups.includes(r.chosen) && !have.has(r.chosen) && have.add(r.chosen) : true));
+  return { groups, rows: [...rows, ...groups.filter((g) => !have.has(g)).map(sureRow)], sem: ed.sem };
+}
+// Rows from an import join the ones already read; the same group or the same unreadable row twice stays once.
+function addRows(rows = []) {
+  const key = (r) => (r.chosen ? `g|${r.chosen}` : `n|${r.code}|${r.text}|${JSON.stringify(r.meets)}`);
+  const seen = new Set(ed.rows.map(key));
+  for (const r of rows) if (!seen.has(key(r)) && seen.add(key(r))) ed.rows.push(r);
+}
+function importText(text) {
+  const ids = groupsFromText(text, allData());
+  // edit variant: text with no group id may be a planner table, like a PDF's text
+  if (ed.mode === 'edit' && !(ids.found.length || ids.unknown.length)) {
+    const rows = rowsFromTable(text, allData().courses);
+    if (rows.length) return applyFound(matchRows(rows, allData().courses));
+  }
+  applyFound(ids);
+}
+function applyFound({ found, unknown, ambiguous = 0, weak = 0, rows }) {
+  if (ed.mode === 'edit') addRows(rows);
   const placed = [];
   let already = 0,
     refused = 0;
@@ -344,14 +384,13 @@ function applyFound({ found, unknown, ambiguous = 0, weak = 0 }) {
     else if (put(gid)) placed.push(gid);
     else refused++;
   }
-  const otherOf = (s) => (s === 'א' ? 'ב' : 'א');
-  const switched = placed.length && !placed.some((g) => semOfGroup(g) === ed.sem) ? semOfGroup(placed[0]) : null; // nothing here: show where they landed
+  const switched = placed.length && !placed.some((g) => semOf(g) === ed.sem) ? semOf(placed[0]) : null; // nothing here: show where they landed
   if (switched) setSem(switched);
   setPickErr(refused ? LIMIT : '');
   changed();
   renderGroups();
-  const other = placed.filter((g) => semOfGroup(g) !== ed.sem).length,
-    o = SEM_NAME[otherOf(ed.sem)];
+  const other = placed.filter((g) => semOf(g) !== ed.sem).length,
+    o = [...new Set(placed.map((g) => semOf(g)).filter((x) => x !== ed.sem))].map((x) => SEM_NAME[x]).join(' ו');
   const skipped = [already && `${already} כבר במערכת`, refused && `${refused} לא שובצו`].filter(Boolean).join(', ');
   status(
     `<p>${placed.length === found.length ? (found.length === 1 ? 'נמצאה קבוצה אחת' : `נמצאו ${found.length} קבוצות`) : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${
@@ -383,7 +422,8 @@ async function pdfText(file) {
 // Group ids in the text win; otherwise whatever a table or grid gave.
 function applyScan(text, result) {
   const ids = groupsFromText(text, allData());
-  applyFound(ids.found.length || !(result.found.length || result.unknown.length) ? ids : result);
+  const useIds = ids.found.length || !(result.found.length || result.unknown.length);
+  applyFound(useIds ? { ...ids, rows: result.rows } : result); // the scan's unreadable rows are kept either way
 }
 const progress = (me) => (i, n, f) => {
   if (ed === me) status(`<p>מזהה טקסט… ${n > 1 ? `שקף ${i + 1} מתוך ${n}, ` : ''}${Math.round(f * 100)}%</p>`);
@@ -493,7 +533,21 @@ async function importFile(file) {
 }
 
 // ---------- save / close ----------
+function saveEdit() {
+  const out = editResult();
+  setErr('feErr', '');
+  if (!out.groups.length && !out.rows.length) {
+    setTab('pick');
+    setPickErr('יש לשבץ קבוצה אחת לפחות', true);
+    $('feCourse').focus();
+    return;
+  }
+  const err = ed.onSave(out);
+  if (err) setErr('feErr', err);
+  else closeEditor();
+}
 async function save() {
+  if (ed.mode === 'edit') return saveEdit();
   const input = $('feName'),
     name = input.value.trim();
   setErr('feErr', '');
@@ -526,7 +580,7 @@ async function save() {
 
 const ACT = {
   async cancel() {
-    const dirty = $('feName').value.trim() !== (ed.friend?.name ?? '') || ed.draft.join() !== ed.start;
+    const dirty = ($('feName')?.value.trim() ?? '') !== (ed.friend?.name ?? '') || ed.draft.join() !== ed.start;
     if (!dirty || await askConfirm('לסגור בלי לשמור?', { ok: 'סגור', cancel: 'המשך לערוך' })) closeEditor();
   },
   save,
@@ -554,6 +608,7 @@ const ACT = {
       setPickErr(LIMIT);
       return;
     } else {
+      ed.rows = ed.rows.filter((r) => r.chosen !== gid); // picked by hand: no stale guess to check
       const ds = meetingsOf(gid)
         .map((m) => m.day)
         .filter((d) => d >= 1 && d <= 6);
