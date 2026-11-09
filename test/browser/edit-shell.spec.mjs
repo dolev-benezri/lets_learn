@@ -133,3 +133,26 @@ test('phone: a visit with no link opens the remembered mode; a link wins; Back t
   await page.locator('#edit').waitFor({ state: 'hidden' });
   assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-mode')), 'build');
 });
+
+// A short phone (about what a phone browser leaves between its bars): the reason must show where the finger is.
+test('short phone: a load button pressed before the year is chosen says why beside the buttons, in view, and opens nothing', async (t) => {
+  const noYear = { ...DONE, 'afeka-sched-v1': JSON.stringify({ ...JSON.parse(DONE['afeka-sched-v1']), profile: { year: null, amirnet: null, specs: [], summer: false } }) };
+  const page = await visit(t, { width: 390, height: 640 }, noYear, '#edit');
+  for (const way of ['loadFile', 'loadHand']) {
+    const btn = page.locator(`[data-ed="${way}"]`);
+    await btn.scrollIntoViewIfNeeded();
+    await btn.click();
+    const msg = page.locator('#edWaysMsg');
+    assert.equal(await msg.textContent(), 'בחרו קודם שנת לימודים.', way);
+    assert.equal(await page.locator('#friendEd[open]').count(), 0, way);
+    // in view, and right above the buttons: no farther than one button's height from the pressed card
+    const [m, b] = [await msg.boundingBox(), await page.locator('[data-ed="loadFile"]').boundingBox()];
+    assert.ok(m.y >= 0 && m.y + m.height <= 640, `${way}: the message is on screen`);
+    assert.ok(b.y - (m.y + m.height) < 24 && b.y > m.y, `${way}: the message sits just above the buttons`);
+    assert.equal(await page.evaluate(() => document.activeElement?.name), 'p-year', `${way}: focus goes to the missing answer`);
+  }
+  // the year answered: the same button opens the loader, and the message is gone
+  await page.locator('#editIdentity .seg-opts label').nth(1).click(); // the page is drawn again: a click, not check()
+  await page.locator('[data-ed="loadFile"]').click();
+  await page.locator('#friendEd[open]').waitFor();
+});

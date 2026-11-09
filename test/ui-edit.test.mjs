@@ -45,6 +45,10 @@ test('stepOneHtml: the way in, the registered box, the next button; copy is exac
   for (const s of ['בחינות / ציונים / מערכת שעות', 'לוח מערכת שעות', 'ביצוע', 'להפקת דו"ח אקסל'])
     assert.ok(root.querySelector('.edit-yedion').text.includes(s), s);
   assert.equal(root.querySelectorAll('[data-ed-row]').length, 0, 'nothing to review');
+  // why a load button did nothing is said inside the buttons' card, above them (on a phone the "הבא" row is far below)
+  const ways = root.querySelector('.edit-ways');
+  assert.equal(ways.querySelector('#edWaysMsg').getAttribute('role'), 'alert');
+  assert.ok(ways.innerHTML.indexOf('edWaysMsg') < ways.innerHTML.indexOf('data-ed="loadFile"'));
   assert.ok(!/החל|הרשם/.test(root.querySelectorAll('button').map((b) => b.text).join(' ')), 'no apply/register verb on an action');
 });
 

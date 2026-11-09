@@ -74,7 +74,9 @@ export function stepOneHtml(edit, data, review, { same = true } = {}) {
   const d = edit.draft, choices = d?.choices ?? {}, rows = d ? review : [];
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
     <p class="me-step"><b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.</p></div><div id="editIdentity"></div>`;
-  const ways = (primary) => `<section class="me-card edit-ways" aria-label="טעינת המערכת"><div class="me-choice-btns">
+  // edWaysMsg: why a load button did nothing (track or year missing), said beside the button that was pressed
+  const ways = (primary) => `<section class="me-card edit-ways" aria-label="טעינת המערכת">
+    <p class="err-text" id="edWaysMsg" role="alert"></p><div class="me-choice-btns">
     <button type="button" class="btn${primary ? ' primary' : ''}" data-ed="loadFile">קובץ מערכת (אקסל מאפקה-נט, PDF או צילום)</button>
     <button type="button" class="btn" data-ed="loadHand">לבחור קורסים וקבוצות ידנית</button></div>
     <p class="hint edit-yedion">${YEDION_HINT}</p></section>`;
@@ -269,8 +271,8 @@ const commit = (next) => {
 };
 const dataOf = (sem) => app.sem?.[sem] ?? null;
 const sameNow = (st) => !st.baseline.length || (!!dataOf(st.dataset?.sem) && sameDataset(st, dataOf(st.dataset.sem), app.state));
-const say = (text) => {
-  if ($('edMsg')) $('edMsg').textContent = text;
+const say = (text, at = 'edMsg') => {
+  if ($(at)) $(at).textContent = text;
 };
 const onChanges = () => location.hash === '#edit/changes';
 
@@ -504,15 +506,17 @@ const groupsOfDraft = (d) =>
 const fixedRows = (d) => (d?.rows ?? []).map((r, i) => (i in d.choices && !d.choices[i] ? { ...r, chosen: null } : r));
 
 // The loader lists the track's courses and the dataset is the track's: track and year come first.
-const noIdentity = () => {
+// `at`: where the reason is said, beside the control that was pressed (on a phone the "הבא" row is far below the load buttons).
+const noIdentity = (at = 'edMsg') => {
   if (app.state.profile.year && !needsProgram()) return false;
-  say('בחרו קודם מסלול ושנת לימודים.');
-  $('editIdentity')?.querySelector('select, input')?.focus();
+  const track = needsProgram();
+  say(track ? 'בחרו קודם מסלול ושנת לימודים.' : 'בחרו קודם שנת לימודים.', at);
+  $('editIdentity')?.querySelector(track ? 'select' : 'input')?.focus();
   return true;
 };
 
 async function openLoader(file) {
-  if (noIdentity()) return;
+  if (noIdentity('edWaysMsg')) return;
   const { openFriendEditor } = await import('./ui-friend-editor.js');
   const d = edit().draft;
   openFriendEditor({
