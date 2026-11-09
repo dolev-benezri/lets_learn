@@ -198,6 +198,12 @@ test('review rows: a coded row with the exact day and hours is sure', () => {
   assert.deepEqual([r.code, r.via, r.text, r.type], ['30112', 'code', 'row 30112', 'סופי-הרצאה+תרגול']);
 });
 
+test('review rows: a code corrected by one digit is not sure even with exact hours; an OCR look-alike letter is', () => {
+  const meets = [{ days: [2], start: '13:00', end: '14:50' }];
+  assert.equal(oneRow(coded('30112', meets, { code: '30113' })).confidence, 'weak');
+  assert.equal(oneRow(coded('30112', meets, { code: '3O112' })).confidence, 'sure');
+});
+
 test('review rows: hours only close, or a day that is not certain, is weak', () => {
   assert.equal(oneRow(coded('30112', [{ days: [2], start: '13:00', end: '15:00' }])).confidence, 'weak');
   assert.equal(oneRow(coded('30112', [{ days: [2, 3], start: '13:00', end: '14:50' }])).confidence, 'weak');

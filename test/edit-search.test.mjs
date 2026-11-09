@@ -394,3 +394,13 @@ test('kinds: a known course with a missing group becomes real once it has a swap
   assert.deepEqual(kinds(edit(lessons), base()).fixed, ['B']);
   assert.deepEqual(kinds(edit(lessons, { swaps: { B: ['B2'] } }), base()).fixed, []);
 });
+
+test('kinds: a course whose linked part was not loaded (no tutorial row) stays as loaded, unless it may move', () => {
+  const T = (id, day) => grp(id, day, '12:00', '12:50', { type: 'תרגול', primary: false });
+  const data = dataOf({ ...base().courses, C: course('גימל', [grp('C1', 5, '08:00', '09:50', { linked: ['C1/1', 'C1/2'] }), T('C1/1', 5), T('C1/2', 6)]) });
+  const lecture = L('C', 'C1', 5, '08:00', '09:50');
+  assert.deepEqual(kinds(edit([...twoReal(), lecture]), data).fixed, ['C']);
+  assert.deepEqual(kinds(edit([...twoReal(), lecture, L('C', 'C1/2', 6, '12:00', '12:50')]), data).fixed, [], 'lecture + its tutorial is whole');
+  assert.deepEqual(kinds(edit([...twoReal(), lecture], { movable: ['C'] }), data).fixed, []);
+  assert.deepEqual(kinds(edit([...twoReal(), L('C', 'C1/1', 5, '12:00', '12:50')]), data).fixed, ['C'], 'a tutorial without its lecture');
+});

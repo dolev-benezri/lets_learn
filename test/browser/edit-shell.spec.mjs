@@ -118,3 +118,18 @@ test('320 px wide: the mode choice and the edit page do not scroll sideways; the
   assert.equal(await fits(), true, 'the edit page');
   assert.deepEqual(await menu.boundingBox(), box, 'the button does not move between pages');
 });
+
+test('phone: a visit with no link opens the remembered mode; a link wins; Back to the build page remembers build', async (t) => {
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-mode': 'edit' });
+  await page.locator('#edit').waitFor({ state: 'visible' });
+  assert.equal(new URL(page.url()).hash, '#edit');
+  await page.goto(page.url().replace(/#.*$/, '#me'));
+  await page.locator('#me').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#edit').isVisible(), false, 'an explicit link wins over the remembered mode');
+  await page.evaluate(() => localStorage.setItem('afeka-sched-v1-mode', 'edit'));
+  await page.goto(page.url().replace(/#.*$/, '#edit'));
+  await page.locator('#edit').waitFor({ state: 'visible' });
+  await page.goBack();
+  await page.locator('#edit').waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-mode')), 'build');
+});

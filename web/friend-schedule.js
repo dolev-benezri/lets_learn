@@ -22,8 +22,9 @@ const letters = (s) => clean(s).replace(/[^א-תA-Za-z0-9]/g, '');
 const hhmm = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 
 // "30m2" -> the one known course code within one edit of "30112" (OCR reads "11" as "m"); null when unknown or ambiguous.
+const digits = (tok) => tok.replace(/[mlI|OoSBZ]/g, (c) => DIGIT_LOOKALIKE[c]);
 function codeOf(tok, known) {
-  const t = tok.replace(/[mlI|OoSBZ]/g, (c) => DIGIT_LOOKALIKE[c]);
+  const t = digits(tok);
   if (!/^\d{4,6}$/.test(t)) return null;
   if (known.has(t)) return t;
   const near = [...known].filter((k) => Math.abs(k.length - t.length) <= 1 && lev(k, t) <= 1);
@@ -267,7 +268,8 @@ function reviewRow(row, ranked, courses) {
   let confidence = 'weak';
   if (!top) confidence = 'none';
   else if (ranked[1]?.[1] === ranked[0][1]) confidence = 'tie';
-  else if (row.via === 'code' && exact(top)) confidence = 'sure';
+  // a code read one digit off and corrected (codeOf) is a guess: only the code as printed counts as exact
+  else if (row.via === 'code' && digits(row.code ?? '') === row.cid && exact(top)) confidence = 'sure';
   return {
     code: row.via === 'grid' ? null : row.code ?? null,
     name: top ? courses[ranked[0][3]].name ?? null : row.via === 'grid' ? row.nameKey ?? null : null,

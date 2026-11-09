@@ -16,19 +16,25 @@ import { loadEdit, saveEdit, lessonsOf, loadSchedule, restoreOriginal, savePropo
 export const pendingRows = (rows, choices) =>
   rows.flatMap((r, i) => (r.confidence === 'sure' || i in choices ? [] : [i]));
 
+// The first confirmed row that gives no lesson: its group left the data and the row has no hours to keep (-1: none).
+export const lostRow = (rows, choices, data) =>
+  rows.findIndex((r, i) => {
+    const v = i in choices ? choices[i] : r.confidence === 'sure' ? r.chosen : undefined;
+    return !!v && !r.meets.length && !lessonsOf([v], data).length;
+  });
+
 // The lessons the confirmed rows stand for. choices[i]: a group id, or null = "no group" (stays fixed, with the row's hours).
+// A chosen group the data no longer has (a newer data file) stays fixed with the row's hours too.
 export function lessonsFromRows(rows, choices, data) {
   const out = [], seen = new Set();
   rows.forEach((r, i) => {
     const v = i in choices ? choices[i] : r.confidence === 'sure' ? r.chosen : undefined;
-    if (v === undefined) return;
-    if (v) {
-      if (!seen.has(v)) out.push(...lessonsOf([v], data));
-      seen.add(v);
-    } else
-      out.push(...r.meets.map((m) => ({
-        course: r.code ?? `x${i}`, name: r.name ?? r.code ?? 'קורס', type: r.type ?? 'הרצאה', group: null, day: m.day, start: m.start, end: m.end
-      })));
+    if (v === undefined || (v && seen.has(v))) return;
+    const ls = v ? lessonsOf([v], data) : [];
+    if (v) seen.add(v);
+    out.push(...(ls.length ? ls : r.meets.map((m) => ({
+      course: r.code ?? `x${i}`, name: r.name ?? r.code ?? 'קורס', type: r.type ?? 'הרצאה', group: null, day: m.day, start: m.start, end: m.end
+    }))));
   });
   return out;
 }
@@ -266,6 +272,10 @@ const invalidate = () => {
   V.result = null;
   V.i = 0;
   V.edits++;
+  // a search under way answers an older question: stop it, so a new search can start at once
+  V.worker?.terminate();
+  V.cancel?.();
+  V.running = false; // drawn right after (touch), before the cancelled search hears it
 };
 function touch(next, sel) {
   invalidate();
@@ -274,8 +284,14 @@ function touch(next, sel) {
   if (sel) document.querySelector(sel)?.focus({ preventScroll: true });
 }
 
+// Leaving step 2 (for step 1 or the build page) stops a search under way: its answer is for a page no longer shown.
+export function stopSearch() {
+  if (V.running) invalidate();
+}
+
 export function renderEdit() {
   wire();
+  if (!onChanges()) stopSearch();
   const st = edit(), same = sameNow(st);
   if (onChanges() && (!st.baseline.length || !same)) history.replaceState(null, '', '#edit');
   const label = `<button type="button" class="mode-label" data-act="menu" data-k="editMode">עורכים מערכת קיימת · החלפה</button>`;
@@ -367,8 +383,8 @@ function runWorker(msg) {
   const seq = ++V.seq, w = (V.worker = new Worker(new URL('./edit-worker.js', import.meta.url), { type: 'module' }));
   return new Promise((ok, no) => {
     V.cancel = () => no(new Error('cancelled'));
-    w.onmessage = (e) => seq === V.seq && ok(e.data);
-    w.onerror = (e) => seq === V.seq && no(new Error(e.message || 'worker'));
+    w.onmessage = (e) => (w.terminate(), seq === V.seq && ok(e.data));
+    w.onerror = (e) => (w.terminate(), seq === V.seq && no(new Error(e.message || 'worker')));
     w.postMessage(msg);
   });
 }
@@ -472,11 +488,21 @@ const groupsOfDraft = (d) =>
 // rows confirmed as "no group" go back to the loader without a group, so reopening it keeps them
 const fixedRows = (d) => (d?.rows ?? []).map((r, i) => (i in d.choices && !d.choices[i] ? { ...r, chosen: null } : r));
 
+// The loader lists the track's courses and the dataset is the track's: track and year come first.
+const noIdentity = () => {
+  if (app.state.profile.year && !needsProgram()) return false;
+  say('בחרו קודם מסלול ושנת לימודים.');
+  $('editIdentity')?.querySelector('select, input')?.focus();
+  return true;
+};
+
 async function openLoader(file) {
+  if (noIdentity()) return;
   const { openFriendEditor } = await import('./ui-friend-editor.js');
   const d = edit().draft;
   openFriendEditor({
-    mode: 'edit', groups: groupsOfDraft(d), rows: fixedRows(d), sem: d?.sem ?? null, returnFocusId: 'editTitle', focusFile: file,
+    // a semester whose data did not load this time (summer) is not offered back
+    mode: 'edit', groups: groupsOfDraft(d), rows: fixedRows(d), sem: dataOf(d?.sem) ? d.sem : null, returnFocusId: 'editTitle', focusFile: file,
     onSave({ rows, sem }) {
       // a choice made earlier stays with its row when the rows are read again
       const key = (r) => [r.code, r.type, r.text, JSON.stringify(r.meets)].join('|');
@@ -493,6 +519,7 @@ async function openLoader(file) {
 }
 
 function next() {
+  if (noIdentity()) return;
   const st = edit(), d = st.draft;
   if (!d?.rows.length) {
     if (st.baseline.length && sameNow(st)) location.hash = '#edit/changes';
@@ -505,8 +532,8 @@ function next() {
     document.querySelector(`[data-ed-row="${todo[0]}"] input`)?.focus();
     return;
   }
-  const data = dataOf(d.sem), lessons = lessonsFromRows(d.rows, d.choices, data);
-  if (!lessons.length) return say('לא נמצאו שיעורים במערכת. טענו אותה שוב.');
+  const data = dataOf(d.sem), lessons = data ? lessonsFromRows(d.rows, d.choices, data) : [];
+  if (!lessons.length || lostRow(d.rows, d.choices, data) >= 0) return say('לא נמצאו כל השיעורים במערכת. טענו אותה שוב.');
   // the same schedule as the one already loaded: keep the work done in step 2
   if (!(st.baseline.length && sameNow(st) && st.registered === d.registered && JSON.stringify(lessons) === JSON.stringify(st.original)))
     (invalidate(), commit({ ...loadSchedule(st, lessons, datasetOf(data, app.state), d.registered), draft: d }));
@@ -613,7 +640,14 @@ function wire() {
     if (goal === 'dayOff') touch({ ...st, goal: { ...st.goal, dayOff: Number(t.value) || null } }, '[data-ed-goal="dayOff"]');
     else if (goal === 'notAfter') touch({ ...st, goal: { ...st.goal, notAfter: t.value || null } }, '[data-ed-goal="notAfter"]');
     else if (goal === 'addCourse' && t.value) touch({ ...st, added: [...st.added, t.value] }, '[data-ed-goal="addCourse"]');
-    if (goal || !d) return;
+    if (goal) return;
+    if (!d) {
+      // an older save with a schedule and no draft: the checkbox sets the loaded schedule's registration
+      if (!t.hasAttribute?.('data-ed-reg')) return;
+      invalidate();
+      commit({ ...st, registered: t.checked, owned: t.checked ? [...new Set(st.original.map((l) => l.group).filter(Boolean))] : [] });
+      return say('');
+    }
     if (t.dataset?.edPick !== undefined) d.choices[t.dataset.edPick] = t.value || null;
     else if (t.hasAttribute?.('data-ed-reg')) (d.registered = t.checked), invalidate();
     else return;

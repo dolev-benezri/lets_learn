@@ -89,7 +89,9 @@ test('phone: no courses left says so instead of searching', async (t) => {
 });
 
 test('phone: two pinned lessons that overlap block the search and name both', async (t) => {
-  const clash = [L('30003', 'מבוא לכימיה', 'סופי-הרצאה+תרגול', '273000302', 4, '14:00', '15:50'), L('30112', 'תרמודינמיקה 1', 'סופי-הרצאה+תרגול', '273011202', 4, '14:00', '15:50')];
+  const clash = [
+    ...CHEM, L('30112', 'תרמודינמיקה 1', 'סופי-הרצאה+תרגול', '273011202', 4, '14:00', '15:50'), L('30112', 'תרמודינמיקה 1', 'תרגול', '273011202/1', 4, '16:00', '16:50')
+  ]; // whole courses (lecture + tutorial): a course missing its tutorial row stays as loaded, and fixed lessons may overlap
   const page = await visit(t, 'phone', seed(clash));
   await page.locator('[data-ed="search"]').waitFor();
   await page.evaluate(COUNT);
@@ -169,4 +171,26 @@ test('desktop: ☰ pressed while the registration panel is docked reopens the dr
   await page.keyboard.press('Escape');
   await page.locator('[data-panel="reg"]').click();
   await page.waitForFunction(() => document.getElementById('drawer').open && !document.getElementById('drawer').classList.contains('side'));
+});
+
+test('phone: an edit while a search runs stops it, so the search button is free again at once', async (t) => {
+  const page = await visit(t, 'phone', seed([...CHEM, ...THERMO], { movable: ['30003'] }));
+  await page.locator('[data-ed="search"]').waitFor();
+  await page.evaluate(() => {
+    window.__posts = [];
+    Worker.prototype.postMessage = function (m) {
+      window.__posts.push(m?.kind ?? 'other'); // never answers: the search stays under way
+    };
+  });
+  await page.locator('[data-ed="search"]').click();
+  await page.locator('[data-ed="search"]', { hasText: 'מחפש…' }).waitFor();
+  await page.locator('[data-ed-goal="dayOff"]').selectOption('4');
+  assert.equal((await page.locator('[data-ed="search"]').textContent()).trim(), 'חפש הצעות');
+  await page.locator('[data-ed="search"]').click();
+  assert.deepEqual(await page.evaluate(() => window.__posts), ['search', 'search']);
+  // leaving step 2 stops it too: back on step 2 the button is free
+  await page.evaluate(() => (location.hash = '#edit'));
+  await page.locator('[data-ed="next"]').waitFor();
+  await page.evaluate(() => (location.hash = '#edit/changes'));
+  assert.equal((await page.locator('[data-ed="search"]').textContent()).trim(), 'חפש הצעות');
 });

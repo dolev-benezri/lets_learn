@@ -13,9 +13,23 @@ const uniq = (a) => [...new Set(a)];
 
 // A course is fixed when any baseline lesson has no group in the data or the course is not in the data; a fixed course that
 // exists in the data and is marked movable counts as real (it is searched with all its options).
+// The file missed a row of this course: no lecture (primary) was loaded, or a loaded group's linked part (a tutorial, a lab)
+// has none of its groups loaded.
+// Kept as loaded, so the search does not add the part as a change the student never asked for.
+function partial(id, edit, data) {
+  const groups = data.courses[id].groups, byId = new Map(groups.map((g) => [g.id, g]));
+  const have = new Set(edit.baseline.filter((l) => l.course === id).map((l) => l.group));
+  if (![...have].some((gid) => byId.get(gid)?.primary)) return true; // a tutorial without its lecture
+  return [...have].some((gid) => {
+    const types = new Map();
+    for (const s of byId.get(gid)?.linked ?? []) if (byId.has(s)) types.set(byId.get(s).type, [...(types.get(byId.get(s).type) ?? []), s]);
+    return [...types.values()].some((ids) => !ids.some((s) => have.has(s)));
+  });
+}
+
 export function kinds(edit, data) {
   const ids = uniq(edit.baseline.map((l) => l.course)),
-    broken = (id) => !data.courses[id] || edit.baseline.some((l) => l.course === id && !hasGroup(data, l)),
+    broken = (id) => !data.courses[id] || edit.baseline.some((l) => l.course === id && !hasGroup(data, l)) || partial(id, edit, data),
     fixed = ids.filter((id) => broken(id) && !(data.courses[id] && (edit.movable.includes(id) || edit.swaps[id]?.length)));
   return { real: ids.filter((id) => !fixed.includes(id)), fixed };
 }

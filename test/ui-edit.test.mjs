@@ -5,7 +5,7 @@ import { parse } from 'node-html-parser';
 
 const store = new Map();
 globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
-const { stepOneHtml, lessonsFromRows, pendingRows } = await import('../web/ui-edit.js');
+const { stepOneHtml, lessonsFromRows, pendingRows, lostRow } = await import('../web/ui-edit.js');
 const { emptyEdit } = await import('../web/edit-state.js');
 const { real } = await import('./fixtures/real.mjs');
 
@@ -72,6 +72,15 @@ test('lessonsFromRows: chosen groups give their lessons; none gives fixed lesson
   assert.deepEqual([fixed.course, fixed.day, fixed.start, fixed.end], ['99999', 1, '08:00', '09:50']);
   const kept = lessonsFromRows([row({})], { 0: null }, data);
   assert.deepEqual(kept.map((l) => [l.group, l.day, l.start]), [[null, 5, '12:00']], 'a row confirmed as no group stays fixed');
+  const gone = lessonsFromRows([row({})], { 0: '271039999' }, data);
+  assert.deepEqual(gone.map((l) => [l.group, l.day, l.start]), [[null, 5, '12:00']], 'a group missing from the data stays fixed with the row hours');
+  assert.deepEqual(lessonsFromRows([NONE], { 0: null }, null).map((l) => l.day), [1], 'no data: fixed rows still read');
+});
+
+test('lostRow: a chosen group gone from the data, on a row with no hours, is found; rows that give lessons are not', () => {
+  assert.equal(lostRow([SURE, row({ meets: [] })], { 1: '271039999' }, data), 1);
+  assert.equal(lostRow([SURE, row({})], { 1: '271039999' }, data), -1, 'its hours keep it as a fixed lesson');
+  assert.equal(lostRow([SURE, NONE], { 1: null }, data), -1);
 });
 
 // ---------- step 2 (Task 11) ----------

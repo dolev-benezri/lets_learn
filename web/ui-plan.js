@@ -9,8 +9,8 @@ import './ui-map.js';
 import { popStale, PAGE_NAME } from './ui-text.js';
 import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, termsOk, heb, $, ui } from './ui-common.js';
 import { scheduleRun, cancelRun } from './ui-search.js';
-import { renderEdit } from './ui-edit.js';
-import { needsModeChoice, modeOpen, renderModeChoice } from './ui-mode.js';
+import { renderEdit, stopSearch } from './ui-edit.js';
+import { needsModeChoice, modeOpen, renderModeChoice, getMode, setMode } from './ui-mode.js';
 import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
@@ -20,6 +20,8 @@ import { tourCheck, tourOnce } from './tour.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 let firstVisit = !onboarded() && !location.hash;
+// The remembered mode: a visit with no link opens the edit page (spec "The mode choice"); any link (#me, #edit, #f=, #b=) wins.
+if (!location.hash && getMode() === 'edit') history.replaceState(null, '', '#edit');
 
 // The step follows the hash (app.js routeOf): one page shown at a time (index.html #me, #courses, #prefs, #layout).
 // The top bar keeps only the title off the plans (style.css [data-view]): the alternatives and the plan actions belong to step 4.
@@ -86,6 +88,7 @@ function onHash() {
     focusView();
     return;
   }
+  stopSearch(); // any way off the edit page (a pasted friend or backup link too) stops its search
   if (/^#[fb]=/.test(location.hash)) {
     scrollTo(0, 0);
     applyHash().then(focusView);
@@ -93,6 +96,7 @@ function onHash() {
   }
   if (document.body.dataset.view === 'edit') {
     // back from the edit page: the build page was never drawn there and its search was stopped
+    setMode('build'); // the mode in use is the one remembered, so a reload here stays on the build page
     closeOverlays();
     renderAll();
     scrollTo(0, 0);
