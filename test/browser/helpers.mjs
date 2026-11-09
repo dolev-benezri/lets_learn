@@ -64,7 +64,9 @@ export function gradeSheetPdf(lines) {
 // `size` is 'phone' or 'desktop', or a { width, height } of its own. `scheme` is the device's colour scheme (the site follows it). The outside-request and script-error checks run when the test ends.
 // The first-visit tour is marked seen, so it never stands between a test and the page; `withTour` leaves it unseen (tour.spec.mjs, and the axe run with its popover open).
 export const TOUR_SEEN = { 'afeka-sched-v1-tour': 'intro,plans' };
-export async function visit(browser, t, size, seed = null, hash = '', scheme = 'light', withTour = false) {
+// The first-entry mode choice is answered ('build'), so the fresh-visit specs go from the terms straight to the track question; `withModeChoice` leaves it open (edit-shell.spec.mjs).
+export const MODE_BUILD = { 'afeka-sched-v1-mode': 'build' };
+export async function visit(browser, t, size, seed = null, hash = '', scheme = 'light', withTour = false, withModeChoice = false) {
   const viewport = typeof size === 'string' ? SIZES[size] : size,
     phone = viewport.width < 600;
   const context = await browser.newContext({
@@ -84,7 +86,7 @@ export async function visit(browser, t, size, seed = null, hash = '', scheme = '
   });
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(
-    ({ items, tourSeen }) => {
+    ({ items, tourSeen, mode }) => {
       navigator.clipboard.writeText = () => Promise.reject(new Error('no clipboard')); // the copy button then shows its text dialog
       window.__prints = 0;
       window.print = () => {
@@ -92,10 +94,10 @@ export async function visit(browser, t, size, seed = null, hash = '', scheme = '
       };
       if (!sessionStorage.getItem('__seeded')) {
         sessionStorage.setItem('__seeded', '1');
-        for (const [k, v] of Object.entries({ ...tourSeen, ...items })) localStorage.setItem(k, v);
+        for (const [k, v] of Object.entries({ ...tourSeen, ...mode, ...items })) localStorage.setItem(k, v);
       }
     },
-    { items: seed, tourSeen: withTour ? null : TOUR_SEEN }
+    { items: seed, tourSeen: withTour ? null : TOUR_SEEN, mode: withModeChoice ? null : MODE_BUILD }
   );
   t.after(async () => {
     await context.close();

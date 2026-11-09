@@ -18,6 +18,7 @@ import {
 } from './ui-grid.js';
 import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen, examsNoteHtml, conflictsFor } from './ui-text.js';
 import { approvedOn } from './settings.js';
+import { menuPanel } from './ui-mode.js';
 import {
   WEIGHTS,
   SCALE,
@@ -295,7 +296,7 @@ function advisorPanel() {
   ${printable ? '<p class="hint advisor-hint">לא נפתחת הדפסה? בדפדפן שבתוך אפליקציה היא לא תמיד עובדת. אפשר לשתף את ה-PDF.</p>' : ''}`
   ];
 }
-const PANELS = { reg: regPanel, advisor: advisorPanel };
+const PANELS = { reg: regPanel, advisor: advisorPanel, menu: menuPanel };
 export function renderDrawer() {
   if (!ui.panel) return;
   // actions: a row that stays under the header while the body scrolls

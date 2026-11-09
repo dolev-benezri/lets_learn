@@ -45,6 +45,7 @@ import { renderBanner, renderView, go } from './ui-view.js';
 import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
 import { advisorPdfAct } from './ui-advisor-pdf.js';
+import { setMode } from './ui-mode.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel, advisorNow } from './ui-drawer.js';
 
 // ---------- actions ----------
@@ -166,6 +167,19 @@ export const ACT = {
     ($('layout').hidden ? shownTitle() : $('week'))?.focus();
   }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
+  menu: (el) => openPanel('menu', el), // the ☰ button and the edit page's mode label
+  mode(el) {
+    setMode(el.dataset.mode);
+    $('drawer').close(); // the link itself navigates
+  },
+  pickMode(el) {
+    setMode(el.dataset.mode);
+    if (el.dataset.mode === 'edit') location.hash = '#edit';
+    else {
+      refresh();
+      shownTitle()?.focus();
+    }
+  },
   closeDrawer: () => $('drawer').close(),
   prev: () => go(-1),
   next: () => go(1),

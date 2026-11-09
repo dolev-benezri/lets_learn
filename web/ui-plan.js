@@ -1,14 +1,16 @@
 // Calendar-first UI (design-system/afeka-scheduler/pages/app.md v2): top bar, four step pages (#me, #courses, #prefs, the plans),
 // the registration drawer, auto search in a worker. The week grid and popover live in ui-grid.js.
-import { app, save, refresh, setRenderers, keepFocus, STEPS, routeOf, applyHash, watchOtherTabs } from './app.js';
+import { app, save, refresh, setRenderers, keepFocus, STEPS, routeOf, isEditHash, applyHash, watchOtherTabs } from './app.js';
 import { readHash } from './share.js';
 import { icon } from './ui-grid.js';
 import { trapTab, askConfirm } from './ui-dialog.js';
 import { retakeNotice } from './rules.js';
 import './ui-map.js';
 import { popStale, PAGE_NAME } from './ui-text.js';
-import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, heb, $, ui } from './ui-common.js';
-import { scheduleRun } from './ui-search.js';
+import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, termsOk, heb, $, ui } from './ui-common.js';
+import { scheduleRun, cancelRun } from './ui-search.js';
+import { renderEdit } from './ui-edit.js';
+import { needsModeChoice, modeOpen, renderModeChoice } from './ui-mode.js';
 import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
@@ -23,14 +25,16 @@ let firstVisit = !onboarded() && !location.hash;
 // The top bar keeps only the title off the plans (style.css [data-view]): the alternatives and the plan actions belong to step 4.
 function renderRoute() {
   const view = routeOf(location.hash),
-    gate = gated(); // the gate question takes the status page's container
+    // the gate question takes the status page's container; the edit page asks for the terms only (it asks track and year itself)
+    choice = view !== 'edit' && needsModeChoice(),
+    gate = view === 'edit' ? !termsOk() : gated() || choice;
   const page = PAGE[gate ? 'me' : view][0];
   for (const [p] of Object.values(PAGE)) $(p).hidden = p !== page;
   document.body.dataset.view = view;
   document.title = `${gate ? 'התחלה' : PAGE_NAME[view]} · המערכת שלי · אפקה`; // a tab title per step (a11y)
   document.body.classList.toggle('gated', gate);
   // leaving step 1 any way (step bar, link, "הבא") ends the first-visit redirect
-  if (view !== 'me' && app.cls && !gate) {
+  if (view !== 'me' && view !== 'edit' && app.cls && !gate) {
     markOnboarded();
     retakeNote();
   }
@@ -41,7 +45,8 @@ function renderRoute() {
     else a.removeAttribute('aria-current');
   }
   if (app.cls) {
-    renderMe();
+    if (choice) renderModeChoice();
+    else renderMe();
     renderReport();
   }
 }
@@ -54,6 +59,11 @@ function retakeNote() {
   if (text) askConfirm(text, { ok: 'הבנתי', cancel: null });
 }
 const focusView = () => shownTitle()?.focus({ preventScroll: true });
+// builder overlays do not follow a view switch
+const closeOverlays = () => {
+  $('drawer').open && $('drawer').close();
+  $('pop').matches(':popover-open') && $('pop').hidePopover();
+};
 // Back/forward and the nav links switch views without a new search (a search would reset the shown alternative).
 // A friend or backup link pasted into the open tab is applied like at load, then lands on the builder.
 function onHash() {
@@ -67,15 +77,30 @@ function onHash() {
     }
     return;
   }
+  if (isEditHash(location.hash)) {
+    closeOverlays();
+    cancelRun();
+    renderRoute();
+    renderEdit();
+    scrollTo(0, 0);
+    focusView();
+    return;
+  }
   if (/^#[fb]=/.test(location.hash)) {
     scrollTo(0, 0);
     applyHash().then(focusView);
     return;
   }
+  if (document.body.dataset.view === 'edit') {
+    // back from the edit page: the build page was never drawn there and its search was stopped
+    closeOverlays();
+    renderAll();
+    scrollTo(0, 0);
+    focusView();
+    return;
+  }
   if (routeOf(location.hash) !== document.body.dataset.view) {
-    // builder overlays do not follow a view switch (focusView below keeps focus out of <body>)
-    $('drawer').open && $('drawer').close();
-    $('pop').matches(':popover-open') && $('pop').hidePopover();
+    closeOverlays(); // focusView below keeps focus out of <body>
   }
   renderRoute();
   scrollTo(0, 0);
@@ -87,7 +112,13 @@ function onHash() {
 }
 
 function renderAll() {
-  if (firstVisit) {
+  if (isEditHash(location.hash)) {
+    cancelRun();
+    renderRoute();
+    renderEdit();
+    return;
+  }
+  if (firstVisit && !modeOpen()) {
     firstVisit = false;
     history.replaceState(null, '', '#me');
   } // replace, not a new entry: Back must not bounce
