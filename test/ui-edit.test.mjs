@@ -33,8 +33,14 @@ test('stepOneHtml: a tie row lists both candidates, a none row offers no group, 
 test('stepOneHtml: the way in, the registered box, the next button; copy is exact', () => {
   const root = html([SURE]);
   const t = root.text;
-  for (const s of ['קובץ מהמתכנן (PDF או צילום)', 'לבחור קורסים וקבוצות ידנית', 'המערכת כבר רשומה במכללה', 'הבא: שינויים'])
+  for (const s of ['קובץ מערכת (אקסל מהידיעון, PDF או צילום)', 'לבחור קורסים וקבוצות ידנית', 'המערכת כבר רשומה במכללה', 'הבא: שינויים'])
     assert.ok(t.includes(s), s);
+  // the yedion's sign-in opens beside the site: the student downloads the Excel file there and loads it here
+  const a = root.querySelector('.edit-yedion a');
+  assert.equal(a.getAttribute('href'), 'https://yedionp.afeka.ac.il/yedion/fireflyweb.aspx');
+  assert.equal(a.getAttribute('target'), '_blank');
+  assert.equal(a.getAttribute('rel'), 'noopener noreferrer');
+  assert.match(root.querySelector('.edit-yedion').text, /בידיעון \(נפתח בלשונית חדשה\) אפשר להוריד את מערכת השעות כקובץ אקסל/);
   assert.equal(root.querySelectorAll('[data-ed-row]').length, 0, 'nothing to review');
   assert.ok(!/החל|הרשם/.test(root.querySelectorAll('button').map((b) => b.text).join(' ')), 'no apply/register verb on an action');
 });

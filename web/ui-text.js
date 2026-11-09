@@ -9,7 +9,12 @@ export const SPLIT_WARNING =
 export const SPLIT_TAG = 'מופרד · דורש אישור ההכוון'; // beside each split course in the registration list
 export const RULES_UNAPPROVED = 'הכללים לא אושרו על ידי המחלקה.';
 export const conflictLine = (t) => `יש סתירה בין המקורות הרשמיים לגבי ${t}.`;
-export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
+// The yedion's login page (it opens in a new tab: the site cannot fetch the student's file itself, the yedion's sign-in is its own).
+export const YEDION_URL = 'https://yedionp.afeka.ac.il/yedion/fireflyweb.aspx';
+export const YEDION_HINT =
+  `<a href="${YEDION_URL}" target="_blank" rel="noopener noreferrer">בידיעון<span class="sr"> (נפתח בלשונית חדשה)</span></a>` +
+  ' אפשר להוריד את מערכת השעות כקובץ אקסל, ואז לטעון אותו כאן.';
+export const SPLIT_NOTE ='חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
 // names are raw: the caller escapes
 export const splitLine = (names) => `מופרדים: ${names.join(', ')} · דורש אישור ההכוון`;
 export const esc = (s) =>

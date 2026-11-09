@@ -7,7 +7,7 @@ import { askConfirm } from './ui-dialog.js';
 import { classify } from './rules.js';
 import { kinds, overlaps, displayData, summaryLine, changeText, PROPOSAL_ONLY, FIXED } from './edit-search.js';
 import { reqContext, reqMet } from './rules.js';
-import { groupNumber, ago } from './ui-text.js';
+import { groupNumber, ago, YEDION_HINT } from './ui-text.js';
 import { identityPick } from './ui-me.js';
 import { loadEdit, saveEdit, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
 
@@ -75,8 +75,9 @@ export function stepOneHtml(edit, data, review, { same = true } = {}) {
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
     <p class="me-step"><b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.</p></div><div id="editIdentity"></div>`;
   const ways = (primary) => `<section class="me-card edit-ways" aria-label="טעינת המערכת"><div class="me-choice-btns">
-    <button type="button" class="btn${primary ? ' primary' : ''}" data-ed="loadFile">קובץ מהמתכנן (PDF או צילום)</button>
-    <button type="button" class="btn" data-ed="loadHand">לבחור קורסים וקבוצות ידנית</button></div></section>`;
+    <button type="button" class="btn${primary ? ' primary' : ''}" data-ed="loadFile">קובץ מערכת (אקסל מהידיעון, PDF או צילום)</button>
+    <button type="button" class="btn" data-ed="loadHand">לבחור קורסים וקבוצות ידנית</button></div>
+    <p class="hint edit-yedion">${YEDION_HINT}</p></section>`;
   if (!same)
     return `${head}<div class="edit-col"><p class="msg bad" role="status"><span>המערכת נשמרה מול נתונים אחרים. טענו אותה שוב כדי לערוך.</span></p>
       <section class="me-card"><h3>המערכת שנשמרה</h3>${snapshotHtml(edit.original)}

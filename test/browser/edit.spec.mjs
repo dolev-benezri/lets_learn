@@ -4,6 +4,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
 import { DONE, visit as visitIn, launch } from './helpers.mjs';
+import { zipSync, strToU8 } from '../../web/vendor/fflate/fflate.js';
 
 let browser;
 before(async () => {
@@ -48,6 +49,17 @@ const hebrewPdf = (lines) => {
   pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${at.map((n) => `${String(n).padStart(10, '0')} 00000 n \n`).join('')}`;
   return Buffer.from(`${pdf}trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`, 'latin1');
 };
+// A made-up yedion export (the real one carries the student's ID number and is never committed): day headers in row 2, a lesson per cell.
+const yedionXlsx = (cells) => {
+  const all = { B2: 'יום ראשון', C2: 'יום שני', D2: 'יום שלישי', E2: 'יום רביעי', F2: 'יום חמישי', G2: 'יום שישי', ...cells };
+  const c = (ref, t) => `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</t></is></c>`;
+  return Buffer.from(zipSync({
+    'xl/workbook.xml': strToU8('<workbook><sheets><sheet name="FileFromYedion" sheetId="1" r:id="rId1"/></sheets></workbook>'),
+    'xl/_rels/workbook.xml.rels': strToU8('<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>'),
+    'xl/worksheets/sheet1.xml': strToU8(`<worksheet><sheetData><row>${Object.entries(all).map(([r, t]) => c(r, t)).join('')}</row></sheetData></worksheet>`)
+  }));
+};
+const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 // a lesson of the course on its day (the phone shows one day at a time)
 const lesson = async (page, name, day) => {
   const d = page.locator(`#editDays [data-day="${day}"]`);
@@ -134,6 +146,37 @@ for (const [name, size] of SIZES) {
     await confirmRows(page);
     assert.ok((await saved(page)).baseline.length >= 1);
     assert.equal(await noSideways(page), true, 'step 2');
+  });
+
+  test(`${name}: the yedion's Excel file, read without OCR, every lesson sure, goes to step 2`, async (t) => {
+    const page = await visit(t, size, DONE);
+    const link = page.locator('.edit-yedion a');
+    assert.equal(await link.getAttribute('href'), 'https://yedionp.afeka.ac.il/yedion/fireflyweb.aspx');
+    assert.equal(await link.getAttribute('target'), '_blank');
+    await page.locator('[data-ed="loadFile"]').click();
+    await page.locator('#friendEd[open]').waitFor();
+    assert.equal(await page.locator('#feYedion a').getAttribute('target'), '_blank');
+    await page.locator('#feFile').setInputFiles({
+      name: 'schedule.xlsx',
+      mimeType: XLSX,
+      buffer: yedionXlsx({
+        E9: '30003-מבוא לכימיה סופי-הרצאה+תרגול\tד"ר פלוני אלמוני 101 בניין 14:00-15:50',
+        E10: 'המשך\tמבוא לכימיה',
+        E11: '30003-מבוא לכימיה תרגול\tמר פלוני 101 בניין 16:00-16:50',
+        D10: '30112-תרמודינמיקה 1 סופי-הרצאה+תרגול\tד"ר פלונית 054 בניין 15:00-16:50',
+        D12: '30112-תרמודינמיקה 1 תרגול\tד"ר פלונית 054 בניין 17:00-17:50'
+      })
+    });
+    await page.locator('#feImpStatus').filter({ hasText: /נמצא|לא זוהה/ }).waitFor({ timeout: 30000 });
+    await page.locator('[data-fe="save"]').click();
+    await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
+    assert.match(await page.getByText(/נטענה מערכת של סמסטר/).textContent(), /· 2 קורסים/);
+    assert.equal(await page.locator('[data-ed-row]').count(), 0, 'every lesson was read exactly: nothing to confirm');
+    assert.ok((await saved(page)).draft.rows.every((r) => r.via === 'xlsx' && r.confidence === 'sure'));
+    assert.equal(await noSideways(page), true, 'step 1');
+    await page.locator('[data-ed="next"]').click();
+    await page.waitForFunction(() => location.hash === '#edit/changes');
+    assert.deepEqual((await saved(page)).baseline.map((l) => l.group).sort(), ['273000302', '273000302/1', '273011204', '273011204/1']);
   });
 
   test(`${name}: loading by hand, picking a course and its group in the editor, goes to step 2`, async (t) => {

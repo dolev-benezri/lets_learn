@@ -194,11 +194,15 @@ function score(g, row) {
   const free = g.meetings.slice();
   let s = 0;
   for (const m of row.meets) {
-    const i = free.findIndex((x) => x.start === m.start && x.end === m.end),
-      j = i < 0 ? free.findIndex((x) => x.start === m.start) : i;
+    // the best fit first (hours and day), so two meetings at the same hours on different days each find their own
+    const fit = (x) => x.start === m.start && x.end === m.end,
+      onDay = (x) => !!m.days?.includes(x.day),
+      tries = [(x) => fit(x) && onDay(x), fit, (x) => x.start === m.start && onDay(x), (x) => x.start === m.start];
+    let j = -1;
+    for (const f of tries) if ((j = free.findIndex(f)) >= 0) break;
     if (j < 0) continue;
-    s += i >= 0 ? 10 : 3;
-    if (m.days?.includes(free[j].day)) s += 5;
+    s += fit(free[j]) ? 10 : 3;
+    if (onDay(free[j])) s += 5;
     free.splice(j, 1);
   }
   const gk = KINDS.filter((k) => g.type.includes(k));
@@ -235,6 +239,7 @@ export function matchRows(rows, courses) {
       .filter(([, s, sim]) => s >= (sim >= 0.45 ? 3 : 15))
       .map(([g, s, sim, cid]) => [g, s + sim * 8, sim, cid])
       .sort((a, b) => b[1] - a[1]);
+    if (row.via === 'xlsx') byLecturer(ranked, row.text);
     review.push(reviewRow(row, ranked, courses));
     if (!ranked.length) {
       if (!unknown.includes(row.code)) unknown.push(row.code);
@@ -249,6 +254,17 @@ export function matchRows(rows, courses) {
     if (!found.includes(ranked[0][0].id)) found.push(ranked[0][0].id);
   }
   return { found, unknown, ambiguous, quality, weak, weakIds, rows: review };
+}
+
+// The yedion's file names each lesson's lecturer: among groups tied at the top, the one whose lecturer the text names (and no other
+// tied group's) goes first, a hair ahead, so it is no longer a tie. Scores below the tie never move.
+const named = (g, text) => letters(g.lecturer).length >= 4 && letters(text).includes(letters(g.lecturer));
+function byLecturer(ranked, text) {
+  const tied = ranked.filter((r) => r[1] === ranked[0]?.[1]),
+    hits = tied.filter(([g]) => named(g, text));
+  if (tied.length < 2 || hits.length !== 1) return;
+  ranked.splice(ranked.indexOf(hits[0]), 1);
+  ranked.unshift([hits[0][0], hits[0][1] + 0.01, hits[0][2], hits[0][3]]);
 }
 
 // One meet per day; a meet whose day the reader could not tell has no day to show and stays in `text`.
@@ -270,6 +286,11 @@ function reviewRow(row, ranked, courses) {
   else if (ranked[1]?.[1] === ranked[0][1]) confidence = 'tie';
   // a code read one digit off and corrected (codeOf) is a guess: only the code as printed counts as exact
   else if (row.via === 'code' && digits(row.code ?? '') === row.cid && exact(top)) confidence = 'sure';
+  // the yedion's file prints codes exactly, but hides a lesson that starts in the same hour as another: sure only with every meeting
+  // seen, and not when the cell names another candidate's lecturer instead of this group's
+  else if (row.via === 'xlsx' && row.meets.length === top.meetings.length && exact(top) &&
+    (named(top, row.text) || !ranked.some(([g]) => named(g, row.text))))
+    confidence = 'sure';
   return {
     code: row.via === 'grid' ? null : row.code ?? null,
     name: top ? courses[ranked[0][3]].name ?? null : row.via === 'grid' ? row.nameKey ?? null : null,

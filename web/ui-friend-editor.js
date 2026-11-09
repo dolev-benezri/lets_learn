@@ -5,7 +5,7 @@ import { app, esc, yearView, semOfGroup, summerOn } from './app.js';
 import { DAYS, icon, typeLabel, groupIndex, hourRange, renderWeek, assignColors } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { groupsFromText, placeGroup, findCourse, clashIds } from './friend-import.js';
-import { groupNumber, courseCount } from './ui-text.js';
+import { groupNumber, courseCount, YEDION_HINT } from './ui-text.js';
 import { imageCanvas, pageCanvas, bigPage, scanCanvases } from './friend-scan.js';
 import { withPdf, pdfStep } from './grade-import.js';
 import { rowsFromTable, matchRows } from './friend-schedule.js';
@@ -15,6 +15,7 @@ const LIMIT = `אפשר עד ${MAX} קבוצות לחבר`;
 const NOTEXT = 'לא נמצא טקסט בקובץ, נסו להעתיק ולהדביק';
 const failText = (e) => (e?.user ? e.message : NOTEXT); // a limit that ran out has its own words; every other failure reads as "no text"
 const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳', 'קיץ': 'קיץ' };
+const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 const dlg = document.getElementById('friendEd');
 // phone: the editor is two full-screen tabs (CSS shows one, driven by #feRoot[data-tab]); wider: both side by side
@@ -102,8 +103,9 @@ const shell = () => `<div class="fe" id="feRoot">
           <label for="feText">הדביקו טקסט עם מספרי קבוצות</label>
           <textarea id="feText" rows="3" dir="auto"></textarea>
           <button type="button" class="btn" id="feFind" data-fe="find">מצא קבוצות</button>
-          <label for="feFile">או קובץ מערכת (PDF או תמונה)</label>
-          <input type="file" id="feFile" accept="application/pdf,image/*">
+          <label for="feFile">או קובץ מערכת (אקסל מהידיעון, PDF או תמונה)</label>
+          <input type="file" id="feFile" accept="application/pdf,image/*,.xlsx,${XLSX}" aria-describedby="feYedion">
+          <p class="hint" id="feYedion">${YEDION_HINT}</p>
           <div id="feImpStatus" class="hint" aria-live="polite" tabindex="-1"></div>
           <div id="feImpPages" class="fe-pages-box" hidden></div></section>
       </div>
@@ -488,7 +490,8 @@ async function importFile(file) {
   const me = ed,
     input = $('feFile'),
     refocus = document.activeElement === input,
-    isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name),
+    isXlsx = file.type === XLSX || /\.xlsx$/i.test(file.name);
   const busy = (on) => {
     me.busy = on;
     input.disabled = on;
@@ -497,14 +500,19 @@ async function importFile(file) {
   busy(true);
   $('feImpPages').hidden = true;
   if (refocus) $('feImpStatus').focus({ preventScroll: true }); // a disabled input would drop focus to <body>
-  status(`<p>${isPdf ? 'קורא את הקובץ…' : 'מזהה טקסט…'}</p>`);
+  status(`<p>${isPdf || isXlsx ? 'קורא את הקובץ…' : 'מזהה טקסט…'}</p>`);
   let text = '',
     result = null,
     scanned = false,
     failed = null;
   const courses = allData().courses;
   try {
-    if (isPdf) {
+    if (isXlsx) {
+      // no text is kept: a nine-digit number anywhere in it would be read as a group id (applyScan) and win over the rows
+      const rows = (await import('./yedion-xlsx.js')).rowsFromXlsx(new Uint8Array(await file.arrayBuffer()), courses);
+      if (!rows) throw Object.assign(new Error('זה לא קובץ מערכת שעות מהידיעון'), { user: true });
+      result = matchRows(rows, courses);
+    } else if (isPdf) {
       text = await pdfText(file);
       const rows = rowsFromTable(text, courses);
       if (rows.some((r) => r.cid)) result = matchRows(rows, courses);

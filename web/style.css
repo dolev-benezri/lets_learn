@@ -2213,6 +2213,8 @@ body.touring .actions { display:flex; }
 .edit-col { display:grid; gap:14px; max-width:640px; margin:0 auto; }
 .edit-col .me-card h3 { margin-bottom:6px; }
 .edit-ways .me-choice-btns { margin-top:0; }
+.edit-ways .btn { white-space:normal; text-align:center; padding-block:6px; } /* the file button's label wraps on a 320 px phone */
+.edit-yedion { margin:10px 0 0; }
 .rv-row { min-width:0; margin:10px 0 0; padding:10px 0 0; border:0; border-top:1px solid var(--border); }
 .rv-row legend { float:inline-start; width:100%; padding:0 0 4px; font-size:var(--fs); }
 .rv-row legend + * { clear:both; }

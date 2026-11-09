@@ -2,7 +2,7 @@
 // fields are dropped, never trusted. Nothing here touches the build page's save (`afeka-sched-v1`).
 export const EDIT_KEY = 'afeka-sched-v1-edit';
 
-const SEMS = ['א', 'ב', 'קיץ'], VIA = ['code', 'name', 'grid'], CONF = ['sure', 'weak', 'tie', 'none'];
+const SEMS = ['א', 'ב', 'קיץ'], VIA = ['code', 'name', 'grid', 'xlsx'], CONF = ['sure', 'weak', 'tie', 'none'];
 const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
 const str = (x, max) => typeof x === 'string' && x.length <= max;
 const strOrNull = (x, max) => x === null || str(x, max);
