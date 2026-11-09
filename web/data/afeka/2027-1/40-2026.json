@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-08T23:18:50.710Z",
+ "fetchedAt": "2026-11-09T23:20:49.964Z",
  "year": 2027,
  "startYear": 2026,
  "program": 40,
@@ -688,7 +688,7 @@
        "day": 3,
        "start": "08:00",
        "end": "11:50",
-       "room": "מפ\"ט זית"
+       "room": "302 פיקוס"
       }
      ],
      "exams": [
@@ -742,7 +742,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' מרקס אן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1595,7 +1595,7 @@
      "id": "271080503",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "מר בן יעקב יואב",
+     "lecturer": "ד\"ר בן יעקב יואב",
      "full": false,
      "semester": "א",
      "linked": [
@@ -1628,7 +1628,7 @@
      "id": "271080503/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "מר בן יעקב יואב",
+     "lecturer": "ד\"ר בן יעקב יואב",
      "full": false,
      "semester": "א",
      "linked": [],
@@ -1850,7 +1850,7 @@
    "groups": []
   },
   "30357": {
-   "name": "פיתוח רכב1",
+   "name": "פיתוח הנדסי רב תחומי1",
    "credits": 2.5,
    "offered": true,
    "prereqs": [],
@@ -1896,7 +1896,7 @@
    ]
   },
   "30358": {
-   "name": "פיתוח רכב2",
+   "name": "פיתוח הנדסי רב תחומי2",
    "credits": 2.5,
    "offered": false,
    "prereqs": [],
@@ -9342,7 +9342,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר וקסמן עזרא",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090508/1",
@@ -10052,7 +10052,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10106,7 +10106,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' בילצ'ינסקי דינה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10168,7 +10168,7 @@
        "day": 4,
        "start": "09:00",
        "end": "10:50",
-       "room": "204 פיקוס"
+       "room": "מפ\"ט רימון"
       }
      ],
      "exams": []

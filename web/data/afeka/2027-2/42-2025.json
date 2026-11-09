@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-08T23:18:50.710Z",
+ "fetchedAt": "2026-11-09T23:20:49.964Z",
  "year": 2027,
  "startYear": 2025,
  "program": 42,
@@ -1338,7 +1338,7 @@
      "id": "271080504",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "מר בן יעקב יואב",
+     "lecturer": "ד\"ר בן יעקב יואב",
      "full": false,
      "semester": "ב",
      "linked": [
@@ -1407,7 +1407,7 @@
      "id": "271080504/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "מר בן יעקב יואב",
+     "lecturer": "ד\"ר בן יעקב יואב",
      "full": false,
      "semester": "ב",
      "linked": [],
@@ -1514,14 +1514,14 @@
    ]
   },
   "30357": {
-   "name": "פיתוח רכב1",
+   "name": "פיתוח הנדסי רב תחומי1",
    "credits": 2.5,
    "offered": false,
    "prereqs": [],
    "groups": []
   },
   "30358": {
-   "name": "פיתוח רכב2",
+   "name": "פיתוח הנדסי רב תחומי2",
    "credits": 2.5,
    "offered": true,
    "prereqs": [],
@@ -9137,7 +9137,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091402/1"
@@ -9518,7 +9518,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

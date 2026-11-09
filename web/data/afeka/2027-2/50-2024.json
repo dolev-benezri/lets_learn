@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-08T23:18:50.710Z",
+ "fetchedAt": "2026-11-09T23:20:49.964Z",
  "year": 2027,
  "startYear": 2024,
  "program": 50,
@@ -1499,7 +1499,7 @@
      "type": "סופי-תרגול",
      "primary": true,
      "lecturer": "ד\"ר עזרא זנבה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7360,7 +7360,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091402/1"
@@ -7741,7 +7741,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

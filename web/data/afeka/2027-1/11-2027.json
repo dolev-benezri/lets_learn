@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-08T23:18:50.710Z",
+ "fetchedAt": "2026-11-09T23:20:49.964Z",
  "year": 2027,
  "startYear": 2027,
  "program": 11,
@@ -505,7 +505,7 @@
        "day": 3,
        "start": "08:00",
        "end": "11:50",
-       "room": "מפ\"ט זית"
+       "room": "302 פיקוס"
       }
      ],
      "exams": [
@@ -559,7 +559,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' מרקס אן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -663,7 +663,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' הרצברג מורג אפרת",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271001001/1"
@@ -696,7 +696,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' הרצברג מורג אפרת",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271001002/1"
@@ -762,7 +762,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' הרצברג מורג אפרת",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -780,7 +780,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' הרצברג מורג אפרת",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -2316,7 +2316,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר חוטובלי ראובן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271012008/1"
@@ -2403,7 +2403,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר חוטובלי ראובן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8964,7 +8964,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר וקסמן עזרא",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090508/1",
@@ -9674,7 +9674,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9728,7 +9728,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' בילצ'ינסקי דינה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9790,7 +9790,7 @@
        "day": 4,
        "start": "09:00",
        "end": "10:50",
-       "room": "204 פיקוס"
+       "room": "מפ\"ט רימון"
       }
      ],
      "exams": []
