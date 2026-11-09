@@ -238,3 +238,27 @@ export function runEdit({ kind, edit, data, record }) {
   const t = tryEach(edit, data, record);
   return { proposals: [], enabling: t.found.map((f) => f.course), timedOut: !!r.partial || t.timedOut, diagnosis: r.diagnosis };
 }
+
+export const PROPOSAL_ONLY = 'הצעה בלבד. ההרשמה נעשית במכללה.';
+
+// The text to copy: only what changes, as group numbers. `from` is the registered set (owned groups plus fixed lessons) or
+// the baseline; fixed lessons (no group) never appear. A group that stays is not listed.
+export function changeText(from, to, data) {
+  const groupsOf = (ls) => {
+    const m = new Map();
+    for (const l of ls) {
+      if (!l.group) continue;
+      const c = m.get(l.course) ?? { name: data.courses[l.course]?.name ?? l.name, groups: [] };
+      if (!c.groups.includes(l.group)) c.groups.push(l.group);
+      m.set(l.course, c);
+    }
+    return m;
+  };
+  const was = groupsOf(from), now = groupsOf(to);
+  const lines = (a, b) => [...a].flatMap(([id, c]) => {
+    const gone = c.groups.filter((g) => !b.get(id)?.groups.includes(g));
+    return gone.length ? [`${c.name} (${id}): ${gone.join(', ')}`] : [];
+  });
+  const add = lines(now, was), drop = lines(was, now);
+  return [...(add.length ? ['להוסיף:', ...add] : []), ...(drop.length ? ['להסיר:', ...drop] : []), PROPOSAL_ONLY].join('\n');
+}

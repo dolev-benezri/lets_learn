@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyEdit, loadSchedule, lessonsOf } from '../web/edit-state.js';
 import {
-  kinds, editQuery, acceptedParallel, displayData, overlaps, gapMinutes, proposalsFrom, summaryLine, tryEach, runEdit, FIXED_COURSE
+  kinds, editQuery, acceptedParallel, displayData, overlaps, gapMinutes, proposalsFrom, summaryLine, tryEach, runEdit, changeText, PROPOSAL_ONLY, FIXED_COURSE
 } from '../web/edit-search.js';
 import { search } from '../web/solver-core.js';
 import { DEFAULT } from '../web/app.js';
@@ -343,4 +343,41 @@ test('tryEach: each try gets at most the time left of the overall cap', () => {
   tryEach(edit(twoReal(), { goal: free3 }), tryData(), record, slow, { perMs: 400, totalMs: 100 });
   assert.equal(limits.length, 2);
   assert.ok(limits[0] <= 100 && limits[1] < 100 && limits[1] <= 100 - 25, `${limits}`);
+});
+
+// Copying the changes
+const T = (course, group, day, start, type = 'הרצאה') => ({ ...L(course, group, day, start, '09:50', `n${course}`), type });
+const copyData = () => dataOf({ A: course('אלף', []), B: course('בית', []), C: course('גימל', []) });
+
+test('changeText: a moved course lists its new lecture and tutorial under להוסיף and the old ones under להסיר', () => {
+  const from = [T('A', 'A1', 1, '08:00'), T('A', 'A1/1', 1, '10:00', 'תרגול'), T('B', 'B1', 2, '08:00')];
+  const to = [T('A', 'A2', 3, '08:00'), T('A', 'A2/1', 3, '10:00', 'תרגול'), T('B', 'B1', 2, '08:00')];
+  assert.equal(changeText(from, to, copyData()), ['להוסיף:', 'אלף (A): A2, A2/1', 'להסיר:', 'אלף (A): A1, A1/1', PROPOSAL_ONLY].join('\n'));
+});
+
+test('changeText: a removed course is only under להסיר, an added one only under להוסיף, a kept lecture is not listed', () => {
+  const from = [T('A', 'A1', 1, '08:00'), T('A', 'A1/1', 1, '10:00', 'תרגול'), T('B', 'B1', 2, '08:00')];
+  assert.equal(changeText(from, [T('A', 'A1', 1, '08:00'), T('A', 'A1/1', 1, '10:00', 'תרגול')], copyData()), ['להסיר:', 'בית (B): B1', PROPOSAL_ONLY].join('\n'));
+  assert.equal(changeText(from.slice(2), [...from.slice(2), T('C', 'C1', 4, '08:00')], copyData()), ['להוסיף:', 'גימל (C): C1', PROPOSAL_ONLY].join('\n'));
+  const tutorialOnly = [T('A', 'A1', 1, '08:00'), T('A', 'A1/2', 2, '10:00', 'תרגול')];
+  assert.equal(changeText(from.slice(0, 2), tutorialOnly, copyData()), ['להוסיף:', 'אלף (A): A1/2', 'להסיר:', 'אלף (A): A1/1', PROPOSAL_ONLY].join('\n'));
+});
+
+test('changeText: fixed lessons never appear; nothing changed is just the disclaimer; the disclaimer ends it', () => {
+  const fixed = T('X', null, 6, '08:00');
+  assert.equal(changeText([fixed], [], copyData()), PROPOSAL_ONLY);
+  assert.equal(changeText([T('A', 'A1', 1, '08:00'), fixed], [T('A', 'A1', 1, '08:00')], copyData()), PROPOSAL_ONLY);
+  assert.equal(changeText([], [fixed, T('A', 'A1', 1, '08:00')], copyData()).includes('X'), false);
+});
+
+test('changeText: no apply or register wording except the closing disclaimer', () => {
+  const text = changeText([T('A', 'A1', 1, '08:00')], [T('A', 'A2', 3, '08:00'), T('B', 'B1', 2, '08:00')], copyData());
+  const lines = text.split('\n');
+  assert.equal(lines.at(-1), PROPOSAL_ONLY);
+  assert.equal(lines.slice(0, -1).join('\n').match(/החל|הרשמ|apply|register/i), null);
+  assert.equal(PROPOSAL_ONLY.match(/החל|apply|register/i), null);
+});
+
+test('changeText: a course missing from the data keeps its snapshot name', () => {
+  assert.equal(changeText([], [T('Z', 'Z1', 1, '08:00')], copyData()), ['להוסיף:', 'nZ (Z): Z1', PROPOSAL_ONLY].join('\n'));
 });
