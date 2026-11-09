@@ -12,7 +12,7 @@ export const conflictLine = (t) => `יש סתירה בין המקורות הרש
 // The yedion's login page (it opens in a new tab: the site cannot fetch the student's file itself, the yedion's sign-in is its own).
 export const YEDION_URL = 'https://yedionp.afeka.ac.il/yedion/fireflyweb.aspx';
 export const YEDION_HINT =
-  `<a href="${YEDION_URL}" target="_blank" rel="noopener noreferrer">בידיעון<span class="sr"> (נפתח בלשונית חדשה)</span></a>` +
+  `<a href="${YEDION_URL}" target="_blank" rel="noopener noreferrer">באפקה-נט<span class="sr"> (נפתח בלשונית חדשה)</span></a>` +
   ' אפשר להוריד את מערכת השעות כקובץ אקסל, ואז לטעון אותו כאן.';
 export const SPLIT_NOTE ='חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
 // names are raw: the caller escapes

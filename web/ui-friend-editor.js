@@ -103,7 +103,7 @@ const shell = () => `<div class="fe" id="feRoot">
           <label for="feText">הדביקו טקסט עם מספרי קבוצות</label>
           <textarea id="feText" rows="3" dir="auto"></textarea>
           <button type="button" class="btn" id="feFind" data-fe="find">מצא קבוצות</button>
-          <label for="feFile">או קובץ מערכת (אקסל מהידיעון, PDF או תמונה)</label>
+          <label for="feFile">או קובץ מערכת (אקסל מאפקה-נט, PDF או תמונה)</label>
           <input type="file" id="feFile" accept="application/pdf,image/*,.xlsx,${XLSX}" aria-describedby="feYedion">
           <p class="hint" id="feYedion">${YEDION_HINT}</p>
           <div id="feImpStatus" class="hint" aria-live="polite" tabindex="-1"></div>
@@ -510,7 +510,7 @@ async function importFile(file) {
     if (isXlsx) {
       // no text is kept: a nine-digit number anywhere in it would be read as a group id (applyScan) and win over the rows
       const rows = (await import('./yedion-xlsx.js')).rowsFromXlsx(new Uint8Array(await file.arrayBuffer()), courses);
-      if (!rows) throw Object.assign(new Error('זה לא קובץ מערכת שעות מהידיעון'), { user: true });
+      if (!rows) throw Object.assign(new Error('זה לא קובץ מערכת שעות מאפקה-נט'), { user: true });
       result = matchRows(rows, courses);
     } else if (isPdf) {
       text = await pdfText(file);
