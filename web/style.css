@@ -2213,8 +2213,9 @@ body.touring .actions { display:flex; }
 .edit-col { display:grid; gap:14px; max-width:640px; margin:0 auto; }
 .edit-col .me-card h3 { margin-bottom:6px; }
 .edit-ways .me-choice-btns { margin-top:0; }
-.rv-row { margin:10px 0 0; padding:10px; border:1px solid var(--border-strong); border-radius:var(--radius); }
-.rv-row legend { padding:0 6px; font-size:var(--fs); }
+.rv-row { min-width:0; margin:10px 0 0; padding:10px 0 0; border:0; border-top:1px solid var(--border); }
+.rv-row legend { float:inline-start; width:100%; padding:0 0 4px; font-size:var(--fs); }
+.rv-row legend + * { clear:both; }
 .rv-row legend .hint { display:block; }
 .rv-opt {
   display:flex;
@@ -2287,3 +2288,29 @@ body.touring .actions { display:flex; }
 .blk.movable { border-style:dashed; }
 #edit .daysel { margin-bottom:8px; }
 #edit .err-text:empty { display:none; }
+/* edit proposals: the switcher, the summary and a card per changed course; 200 ms to slide in, none under reduced motion */
+.prop-nav { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px; }
+.prop-nav .alt-label { min-width:8em; text-align:center; font-weight:600; }
+.prop-panel {
+  display:grid;
+  gap:10px;
+  margin-bottom:12px;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-card);
+}
+.prop-sum { font-weight:600; }
+.pcards { display:grid; gap:8px; }
+.pcard { padding:10px 12px; background:var(--surface-2); border-radius:var(--radius); }
+.pcard h4 { margin:0 0 4px; font-size:var(--fs); font-weight:600; }
+.pcard .was { color:var(--text-2); }
+.pcard .now { color:var(--success); font-weight:500; }
+.pcard .tag { margin:0; }
+.prop-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.prop-actions .btn { flex:1 1 auto; }
+@keyframes edit-in { from { opacity:0; transform:translateY(8px); } }
+@media (prefers-reduced-motion: no-preference) {
+  .edit-step.fx, .edit-week.fx, .prop-panel.fx { animation:edit-in 200ms var(--ease-out); }
+}

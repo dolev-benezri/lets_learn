@@ -155,7 +155,7 @@ export const popStale = (openTop, nowTop, vh) =>
 
 // Header freshness line. checkedAt = last scraper run (status.json); changedAt = the data file's fetchedAt (last real change).
 const REL = new Intl.RelativeTimeFormat('he', { numeric: 'always' });
-const ago = (ms) => {
+export const ago = (ms) => {
   const m = Math.round(ms / 6e4),
     h = Math.round(ms / 36e5),
     d = Math.round(ms / 864e5);

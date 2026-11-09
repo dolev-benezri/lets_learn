@@ -151,3 +151,80 @@ test('parallelPrompts: no question when another alternative stays or the record 
   assert.deepEqual(parallelPrompts(st(ls.slice(0, 2)), d, 'A', { passed: ['D'], profile: {} }), [], 'passed in an earlier semester');
 });
 
+// ---------- proposals (Task 12) ----------
+const { proposalHtml, navHtml, searchNotesHtml } = await import('../web/ui-edit.js');
+const { PROPOSAL_ONLY } = await import('../web/edit-search.js');
+const mv = () => {
+  const d = small();
+  d.courses.A.groups.push(grp('A2', 4, '10:00', '11:50'));
+  d.courses.A.groups[1].lecturer = 'M';
+  return d;
+};
+const oneMove = (data, over = {}) => {
+  const base = [L('A', 'A1', 1, '08:00', '09:50', 'אלף'), L('C', 'C1', 2, '08:00', '09:50', 'גימל')];
+  const now = [L('A', 'A2', 4, '10:00', '11:50', 'אלף'), L('C', 'C1', 2, '08:00', '09:50', 'גימל')];
+  return { edit: st(base, over), p: { lessons: now, score: 1, changed: ['A'], added: [], removed: [] }, data };
+};
+
+test('proposalHtml: the summary line, one card with the old hours struck and the new ones, the disclaimer', () => {
+  const { edit, p, data } = oneMove(mv());
+  const root = parse(proposalHtml(edit, p, data));
+  assert.ok(root.querySelector('.prop-sum').text.includes('יום א׳ התפנה'));
+  const cards = root.querySelectorAll('.pcard');
+  assert.equal(cards.length, 1);
+  assert.match(cards[0].querySelector('s').text, /08:00/);
+  assert.match(cards[0].querySelector('.now').text, /10:00/);
+  assert.ok(cards[0].text.includes('מרצה'), 'the lecturer changes: shown');
+  assert.ok(root.text.includes(PROPOSAL_ONLY));
+  assert.equal(PROPOSAL_ONLY, 'הצעה בלבד. ההרשמה נעשית במכללה.');
+});
+
+test('proposalHtml: a full destination carries the full-group tag when not registered', () => {
+  const data = mv();
+  data.courses.A.groups[1].full = true;
+  const { edit, p } = oneMove(data);
+  assert.ok(parse(proposalHtml(edit, p, data)).querySelector('.tag.bad'));
+  const reg = parse(proposalHtml({ ...edit, registered: true }, p, data));
+  assert.equal(reg.querySelector('.tag.bad'), null);
+});
+
+test('proposalHtml: added and removed courses get their own cards', () => {
+  const data = mv();
+  const edit = st([L('A', 'A1', 1, '08:00', '09:50', 'אלף')]);
+  const root = parse(proposalHtml(edit, { lessons: [L('D', 'D1', 3, '08:00', '09:50', 'דלת')], score: 1, changed: [], added: ['D'], removed: ['A'] }, data));
+  assert.equal(root.querySelectorAll('.pcard').length, 2);
+  assert.ok(root.text.includes('נוסף') && root.text.includes('הוסר'));
+});
+
+test('proposalHtml: proposal 0 is "המקורית" and lists every overlapping pair as a warning', () => {
+  const data = mv();
+  const ls = [L('X', null, 1, '08:00', '09:50', 'חיצוני'), L('Y', null, 1, '09:00', '10:50', 'עוד')];
+  const root = parse(proposalHtml(st(ls), { lessons: ls, score: 0, changed: [], added: [], removed: [] }, data, { zero: true }));
+  assert.ok(root.text.includes('המקורית'));
+  assert.ok(root.text.includes('חיצוני') && root.text.includes('עוד'));
+  assert.equal(root.querySelectorAll('.pcard').length, 0);
+  const none = parse(proposalHtml(st([L('A', 'A1', 1, '08:00', '09:50')]), { lessons: [L('A', 'A1', 1, '08:00', '09:50')], score: 0, changed: [], added: [], removed: [] }, data, { zero: true }));
+  assert.equal(none.querySelector('.warn-text'), null);
+});
+
+test('navHtml: "הצעה n מתוך N", the original is "המקורית"', () => {
+  assert.ok(parse(navHtml(2, 5)).text.includes('הצעה 2 מתוך 5'));
+  assert.ok(parse(navHtml(0, 5)).text.includes('המקורית'));
+});
+
+test('searchNotesHtml: "אם X יזוז" only when enabling is not empty, the timeout line only when timed out, diagnosis as text', () => {
+  const d = small(), e = st([L('A', 'A1', 1, '08:00', '09:50', 'אלף')]);
+  const none = parse(searchNotesHtml({ proposals: [], enabling: [], timedOut: false, diagnosis: ['אין קבוצה <b>x</b>'] }, e, d));
+  assert.ok(!none.text.includes('יזוז') && !none.text.includes('לא הספקנו'));
+  assert.ok(none.text.includes('אין קבוצה <b>x</b>'), 'text, never HTML');
+  const en = parse(searchNotesHtml({ proposals: [], enabling: ['A'], timedOut: false, diagnosis: [] }, e, d));
+  assert.ok(en.text.includes('אם אלף יזוז, יש פתרון'));
+  assert.equal(en.querySelector('[data-ed="letMove"]').getAttribute('data-course'), 'A');
+  assert.ok(parse(searchNotesHtml({ proposals: [], enabling: [], timedOut: true, diagnosis: [] }, e, d)).text.includes('לא הספקנו לבדוק הכל'));
+});
+
+test('no action of the proposal screens says החל or הרשמה', () => {
+  const { edit, p, data } = oneMove(mv());
+  const html = proposalHtml(edit, p, data) + navHtml(1, 2) + searchNotesHtml({ proposals: [], enabling: ['A'], timedOut: true, diagnosis: [] }, edit, data);
+  for (const b of parse(html).querySelectorAll('button')) assert.ok(!/החל|הרשמ/.test(b.text), b.text);
+});

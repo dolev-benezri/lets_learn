@@ -1,15 +1,15 @@
 // The edit page (#edit, #edit/changes): a separate page from the build steps. Step 1 loads my schedule and reviews what was read;
 // step 2 and the proposals follow. Pure HTML helpers are exported (test/ui-edit.test.mjs); the DOM part is at the bottom.
-import { app, esc } from './app.js';
-import { $, needsProgram } from './ui-common.js';
+import { app, esc, seatsAt } from './app.js';
+import { $, needsProgram, copy, toast } from './ui-common.js';
 import { DAYS, groupIndex, typeLabel, icon, nameHtml, hourRange, renderWeek, assignColors, placePop } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { classify } from './rules.js';
-import { kinds, overlaps, displayData, FIXED } from './edit-search.js';
+import { kinds, overlaps, displayData, summaryLine, changeText, PROPOSAL_ONLY, FIXED } from './edit-search.js';
 import { reqContext, reqMet } from './rules.js';
-import { groupNumber } from './ui-text.js';
+import { groupNumber, ago } from './ui-text.js';
 import { identityPick } from './ui-me.js';
-import { loadEdit, saveEdit, lessonsOf, loadSchedule, restoreOriginal, datasetOf, sameDataset } from './edit-state.js';
+import { loadEdit, saveEdit, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
 
 // ---------- step 1: rows -> lessons ----------
 // A row needs the student's word unless it is sure (a row with no group needs the tap too: it stays as a fixed lesson).
@@ -185,11 +185,68 @@ export function changesHtml(edit, data) {
   return rows.length ? `<ul class="plain changes">${rows.map(([t, l]) => `<li><span class="hint">${t}:</span> ${l.join(' ')}</li>`).join('')}</ul>` : '';
 }
 
+// ---------- proposals: pure parts ----------
+const uniq = (a) => [...new Set(a)];
+const whenOf = (ls) => uniq(ls.map((l) => `${DAYS[l.day]}׳ <bdi dir="ltr">${esc(l.start)}–${esc(l.end)}</bdi>`)).join(', ');
+const numsOf = (ls) => uniq(ls.filter((l) => l.group).map((l) => groupNumber(l.group))).map((n) => `<bdi dir="ltr">${esc(n)}</bdi>`).join(' + ');
+const groupOf = (data, course, id) => data.courses[course]?.groups.find((g) => g.id === id);
+const lecturersOf = (ls, data, course) =>
+  uniq(ls.filter((l) => l.group).map((l) => groupOf(data, course, l.group)?.lecturer).filter(Boolean)).join(', ');
+
+// One course's card: the old place struck through, the new one highlighted, the lecturer when it changes, the full-group tag.
+function cardHtml(edit, p, data, course, tag) {
+  const old = edit.baseline.filter((l) => l.course === course), now = p.lessons.filter((l) => l.course === course);
+  const name = data.courses[course]?.name ?? old[0]?.name ?? now[0]?.name ?? course;
+  const was = lecturersOf(old, data, course), is = lecturersOf(now, data, course);
+  const full = !edit.registered && now.some((l) => l.group && groupOf(data, course, l.group)?.full);
+  return `<li class="pcard"><h4>${nameHtml(name)}${tag ? ` <span class="tag">${tag}</span>` : ''}</h4>
+    ${old.length ? `<p class="was"><s>${whenOf(old)} · קבוצה ${numsOf(old)}</s></p>` : ''}
+    ${now.length ? `<p class="now">${whenOf(now)} · קבוצה ${numsOf(now)}${full ? ' <span class="tag bad">מלאה</span>' : ''}</p>` : ''}
+    ${was !== is && is ? `<p class="hint">מרצה: ${was ? `<s>${esc(was)}</s> ` : ''}${esc(is)}</p>` : ''}
+    ${full ? `<p class="tag bad">${icon('alert')} הקבוצה מלאה</p>` : ''}</li>`;
+}
+
+// One proposal: the summary line, a card for each changed, added and removed course, the disclaimer. zero: the baseline as a
+// reference ("המקורית"), with its overlapping pairs as warnings.
+export function proposalHtml(edit, p, data, { zero = false } = {}) {
+  const name = (c) => p.lessons.find((l) => l.course === c)?.name ?? data.courses[c]?.name ?? c;
+  const head = zero ? '<p class="prop-sum"><b>המקורית</b> · המערכת שלכם כמו שהיא, להשוואה.</p>' : `<p class="prop-sum">${esc(summaryLine(edit.baseline, p, data))}</p>`;
+  const cards = zero ? [] : [
+    ...p.changed.map((c) => cardHtml(edit, p, data, c, '')), ...p.added.map((c) => cardHtml(edit, p, data, c, 'נוסף')),
+    ...p.removed.map((c) => cardHtml(edit, p, data, c, 'הוסר'))
+  ];
+  const warn = zero
+    ? overlaps(p.lessons).map(([a, b]) => `<p class="warn-text">${icon('alert')} <span>${esc(name(a))} ו${esc(name(b))} חופפים</span></p>`).join('')
+    : '';
+  return `${head}${cards.length ? `<ul class="pcards">${cards.join('')}</ul>` : ''}${warn}<p class="disclaimer">${PROPOSAL_ONLY}</p>`;
+}
+
+// "הצעה n מתוך N" with the previous and next buttons (the build page's arrows: ArrowLeft is next in RTL); 0 is the original.
+export function navHtml(i, n) {
+  return `<div class="prop-nav" role="group" aria-label="מעבר בין הצעות" tabindex="-1">
+    <button type="button" class="btn icon-btn" data-ed="propPrev" aria-label="ההצעה הקודמת" aria-keyshortcuts="ArrowRight">${icon('chevron-right')}</button>
+    <span class="alt-label" aria-live="polite">${i === 0 ? 'המקורית' : `הצעה ${i} מתוך ${n}`}</span>
+    <button type="button" class="btn icon-btn" data-ed="propNext" aria-label="ההצעה הבאה" aria-keyshortcuts="ArrowLeft">${icon('chevron-left')}</button></div>`;
+}
+
+// What a search that found nothing, or not everything, says: the solver's own lines (text only), the one course whose moving
+// would make a solution, and the timeout.
+export function searchNotesHtml(result, edit, data) {
+  const out = [];
+  if (!result.proposals.length) {
+    out.push(result.diagnosis.length ? `<ul class="plain">${result.diagnosis.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p>לא נמצאה הצעה.</p>');
+    for (const c of result.enabling)
+      out.push(`<p>אם ${esc(nameIn(edit, data, c))} יזוז, יש פתרון. <button type="button" class="btn" data-ed="letMove" data-course="${esc(c)}">תן לה לזוז</button></p>`);
+  }
+  if (result.timedOut) out.push('<p class="hint">לא הספקנו לבדוק הכל</p>');
+  return out.join('');
+}
+
 // ---------- the page (DOM) ----------
 let E = null; // the edit state, read once
 let fresh = false; // a schedule was read in this visit: its review shows even while the saved one belongs to other data
 // What step 2 shows and has under way (not saved): the shown day, the search in flight, its result.
-const V = { day: null, running: false, result: null, seq: 0, edits: 0, worker: null };
+const V = { day: null, i: 0, fx: null, step: 1, running: false, result: null, seq: 0, edits: 0, worker: null }; // fx: what animates next
 const editColors = new Map();
 const edit = () => (E ??= loadEdit());
 const commit = (next) => {
@@ -204,9 +261,14 @@ const say = (text) => {
 const onChanges = () => location.hash === '#edit/changes';
 
 // Any change to what the search uses clears the result it gave, saves, and draws the page again; focus goes to `sel` when given.
-function touch(next, sel) {
+// the shown result (and any search under way) belongs to the schedule and the edits it was asked about
+const invalidate = () => {
   V.result = null;
+  V.i = 0;
   V.edits++;
+};
+function touch(next, sel) {
+  invalidate();
   commit(next);
   renderEdit();
   if (sel) document.querySelector(sel)?.focus({ preventScroll: true });
@@ -217,23 +279,34 @@ export function renderEdit() {
   const st = edit(), same = sameNow(st);
   if (onChanges() && (!st.baseline.length || !same)) history.replaceState(null, '', '#edit');
   const label = `<button type="button" class="mode-label" data-act="menu" data-k="editMode">עורכים מערכת קיימת · החלפה</button>`;
-  $('edit').innerHTML = label + (onChanges() ? stepTwo(st) : stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh }));
+  const step = onChanges() ? 2 : 1;
+  if (step !== V.step) V.fx = 'step';
+  V.step = step;
+  const fx = V.fx === 'step' ? ' fx' : '';
+  const body = step === 2 ? stepTwo(st) : stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh });
+  V.fx = null;
+  $('edit').innerHTML = `${label}<div class="edit-step${fx}">${body}</div>`;
   if ($('editIdentity') && (!app.state.profile.year || needsProgram())) $('editIdentity').innerHTML = identityPick(app.state.profile.year, true);
 }
 
 // ---------- step 2 ----------
 function stepTwo(st) {
-  const data = dataOf(st.dataset.sem), lessons = effectiveLessons(st, data);
+  const data = dataOf(st.dataset.sem), props = V.result?.proposals ?? [];
+  V.i = Math.min(V.i, props.length);
+  const pr = V.i > 0 ? props[V.i - 1] : null, zero = !pr && props.length > 0; // 0: the baseline as it is, no pending edits drawn
+  const lessons = pr ? pr.lessons : zero ? st.baseline : effectiveLessons(st, data);
   const statuses = classify(data, app.state).statuses;
   const dd = displayData(lessons, data), swapped = Object.keys(st.swaps).filter((c) => st.swaps[c].length && !st.removed.includes(c));
-  const ghosts = st.baseline.filter((l) => swapped.includes(l.course)).map(({ day, start, end }) => ({ day, start, end }));
+  const moved = pr ? pr.changed : zero ? [] : swapped; // courses whose old place is drawn as "היה כאן"
+  const ghosts = st.baseline.filter((l) => moved.includes(l.course)).map(({ day, start, end }) => ({ day, start, end }));
   const byId = groupIndex(dd.data), meetings = [...dd.groups.flatMap((g) => byId.get(g)?.g.meetings ?? []), ...ghosts];
   const range = hourRange(meetings);
   assignColors(editColors, [...new Set(dd.groups.map((g) => byId.get(g)?.cid))]);
   V.day = Math.min(V.day ?? Math.min(...meetings.map((m) => m.day).filter((d) => d >= 1), 6), range.days);
   const week = renderWeek({
     data: dd.data, res: { groups: dd.groups }, range, colors: editColors, dashed: new Set(), pins: [], friends: [], day: V.day, ghosts,
-    changed: new Set(swapped.flatMap((c) => st.swaps[c])), movable: new Set(st.movable.flatMap((c) => [c, FIXED + c])) // a fixed lesson is drawn as a group of "fixed:<course>"
+    changed: pr ? newGroups(pr) : new Set(zero ? [] : swapped.flatMap((c) => st.swaps[c])),
+    movable: new Set(st.movable.flatMap((c) => [c, FIXED + c])) // a fixed lesson is drawn as a group of "fixed:<course>"
   });
   const days = Array.from({ length: range.days }, (_, i) => i + 1)
     .map((d) => `<button type="button" data-ed="day" data-day="${d}" aria-pressed="${d === V.day}">${DAYS[d]}׳</button>`).join('');
@@ -241,19 +314,50 @@ function stepTwo(st) {
   return `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
     <p class="me-step"><b>צעד 2 מתוך 2.</b> לחצו על שיעור כדי לסמן שיכול לזוז, ובחרו מה חשוב לכם.</p></div>
     ${goalsHtml(st, addableCourses(data, statuses, st))}${changesHtml(st, data)}
-    <div id="editResults">${resultsHtml(st, data)}</div>
+    <div id="editResults">${resultsHtml(st, data, pr, props.length)}</div>
     <h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
     <div class="daysel" id="editDays" role="group" aria-label="בחירת יום">${days}</div>
-    <div id="editWeek" class="edit-week">${week}</div>${warn ? `<div class="edit-warn">${warn}</div>` : ''}
+    <div id="editWeek" class="edit-week${V.fx ? ' fx' : ''}">${week}</div>${warn ? `<div class="edit-warn">${warn}</div>` : ''}
     <p class="err-text" id="edMsg" role="alert"></p>
     <div class="me-foot"><a class="btn" href="#edit">חזרה לצעד 1</a>
       <button type="button" class="btn primary" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${V.running ? 'מחפש…' : 'חפש הצעות'}</button></div>`;
 }
 
-// (the proposals come in the next task)
-function resultsHtml() {
+// The groups a proposal puts in place of the old ones (highlighted in the week).
+const newGroups = (p) => new Set(p.lessons.filter((l) => [...p.changed, ...p.added].includes(l.course) && l.group).map((l) => l.group));
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// "מקומות פנויים נבדקו לפני X": when the seat counts of the destination courses were read (the oldest of them).
+function seatsNote(p, data) {
+  const at = [...p.changed, ...p.added].map((c) => seatsAt(c, data)).filter(Boolean).map((t) => new Date(t).getTime()).filter(Number.isFinite);
+  return at.length ? `<p class="hint">מקומות פנויים נבדקו ${esc(ago(Date.now() - Math.min(...at)))}</p>` : '';
+}
+// A changed course that left the shown day for another: "הראה את היום החדש" goes there.
+function newDayButton(st, p) {
+  const key = (l) => [l.day, l.start, l.end].join('|');
+  for (const c of p.changed) {
+    const was = st.baseline.filter((l) => l.course === c), now = p.lessons.filter((l) => l.course === c);
+    const old = new Set(was.map(key)), fresh = new Set(now.map(key));
+    const left = was.some((l) => l.day === V.day && !fresh.has(key(l))), to = now.find((l) => !old.has(key(l)) && l.day !== V.day);
+    if (left && to) return `<button type="button" class="btn" data-ed="newDay" data-day="${to.day}">הראה את היום החדש</button>`;
+  }
+  return '';
+}
+
+// Above the week: the way back to the original, then the proposals (or what the search found instead).
+function resultsHtml(st, data, pr, n) {
+  const pending = st.movable.length || st.added.length || st.removed.length || Object.values(st.swaps).some((x) => x.length);
+  const back = same(st.baseline, st.original) && !pending ? '' : '<p><button type="button" class="btn" data-ed="restoreOriginal">חזרה למערכת המקורית</button></p>';
   const r = V.result;
-  return r ? `<p class="hint" role="status">נמצאו ${r.proposals?.length ?? 0} הצעות.</p>` : '';
+  if (!r) return back;
+  const notes = searchNotesHtml(r, st, data);
+  if (!n) return `<div class="prop-panel">${notes}${back}</div>`;
+  const zero = { lessons: st.baseline, score: 0, changed: [], added: [], removed: [] };
+  const actions = pr
+    ? `<div class="prop-actions">${newDayButton(st, pr)}<button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
+      <button type="button" class="btn" data-ed="copyChanges">העתק שינויים</button></div>${st.registered ? seatsNote(pr, data) : ''}`
+    : '';
+  return `${navHtml(V.i, n)}<div class="prop-panel${V.fx === 'prop' ? ' fx' : ''}">${proposalHtml(st, pr ?? zero, data, { zero: !pr })}${actions}${notes}${back}</div>`;
 }
 
 // The worker that searches. A newer run (or leaving) drops the older answer.
@@ -292,6 +396,8 @@ async function search() {
   }
   V.running = false;
   if (stamp !== V.edits) V.result = null; // something changed while it ran: the answer is for an older question
+  V.i = V.result?.proposals.length ? 1 : 0;
+  V.fx = 'prop';
   if (onChanges()) {
     renderEdit();
     $('editResults')?.scrollIntoView?.({ block: 'nearest' });
@@ -378,6 +484,7 @@ async function openLoader(file) {
       const choices = {};
       rows.forEach((r, i) => key(r) && was.has(key(r)) && (choices[i] = was.get(key(r))));
       fresh = true;
+      invalidate();
       commit({ ...edit(), draft: { rows, choices, registered: d?.registered ?? edit().registered, sem } });
       renderEdit();
       return null;
@@ -402,7 +509,7 @@ function next() {
   if (!lessons.length) return say('לא נמצאו שיעורים במערכת. טענו אותה שוב.');
   // the same schedule as the one already loaded: keep the work done in step 2
   if (!(st.baseline.length && sameNow(st) && st.registered === d.registered && JSON.stringify(lessons) === JSON.stringify(st.original)))
-    commit({ ...loadSchedule(st, lessons, datasetOf(data, app.state), d.registered), draft: d });
+    (invalidate(), commit({ ...loadSchedule(st, lessons, datasetOf(data, app.state), d.registered), draft: d }));
   location.hash = '#edit/changes';
 }
 
@@ -417,11 +524,57 @@ const STEP_ONE = {
   }
 };
 const without = (list, c) => list.filter((x) => x !== c);
+const shownProposal = () => V.result?.proposals[V.i - 1];
+// previous / next proposal, 0 being the original; the shown day stays
+function step(by) {
+  const n = V.result?.proposals.length;
+  if (!n) return;
+  V.i = (V.i + by + n + 1) % (n + 1);
+  V.fx = 'prop';
+  renderEdit();
+}
 const ACT_ED = {
+  propPrev: () => (step(-1), document.querySelector('[data-ed="propPrev"]')?.focus({ preventScroll: true })),
+  propNext: () => (step(1), document.querySelector('[data-ed="propNext"]')?.focus({ preventScroll: true })),
+  newDay(b) {
+    V.day = Number(b.dataset.day);
+    V.fx = 'week';
+    renderEdit();
+    $('editWeekTitle').focus({ preventScroll: true });
+  },
+  saveProposal() {
+    const p = shownProposal(), st = edit();
+    if (!p) return;
+    V.result = null;
+    V.i = 0;
+    V.edits++;
+    commit(saveProposal(st, p.lessons));
+    renderEdit();
+    $('editTitle').focus({ preventScroll: true });
+    toast('ההצעה נשמרה כמערכת הנוכחית. ההרשמה נעשית במכללה.');
+  },
+  copyChanges() {
+    const p = shownProposal(), st = edit();
+    if (p) copy(changeText(st.registered ? st.original : st.baseline, p.lessons, dataOf(st.dataset.sem)), 'השינויים הועתקו');
+  },
+  restoreOriginal() {
+    V.result = null;
+    V.i = 0;
+    V.edits++;
+    commit(restoreOriginal(edit()));
+    renderEdit();
+    $('editTitle').focus({ preventScroll: true });
+    toast('חזרנו למערכת המקורית');
+  },
+  letMove(b) {
+    touch({ ...edit(), movable: [...edit().movable, b.dataset.course] }, '#editTitle');
+    search();
+  },
   ...STEP_ONE,
   search,
   day(b) {
     V.day = Number(b.dataset.day);
+    V.fx = 'week';
     renderEdit();
     document.querySelector(`#editDays [data-day="${V.day}"]`)?.focus({ preventScroll: true });
   },
@@ -462,10 +615,19 @@ function wire() {
     else if (goal === 'addCourse' && t.value) touch({ ...st, added: [...st.added, t.value] }, '[data-ed-goal="addCourse"]');
     if (goal || !d) return;
     if (t.dataset?.edPick !== undefined) d.choices[t.dataset.edPick] = t.value || null;
-    else if (t.hasAttribute?.('data-ed-reg')) d.registered = t.checked;
+    else if (t.hasAttribute?.('data-ed-reg')) (d.registered = t.checked), invalidate();
     else return;
     commit(st);
     say('');
+  });
+  // the build switcher's keys: ArrowLeft is next, ArrowRight previous (right to left); not while typing or while something is open
+  document.addEventListener('keydown', (e) => {
+    if (!onChanges() || !V.result?.proposals.length || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || $('pop').matches(':popover-open') || document.querySelector('dialog:modal')) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable], [tabindex="0"]')) return;
+    e.preventDefault();
+    step(e.key === 'ArrowLeft' ? 1 : -1);
+    document.querySelector(e.key === 'ArrowLeft' ? '[data-ed="propNext"]' : '[data-ed="propPrev"]')?.focus({ preventScroll: true });
   });
   // Escape (a light dismiss) with the block gone: focus must not fall to <body>
   $('pop').addEventListener('toggle', (e) => e.newState === 'closed' && onChanges() && setTimeout(refocus, 0));

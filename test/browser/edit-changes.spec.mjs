@@ -69,6 +69,8 @@ test('phone: nothing to move and no goal says what to do; a goal alone posts "tr
   await page.locator('[data-ed="search"]').click();
   await page.waitForFunction(() => window.__posts.length >= 1);
   assert.deepEqual(await page.evaluate(() => window.__posts), ['tries']);
+  await page.locator('#editResults .prop-panel').waitFor({ timeout: 30000 }); // the answer redraws the page: click after it
+  if (await page.locator('[data-ed="propPrev"]').count()) await page.locator('[data-ed="propPrev"]').click(); // the original: its lessons are on the shown day
   await page.locator('#editWeek .day.on .blk').first().click();
   await page.locator('#pop [data-ed="toggleMove"]').click();
   await page.evaluate(() => (window.__posts = []));
