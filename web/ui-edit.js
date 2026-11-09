@@ -63,6 +63,13 @@ const snapshotHtml = (ls) =>
 
 // Step 1. edit: the saved state; data: the chosen semester's file; review: the rows read (the sure ones are not listed);
 // opts.same: the saved schedule belongs to the data now shown.
+// How many courses the file or the hand pick gave, so the student sees the load worked before step 2.
+const coursesLine = (rows, data) => {
+  const idx = data && groupIndex(data);
+  const n = new Set(rows.map((r, i) => (r.chosen && idx?.get(r.chosen)?.cid) ?? r.code ?? r.name ?? i)).size;
+  return n ? ` · ${n === 1 ? 'קורס אחד' : `${n} קורסים`}` : '';
+};
+
 export function stepOneHtml(edit, data, review, { same = true } = {}) {
   const d = edit.draft, choices = d?.choices ?? {}, rows = d ? review : [];
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
@@ -81,7 +88,7 @@ export function stepOneHtml(edit, data, review, { same = true } = {}) {
       <p class="hint">לא בטוחים בשורות האלה. בחרו קבוצה בכל שורה.</p>${review_.join('')}</section>` : ''}
     ${loaded ? `<section class="me-card"><label class="check"><input type="checkbox" data-ed-reg${d?.registered ?? edit.registered ? ' checked' : ''}>
       המערכת כבר רשומה במכללה</label>
-      ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}</p>` : ''}</section>` : ''}
+      ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}${coursesLine(rows, data)}</p>` : ''}</section>` : ''}
     <p class="err-text" id="edMsg" role="alert"></p></div>
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">הבא: שינויים</button></div>`;
 }
@@ -349,15 +356,22 @@ function seatsNote(p, data) {
   return at.length ? `<p class="hint">מקומות פנויים נבדקו ${esc(ago(Date.now() - Math.min(...at)))}</p>` : '';
 }
 // A changed course that left the shown day for another: "הראה את היום החדש" goes there.
-function newDayButton(st, p) {
-  const key = (l) => [l.day, l.start, l.end].join('|');
+// The day a proposal moved a meeting to, when that is not the shown day (null: none). A meeting moved to another day is one
+// with no removed meeting of its type on its new day: a time change within the day is no move, a lecture and tutorial that
+// trade days both are.
+export function movedDay(baseline, p, shown) {
+  const key = (l) => [l.day, l.start, l.end, l.type].join('|');
   for (const c of p.changed) {
-    const was = st.baseline.filter((l) => l.course === c), now = p.lessons.filter((l) => l.course === c);
-    const old = new Set(was.map(key)), fresh = new Set(now.map(key));
-    const left = was.some((l) => l.day === V.day && !fresh.has(key(l))), to = now.find((l) => !old.has(key(l)) && l.day !== V.day);
-    if (left && to) return `<button type="button" class="btn" data-ed="newDay" data-day="${to.day}">הראה את היום החדש</button>`;
+    const was = baseline.filter((l) => l.course === c), now = p.lessons.filter((l) => l.course === c);
+    const old = new Set(was.map(key)), fresh = new Set(now.map(key)), gone = was.filter((l) => !fresh.has(key(l)));
+    const to = now.find((l) => !old.has(key(l)) && l.day !== shown && !gone.some((g) => g.day === l.day && g.type === l.type));
+    if (gone.length && to) return to.day;
   }
-  return '';
+  return null;
+}
+function newDayButton(st, p) {
+  const day = movedDay(st.baseline, p, V.day);
+  return day ? `<button type="button" class="btn" data-ed="newDay" data-day="${day}">הראה את היום החדש</button>` : '';
 }
 
 // Above the week: the way back to the original, then the proposals (or what the search found instead).
@@ -607,9 +621,11 @@ const ACT_ED = {
   },
   fewerGaps: () => touch({ ...edit(), goal: { ...edit().goal, fewerGaps: !edit().goal.fewerGaps } }, '[data-ed="fewerGaps"]'),
   toggleMove(b) {
-    const st = edit(), c = b.dataset.course;
+    const st = edit(), c = b.dataset.course, src = $('pop').dataset.src;
     $('pop').hidePopover?.();
-    touch({ ...st, movable: st.movable.includes(c) ? without(st.movable, c) : [...st.movable, c] }, '#editWeekTitle');
+    touch({ ...st, movable: st.movable.includes(c) ? without(st.movable, c) : [...st.movable, c] });
+    // the lesson is still there: focus goes back to it (spec: "focus returns to the lesson")
+    (src && document.querySelector(`#editWeek [data-k="${CSS.escape(src)}"]`) || $('editWeekTitle'))?.focus({ preventScroll: true });
   },
   others: (b) => others(b.dataset.course),
   pickSwap(b) {

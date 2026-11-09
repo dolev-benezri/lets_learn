@@ -45,7 +45,7 @@ for (const size of ['phone', 'desktop'])
     await menu.locator('[data-ed="toggleMove"]').click();
     assert.equal((await saved(page)).movable.length, 1);
     assert.match(await page.locator('#editWeek .blk.movable').first().textContent(), /יכול לזוז/);
-    assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle');
+    assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('movable')), true, 'focus back on the lesson');
     assert.match(await page.locator('.changes').innerText(), /יכולים לזוז/);
   });
 

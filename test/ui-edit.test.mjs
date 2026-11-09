@@ -5,7 +5,7 @@ import { parse } from 'node-html-parser';
 
 const store = new Map();
 globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
-const { stepOneHtml, lessonsFromRows, pendingRows, lostRow } = await import('../web/ui-edit.js');
+const { stepOneHtml, lessonsFromRows, pendingRows, lostRow, movedDay } = await import('../web/ui-edit.js');
 const { emptyEdit } = await import('../web/edit-state.js');
 const { real } = await import('./fixtures/real.mjs');
 
@@ -75,6 +75,26 @@ test('lessonsFromRows: chosen groups give their lessons; none gives fixed lesson
   const gone = lessonsFromRows([row({})], { 0: '271039999' }, data);
   assert.deepEqual(gone.map((l) => [l.group, l.day, l.start]), [[null, 5, '12:00']], 'a group missing from the data stays fixed with the row hours');
   assert.deepEqual(lessonsFromRows([NONE], { 0: null }, null).map((l) => l.day), [1], 'no data: fixed rows still read');
+});
+
+test('stepOneHtml: the loaded line says the semester and how many courses were read', () => {
+  assert.match(html([SURE, row({}), NONE]).text, /נטענה מערכת של סמסטר א׳ · 3 קורסים/);
+  assert.match(html([SURE, { ...SURE, type: 'תרגול' }]).text, /נטענה מערכת של סמסטר א׳ · קורס אחד/);
+});
+
+test('stepOneHtml: a course read by name and its tutorial picked by code count once', () => {
+  const byName = row({ code: null, via: 'name', name: 'MATLAB', chosen: '271033601', confidence: 'weak' });
+  assert.match(html([byName, row({ chosen: '271033601', confidence: 'sure' })]).text, /· קורס אחד/);
+});
+
+test('movedDay: the new day of a moved meeting unless it is shown; a move within the day is none; a lecture and tutorial trading days is a move', () => {
+  const M = (day, start, type, group) => ({ course: 'C', name: 'c', type, group, day, start, end: '09:50' });
+  const base = [M(2, '08:00', 'הרצאה', 'g1'), M(4, '08:00', 'תרגול', 'g1/1')];
+  const p = (lessons) => ({ changed: ['C'], lessons });
+  assert.equal(movedDay(base, p([M(3, '08:00', 'הרצאה', 'g2'), M(4, '08:00', 'תרגול', 'g1/1')]), 1), 3);
+  assert.equal(movedDay(base, p([M(3, '08:00', 'הרצאה', 'g2'), M(4, '08:00', 'תרגול', 'g1/1')]), 3), null, 'already shown');
+  assert.equal(movedDay(base, p([M(2, '12:00', 'הרצאה', 'g2'), M(4, '08:00', 'תרגול', 'g1/1')]), 1), null, 'same day, new hours');
+  assert.equal(movedDay(base, p([M(4, '12:00', 'הרצאה', 'g2'), M(2, '12:00', 'תרגול', 'g2/1')]), 1), 4, 'they trade days');
 });
 
 test('lostRow: a chosen group gone from the data, on a row with no hours, is found; rows that give lessons are not', () => {

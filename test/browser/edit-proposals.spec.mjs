@@ -49,6 +49,11 @@ test('phone: "הראה את היום החדש" appears where the old lesson was 
   assert.notEqual(await page.locator('#editDays [aria-pressed="true"]').getAttribute('data-day'), '4');
   assert.equal((await page.locator('#editWeek .day.on .blk.changed').count()) > 0, true, 'the new lesson is highlighted');
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle');
+  const to = await page.locator('#editDays [aria-pressed="true"]').getAttribute('data-day');
+  await page.locator('#editDays [data-day="3"]').click(); // a day the change does not touch: the button is still offered
+  await page.locator('[data-ed="newDay"]').click();
+  assert.equal(await page.locator('#editDays [aria-pressed="true"]').getAttribute('data-day'), to);
+  assert.equal(await page.locator('[data-ed="newDay"]').count(), 0, 'on the new day there is nothing to show');
 });
 
 test('desktop: the arrows and the keys move between proposals and the original; keys follow the reading direction', async (t) => {
