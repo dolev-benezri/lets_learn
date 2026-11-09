@@ -16,7 +16,7 @@ const uniq = (a) => [...new Set(a)];
 export function kinds(edit, data) {
   const ids = uniq(edit.baseline.map((l) => l.course)),
     broken = (id) => !data.courses[id] || edit.baseline.some((l) => l.course === id && !hasGroup(data, l)),
-    fixed = ids.filter((id) => broken(id) && !(data.courses[id] && edit.movable.includes(id)));
+    fixed = ids.filter((id) => broken(id) && !(data.courses[id] && (edit.movable.includes(id) || edit.swaps[id]?.length)));
   return { real: ids.filter((id) => !fixed.includes(id)), fixed };
 }
 
@@ -216,7 +216,7 @@ export function tryEach(edit, data, record, run = search, { perMs = 400, totalMs
       break;
     }
     // a try never runs past the overall cap; a search that stops on its limit reports `partial`
-    const e = { ...edit, movable: [...edit.movable, course] }, q = { ...editQuery(e, data, record), timeLimitMs: Math.min(perMs, left) };
+    const e = { ...edit, movable: [...edit.movable, course] }, q = { ...editQuery(e, data, record), timeLimitMs: Math.min(perMs, left), why: false };
     const r = run(q), proposals = proposalsFrom(r.results, e, q);
     if (proposals.length) found.push({ course, proposals });
     else if (r.partial) timedOut = true;

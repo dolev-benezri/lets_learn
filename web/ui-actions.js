@@ -46,6 +46,7 @@ import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
 import { advisorPdfAct } from './ui-advisor-pdf.js';
 import { setMode } from './ui-mode.js';
+import { openLessonMenu } from './ui-edit.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel, advisorNow } from './ui-drawer.js';
 
 // ---------- actions ----------
@@ -189,7 +190,7 @@ export const ACT = {
     keepFocus(renderView);
   },
   block: (el) =>
-    openPop(el, {
+    document.body.dataset.view === 'edit' ? openLessonMenu(el) : openPop(el, {
       data: shownData(),
       res: shown(),
       includeFull: app.state.constraints.includeFull,

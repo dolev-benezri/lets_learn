@@ -2230,3 +2230,60 @@ body.touring .actions { display:flex; }
 .rv-opt:has(input:focus-visible) { outline:2px solid var(--primary); outline-offset:1px; }
 .snap { display:grid; gap:4px; margin:6px 0 12px; }
 .snap li { padding:6px 0; border-bottom:1px solid var(--border); }
+/* the ☰ menu: a side sheet from the button's edge, full height, on every width (the other drawer panels keep their layouts) */
+.drawer.side {
+  inset-block:0;
+  inset-inline:auto 0;
+  width:min(320px, 85vw);
+  height:100dvh;
+  max-height:none;
+  border-radius:0;
+  border-start-start-radius:16px;
+  border-end-start-radius:16px;
+  box-shadow:var(--shadow-pop);
+}
+@keyframes in-edge { from { transform:translateX(-100%); } }
+@media (prefers-reduced-motion: no-preference) { .drawer.side[open] { animation:in-edge var(--dur-2) var(--ease-out); } }
+/* edit step 2: goal chips, undo chips, the week with its marks */
+.goals { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.chip {
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:var(--tap);
+  padding:0 14px;
+  font:inherit;
+  color:var(--text);
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:999px;
+  cursor:pointer;
+}
+.chip select {
+  appearance:none;
+  -webkit-appearance:none;
+  width:auto;
+  max-width:9.5em;
+  text-overflow:ellipsis;
+  padding:0;
+  min-height:calc(var(--tap) - 4px);
+  border:0;
+  background:transparent;
+  font:inherit;
+  color:inherit;
+  cursor:pointer;
+}
+.chip.on, .chip[aria-pressed="true"] { background:var(--primary-soft); border-color:var(--primary); color:var(--primary-hover); font-weight:600; }
+.chip:focus-within, .chip:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.chip select:focus-visible { outline:none; }
+.tag-chip .icon { width:14px; height:14px; }
+.changes { display:grid; gap:6px; margin-bottom:10px; }
+.changes li { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.edit-week { margin-bottom:10px; }
+.edit-warn { display:grid; gap:6px; margin-bottom:10px; }
+.off.ghost { background:transparent; border:2px dashed var(--border-strong); }
+.blk.changed { outline:2px solid var(--success); outline-offset:-2px; box-shadow:var(--shadow-lift); }
+.blk.movable { border-style:dashed; }
+#edit .daysel { margin-bottom:8px; }
+#edit .err-text:empty { display:none; }

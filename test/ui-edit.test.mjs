@@ -73,3 +73,81 @@ test('lessonsFromRows: chosen groups give their lessons; none gives fixed lesson
   const kept = lessonsFromRows([row({})], { 0: null }, data);
   assert.deepEqual(kept.map((l) => [l.group, l.day, l.start]), [[null, 5, '12:00']], 'a row confirmed as no group stays fixed');
 });
+
+// ---------- step 2 (Task 11) ----------
+const { lessonMenuHtml, overlapMessage, parallelPrompts, blockedLines, addableCourses } = await import('../web/ui-edit.js');
+const { displayData, FIXED } = await import('../web/edit-search.js');
+const grp = (id, day, start, end) => ({ id, type: 'הרצאה', primary: true, linked: [], full: false, lecturer: 'L', exams: [], meetings: [{ day, start, end, room: 'r' }] });
+const crs = (name, groups, prereqs = []) => ({ name, credits: 3, offered: true, prereqs, groups });
+const par = (id, name) => ({ kind: 'מקביל', anyOf: [{ id, name }] });
+const small = () => ({
+  year: 2027, startYear: 2026, program: 30, semester: 'א',
+  courses: {
+    A: crs('אלף', [grp('A1', 1, '08:00', '09:50')]),
+    B: crs('בית', [grp('B1', 1, '09:00', '10:50')], [par('A', 'אלף')]),
+    C: crs('גימל', [grp('C1', 2, '08:00', '09:50')]),
+    D: crs('דלת', [grp('D1', 3, '08:00', '09:50')])
+  }
+});
+const L = (course, group, day, start, end, name = course) => ({ course, name, type: 'הרצאה', group, day, start, end });
+const st = (lessons, over = {}) => ({ ...emptyEdit(), baseline: lessons, original: lessons, ...over });
+
+test('lessonMenuHtml: the three actions for a real course, only "להוריד מהמערכת" for a course missing from the data', () => {
+  const d = small();
+  const ls = [L('A', 'A1', 1, '08:00', '09:50', 'אלף'), L('X', null, 4, '10:00', '11:50', 'קורס חיצוני')];
+  const dd = displayData(ls, d);
+  const root = parse(lessonMenuHtml(st(ls), dd.data, 'A1'));
+  assert.deepEqual(root.querySelectorAll('button[data-ed]').map((b) => b.text.trim()), ['יכול לזוז', 'קבוצות אחרות', 'להוריד מהמערכת']);
+  const gone = parse(lessonMenuHtml(st(ls), dd.data, dd.groups.find((g) => g.startsWith(FIXED))));
+  assert.deepEqual(gone.querySelectorAll('button[data-ed]').map((b) => b.text.trim()), ['להוריד מהמערכת']);
+  const on = parse(lessonMenuHtml(st(ls, { movable: ['A'] }), dd.data, 'A1'));
+  assert.equal(on.querySelector('[data-ed="toggleMove"]').getAttribute('aria-pressed'), 'true');
+});
+
+test('overlapMessage: two pinned real lessons that overlap block the search and name both; a movable one does not', () => {
+  const d = small();
+  const ls = [L('A', 'A1', 1, '08:00', '09:50', 'אלף'), L('B', 'B1', 1, '09:00', '10:50', 'בית')];
+  const msg = overlapMessage(st(ls), ls, d);
+  assert.ok(msg.includes('אלף') && msg.includes('בית') && msg.includes('יכול לזוז'));
+  assert.equal(overlapMessage(st(ls, { movable: ['B'] }), ls, d), null);
+  const fixed = [L('A', 'A1', 1, '08:00', '09:50', 'אלף'), L('X', null, 1, '09:00', '10:50', 'חיצוני')];
+  assert.ok(overlapMessage(st(fixed), fixed, d).includes('אלף'), 'a real lesson over a fixed one names the real one');
+  const two = [L('X', null, 1, '08:00', '09:50', 'חיצוני'), L('Y', null, 1, '09:00', '10:50', 'עוד')];
+  assert.equal(overlapMessage(st(two), two, d), null, 'two fixed lessons never block');
+});
+
+test('parallelPrompts: removing a course another baseline course needs in parallel asks with the exact words', () => {
+  const d = small();
+  const ls = [L('A', 'A1', 1, '08:00', '09:50', 'אלף'), L('B', 'B1', 2, '09:00', '10:50', 'בית')];
+  assert.deepEqual(parallelPrompts(st(ls), d, 'A'), [{ id: 'B', text: 'בית צריך את אלף במקביל. להסיר גם את בית?' }]);
+  assert.deepEqual(parallelPrompts(st(ls), d, 'B'), []);
+  assert.deepEqual(parallelPrompts(st(ls, { removed: ['B'] }), d, 'A'), []);
+});
+
+test('blockedLines: a blocked course always gets a line naming its requirement, even with empty reasons', () => {
+  const d = small();
+  d.courses.C.prereqs = [{ kind: 'קדם', anyOf: [{ id: 'D', name: 'דלת' }] }];
+  const ls = [L('C', 'C1', 2, '08:00', '09:50', 'גימל')];
+  const lines = blockedLines(st(ls), d, { C: { status: 'blocked', reasons: [], blockedBy: [['D']] } });
+  assert.equal(lines.length, 1);
+  assert.ok(lines[0].includes('גימל') && lines[0].includes('דלת'));
+  assert.deepEqual(blockedLines(st(ls), d, { C: { status: 'available', reasons: [] } }), []);
+  assert.ok(blockedLines(st(ls), d, { C: { status: 'blocked', reasons: [], blockedBy: [] } })[0].length > 'גימל'.length, 'never an empty line');
+});
+
+test('addableCourses: open this semester, not already in the schedule', () => {
+  const d = small();
+  const ls = [L('A', 'A1', 1, '08:00', '09:50', 'אלף')];
+  const statuses = { A: { status: 'available' }, B: { status: 'available' }, C: { status: 'done' }, D: { status: 'blocked' } };
+  assert.deepEqual(addableCourses(d, statuses, st(ls)).map((c) => c.id), ['B']);
+});
+
+test('parallelPrompts: no question when another alternative stays or the record already has it; chains are asked one by one', () => {
+  const d = small();
+  d.courses.B.prereqs = [{ kind: 'מקביל', anyOf: [{ id: 'A', name: 'אלף' }, { id: 'D', name: 'דלת' }] }];
+  const ls = [L('A', 'A1', 1, '08:00', '09:50', 'אלף'), L('B', 'B1', 2, '09:00', '10:50', 'בית'), L('D', 'D1', 3, '08:00', '09:50', 'דלת')];
+  assert.deepEqual(parallelPrompts(st(ls), d, 'A'), [], 'D still stands for the requirement');
+  assert.equal(parallelPrompts(st(ls.slice(0, 2)), d, 'A').length, 1);
+  assert.deepEqual(parallelPrompts(st(ls.slice(0, 2)), d, 'A', { passed: ['D'], profile: {} }), [], 'passed in an earlier semester');
+});
+

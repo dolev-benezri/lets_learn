@@ -381,3 +381,16 @@ test('changeText: no apply or register wording except the closing disclaimer', (
 test('changeText: a course missing from the data keeps its snapshot name', () => {
   assert.equal(changeText([], [T('Z', 'Z1', 1, '08:00')], copyData()), ['להוסיף:', 'nZ (Z): Z1', PROPOSAL_ONLY].join('\n'));
 });
+
+test('tryEach: a try never spends time on the diagnosis (why: false)', () => {
+  const whys = [];
+  const spy = (q) => (whys.push(q.why), { results: [], partial: false, diagnosis: [] });
+  tryEach(edit(twoReal(), { goal: free3 }), tryData(), record, spy);
+  assert.deepEqual(whys, [false, false]);
+});
+
+test('kinds: a known course with a missing group becomes real once it has a swap, like a movable one', () => {
+  const lessons = [L('A', 'A1', 1, '08:00', '09:50'), L('B', null, 3, '08:00', '09:50')];
+  assert.deepEqual(kinds(edit(lessons), base()).fixed, ['B']);
+  assert.deepEqual(kinds(edit(lessons, { swaps: { B: ['B2'] } }), base()).fixed, []);
+});
