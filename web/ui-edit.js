@@ -61,23 +61,23 @@ export function stepOneHtml(edit, data, review, { same = true } = {}) {
   const d = edit.draft, choices = d?.choices ?? {}, rows = d ? review : [];
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
     <p class="me-step"><b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.</p></div><div id="editIdentity"></div>`;
-  const ways = `<section class="me-card edit-ways" aria-label="טעינת המערכת"><div class="me-choice-btns">
-    <button type="button" class="btn primary" data-ed="loadFile">קובץ מהמתכנן (PDF או צילום)</button>
+  const ways = (primary) => `<section class="me-card edit-ways" aria-label="טעינת המערכת"><div class="me-choice-btns">
+    <button type="button" class="btn${primary ? ' primary' : ''}" data-ed="loadFile">קובץ מהמתכנן (PDF או צילום)</button>
     <button type="button" class="btn" data-ed="loadHand">לבחור קורסים וקבוצות ידנית</button></div></section>`;
   if (!same)
     return `${head}<div class="edit-col"><p class="msg bad" role="status"><span>המערכת נשמרה מול נתונים אחרים. טענו אותה שוב כדי לערוך.</span></p>
       <section class="me-card"><h3>המערכת שנשמרה</h3>${snapshotHtml(edit.original)}
-      <button type="button" class="btn" data-ed="restore">חזרה למערכת המקורית</button></section>${ways}</div>`;
+      <button type="button" class="btn" data-ed="restore">חזרה למערכת המקורית</button></section>${ways(true)}</div>`;
   const review_ = rows.flatMap((r, i) => (r.confidence === 'sure' ? [] : [reviewRowHtml(r, i, choices, data)]));
   const loaded = rows.length || edit.baseline.length;
-  return `${head}<div class="edit-col">${ways}
+  return `${head}<div class="edit-col">${ways(!loaded)}
     ${review_.length ? `<section class="me-card" aria-labelledby="rvH"><h3 id="rvH">לבדיקה</h3>
       <p class="hint">לא בטוחים בשורות האלה. בחרו קבוצה בכל שורה.</p>${review_.join('')}</section>` : ''}
     ${loaded ? `<section class="me-card"><label class="check"><input type="checkbox" data-ed-reg${d?.registered ?? edit.registered ? ' checked' : ''}>
       המערכת כבר רשומה במכללה</label>
-      ${d?.sem ? `<p class="hint">סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}</p>` : ''}</section>` : ''}
+      ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}</p>` : ''}</section>` : ''}
     <p class="err-text" id="edMsg" role="alert"></p></div>
-    <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><button type="button" class="btn primary" data-ed="next">הבא: שינויים</button></div>`;
+    <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">הבא: שינויים</button></div>`;
 }
 
 // ---------- step 2: pure parts ----------
@@ -200,8 +200,8 @@ function cardHtml(edit, p, data, course, tag) {
   const was = lecturersOf(old, data, course), is = lecturersOf(now, data, course);
   const full = !edit.registered && now.some((l) => l.group && groupOf(data, course, l.group)?.full);
   return `<li class="pcard"><h4>${nameHtml(name)}${tag ? ` <span class="tag">${tag}</span>` : ''}</h4>
-    ${old.length ? `<p class="was"><s>${whenOf(old)} · קבוצה ${numsOf(old)}</s></p>` : ''}
-    ${now.length ? `<p class="now">${whenOf(now)} · קבוצה ${numsOf(now)}${full ? ' <span class="tag bad">מלאה</span>' : ''}</p>` : ''}
+    ${old.length ? `<p class="was"><s>${whenOf(old)} · <span class="nw">קבוצה ${numsOf(old)}</span></s></p>` : ''}
+    ${now.length ? `<p class="now">${whenOf(now)} · <span class="nw">קבוצה ${numsOf(now)}</span>${full ? ' <span class="tag bad">מלאה</span>' : ''}</p>` : ''}
     ${was !== is && is ? `<p class="hint">מרצה: ${was ? `<s>${esc(was)}</s> ` : ''}${esc(is)}</p>` : ''}
     ${full ? `<p class="tag bad">${icon('alert')} הקבוצה מלאה</p>` : ''}</li>`;
 }
@@ -320,7 +320,7 @@ function stepTwo(st) {
     <div id="editWeek" class="edit-week${V.fx ? ' fx' : ''}">${week}</div>${warn ? `<div class="edit-warn">${warn}</div>` : ''}
     <p class="err-text" id="edMsg" role="alert"></p>
     <div class="me-foot"><a class="btn" href="#edit">חזרה לצעד 1</a>
-      <button type="button" class="btn primary" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${V.running ? 'מחפש…' : 'חפש הצעות'}</button></div>`;
+      <button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${V.running ? 'מחפש…' : 'חפש הצעות'}</button></div>`;
 }
 
 // The groups a proposal puts in place of the old ones (highlighted in the week).

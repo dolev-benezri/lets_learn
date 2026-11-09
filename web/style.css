@@ -2257,7 +2257,7 @@ body.touring .actions { display:flex; }
   font:inherit;
   color:var(--text);
   background:var(--surface);
-  border:1px solid var(--border-strong);
+  border:1px solid var(--border-input);
   border-radius:999px;
   cursor:pointer;
 }
@@ -2267,6 +2267,7 @@ body.touring .actions { display:flex; }
   width:auto;
   max-width:9.5em;
   text-overflow:ellipsis;
+  text-align-last:center; /* the label sits mid-chip, not at one edge of a width the longest option set */
   padding:0;
   min-height:calc(var(--tap) - 4px);
   border:0;
@@ -2283,10 +2284,14 @@ body.touring .actions { display:flex; }
 .changes li { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
 .edit-week { margin-bottom:10px; }
 .edit-warn { display:grid; gap:6px; margin-bottom:10px; }
-.off.ghost { background:transparent; border:2px dashed var(--border-strong); }
+.off.ghost { background:transparent; border:2px dashed var(--border-input); }
 .blk.changed { outline:2px solid var(--success); outline-offset:-2px; box-shadow:var(--shadow-lift); }
 .blk.movable { border-style:dashed; }
 #edit .daysel { margin-bottom:8px; }
+/* the bar follows the column, not the page */
+@media (min-width:720px) {
+  #edit .edit-col + .me-foot { max-width:640px; margin-inline:auto; border-radius:var(--radius) var(--radius) 0 0; }
+}
 #edit .err-text:empty { display:none; }
 /* edit proposals: the switcher, the summary and a card per changed course; 200 ms to slide in, none under reduced motion */
 .prop-nav { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px; }
@@ -2308,6 +2313,7 @@ body.touring .actions { display:flex; }
 .pcard .was { color:var(--text-2); }
 .pcard .now { color:var(--success); font-weight:500; }
 .pcard .tag { margin:0; }
+.pcard .nw { white-space:nowrap; }
 .prop-actions { display:flex; flex-wrap:wrap; gap:8px; }
 .prop-actions .btn { flex:1 1 auto; }
 @keyframes edit-in { from { opacity:0; transform:translateY(8px); } }
