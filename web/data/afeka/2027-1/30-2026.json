@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-09T23:20:49.964Z",
+ "fetchedAt": "2026-11-10T23:22:38.990Z",
  "year": 2027,
  "startYear": 2026,
  "program": 30,
@@ -300,7 +300,6 @@
     "30245",
     "30327",
     "30349",
-    "30354",
     "30357",
     "30358",
     "62216",
@@ -1036,7 +1035,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271001618/1"
@@ -1649,7 +1648,7 @@
        "day": 2,
        "start": "14:00",
        "end": "15:50",
-       "room": "202 פיקוס"
+       "room": "205 פיקוס"
       }
      ],
      "exams": [
@@ -1764,7 +1763,7 @@
        "day": 2,
        "start": "16:00",
        "end": "16:50",
-       "room": "202 פיקוס"
+       "room": "205 פיקוס"
       }
      ],
      "exams": []
@@ -3108,7 +3107,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "ד\"ר מחאמיד מוסטפא",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -3457,7 +3456,7 @@
      "type": "סופי-תרגול",
      "primary": true,
      "lecturer": "ד\"ר הרמן דן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -6606,13 +6605,6 @@
     }
    ]
   },
-  "30354": {
-   "name": "היבטים מעשיים במדע הביו-חומרים",
-   "credits": 0,
-   "offered": false,
-   "prereqs": [],
-   "groups": []
-  },
   "30356": {
    "name": "מבוא לראייה ממוחשבת",
    "credits": 3,
@@ -8943,6 +8935,24 @@
       }
      ],
      "exams": []
+    },
+    {
+     "id": "279090227/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קגן יעל",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
     }
    ]
   },
@@ -9010,7 +9020,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090303/1",
@@ -11551,7 +11561,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -13534,7 +13544,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279092510/1"
@@ -13702,7 +13712,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [

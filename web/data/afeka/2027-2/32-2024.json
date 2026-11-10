@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-09T23:20:49.964Z",
+ "fetchedAt": "2026-11-10T23:22:38.990Z",
  "year": 2027,
  "startYear": 2024,
  "program": 32,
@@ -5808,14 +5808,14 @@
    "groups": []
   },
   "30357": {
-   "name": "פיתוח רכב1",
+   "name": "פיתוח הנדסי רב תחומי1",
    "credits": 2.5,
    "offered": false,
    "prereqs": [],
    "groups": []
   },
   "30358": {
-   "name": "פיתוח רכב2",
+   "name": "פיתוח הנדסי רב תחומי2",
    "credits": 2.5,
    "offered": true,
    "prereqs": [],

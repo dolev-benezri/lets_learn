@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-09T23:20:49.964Z",
+ "fetchedAt": "2026-11-10T23:22:38.990Z",
  "year": 2027,
  "startYear": 2025,
  "program": 42,
@@ -5095,6 +5095,24 @@
      "exams": []
     },
     {
+     "id": "274022003",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר בן יעקב יואב",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "10:00",
+       "end": "11:50",
+       "room": "מפ\"ט אתרוג"
+      }
+     ],
+     "exams": []
+    },
+    {
      "id": "274022001/1",
      "type": "תרגול",
      "primary": false,
@@ -5108,6 +5126,24 @@
        "start": "12:00",
        "end": "13:50",
        "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "274022003/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר בן יעקב יואב",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 1,
+       "start": "12:00",
+       "end": "13:50",
+       "room": "מפ\"ט אתרוג"
       }
      ],
      "exams": []

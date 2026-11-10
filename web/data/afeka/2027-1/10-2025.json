@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-09T23:20:49.964Z",
+ "fetchedAt": "2026-11-10T23:22:38.990Z",
  "year": 2027,
  "startYear": 2025,
  "program": 10,
@@ -1121,7 +1121,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "מר לבנת מיקי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1474,7 +1474,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271001618/1"
@@ -4572,7 +4572,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אבן זהר יאיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271024001/1"
@@ -9449,6 +9449,24 @@
       }
      ],
      "exams": []
+    },
+    {
+     "id": "279090227/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "גב' קגן יעל",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 4,
+       "start": "11:00",
+       "end": "12:50",
+       "room": "מפ\"ט רימון"
+      }
+     ],
+     "exams": []
     }
    ]
   },
@@ -9516,7 +9534,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090303/1",
@@ -11513,7 +11531,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' יעקובוב רבקה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
