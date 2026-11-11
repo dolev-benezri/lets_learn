@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-09T23:20:49.964Z",
+ "fetchedAt": "2026-11-11T23:20:20.069Z",
  "year": 2027,
  "startYear": 2025,
  "program": 20,
@@ -206,9 +206,9 @@
     "20217",
     "20218",
     "20221",
+    "20222",
     "20315",
     "20324",
-    "20342",
     "66113"
    ]
   },
@@ -4448,13 +4448,6 @@
     }
    ]
   },
-  "20342": {
-   "name": "עיבוד ספרתי של תמונה",
-   "credits": 0,
-   "offered": false,
-   "prereqs": [],
-   "groups": []
-  },
   "20343": {
    "name": "מבוא להנדסה אל\"אופטית",
    "credits": 2.5,
@@ -8635,7 +8628,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' אליהו דנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8653,7 +8646,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אולבינסקי אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -8671,7 +8664,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' אליהו דנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9734,7 +9727,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279091416/1"
@@ -9965,7 +9958,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' נמירובסקי אירינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [

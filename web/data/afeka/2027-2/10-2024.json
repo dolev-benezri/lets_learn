@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-08T23:18:50.710Z",
+ "fetchedAt": "2026-11-11T23:20:20.069Z",
  "year": 2027,
  "startYear": 2024,
  "program": 10,
@@ -9555,7 +9555,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' אליהו דנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9573,7 +9573,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אולבינסקי אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9591,7 +9591,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' אליהו דנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

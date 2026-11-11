@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-10T23:22:38.990Z",
+ "fetchedAt": "2026-11-11T23:20:20.069Z",
  "year": 2027,
  "startYear": 2025,
  "program": 20,
@@ -206,9 +206,9 @@
     "20217",
     "20218",
     "20221",
+    "20222",
     "20315",
     "20324",
-    "20342",
     "66113"
    ]
   },
@@ -620,7 +620,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר חריזמן קרן (אנה)",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -721,7 +721,7 @@
        "day": 4,
        "start": "17:00",
        "end": "20:50",
-       "room": "מפ\"ט זית"
+       "room": "מפ\"ט אתרוג"
       }
      ],
      "exams": [
@@ -3307,7 +3307,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר חצקלביץ רון חיים",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -3325,7 +3325,7 @@
      "type": "סופי-מעבדה",
      "primary": true,
      "lecturer": "מר ברק אורי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -4756,13 +4756,6 @@
      "exams": []
     }
    ]
-  },
-  "20342": {
-   "name": "עיבוד ספרתי של תמונה",
-   "credits": 0,
-   "offered": false,
-   "prereqs": [],
-   "groups": []
   },
   "20343": {
    "name": "מבוא להנדסה אל\"אופטית",
@@ -8301,7 +8294,7 @@
        "day": 3,
        "start": "18:00",
        "end": "19:50",
-       "room": "055 פרונטלי בניין מעבדות"
+       "room": "205 פיקוס"
       }
      ],
      "exams": [
@@ -8631,7 +8624,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אלקיים רמי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9057,7 +9050,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' טל-עזר הלל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090511/1"
@@ -9809,7 +9802,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10205,7 +10198,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10826,7 +10819,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10844,7 +10837,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10862,7 +10855,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11028,7 +11021,7 @@
        "day": 2,
        "start": "13:00",
        "end": "14:50",
-       "room": "115 פיקוס"
+       "room": "מפ\"ט זית"
       }
      ],
      "exams": [
@@ -11630,7 +11623,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279091703/1"
@@ -12035,7 +12028,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12071,7 +12064,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר בנגיאט עמית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12079,7 +12072,7 @@
        "day": 2,
        "start": "13:00",
        "end": "13:50",
-       "room": "054 פרונטלי בנין מעבדות"
+       "room": "304 פיקוס"
       }
      ],
      "exams": []

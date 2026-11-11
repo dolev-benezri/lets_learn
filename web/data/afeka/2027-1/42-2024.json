@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-10T23:22:38.990Z",
+ "fetchedAt": "2026-11-11T23:20:20.069Z",
  "year": 2027,
  "startYear": 2024,
  "program": 42,
@@ -702,7 +702,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר חריזמן קרן (אנה)",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -803,7 +803,7 @@
        "day": 4,
        "start": "17:00",
        "end": "20:50",
-       "room": "מפ\"ט זית"
+       "room": "מפ\"ט אתרוג"
       }
      ],
      "exams": [
@@ -2393,7 +2393,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר פוקס עדי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "274010802/1"
@@ -2492,7 +2492,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' שליט משעל גילי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8646,7 +8646,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' טל-עזר הלל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090511/1"
@@ -9398,7 +9398,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9794,7 +9794,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10415,7 +10415,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10433,7 +10433,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10451,7 +10451,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

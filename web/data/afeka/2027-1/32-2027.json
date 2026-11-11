@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-10T23:22:38.990Z",
+ "fetchedAt": "2026-11-11T23:20:20.069Z",
  "year": 2027,
  "startYear": 2027,
  "program": 32,
@@ -600,7 +600,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "ד\"ר חריזמן קרן (אנה)",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -701,7 +701,7 @@
        "day": 4,
        "start": "17:00",
        "end": "20:50",
-       "room": "מפ\"ט זית"
+       "room": "מפ\"ט אתרוג"
       }
      ],
      "exams": [
@@ -2530,7 +2530,7 @@
        "day": 2,
        "start": "12:00",
        "end": "13:50",
-       "room": "304 פיקוס"
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
       },
       {
        "day": 4,
@@ -2569,7 +2569,7 @@
        "day": 2,
        "start": "14:00",
        "end": "15:50",
-       "room": "304 פיקוס"
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
       },
       {
        "day": 4,
@@ -4939,9 +4939,9 @@
      "meetings": [
       {
        "day": 3,
-       "start": "19:00",
-       "end": "20:50",
-       "room": "103 מעב' דואלי פיקוס"
+       "start": "18:00",
+       "end": "19:50",
+       "room": "208 פיקוס"
       }
      ],
      "exams": [
@@ -4970,9 +4970,9 @@
      "meetings": [
       {
        "day": 3,
-       "start": "21:00",
-       "end": "21:50",
-       "room": "103 מעב' דואלי פיקוס"
+       "start": "20:00",
+       "end": "20:50",
+       "room": "208 פיקוס"
       }
      ],
      "exams": []
@@ -8602,7 +8602,7 @@
        "day": 3,
        "start": "18:00",
        "end": "19:50",
-       "room": "055 פרונטלי בניין מעבדות"
+       "room": "205 פיקוס"
       }
      ],
      "exams": [
@@ -8932,7 +8932,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אלקיים רמי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9358,7 +9358,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "פרופ' טל-עזר הלל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090511/1"
@@ -10110,7 +10110,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10506,7 +10506,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11127,7 +11127,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11145,7 +11145,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11163,7 +11163,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11329,7 +11329,7 @@
        "day": 2,
        "start": "13:00",
        "end": "14:50",
-       "room": "115 פיקוס"
+       "room": "מפ\"ט זית"
       }
      ],
      "exams": [
@@ -11931,7 +11931,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279091703/1"
@@ -12336,7 +12336,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12372,7 +12372,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר בנגיאט עמית",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12380,7 +12380,7 @@
        "day": 2,
        "start": "13:00",
        "end": "13:50",
-       "room": "054 פרונטלי בנין מעבדות"
+       "room": "304 פיקוס"
       }
      ],
      "exams": []

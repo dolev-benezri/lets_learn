@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-06T23:17:12.954Z",
+ "fetchedAt": "2026-11-11T23:20:20.069Z",
  "year": 2027,
  "startYear": 2025,
  "program": 50,
@@ -2952,7 +2952,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בן סימון גבריאל",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [
       "279091606/1"
