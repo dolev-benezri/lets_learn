@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-12T23:19:15.829Z",
+ "fetchedAt": "2026-11-13T23:22:09.700Z",
  "year": 2027,
  "startYear": 2027,
  "program": 20,
@@ -259,7 +259,9 @@
     "20221",
     "20351",
     "20381",
-    "20386"
+    "20386",
+    "30357",
+    "30358"
    ]
   }
  ],
@@ -5919,6 +5921,59 @@
    ],
    "groups": []
   },
+  "30357": {
+   "name": "פיתוח הנדסי רב תחומי1",
+   "credits": 2.5,
+   "offered": true,
+   "prereqs": [],
+   "groups": [
+    {
+     "id": "273035701",
+     "type": "סופי-הרצאה+תרגול",
+     "primary": true,
+     "lecturer": "ד\"ר הרמן דן",
+     "full": false,
+     "semester": "א",
+     "linked": [
+      "273035701/1"
+     ],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "17:00",
+       "end": "18:50",
+       "room": "115 פיקוס"
+      }
+     ],
+     "exams": []
+    },
+    {
+     "id": "273035701/1",
+     "type": "תרגול",
+     "primary": false,
+     "lecturer": "ד\"ר הרמן דן",
+     "full": false,
+     "semester": "א",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 6,
+       "start": "19:00",
+       "end": "19:50",
+       "room": "115 פיקוס"
+      }
+     ],
+     "exams": []
+    }
+   ]
+  },
+  "30358": {
+   "name": "פיתוח הנדסי רב תחומי2",
+   "credits": 2.5,
+   "offered": false,
+   "prereqs": [],
+   "groups": []
+  },
   "66113": {
    "name": "ניתוח מערכת מבוססות למידה עמוקה",
    "credits": 3,
@@ -8770,7 +8825,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שפירא יובל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10947,7 +11002,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10965,7 +11020,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10983,7 +11038,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11495,7 +11550,7 @@
        "day": 4,
        "start": "16:00",
        "end": "16:50",
-       "room": "204 פיקוס"
+       "room": "קריה ה'9"
       }
      ],
      "exams": []
@@ -12110,7 +12165,7 @@
        "day": 4,
        "start": "17:00",
        "end": "17:50",
-       "room": "200 פיקוס"
+       "room": "קריה ה'9"
       }
      ],
      "exams": []
@@ -12156,7 +12211,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12192,7 +12247,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר בנגיאט עמית",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [

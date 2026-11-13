@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-12T23:19:15.829Z",
+ "fetchedAt": "2026-11-13T23:22:09.700Z",
  "year": 2027,
  "startYear": 2027,
  "program": 40,
@@ -11224,7 +11224,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11242,7 +11242,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11260,7 +11260,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [

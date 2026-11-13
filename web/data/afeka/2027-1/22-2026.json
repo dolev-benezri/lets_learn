@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-12T23:19:15.829Z",
+ "fetchedAt": "2026-11-13T23:22:09.700Z",
  "year": 2027,
  "startYear": 2026,
  "program": 22,
@@ -8777,7 +8777,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר שפירא יובל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10954,7 +10954,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10972,7 +10972,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10990,7 +10990,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11502,7 +11502,7 @@
        "day": 4,
        "start": "16:00",
        "end": "16:50",
-       "room": "204 פיקוס"
+       "room": "קריה ה'9"
       }
      ],
      "exams": []
@@ -12117,7 +12117,7 @@
        "day": 4,
        "start": "17:00",
        "end": "17:50",
-       "room": "200 פיקוס"
+       "room": "קריה ה'9"
       }
      ],
      "exams": []
@@ -12163,7 +12163,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12199,7 +12199,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר בנגיאט עמית",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
