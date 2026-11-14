@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-13T23:22:09.700Z",
+ "fetchedAt": "2026-11-14T23:22:54.969Z",
  "year": 2027,
  "startYear": 2027,
  "program": 40,
@@ -6520,7 +6520,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר גולומב שחר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "274024801/1"
@@ -6560,7 +6560,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גולומב שחר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8583,7 +8583,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' זלקמן סמירין אולגה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

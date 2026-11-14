@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-12T23:19:15.829Z",
+ "fetchedAt": "2026-11-14T23:22:54.969Z",
  "year": 2027,
  "startYear": 2026,
  "program": 112,
@@ -8197,7 +8197,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' זלקמן סמירין אולגה",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
