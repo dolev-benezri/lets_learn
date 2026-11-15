@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-14T23:22:54.969Z",
+ "fetchedAt": "2026-11-15T23:24:03.208Z",
  "year": 2027,
  "startYear": 2024,
  "program": 10,
@@ -9641,7 +9641,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090410/1",

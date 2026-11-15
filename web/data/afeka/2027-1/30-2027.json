@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-14T23:22:54.969Z",
+ "fetchedAt": "2026-11-15T23:24:03.208Z",
  "year": 2027,
  "startYear": 2027,
  "program": 30,
@@ -2820,7 +2820,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר עומר נטע",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "273012701/1"
@@ -2976,7 +2976,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר עומר נטע",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -6077,7 +6077,7 @@
        "day": 1,
        "start": "08:00",
        "end": "09:50",
-       "room": "114-פיקוס סיסקו וגם פרונטלי"
+       "room": "304 פיקוס"
       }
      ],
      "exams": [
@@ -6108,7 +6108,7 @@
        "day": 1,
        "start": "10:00",
        "end": "10:50",
-       "room": "114-פיקוס סיסקו וגם פרונטלי"
+       "room": "304 פיקוס"
       }
      ],
      "exams": []
@@ -6350,7 +6350,7 @@
      "id": "273033601",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "ד\"ר דיסקין דוד,, רוזינסקי אליהו",
+     "lecturer": "ד\"ר דיסקין דוד,, מר רוזינסקי אליהו",
      "full": true,
      "semester": "א",
      "linked": [
@@ -6370,7 +6370,7 @@
      "id": "273033601/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "ד\"ר דיסקין דוד,, רוזינסקי אליהו",
+     "lecturer": "ד\"ר דיסקין דוד,, מר רוזינסקי אליהו",
      "full": true,
      "semester": "א",
      "linked": [],
@@ -9498,7 +9498,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שטרנפלד איתי",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090410/1",
@@ -12817,7 +12817,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בן סימון גבריאל",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279091709/1"
@@ -13090,7 +13090,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -13098,7 +13098,7 @@
        "day": 1,
        "start": "13:00",
        "end": "13:50",
-       "room": "302 פיקוס"
+       "room": "114-פיקוס סיסקו וגם פרונטלי"
       }
      ],
      "exams": []
