@@ -206,6 +206,28 @@ for (const [name, size] of SIZES) {
   });
 }
 
+// A student who chose the wrong track sees their own courses "not found": the message says to check the track.
+test('phone 320: a course of another track in the Excel file is not found, and the message points at the chosen track', async (t) => {
+  const page = await visit(t, SIZES[1][1], DONE);
+  await page.locator('[data-ed="loadFile"]').click();
+  await page.locator('#friendEd[open]').waitFor();
+  await page.locator('#feFile').setInputFiles({
+    name: 'schedule.xlsx',
+    mimeType: XLSX,
+    buffer: yedionXlsx({
+      E9: '30003-מבוא לכימיה סופי-הרצאה+תרגול\tד"ר פלוני אלמוני 101 בניין 14:00-15:50',
+      C3: '99999-קורס של מסלול אחר סופי-הרצאה+תרגול\tד"ר פלונית 202 בניין 08:00-09:50'
+    })
+  });
+  const status = page.locator('#feImpStatus');
+  await status.filter({ hasText: 'לא נמצאו' }).waitFor({ timeout: 30000 });
+  const text = await status.innerText();
+  assert.match(text, /נמצאה קבוצה אחת/);
+  assert.match(text, /לא נמצאו: 99999/);
+  assert.match(text, /הקורס 99999 לא קיים בנתוני המסלול שבחרתם\. בדקו שהמסלול ושנת הלימודים נכונים\./);
+  assert.equal(await noSideways(page), true);
+});
+
 for (const [name, size] of [SIZES[0], SIZES[2]])
   test(`${name}: mark a course movable, free a day, a proposal with its summary and card, its new day, save, restore the original`, async (t) => {
     const page = await visit(t, size, LOADED, '#edit/changes');

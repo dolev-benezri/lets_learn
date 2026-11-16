@@ -26,7 +26,8 @@ import {
   freshAt,
   examsNoteHtml,
   conflictsFor,
-  reportMailto
+  reportMailto,
+  notFoundHint
 } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
@@ -445,4 +446,26 @@ test('capPreviewText: what one more credit adds, what it drops, and when it chan
   assert.match(cut(null).text, /נעצר בגלל מגבלת הזמן/, 'a search cut short does not claim there is no other plan');
   assert.doesNotMatch(cut(null).text, /לא נמצאה מערכת אחרת\.$/);
   assert.match(cut({ ...now, groups: ['1', '9'] }).text, /^20 נ״ז: אותם קורסים, שיבוץ אחר\. .*נעצר בגלל מגבלת הזמן/);
+});
+
+test('notFoundHint: names the course codes missing from the track data; a course it has, group ids and name keys get no hint', () => {
+  const courses = { 90916: { name: 'x', groups: [] } };
+  const b = (c) => `<bdi dir="ltr">${c}</bdi>`;
+  assert.equal(notFoundHint([], courses, true), '');
+  assert.equal(notFoundHint(['271033601', '271033602/1'], courses, true), ''); // group ids from pasted text: not a track matter
+  assert.equal(notFoundHint(['אנליזההרמונית'], courses, true), ''); // a name the grid reader could not place is not a code
+  // the course is in the data and no group fits the hours read (friend-schedule.test: 30112 at 07:00): the track is not the reason
+  assert.equal(notFoundHint(['90916'], courses, true), '');
+  assert.equal(notFoundHint(['30112', '90916'], courses, true), `הקורס ${b('30112')} לא קיים בנתוני המסלול שבחרתם. בדקו שהמסלול ושנת הלימודים נכונים.`);
+  assert.equal(
+    notFoundHint(['30112', '30131', '271033601'], courses, true),
+    `הקורסים ${b('30112')}, ${b('30131')} לא קיימים בנתוני המסלול שבחרתם. בדקו שהמסלול ושנת הלימודים נכונים.`
+  );
+  assert.equal(notFoundHint(['30112'], courses, false), `הקורס ${b('30112')} לא קיים בנתוני המסלול שלכם. ייתכן שהחבר לומד אותו במסלול אחר.`);
+  assert.equal(
+    notFoundHint(['30112', '30131'], courses, false),
+    `הקורסים ${b('30112')}, ${b('30131')} לא קיימים בנתוני המסלול שלכם. ייתכן שהחבר לומד אותם במסלול אחר.`
+  );
+  const many = Array.from({ length: 10 }, (_, k) => String(40000 + k));
+  assert.match(notFoundHint(many, courses, true), /40007<\/bdi> ועוד 2 לא קיימים/);
 });

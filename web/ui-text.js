@@ -16,6 +16,18 @@ export const YEDION_HINT =
   ' אפשר להוריד את מערכת השעות כקובץ אקסל, ואז לטעון אותו כאן.' +
   // the path as the portal prints it (seen 2026-11-10): the menu, the page, its run button, then the export button
   ' שם: בתפריט "בחינות / ציונים / מערכת שעות" בוחרים "לוח מערכת שעות", לוחצים "ביצוע" ואז "להפקת דו"ח אקסל".';
+// Under "לא נמצאו: 30112, …": which of those course codes the chosen track's data does not hold at all (a student who picked the wrong
+// track sees their own courses "not found"). A course the data has, with no group at the hours read, is another matter and is not
+// named; so are group ids (9 digits, pasted text). HTML: the codes are digits only.
+export function notFoundHint(unknown, courses, edit) {
+  const gone = unknown.filter((u) => /^\d{5}$/.test(u) && !courses[u]);
+  if (!gone.length) return '';
+  const one = gone.length === 1,
+    codes = gone.slice(0, 8).map((c) => `<bdi dir="ltr">${c}</bdi>`).join(', ') + (gone.length > 8 ? ` ועוד ${gone.length - 8}` : '');
+  return `${one ? 'הקורס' : 'הקורסים'} ${codes} לא ${one ? 'קיים' : 'קיימים'} בנתוני ${
+    edit ? 'המסלול שבחרתם. בדקו שהמסלול ושנת הלימודים נכונים.' : `המסלול שלכם. ייתכן שהחבר לומד ${one ? 'אותו' : 'אותם'} במסלול אחר.`
+  }`;
+}
 export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
 // names are raw: the caller escapes
 export const splitLine = (names) => `מופרדים: ${names.join(', ')} · דורש אישור ההכוון`;

@@ -5,7 +5,7 @@ import { app, esc, yearView, semOfGroup, summerOn } from './app.js';
 import { DAYS, icon, typeLabel, groupIndex, hourRange, renderWeek, assignColors } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { groupsFromText, placeGroup, findCourse, clashIds } from './friend-import.js';
-import { groupNumber, courseCount, YEDION_HINT } from './ui-text.js';
+import { groupNumber, courseCount, YEDION_HINT, notFoundHint } from './ui-text.js';
 import { imageCanvas, pageCanvas, bigPage, scanCanvases } from './friend-scan.js';
 import { withPdf, pdfStep } from './grade-import.js';
 import { rowsFromTable, matchRows } from './friend-schedule.js';
@@ -394,6 +394,7 @@ function applyFound({ found, unknown, ambiguous = 0, weak = 0, rows }) {
   const other = placed.filter((g) => semOf(g) !== ed.sem).length,
     o = [...new Set(placed.map((g) => semOf(g)).filter((x) => x !== ed.sem))].map((x) => SEM_NAME[x]).join(' ו');
   const skipped = [already && `${already} כבר במערכת`, refused && `${refused} לא שובצו`].filter(Boolean).join(', ');
+  const why = notFoundHint(unknown, allData().courses, ed.mode === 'edit'); // the codes the chosen track's data does not hold at all
   status(
     `<p>${placed.length === found.length ? (found.length === 1 ? 'נמצאה קבוצה אחת' : `נמצאו ${found.length} קבוצות`) : `נמצאו ${found.length} קבוצות, שובצו ${placed.length} (${skipped})`}${
       other ? ` (${other === placed.length ? 'כולן' : `${other} מהן`} בסמסטר ${o})` : ''
@@ -408,7 +409,7 @@ function applyFound({ found, unknown, ambiguous = 0, weak = 0, rows }) {
         ? `<p>לא נמצאו: ${unknown
             .slice(0, 8)
             .map((id) => `<bdi dir="ltr">${esc(id)}</bdi>`)
-            .join(', ')}${unknown.length > 8 ? ` ועוד ${unknown.length - 8}` : ''}</p>`
+            .join(', ')}${unknown.length > 8 ? ` ועוד ${unknown.length - 8}` : ''}</p>${why ? `<p>${why}</p>` : ''}`
         : '') +
       (found.length || unknown.length ? '' : '<p>לא זוהה אף מספר קבוצה (9 ספרות).</p>')
   );
