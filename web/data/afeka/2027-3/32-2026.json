@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-12T23:19:15.829Z",
+ "fetchedAt": "2026-11-16T23:19:49.249Z",
  "year": 2027,
  "startYear": 2026,
  "program": 32,
@@ -806,7 +806,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [
       "271001617/1"
@@ -845,7 +845,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "קיץ",
      "linked": [],
      "meetings": [
@@ -3783,7 +3783,13 @@
       {
        "day": 1,
        "start": "17:00",
-       "end": "20:50",
+       "end": "18:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      },
+      {
+       "day": 1,
+       "start": "20:00",
+       "end": "21:50",
        "room": "002 מעב' פיזיקה ואופטיקה"
       }
      ],

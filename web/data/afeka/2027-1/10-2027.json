@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-14T23:22:54.969Z",
+ "fetchedAt": "2026-11-16T23:19:49.249Z",
  "year": 2027,
  "startYear": 2027,
  "program": 10,
@@ -1321,7 +1321,7 @@
        "day": 5,
        "start": "12:00",
        "end": "14:50",
-       "room": "קריה ה'7"
+       "room": "קריה ה'5"
       }
      ],
      "exams": [
@@ -1635,6 +1635,12 @@
        "start": "13:00",
        "end": "15:50",
        "room": "מפ\"ט גפן"
+      },
+      {
+       "day": 5,
+       "start": "15:00",
+       "end": "15:50",
+       "room": "קריה ה'5"
       }
      ],
      "exams": []
@@ -8001,7 +8007,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090102/1"
@@ -8676,7 +8682,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090124/1"
@@ -8809,7 +8815,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8871,7 +8877,7 @@
        "day": 5,
        "start": "13:00",
        "end": "14:50",
-       "room": "קריה ה'5"
+       "room": "קריה ה'7"
       }
      ],
      "exams": []
@@ -9394,7 +9400,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שרייבר ניר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090224/1",
@@ -9489,7 +9495,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10988,7 +10994,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מגנזיק אבלין",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279091105/1"

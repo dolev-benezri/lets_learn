@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-12T23:19:15.829Z",
+ "fetchedAt": "2026-11-16T23:19:49.249Z",
  "year": 2027,
  "startYear": 2024,
  "program": 19,
@@ -2293,7 +2293,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר פרל ניר",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274000502/1"
@@ -2359,7 +2359,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' כהנא דפנה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
