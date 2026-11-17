@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-16T23:19:49.249Z",
+ "fetchedAt": "2026-11-17T23:17:50.732Z",
  "year": 2027,
  "startYear": 2026,
  "program": 42,
@@ -4832,7 +4832,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר גוטמן דוד",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "274020501/1"
@@ -4852,7 +4852,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גוטמן דוד",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9260,7 +9260,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גבל מיקה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091402/1"
@@ -9458,7 +9458,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר אמיר ענת",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279091411/1"
@@ -9641,7 +9641,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9749,7 +9749,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

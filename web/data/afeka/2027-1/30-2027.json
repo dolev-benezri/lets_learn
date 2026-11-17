@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-16T23:19:49.249Z",
+ "fetchedAt": "2026-11-17T23:17:50.732Z",
  "year": 2027,
  "startYear": 2027,
  "program": 30,
@@ -11266,7 +11266,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11887,7 +11887,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11913,7 +11913,7 @@
        "day": 5,
        "start": "12:00",
        "end": "12:50",
-       "room": "קריה ה'5"
+       "room": "קריה ה'7"
       }
      ],
      "exams": []

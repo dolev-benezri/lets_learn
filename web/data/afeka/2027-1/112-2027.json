@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-16T23:19:49.249Z",
+ "fetchedAt": "2026-11-17T23:17:50.732Z",
  "year": 2027,
  "startYear": 2027,
  "program": 112,
@@ -10263,7 +10263,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר כהן יונתן",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
