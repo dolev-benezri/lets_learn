@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-17T23:17:50.732Z",
+ "fetchedAt": "2026-11-18T23:20:34.746Z",
  "year": 2027,
  "startYear": 2025,
  "program": 30,
@@ -451,6 +451,12 @@
      ],
      "exams": [
       {
+       "kind": "בוחן אמצע",
+       "moed": 1,
+       "date": "2026-12-13",
+       "time": "17:00"
+      },
+      {
        "kind": "בחינה",
        "moed": 1,
        "date": "2027-01-24",
@@ -487,6 +493,12 @@
       }
      ],
      "exams": [
+      {
+       "kind": "בוחן אמצע",
+       "moed": 1,
+       "date": "2026-12-13",
+       "time": "17:00"
+      },
       {
        "kind": "בחינה",
        "moed": 1,
@@ -3243,7 +3255,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גולן עוז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "273013703/1"
@@ -3309,7 +3321,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר גולן עוז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "273013705/1"
@@ -3360,7 +3372,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר גולן עוז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -3396,7 +3408,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר גולן עוז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -5431,7 +5443,7 @@
      "type": "סופי-הרצאה+מעבדה",
      "primary": true,
      "lecturer": "ד\"ר אלון טל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "273032104/1"
@@ -5489,7 +5501,7 @@
      "type": "מעבדה",
      "primary": false,
      "lecturer": "ד\"ר אלון טל",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -6923,7 +6935,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בר לוקיאנוב ולדימיר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090102/1"
@@ -6962,7 +6974,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר לייטנר אריאלה מירה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279090105/1",
@@ -7757,7 +7769,7 @@
        "day": 4,
        "start": "19:00",
        "end": "20:50",
-       "room": "מפ\"ט רימון"
+       "room": "302 פיקוס"
       }
      ],
      "exams": []
@@ -10785,7 +10797,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מרגלית תמר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279091104/1"

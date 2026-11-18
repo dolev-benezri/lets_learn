@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-17T23:17:50.732Z",
+ "fetchedAt": "2026-11-18T23:20:34.746Z",
  "year": 2027,
  "startYear": 2024,
  "program": 19,
@@ -625,7 +625,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "271001614/1"
@@ -742,7 +742,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר קרני ירדן",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -4514,7 +4514,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6965,7 +6965,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מיברג שרה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092610/1",

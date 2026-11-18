@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-17T23:17:50.732Z",
+ "fetchedAt": "2026-11-18T23:20:34.746Z",
  "year": 2027,
  "startYear": 2024,
  "program": 40,
@@ -3434,7 +3434,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' כהנא דפנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "274013002/1"
@@ -3518,7 +3518,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' כהנא דפנה",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7530,7 +7530,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' קנדליס אלינה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9886,7 +9886,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מיברג שרה",
-     "full": false,
+     "full": true,
      "semester": "ב",
      "linked": [
       "279092610/1",
@@ -10457,10 +10457,52 @@
   },
   "90947": {
    "name": "מעבדת פיזיקה לתעו\"נ",
-   "credits": 0,
-   "offered": false,
-   "prereqs": [],
-   "groups": []
+   "credits": 1,
+   "offered": true,
+   "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90937",
+       "name": "פיזיקה1 לתעו\"נ"
+      },
+      {
+       "id": null,
+       "name": "פיזיקה-מכניקה"
+      }
+     ]
+    },
+    {
+     "kind": "מקביל",
+     "anyOf": [
+      {
+       "id": "90939",
+       "name": "פיזיקה2 לתעו\"נ"
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "id": "279094702",
+     "type": "סופי-מעבדה",
+     "primary": true,
+     "lecturer": "מר אמבר עמית אדם",
+     "full": false,
+     "semester": "ב",
+     "linked": [],
+     "meetings": [
+      {
+       "day": 3,
+       "start": "15:00",
+       "end": "16:50",
+       "room": "002 מעב' פיזיקה ואופטיקה"
+      }
+     ],
+     "exams": []
+    }
+   ]
   }
  }
 }
