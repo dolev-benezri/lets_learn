@@ -67,6 +67,7 @@ function fold(line) {
   }
   return [...out, cur].join('\r\n ');
 }
+export const EXAM_END_ESTIMATE = 'שעת הסיום משוערת, משך הבחינה לא פורסם';
 const addHours = (time, h) =>
   (Number(time.slice(0, 2)) + h > 23
     ? '23:59'
@@ -103,13 +104,14 @@ ${DISCLAIMER}`)}`
           const key = `${cid}-${e.kind}-${e.moed}`;
           if (seenExam.has(key)) continue;
           seenExam.add(key);
+          // The data has a start time but no length: the end (3 hours, capped at 23:59) is ours, so the description says so.
           const when = e.time
             ? [`DTSTART${TZ}${compact(e.date, e.time)}`, `DTEND${TZ}${compact(e.date, addHours(e.time, 3))}`]
             : [`DTSTART;VALUE=DATE:${compact(e.date)}`];
           event(`exam-${cid}-${seenExam.size}-${e.moed}-${compact(e.date)}`, [
             ...when,
             `SUMMARY:${text(`${e.kind}: ${c.name} (מועד ${e.moed})`)}`,
-            `DESCRIPTION:${text(DISCLAIMER)}`
+            `DESCRIPTION:${text(e.time ? `${EXAM_END_ESTIMATE}\n${DISCLAIMER}` : DISCLAIMER)}`
           ]);
         }
       }
