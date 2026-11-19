@@ -351,8 +351,12 @@ const setGradeMsg = (m) => {
   const el = $('gradeMsg');
   if (el) el.textContent = m;
 };
+const GRADE_STALE = 'המסלול או נתוני הלימודים השתנו בזמן הייבוא, ולכן לא עודכן כלום. ייבאו את הגליון שוב.';
 export async function importGrades(file) {
-  const { data, state } = app;
+  const { data, state, sem } = app;
+  // A track or cohort switch replaces the state and the data files. The sheet was read for the old ones: applying it would change an object nobody
+  // sees any more, and say "updated" over the new state. Checked twice, after the read and before the apply (audit 2026-11-19 finding 9).
+  const same = () => app.state === state && app.sem === sem;
   setGradeMsg('קוראים את הגליון…');
   let found, skipped;
   try {
@@ -362,6 +366,7 @@ export async function importGrades(file) {
   } catch (e) {
     return setGradeMsg(e.user ? e.message : 'לא הצלחנו לקרוא את הקובץ.');
   }
+  if (!same()) return setGradeMsg(GRADE_STALE); // before sheetConfirms (it edits the state) and before the preview opens
   // course rows with a grade the import does not read (e.g. in words) are said, not dropped silently (audit #40)
   const skipNote = !skipped
     ? ''
@@ -389,6 +394,7 @@ export async function importGrades(file) {
     { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) }
   );
   if (!pick) return setGradeMsg('');
+  if (!same()) return setGradeMsg(GRADE_STALE); // the preview was open while the track changed
   applyGradeChanges(state, pick.map((i) => todo[i]));
   setGradeMsg('');
   enterList();

@@ -109,6 +109,68 @@ test('a friend PDF that pdf.js never answers on ends with a message, and the con
   await controlsBack(page);
 });
 
+// A grade sheet whose track or cohort changes while it is read (or while the preview is open) must not be applied: audit 2026-11-19 finding 9.
+const STALE = /השתנו בזמן הייבוא.*ייבאו את הגליון שוב/;
+// Holds the pdf.js worker's file back until the returned function is called: the sheet is "being read" for as long as the test wants.
+async function holdPdf(page) {
+  let release;
+  const gate = new Promise((r) => (release = r));
+  await page.route('**/vendor/pdfjs/pdf.worker.min.mjs', async (route) => {
+    await gate;
+    await route.continue();
+  });
+  return release;
+}
+// The same program, the next cohort: the state and the data files are replaced, the way a track switch does it.
+const switchCohort = (page) => page.evaluate(async () => (await import('./app.js')).switchTo(30, 2027));
+const gradeOf = (page, id) => page.evaluate(async (i) => (await import('./app.js')).app.state.grades[i] ?? null, id);
+const ALL_DONE = { ...SEED, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, passed: ['10016', '30003'], grades: { 10016: 85, 30003: 90 } }) };
+
+test('a track switch while the grade sheet is read: nothing is applied, no preview opens, and the student is told to import again', async (t) => {
+  const page = await visitIn(browser, t, 'phone', SEED, '#me');
+  await page.locator('#gradeFile').waitFor({ state: 'attached' });
+  const release = await holdPdf(page);
+  await uploadSheet(page);
+  await page.locator('#gradeMsg').filter({ hasText: /קוראים/ }).waitFor();
+  assert.equal(await switchCohort(page), true, 'the switch went through');
+  release();
+  await page.locator('#gradeMsg').filter({ hasText: STALE }).waitFor({ timeout: 15000 });
+  assert.equal(await page.locator('dialog.dlg-rows[open]').count(), 0, 'no preview for a sheet read against the old track');
+  assert.equal(await gradeOf(page, '10016'), null);
+});
+
+test('a track switch while the sheet is read, when the sheet changes nothing: still told to import again, not "all up to date"', async (t) => {
+  const page = await visitIn(browser, t, 'phone', ALL_DONE, '#me');
+  await page.locator('#gradeFile').waitFor({ state: 'attached' });
+  const release = await holdPdf(page);
+  await uploadSheet(page);
+  await page.locator('#gradeMsg').filter({ hasText: /קוראים/ }).waitFor();
+  assert.equal(await switchCohort(page), true);
+  release();
+  await page.locator('#gradeMsg').filter({ hasText: STALE }).waitFor({ timeout: 15000 });
+});
+
+test('a sheet that changes nothing, with no switch: "all up to date", as before', async (t) => {
+  const page = await visitIn(browser, t, 'phone', ALL_DONE, '#me');
+  await page.locator('#gradeFile').waitFor({ state: 'attached' });
+  await uploadSheet(page);
+  await page.locator('#gradeMsg').filter({ hasText: /והכול כבר מעודכן/ }).waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('dialog.dlg-rows[open]').count(), 0);
+});
+
+test('a track switch while the preview is open: applying it changes nothing, and the student is told to import again', async (t) => {
+  const page = await visitIn(browser, t, 'phone', SEED, '#me');
+  await page.locator('#gradeFile').waitFor({ state: 'attached' });
+  await uploadSheet(page);
+  const preview = page.locator('dialog.dlg-rows[open]');
+  await preview.waitFor({ timeout: 30000 });
+  assert.equal(await switchCohort(page), true);
+  await preview.locator('button[value="ok"]').click();
+  await page.locator('#gradeMsg').filter({ hasText: STALE }).waitFor({ timeout: 15000 });
+  assert.equal(await gradeOf(page, '10016'), null, 'the new track has no grade from the old sheet');
+  assert.equal(await page.locator('.toast').filter({ hasText: /עודכנ/ }).count(), 0, 'and no "updated" message');
+});
+
 // A stand-in for tesseract: the path through thumbnails, the tick boxes, scanCanvases and the merge runs for real, and only the recognition is canned.
 const ocr = (recognize) => `let done = 0;
   globalThis.__ocrDone = () => done;
