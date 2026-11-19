@@ -162,3 +162,19 @@ test('diagnosis: a lecture with its tutorial but no lab names the lab only', () 
   assert.match(r.diagnosis[0], /המעבדה/);
   assert.doesNotMatch(r.diagnosis[0], /התרגול/);
 });
+
+// Full-branch Codex review, round 2: when every promised part is reachable (a combination fails for another reason, here the
+// lab overlapping its lecture), no part is named and the generic reason stands, not "חסרות שעות ה".
+test('diagnosis: no part to name falls back to the generic reason', () => {
+  const data = {
+    fetchedAt: 'x', year: 2027, startYear: 2026, semester: 'א', examsPublished: false, lists: [],
+    courses: { X: { name: 'פיזיקה 2', credits: 5, offered: true, prereqs: [], groups: course(
+      raw('X1', 'סופי-הרצאה+תרגול+מעבדה', ['X1/1', 'X1/2'], 1), raw('X1/1', 'תרגול', [], 2), raw('X1/2', 'תרגול', ['X1/m'], 3),
+      raw('X1/m', 'מעבדה', [], 1) // the same day and hour as the lecture
+    ).groups } }
+  };
+  const r = search({ data, courses: [{ id: 'X', mode: 'must' }] });
+  assert.equal(r.results.length, 0);
+  assert.doesNotMatch(r.diagnosis[0], /חסרות שעות/);
+  assert.match(r.diagnosis[0], /אילוצים/);
+});

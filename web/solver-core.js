@@ -370,22 +370,28 @@ function explain(info, unlocks) {
   return parts.join(' · ');
 }
 
+// The promised parts (promisedParts) that a lecture's link chain (lecture -> tutorial -> lab) does not reach, over all the
+// lectures of the course.
+function missingParts(course) {
+  const byId = new Map(course.groups.map((g) => [g.id, g]));
+  const lacks = (p) => {
+    const seen = new Set(), walk = (g) => g.linked.forEach((id) => { if (byId.has(id) && !seen.has(id)) { seen.add(id); walk(byId.get(id)); } });
+    walk(p);
+    return promisedParts(p).filter((t) => ![...seen].some((id) => byId.get(id).type === t));
+  };
+  return [...new Set(course.groups.filter((g) => g.primary).flatMap(lacks))];
+}
+
 // freedByBlocks(id): the course would have options if the busy blocks were ignored; freedByFull(id): ... if full
 // groups were allowed; softOptions(id): its options with the day off and hours as wishes (null: none was a must).
 function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () => false, softOptions = null, freedByParts = () => false) {
   const name = (id) => data.courses[id].name;
   const out = [];
   for (const it of items) if (it.mode === 'must' && !it.options.length) {
-    // every lecture group lacks the tutorial or lab its type promises: no constraint of the student's is to blame
-    if (freedByParts(it.id)) {
-      // only the parts a lecture's link chain (lecture -> tutorial -> lab) does not reach
-      const groups = data.courses[it.id].groups, byId = new Map(groups.map((g) => [g.id, g]));
-      const lacks = (p) => {
-        const seen = new Set(), walk = (g) => g.linked.forEach((id) => { if (byId.has(id) && !seen.has(id)) { seen.add(id); walk(byId.get(id)); } });
-        walk(p);
-        return promisedParts(p).filter((t) => ![...seen].some((id) => byId.get(id).type === t));
-      };
-      const parts = [...new Set(groups.filter((g) => g.primary).flatMap(lacks))];
+    // every lecture group lacks the tutorial or lab its type promises: no constraint of the student's is to blame. With no
+    // part named (the chains reach every part, a combination fails for another reason) the generic reason below stands.
+    const parts = freedByParts(it.id) ? missingParts(data.courses[it.id]) : [];
+    if (parts.length) {
       out.push(`${name(it.id)}: בנתוני אפקה חסרות שעות ה${parts.join(' וה')} של קבוצות ההרצאה (אין להן שעות או שהקישור אליהן חסר), `
         + 'ולכן אי אפשר לשבץ את הקורס. אפשר לפנות למזכירות.');
       continue;
