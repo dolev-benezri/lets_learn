@@ -441,7 +441,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
   .pmap .pm-head, .pmap .pm-bar, .pmap .pm-band, .pmap .pm-note { padding-inline:12px; }
   .pmap .pm-band { font-size:12px; }
 }
-/* phone: as little chrome as possible, the map gets the height (close and zoom stay 44px; filters 36px) */
+/* phone: as little chrome as possible, the map gets the height (the controls keep their --tap height: 44px on touch) */
 @media (max-width:599px) {
   .pmap .pm-head { min-height:48px; padding-block:2px; }
   .pmap .pm-title { font-size:15px; }
@@ -449,11 +449,10 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
   .pmap .pm-note { padding-block:4px; font-size:var(--fs-xs); }
   .pmap .pm-bar { padding-block:4px; gap:4px 8px; }
   .pmap .pm-seg { gap:6px; }
-  .pmap .pm-seg button { min-height:36px; padding:0 10px; font-size:var(--fs-sm); }
-  .pmap .pm-btn { min-height:36px; padding:0 10px; font-size:var(--fs-sm); }
+  .pmap .pm-seg button { padding:0 10px; font-size:var(--fs-sm); }
+  .pmap .pm-btn { padding:0 10px; font-size:var(--fs-sm); }
   .pmap .pm-tools { width:100%; justify-content:space-between; }
   .pmap .pm-legend { padding-bottom:2px; }
-  .pmap .pm-legend summary { min-height:28px; }
 }
 /* Round 3: bands by year only; pre-degree band; the plan overlay; progress bar. Plan colour = the site's purple (--c2-*), used by no status. */
 .pmap .band.pre rect {
@@ -566,7 +565,9 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 .pmap .pm-mini .blk { padding:0; border-inline-start-width:2px; cursor:default; }
 .pmap .pm-mini .blk > * { display:none; }
 @media (max-width:599px) {
-  .pmap .pm-alt .pm-ibtn { width:36px; min-height:36px; }
+  /* the header has no room for two wider arrows: 36px wide, and the touch area grows 4px each side into the gaps (44px, no neighbour under it) */
+  .pmap .pm-alt .pm-ibtn { width:36px; position:relative; }
+  .pmap .pm-alt .pm-ibtn::after { content:""; position:absolute; inset:-1px -5px; }
   .pmap .pm-mini:not([open]) {
     max-width:calc(100% - 182px);
   } /* 182 = the electives chip (150) + both gutters (16) + a gap (16) */
@@ -579,7 +580,7 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
     border-radius:var(--radius) var(--radius) 0 0;
   }
 }
-@media (max-width:359px) { .pmap .pm-alt .long { display:none; } .pmap .pm-alt .short { display:inline; } }
+@media (max-width:374px) { .pmap .pm-alt .long { display:none; } .pmap .pm-alt .short { display:inline; } }
 /* The switch flash (1.8 s, ui-map.js spot): the shown plan and the edges it opens in the primary colour, the rest faded, then all eases back. */
 .pmap .pm-svg.spot .nd:not(.plan), .pmap .pm-svg.spot .or, .pmap .pm-svg.spot .ext, .pmap .pm-svg.spot .e:not(.plan) {
   opacity:.14;
@@ -649,6 +650,12 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
   border-inline-start:3px solid var(--cfg);
 }
 .pmap .pm-mini-l b { flex:none; min-width:3.5em; }
+/* Touch: every control is a full --tap (44px) target, the boxes' summaries, the abbreviations toggle and
+   the lone link in the progress bar too. The drawn icons stay small. */
+@media (pointer:coarse) {
+  .pmap .pm-legend summary, .pmap .pm-aside summary, .pmap .pm-mini summary, .pmap .pm-ab { min-height:var(--tap); }
+  .pmap .pm-prog-spec a { display:inline-flex; align-items:center; min-height:var(--tap); }
+}
 @media (prefers-reduced-motion: reduce) {
   .pmap *, .pmap *::before, .pmap *::after { transition:none !important; scroll-behavior:auto !important; }
 }

@@ -297,7 +297,7 @@ export function altBarHtml({ k, n, running, summer }) {
   const dis = running ? ' disabled' : '';
   const btn = (d, k2, label, ic) =>
     `<button type="button" class="pm-ibtn" data-pm="alt" data-d="${d}" data-k="${k2}" aria-label="${label}"${dis}>${icon(ic)}</button>`;
-  // Phone header: "קיץ:" is shorter than "חלופה", and below 360px only "3/10" (or "מחפש…") is left, so the title never wraps.
+  // Phone header: "קיץ:" is shorter than "חלופה", and below 375px only "3/10" (or "מחפש…") is left, so the title never wraps, even at "10/10".
   const label = running
     ? '<span class="long">מחפש חלופות…</span><span class="short">מחפש…</span>'
     : `<span class="long">${summer ? 'קיץ:' : 'חלופה'} </span><b>${
