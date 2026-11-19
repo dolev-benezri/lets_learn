@@ -166,6 +166,7 @@ test('desktop: after a dataset mismatch, loading again shows the review and the 
   assert.equal(await page.locator('[data-ed="next"]').count(), 1);
   assert.equal(await page.locator('[data-ed-row]').count(), 2);
   await page.locator('[data-ed-row="1"] input[value=""]').check(); // the tie row stays fixed
+  await page.locator('details.edit-ways summary').click(); // once loaded, the load buttons fold under one line
   await page.locator('[data-ed="loadHand"]').click();
   await page.locator('#friendEd[open]').waitFor();
   await page.locator('[data-fe="save"]').click();

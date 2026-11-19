@@ -5,7 +5,8 @@ import { parse } from 'node-html-parser';
 
 const store = new Map();
 globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
-const { stepOneHtml, lessonsFromRows, pendingRows, lostRow, movedDay } = await import('../web/ui-edit.js');
+const { stepOneHtml, lessonsFromRows, pendingRows, lostRow, movedDay, changedDays } = await import('../web/ui-edit.js');
+const { groupIndex } = await import('../web/ui-grid.js');
 const { emptyEdit } = await import('../web/edit-state.js');
 const { real } = await import('./fixtures/real.mjs');
 
@@ -52,6 +53,22 @@ test('stepOneHtml: the way in, the registered box, the next button; copy is exac
   assert.ok(!/החל|הרשם/.test(root.querySelectorAll('button').map((b) => b.text).join(' ')), 'no apply/register verb on an action');
 });
 
+test('stepOneHtml: before a load the load card leads; once loaded it folds under one line after what was read', () => {
+  const empty = parse(stepOneHtml(emptyEdit(), data, []));
+  assert.equal(empty.querySelector('details'), null, 'nothing loaded: the buttons are open');
+  assert.equal(empty.querySelector('section.edit-ways [data-ed="loadFile"]').classList.contains('primary'), true);
+  const root = html([SURE, row({})]), col = root.querySelector('.edit-col').innerHTML;
+  const fold = root.querySelector('details.edit-ways');
+  assert.equal(fold.hasAttribute('open'), false);
+  assert.equal(fold.firstChild.tagName, 'SUMMARY');
+  assert.equal(fold.querySelector('summary').text, 'טעינה מחדש או שינוי ידני');
+  for (const b of ['loadFile', 'loadHand']) assert.ok(fold.querySelector(`[data-ed="${b}"]`), b);
+  assert.ok(fold.querySelector('#edWaysMsg') && fold.querySelector('.edit-yedion a'));
+  assert.ok(col.indexOf('rvH') < col.indexOf('<details'), 'the review comes first');
+  assert.ok(col.indexOf('data-ed-reg') < col.indexOf('<details'), 'then the registered box');
+  assert.equal(root.querySelectorAll('[data-ed="loadFile"]').length, 1);
+});
+
 test('stepOneHtml: a made choice is checked', () => {
   const root = html([row({})], { 0: '271033602' });
   assert.equal(root.querySelector('input[value="271033602"]').hasAttribute('checked'), true);
@@ -70,6 +87,17 @@ test('stepOneHtml: another dataset shows the reload note and snapshots, no way o
   assert.ok(root.text.includes('חזרה למערכת המקורית'));
   assert.equal(root.querySelector('[data-ed="next"]'), null);
   assert.equal(root.querySelector('a[href="#edit/changes"]'), null);
+  assert.equal(root.querySelector('details'), null, 'loading again is the way on here: the buttons stay open');
+  assert.ok(root.querySelector('section.edit-ways [data-ed="loadFile"]'));
+});
+
+test('changedDays: the days of the changed groups and of the old places; none when nothing changed', () => {
+  const byId = groupIndex(data), [a, b] = Object.values(data.courses).flatMap((c) => c.groups).filter((g) => g.meetings.length);
+  assert.deepEqual([...changedDays(byId, new Set([a.id]), [])].sort(), [...new Set(a.meetings.map((m) => m.day))].sort());
+  const both = changedDays(byId, new Set([a.id, b.id, 'not-a-group']), [{ day: 6, start: '08:00', end: '09:00' }]);
+  for (const m of [...a.meetings, ...b.meetings]) assert.ok(both.has(m.day), m.day);
+  assert.ok(both.has(6), 'a ghost day');
+  assert.equal(changedDays(byId, new Set(), []).size, 0);
 });
 
 test('pendingRows: only a sure row needs nothing; a tie, weak or none row waits for a choice (none: the tap that keeps it fixed)', () => {

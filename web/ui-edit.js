@@ -75,23 +75,25 @@ export function stepOneHtml(edit, data, review, { same = true } = {}) {
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
     <p class="me-step"><b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.</p></div><div id="editIdentity"></div>`;
   // edWaysMsg: why a load button did nothing (track or year missing), said beside the button that was pressed
-  const ways = (primary) => `<section class="me-card edit-ways" aria-label="טעינת המערכת">
-    <p class="err-text" id="edWaysMsg" role="alert"></p><div class="me-choice-btns">
+  const waysBody = (primary) => `<p class="err-text" id="edWaysMsg" role="alert"></p><div class="me-choice-btns">
     <button type="button" class="btn${primary ? ' primary' : ''}" data-ed="loadFile">קובץ מערכת (אקסל מאפקה-נט, PDF או צילום)</button>
     <button type="button" class="btn" data-ed="loadHand">לבחור קורסים וקבוצות ידנית</button></div>
-    <p class="hint edit-yedion">${YEDION_HINT}</p></section>`;
+    <p class="hint edit-yedion">${YEDION_HINT}</p>`;
+  const ways = (primary) => `<section class="me-card edit-ways" aria-label="טעינת המערכת">${waysBody(primary)}</section>`;
+  // once a schedule is loaded, what was read comes first and the load buttons fold under one line (a phone sees the review at once)
+  const reload = `<details class="me-card edit-ways"><summary>טעינה מחדש או שינוי ידני</summary>${waysBody(false)}</details>`;
   if (!same)
     return `${head}<div class="edit-col"><p class="msg bad" role="status"><span>המערכת נשמרה מול נתונים אחרים. טענו אותה שוב כדי לערוך.</span></p>
       <section class="me-card"><h3>המערכת שנשמרה</h3>${snapshotHtml(edit.original)}
       <button type="button" class="btn" data-ed="restore">חזרה למערכת המקורית</button></section>${ways(true)}</div>`;
   const review_ = rows.flatMap((r, i) => (r.confidence === 'sure' ? [] : [reviewRowHtml(r, i, choices, data)]));
   const loaded = rows.length || edit.baseline.length;
-  return `${head}<div class="edit-col">${ways(!loaded)}
+  return `${head}<div class="edit-col">${loaded ? '' : ways(true)}
     ${review_.length ? `<section class="me-card" aria-labelledby="rvH"><h3 id="rvH">לבדיקה</h3>
       <p class="hint">לא בטוחים בשורות האלה. בחרו קבוצה בכל שורה.</p>${review_.join('')}</section>` : ''}
     ${loaded ? `<section class="me-card"><label class="check"><input type="checkbox" data-ed-reg${d?.registered ?? edit.registered ? ' checked' : ''}>
       המערכת כבר רשומה במכללה</label>
-      ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}${coursesLine(rows, data)}</p>` : ''}</section>` : ''}
+      ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}${coursesLine(rows, data)}</p>` : ''}</section>${reload}` : ''}
     <p class="err-text" id="edMsg" role="alert"></p></div>
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">הבא: שינויים</button></div>`;
 }
@@ -237,6 +239,10 @@ export function proposalHtml(edit, p, data, { zero = false } = {}) {
   return `${head}${cards.length ? `<ul class="pcards">${cards.join('')}</ul>` : ''}${warn}<p class="disclaimer">${PROPOSAL_ONLY}</p>`;
 }
 
+// The days a phone's day tabs mark: where a changed group meets and where a moved course used to be ("היה כאן").
+export const changedDays = (byId, groups, ghosts) =>
+  new Set([...[...groups].flatMap((g) => byId.get(g)?.g.meetings ?? []), ...ghosts].map((m) => m.day));
+
 // "הצעה n מתוך N" with the previous and next buttons (the build page's arrows: ArrowLeft is next in RTL); 0 is the original.
 export function navHtml(i, n) {
   return `<div class="prop-nav" role="group" aria-label="מעבר בין הצעות" tabindex="-1">
@@ -311,7 +317,9 @@ export function renderEdit() {
   const fx = V.fx === 'step' ? ' fx' : '';
   const body = step === 2 ? stepTwo(st) : stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh });
   V.fx = null;
+  const gx = document.querySelector('#edit .goals')?.scrollLeft; // a phone's goal row scrolls sideways: a redraw keeps its place
   $('edit').innerHTML = `${label}<div class="edit-step${fx}">${body}</div>`;
+  if (gx) document.querySelector('#edit .goals')?.scrollTo({ left: gx });
   if ($('editIdentity') && (!app.state.profile.year || needsProgram())) $('editIdentity').innerHTML = identityPick(app.state.profile.year, true);
 }
 
@@ -324,26 +332,33 @@ function stepTwo(st) {
   const statuses = classify(data, app.state).statuses;
   const dd = displayData(lessons, data), swapped = Object.keys(st.swaps).filter((c) => st.swaps[c].length && !st.removed.includes(c));
   const moved = pr ? pr.changed : zero ? [] : swapped; // courses whose old place is drawn as "היה כאן"
-  const ghosts = st.baseline.filter((l) => moved.includes(l.course)).map(({ day, start, end }) => ({ day, start, end }));
-  const byId = groupIndex(dd.data), meetings = [...dd.groups.flatMap((g) => byId.get(g)?.g.meetings ?? []), ...ghosts];
+  const at = ({ day, start, end }) => ({ day, start, end });
+  const ghosts = st.baseline.filter((l) => moved.includes(l.course)).map(at);
+  // a course the proposal (or a pending edit) takes out: its days are marked too, so they stay in the week's range
+  const out = (pr ? pr.removed : zero ? [] : st.removed), gone = st.baseline.filter((l) => out.includes(l.course)).map(at);
+  const byId = groupIndex(dd.data), meetings = [...dd.groups.flatMap((g) => byId.get(g)?.g.meetings ?? []), ...ghosts, ...gone];
   const range = hourRange(meetings);
   assignColors(editColors, [...new Set(dd.groups.map((g) => byId.get(g)?.cid))]);
   V.day = Math.min(V.day ?? Math.min(...meetings.map((m) => m.day).filter((d) => d >= 1), 6), range.days);
+  const changed = pr ? newGroups(pr) : new Set(zero ? [] : swapped.flatMap((c) => st.swaps[c])), marked = changedDays(byId, changed, [...ghosts, ...gone]);
   const week = renderWeek({
-    data: dd.data, res: { groups: dd.groups }, range, colors: editColors, dashed: new Set(), pins: [], friends: [], day: V.day, ghosts,
-    changed: pr ? newGroups(pr) : new Set(zero ? [] : swapped.flatMap((c) => st.swaps[c])),
+    data: dd.data, res: { groups: dd.groups }, range, colors: editColors, dashed: new Set(), pins: [], friends: [], day: V.day, ghosts, changed,
     movable: new Set(st.movable.flatMap((c) => [c, FIXED + c])) // a fixed lesson is drawn as a group of "fixed:<course>"
   });
   const days = Array.from({ length: range.days }, (_, i) => i + 1)
-    .map((d) => `<button type="button" data-ed="day" data-day="${d}" aria-pressed="${d === V.day}">${DAYS[d]}׳</button>`).join('');
+    .map((d) => `<button type="button" data-ed="day" data-day="${d}" aria-pressed="${d === V.day}">${DAYS[d]}׳${
+      marked.has(d) ? '<span class="chg" aria-hidden="true"></span><span class="sr"> (יש שינוי)</span>' : ''}</button>`).join('');
   const warn = blockedLines(st, data, statuses).map((t) => `<p class="warn-text">${icon('alert')} <span>${esc(t)}</span></p>`).join('');
+  // a phone (one day at a time) shows the week right under the proposal switcher and the proposal's details under the week;
+  // the order is chosen when drawn, so reading and Tab order follow what is seen
+  const [top, panel] = resultsHtml(st, data, pr, props.length), below = props.length > 0 && !!globalThis.matchMedia?.('(max-width:759px)').matches;
   return `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
     <p class="me-step"><b>צעד 2 מתוך 2.</b> לחצו על שיעור כדי לסמן שיכול לזוז, ובחרו מה חשוב לכם.</p></div>
     ${goalsHtml(st, addableCourses(data, statuses, st))}${changesHtml(st, data)}
-    <div id="editResults">${resultsHtml(st, data, pr, props.length)}</div>
+    <div id="editResults">${top}${below ? '' : panel}</div>
     <h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
     <div class="daysel" id="editDays" role="group" aria-label="בחירת יום">${days}</div>
-    <div id="editWeek" class="edit-week${V.fx ? ' fx' : ''}">${week}</div>${warn ? `<div class="edit-warn">${warn}</div>` : ''}
+    <div id="editWeek" class="edit-week${V.fx ? ' fx' : ''}">${week}</div>${warn ? `<div class="edit-warn">${warn}</div>` : ''}${below ? panel : ''}
     <p class="err-text" id="edMsg" role="alert"></p>
     <div class="me-foot"><a class="btn" href="#edit">חזרה לצעד 1</a>
       <button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${V.running ? 'מחפש…' : 'חפש הצעות'}</button></div>`;
@@ -377,20 +392,20 @@ function newDayButton(st, p) {
   return day ? `<button type="button" class="btn" data-ed="newDay" data-day="${day}">הראה את היום החדש</button>` : '';
 }
 
-// Above the week: the way back to the original, then the proposals (or what the search found instead).
+// The way back to the original, then the proposals (or what the search found instead): [switcher, panel], each '' when none.
 function resultsHtml(st, data, pr, n) {
   const pending = st.movable.length || st.added.length || st.removed.length || Object.values(st.swaps).some((x) => x.length);
   const back = same(st.baseline, st.original) && !pending ? '' : '<p><button type="button" class="btn" data-ed="restoreOriginal">חזרה למערכת המקורית</button></p>';
   const r = V.result;
-  if (!r) return back;
+  if (!r) return ['', back];
   const notes = searchNotesHtml(r, st, data);
-  if (!n) return `<div class="prop-panel">${notes}${back}</div>`;
+  if (!n) return ['', `<div class="prop-panel">${notes}${back}</div>`];
   const zero = { lessons: st.baseline, score: 0, changed: [], added: [], removed: [] };
   const actions = pr
     ? `<div class="prop-actions">${newDayButton(st, pr)}<button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
       <button type="button" class="btn" data-ed="copyChanges">העתק שינויים</button></div>${st.registered ? seatsNote(pr, data) : ''}`
     : '';
-  return `${navHtml(V.i, n)}<div class="prop-panel${V.fx === 'prop' ? ' fx' : ''}">${proposalHtml(st, pr ?? zero, data, { zero: !pr })}${actions}${notes}${back}</div>`;
+  return [navHtml(V.i, n), `<div class="prop-panel${V.fx === 'prop' ? ' fx' : ''}">${proposalHtml(st, pr ?? zero, data, { zero: !pr })}${actions}${notes}${back}</div>`];
 }
 
 // The worker that searches. A newer run (or leaving) drops the older answer.
@@ -587,6 +602,7 @@ const ACT_ED = {
     V.fx = 'week';
     renderEdit();
     $('editWeekTitle').focus({ preventScroll: true });
+    $('editDays').scrollIntoView?.({ block: 'start' }); // on a phone the button sits under the week: bring the new day into view
   },
   saveProposal() {
     const p = shownProposal(), st = edit();

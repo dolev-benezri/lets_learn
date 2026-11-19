@@ -114,12 +114,14 @@ const tabThrough = async (page, root) => {
 const skipped = (page, root) =>
   page.evaluate(([r, links]) => {
     // WebKit's Tab skips links unless the system setting is on (Safari's "press Tab to highlight each item"), so links are checked only in the other engines
-    const sel = 'button, input, select, textarea, [tabindex="0"]' + (links ? ', a[href]' : '');
+    const sel = 'button, input, select, textarea, summary, [tabindex="0"]' + (links ? ', a[href]' : '');
     const reached = (e) =>
       e.hasAttribute('data-tab-seen') ||
       (e.type === 'radio' && [...document.getElementsByName(e.name)].some((x) => x.hasAttribute('data-tab-seen')));
     return [...document.querySelector(r).querySelectorAll(sel)]
       .filter((e) => !e.disabled && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden')
+      // inside a closed <details> only its summary shows (the engines keep boxes for the rest, hidden by content-visibility)
+      .filter((e) => !e.closest('details:not([open])') || e.matches('details > summary'))
       .filter((e) => !reached(e))
       .map((e) => e.outerHTML.slice(0, 90));
   }, [root, (process.env.BROWSER || 'webkit') !== 'webkit']);
@@ -243,11 +245,50 @@ for (const [name, size] of [SIZES[0], SIZES[2]])
     const before = await saved(page);
     await page.locator('[data-ed="newDay"]').first().click();
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle');
+    if (name === 'phone') // the button sits under the week there: the new day is brought into view
+      assert.equal(await page.locator('#editDays').evaluate((e) => e.getBoundingClientRect().top >= 0 && e.getBoundingClientRect().bottom <= innerHeight), true);
     await page.locator('[data-ed="saveProposal"]').click();
     assert.notDeepEqual((await saved(page)).baseline, before.baseline);
     await page.locator('[data-ed="restoreOriginal"]').click();
     assert.deepEqual((await saved(page)).baseline, before.baseline);
   });
+
+// The owner's phone test: the week was below the fold. One row of goals; on a phone the week sits right under the proposal
+// switcher and the details under the week (desktop keeps the details first); a day the proposal changes is marked.
+for (const [name, size] of SIZES)
+  test(`${name}: goals in one row, the week and the proposal in reading order, the changed day marked`, async (t) => {
+    const page = await visit(t, size, LOADED, '#edit/changes');
+    await page.locator('#editWeek .blk').first().waitFor();
+    const [goals, chip] = [await page.locator('.goals').boundingBox(), await page.locator('.goals .chip').first().boundingBox()];
+    assert.ok(goals.height < chip.height * 2, `one row of goals: ${goals.height} / ${chip.height}`);
+    assert.equal(await noSideways(page), true, 'step 2');
+    await (await lesson(page, 'תרמודינמיקה', 3)).click();
+    await page.locator('#pop [data-ed="toggleMove"]').click();
+    await page.locator('[data-ed-goal="dayOff"]').selectOption('3'); // thermodynamics leaves Tuesday
+    await search(page);
+    const order = await page.evaluate(() => [...document.querySelectorAll('.prop-nav, .prop-panel, #editWeek')].map((e) => e.className.split(' ')[0]));
+    const phone = name !== 'desktop';
+    assert.deepEqual(order, phone ? ['prop-nav', 'edit-week', 'prop-panel'] : ['prop-nav', 'prop-panel', 'edit-week']);
+    if (phone) {
+      assert.match(await page.locator('#editDays [data-day="3"]').textContent(), /\(יש שינוי\)/, 'the day it left is marked');
+      assert.equal(await page.locator('#editDays [data-day="3"] .chg').isVisible(), true);
+    }
+    assert.equal(await noSideways(page), true, 'a proposal');
+  });
+
+test('phone 320: a goal chosen at the far end of the goal row stays in view after the page redraws', async (t) => {
+  const page = await visit(t, SIZES[1][1], LOADED, '#edit/changes');
+  await page.locator('#editWeek .blk').first().waitFor();
+  const goals = page.locator('.goals');
+  await goals.evaluate((g) => g.scrollTo({ left: -g.scrollWidth })); // right to left: the far end is the most negative
+  const before = await goals.evaluate((g) => g.scrollLeft);
+  assert.ok(before < 0, `the row scrolls: ${before}`);
+  await page.locator('[data-ed-goal="notAfter"]').selectOption('16:00');
+  assert.equal((await saved(page)).goal.notAfter, '16:00');
+  assert.equal(await page.locator('.goals').evaluate((g) => g.scrollLeft), before);
+  const [row, chip] = [await page.locator('.goals').boundingBox(), await page.locator('[data-ed-goal="notAfter"]').boundingBox()];
+  assert.ok(chip.x >= row.x && chip.x + chip.width <= row.x + row.width, 'the chosen chip is inside the row');
+});
 
 test('phone: adding a course and searching; "העתק שינויים" falls back to the text dialog with "להוסיף:" and the disclaimer', async (t) => {
   const page = await visit(t, 'phone', LOADED, '#edit/changes');
@@ -272,6 +313,14 @@ test('desktop: keyboard only reaches every control of step 1, step 2 and the pro
   const one = await tabThrough(page, '#edit');
   assert.ok(one.length >= 5, one.join());
   assert.deepEqual(await skipped(page, '#edit'), [], 'step 1');
+  // the folded load buttons: Enter on the summary opens them and Tab reaches both
+  await page.locator('#edit details.edit-ways summary').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#edit details.edit-ways').evaluate((d) => d.open), true);
+  await page.evaluate(() => document.querySelectorAll('[data-tab-seen]').forEach((e) => e.removeAttribute('data-tab-seen')));
+  const open = await tabThrough(page, '#edit');
+  for (const c of ['loadFile', 'loadHand']) assert.ok(open.includes(c), `${c} in ${open.join()}`);
+  assert.deepEqual(await skipped(page, '#edit'), [], 'step 1, load buttons open');
   await confirmRows(page);
   const two = await tabThrough(page, '#edit');
   assert.deepEqual(await skipped(page, '#edit'), [], 'step 2 ' + two.join());
@@ -290,6 +339,8 @@ for (const size of ['phone', 'desktop'])
     const page = await visit(t, size, DONE);
     await loadByHand(page);
     await axe(page, 'step 1');
+    await page.locator('#edit details.edit-ways summary').click();
+    await axe(page, 'step 1, load buttons open');
     await confirmRows(page);
     await axe(page, 'step 2');
     await (await lesson(page, 'כימיה', 4)).click();

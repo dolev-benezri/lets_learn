@@ -2290,6 +2290,15 @@ body.touring .actions { display:flex; }
 .blk.changed { outline:2px solid var(--success); outline-offset:-2px; box-shadow:var(--shadow-lift); }
 .blk.movable { border-style:dashed; }
 #edit .daysel { margin-bottom:8px; }
+/* a day the shown proposal changes: a dot beside the day's letter */
+.daysel .chg { width:6px; height:6px; border-radius:50%; background:var(--success); }
+.daysel [aria-pressed="true"] .chg { background:currentColor; }
+/* one day at a time: the goal chips are one row that scrolls sideways, so the week starts higher (4px room for the focus ring) */
+@media (max-width:759px) {
+  .goals { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding:4px; margin:-4px -4px 6px; }
+  .goals::-webkit-scrollbar { display:none; }
+  .goals > .chip { flex:none; white-space:nowrap; }
+}
 /* the bar follows the column, not the page */
 @media (min-width:720px) {
   #edit .edit-col + .me-foot { max-width:640px; margin-inline:auto; border-radius:var(--radius) var(--radius) 0 0; }
