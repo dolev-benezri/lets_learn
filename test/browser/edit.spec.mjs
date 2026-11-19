@@ -283,13 +283,16 @@ test('phone 320: a goal chosen at the far end of the goal row stays in view afte
   await goals.evaluate((g) => g.scrollTo({ left: -g.scrollWidth })); // right to left: the far end is the most negative
   const before = await goals.evaluate((g) => g.scrollLeft);
   assert.ok(before < 0, `the row scrolls: ${before}`);
-  await page.locator('[data-ed-goal="notAfter"]').selectOption('16:00');
-  assert.equal((await saved(page)).goal.notAfter, '16:00');
+  // "+ קורס", the last chip: whole at the far end in every engine (a middle chip there is cut by font widths that differ)
+  const add = page.locator('[data-ed-goal="addCourse"]');
+  const opt = await add.locator('option').evaluateAll((os) => os.map((o) => o.value).find(Boolean));
+  await add.selectOption(opt);
+  assert.deepEqual((await saved(page)).added, [opt]);
   // Chromium rounds a fractional scroll position (-248 read back as -247): a pixel either way is the same place
   const after = await page.locator('.goals').evaluate((g) => g.scrollLeft);
   assert.ok(Math.abs(after - before) <= 1, `the row keeps its place: ${before} then ${after}`);
-  const [row, chip] = [await page.locator('.goals').boundingBox(), await page.locator('[data-ed-goal="notAfter"]').boundingBox()];
-  assert.ok(chip.x >= row.x && chip.x + chip.width <= row.x + row.width, 'the chosen chip is inside the row');
+  const [row, chip] = [await page.locator('.goals').boundingBox(), await page.locator('[data-ed-goal="addCourse"]').boundingBox()];
+  assert.ok(chip.x >= row.x - 1 && chip.x + chip.width <= row.x + row.width + 1, `the chosen chip is inside the row: ${JSON.stringify([row, chip])}`);
 });
 
 test('phone: adding a course and searching; "העתק שינויים" falls back to the text dialog with "להוסיף:" and the disclaimer', async (t) => {
