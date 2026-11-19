@@ -132,7 +132,8 @@ test('desktop: removing a course another one needs in parallel asks first; yes r
   assert.deepEqual((await saved(page)).removed ?? [], []);
   await dropOf('פיזיקה');
   await page.locator('dialog[open]').getByText('כן, להסיר').click();
-  await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1-edit')).removed.length === 2);
+  // the seeded save has no "removed" yet: until the page writes it, keep waiting (a throw here would end the wait)
+  await page.waitForFunction(() => (JSON.parse(localStorage.getItem('afeka-sched-v1-edit')).removed ?? []).length === 2);
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle');
 });
 
