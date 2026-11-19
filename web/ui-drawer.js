@@ -18,6 +18,7 @@ import {
 } from './ui-grid.js';
 import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen, examsNoteHtml, conflictsFor } from './ui-text.js';
 import { approvedOn } from './settings.js';
+import { menuPanel } from './ui-mode.js';
 import {
   WEIGHTS,
   SCALE,
@@ -295,7 +296,7 @@ function advisorPanel() {
   ${printable ? '<p class="hint advisor-hint">לא נפתחת הדפסה? בדפדפן שבתוך אפליקציה היא לא תמיד עובדת. אפשר לשתף את ה-PDF.</p>' : ''}`
   ];
 }
-const PANELS = { reg: regPanel, advisor: advisorPanel };
+const PANELS = { reg: regPanel, advisor: advisorPanel, menu: menuPanel };
 export function renderDrawer() {
   if (!ui.panel) return;
   // actions: a row that stays under the header while the body scrolls
@@ -311,14 +312,22 @@ export function renderDrawer() {
 // ponytail: the modal/docked mode is picked when the drawer opens; resizing across the boundary while it is open keeps the old mode.
 export function openPanel(name, from) {
   if (name !== 'advisor') dropAdvisorPdf(); // on a desktop one panel can replace another, with no close between them
+  const d = $('drawer');
+  // the ☰ menu is modal and a side sheet, other panels are not: switching between them reopens the dialog in its new mode
+  if (d.open && (d.classList.contains('side') !== (name === 'menu') || (name === 'menu' && !d.classList.contains('modal')))) {
+    d.addEventListener('close', () => openPanel(name, from), { once: true }); // after the shared close handler (ui-plan.js) has run
+    d.close();
+    return;
+  }
   ui.panel = name;
   ui.opener = from;
   renderDrawer();
-  const d = $('drawer');
   if (!d.open) {
-    const modal = matchMedia(SHEET).matches; // modal: native focus trap, inert page, Escape, scrim (::backdrop)
+    // modal: native focus trap, inert page, Escape, scrim (::backdrop). The ☰ menu is a side sheet and modal at every width.
+    const modal = name === 'menu' || matchMedia(SHEET).matches;
     d.classList.toggle('modal', modal);
+    d.classList.toggle('side', name === 'menu');
     modal ? d.showModal() : d.show();
   }
-  document.body.classList.add('drawer-open');
+  if (name !== 'menu' || matchMedia(SHEET).matches) document.body.classList.add('drawer-open'); // wide: the page does not make room for the menu
 }

@@ -25,6 +25,16 @@ export function scheduleRun(again = false) {
   setBusy();
   ui.timer = setTimeout(run, 300);
 }
+// The edit page takes over: no build search may run, or finish into the build page, while it is shown.
+export function cancelRun() {
+  clearTimeout(ui.timer);
+  ui.gen++; // a result posted before the termination is ignored (the worker's onmessage compares)
+  ui.running = false;
+  ui.capProbe = null;
+  ui.worker?.terminate();
+  ui.probeWorker?.terminate();
+  setBusy();
+}
 const candidates = () => {
   const inSummer = summerPinned();
   return Object.keys(app.data.courses)

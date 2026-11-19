@@ -90,7 +90,8 @@ export function buildOptions(course, {
   forbidden = null,
   friendGroups = [],
   lecturers = {},
-  split = false
+  split = false,
+  allowFull
 } = {}) {
   const byId = new Map(course.groups.map((g) => [g.id, g])),
     primaries = course.groups.filter((g) => g.primary);
@@ -106,7 +107,8 @@ export function buildOptions(course, {
     g.meetings.map((m) => [m.day, m.start, m.end, m.room]),
     g.exams,
     friendGroups.map((fg) => fg.includes(g.id)),
-    pins.includes(g.id)
+    pins.includes(g.id),
+    g.full && allowFull ? allowFull.includes(g.id) : null // matters only for a full group
   ]);
   const firstBySig = new Map(), alts = {};
   for (const p of primaries) {
@@ -151,7 +153,8 @@ export function buildOptions(course, {
     }
     for (const [groups, isSplit] of combos) {
       const ids = groups.map((g) => g.id);
-      if (!includeFull && groups.some((g) => g.full && !pins.includes(g.id))) continue;
+      // allowFull (edit page): only these full groups pass, pinned or not; without it a pin passes a full group
+      if (groups.some((g) => g.full && (allowFull ? !allowFull.includes(g.id) : !includeFull && !pins.includes(g.id)))) continue;
       const meetings = groups.flatMap((g) => g.meetings.map((m) => ({ ...m, group: g.id })));
       const mask = meetingsMask(meetings);
       if (forbidden && meetings.some(forbidden)) continue;
@@ -424,7 +427,8 @@ export function search({
   bias = {},
   distinct = false,
   why = true,
-  onlySplit = false
+  onlySplit = false,
+  allowFull
 }) {
   if (!(topK > 0)) return { results: [], partial: false, diagnosis: [] };
   const forbidden = forbiddenBy(constraints);
@@ -444,7 +448,8 @@ export function search({
       forbidden,
       friendGroups,
       lecturers: constraints.lecturers,
-      split: constraints.split
+      split: constraints.split,
+      allowFull
     }).map((o) => ({ ...o, course: id, out: o.meetings.reduce((a, m) => a + outsideMin(m, constraints), 0) }));
     return { id, mode, credits: c.credits, options };
   }).sort((a, b) => a.options.length - b.options.length);
@@ -617,7 +622,7 @@ export function search({
     const lecturers = Object.fromEntries(Object.entries(constraints.lecturers).filter(([, v]) => v !== 'prefer'));
     return search({
       data, courses, statuses, pins, constraints: { ...constraints, lecturers },
-      weights, friends, topK, timeLimitMs: retryLimit(deadline - Date.now(), timeLimitMs), prune, bias, distinct, why, onlySplit
+      weights, friends, topK, timeLimitMs: retryLimit(deadline - Date.now(), timeLimitMs), prune, bias, distinct, why, onlySplit, allowFull
     });
   }
   // nothing to explain: the regular search beside it says why a course does not fit
@@ -631,7 +636,7 @@ export function search({
   // A short single-result search with some constraints relaxed (why: false, so it does not explain itself in turn)
   const relaxed = (over, st = statuses) => search({
     data, courses, statuses: st, pins, constraints: { ...constraints, ...over }, weights, friends, topK: 1,
-    timeLimitMs: timeLimitMs / 8, prune, bias, why: false
+    timeLimitMs: timeLimitMs / 8, prune, bias, why: false, allowFull
   });
   const anyMust = items.some((it) => it.mode === 'must');
   // No plan under the campus-day cap, but one without it: the cap is the reason
@@ -652,6 +657,7 @@ export function search({
     friendGroups,
     lecturers: constraints.lecturers,
     split: constraints.split,
+    allowFull,
     ...over
   });
   const optionsIf = (id, over) => optionsOf(id, over).length > 0;

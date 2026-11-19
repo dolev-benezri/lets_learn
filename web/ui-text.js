@@ -9,6 +9,25 @@ export const SPLIT_WARNING =
 export const SPLIT_TAG = 'מופרד · דורש אישור ההכוון'; // beside each split course in the registration list
 export const RULES_UNAPPROVED = 'הכללים לא אושרו על ידי המחלקה.';
 export const conflictLine = (t) => `יש סתירה בין המקורות הרשמיים לגבי ${t}.`;
+// The yedion's login page (it opens in a new tab: the site cannot fetch the student's file itself, the yedion's sign-in is its own).
+export const YEDION_URL = 'https://yedionp.afeka.ac.il/yedion/fireflyweb.aspx';
+export const YEDION_HINT =
+  `<a href="${YEDION_URL}" target="_blank" rel="noopener noreferrer">באפקה-נט<span class="sr"> (נפתח בלשונית חדשה)</span></a>` +
+  ' אפשר להוריד את מערכת השעות כקובץ אקסל, ואז לטעון אותו כאן.' +
+  // the path as the portal prints it (seen 2026-11-10): the menu, the page, its run button, then the export button
+  ' שם: בתפריט "בחינות / ציונים / מערכת שעות" בוחרים "לוח מערכת שעות", לוחצים "ביצוע" ואז "להפקת דו"ח אקסל".';
+// Under "לא נמצאו: 30112, …": which of those course codes the chosen track's data does not hold at all (a student who picked the wrong
+// track sees their own courses "not found"). A course the data has, with no group at the hours read, is another matter and is not
+// named; so are group ids (9 digits, pasted text). HTML: the codes are digits only.
+export function notFoundHint(unknown, courses, edit) {
+  const gone = unknown.filter((u) => /^\d{5}$/.test(u) && !courses[u]);
+  if (!gone.length) return '';
+  const one = gone.length === 1,
+    codes = gone.slice(0, 8).map((c) => `<bdi dir="ltr">${c}</bdi>`).join(', ') + (gone.length > 8 ? ` ועוד ${gone.length - 8}` : '');
+  return `${one ? 'הקורס' : 'הקורסים'} ${codes} לא ${one ? 'קיים' : 'קיימים'} בנתוני ${
+    edit ? 'המסלול שבחרתם. בדקו שהמסלול ושנת הלימודים נכונים.' : `המסלול שלכם. ייתכן שהחבר לומד ${one ? 'אותו' : 'אותם'} במסלול אחר.`
+  }`;
+}
 export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (דורש אישור ההכוון האקדמי)';
 // names are raw: the caller escapes
 export const splitLine = (names) => `מופרדים: ${names.join(', ')} · דורש אישור ההכוון`;
@@ -155,7 +174,7 @@ export const popStale = (openTop, nowTop, vh) =>
 
 // Header freshness line. checkedAt = last scraper run (status.json); changedAt = the data file's fetchedAt (last real change).
 const REL = new Intl.RelativeTimeFormat('he', { numeric: 'always' });
-const ago = (ms) => {
+export const ago = (ms) => {
   const m = Math.round(ms / 6e4),
     h = Math.round(ms / 36e5),
     d = Math.round(ms / 864e5);
@@ -296,7 +315,7 @@ export const approvedText = (day) => `אושר על ידי המחלקה, ${day.s
 // "דיווח על טעות": a mailto with the subject and a body the tool fills (ctx: program, startYear, semester, group?, page).
 // The address goes through encodeURIComponent (so "?", "&", "," and "#" in it cannot add a header or a recipient), keeping only "@".
 // Each field is clipped to 40 characters: a Hebrew letter is 6 characters once encoded, and mail apps drop links over ~2000.
-export const PAGE_NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות' };
+export const PAGE_NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות', edit: 'עריכת מערכת קיימת' };
 const clip = (v) => [...String(v)].slice(0, 40).join('');
 export function reportMailto(email, ctx) {
   const lines = [

@@ -1,0 +1,5 @@
+fflate 0.8.3 (MIT, see LICENSE), self-hosted so the site makes no request outside its own origin. Opens the yedion's timetable .xlsx (a zip) in web/yedion-xlsx.js.
+Added on 2026-11-09. File fflate.js is esm/browser.js of fflate@0.8.3, unchanged (fetched with `npm pack --ignore-scripts` into an empty folder, sha512 matched the registry's dist.integrity):
+  fflate@0.8.3    sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==   (MIT)
+Its sha256 is in test/fixtures/vendor-sha256.json, and test/vendor.test.mjs fails if it changes.
+To update: replace the file, rewrite this note, run node scripts/vendor-manifest.mjs and npm test.

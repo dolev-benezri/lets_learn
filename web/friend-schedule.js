@@ -22,8 +22,9 @@ const letters = (s) => clean(s).replace(/[^א-תA-Za-z0-9]/g, '');
 const hhmm = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 
 // "30m2" -> the one known course code within one edit of "30112" (OCR reads "11" as "m"); null when unknown or ambiguous.
+const digits = (tok) => tok.replace(/[mlI|OoSBZ]/g, (c) => DIGIT_LOOKALIKE[c]);
 function codeOf(tok, known) {
-  const t = tok.replace(/[mlI|OoSBZ]/g, (c) => DIGIT_LOOKALIKE[c]);
+  const t = digits(tok);
   if (!/^\d{4,6}$/.test(t)) return null;
   if (known.has(t)) return t;
   const near = [...known].filter((k) => Math.abs(k.length - t.length) <= 1 && lev(k, t) <= 1);
@@ -69,7 +70,7 @@ export function rowsFromTable(text, courses) {
   }
   return hits.map((h, i) => {
     const body = t.slice(h.end, hits[i + 1]?.at ?? t.length);
-    return { cid: h.cid, code: h.code, kinds: kindsOf(body), meets: ranges(body) };
+    return { cid: h.cid, code: h.code, kinds: kindsOf(body), meets: ranges(body), via: 'code', text: t.slice(h.at, hits[i + 1]?.at ?? t.length) };
   });
 }
 
@@ -133,13 +134,15 @@ export function rowsFromWords(words, courses) {
       const inCode = ws.filter((w) => w !== a && w.x0 >= a.x0 - pageW * 0.12).sort((p, q) => q.x0 - p.x0);
       let cid = null,
         cids = null,
-        code = '';
+        code = '',
+        via = 'code';
       for (const w of inCode)
         if ((cid = codeOf(clean(w.t), known))) {
           code = clean(w.t);
           break;
         }
       if (!cid) {
+        via = 'name'; // cidInText fits a course name; damaged-code candidates (cids) are not an exact code either
         cid = cidInText(text, courses);
         code = cid ?? (inCode.map((w) => clean(w.t)).join('') || '?');
         if (!cid) {
@@ -147,7 +150,7 @@ export function rowsFromWords(words, courses) {
           if (near.length) cids = near;
         }
       }
-      return { cid, cids, code, kinds: kindsOf(text), meets: ranges(text) };
+      return { cid, cids, code, kinds: kindsOf(text), meets: ranges(text), via, text };
     })
     .filter((r) => r.cid || r.cids || r.meets.length); // a stray digit that anchored a row with nothing in it
 }
@@ -170,6 +173,8 @@ export function rowFromBlock(text, day, courses, slot = null) {
     code: nameKey,
     nameKey,
     kinds: kindsOf(t.slice(Math.max(0, t.indexOf('(')))),
+    via: 'grid',
+    text: t,
     meets: (slot ? [slot] : ranges(t)).map((r) => ({ ...r, days: [day] }))
   };
 }
@@ -189,11 +194,15 @@ function score(g, row) {
   const free = g.meetings.slice();
   let s = 0;
   for (const m of row.meets) {
-    const i = free.findIndex((x) => x.start === m.start && x.end === m.end),
-      j = i < 0 ? free.findIndex((x) => x.start === m.start) : i;
+    // the best fit first (hours and day), so two meetings at the same hours on different days each find their own
+    const fit = (x) => x.start === m.start && x.end === m.end,
+      onDay = (x) => !!m.days?.includes(x.day),
+      tries = [(x) => fit(x) && onDay(x), fit, (x) => x.start === m.start && onDay(x), (x) => x.start === m.start];
+    let j = -1;
+    for (const f of tries) if ((j = free.findIndex(f)) >= 0) break;
     if (j < 0) continue;
-    s += i >= 0 ? 10 : 3;
-    if (m.days?.includes(free[j].day)) s += 5;
+    s += fit(free[j]) ? 10 : 3;
+    if (onDay(free[j])) s += 5;
     free.splice(j, 1);
   }
   const gk = KINDS.filter((k) => g.type.includes(k));
@@ -210,7 +219,8 @@ function score(g, row) {
 // A row with a course code looks only there; a grid block (name only) looks through every course with a similar name, and the meetings decide.
 export function matchRows(rows, courses) {
   const found = [],
-    unknown = [];
+    unknown = [],
+    review = [];
   const weakIds = [];
   let ambiguous = 0,
     quality = 0,
@@ -225,10 +235,12 @@ export function matchRows(rows, courses) {
           : [];
     // a shaky name (<0.45) is trusted only when day and both times fit exactly
     const ranked = cands
-      .flatMap(([cid, sim]) => courses[cid].groups.map((g) => [g, score(g, row), sim]))
+      .flatMap(([cid, sim]) => courses[cid].groups.map((g) => [g, score(g, row), sim, cid]))
       .filter(([, s, sim]) => s >= (sim >= 0.45 ? 3 : 15))
-      .map(([g, s, sim]) => [g, s + sim * 8, sim])
+      .map(([g, s, sim, cid]) => [g, s + sim * 8, sim, cid])
       .sort((a, b) => b[1] - a[1]);
+    if (row.via === 'xlsx') byLecturer(ranked, row.text);
+    review.push(reviewRow(row, ranked, courses));
     if (!ranked.length) {
       if (!unknown.includes(row.code)) unknown.push(row.code);
       continue;
@@ -241,7 +253,55 @@ export function matchRows(rows, courses) {
     }
     if (!found.includes(ranked[0][0].id)) found.push(ranked[0][0].id);
   }
-  return { found, unknown, ambiguous, quality, weak, weakIds };
+  return { found, unknown, ambiguous, quality, weak, weakIds, rows: review };
+}
+
+// The yedion's file names each lesson's lecturer: among groups tied at the top, the one whose lecturer the text names (and no other
+// tied group's) goes first, a hair ahead, so it is no longer a tie. Scores below the tie never move.
+const named = (g, text) => letters(g.lecturer).length >= 4 && letters(text).includes(letters(g.lecturer));
+function byLecturer(ranked, text) {
+  const tied = ranked.filter((r) => r[1] === ranked[0]?.[1]),
+    hits = tied.filter(([g]) => named(g, text));
+  if (tied.length < 2 || hits.length !== 1) return;
+  ranked.splice(ranked.indexOf(hits[0]), 1);
+  ranked.unshift([hits[0][0], hits[0][1] + 0.01, hits[0][2], hits[0][3]]);
+}
+
+// One meet per day; a meet whose day the reader could not tell has no day to show and stays in `text`.
+const meetsOf = (row) => row.meets.flatMap((m) => (m.days ?? []).map((day) => ({ day, start: m.start, end: m.end })));
+
+// The row for the review list. sure = the course by its exact code, one top group, every meet on that group's day with
+// its exact hours; tie = the top two score equal; none = no group; weak = every other single match.
+function reviewRow(row, ranked, courses) {
+  const top = ranked[0]?.[0],
+    exact = (g) => {
+      const free = g.meetings.slice();
+      return row.meets.length > 0 && row.meets.every((m) => {
+        const i = m.days?.length === 1 ? free.findIndex((x) => x.day === m.days[0] && x.start === m.start && x.end === m.end) : -1;
+        return i >= 0 && free.splice(i, 1).length === 1;
+      });
+    };
+  let confidence = 'weak';
+  if (!top) confidence = 'none';
+  else if (ranked[1]?.[1] === ranked[0][1]) confidence = 'tie';
+  // a code read one digit off and corrected (codeOf) is a guess: only the code as printed counts as exact
+  else if (row.via === 'code' && digits(row.code ?? '') === row.cid && exact(top)) confidence = 'sure';
+  // the yedion's file prints codes exactly, but hides a lesson that starts in the same hour as another: sure only with every meeting
+  // seen, and not when the cell names another candidate's lecturer instead of this group's
+  else if (row.via === 'xlsx' && row.meets.length === top.meetings.length && exact(top) &&
+    (named(top, row.text) || !ranked.some(([g]) => named(g, row.text))))
+    confidence = 'sure';
+  return {
+    code: row.via === 'grid' ? null : row.code ?? null,
+    name: top ? courses[ranked[0][3]].name ?? null : row.via === 'grid' ? row.nameKey ?? null : null,
+    type: top ? top.type : row.kinds.join('+') || null,
+    text: row.text ?? '',
+    via: row.via ?? 'name',
+    meets: meetsOf(row),
+    candidates: ranked.map(([g]) => g.id),
+    chosen: top?.id ?? null,
+    confidence
+  };
 }
 
 // Grid blocks [{ text, day, off, hours }] (offset in hours from the grid's first row, length in hours) -> matchRows' result.
@@ -258,21 +318,30 @@ export function matchGrid(blocks, courses) {
     const m = matchRows(rows, courses);
     if (!best || m.quality > best.quality) best = m; // exact fits outweigh many loose ones
   }
-  return best ?? { found: [], unknown: [], ambiguous: 0, quality: 0, weak: 0, weakIds: [] };
+  return best ?? { found: [], unknown: [], ambiguous: 0, quality: 0, weak: 0, weakIds: [], rows: [] };
 }
 
 // What the pages of one scan add up to.
 export function mergeScans(tables, grids, courses) {
-  const result = { found: [], unknown: [], ambiguous: 0, weak: 0 };
+  const result = { found: [], unknown: [], ambiguous: 0, weak: 0, rows: [] };
   // placeGroup keeps one group per course and type, so a second one would silently replace the first: the first (a table's) stays.
   const slots = new Set(),
     slotOf = new Map(Object.entries(courses).flatMap(([cid, c]) => c.groups.map((g) => [g.id, `${cid}|${g.type}`])));
+  const accepted = new Set(), seen = new Set();
   const add = (r, { skip = [], notes = true, unknown = true } = {}) => {
     for (const g of r.found) {
       const slot = slotOf.get(g);
       if (skip.includes(g) || result.found.includes(g) || slots.has(slot)) continue;
       slots.add(slot);
       result.found.push(g);
+      accepted.add(g);
+    }
+    // a review row for each group taken here (the first row to choose it) and for each row with no group, once per text
+    for (const row of r.rows ?? []) {
+      const key = row.chosen ? `g|${row.chosen}` : `n|${row.code}|${row.text}|${JSON.stringify(row.meets)}`;
+      if (seen.has(key) || (row.chosen ? !accepted.has(row.chosen) : !unknown)) continue;
+      seen.add(key);
+      result.rows.push(row);
     }
     if (unknown) for (const u of r.unknown) if (!result.unknown.includes(u)) result.unknown.push(u);
     if (notes) {

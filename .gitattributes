@@ -6,3 +6,4 @@ web/vendor/pdf/** -text
 web/vendor/panzoom/** -text
 web/vendor/pdfjs/** -text
 web/vendor/popover/** -text
+web/vendor/fflate/** -text

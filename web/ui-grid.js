@@ -54,6 +54,7 @@ export const ICON = {
     '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/>' +
     '<path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
   file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
   pencil: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z"/>',
   map:
     '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0' +
@@ -267,12 +268,12 @@ const friendAvs = (fr) =>
 // Plain-Hebrew progress pill: rank 1 = the alternative that moves furthest in the degree (ties share it).
 export const rankText = (rank, n) => (rank === 1 ? 'מקדמת הכי הרבה בתואר' : `מקום ${rank} מתוך ${n} בהתקדמות בתואר`);
 
-function block({ cid, c, g }, m, from, cls, pinned, fr) {
+function block({ cid, c, g }, m, from, cls, pinned, fr, sr = '') {
   const d = toMin(m.end) - toMin(m.start);
   const k = `b-${g.id}-${m.day}-${m.start}`;
   return `<button type="button" class="blk ${cls}${pinned ? ' pinned' : ''}${d < 80 ? ' short' : ''}" data-act="block" data-gid="${esc(g.id)}" data-k="${esc(k)}"
     aria-haspopup="dialog" style="--s:${toMin(m.start) - from * 60};--d:${d}">
-    <span class="sr">יום ${DAYS[m.day]}׳, </span><span class="blk-name">${nameHtml(c.name)}</span>
+    <span class="sr">יום ${DAYS[m.day]}׳, </span>${sr ? `<span class="sr">${sr}, </span>` : ''}<span class="blk-name">${nameHtml(c.name)}</span>
     <span class="blk-meta"><bdi dir="ltr">${esc(m.start)}<span class="blk-end">–${esc(m.end)}</span></bdi></span>
     <span class="blk-room">${esc(typeLabel(g.type))}${m.room ? ` · ${esc(m.room)}` : ''}</span>
     ${pinned ? `<span class="blk-pin">${icon('pin')}<span class="sr">, נעוץ</span></span>` : ''}
@@ -288,13 +289,21 @@ function busyBlock(b, from) {
     <span class="sr">זמן תפוס: ${b.label ? `${esc(b.label)} ` : ''}${esc(b.start)}–${esc(b.end)}</span></div>`;
 }
 
+// A lesson's old place: a dashed box, a plain div. The visible label is hidden from screen readers, which get the phrase with the hours.
+function ghostBlock(b, from) {
+  return `<div class="off ghost" style="--s:${toMin(b.start) - from * 60};--d:${toMin(b.end) - toMin(b.start)}"><span class="off-l" aria-hidden="true">היה כאן</span>
+    <span class="sr">היה כאן: ${esc(b.start)}–${esc(b.end)}</span></div>`;
+}
+
 // ctx: { data, res (or null), range, colors: Map cid->index, dashed: Set of repeat-colour cids, pins, friends
-// (active), day (mobile), blocks (busy time, optional) }
+// (active), day (mobile), blocks (busy time, optional) }. The edit page adds ghosts [{ day, start, end }] ("היה כאן"), changed (Set of
+// group ids) and movable (Set of course ids: every block then says "יכול לזוז" or "נשאר במקום" to screen readers).
 export function renderWeek(ctx) {
-  const { data, res, range, colors, dashed, pins, friends, day, blocks = [] } = ctx;
+  const { data, res, range, colors, dashed, pins, friends, day, blocks = [], ghosts = [], changed, movable } = ctx;
   const byId = groupIndex(data);
   const cols = Array.from({ length: range.days + 1 }, () => []);
   for (const b of blocks) if (b.day >= 1 && b.day <= range.days) cols[b.day].push(busyBlock(b, range.from));
+  for (const b of ghosts) if (b.day >= 1 && b.day <= range.days) cols[b.day].push(ghostBlock(b, range.from));
   for (const gid of res?.groups ?? []) {
     const x = byId.get(gid);
     if (!x) continue;
@@ -306,9 +315,10 @@ export function renderWeek(ctx) {
             x,
             m,
             range.from,
-            `c${colors.get(x.cid) ?? 7}${dashed?.has(x.cid) ? ' rep' : ''}`,
+            `c${colors.get(x.cid) ?? 7}${dashed?.has(x.cid) ? ' rep' : ''}${changed?.has(gid) ? ' changed' : ''}${movable?.has(x.cid) ? ' movable' : ''}`,
             pins.includes(gid),
-            fr
+            fr,
+            movable ? (movable.has(x.cid) ? 'יכול לזוז' : 'נשאר במקום') : ''
           )
         );
   }
@@ -367,6 +377,25 @@ export function reportHref(group) {
     group,
     page: PAGE_NAME[document.body.dataset.view]
   });
+}
+// Shows the popover beside its block (a bottom sheet on a phone, where CSS places it).
+export function placePop(pop, btn) {
+  pop.showPopover();
+  if (!matchMedia('(max-width: 599px)').matches) {
+    const r = btn.getBoundingClientRect(),
+      w = pop.offsetWidth,
+      h = pop.offsetHeight,
+      gap = 8;
+    const left =
+      r.left - w - gap >= gap
+        ? r.left - w - gap
+        : r.right + w + gap <= innerWidth
+          ? r.right + gap
+          : Math.max(gap, (innerWidth - w) / 2);
+    pop.style.left = `${left}px`;
+    pop.style.top = `${Math.max(gap, Math.min(r.top, innerHeight - h - gap))}px`;
+    pop.dataset.top = r.top; // where the block was: a long scroll away from it closes the popover (ui-plan.js)
+  } else pop.style.left = pop.style.top = '';
 }
 export function openPop(btn, ctx) {
   const pop = document.getElementById('pop');
@@ -435,21 +464,6 @@ export function openPop(btn, ctx) {
   pop.setAttribute('aria-labelledby', 'popTitle');
   pop.dataset.src = btn.dataset.k;
   pop.dataset.gid = g.id;
-  pop.showPopover();
-  if (!matchMedia('(max-width: 599px)').matches) {
-    const r = btn.getBoundingClientRect(),
-      w = pop.offsetWidth,
-      h = pop.offsetHeight,
-      gap = 8;
-    const left =
-      r.left - w - gap >= gap
-        ? r.left - w - gap
-        : r.right + w + gap <= innerWidth
-          ? r.right + gap
-          : Math.max(gap, (innerWidth - w) / 2);
-    pop.style.left = `${left}px`;
-    pop.style.top = `${Math.max(gap, Math.min(r.top, innerHeight - h - gap))}px`;
-    pop.dataset.top = r.top; // where the block was: a long scroll away from it closes the popover (ui-plan.js)
-  } else pop.style.left = pop.style.top = '';
+  placePop(pop, btn);
   pop.querySelector('.pop-actions [data-act="pin"]').focus({ preventScroll: true });
 }
