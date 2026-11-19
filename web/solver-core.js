@@ -84,6 +84,10 @@ export function pinsWithoutSplit(datas, pins) {
   return pins.filter((p) => !drop.has(p));
 }
 
+// The parts a lecture's type promises after the lecture itself: `סופי-הרצאה+תרגול+מעבדה` -> תרגול, מעבדה. A tutorial or
+// lab group has no "+" in its type, and a primary that is itself the lab (`סופי-מעבדה`) promises nothing more.
+export const promisedParts = (g) => g.type.split('+').slice(1).map((t) => t.trim());
+
 export function buildOptions(course, {
   pins = [],
   includeFull = false,
@@ -91,7 +95,8 @@ export function buildOptions(course, {
   friendGroups = [],
   lecturers = {},
   split = false,
-  allowFull
+  allowFull,
+  parts = true // false: lift the required-parts rule (the diagnosis asks what it alone removes)
 } = {}) {
   const byId = new Map(course.groups.map((g) => [g.id, g])),
     primaries = course.groups.filter((g) => g.primary);
@@ -152,6 +157,10 @@ export function buildOptions(course, {
       }
     }
     for (const [groups, isSplit] of combos) {
+      // A lecture whose type promises a tutorial or a lab is never offered without a group of that type, whatever the
+      // reason it is missing (no link, a linked group that had no hours and was dropped). Other groups of the type
+      // that are left give other combinations, which stay.
+      if (parts && promisedParts(p).some((t) => !groups.some((g) => g.type === t))) continue;
       const ids = groups.map((g) => g.id);
       // allowFull (edit page): only these full groups pass, pinned or not; without it a pin passes a full group
       if (groups.some((g) => g.full && (allowFull ? !allowFull.includes(g.id) : !includeFull && !pins.includes(g.id)))) continue;
@@ -363,10 +372,17 @@ function explain(info, unlocks) {
 
 // freedByBlocks(id): the course would have options if the busy blocks were ignored; freedByFull(id): ... if full
 // groups were allowed; softOptions(id): its options with the day off and hours as wishes (null: none was a must).
-function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () => false, softOptions = null) {
+function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () => false, softOptions = null, freedByParts = () => false) {
   const name = (id) => data.courses[id].name;
   const out = [];
   for (const it of items) if (it.mode === 'must' && !it.options.length) {
+    // every lecture group lacks the tutorial or lab its type promises: no constraint of the student's is to blame
+    if (freedByParts(it.id)) {
+      const parts = [...new Set(data.courses[it.id].groups.filter((g) => g.primary).flatMap(promisedParts))];
+      out.push(`${name(it.id)}: בנתוני אפקה חסרות שעות ה${parts.join(' וה')} של קבוצות ההרצאה (אין להן שעות או שהקישור אליהן חסר), `
+        + 'ולכן אי אפשר לשבץ את הקורס. אפשר לפנות למזכירות.');
+      continue;
+    }
     out.push(`${name(it.id)}: אין קבוצה שמתאימה לאילוצים (${freedByBlocks(it.id)
       ? 'זמן תפוס, ' : ''}${avoids ? 'בחירת מרצה, ' : ''}חסימות אישיות, קבוצות מלאות או נעיצה)`);
     // Course 10013: every tutorial links the one lab that is full, and the free lab is linked from nothing (the
@@ -661,6 +677,7 @@ export function search({
     ...over
   });
   const optionsIf = (id, over) => optionsOf(id, over).length > 0;
+  const LIFTED = { pins: [], forbidden: null, includeFull: true, lecturers: {}, allowFull: undefined };
   const soft = forbiddenBy({ ...constraints, dayOffHard: false, windowHard: false });
   const found = diagnose(
     items,
@@ -669,7 +686,10 @@ export function search({
     Object.keys(constraints.lecturers ?? {}).length > 0,
     // split on: an unlinked free group is already usable
     (id) => !constraints.split && optionsIf(id, { includeFull: true }),
-    constraints.dayOffHard || constraints.windowHard ? (id) => optionsOf(id, { forbidden: soft }) : null
+    constraints.dayOffHard || constraints.windowHard ? (id) => optionsOf(id, { forbidden: soft }) : null,
+    // the course has nothing left even with every other limit of the student's lifted (busy time, hours, full groups, pins,
+    // lecturers), and has groups once the parts rule is lifted too
+    (id) => !optionsIf(id, LIFTED) && optionsIf(id, { ...LIFTED, parts: false })
   );
   if (noExamClash) found.push(...examBlocks());
   return { results: [], partial: false, diagnosis: found.length ? found : [why ? whyNot() : GENERIC] };
