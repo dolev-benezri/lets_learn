@@ -474,8 +474,13 @@ async function scanSelected() {
   let out = null,
     failed = null;
   try {
-    out = await withPdf(me.pdf, async (doc) =>
-      scanCanvases(await Promise.all(n.map((i) => bigPage(doc, i))), allData().courses, progress(me))
+    // each slide is drawn when its turn comes and freed after it is read: a dozen at once is hundreds of MB, more than an iPhone tab survives
+    out = await withPdf(me.pdf, (doc) =>
+      scanCanvases(
+        n.map((i) => () => bigPage(doc, i)),
+        allData().courses,
+        progress(me)
+      )
     );
   } catch (e) {
     failed = e;

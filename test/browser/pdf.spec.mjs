@@ -1,6 +1,7 @@
 // PDF import in a real browser: on a browser without the newer JavaScript features, when pdf.js stops answering, and through the OCR path with a stand-in for tesseract.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { deflateSync } from 'node:zlib';
 import { STUDENT, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
@@ -156,4 +157,115 @@ test('thumbnails that fail after the editor was closed say nothing to it, and no
   assert.equal(await page.evaluate(() => window.__thumbFailed), true, 'the thumbnail was reached');
   await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
   await page.waitForTimeout(200);
+});
+
+// A PDF of the pages given, built here (synthetic): { w, h } in points, `draw` is the content stream, `image` is { w, h } of a gray picture (flat, so it packs small)
+// drawn over the whole page. Every page takes three object numbers (page, content, picture), so the numbers are known before anything is written.
+function deckPdf(pages) {
+  let out = Buffer.from('%PDF-1.4\n', 'latin1');
+  const at = [],
+    add = (n, body) => {
+      at[n] = out.length;
+      out = Buffer.concat([out, Buffer.from(`${n} 0 obj\n`, 'latin1'), Buffer.from(body, 'latin1'), Buffer.from('\nendobj\n', 'latin1')]);
+    };
+  const stream = (dict, data) => `<< ${dict} /Length ${data.length} >>\nstream\n${data.toString('latin1')}\nendstream`;
+  add(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  add(2, `<< /Type /Pages /Kids [${pages.map((_, i) => `${4 + i * 3} 0 R`).join(' ')}] /Count ${pages.length} >>`);
+  add(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  pages.forEach((p, i) => {
+    const [pg, content, img] = [4 + i * 3, 5 + i * 3, 6 + i * 3],
+      draw = (p.image ? `q ${p.w} 0 0 ${p.h} 0 0 cm /Im0 Do Q ` : '') + (p.draw ?? '');
+    add(pg, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${p.w} ${p.h}] /Contents ${content} 0 R /Resources << /Font << /F1 3 0 R >> ${p.image ? `/XObject << /Im0 ${img} 0 R >>` : ''} >> >>`);
+    add(content, stream('', Buffer.from(draw, 'latin1')));
+    add(
+      img,
+      p.image
+        ? stream(`/Type /XObject /Subtype /Image /Width ${p.image.w} /Height ${p.image.h} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode`, deflateSync(Buffer.alloc(p.image.w * p.image.h, 200)))
+        : 'null'
+    );
+  });
+  const n = 3 + pages.length * 3 + 1,
+    xref = out.length;
+  out = Buffer.concat([
+    out,
+    Buffer.from(`xref\n0 ${n}\n0000000000 65535 f \n${at.slice(1).map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}trailer\n<< /Size ${n} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`, 'latin1')
+  ]);
+  return out;
+}
+const NOTE = 'BT /F1 8 Tf 20 10 Td (no group number here) Tj ET '; // text with no group id in it: the file counts as a scan
+// the rows of a weekly grid, drawn: 4 day headers (rightmost = ראשון) and one block in the rightmost column, 17:00-19:50 when the first row is 8:00
+const GRID = `${NOTE}0.8 0.55 0.75 rg ${[40, 280, 520, 760].map((x) => `${x} 456 200 24 re f`).join(' ')} 0 0.35 0.9 rg 764 171 192 68 re f`;
+const TABLE_SLIDE = '1 6001 אנגלית בסיסי (מתחילים) סופי-הרצאה ד"ר אלמוני 3.00 3.00 יום שני, 08:00-10:50 יום רביעי, 08:00-10:50';
+const BLOCK_NAME = 'אנגלית בסיסי (מתחילים)';
+
+// Notes every big canvas (not the 240-wide thumbnails) the page draws on: the canvas itself and its size when it was drawn on.
+const watchCanvases = (page) =>
+  page.evaluate(() => {
+    const real = HTMLCanvasElement.prototype.getContext;
+    window.__big = [];
+    window.__sizes = [];
+    HTMLCanvasElement.prototype.getContext = function (...a) {
+      if (this.width > 240 && !window.__big.includes(this)) {
+        window.__big.push(this);
+        window.__sizes.push([this.width, this.height]);
+      }
+      return real.apply(this, a);
+    };
+  });
+async function scannedDeck(t, pages, recognize) {
+  const page = await friendEditor(t);
+  await page.route('**/vendor/tesseract/tesseract.esm.min.js', (r) => r.fulfill({ contentType: 'text/javascript', body: ocr(recognize) }));
+  await watchCanvases(page);
+  await page.locator('#feFile').setInputFiles({ name: 'deck.pdf', mimeType: 'application/pdf', buffer: deckPdf(pages) });
+  const boxes = page.locator('#feImpPages input[type="checkbox"]');
+  for (let i = 0; i < pages.length; i++) await boxes.nth(i).check({ timeout: 30000 });
+  await page.locator('[data-fe="pages"]').click();
+  return page;
+}
+
+test('a scanned deck is read one slide at a time: each is freed before the next is drawn, and a table still wins over a grid', async (t) => {
+  // reads how many big canvases are alive each time it is asked to read; the first slide is a grid (its blocks are read from crops), the second a table
+  const page = await scannedDeck(
+    t,
+    [
+      { w: 960, h: 540, draw: GRID },
+      { w: 960, h: 540, draw: NOTE },
+      { w: 595, h: 842, draw: NOTE }
+    ],
+    `async (c, opts) => {
+      (globalThis.__alive ??= []).push(window.__big.filter((x) => x.width > 0).length);
+      if (opts.rectangle) return { data: { text: '${BLOCK_NAME}' } };
+      return { data: { text: ['', '${TABLE_SLIDE}', ''][(globalThis.__slide = (globalThis.__slide ?? -1) + 1)], blocks: [] } };
+    }`
+  );
+  await feStatus(page).filter({ hasText: /נמצאה קבוצה אחת/ }).waitFor({ timeout: 30000 });
+  await controlsBack(page);
+  const alive = await page.evaluate(() => globalThis.__alive);
+  assert.equal(alive.length, 4, 'three slides and the one block of the grid were read');
+  assert.deepEqual(alive, alive.map(() => 1), 'only the slide being read was alive each time');
+  assert.equal(await page.evaluate(() => window.__big.length), 3);
+  assert.equal(await page.evaluate(() => window.__big.every((c) => c.width === 0)), true, 'and the last one is freed too');
+  assert.equal(await page.evaluate(() => globalThis.__ocrDone()), 1);
+  assert.deepEqual(await page.evaluate(() => globalThis.__slide), 2);
+});
+
+test('a scanned page that is very tall is drawn within the pixel cap, and a normal page is drawn as before', async (t) => {
+  // the stand-in reads the size of each canvas it is given
+  const page = await scannedDeck(
+    t,
+    [
+      { w: 595, h: 3000, draw: NOTE },
+      { w: 595, h: 842, draw: NOTE }
+    ],
+    `async (c) => {
+      (globalThis.__read ??= []).push([c.width, c.height]);
+      return { data: { text: '', blocks: [] } };
+    }`
+  );
+  await feStatus(page).filter({ hasText: /לא זוהה אף מספר קבוצה/ }).waitFor({ timeout: 60000 });
+  await controlsBack(page);
+  const [tall, a4] = await page.evaluate(() => globalThis.__read);
+  assert.ok(tall[0] * tall[1] <= 16e6, `${tall} is over 16 million pixels`);
+  assert.ok(tall[0] > 1000 && Math.abs(tall[1] / tall[0] - 3000 / 595) < 0.01, "in the page's own shape");
+  assert.deepEqual(a4, [2880, 4076], 'a normal A4 page is 2,880 wide, as it was');
 });

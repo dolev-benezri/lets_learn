@@ -10,46 +10,72 @@ const VENDOR = new URL('vendor/tesseract/', import.meta.url).href;
 const TESSERACT = `${VENDOR}tesseract.esm.min.js`;
 const OCR_PATHS = { workerPath: `${VENDOR}worker.min.js`, corePath: `${VENDOR}core`, langPath: `${VENDOR}lang` };
 const WIDTH = 2880; // small text (8px in a 1045px screenshot) reads well at about 3x
+// One page's canvas never has more pixels than this: a 2,880-wide A4 page is 11.7 million (47MB), but a big scan or photo drawn at its own size can be
+// 20 to 50 million. iPhone Safari draws nothing on a canvas over 16,777,216 pixels, and a few of them in a row can close the tab.
+export const MAX_PIXELS = 16e6;
+// The scale to draw a w x h picture at: `want`, or less when that would be over MAX_PIXELS.
+export const fitScale = (w, h, want) => Math.min(want, Math.sqrt(MAX_PIXELS / (w * h)));
 
-const canvasOf = (w, h) =>
-  Object.assign(document.createElement('canvas'), { width: Math.round(w), height: Math.round(h) });
+// A canvas of w x h whole pixels: rounded, unless that goes over the cap (a fit scale is exact, but a rounded side can tip it), then rounded down.
+function canvasOf(w, h) {
+  const [a, b] = Math.round(w) * Math.round(h) > MAX_PIXELS ? [Math.floor(w), Math.floor(h)] : [Math.round(w), Math.round(h)];
+  return Object.assign(document.createElement('canvas'), { width: a, height: b });
+}
+
+// A picture (anything drawImage takes, w x h) on a canvas: upscaled up to 3x towards 2,880 wide and smoothed, but within MAX_PIXELS.
+export function pictureCanvas(src, w, h) {
+  const s = fitScale(w, h, Math.min(3, Math.max(1, WIDTH / w))),
+    c = canvasOf(w * s, h * s);
+  try {
+    const x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high';
+    x.drawImage(src, 0, 0, c.width, c.height);
+  } catch (e) {
+    c.width = 0; // nobody gets this canvas: give its pixels back now
+    throw e;
+  }
+  return c;
+}
 
 export async function imageCanvas(file) {
-  const bmp = await createImageBitmap(file),
-    s = Math.min(3, Math.max(1, WIDTH / bmp.width));
-  const c = canvasOf(bmp.width * s, bmp.height * s),
-    x = c.getContext('2d');
-  x.imageSmoothingQuality = 'high';
-  x.drawImage(bmp, 0, 0, c.width, c.height);
-  bmp.close();
-  return c;
+  const bmp = await createImageBitmap(file);
+  try {
+    return pictureCanvas(bmp, bmp.width, bmp.height);
+  } finally {
+    bmp.close();
+  }
 }
 
 export async function pageCanvas(doc, n, width) {
   const page = await pdfStep(doc.getPage(n)),
     vp1 = page.getViewport({ scale: 1 }),
-    vp = page.getViewport({ scale: width / vp1.width });
+    vp = page.getViewport({ scale: fitScale(vp1.width, vp1.height, width / vp1.width) });
   const c = canvasOf(vp.width, vp.height);
-  await pdfStep(page.render({ canvas: c, canvasContext: c.getContext('2d'), viewport: vp }).promise);
+  try {
+    await pdfStep(page.render({ canvas: c, canvasContext: c.getContext('2d'), viewport: vp }).promise);
+  } catch (e) {
+    c.width = 0; // nobody gets this canvas: give its pixels back now
+    throw e;
+  }
   return c;
 }
 // A scanned slide is one picture: draw that, upscaled and smoothed. Letting pdf.js resample the page instead blurs small digits (course codes lose a digit).
+// The page's own copy of the picture (pdf.js keeps it until the page is cleaned up) is let go once it is drawn:
+// with a dozen slides it is the larger part of the memory.
 export async function bigPage(doc, n) {
   const page = await pdfStep(doc.getPage(n)),
-    { OPS } = await loadPdfjs(),
-    ops = await pdfStep(page.getOperatorList());
-  const ids = ops.fnArray.flatMap((fn, i) => (fn === OPS.paintImageXObject ? [ops.argsArray[i][0]] : []));
-  const img =
-    ids.length === 1
-      ? await Promise.race([new Promise((r) => page.objs.get(ids[0], r)), new Promise((r) => setTimeout(r, 3000))])
-      : null;
-  if (!img?.bitmap) return pageCanvas(doc, n, WIDTH);
-  const s = Math.min(3, Math.max(1, WIDTH / img.width)),
-    c = canvasOf(img.width * s, img.height * s),
-    x = c.getContext('2d');
-  x.imageSmoothingQuality = 'high';
-  x.drawImage(img.bitmap, 0, 0, c.width, c.height);
-  return c;
+    { OPS } = await loadPdfjs();
+  try {
+    const ops = await pdfStep(page.getOperatorList());
+    const ids = ops.fnArray.flatMap((fn, i) => (fn === OPS.paintImageXObject ? [ops.argsArray[i][0]] : []));
+    const img =
+      ids.length === 1
+        ? await Promise.race([new Promise((r) => page.objs.get(ids[0], r)), new Promise((r) => setTimeout(r, 3000))])
+        : null;
+    return img?.bitmap ? pictureCanvas(img.bitmap, img.width, img.height) : await pageCanvas(doc, n, WIDTH);
+  } finally {
+    page.cleanup();
+  }
 }
 
 // Blocks of one grid slide with the text inside each (read from a plain crop: names come out well, small times do not, so times come from geometry).
@@ -82,32 +108,44 @@ const wordsOf = (blocks) =>
     )
   );
 
-// Canvases -> { text, result }: all OCR text (for 9-digit group ids) and the groups found from a table or grid. onProgress(i, n, fraction).
+// Pages -> { text, result }: all OCR text (for 9-digit group ids) and the groups found from a table or grid. onProgress(i, n, fraction).
+// A page is a canvas, or a function that draws one: it is called when the page's turn comes, so only one page's pixels exist at a time. Each canvas is
+// freed (width = 0) as soon as its page is read, also when the read fails. A canvas passed in is freed too, whatever happens (even when the worker never
+// starts, and the pages a failure kept it from reading): the caller must not use it again.
 // A table is exact (course codes); a grid fills in what the tables missed, but only with matches whose name was readable.
-export async function scanCanvases(canvases, courses, onProgress = () => {}) {
-  const { createWorker } = (await import(TESSERACT)).default;
-  let at = 0;
-  const worker = await createWorker('heb+eng', 1, {
-    ...OCR_PATHS,
-    logger: (m) => {
-      if (m.status === 'recognizing text') onProgress(at, canvases.length, m.progress);
-    }
-  });
+// `tesseract` is for tests: the module that makes the worker.
+export async function scanCanvases(pages, courses, onProgress = () => {}, tesseract = null) {
+  let at = 0,
+    worker = null;
   const texts = [],
     tables = [],
     grids = [];
   try {
-    for (const [i, c] of canvases.entries()) {
+    const { createWorker } = tesseract ?? (await import(TESSERACT)).default;
+    worker = await createWorker('heb+eng', 1, {
+      ...OCR_PATHS,
+      logger: (m) => {
+        if (m.status === 'recognizing text') onProgress(at, pages.length, m.progress);
+      }
+    });
+    for (const [i, page] of pages.entries()) {
       at = i;
-      onProgress(i, canvases.length, 0);
-      const { data } = await worker.recognize(c, {}, { blocks: true }),
-        rows = rowsFromWords(wordsOf(data.blocks), courses) ?? rowsFromTable(data.text, courses);
-      texts.push(data.text);
-      if (rows.some((r) => r.cid || r.cids)) tables.push(matchRows(rows, courses));
-      else grids.push(matchGrid(await gridBlocks(c, worker), courses));
+      onProgress(i, pages.length, 0);
+      let c = null;
+      try {
+        c = typeof page === 'function' ? await page() : page;
+        const { data } = await worker.recognize(c, {}, { blocks: true }),
+          rows = rowsFromWords(wordsOf(data.blocks), courses) ?? rowsFromTable(data.text, courses);
+        texts.push(data.text);
+        if (rows.some((r) => r.cid || r.cids)) tables.push(matchRows(rows, courses));
+        else grids.push(matchGrid(await gridBlocks(c, worker), courses));
+      } finally {
+        if (c) c.width = 0; // the pixels go back now, not when the garbage collector gets to them
+      }
     }
   } finally {
-    await worker.terminate();
+    for (const page of pages) if (typeof page !== 'function') page.width = 0;
+    await worker?.terminate();
   }
   return { text: texts.join('\n'), result: mergeScans(tables, grids, courses) };
 }
