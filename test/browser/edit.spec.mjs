@@ -285,7 +285,9 @@ test('phone 320: a goal chosen at the far end of the goal row stays in view afte
   assert.ok(before < 0, `the row scrolls: ${before}`);
   await page.locator('[data-ed-goal="notAfter"]').selectOption('16:00');
   assert.equal((await saved(page)).goal.notAfter, '16:00');
-  assert.equal(await page.locator('.goals').evaluate((g) => g.scrollLeft), before);
+  // Chromium rounds a fractional scroll position (-248 read back as -247): a pixel either way is the same place
+  const after = await page.locator('.goals').evaluate((g) => g.scrollLeft);
+  assert.ok(Math.abs(after - before) <= 1, `the row keeps its place: ${before} then ${after}`);
   const [row, chip] = [await page.locator('.goals').boundingBox(), await page.locator('[data-ed-goal="notAfter"]').boundingBox()];
   assert.ok(chip.x >= row.x && chip.x + chip.width <= row.x + row.width, 'the chosen chip is inside the row');
 });
