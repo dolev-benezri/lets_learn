@@ -148,3 +148,17 @@ test('edit page: a baseline lecture lacking the part its type promises is a fixe
   };
   assert.deepEqual(kinds(edit, data), { real: ['Y', 'Z'], fixed: ['X', 'W'] });
 });
+
+// Full-branch Codex review: the reason names only the parts that are missing.
+test('diagnosis: a lecture with its tutorial but no lab names the lab only', () => {
+  const data = {
+    fetchedAt: 'x', year: 2027, startYear: 2026, semester: 'א', examsPublished: false, lists: [],
+    courses: { X: { name: 'פיזיקה 2', credits: 5, offered: true, prereqs: [], groups: course(
+      raw('X1', 'סופי-הרצאה+תרגול+מעבדה', ['X1/1'], 1), raw('X1/1', 'תרגול', [], 2)
+    ).groups } }
+  };
+  const r = search({ data, courses: [{ id: 'X', mode: 'must' }] });
+  assert.equal(r.results.length, 0);
+  assert.match(r.diagnosis[0], /המעבדה/);
+  assert.doesNotMatch(r.diagnosis[0], /התרגול/);
+});

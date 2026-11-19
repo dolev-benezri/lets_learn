@@ -378,7 +378,14 @@ function diagnose(items, data, freedByBlocks, avoids = false, freedByFull = () =
   for (const it of items) if (it.mode === 'must' && !it.options.length) {
     // every lecture group lacks the tutorial or lab its type promises: no constraint of the student's is to blame
     if (freedByParts(it.id)) {
-      const parts = [...new Set(data.courses[it.id].groups.filter((g) => g.primary).flatMap(promisedParts))];
+      // only the parts a lecture's link chain (lecture -> tutorial -> lab) does not reach
+      const groups = data.courses[it.id].groups, byId = new Map(groups.map((g) => [g.id, g]));
+      const lacks = (p) => {
+        const seen = new Set(), walk = (g) => g.linked.forEach((id) => { if (byId.has(id) && !seen.has(id)) { seen.add(id); walk(byId.get(id)); } });
+        walk(p);
+        return promisedParts(p).filter((t) => ![...seen].some((id) => byId.get(id).type === t));
+      };
+      const parts = [...new Set(groups.filter((g) => g.primary).flatMap(lacks))];
       out.push(`${name(it.id)}: בנתוני אפקה חסרות שעות ה${parts.join(' וה')} של קבוצות ההרצאה (אין להן שעות או שהקישור אליהן חסר), `
         + 'ולכן אי אפשר לשבץ את הקורס. אפשר לפנות למזכירות.');
       continue;
