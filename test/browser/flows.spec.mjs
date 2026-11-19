@@ -527,9 +527,11 @@ for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.
 }
 
 // The owner's call: when the two do not fit (a late first lesson, or a short screen with its toolbars), arriving shows the warnings, and choosing a day shows its lesson.
-// The height is measured, so this holds on any night's data: one pixel short of fitting both.
+// The height is measured, so this holds on any night's data: one pixel short of fitting both. A one-line note could make that screen wider than tall, where a
+// phone on its side hides the day buttons, so the record holds a pass over a failed prerequisite (frozen data: 90902 needs 90901): a second line, whatever the date.
+const WARNED = { ...DONE, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, passed: STUDENT.passed.filter((id) => id !== '90901'), failed: { 90901: 1 } }) };
 test('a short phone: arriving shows the warnings first, and choosing a day shows its lesson', async (t) => {
-  const page = await visit(t, { width: 320, height: 640 }, FIRST);
+  const page = await visit(t, { width: 320, height: 640 }, WARNED);
   await weekReady(page);
   await page.waitForTimeout(300);
   const spots = () =>
@@ -545,8 +547,10 @@ test('a short phone: arriving shows the warnings first, and choosing a day shows
         vh: innerHeight
       };
     });
-  const tall = await spots();
-  await page.setViewportSize({ width: 320, height: Math.floor(tall.firstTop - tall.noteTop + tall.head + 99) });
+  const tall = await spots(),
+    height = Math.floor(tall.firstTop - tall.noteTop + tall.head + 99);
+  assert.ok(height > 320, `a phone held upright, or the day buttons are hidden: ${height}, ${JSON.stringify(tall)}`);
+  await page.setViewportSize({ width: 320, height });
   await page.reload();
   await weekReady(page);
   await page.waitForTimeout(300);
