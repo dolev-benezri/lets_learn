@@ -271,7 +271,7 @@ test('summaryLine: a freed day, gaps, an earlier end, the change count and the l
   assert.equal(summaryLine(twoReal(), move, data), 'יום ג׳ התפנה · קורס אחד זז · אותו מרצה');
   const gd = gapData();
   const gp = { lessons: [L('A', 'A1', 1, '08:00', '10:00'), L('B', 'B2', 1, '10:00', '12:00')], changed: ['B'], added: [], removed: [], score: 1 };
-  assert.equal(summaryLine(gapBase(), gp, gd), 'פחות 120 דקות חלון · מסיימים ב-12:00 · קורס אחד זז · אותו מרצה');
+  assert.equal(summaryLine(gapBase(), gp, gd), 'שעתיים פחות חלונות · מסיימים ב-12:00 · קורס אחד זז · אותו מרצה');
   const other = { lessons: [L('A', 'A1', 1, '08:00', '10:00'), L('B', 'B3', 1, '12:00', '14:00')], changed: ['B'], added: [], removed: [], score: 1 };
   assert.equal(summaryLine(gapBase(), other, gd), 'קורס אחד זז');
   const two = { lessons: [], changed: ['A', 'B'], added: ['C'], removed: ['D', 'E'], score: 1 };

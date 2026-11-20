@@ -1,7 +1,7 @@
 // The edit page's search (spec: "Search"): the edit state becomes one `search` call. No DOM.
 import { classify } from './rules.js';
 import { toMin, searchAll, pinsWithoutSplit, promisedParts } from './solver-core.js';
-import { splitLine } from './ui-text.js';
+import { splitLine, hoursText } from './ui-text.js';
 import { lessonsOf } from './edit-state.js';
 import { DEFAULT } from './app.js'; // importing app.js has no side effects (no DOM at import): the build defaults live there
 
@@ -221,7 +221,8 @@ export function summaryLine(baseline, p, data) {
   if (freed.length === 1) parts.push(`יום ${DAY_LETTER[freed[0]]} התפנה`);
   else if (freed.length) parts.push(`ימים ${freed.map((d) => DAY_LETTER[d]).join(', ')} התפנו`);
   const gaps = gapMinutes(baseline) - gapMinutes(p.lessons);
-  if (gaps > 0) parts.push(`פחות ${gaps} דקות חלון`);
+  // in hours like the build page's comparison; under half an hour in minutes, so a small gain is not rounded away or up
+  if (gaps > 0) parts.push(`${gaps < 30 ? `${gaps} דקות` : hoursText(Math.round(gaps / 30) / 2)} פחות חלונות`);
   const last = (ls) => ls.reduce((a, l) => (toMin(l.end) > toMin(a) ? l.end : a), '00:00');
   if (p.lessons.length && baseline.length && toMin(last(p.lessons)) < toMin(last(baseline))) parts.push(`מסיימים ב-${last(p.lessons)}`);
   if (p.changed.length) parts.push(countText(p.changed.length, 'קורס אחד זז', 'קורסים זזו'));
