@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyEdit, loadSchedule, lessonsOf } from '../web/edit-state.js';
 import {
-  kinds, editQuery, acceptedParallel, displayData, overlaps, gapMinutes, proposalsFrom, summaryLine, tryEach, runEdit, changeText, PROPOSAL_ONLY, FIXED_COURSE
+  kinds, editQuery, acceptedParallel, displayData, overlaps, gapMinutes, proposalsFrom, summaryLine, tryEach, runEdit, changeText, PROPOSAL_ONLY, FIXED_COURSE, splitOnlySwaps
 } from '../web/edit-search.js';
 import { search } from '../web/solver-core.js';
+import { splitLine } from '../web/ui-text.js';
 import { DEFAULT } from '../web/app.js';
 import { real } from './fixtures/real.mjs';
 
@@ -403,4 +404,76 @@ test('kinds: a course whose linked part was not loaded (no tutorial row) stays a
   assert.deepEqual(kinds(edit([...twoReal(), lecture, L('C', 'C1/2', 6, '12:00', '12:50')]), data).fixed, [], 'lecture + its tutorial is whole');
   assert.deepEqual(kinds(edit([...twoReal(), lecture], { movable: ['C'] }), data).fixed, []);
   assert.deepEqual(kinds(edit([...twoReal(), L('C', 'C1/1', 5, '12:00', '12:50')]), data).fixed, ['C'], 'a tutorial without its lecture');
+});
+
+// ---------- split lecture and tutorial in the edit page (F.2): through the build page's option, with its warning ----------
+// A has two lectures, each linked to its own tutorial. B sits on A1's tutorial and the student has A2 + A2/1, so the only way to move A
+// is the lecture of A1 with the tutorial of A2, which no link chain builds: a split option.
+const tut = (id, day, start, end) => grp(id, day, start, end, { type: 'תרגול', primary: false });
+const splitData = () => dataOf({
+  A: course('אלף', [
+    grp('A1', 1, '08:00', '09:50', { linked: ['A1/1'] }), grp('A2', 3, '08:00', '09:50', { linked: ['A2/1'] }),
+    tut('A1/1', 2, '08:00', '08:50'), tut('A2/1', 4, '08:00', '08:50')
+  ]),
+  B: course('בית', [grp('B1', 2, '08:00', '09:50')])
+});
+const T2 = (course, group, day, start, end) => ({ ...L(course, group, day, start, end), type: 'תרגול' });
+const splitEdit = () => edit([L('A', 'A2', 3, '08:00', '09:50'), T2('A', 'A2/1', 4, '08:00', '08:50'), L('B', 'B1', 2, '08:00', '09:50')], { movable: ['A'] });
+const recSplit = { ...DEFAULT, passed: [], constraints: { ...DEFAULT.constraints, split: true } };
+
+test('split: off (the default), moving A finds nothing, as before; the query says split false', () => {
+  assert.equal(editQuery(splitEdit(), splitData(), record).constraints.split, false);
+  const r = runEdit({ kind: 'search', edit: splitEdit(), data: splitData(), record });
+  assert.deepEqual(r.proposals, []);
+});
+
+test('split: on (the build page\'s option), a swap only a split option fits is proposed and marked split', () => {
+  assert.equal(editQuery(splitEdit(), splitData(), recSplit).constraints.split, true);
+  const r = runEdit({ kind: 'search', edit: splitEdit(), data: splitData(), record: recSplit });
+  assert.equal(r.proposals.length, 1);
+  const p = r.proposals[0];
+  assert.deepEqual(p.split, ['A']);
+  assert.deepEqual(p.changed, ['A']);
+  assert.deepEqual(p.lessons.filter((l) => l.course === 'A').map((l) => l.group).sort(), ['A1', 'A2/1']);
+});
+
+test('split: a course that the student already had split and did not change is not marked in the proposal', () => {
+  // A stays as the student has it (A1 + A2/1, a split pair); B moves. The split is not new, so no warning on this proposal.
+  const e = edit([L('A', 'A1', 1, '08:00', '09:50'), T2('A', 'A2/1', 4, '08:00', '08:50'), L('B', 'B1', 2, '08:00', '09:50')], { movable: ['B'] });
+  const data = splitData();
+  data.courses.B.groups.push(grp('B2', 5, '08:00', '09:50'));
+  const r = runEdit({ kind: 'search', edit: e, data, record: recSplit });
+  assert.ok(r.proposals.length > 0);
+  assert.deepEqual(r.proposals.map((p) => p.split), r.proposals.map(() => []));
+});
+
+test('split: proposals are ordered regular first, then split, whatever their score or number of changes', () => {
+  const data = splitData();
+  data.courses.A.groups.push(grp('A3', 5, '08:00', '09:50', { linked: ['A3/1'] }), tut('A3/1', 6, '08:00', '08:50'));
+  const e = splitEdit();
+  const q = editQuery(e, data, recSplit);
+  const results = [
+    { groups: ['A1', 'A2/1', 'B1'], score: 99, split: ['A'] },
+    { groups: ['A3', 'A3/1', 'B1'], score: 1, split: [] }
+  ];
+  const ps = proposalsFrom(results, e, q);
+  assert.deepEqual(ps.map((p) => p.split.length), [0, 1]);
+});
+
+test('split: changeText names the split course for the advisor', () => {
+  const from = [T('A', 'A2', 3, '08:00'), T('A', 'A2/1', 4, '08:00', 'תרגול')];
+  const to = [T('A', 'A1', 1, '08:00'), T('A', 'A2/1', 4, '08:00', 'תרגול')];
+  const text = changeText(from, to, copyData(), ['A']);
+  assert.ok(text.includes(splitLine(['אלף'])), text);
+  assert.equal(text.endsWith(PROPOSAL_ONLY), true);
+  assert.equal(changeText(from, to, copyData()).includes('מופרדים'), false, 'no split: no line');
+});
+
+test('splitOnlySwaps: a swap that only works with the split option on is found, a regular one and a lone lecture are not', () => {
+  const data = splitData();
+  assert.deepEqual(splitOnlySwaps({ A: ['A1', 'A2/1'] }, data), ['A']);
+  assert.deepEqual(splitOnlySwaps({ A: ['A2', 'A2/1'] }, data), []);
+  assert.deepEqual(splitOnlySwaps({ A: ['A1'] }, data), []);
+  assert.deepEqual(splitOnlySwaps({ A: [], B: ['B1'] }, data), []);
+  assert.deepEqual(splitOnlySwaps({}, data), []);
 });

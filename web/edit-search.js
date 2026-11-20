@@ -1,6 +1,7 @@
 // The edit page's search (spec: "Search"): the edit state becomes one `search` call. No DOM.
 import { classify } from './rules.js';
-import { toMin, search } from './solver-core.js';
+import { toMin, searchAll, pinsWithoutSplit } from './solver-core.js';
+import { splitLine } from './ui-text.js';
 import { lessonsOf } from './edit-state.js';
 import { DEFAULT } from './app.js'; // importing app.js has no side effects (no DOM at import): the build defaults live there
 
@@ -62,6 +63,11 @@ export function acceptedParallel(edit, data, record) {
   return out;
 }
 
+// The courses whose swap (the groups the student picked) only works with the split option on: with it off the search could not build them.
+// The solver's own test for pins (the build page drops such pins when the option is switched off).
+export const splitOnlySwaps = (swaps, data) =>
+  Object.keys(swaps).filter((c) => swaps[c].length && pinsWithoutSplit([data], swaps[c]).length !== swaps[c].length);
+
 // Search arguments for the edit state. record = the shared "המצב שלי" (passed, failed, grades, exempt, outsideDone, profile).
 export function editQuery(edit, data, record) {
   const { real, fixed } = kinds(edit, data),
@@ -88,7 +94,9 @@ export function editQuery(edit, data, record) {
     pins.push(FIXED_GROUP);
   }
 
-  const constraints = { ...structuredClone(DEFAULT.constraints), blocks: [], split: false, includeFull: !edit.registered };
+  // split (a lecture and a tutorial the college does not link) is the build page's own option, the student's choice and warning;
+  // anything but a true switches it off, as for a record from before the option existed
+  const constraints = { ...structuredClone(DEFAULT.constraints), blocks: [], split: record?.constraints?.split === true, includeFull: !edit.registered };
   const g = edit.goal;
   if (g.dayOff) Object.assign(constraints, { dayOff: [g.dayOff], dayOffHard: true });
   if (g.notAfter) Object.assign(constraints, { notAfter: g.notAfter, windowHard: true });
@@ -179,11 +187,12 @@ export function proposalsFrom(results, edit, query) {
     .map((r) => {
       const lessons = [...lessonsOf(r.groups.filter((id) => id !== 'fixed:g'), query.data), ...fixedLs];
       const now = uniq(lessons.map((l) => l.course));
+      const changed = was.filter((c) => now.includes(c) && groupsOfCourse(lessons, c) !== groupsOfCourse(edit.baseline, c)),
+        added = now.filter((c) => !was.includes(c));
+      // the courses this proposal splits that the student asked to move or add: a split they already had and keep is not news
       return {
-        lessons, score: r.score,
-        changed: was.filter((c) => now.includes(c) && groupsOfCourse(lessons, c) !== groupsOfCourse(edit.baseline, c)),
-        added: now.filter((c) => !was.includes(c)),
-        removed: was.filter((c) => !now.includes(c))
+        lessons, score: r.score, changed, added, removed: was.filter((c) => !now.includes(c)),
+        split: (r.split ?? []).filter((c) => changed.includes(c) || added.includes(c))
       };
     })
     .filter((p) => !sameLessons(p.lessons, edit.baseline) && !(edit.goal.fewerGaps && gapMinutes(p.lessons) >= baseGap))
@@ -191,7 +200,8 @@ export function proposalsFrom(results, edit, query) {
 }
 
 const changes = (p) => p.changed.length + p.added.length + p.removed.length;
-const byChanges = (a, b) => changes(a) - changes(b) || b.score - a.score;
+// a proposal that splits a course never ranks above one that does not (the build page's rule), then fewest changes, then the better score
+const byChanges = (a, b) => !!a.split?.length - !!b.split?.length || changes(a) - changes(b) || b.score - a.score;
 
 const DAY_LETTER = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳'];
 const countText = (n, one, many) => (n === 1 ? one : `${n} ${many}`);
@@ -220,7 +230,7 @@ export function summaryLine(baseline, p, data) {
 // For each real baseline course that is not movable yet, one short search with only it movable (spec: "A goal with nothing
 // marked movable"). Keeps the courses whose try gave a proposal. timedOut: the overall cap ran out before every course was
 // tried, or a try stopped on its own time limit with nothing found, so "no solution" is not claimed.
-export function tryEach(edit, data, record, run = search, { perMs = 400, totalMs = 4000 } = {}) {
+export function tryEach(edit, data, record, run = searchAll, { perMs = 400, totalMs = 4000 } = {}) {
   const found = [], start = Date.now(), gone = new Set(edit.removed);
   let timedOut = false;
   for (const course of kinds(edit, data).real.filter((c) => !edit.movable.includes(c) && !gone.has(c))) {
@@ -247,7 +257,7 @@ export function runEdit({ kind, edit, data, record }) {
       proposals: t.found.flatMap((f) => f.proposals).sort(byChanges), enabling: t.found.map((f) => f.course), timedOut: t.timedOut, diagnosis: []
     };
   }
-  const q = editQuery(edit, data, record), r = search(q), proposals = proposalsFrom(r.results, edit, q);
+  const q = editQuery(edit, data, record), r = searchAll(q), proposals = proposalsFrom(r.results, edit, q);
   if (proposals.length) return { proposals, enabling: [], timedOut: !!r.partial, diagnosis: r.diagnosis };
   const t = tryEach(edit, data, record);
   return { proposals: [], enabling: t.found.map((f) => f.course), timedOut: !!r.partial || t.timedOut, diagnosis: r.diagnosis };
@@ -257,7 +267,8 @@ export const PROPOSAL_ONLY = 'הצעה בלבד. ההרשמה נעשית במכ�
 
 // The text to copy: only what changes, as group numbers. `from` is the registered set (owned groups plus fixed lessons) or
 // the baseline; fixed lessons (no group) never appear. A group that stays is not listed.
-export function changeText(from, to, data) {
+// `split`: the course ids the proposal splits; the advisor has to approve those, so the text says so.
+export function changeText(from, to, data, split = []) {
   const groupsOf = (ls) => {
     const m = new Map();
     for (const l of ls) {
@@ -274,5 +285,7 @@ export function changeText(from, to, data) {
     return gone.length ? [`${c.name} (${id}): ${gone.join(', ')}`] : [];
   });
   const add = lines(now, was), drop = lines(was, now);
-  return [...(add.length ? ['להוסיף:', ...add] : []), ...(drop.length ? ['להסיר:', ...drop] : []), PROPOSAL_ONLY].join('\n');
+  const names = split.map((c) => data.courses[c]?.name ?? to.find((l) => l.course === c)?.name ?? c);
+  const body = [...(add.length ? ['להוסיף:', ...add] : []), ...(drop.length ? ['להסיר:', ...drop] : [])];
+  return [...body, ...(names.length ? [splitLine(names)] : []), PROPOSAL_ONLY].join('\n');
 }

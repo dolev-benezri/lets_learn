@@ -306,3 +306,41 @@ test('stepOneHtml: "כל שינוי נשמר מיד" is shown only while saving 
   assert.equal(hint({ saving: true }).hasAttribute('hidden'), false);
   assert.equal(hint({ saving: false }).hasAttribute('hidden'), true, 'a failed save, or another tab, hides the promise');
 });
+
+// ---------- split lecture and tutorial (F.2): the build page's warning, in the proposal and beside a swap option ----------
+const { swapOptions, swapListHtml } = await import('../web/ui-edit.js');
+const { SPLIT_NOTE, SPLIT_TAG, splitLine } = await import('../web/ui-text.js');
+
+test('proposalHtml: a proposal that splits a course says so with the build page\'s lines and tags the course; one that does not, says nothing', () => {
+  const { edit, p, data } = oneMove(mv());
+  const root = parse(proposalHtml(edit, { ...p, split: ['A'] }, data));
+  assert.ok(root.text.includes(SPLIT_NOTE), 'the note');
+  assert.ok(root.querySelector('.split-line').text.includes(splitLine([data.courses.A.name])), 'the line with the course name');
+  assert.ok(root.querySelector('.pcard .tag.warn').text.includes(SPLIT_TAG), 'the tag on the course card');
+  const plain = parse(proposalHtml(edit, { ...p, split: [] }, data));
+  assert.equal(plain.querySelector('.split-line'), null);
+  assert.equal(plain.text.includes(SPLIT_NOTE), false);
+  assert.equal(parse(proposalHtml(edit, p, data)).querySelector('.split-line'), null, 'a proposal from before the field existed');
+});
+
+test('swapOptions: the groups of the course in each proposal, the shown ones and repeats left out, each marked split or not', () => {
+  const props = [
+    { lessons: [L('A', 'A1', 1, '08:00', '09:50'), L('A', 'A1/1', 2, '08:00', '08:50')], split: [] },
+    { lessons: [L('A', 'A2', 3, '08:00', '09:50'), L('A', 'A1/1', 2, '08:00', '08:50')], split: ['A'] },
+    { lessons: [L('A', 'A2', 3, '08:00', '09:50'), L('A', 'A1/1', 2, '08:00', '08:50'), L('C', 'C1', 2, '08:00', '09:50')], split: ['A'] },
+    { lessons: [L('C', 'C1', 2, '08:00', '09:50')], split: [] }
+  ];
+  assert.deepEqual(swapOptions(props, 'A', 'A1,A1/1'), [{ ids: ['A2', 'A1/1'], split: true }]);
+  assert.deepEqual(swapOptions(props, 'A', ''), [{ ids: ['A1', 'A1/1'], split: false }, { ids: ['A2', 'A1/1'], split: true }]);
+});
+
+test('swapListHtml: a swap that only a split option allows is offered with the split warning inside its button; a regular one has none', () => {
+  const data = small();
+  data.courses.A.groups.push(grp('A2', 4, '10:00', '11:50'));
+  const root = parse(swapListHtml([{ ids: ['A1'], split: false }, { ids: ['A2'], split: true }], 'A', data));
+  const buttons = root.querySelectorAll('button[data-ed="pickSwap"]');
+  assert.deepEqual(buttons.map((b) => b.getAttribute('data-groups')), ['A1', 'A2']);
+  assert.equal(buttons[0].querySelector('.tag.warn'), null);
+  assert.ok(buttons[1].querySelector('.tag.warn').text.includes(SPLIT_TAG), 'inside the button, so it is in its name');
+  assert.equal(swapListHtml([], 'A', data).includes('אין קבוצות אחרות'), true);
+});
