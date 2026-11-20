@@ -125,6 +125,19 @@ test('storage that throws on every call: loadEdit gives the empty state, saveEdi
   assert.doesNotThrow(() => saveEdit(loaded()));
 });
 
+test('saveEdit says whether it saved: true when stored, false when storage is blocked, full or missing', () => {
+  const store = {};
+  stubStorage({ getItem: (k) => store[k] ?? null, setItem: (k, v) => (store[k] = String(v)) });
+  assert.equal(saveEdit(loaded()), true);
+  assert.deepEqual(loadEdit(), normalizeEdit(loaded()), 'what it said it saved is there');
+  stubStorage({ getItem: () => null, setItem: () => { throw new DOMException('full', 'QuotaExceededError'); } });
+  assert.equal(saveEdit(loaded()), false);
+  stubStorage({ getItem: () => null, setItem: () => { throw new Error('blocked'); } });
+  assert.equal(saveEdit(loaded()), false);
+  delete globalThis.localStorage;
+  assert.equal(saveEdit(loaded()), false);
+});
+
 test('the build save key is never read or written', () => {
   const seen = [];
   stubStorage({ getItem: (k) => (seen.push(k), null), setItem: (k) => seen.push(k), removeItem: (k) => seen.push(k) });

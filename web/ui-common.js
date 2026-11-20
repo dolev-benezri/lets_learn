@@ -184,12 +184,12 @@ export function toast(text) {
     toastHide = setTimeout(() => t.matches(':popover-open') && t.hidePopover(), 250);
   }, ms);
 }
-export async function copy(text, ok) {
+export async function copy(text, ok, failed = 'ההעתקה האוטומטית נכשלה. העתיקו מכאן:') {
   try {
     await navigator.clipboard.writeText(text);
     toast(ok);
   } catch {
-    showText('ההעתקה האוטומטית נכשלה. העתיקו מכאן:', text);
+    showText(failed, text);
   }
 }
 

@@ -9,9 +9,9 @@ import './ui-map.js';
 import { popStale, PAGE_NAME } from './ui-text.js';
 import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, termsOk, heb, $, ui } from './ui-common.js';
 import { scheduleRun, cancelRun } from './ui-search.js';
-import { renderEdit, stopSearch } from './ui-edit.js';
+import { renderEdit, stopSearch, syncSavedHint } from './ui-edit.js';
 import { needsModeChoice, modeOpen, renderModeChoice, getMode, setMode } from './ui-mode.js';
-import { renderTop, renderReport, renderBanner, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
+import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
@@ -119,6 +119,7 @@ function renderAll() {
   if (isEditHash(location.hash)) {
     cancelRun();
     renderRoute();
+    renderNotice(); // the site notice, a failed save and another tab's copy: every page, not only the build page's banner
     renderEdit();
     return;
   }
@@ -138,7 +139,11 @@ ui.onResult = () => tourOnce('plans', shownTitle); // renderView: step 4 shows a
 
 // ---------- wiring (static shell from index.html) ----------
 watchOtherTabs();
-app.onSaveChange = () => app.data && renderBanner();
+app.onSaveChange = () => {
+  if (!app.data) return;
+  renderNotice();
+  syncSavedHint();
+};
 document.querySelectorAll('[data-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');

@@ -17,7 +17,8 @@ import {
   OLD_WEIGHTS
 } from './app.js';
 import { setStatus, cleanProfile, specRule, classify } from './rules.js';
-import { friendLink, backupLink } from './share.js';
+import { friendLink, backupLink, backupReadable } from './share.js';
+import { backupEdit } from './edit-state.js';
 import { toIcs } from './ics.js';
 import { groupIndex, openPop, pinWith, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
@@ -292,7 +293,15 @@ export const ACT = {
   },
   advisorPdf: advisorPdfAct,
   advisorCopy: () => copy(document.querySelector('.advisor-sum').innerText, 'הסיכום הועתק'),
-  backup: async () => copy(await backupLink(location.origin + location.pathname, app.state), 'קישור הגיבוי הועתק'),
+  async backup() {
+    const base = location.origin + location.pathname, edit = backupEdit();
+    const link = await backupLink(base, app.state, edit);
+    if (!edit || (await backupReadable(link, app.state))) return copy(link, 'קישור הגיבוי הועתק');
+    // the schedule makes the link too big for a restore to read: better the record alone, said so (also when the copy falls back to
+    // the text dialog), than a link that is refused
+    const left = 'הגיבוי בלי המערכת הערוכה: היא ארוכה מדי לקישור.';
+    copy(await backupLink(base, app.state), left, `${left} ההעתקה האוטומטית נכשלה. העתיקו מכאן:`);
+  },
   landingAdd: () => addFriend(app.friendLanding),
   landingDrop() {
     app.friendLanding = null;

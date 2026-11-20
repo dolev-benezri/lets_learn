@@ -123,6 +123,28 @@ function renderBoardNote() {
   $('boardNote').innerHTML = html;
 }
 
+// The remote notice, a save that fails and another tab's newer copy sit above every page (#notice, outside the plans step that holds
+// #banner): the build page's renderBanner and the edit page's renderAll both draw it.
+export const noticeHtml = (a) =>
+  (a.settings.notice
+    ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(a.settings.notice)}</span></div>`
+    : '') +
+  (a.saveFailed || a.editSaveFailed
+    ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">השינויים לא נשמרים בדפדפן הזה, ויאבדו כשתסגרו את הדף.</span>
+        <button type="button" class="btn ghost" data-act="backup">העתק קישור גיבוי</button></div>`
+    : '') +
+  (a.otherTab
+    ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">הנתונים השתנו בלשונית אחרת, ושינויים כאן כבר לא נשמרים.</span>
+        <button type="button" class="btn ghost" data-act="reloadPage">טען מחדש</button></div>`
+    : '');
+export function renderNotice() {
+  const html = noticeHtml(app);
+  // written only on a change: a role=alert region replaced on every refresh is announced again each time
+  if ($('notice').dataset.text === html) return;
+  $('notice').dataset.text = html;
+  $('notice').innerHTML = html;
+}
+
 export function renderBanner() {
   renderBoardNote();
   const L = app.friendLanding;
@@ -135,24 +157,7 @@ export function renderBanner() {
   // with one semester loaded, the other's pins would look gone
   const gone = app.sem['ב'] ? stalePins(app.state.pins, [app.sem['א'], app.sem['ב'], app.sem['קיץ']]) : [];
   const turn = turnWarning(app.settings.turns, app.state.profile.turn, freshOf(app.data));
-  // the remote notice sits above every step (#notice, outside the plans step that holds #banner)
-  const noticeState = `${!!app.saveFailed}|${!!app.otherTab}|${app.settings.notice}`;
-  if ($('notice').dataset.text !== noticeState) {
-    // written only on a change: a role=alert region replaced on every refresh is announced again each time
-    $('notice').dataset.text = noticeState;
-    $('notice').innerHTML =
-      (app.settings.notice
-        ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.settings.notice)}</span></div>`
-        : '') +
-      (app.saveFailed
-        ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">השינויים לא נשמרים בדפדפן הזה, ויאבדו כשתסגרו את הדף.</span>
-        <button type="button" class="btn ghost" data-act="backup">העתק קישור גיבוי</button></div>`
-        : '') +
-      (app.otherTab
-        ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">הנתונים השתנו בלשונית אחרת, ושינויים כאן כבר לא נשמרים.</span>
-        <button type="button" class="btn ghost" data-act="reloadPage">טען מחדש</button></div>`
-        : '');
-  }
+  renderNotice();
   $('banner').innerHTML =
     (app.hashError
       ? `<div class="banner err" role="alert">${icon('alert')}<span class="grow">${esc(app.hashError)}</span>
