@@ -1,6 +1,6 @@
 // The edit page's search (spec: "Search"): the edit state becomes one `search` call. No DOM.
 import { classify } from './rules.js';
-import { toMin, search } from './solver-core.js';
+import { toMin, search, promisedParts } from './solver-core.js';
 import { lessonsOf } from './edit-state.js';
 import { DEFAULT } from './app.js'; // importing app.js has no side effects (no DOM at import): the build defaults live there
 
@@ -14,13 +14,18 @@ const uniq = (a) => [...new Set(a)];
 // A course is fixed when any baseline lesson has no group in the data or the course is not in the data; a fixed course that
 // exists in the data and is marked movable counts as real (it is searched with all its options).
 // The file missed a row of this course: no lecture (primary) was loaded, or a loaded group's linked part (a tutorial, a lab)
-// has none of its groups loaded.
+// has none of its groups loaded, or the lecture has no linked group of a part its type promises (the search never offers
+// such a lecture, so it could not place the course at all).
 // Kept as loaded, so the search does not add the part as a change the student never asked for.
 function partial(id, edit, data) {
   const groups = data.courses[id].groups, byId = new Map(groups.map((g) => [g.id, g]));
   const have = new Set(edit.baseline.filter((l) => l.course === id).map((l) => l.group));
   if (![...have].some((gid) => byId.get(gid)?.primary)) return true; // a tutorial without its lecture
   return [...have].some((gid) => {
+    // what its own type promises (a tutorial, a lab) must be loaded too, as a group its link chain reaches (lecture -> tutorial -> lab)
+    const reached = new Set(), walk = (g) => { for (const s of g?.linked ?? []) if (byId.has(s) && !reached.has(s)) { reached.add(s); walk(byId.get(s)); } };
+    walk(byId.get(gid));
+    if (promisedParts(byId.get(gid) ?? { type: '' }).some((t) => ![...reached].some((s) => have.has(s) && byId.get(s).type === t))) return true;
     const types = new Map();
     for (const s of byId.get(gid)?.linked ?? []) if (byId.has(s)) types.set(byId.get(s).type, [...(types.get(byId.get(s).type) ?? []), s]);
     return [...types.values()].some((ids) => !ids.some((s) => have.has(s)));

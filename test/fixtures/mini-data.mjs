@@ -1,8 +1,10 @@
 // Small synthetic Dataset: A (physics) → B → C chain, P parallel-requires Q, X has an unknown prereq.
-const grp = (id, day, start, end, extra = {}) => ({
-  id, type: 'סופי-הרצאה+תרגול', primary: true, lecturer: 'L', full: false, semester: 'א',
-  linked: [], meetings: [{ day, start, end, room: 'r' }], exams: [], ...extra,
-});
+// The type says what the lecture has (the solver offers a "+תרגול" lecture only with its tutorial): linked -> with a tutorial.
+const grp = (id, day, start, end, extra = {}) => {
+  const g = { id, primary: true, lecturer: 'L', full: false, semester: 'א',
+    linked: [], meetings: [{ day, start, end, room: 'r' }], exams: [], ...extra };
+  return { type: g.linked.length ? 'סופי-הרצאה+תרגול' : 'סופי-הרצאה', ...g };
+};
 const sub = (id, day, start, end) => ({ ...grp(id, day, start, end), type: 'תרגול', primary: false });
 
 export function mini() {
