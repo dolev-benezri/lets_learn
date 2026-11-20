@@ -84,6 +84,18 @@ export function pinsWithoutSplit(datas, pins) {
   return pins.filter((p) => !drop.has(p));
 }
 
+// When two first sittings clash for one student. 'hours' (the default): the same date and start (a sitting with no hour is not
+// known to clash); 'forbid', the student's choice: the same date; 'allow': never. Only dates the college published count. The
+// search, an option's keys and the backups list all read it here. exams: a group's, or a plan's ({ course, ...exam }).
+export const examRuleOf = (data, constraints) => {
+  const rule = constraints?.examsSameDay ?? 'hours';
+  return data.examsPublished && rule !== 'allow' ? rule : null;
+};
+export const sittingKeys = (exams, rule) => exams
+  .filter((e) => e.kind === 'בחינה' && e.moed === 1 && (rule === 'forbid' || e.time))
+  .map((e) => (rule === 'forbid' ? e.date : `${e.date} ${e.time}`));
+export const examKeysOf = (option, rule) => (rule === 'forbid' ? option.exams : option.slots);
+
 export function buildOptions(course, {
   pins = [],
   includeFull = false,
@@ -169,9 +181,9 @@ export function buildOptions(course, {
       const sharesWith = friendGroups.map((fg) => ids.some((gid) => fg.includes(gid)));
       options.push({
         groups: ids, mask, meetings,
-        exams: p.exams.filter((e) => e.kind === 'בחינה' && e.moed === 1).map((e) => e.date),
+        exams: sittingKeys(p.exams, 'forbid'),
         // the same first-sitting start, which one student cannot attend twice; an exam with no hour is not known to clash
-        slots: p.exams.filter((e) => e.kind === 'בחינה' && e.moed === 1 && e.time).map((e) => `${e.date} ${e.time}`),
+        slots: sittingKeys(p.exams, 'hours'),
         allExams: p.exams,
         minutes, sharedMin, sharesWith,
         alts: alts[p.id] ? { [p.id]: alts[p.id] } : {},
@@ -482,8 +494,8 @@ export function search({
   // 'hours' (the default): the same date and start. 'forbid', the student's choice: the same date. 'allow': neither, to name
   // the reason when nothing fits.
   const examRule = constraints.examsSameDay ?? 'hours';
-  const noExamClash = data.examsPublished && examRule !== 'allow';
-  const examKeys = (o) => (examRule === 'forbid' ? o.exams : o.slots);
+  const noExamClash = !!examRuleOf(data, constraints);
+  const examKeys = (o) => examKeysOf(o, examRule);
   const conditional = courses
     .filter(({ id }) => statuses[id]?.missingParallel)
     .map(({ id }) => ({ id, needs: statuses[id].missingParallel }));
