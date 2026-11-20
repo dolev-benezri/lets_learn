@@ -1,6 +1,9 @@
 // Week grid, block popover and the small pure helpers behind them (hour range, pills summary, scale steps).
 import { app, esc, seatsAt } from './app.js';
-import { toMin, meetingsMask, overlaps, merge, daysUsed, buildOptions, forbiddenBy, freeDayCandidates } from './solver-core.js';
+import {
+  toMin, meetingsMask, overlaps, merge, daysUsed, buildOptions, forbiddenBy, freeDayCandidates,
+  examRuleOf, examKeysOf, sittingKeys
+} from './solver-core.js';
 import { groupLabel, groupNumber, groupFresh, heb, reportMailto, PAGE_NAME, examWhen, examsNoteHtml } from './ui-text.js';
 // A course name as HTML: escaped, with its Latin runs marked lang="en" so a Hebrew screen reader voice says "IOS", not letters. Entities (&lt;) are not words.
 export const nameHtml = (t) =>
@@ -147,7 +150,8 @@ export function altGroups(data, groupIds, gid, includeFull = false, split = fals
     });
 }
 
-// Up to 3 other groups of the same course and type that fit the rest of the alternative and the student's `constraints`, aren't full and
+// Up to 3 other groups of the same course and type that fit the rest of the alternative (hours and first sittings, by the
+// solver's exam rule) and the student's `constraints`, aren't full and
 // (for a lecture) make a whole option with free groups of their own (tutorial, lab): listed as "L2 + L2/1". A tutorial backup must belong to
 // the course's chosen lecture. Identical-time `alts` are skipped.
 export function backups(data, res, gid, constraints = {}) {
@@ -156,8 +160,13 @@ export function backups(data, res, gid, constraints = {}) {
   const mates = res.groups.filter((id) => id !== gid && byId.get(id)?.cid === cid).map((id) => byId.get(id).g);
   const out = [];
   const rest = meetingsMask(res.groups.filter((id) => byId.get(id)?.cid !== cid).flatMap((id) => byId.get(id).g.meetings));
-  const forbidden = forbiddenBy(constraints),
-    fits = (o) => !overlaps(o.mask, rest) && !(constraints.maxDays && daysUsed(merge(rest, o.mask)) > constraints.maxDays);
+  const forbidden = forbiddenBy(constraints);
+  // the first sittings of the rest of the plan, under the solver's exam rule (a result without exams checks none)
+  const rule = examRuleOf(data, constraints),
+    sittings = rule ? new Set(sittingKeys((res.exams ?? []).filter((e) => e.course !== cid), rule)) : null;
+  const fits = (o) => !overlaps(o.mask, rest)
+    && !(constraints.maxDays && daysUsed(merge(rest, o.mask)) > constraints.maxDays)
+    && !(sittings && examKeysOf(o, rule).some((k) => sittings.has(k)));
   for (const g of c.groups) {
     if (g.type !== cur.type || g.id === gid || g.full || res.alts?.[gid]?.includes(g.id)) continue;
     if (cur.primary) {
