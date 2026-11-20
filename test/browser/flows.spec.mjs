@@ -638,15 +638,49 @@ test('the lesson window says where an exam date came from, and nothing when it s
   assert.match(await page.locator('#pop').innerText(), /בדקו מול הידיעון/);
 });
 
-const later = (r) => setTimeout(() => r.continue(), 400);
+// Holds every request for a file matching `re` until release(), so a switch stays "still loading" exactly as long as the test wants,
+// not for a guessed time. Requests that do not match go through at once.
+const holdFiles = async (page, re) => {
+  const held = [];
+  let holding = true;
+  await page.context().route(re, (route) => (holding ? held.push(route) : route.continue()));
+  return {
+    release: () => {
+      holding = false;
+      held.splice(0).forEach((route) => route.continue());
+    }
+  };
+};
+// Counts the page's fetches, and their JSON reads, still on their way (window.__busy). Each count goes down before the site's own continuation runs,
+// in the same microtask run, so a poll between tasks sees 0 only once the site has had every answer and applied or dropped it.
+const trackFetches = (page) =>
+  page.evaluate(() => {
+    window.__busy = 0;
+    const done = () => window.__busy--;
+    for (const [target, name] of [[window, 'fetch'], [Response.prototype, 'json']]) {
+      const original = target[name];
+      target[name] = function (...args) {
+        window.__busy++;
+        const p = original.apply(this, args);
+        p.then(done, done);
+        return p;
+      };
+    }
+  });
+const fetchesDone = (page) => page.waitForFunction(() => window.__busy === 0, null, { timeout: 30000 });
 
 test('a study year picked and taken back while it loads: the last choice wins', async (t) => {
   const page = await visit(t, 'desktop', DONE, '#me');
   await page.locator('input[data-chg="pyear"]').first().waitFor({ state: 'attached', timeout: 30000 });
-  await page.context().route(/\/30-2025\.json$/, later);
+  await trackFetches(page);
+  const old = /\/30-2025\.json$/,
+    hold = await holdFiles(page, old),
+    sent = page.waitForRequest(old, { timeout: 30000 });
   await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await sent; // the switch to cohort 2025 is loading, and stays so
   await page.locator('input[data-chg="pyear"][value="2"]').evaluate((e) => e.click());
-  await page.waitForTimeout(1200);
+  hold.release(); // its files arrive after the choice was taken back
+  await fetchesDone(page);
   const s = await savedState(page);
   assert.deepEqual([s.profile.year, s.startYear], [2, 2026]);
 });
@@ -655,10 +689,19 @@ test('a study year picked while a new program loads: it applies to the new progr
   const page = await visit(t, 'desktop', DONE, '#me');
   const pick = page.locator('select[data-chg="program"]');
   await pick.waitFor({ timeout: 30000 });
-  await page.context().route(/\/20-20\d\d\.json$/, later);
+  await trackFetches(page);
+  const first = /\/20-2026\.json$/, // the cohort the program switch asks for first (year ב׳ of 2027); the year picked next asks for 2025
+    hold = await holdFiles(page, first),
+    sent = page.waitForRequest(first, { timeout: 30000 });
   await pick.selectOption('20');
+  await sent; // the switch to program 20 is loading, and stays so
   await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
-  await page.waitForTimeout(1500);
+  await page.waitForFunction(() => {
+    const s = JSON.parse(localStorage.getItem('afeka-sched-v1'));
+    return s.program === 20 && s.startYear === 2025;
+  }, null, { timeout: 30000 }); // the second choice is applied...
+  hold.release(); // ...and only then do the first switch's files arrive
+  await fetchesDone(page);
   const s = await savedState(page);
   assert.deepEqual([s.program, s.profile.year, s.startYear], [20, 3, 2025]);
 });
