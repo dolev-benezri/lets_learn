@@ -92,7 +92,7 @@ export function compareAlts(a, b, data) {
   for (const f of a.withFriends.filter((f) => !has(b, f.name))) out.push(`עם ${f.name}`);
   const gap = Math.round((a.gapH - b.gapH) * 2) / 2,
     h = Math.abs(gap);
-  if (gap) out.push(`${h === 1 ? 'שעה' : h === 0.5 ? 'חצי שעה' : `${h} שעות`} ${gap > 0 ? 'יותר' : 'פחות'} חלונות`);
+  if (gap) out.push(`${hoursText(h)} ${gap > 0 ? 'יותר' : 'פחות'} חלונות`);
   for (const c of a.courses.filter((x) => !b.courses.includes(x))) out.push(`+ ${data.courses[c].name}`);
   for (const c of b.courses.filter((x) => !a.courses.includes(x))) out.push(`− ${data.courses[c].name}`);
   const u = (a.unlocks ?? 0) - (b.unlocks ?? 0);
@@ -119,6 +119,9 @@ export function capPreviewText({ cap, now, wider, nameOf, year = false, partial 
   };
 }
 export const count = (n, one, many) => (n === 1 ? one : `${n} ${many}`); // Hebrew has no "1 קבוצות"
+// A length of time in half hours, the way a student says it: "חצי שעה", "שעה וחצי", "שעתיים", "6 שעות"
+export const hoursText = (h) =>
+  ({ 0.5: 'חצי שעה', 1: 'שעה', 1.5: 'שעה וחצי', 2: 'שעתיים' })[h] ?? `${h} שעות`;
 export const courseCount = (n) => count(n, 'קורס אחד', 'קורסים');
 export const groupCount = (n) => count(n, 'קבוצה אחת', 'קבוצות');
 export const meetingText = (m) => `יום ${D[m.day] ?? '?'}׳ ${m.start}–${m.end}`;

@@ -256,7 +256,13 @@ test('compareAlts names what changes: free day, friend, gaps, courses, unlocks',
     'פותחת 2 קורסים פחות'
   ]);
   assert.deepEqual(compareAlts({ ...best, gapH: 3.5 }, best, data), ['2.5 שעות יותר חלונות']);
+  assert.deepEqual(compareAlts({ ...best, gapH: 3 }, best, data), ['שעתיים יותר חלונות']);
   assert.deepEqual(compareAlts(best, best, data), ['אותם קורסים, שיבוץ אחר']);
+});
+
+test('hoursText: half hours the way a student says them', async () => {
+  const { hoursText } = await import('../web/ui-text.js');
+  assert.deepEqual([0.5, 1, 1.5, 2, 2.5, 6].map(hoursText), ['חצי שעה', 'שעה', 'שעה וחצי', 'שעתיים', '2.5 שעות', '6 שעות']);
 });
 
 test('compareAlts: the same groups (a year plan whose semester did not change) say so', async () => {
