@@ -12,7 +12,7 @@ Success: a student with a schedule on their phone gets a useful proposal in unde
 
 | Question | Answer |
 |---|---|
-| Where does the existing schedule come from | A file from the Afeka planner (the same PDF/screenshot format friends send) and picking by hand. The portal's own file is out of version 1: nobody here has seen its format; it comes in once there is a real sample. |
+| Where does the existing schedule come from | The portal's own Excel export (the yedion, "אפקה-נט", `.xlsx`: read as printed, so a known course code is exact; `web/yedion-xlsx.js`, added 2026-11-09 once a sample existed), a file from the Afeka planner (the same PDF/screenshot format friends send), and picking by hand. |
 | Before or after registration | Both. The student says at the start whether the schedule is already registered, and the full-group rule follows (see Search). |
 | What a student can do in version 1 | Move a course, add or remove a course, one-tap goals, and Codex's extras: say which course stands in the way, copy only the changed group numbers, restore the original in one tap. |
 | Where the mode switch lives | A choice on first entry, a small mode label at the top of the edit page, and the lasting switch in a side menu (☰). |
@@ -32,7 +32,6 @@ In version 1:
 - Smooth transitions: switching proposals, switching days, highlighting what changed.
 
 Out of version 1, with the reason:
-- The portal file: no sample of its format.
 - Two semesters at once: registration changes happen per semester.
 - A change budget inside the solver (approach B): needs changes deep in `search` and its pruning.
 - The lesson gliding to its new place: phones show one day at a time (`web/style.css:1256`), so a move to another day is out of sight, and the grid is re-rendered as HTML (`web/ui-view.js:425`), not moved element by element. Version 1 marks the old place and offers "הראה את היום החדש"; the glide is version 2.
@@ -85,8 +84,10 @@ Out of version 1, with the reason:
 
 - The edit page saves under its own localStorage key, `afeka-sched-v1-edit`, separate from the build page's save. The build page's loading ignores it, and the existing "erase everything" already removes it by its prefix (`web/app.js:256`, `web/app.js:299`).
 - Shape:
-  `{ v: 1, dataset: { year, sem, program, startYear }, registered: bool, owned: [group ids], original: [lesson], baseline: [lesson], movable: [course ids], swaps: { course id: [group ids] }, added: [course ids], removed: [course ids], goal: { dayOff, notAfter, fewerGaps } }`
+  `{ v: 1, dataset: { year, sem, program, startYear }, registered: bool, owned: [group ids], original: [lesson], baseline: [lesson], movable: [course ids], swaps: { course id: [group ids] }, added: [course ids], removed: [course ids], goal: { dayOff, notAfter, fewerGaps }, draft: null | { rows, choices, registered, sem } }`
   where a lesson is `{ course, name, type, group | null, day, start, end }`: a snapshot of what was loaded, so the schedule can be drawn and restored even when the data changes.
+- `draft`: the rows read from a file or picked by hand in step 1, with the student's choices, until "הבא" turns them into `original` and `baseline`. It is saved so a reload keeps the review, and it is left out of a backup link (rows of text read from a file would make the link long for nothing).
+- Saving and tabs (added 2026-11-20): `saveEdit` reports whether it wrote. The edit key has its own failure flag, so a good save of the build page's key does not hide a failed edit save; while either fails the page shows the same notice as the build page ("השינויים לא נשמרים…", with the backup-link button) on `#edit` too, and "כל שינוי נשמר מיד" is hidden. Another tab's write to the key (the build key or this one) turns on the "טען מחדש" notice and the older tab stops saving. A backup link carries the edit state (`edit`, without `draft`) and a restore reads it; an older link without it leaves the saved edit state as it is. A link that would be too long for a restore to read (over the reader's length or decoded-size limit; far from a real schedule) is copied without the edit part, and the copy says so. A proposal result is stamped with the student's record, the data file and the restore count; a changed stamp drops it, on entering the page and before "שמור הצעה", and asks for a new search.
 - `original`: the schedule as loaded, never changed until a new schedule is loaded. "חזרה למערכת המקורית" copies it into `baseline` and clears `movable`, `swaps`, `added` and `removed`.
 - `baseline`: the current schedule. "שמור הצעה" writes the proposal into it and clears `movable`, `swaps`, `added` and `removed`.
 - `owned`: the group ids confirmed as registered in step 1. Only these may stay while full. A saved proposal is not registered, so its new groups never join `owned`.
@@ -186,7 +187,7 @@ Third round, same day: "sure" needs the exact code, one group, the same day and 
 
 ## Open after version 1
 
-- The portal file, once a sample exists.
+- (Done after this design: the portal's Excel file is read, see "Where does the existing schedule come from".)
 - The lesson glide.
 - Pairs in the automatic tries.
 - Approach B (a change budget inside the solver) if students ask for "change at most two courses".

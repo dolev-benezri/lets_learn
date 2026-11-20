@@ -22,7 +22,7 @@ const DRAFT = {
   rows: [{ code: '30003', name: 'מבוא לכימיה', type: 'סופי-הרצאה+תרגול', text: 'x', via: 'code', confidence: 'sure', chosen: '273000302', candidates: ['273000302'], meets: [{ day: 4, start: '14:00', end: '15:50' }] }],
   choices: {}, registered: false, sem: 'א'
 };
-// chemistry may move and Thursday (day 4) should be free: every proposal moves chemistry to another day (the same state as edit-proposals.spec)
+// chemistry may move and Wednesday (ד׳, day 4; Sunday is 1) should be free: every proposal moves chemistry to another day (the same state as edit-proposals.spec)
 const state = (over = {}) => ({ v: 1, dataset: DS, registered: false, owned: [], original: BASE, baseline: BASE, movable: ['30003'], goal: { dayOff: 4 }, ...over });
 const seed = (over) => ({ ...DONE, 'afeka-sched-v1-edit': JSON.stringify(state(over)) });
 const visit = (t, size, s, hash = '#edit/changes') => visitIn(browser, t, size, s, hash);

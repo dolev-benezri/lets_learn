@@ -113,13 +113,21 @@ test('desktop: switching proposals slides in over 200 ms, and not at all under r
   assert.equal(await page.locator('.prop-panel').evaluate((el) => getComputedStyle(el).animationDuration), '0.2s');
 });
 
-test('phone: nothing found says why, as text; a goal alone offers the courses that would make it possible', async (t) => {
-  // Sunday cannot be freed by moving chemistry alone if thermodynamics must stay and Sunday is where nothing is: free day 3 instead
+test('phone: a goal alone, with nothing marked movable, finds the course whose move reaches it: every proposal frees the day', async (t) => {
+  // Tuesday (ג׳, day 3: Sunday is 1) is thermodynamics' day. Chemistry cannot free it; thermodynamics can, so the tries find proposals that move only it.
   const page = await visit(t, 'phone', seed({ movable: [], goal: { dayOff: 3 } }));
-  await page.locator('[data-ed="search"]').click();
-  await page.locator('#editResults .prop-panel, #editResults .prop-nav').first().waitFor({ timeout: 30000 });
-  const text = await page.locator('#editResults').innerText();
-  assert.ok(/אם .+ יזוז, יש פתרון|לא נמצאה הצעה|הצעה 1 מתוך/.test(text), text);
+  const before = await saved(page);
+  await search(page); // waits for the proposal switcher: a "nothing found" answer would time out here, not pass
+  const n = Number((await page.locator('.prop-nav .alt-label').textContent()).match(/מתוך (\d+)/)[1]);
+  assert.ok(n >= 1);
+  for (let i = 1; i <= n; i++) {
+    assert.match(await page.locator('.prop-sum').textContent(), /יום ג׳ התפנה/, `proposal ${i} frees Tuesday`);
+    assert.deepEqual(await page.locator('.pcard h4').allTextContents(), ['תרמודינמיקה 1'], `proposal ${i} moves only thermodynamics`);
+    assert.equal(await page.locator('.pcard .now').count(), 1);
+    if (i < n) await page.locator('[data-ed="propNext"]').click();
+  }
+  // the tries only look: nothing was saved
+  assert.deepEqual(await saved(page), before);
 });
 
 test('desktop: registering again in step 1 drops the proposals; proposal 0 is the baseline without pending swaps; restore shows for pending edits', async (t) => {
