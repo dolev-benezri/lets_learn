@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. **Plan only: no code is written until the owner approves this file.**
 
-**Goal:** Move the real site (`web/`) to design concept A "הלוח": the week board is always on screen, every tool opens as a panel over it (bottom sheet on a phone, side column on a computer), a bottom dock on the phone, and "build" / "improve" as two tabs at the top. No feature, saved state or old link may be lost.
+**Goal:** Move the real site (`web/`) to design concept A "הלוח": the week board is always on screen, every tool opens as a panel over it (bottom sheet on a phone, side column on a computer), a bottom dock on the phone, and "build" / "improve" as two tabs at the top. **A full replacement: no screen, state or dialog of the live site keeps the old look when the work is done** (owner, 2026-11-21: "אני רוצה החלפה מלאה על כל מסכי האתר לא לפספס כלום"), and no feature, saved state or old link is lost. Section 9 is the checklist and Task 13 is the proof.
 
 **Architecture:** The live UI already renders into fixed containers (`#me`, `#courses`, `#side`, `#prefs`, `#edit`, `#layout`, `#week`, `#drawer`, `#pop`) and shows one page at a time through one seam (`PAGE` in `ui-common.js`, `renderRoute` and `onHash` in `ui-plan.js`, `routeOf` in `app.js`). A keeps those renderers, ids and `data-act` / `data-chg` / `data-ed` hooks. A new `web/ui-shell.js` builds the A frame around them at start-up (re-parenting the existing nodes) and decides which panel is open; a new scoped `web/design-a.css` gives the prototype's look. All of it sits behind a switch (`?design=a`, remembered), so `main` keeps the classic site until the owner flips the default.
 
@@ -20,6 +20,7 @@
 - Hebrew UI text is kept as the live site has it, except the strings a task names. RTL everywhere.
 - localStorage access is always in `try`/`catch`. The only new key is `afeka-sched-v1-design`. No A-only state goes into the `afeka-sched-v1` blob (`watchOtherTabs` and `recordOf` compare it across tabs). `TERMS_VERSION` is **not** bumped (everyone would be asked again).
 - WCAG 2.1 AA (the prototype CSS is **not** assumed clean: `a.css` `.bdg.warn` is white on `--warn`, about 1.9:1 in dark), tap targets at least `--tap` (44px), visible focus, `prefers-reduced-motion` turns movement off, widths 320 / 375 / desktop, light and dark.
+- **Full replacement.** Classic exists only as a transition switch. Every row of section 9 gets an A screen; Task 12 removes classic (CSS, markup, code paths, the switch) and Task 13 proves that nothing is left in the old style. A row with no natural place in A is a question for the owner and is still built; nothing is dropped.
 - Private data: none. Tests use synthetic data and `test/fixtures/real` only. The repository is public.
 - Codex reviews every commit before it is made; a full-branch review (high effort, raw `-o` answer saved under `.superpowers/sessions/reviews/`) before any branch is submitted. Codex never opens `web/vendor/**`. Unit tests run on Node 24 (`npx -y -p node@24 node --test "test/*.test.mjs"`) before any push. Nothing reaches `main` or the remote without the owner's OK; the manager merges.
 - Commits end with `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
@@ -34,6 +35,7 @@ Failure modes the owner's request implies but no feature list names (each gets a
 4. **Blocked storage (private mode).** `?design=a` still works for the visit, also after a friend link is read (the query is kept), nothing throws, and nothing is remembered. Test in Task 1.
 5. **Printing the advisor summary under the new frame.** `#print` / `html.print-summary` must still print the whole summary on several pages; the prototype's fixed-height shell is not ported. Test in Task 5.
 6. **Improve mode is a mode, not a panel.** Opening a shared tool from it must keep the edit route; leaving the edit route writes mode `build` and redraws the builder (`ui-plan.js:97`). An edit visitor is gated on the terms only, never on the builder's track and year. Tests in Tasks 2 and 8.
+7. **A state nobody opens by hand** (load failure, search error, no result, blocked storage, print, a stale proposal, a dialog behind a toast). The sweep of Task 13 forces each of them through `page.route`, seeds and emulation, so none is left in the old look unseen.
 
 ---
 
@@ -45,6 +47,10 @@ Failure modes the owner's request implies but no feature list names (each gets a
 
 להעביר את האתר האמיתי לעיצוב א׳ "הלוח": המערכת השבועית תמיד על המסך, וכל כלי (המצב שלי, קורסים, מה חשוב לי, חברים, להוציא) נפתח כחלונית מעליה. בטלפון זה גיליון שעולה מלמטה וסרגל כלים תחתון. במחשב זו עמודה בצד, ועמודה נוספת עם החלופות. למעלה שתי לשוניות: "מערכת חדשה" ו"שיפור מערכת קיימת". עיצוב ב׳ לא נוגעים בו ולא מוחקים אותו.
 
+## החלפה מלאה (מה שביקשת)
+
+ביקשת: "החלפה מלאה על כל מסכי האתר, לא לפספס כלום". לכן יש בתוכנית (סעיף 9) **רשימת בדיקה של 177 פריטים שנלקחה מהקוד, ובתוכה כ־300 תרחישים** (פריט שיש בו כמה מצבים, כמו מפה שנטענת או נכשלת או PDF שמתכונן או נכשל, נבדק בנפרד בכל מצב): כל מסך, חלונית, גיליון, חלון קופץ, תפריט, הודעה קטנה (26 הודעות כאלה), באנר, מצב ריק, מצב שגיאה, מצב טעינה, ההתחלה והתנאים, ההדפסה וה־PDF, השיתוף וכל כתובת. לכל פריט כתוב איזה מסך ב־א׳ מחליף אותו. העיצוב הישן נשאר רק בזמן המעבר. משימה 12 מוחקת אותו (לא מסתירה), ומשימה 13, האחרונה, **מוכיחה** שלא נשאר דבר: צילום מסך חדש לכל פריט (טלפון ומחשב, בהיר וכהה), בדיקה שכל הצבעים והגופנים הם של א׳, בדיקה שאין CSS ישן שלא בשימוש, ובדיקה שלא נשאר בקוד שום "שלב 1" או "הבא:". דברים שאין להם מקום טבעי ב־א׳ לא נמחקים: הם נבנים, ושואלים אותך עליהם (שאלות 12 עד 16).
+
 ## מה לא משתנה
 
 - כל הנתונים, החיפוש, הכללים והחישובים. שום דבר שם לא נכתב מחדש.
@@ -55,7 +61,7 @@ Failure modes the owner's request implies but no feature list names (each gets a
 ## איך מגיעים לשם בלי לשבור את האתר
 
 - הכול נבנה מאחורי מתג. האתר כמו שהוא היום נשאר ברירת המחדל. מי שפותח את הכתובת עם `?design=a` רואה את העיצוב החדש (והדפדפן זוכר). כך אפשר לבדוק בטלפון, משימה אחרי משימה, לפני שמישהו אחר רואה משהו.
-- 13 משימות קטנות, כל אחת נבדקת לבד. אפשר לעצור אחרי כל אחת. לפני שמתחילים, משימה 0 ממפה אילו בדיקות קיימות קשורות לעיצוב הישן, כי זה קובע כמה עבודה באמת צריך.
+- 14 משימות (0 עד 13), כל אחת נבדקת לבד. אפשר לעצור אחרי כל אחת. לפני שמתחילים, משימה 0 ממפה אילו בדיקות קיימות קשורות לעיצוב הישן, כי זה קובע כמה עבודה באמת צריך.
 - משימה 2 (המסגרת: לשוניות, סרגל תחתון, חלונית, ניווט וקישורים) היא התפר שכל השאר נשען עליו, והיא גדולה מכפי שנראה בהתחלה. אחריה יש נקודת עצירה: רואים אותה בטלפון ומחליטים אם ממשיכים.
 - שיפור מערכת קיימת (עמוד העריכה) נעשה אחרון ובשני שלבים, כי הוא החלק המסובך ביותר: קודם הוא נכנס למסגרת החדשה כמו שהוא, ורק אחר כך מתפצל ללוח וחלונית.
 - ההחלפה בפועל (שה־א׳ יהיה ברירת המחדל) היא משימה נפרדת, אחרונה, וטעונה אישור שלך. אחריה העיצוב הישן נשאר זמן קצר, ואז נמחק.
@@ -91,6 +97,11 @@ Failure modes the owner's request implies but no feature list names (each gets a
 9. **כמה זמן להשאיר את הישן אחרי המעבר** (עם `?design=classic` כדרך חזרה) לפני שמוחקים אותו. *המלצה:* שבועיים.
 10. **תאריך.** יש תקופה שאסור להחליף בה את האתר (תחילת הרשמה)? *המלצה:* להחליף רק מחוץ לה.
 11. **שיפור מערכת: כלים נוספים.** להוסיף ללשונית השיפור גם "מה חשוב לי" ו"להוציא" כמו בדוגמה? זה יכולת חדשה (ייצוא של המערכת המשופרת), לא העברה של משהו קיים. *המלצה:* לא עכשיו. קודם המעבר, אחר כך יכולות חדשות.
+12. **הדפסה: סיכום ליועץ.** זה נייר, בשחור על לבן. *המלצה:* להשאיר מסמך פשוט בשחור־לבן (כך מדפיסים וכך יועצים קוראים), אבל עם אותן כותרות וגופן של א׳. המסך עצמו (התצוגה המקדימה בחלונית) יהיה בסגנון א׳.
+13. **מפה ועורך החברים כחלונות מסך מלא.** הם גדולים מדי לחלונית בצד או לגיליון. *המלצה:* להשאיר אותם מסך מלא, בסגנון א׳ (כותרת, כפתורים, צבעים), עם כפתור סגירה ברור.
+14. **עמוד התנאים והפרטיות.** הוא עמוד נפרד עם טקסט ארוך. *המלצה:* עמוד קריאה פשוט עם הכותרת העליונה של א׳ וקישור "חזרה ללוח", בלי חלוניות.
+15. **סמל האתר, תמונת התצוגה המקדימה בווטסאפ וצבע שורת הדפדפן.** הם היום בצבעי האתר הישן. *המלצה:* להתאים אותם לצבעי א׳ ביום המעבר (משימה 11), כדי שגם קישור משותף ייראה כמו האתר החדש. מאשר שינוי של הסמל והתמונה?
+16. **חלונית פרטי השיעור.** במחשב היא צפה ליד השיעור, בטלפון גיליון מלמטה. א׳ בדוגמה הראה אותה כגיליון גם במחשב. *המלצה:* להשאיר כמו היום (צפה במחשב), בסגנון א׳.
 
 </div>
 
@@ -278,9 +289,10 @@ Size: **S** half a session of work, **M** one, **L** two or more. "Behind switch
 | 9 | Dialogs, map, friend editor, legal page; compatibility spec | yes | M |
 | 10 | Whole-app verification, both designs; iPhone checklist | yes | S |
 | 11 | The flip: A is the default; docs, screenshots, `og.png` | no, needs the owner's OK | M |
-| 12 | Delete classic | no, after the grace period | S |
+| 12 | Delete classic: old CSS, markup, code paths and the switch | no, after the grace period | M |
+| 13 | Proof of full replacement: manifest of section 9, sweep, palette audit, unused-CSS and old-markup checks, one screenshot per item | n/a, final gate | M |
 
-Merge to `main` in at most four pushes (section 7): Tasks 0-1; 2-6; 7-10; 11 (then 12 later). Each task is reviewed on its own commit(s) before it merges locally.
+Merge to `main` in at most four pushes (section 7): Tasks 0-1; 2-6; 7-10; 11 (then 12 and 13 later). Each task is reviewed on its own commit(s) before it merges locally.
 
 ---
 
@@ -390,13 +402,13 @@ Merge to `main` in at most four pushes (section 7): Tasks 0-1; 2-6; 7-10; 11 (th
 ### Task 6: First run, links and the tour
 
 **Files:**
-- Modify: `web/ui-me.js` (terms card skin hooks only), `web/tour.js` (A stops), `web/ui-actions.js` (`tour`: close ☰ and await it, then start with a stable return-focus target), `web/ui-view.js` (the "what first" card when there is no result; the plans-tour call), `web/design-a.css`, `web/ui-shell.js`
+- Modify: `web/ui-text.js` (`toolName(key): string`, "שלב 3" in classic and "מה חשוב לי" under A) and the 17 copy sites of section 9.10 (rows Y01-Y17; the ones marked removed are hidden under A and deleted in Task 12), `web/ui-me.js` (terms card skin hooks only), `web/tour.js` (A stops), `web/ui-actions.js` (`tour`: close ☰ and await it, then start with a stable return-focus target), `web/ui-view.js` (the "what first" card when there is no result; the plans-tour call), `web/design-a.css`, `web/ui-shell.js`
 - Test: `shell-a.spec.mjs`, `tour.spec.mjs` under `DESIGN=a`
 
 **Interfaces:**
 - Produces: `TOUR_INTRO_A`, `TOUR_PLANS_A` (stops on `.modes`, `.dock`, `#week`, `.altbar`), chosen by `designOn()`; same parts `intro` and `plans`. Sequencing rule: the plans tour starts only when the intro was done or skipped **and** no panel is open (an always-visible board must not start it behind the record panel).
 
-- [ ] **Step 1:** Failing tests: `first visit shows the terms card over an empty board, then the track question, then the year question, one per screen`; `a friend link on a first visit shows no mode question and, after the terms, the friend banner above the board` (Review Focus 2); `a backup link runs after the terms and lands on the board`; `an empty #f= and an empty #b= do nothing and break nothing`; `the intro tour has no stop on a hidden element`; `the plans tour waits until the intro is done and no panel is open`; `the tour replays from ☰ after the menu has closed, and focus returns to a visible element`; `the "what first" card disappears after the first result`.
+- [ ] **Step 1:** Failing tests: `first visit shows the terms card over an empty board, then the track question, then the year question, one per screen`; `a friend link on a first visit shows no mode question and, after the terms, the friend banner above the board` (Review Focus 2); `a backup link runs after the terms and lands on the board`; `an empty #f= and an empty #b= do nothing and break nothing`; `the intro tour has no stop on a hidden element`; `the plans tour waits until the intro is done and no panel is open`; `the tour replays from ☰ after the menu has closed, and focus returns to a visible element`; `the "what first" card disappears after the first result`; `no visible string under A says "שלב N", "צעד N" or "הבא:"` (the 17 copy rows).
 - [ ] **Step 2-4:** Red, implement, green. **Step 5:** Commit: `feat(design): A first run, link landings and tour`.
 
 ### Task 7: Improve mode, stage 1 (the edit page inside the frame)
@@ -440,13 +452,48 @@ Merge to `main` in at most four pushes (section 7): Tasks 0-1; 2-6; 7-10; 11 (th
 ### Task 11: The flip (needs the owner's OK)
 
 **Files:**
-- Modify: `web/index.html` (frame baked in), `web/design.js` (default becomes A; `?design=classic` stays), `test/browser/helpers.mjs` (default design is A), the specs that still assume the step bar (`flows.spec.mjs` step-bar assertions at lines 119, 356-358, 501-510; `tour.spec.mjs:204`) per the inventory, `scripts/readme-shots.mjs` (the build-or-edit choice shot disappears; add a tabs shot), `README.md`, `docs/GUIDE.md`, `docs/media/**` (regenerated), `design-system/afeka-scheduler/og.html` and `web/og.png`, `legal.html#accessibility` and `docs/ACCESSIBILITY-*.md` (re-audit statement), `docs/ARCHITECTURE.md`
+- Modify: `web/index.html` (frame baked in), `web/design.js` (default becomes A; `?design=classic` stays), `test/browser/helpers.mjs` (default design is A), the specs that still assume the step bar (`flows.spec.mjs` step-bar assertions at lines 119, 356-358, 501-510; `tour.spec.mjs:204`) per the inventory, `scripts/readme-shots.mjs` (the build-or-edit choice shot disappears; add a tabs shot), `README.md`, `docs/GUIDE.md`, `docs/media/**` (regenerated), `design-system/afeka-scheduler/og.html` and `web/og.png`, **`web/icon.svg`** (literal blue and white), **the brand-mark pseudo-element in `web/style.css:306`**, **`web/theme.js:17`** (the two `theme-color` values), `web/legal.html` (accessibility statement: rows Y18-Y20 and the screen list), `docs/ACCESSIBILITY-*.md` (re-audit statement), `docs/ARCHITECTURE.md`
 
-- [ ] Order: tests first (default flipped, all specs green in WebKit and Chromium locally), then docs and images, then one push. From here CI runs everything in A; classic keeps `design-switch` and a small smoke subset until Task 12. Add the `shell` tour part ("what's new", three stops) for returning visitors if question 7 is yes.
+- [ ] Order: tests first (default flipped, all specs green in WebKit and Chromium locally), then docs and images, then one push. From here CI runs everything in A; classic keeps `design-switch` and a small smoke subset until Task 12. Add the `shell` tour part ("what's new", three stops) for returning visitors if question 7 is yes. The brand files are checked by eye (their pixels are not in the DOM): favicon, header mark, `og.png`, and the browser colour in light and dark.
 
 ### Task 12: Delete classic (after the grace period)
 
-- [ ] Remove the classic CSS and the step-bar markup and code paths (`.steps`, `renderModeChoice`, the `designOn()` guards, `PAGE` indirection if now unused), the `?design=classic` path and the `-design` key's reader; run the whole suite and `test/line-length.test.mjs`.
+**Files:** `web/style.css`, `web/map.css`, `web/design-a.css`, `web/index.html`, `web/legal.html`, `web/app.js`, `web/ui-actions.js`, `web/ui-grid.js`, `web/ui-plan.js`, `web/ui-mode.js`, `web/ui-*.js`, `web/tour.js`, `web/theme.js`, `web/design.js`, `test/browser/*.spec.mjs`
+
+- [ ] **Step 1: Migrate what the old attributes still carry.** `body[data-view]` is not only presentation: it decides whether a lesson opens the edit menu (`ui-actions.js:194`), detects leaving the edit route (`ui-plan.js:97`), supplies the report-mistake context (`ui-grid.js:387`) and restores the route after a cancelled backup restore (`app.js:791`). Replace it with `body.dataset.mode` and `body.dataset.tool` (set by `ui-shell.js`) in all four consumers **before** anything is deleted; then only the **step anchors** (`a[data-view]`) are banned, not the body attribute's role.
+- [ ] **Step 2: Delete, do not hide, with a disposition for each remnant.** Remove from the code, not only from the cascade:
+  - the step bar (`nav.steps`, step anchors with `data-view`, the `.n` badges, `.steps a.done`), the mode tiles (`renderModeChoice`, `.tiles.modes`, `needsModeChoice`), the old ☰ mode links (`.mode-menu`, `.mode-link`, their handler `ACT.mode`, `modeOpen`, `EXPLICIT` in `ui-mode.js:23, 40`), the edit page's mode label and its CSS, the `.actions` header row, the footer block;
+  - the **builder pages'** `.me-step` and `.me-foot` "next" buttons only (`#me`, `#courses`, `#prefs`; the edit page's own foot controls stay with A labels);
+  - the old page layout rules that keep matching while overridden: fragment-scroll compensation, the desktop profile columns and the sticky sidebar (`style.css:1584, 1607, 1673`), and the 18 body-state rules of section 1, **each with a disposition**: *delete* the docked-drawer layout rules (`body.drawer-open` header reshaping, `style.css:1239-1250, 979`), *replace before deleting* the scroll-lock and scrim rules the retained surfaces still need (`body.pop-open` for the phone lesson sheet, `body:has(.drawer.modal[open])`, the ☰ menu's narrow-screen lock, `style.css:1332, 1337, 1705`), *rewrite* `body.touring` and `body.gated` as A rules with a named purpose;
+  - `toolName()` and every `designOn()` guard, `PAGE`'s one-page rule, the `?design=` parameter, `design.js`, the `afeka-sched-v1-design` key and its reader, `legal.html`'s inline `<style>`.
+- [ ] **Step 3: Fold.** Move the surviving A rules out of the `:root[data-design="a"]` scope into plain selectors in `style.css` and `map.css` (one stylesheet per concern; `design-a.css` is deleted), and delete the scope test.
+- [ ] **Step 4:** Run the whole browser suite in the three engines (the default design is now the only one), the unit tests on Node 24 and `test/line-length.test.mjs`. Expected: green, with `design-switch.spec.mjs` and the classic-only assertions of the Task 0 inventory deleted.
+- [ ] **Step 5:** Commit: `refactor(design): remove classic and fold A into the base styles`.
+
+### Task 13: Proof of full replacement (the final gate)
+
+**Files:**
+- Create: `test/browser/inventory.mjs` (the manifest), `test/browser/replacement.sweep.mjs` (the sweep), `test/inventory-sync.test.mjs`, `test/old-markup.test.mjs`, `scripts/css-unused.mjs`, `test/browser/css-unused.allow.json`
+- Modify: `test/browser/run.mjs` (a `--sweep` argument that selects `*.sweep.mjs` instead of `*.spec.mjs`; without it the sweep is never discovered, so CI never runs it), `test/browser/helpers.mjs` (fixture options below), `package.json` (`"test:sweep": "node test/browser/run.mjs --sweep"`, `"check:css": "node scripts/css-unused.mjs"`)
+
+**Interfaces:**
+- Produces: `INVENTORY: Array<{ id: string, scenario: string, area: string, kind: 'screen'|'state'|'dialog'|'toast'|'route'|'print'|'page'|'absent'|'browser-owned', open: (page, ctx) => Promise<void>, expect?: (page) => Promise<void> }>`. **One entry per scenario** (section 9.12): the 177 row ids of section 9, and for the rows that hold exclusive states the `<row>.<letter>` scenarios. `ctx` carries the seed (`DONE`, `STUDENT` and the frozen data from `test/fixtures/real`) and forced-state helpers (`forceSlowSearch`, `forceNoResult`, `forceSearchError`, `forceLoadFailure`, `forceLinkError(kind)`, `forceSavedProgramRemoved`, `forceStorageBlocked`).
+- `visit()` (Task 0) gains the fixture options the sweep needs, because today it rejects every clipboard write, marks both tours seen, seeds storage and stubs `print` (`helpers.mjs:66, 90-97`): `{ clipboard: 'fail' | 'ok', tour: 'seen' | 'fresh', storage: 'seeded' | 'blocked-before-init', print: 'stub' | 'real' }`.
+- An `absent` entry (rows marked removed: B02, M12, K05, W09, E11's labels, the Y rows marked removed) asserts the **exact** obsolete wrapper or text is missing, never a broad selector; a retained control (the theme button, the tour replay, the edit page's feet, `.me-foot` on the edit page) has its own positive scenario.
+
+- [ ] **Step 1: Write the failing tests.**
+  - `inventory-sync.test.mjs` → `every row id and every <row>.<letter> scenario of section 9 of this plan has an entry in INVENTORY, and every entry names a row or scenario` (it parses the tables and the 9.12 tokens of the plan file; plan and manifest stay one list).
+  - `old-markup.test.mjs` → `no removed id, class, function or string is left in web/`: the Step 2 list of Task 12 (scoped: `#me .me-foot`, `#courses .me-foot`, `#prefs .me-foot`, never `.me-foot` globally; `a[data-view]`, not the body attribute), `designOn`, `toolName`, `?design`, `data-design`, `afeka-sched-v1-design`, `.mode-menu`, `.mode-link`; and a scan of all strings in `web/*.js` and `web/*.html` for `שלב [0-9]`, `צעד [0-9]`, `הבא:`, `ארבעה שלבים`, `ארבעת השלבים`, `שלבים 1 עד 4`, `סרגל השלבים`, `לשונית לכל שלב`.
+  - `replacement.sweep.mjs` → for **every** non-absent, non-browser-owned scenario, at 375 and 1280, light and dark (WebKit; a Chromium run adds CSS coverage), with the forced-state recipe of 9.12: (a) `open` reaches the scenario; (b) **painted-colour audit** (below); (c) **component appearance assertions** (below); (d) no horizontal overflow and `axe` clean; (e) **tap targets** (below); (f) one screenshot, `.superpowers/sessions/design-a/proof/<scenario>-<width>-<theme>.png`.
+  - Routes: R01-R13 by URL in each mode they belong to (a hash decides the mode; the record opened over improve mode is a separate in-memory overlay scenario, not a URL); unknown hashes and a direct `#week`; backup links with and without saved state; `legal.html` and each of its five sections by URL; the link-error and recovery sources of C08 selectively failed (9.12), not only the fatal loader.
+  - **Print:** call the advisor print action with `window.print` stubbed (`print: 'stub'`), assert `#print` is populated and `html.print-summary` is set, then `page.emulateMedia({ media: 'print' })` and assert only `#print` is visible; the multi-page check uses Chromium `page.pdf()` (O05.d). Opening the advisor panel alone does not fill `#print`, so emulation without the action proves nothing.
+- [ ] **Painted-colour audit (definition).** Normalize computed colours (alpha included) and check only **painted** values: `color` of elements with text, `background-color` and `background-image` gradients (their stops), `border-*-color` only where the width is above 0 and the style is not `none`, `outline-color`, `box-shadow` colours, SVG `fill` and `stroke`, and `::before` / `::after` content boxes. Allowed: the A token values of that theme, the course tint set, `transparent`, tokens through `currentColor`, and these explicit exceptions: imported-file thumbnails and the OCR canvas (document colours, white page), the tour's dimming overlay (configured in `tour.js`), print (black on white), the brand pixels of `icon.svg` and `og.png` (checked by eye). Browser-owned controls (9.13) are skipped.
+- [ ] **Component appearance assertions.** A colour audit alone passes a dialog with an old radius. For each component family (`.btn`, `.dlg`, `.drawer`, `.pop`, `.toast`, `.dock`, `.me-card`, `.fe`, `.pmap`, `.banner`, `.notice`, `.msg`, `.tile`, the week `.blk`) assert the computed `border-radius`, `border-width`, `box-shadow` and `font-family` equal the A tokens' values. The proof also requires a **human visual review** of the per-area contact sheets by the manager or the owner; the report says so.
+- [ ] **Tap-target definition.** Measure the effective clickable surface: for a checkbox or radio, its `<label>` (or the label-wrapped box), not the raw input; under `pointer:coarse` emulation (`hasTouch`), where `--tap` is 44px. Desktop's `--tap:36px` under `pointer:fine` (`style.css:149`) is intentional and is not asserted at 44. The map's zoom-scaled SVG hit circles (`map-render.js:131`, `ui-map.js:261`) are excluded from the 44px rule because the list view is their accessible equal; X14.l checks that the list view is reachable. Any CSS or map change needed to meet 44px on the other surfaces is budgeted inside Tasks 3 and 9.
+- [ ] **Step 2:** Run the sweep. Expected: FAIL on whatever is still in the old style (a missing manifest entry, a grey that is not an A token, a dialog on the old radius). Fix each in the stylesheet or the renderer, not in the test.
+- [ ] **Step 3: Unused CSS (a report, not an oracle).** `scripts/css-unused.mjs` runs the sweep in Chromium with `page.coverage.startCSSCoverage()`, **aggregated across all navigations**, at widths 320 / 359 / 374 / 599 / 759 / 1079 / 1080 / 1280, with print, reduced-motion and landscape emulations and forced `:hover`, `:focus-visible`, `:active` and `:disabled` states (CDP `CSS.forcePseudoState`) on the component families. It classifies rule families first: element rules, `@media` rules by condition, `@font-face` and `@keyframes` (matched by use, not by selector), and documented browser fallbacks (the Safari popover polyfill selectors, `style.css:1714`), which Chromium can never match. Each unmatched rule is deleted or named in `css-unused.allow.json` with a reason. Coverage cannot show that a **matched but overridden** classic rule was removed: that is the job of Task 12's disposition list and `old-markup.test.mjs`.
+- [ ] **Step 4: Proof.** Write `.superpowers/sessions/design-a/proof/INDEX.md` (private): one row per scenario with its screenshot names and the check results; a contact sheet per area (`montage`). The report to the manager carries the counts: rows, scenarios, screenshots, painted-colour violations (0), component-appearance violations (0), unused rules (0 beyond the allowlist), absent items proven absent, strings left (0), browser-owned surfaces listed (9.13).
+- [ ] **Step 5:** Commit the manifest, the tests, the runner change and the allowlist: `test: prove that every screen of the site is in the A look`.
 
 ## 6. Tests
 
@@ -455,6 +502,7 @@ Merge to `main` in at most four pushes (section 7): Tasks 0-1; 2-6; 7-10; 11 (th
 **New:**
 - Unit: `design-a-css.test.mjs` (scope guard), `design-contrast.test.mjs` (token pairs, both themes), `shell-panels.test.mjs` (route to tool mapping, empty and wildcard cases).
 - Browser (each passes `{ design: 'a' }` explicitly, so CI runs them as written): `design-switch.spec.mjs`, `shell-a.spec.mjs`, `a11y-a.spec.mjs` (axe, overflow, 44px, focus ring; every tool and dialog; 320 / 375 / 1280 and landscape; light and dark), `edit-a.spec.mjs`, `compat-a.spec.mjs`.
+- Final gate (Task 13): `inventory-sync.test.mjs` and `old-markup.test.mjs` (unit, in `npm test`), `replacement.sweep.mjs` (WebKit, plus a Chromium run for CSS coverage; local, `npm run test:sweep`) and `scripts/css-unused.mjs` (`npm run check:css`). The sweep is a one-time proof and a repeatable check, not part of CI.
 - Parameterized, not duplicated: the 8 edit specs, `tour.spec.mjs`, the advisor tests of `flows.spec.mjs` and `pdf.spec.mjs` re-run locally with `DESIGN=a` before the flip (CI cannot run them under A before Task 11 without a second invocation; adding one is a minutes decision, section 7).
 
 **Keyboard and motion:** Tab order (top bar, board bar, dock, panel); Escape closes a phone sheet and returns focus to its opener; arrow keys switch alternatives in build mode only; visible focus ring in both themes; `prefers-reduced-motion` removes the sheet slide (`visit()` sets `reducedMotion: 'reduce'`; one spec turns it on to check the animation is only under `no-preference`).
@@ -465,7 +513,7 @@ Merge to `main` in at most four pushes (section 7): Tasks 0-1; 2-6; 7-10; 11 (th
 
 - #46 ("החלטה: דקות ה-CI של הריצה הלילית") is the **GitLab nightly scrape** (400 min/month, about 510 needed). UI work does not touch `ci/` or the scraper, so it adds nothing there.
 - The browser checks run on **GitHub Actions** (`.github/workflows/browser.yml`): on every push to `main` that touches `web/**`, `test/browser/**` or `test/fixtures/real/**`, as three parallel jobs (webkit, chromium, firefox). The last six runs took 6 to 12 minutes each, so one push is roughly 20 to 35 job-minutes. Actions on this public repository are not metered, but each failure mails the owner.
-- Plan: **at most four pushes** (Tasks 0-1; 2-6; 7-10; 11), everything behind the switch until the last, each verified locally first. The A specs stay small (each under about three minutes) and set their design explicitly. Until the flip CI tests classic plus the A-only specs; the reruns of existing specs under A are local. If the owner wants those reruns in CI too, that is a second `run.mjs` invocation per engine (roughly doubling the browser minutes for those pushes) and a `browser.yml` edit, not part of this plan unless asked.
+- Plan: **at most five pushes** (Tasks 0-1; 2-6; 7-10; 11; 12-13 together after the grace period), everything behind the switch until the flip, each verified locally first. The Task 13 sweep (about 170 items × 4 combinations) runs only locally: its `.sweep.mjs` suffix keeps it out of `run.mjs` discovery and out of CI. The A specs stay small (each under about three minutes) and set their design explicitly. Until the flip CI tests classic plus the A-only specs; the reruns of existing specs under A are local. If the owner wants those reruns in CI too, that is a second `run.mjs` invocation per engine (roughly doubling the browser minutes for those pushes) and a `browser.yml` edit, not part of this plan unless asked.
 
 ## 8. Engineering risks and open questions
 
@@ -479,13 +527,290 @@ Merge to `main` in at most four pushes (section 7): Tasks 0-1; 2-6; 7-10; 11 (th
 8. **Body-state CSS.** The 18 `body[data-view]` / `body.gated` / `body.drawer-open` / `body.touring` / `body.pop-open` rules silently win over A rules of lower specificity. Each gets an explicit A override and the specs assert the visible result on every view.
 9. **Prototype lives on one local, unpushed branch** (`d43018d`). Losing it loses A and B. A backup is the manager's and the owner's call; this plan merges and pushes nothing.
 10. **Two designs during the grace period.** Every fix lands twice in CSS until Task 12; the scope test and the parameterized specs keep them honest.
-11. **The tests are the biggest cost.** The inventory (Task 0) may show that many more assertions than the 8 step-bar lines encode the old layout; its size decides the real effort of Tasks 7 and 11.
+11. **A state with no recipe.** Some rows of section 9 are hard to reach (a stale proposal, a broken backup link, a failed share). Each needs a forced-state recipe in the manifest; a row with no recipe fails the sweep and is fixed, not skipped.
+12. **The palette audit can be too strict or too loose.** Course tints, the dimmed tour page and print are special cases; the allowed set is written once, in the sweep, and reviewed with the first run.
+13. **The tests are the biggest cost.** The inventory (Task 0) may show that many more assertions than the 8 step-bar lines encode the old layout; its size decides the real effort of Tasks 7 and 11 (and, with the 177-row manifest, of Task 13).
+
+## 9. Full-replacement inventory (checklist)
+
+The owner's instruction (2026-11-21, verbatim): "אני רוצה החלפה מלאה על כל מסכי האתר לא לפספס כלום". This section is the checklist that makes it checkable. It was taken from the code at `cfd184a` (`web/*.html`, `web/*.js`, `web/style.css`, `web/map.css`), not from memory. **Every row gets a new A screen, panel, dialog or style before Task 13 can pass, and every row is one screenshot in the proof (a row marked removed is proven absent instead).** A row's id is its key in the Task 13 manifest (`test/browser/inventory.mjs`). A row whose destination has no natural place in A carries a question number (Q1, Q2, Q8 and Q11 to Q16 in the owner summary) and is still built, in the way the recommendation says.
+
+Legend of destinations: **board** = the always-visible week; **tool: X** = the panel for tool X (phone sheet / wide column); **dialog** = a modal `<dialog>`; **strip** = the status strip under the top bar; **page** = a standalone page (`legal.html`). "Restyle" = the live renderer is reused and only the A CSS changes; "new" = new A markup.
+
+### 9.1 Documents, routes, titles, brand
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| D01 | `index.html`, the one app page (header, step bar, `#notice`, `#layout`, four pages, `.scrim`, footer, `#print`, `#drawer`, `#friendEd`, `#pop`, `#toast`) | New frame (Task 2, baked in at Task 11) |
+| D02 | `legal.html`, the one other page: title, `#terms`, `#scope`, `#privacy`, `#accessibility`, `#contact`, its inline `<style>`, its in-page nav, "חזרה" link to `./`, updated line | **page**: A palette, type and top bar through `design.js` and `design-a.css`; its inline `<style>` block is removed (Q14 on its header) |
+| D03 | Document titles: `PAGE_NAME` (`ui-text.js:321`), the gate title "התחלה" (`ui-plan.js:36`), the legal title | Same strings, no step numbers in them |
+| D04 | Brand assets: `icon.svg` (favicon and header mark), `og.png` and the `og:*` meta, `meta theme-color` values written by `theme.js` (`#FFFFFF`, `#0F1627`), `color-scheme`, Rubik preload | Recoloured to the A palette at Task 11, files named: `icon.svg` (literal blue and white), the brand-mark pseudo-element in `style.css:306`, the two `theme-color` values in `theme.js:17`, `og.png`. Their pixels are checked by eye in the proof (a DOM audit cannot read them). Q15 |
+| R01 | Route `''` / `#` (plans) | board; wide: tool `courses` or `me` |
+| R02 | `#me` | tool `me` |
+| R03 | `#courses` | tool `courses` |
+| R04 | `#prefs` | tool `wishes` (+ link chip to friends) |
+| R05 | `#friends` (new) | tool `friends` |
+| R06 | `#out` (new) | tool `out` |
+| R07 | `#edit` | improve mode, edit step 1 |
+| R08 | `#edit/changes` | improve mode, edit step 2 (+ its fallbacks) |
+| R09 | `#edit/<other>` | improve mode, edit step 1 |
+| R10 | `#f=<payload>` | board + friend banner (G05) |
+| R11 | `#b=<payload>` | backup-restore dialog (X05) **when saved state exists**; with none it restores at once (`app.js:783`); then the board |
+| R12 | empty `#f=` / `#b=` | board (plans), nothing read |
+| R13 | Any other hash, including a direct `#week` (the skip link `href="#week"` is intercepted by `data-act="skip"`, `app.js:583`, `ui-actions.js:167`) | board (plans) |
+
+### 9.2 First visit, gate and tour
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| B01 | Terms gate (`termsHtml` at `ui-me.js:184`, called from `gateHtml` at `:194`; tick `termsTick`; `acceptTerms`) | Terms card over the empty ghost board |
+| B02 | Mode choice, two tiles (`renderModeChoice`, `ui-mode.js:31`) | **Replaced** by the two top tabs; no screen remains (decision 2026-11-09 superseded) |
+| B03 | Track question: intro line, "שאלה 1 מתוך 2", program tiles (`gateHtml`) | tool `me`, one question per screen, one column |
+| B04 | Year question: "מסלול: …" + "שינוי", year tiles, hint (`gateHtml`) | same |
+| B05 | Entry screen: "איך מסמנים מה עברתם?", import or manual (predicate `entryScreen` at `ui-me.js:223`, renderer branch at `:313`) | tool `me`, first visit |
+| B06 | Edit-route gate: terms only, identity asked inside the edit loader (`#editIdentity`) | improve mode, same behaviour |
+| B07 | A backup link waiting for the terms (`app.pendingBackup`, `applyPendingBackup`) | same, after B01 |
+| B08 | Tour "intro": 8 stops (`TOUR_INTRO`) | New stops on tabs, dock, board bar, ☰ (Task 6) |
+| B09 | Tour "plans": 4 stops (`TOUR_PLANS`) | New stops (Task 6) |
+| B10 | Tour popover (Driver.js, `vendor/driver/driver.css` + `style.css` restyle), progress text, buttons, the dimmed page | Restyled with A tokens (the vendor files are not edited) |
+| B11 | Tour replay button `#tourBtn` and its hidden-while-gated rule | ☰ item |
+| B12 | Retake-note dialog, once per failed course (`retakeNote`, `ui-plan.js:56`) | dialog X06 |
+| B13 | Loading skeleton `SKELETON` (`app.js:587`) | board skeleton in A |
+| B14 | Load-failed message with "נסה שוב" in `week`, `me`, `side`, `prefs`, `edit` (`app.js:708`) | board error state; dock locked; new containers covered |
+| B15 | Cohort without data: "אין עדיין נתונים למחזור…" (`ui-me.js:177`) and the substitute-cohort note | tool `me` |
+| B16 | `firstVisit` redirect to `#me` (`ui-plan.js:22`) | same, opens tool `me` |
+
+### 9.3 Chrome that is always there
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| C01 | Skip link "דלג לתוכן הראשי" | Skip link to the board |
+| C02 | Top bar: `#title` with semester, year, program; `#meta` freshness and approval line | Top bar brand line + strip |
+| C03 | Alternative switcher `#switcher` (`#prev`, `#altLabel`, `#next`) | Board bar |
+| C04 | ☰ button and its modal side sheet (`menuPanel`) | ☰ sheet: info, map, tour, theme, erase |
+| C05 | `.actions`: map, registration list, advisor summary, share | Map: tool `me` + ☰ + board toolbar; registration and advisor: tool `out`; share: board toolbar |
+| C06 | Step bar: four numbered anchors, current / done states, `#tourBtn`, `.theme-btn` | **Removed:** the step anchors, number badges and "done" state. **Retained and relocated:** the theme button (top bar) and the tour replay (☰). Replaced by the dock (phone) / tool tabs (wide) (Q1 on the order) |
+| C07 | `#notice`: remote notice, failed save (+ backup button), other tab (+ reload) | strip under the top bar |
+| C08 | `#banner`: hash error (+ dismiss), turn warning, vanished pin (+ remove), friend landing (+ add, not now) | banners above the board |
+| C09 | Footer: disclaimer, legal links, report link, counselling link (`site-foot`) | strip line + tool `info` (Q8) |
+| C10 | Toast `#toast` (`role=status`) and its 26 call sites (9.9) | A toast above the dock |
+| C11 | Scrim for the drawer and the sheets | A scrim |
+| C12 | `#print` section and `@media print` (advisor summary) | print view (Q12) |
+| C13 | Live regions `#live`, `#gradeMsg`, `.pm-live`, `aria-live` notes | unchanged; kept in the A frame |
+| C14 | Focus ring, hover, pressed and disabled states, `::backdrop`, `prefers-reduced-motion` rules | A tokens and rules |
+
+### 9.4 My record (build mode, tool `me`)
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| M01 | Profile card: program, track, year, start year (`identityPick`, failed change + retry via `switchTo`) | restyle |
+| M02 | English level (`amirnet`), registration turn (`turnPick`), summer checkbox | restyle |
+| M03 | Specialization form (`specForm`, `specMode`, `specPick`) | restyle |
+| M04 | Outside-program courses list (`outsideDone`, `outsideBox`) | restyle |
+| M05 | Conflict and approval notes (`conflictsFor`, `approvedText`, unverified line) | restyle |
+| M06 | Progress card: bar with 70% mark, goal line, degree checklist (`checklist`), average line | restyle |
+| M07 | Record warnings (`regWarnHtml`, `renderRecordRegWarnings`) | restyle |
+| M08 | Grade-sheet import button + status line (`gradeImport`, `#gradeMsg`) | restyle |
+| M09 | Years: per-year heading, "all of year X" button, course chips with passed / failed / grade / fail count / earlier failure (`yearPassed`, `status`, `grade`, `failCount`, `failedBefore`) | restyle |
+| M10 | "שנים מתקדמות וקורסים נוספים" and "התמחויות אחרות" collapsed sections (`details`) | restyle |
+| M11 | "הנתונים שלי": privacy link, erase button | restyle |
+| M12 | The "step line" and the foot button "הבא: קורסים" (`me-step`, `statusDone`) | **removed** (section 2.5 item 1) |
+
+### 9.5 Courses, wishes, friends (build mode)
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| K01 | Courses page: heading, busy indicator, summary line (`coursesSummary`) | tool `courses` |
+| K02 | Course cards: status radios, semester pick, credits, unlock count, eligibility reasons (`renderSide`) | restyle |
+| K03 | Locked sections: blocked, not offered, exempt (English score), English levels (`details`) | restyle |
+| K04 | Specialization course lists | restyle |
+| K05 | Foot "הבא: מה חשוב לי" | **removed** |
+| W01 | "תכנון": scope and load split | tool `wishes` |
+| W02 | Weights (4 levels × 6), "מה חשוב לך?" | restyle |
+| W03 | Days off (`dayOff`, `daypill`, `dayHard`), hours (`notBefore`, `notAfter`, `winHard`) | restyle |
+| W04 | Busy time rows, add, remove (`blk*`, max 12) | restyle |
+| W05 | "עוד אפשרויות": credit cap, max days, exams rule, full groups, split option | restyle |
+| W06 | Lecturer preferences (prefer / avoid chips; `lecturerDrop`) | restyle |
+| W07 | "נעיצות": count, clear all | restyle |
+| W08 | Reset button and the footer "העתק קישור גיבוי מלא" | restyle |
+| W09 | Foot "הבא: מערכות" | **removed** |
+| G01 | "הוספת חבר": link form (`addFriendForm`), error line | tool `friends` |
+| G02 | "החברים שלי": list, importance, show / hide, edit, remove, 20 max (`fw`, `factive`) | restyle |
+| G03 | "הקישור שלי": name, copy, share (`myName`, `share`, `shareOut`) | restyle |
+| G04 | Open the friend editor (`openFriendEditor`) | button |
+| G05 | Friend landing banner (`landingAdd`, `landingDrop`) | banner |
+
+### 9.6 The board (plans) and the lesson popover
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| P01 | Semester and scope controls (`#semtabs`, `bscope`, `sem`) | board bar |
+| P02 | Notes: semester fallback, summer note, "defaults changed" with `prefsOk` / `prefsUndo`, "only in ב" notes, missing-course note | board notes |
+| P03 | Sort select "הצג לפי" and its hint (`#showby`) | board bar |
+| P04 | Summary pills (`#pills`): credits, days, gaps, friends, exams | board bar |
+| P05 | Disclaimer line (`#disclaimer`) and the board note (`#boardNote`: freshness, rules unapproved, warned courses) | strip + board |
+| P06 | Day chips with "פנוי" (`#daysel`, `renderDaySelector`) | board (Q2 on one-day vs five-day) |
+| P07 | The week: day headers, hours, blocks (pin mark, friend badges with full-name and "+N" titles, repeat colour, short blocks), busy blocks, landscape full week (`renderWeek`; the full-group and split tags are not drawn on the block, they appear in the popover, the registration list and the notes) | board |
+| P08 | Alternative-1 comparison, unlock summary, left-out line (`compareAlts`, `leftOutText`) | board |
+| P09 | Cap preview with "החל תקרה…" (`capLine`, `capProbe`, `capApply`) | board |
+| P10 | Partial-search notice with "חפש עוד" (`more`) | board |
+| P11 | Outside-hours notice with its link | board |
+| P12 | State: computing (`#busy` "מחשב…") | board |
+| P13 | State: no courses chosen yet (with links to record and courses) | board |
+| P14 | State: no result, "החיפוש לא הספיק", diagnosis list, prerequisites line, actions (open wishes, clear pins) | board |
+| P15 | State: search error (`ui.runError`) | board |
+| P16 | Lesson popover `#pop`: header, pin, catalog link, full tag, lecturer, meetings, exams, friends, group number, report link, other groups, prefer / avoid (`openPop`; a bottom sheet up to 599px) | stays `#pop`, restyled (Q16) |
+| P17 | Vanished-pin and stale-pin banners | banner |
+| P18 | Alternatives column (new in A), mini weeks | new (Task 4) |
+| P19 | Share button (header) and share link copy / WhatsApp / "אין עדיין מערכת לשתף" | board toolbar + tool `friends` |
+
+### 9.7 Take-out (drawer panels) and the ☰ menu
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| O01 | Registration list panel: courses with groups, equivalents, backups, availability time, split approval notes, exams list, catalog links, copy | tool `out` |
+| O02 | Calendar `.ics` button and its states ("לא זמין" with reason) | tool `out` |
+| O03 | Backup link button (`backup`) | tool `out` + `wishes` foot |
+| O04 | Advisor summary panel: preview, copy, print, PDF button, PDF notes (preparing, failed, missing characters), the Google-app note | tool `out` |
+| O05 | Advisor print view `#print` and `@media print` | print view (Q12) |
+| O06 | Share-sheet and download flows (`advisorPdfAct`, `shareOut`) | same acts |
+| O07 | "עוד אין מערכת" empty panels | tool `out` empty state |
+| O08 | ☰ side sheet | ☰ sheet |
+
+### 9.8 Edit (improve) mode
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| E01 | Edit step 1, no schedule yet: head, identity question `#editIdentity`, ways to load (file, by hand), Yedion hint | improve mode |
+| E02 | Edit step 1, review rows "לבדיקה" (`reviewRowHtml`) | improve mode |
+| E03 | Edit step 1, loaded: "already registered" check, loaded line, "טעינה מחדש" details | improve mode |
+| E04 | Edit step 1, data changed: "המערכת נשמרה מול נתונים אחרים", snapshot, restore | improve mode |
+| E05 | Edit step 2, no baseline fallback to step 1 | improve mode |
+| E06 | Edit step 2: goals row (`goalsHtml`), pending changes with undo chips (`changesHtml`), split option | improve mode |
+| E07 | Edit step 2: blocked lines, parallel-course prompts (`parallelPrompts`, confirm X09) | improve mode |
+| E08 | Edit step 2: results: proposal switcher, gains and costs, changed / added / removed, "היה כאן" marks, seats note, save, copy changes, restore original | improve mode |
+| E09 | Edit step 2: no proposal, diagnosis, "אם X יזוז" offer, timeout note | improve mode |
+| E10 | Edit step 2: the week with marks, `#editDays`, lesson menu in `#pop` (`openLessonMenu`) | improve mode |
+| E11 | Edit mode label and the "step N of 2" lines | **removed** (2.5 items 2 and 6). The edit page's own foot controls ("הבא: שינויים", "חזרה לצעד 1", "חפש הצעות") are **retained with A labels** (Y04, Y06) and have positive scenarios |
+| E12 | Edit errors: `#edMsg`, `#edWaysMsg`, stale result message | improve mode |
+
+### 9.9 Dialogs, sheets and toasts
+
+**Modal dialogs.** The three generic types are `.dlg` confirm (`askConfirm`), `.dlg-rows` (`askRows`) and text (`showText`) in `ui-dialog.js`; the three large ones are `#drawer`, `#friendEd` and `#pmap`.
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| X01 | Confirm type (`askConfirm`) | dialog, A style |
+| X02 | Rows type, grade-import review (`askRows`, `ui-me.js:393`) | dialog |
+| X03 | Text type, "copy failed, copy by hand" (`showText`, `ui-common.js:192`) | dialog |
+| X04 | Erase-all confirm (`ui-actions.js:364`) | dialog |
+| X05 | Restore-backup confirm (`app.js:785`) | dialog |
+| X06 | Retake note (`ui-plan.js:61`) | dialog |
+| X07 | Reset-preferences confirm (`ui-actions.js:384`) | dialog |
+| X08 | Split-option warning (`ui-actions.js:618`) | dialog |
+| X09 | Remove parallel course (`ui-edit.js:606`) | dialog |
+| X10 | Friend duplicate: replace or add (`ui-actions.js:60`, `ui-friend-editor.js:583`) | dialog |
+| X11 | Close the friend editor without saving (`ui-friend-editor.js:598`) | dialog |
+| X12 | `#drawer` as a modal sheet (reg, advisor, ☰) | A sheet (tool `out`, ☰) |
+| X13 | `#friendEd`: header and name, tabs (groups, week), picker with semester, search and group list, import with text, file, status and the scan page picker (at most 12 pages per scan, chosen from up to 80 thumbnails), the week tab with overlap bar, errors, full-screen layout `dlg-full` | dialog, full screen (Q13) |
+| X14 | `#pmap`: header with credits, mode filters, zoom, fit, abbreviations, view switch, legend, alternative switcher, mini schedule, course card, list view, empty message, "טוען מפה…", failure notice (`ui-map.js`, `map-render.js`, `map.css`) | dialog, full screen (Q13) |
+
+**Toasts, 26 call sites** (the A toast sits above the dock; each message is one row):
+
+| Id | Live item (source) | In A |
+|---|---|---|
+| T01 | Friend add error text (`ui-actions.js:66`) | toast |
+| T02 | Friend added or replaced from a link (`addFriend`, `:73`) | toast |
+| T03 | Friend saved from the manual editor (`saveManualFriend`, `:81`) | toast |
+| T04 | "אין עדיין מערכת לשתף" from share (`:90`) | toast |
+| T05 | The same from share-out (`:96`) | toast |
+| T06 | Split-group pins undone (`:114`) | toast |
+| T07 | Lecturer preferred, avoided or cleared (`:236`) | toast |
+| T08 | Pin set or removed (`:262`) | toast |
+| T09 | Calendar file downloaded (`:275`) | toast |
+| T10 | Preferences reset (`:393`) | toast |
+| T11 | "לא לפני" must be earlier than "לא אחרי" (`:408`) | toast |
+| T12 | Program switch failed, nothing changed (`:442`) | toast |
+| T13 | Switched program and year (`:454`) | toast |
+| T14 | Course pins undone (`:490`) | toast |
+| T15 | Field error from a change handler (`:535`) | toast |
+| T16 | Summer added to the plan (`:565`) | toast |
+| T17 | Grade out of range (`:571`) | toast |
+| T18 | Advisor share failed (`ui-advisor-pdf.js:91`) | toast |
+| T19 | Advisor file downloaded (`ui-advisor-pdf.js:100`) | toast |
+| T20 | Copy done (`ui-common.js:190`) | toast |
+| T21 | Edit swap cancelled (`ui-edit.js:367`) | toast |
+| T22 | Proposal saved, two texts (`ui-edit.js:729`) | toast |
+| T23 | Original restored (`ui-edit.js:742`) | toast |
+| T24 | Grades updated, one or many (`ui-me.js:407`) | toast |
+| T25 | Search finished, variants (`ui-search.js:54`) | toast |
+| T26 | "הבדיקה לא הצליחה" (`ui-search.js:130`) | toast |
+
+### 9.10 Copy that names the old layout
+
+These 20 places say "שלב N", "צעד", "הבא:", "ארבעה שלבים", "שלבים 1 עד 4", "סרגל השלבים" or "לשונית לכל שלב" and must change with the layout. Under A they use the tool's name ("מה חשוב לי", "המצב שלי") through one helper, `toolName(key)`; classic keeps its wording until Task 12 removes the helper. Task 13 scans all strings for "שלב [0-9]", "צעד [0-9]", "הבא:" and "ארבעה שלבים" and fails on any left.
+
+| Id | Live string (source) | In A |
+|---|---|---|
+| Y01 | "ארבעה שלבים, מימין לשמאל…" tour stop (`tour.js:25`) | new stop text |
+| Y02 | "הבא: מערכות" foot of the wishes page (`ui-drawer.js:273`) | removed (W09) |
+| Y03 | "צעד 1 מתוך 2" (`ui-edit.js:76`) | removed |
+| Y04 | "הבא: שינויים" button (`ui-edit.js:99`) | A label (improve step control) |
+| Y05 | "צעד 2 מתוך 2" (`ui-edit.js:400`) | removed |
+| Y06 | "חזרה לצעד 1" (`ui-edit.js:407`) | A label ("חזרה למערכת שלי") |
+| Y07 | "חזרו לשלב 1" (`ui-edit.js:476`) | A text with the tool's name |
+| Y08 | "צעד ראשון: … ״הבא: קורסים״" (`ui-me.js:281`) | removed or the first-run card (Q1) |
+| Y09 | "צעד ראשון: סמנו מה כבר עברתם…" entry screen (`ui-me.js:314`) | A text |
+| Y10 | "הבא: קורסים" foot of the record page (`ui-me.js:344`) | removed (M12) |
+| Y11 | "ארבעה צעדים עד למערכת מוכנה" mode tile (`ui-mode.js:34`) | removed with the tile (B02) |
+| Y12 | "הפרטים בשלב 4" (`ui-side.js:161`) | A text with the tool's name |
+| Y13 | "פרטים בשלב 1" (`ui-view.js:116`) | A text with the tool's name |
+| Y14 | "בשלב 3" friends hint (`ui-view.js:287`) | A text with the tool's name |
+| Y15 | "…ב<a>שלב 2</a>" no-courses message (`ui-view.js:315`) | A text with the tool's name |
+| Y16 | Step bar labels "שלב 1" to "שלב 4" with number badges (`index.html:62-65`) | removed with the bar (C06) |
+| Y17 | "הבא: מה חשוב לי" foot of the courses page (`index.html:101`) | removed (K05) |
+| Y18 | "שלבים 1 עד 4" in the accessibility statement's list of screens (`legal.html:154`) | A text, in step with Task 11's accessibility update |
+| Y19 | "ארבעת השלבים" and "סרגל השלבים" in the keyboard paragraph (`legal.html:159`) | A text |
+| Y20 | "כותרת לשונית לכל שלב" (`legal.html:163`) | A text |
+
+### 9.11 Questions for the owner that come out of the inventory
+
+Already asked: Q1 (the numbered steps and their "done" marks: C06, B02, M12), Q2 (one-day phone week: P06), Q8 (footer links: C09), Q11 (the prototype's improve-mode extras). New from this inventory: **Q12** the print summary (C12, O05); **Q13** the map and the friend editor as full-screen dialogs (X13, X14); **Q14** the header of the legal page (D02); **Q15** the brand mark, `og.png` and the browser theme colour (D04); **Q16** the lesson popover (P16). Each has a recommendation in the Hebrew summary.
+
+### 9.12 Scenarios: rows that hold mutually exclusive states
+
+One row cannot mean one screenshot when it holds states that never show together (a map that is loading, loaded or failed; a PDF that is preparing, ready or failed). **The unit of proof is the scenario.** A row with no list below is one scenario, named by the row id. A row with a list is proven by *each* of its scenarios, named `<row>.<letter>` (for example `X14.f`), each with its own forced-state recipe, reachability assertion and screenshots. `inventory-sync.test.mjs` parses both the row ids and the `<row>.<letter>` tokens of this section, so the manifest follows this list. The recipes below come from the code at `cfd184a` (evidence cited by Codex pass 3); the implementer re-verifies each recipe against the code in Task 13 and adds any branch found missing.
+
+| Row | Scenarios |
+|---|---|
+| X14 map | **a** all courses, map; **b** "remaining" filter; **c** "my year" filter; **d** empty (everything passed: `ui-map.js:151`); **e** loading ("טוען מפה…", `:211`); **f** load failure, list view plus notice (`:245`); **g** list view by choice; **h** course card (prerequisites, unlocks, catalog link); **i** legend open; **j** specialization prompt link; **k** progress area: planned credits, remaining specialization credits, untracked-credit text (`map-render.js:260, 280`); **l** zoomed out to the minimum (hit-target budget); **m** mini schedule with its hover and tap caption; **n** abbreviations on; **o** node titles, focus ring, highlight and dim chains, selection ring |
+| O04 advisor (screen) | **a** summary ready; **b** PDF preparing; **c** PDF ready; **d** PDF failed (`ui-advisor-pdf.js:21`); **e** missing-characters note; **f** Google-app (no print button); **g** failed-course and missing-mandatory lists; **h** prerequisite warnings; **i** source conflicts; **j** annual missing courses; **k** split warnings; **l** close-exam warnings; **m** single, year and summer structures |
+| O05 print | **a** single semester; **b** year; **c** summer; **d** multi-page PDF (Chromium `page.pdf()`) |
+| O01 registration list | **a** single semester; **b** annual plan with a headed section per semester (`ui-drawer.js:162`); **c** an empty semester; **d** exams not published; **e** published, no exams; **f** published with a source note (`:242-250`); **g** equivalents and backups; **h** split tags; **i** availability time |
+| O02 / O03 calendar and backup | **a** `.ics` available; **b** `.ics` unavailable with its reason; **c** backup copied; **d** backup too long: the edited schedule is left out and the explanation is shown (`ui-actions.js:295, 302`); **e** copy failure then the text dialog |
+| X03 / T20 copy payloads | **a** a link; **b** registration text; **c** advisor text; **d** edit changes (`ui-edit.js:733`); **e** the oversized-backup explanation |
+| M03 specialization form | **a** nothing selected; **b** a standalone specialization; **c** one, two and three areas; **d** an incomplete persisted draft; **e** the remaining choices disabled; **f** unverified-rule notice (`ui-me.js:103-141`) |
+| M06 progress | **a** year one, no bar; **b** bar with the 70% mark; **c** checklist rows done; **d** enough credits but a mandatory specialization course missing; **e** untracked degree credits (`ui-me.js:146, 151, 305`) |
+| M08 / X02 grade import | **a** reading; **b** file too large or too many pages; **c** unreadable; **d** timed out; **e** no courses recognized; **f** rows skipped; **g** already up to date; **h** the profile changed before the review; **i** it changed after; **j** exemptions; **k** contradictory failures unchecked; **l** Apply disabled with nothing checked; **m** done, toast T24 (`grade-import.js:35, 182`, `ui-me.js:360-390`, `ui-dialog.js:114`) |
+| M09 / K03 English and outside alternatives | **a** automatically exempt, disabled record rows; **b** an unchecked outside alternative inside a course row (`ui-common.js:204`); **c** English: no score; **d** English: score present; **e** exempt courses (`ui-me.js:52, 77`, `ui-side.js:132, 155`) |
+| K01 / K02 / K04 courses | **a** empty "בתכנון"; **b** required-course rejection warning; **c** a dropped must-course explained; **d** conditional and retake badges; **e** summer-pinned courses; **f** single-semester availability; **g** the year-only semester picker; **h** a program with specializations (`ui-side.js:63-169`) |
+| P02 / P04 / P13 board messages | **a** adjacent-day and same-day exam warnings; **b** split-alternative warning and course line; **c** progress-rank pill; **d** annual-search caveat; **e** an empty displayed semester; **f** the specialization-specific "no courses" prompt (`ui-view.js:313-410`) |
+| G02 / G05 friends | **a** "עוד אין חברים"; **b** a friend with unknown groups; **c** a manual-only friend with its edit button; **d** landing: missing groups; **e** landing: another program; **f** saving a 21st friend is refused (`app.js:327`) |
+| X13 friend editor and edit loader | **a** new friend; **b** existing friend; **c** the edit-loader variant: title "המערכת שלי", no name field, summer allowed, unknown rows kept (`ui-friend-editor.js:27, 82, 357, 550`); **d** OCR progress; **e** unreadable image; **f** unreadable PDF; **g** PDF read timed out; **h** invalid xlsx; **i** ambiguous or weak matches; **j** already present or refused groups; **k** unknown courses explained (`ui-text.js:22`); **l** no groups found; **m** zero pages selected; **n** more than 12 pages selected; **o** overlap bar in the week tab |
+| E01-E12 edit mode | **E01.a** no schedule, load buttons; **E01.b** identity question open; **E02.a** review rows; **E03.a** loaded, "already registered"; **E03.b** "טעינה מחדש" open; **E04.a** data changed since saving; **E06.a** goals; **E06.b** pending changes with each undo chip (move, swap, add, remove); **E06.c** split option; **E07.a** blocked line; **E07.b** parallel-course prompt; **E08.a** the original with overlap warnings; **E08.b** proposals with the "היה כאן" marks; **E08.c** the original at proposal 0; **E08.d** seats note; **E09.a** no proposal, diagnosis; **E09.b** "אם X יזוז" offer; **E09.c** timeout; **E09.d** no goal or no movable course; **E09.e** a pinned overlap blocks the search; **E09.f** searching; **E09.g** worker failure; **E10.a** the week with marks; **E10.b** lesson menu in `#pop`: loading, empty, failure, other groups, split swap choices (`ui-edit.js:550-584`); **E10.c** "הראה את היום החדש"; **E12.a** `#edMsg` and `#edWaysMsg` errors; **E12.b** stale result (`ui-edit.js:244-492`) |
+| C08 / R10 / R11 link and recovery failures | **a** malformed link; **b** unsupported link; **c** link for another semester; **d** failed backup restore; **e** catalog missing; **f** the saved program was removed; **g** the saved cohort was removed or moved; **h** academic-year migration; **i** dismissing the error (`share.js:69-91`, `app.js:246-268, 737, 749`) |
+| B08-B10 tour | **a** first stop; **b** a middle stop; **c** last stop; **d** skipped |
+| C14 interaction states | **a** hover; **b** keyboard focus; **c** pressed; **d** disabled; **e** native title tooltips are not restyled (9.13) |
+
+### 9.13 Outside the application's CSS
+
+These surfaces are drawn by the browser or the operating system and application CSS cannot restyle them. They are listed so that "nothing in the old style" is read correctly: the native confirm fallbacks when `<dialog>.showModal` is missing (`ui-dialog.js:39, 127`), file pickers, system share sheets, native `title` tooltips, the browser's own scrollbars and form-control popups (the `<select>` list, the time picker), and the print dialog. The sweep skips them and records them in the proof as "browser-owned". Where a control has a styled alternative (a `<select>`), A styles the closed control and nothing more.
 
 ## Self-review
 
-- **Coverage of the request:** (1) the map (2.1 to 2.5, 51 `data-act`, 37 `data-chg`, 22 `data-ed` keys and the `data-k` families, 12 route forms, 10 storage keys; checked against the code and corrected after two Codex reviews); (2) stays / rebuilt (3); (3) saved state and links (2.2, 2.3, 4, Task 9); (4) ordered tasks with the switch (5); (5) tests, phone widths, light and dark, keyboard, CI (6, 7); (6) risks and owner questions (Hebrew summary).
-- **Placeholders:** none. Tasks 0-2 carry the full steps; Tasks 3-12 carry Files, Interfaces, named tests and the verification command, because their final shape depends on how the Task 2 seam behaves.
-- **Names:** `designOn`, `routeA`, `stageOf`, `panelOf`, `TOOLS`, `openTool`, `closeTool`, `renderTool`, `routeFocus`, `routeScroll`, `shellInit`, `renderOut`, `renderTools`, `renderAltColumn`, `miniWeekHtml`, `editWeekHtml` / `editToolHtml` are spelled the same wherever they appear.
+- **Coverage of the request:** (1) the map (2.1 to 2.5, 51 `data-act`, 37 `data-chg`, 22 `data-ed` keys and the `data-k` families, 12 route forms, 10 storage keys; checked against the code and corrected after three Codex reviews); (2) stays / rebuilt (3); (3) saved state and links (2.2, 2.3, 4, Task 9); (4) ordered tasks with the switch (5); (5) tests, phone widths, light and dark, keyboard, CI (6, 7); (6) risks and owner questions (Hebrew summary); (7) the owner's full-replacement requirement: the 177-row inventory of section 9, Tasks 12 and 13, and questions 12 to 16.
+- **Placeholders:** none. Tasks 0-2 carry the full steps; Tasks 3-13 carry Files, Interfaces, named tests and the verification command, because their final shape depends on how the Task 2 seam behaves.
+- **Names:** `designOn`, `routeA`, `stageOf`, `panelOf`, `TOOLS`, `openTool`, `closeTool`, `renderTool`, `routeFocus`, `routeScroll`, `shellInit`, `renderOut`, `renderTools`, `renderAltColumn`, `miniWeekHtml`, `toolName`, `INVENTORY`, `editWeekHtml` / `editToolHtml` are spelled the same wherever they appear.
 - **Proportion:** the plan is long because the map is the deliverable; the code in it is signatures and test names only.
 
 ## Review record
@@ -493,3 +818,5 @@ Merge to `main` in at most four pushes (section 7): Tasks 0-1; 2-6; 7-10; 11 (th
 - Codex pass 1 (high effort, `git`-free read of the code): 36 findings (2 blocker, 22 real, 12 minor). All addressed in this file: the route model (mode, tool), improve mode as a mode, edit containment, the test inventory, focus and scroll ownership, PDF ownership, the year-pair alternatives column, the CI design fixture, and the corrected feature, hook and key inventories.
 - Codex pass 2 on the revised file: 21 findings (3 blocker, 10 real, 8 minor). All addressed: improve-mode overlays are in-memory with no hash, stage and overlay visibility are separate decisions, closed routes per mode, `#out` and info routing, `renderTool` on route changes, shared header in improve mode, labelled panel wrappers, no transformed ancestor around the fixed sheet, `routeScroll`, the drawer close listener, the `openStep` mapping, year-export semantics, the edit day selector, and the factual corrections (`applyPendingBackup`, `{program}-{startYear}`, `theme.js`, 4,100 lines, `#semnote`).
 - No third pass was run. The raw answers are kept privately under `.superpowers/sessions/reviews/` (not in git).
+- Codex pass 3 (the full-replacement inventory, section 9 and Tasks 12-13): 32 findings (2 blocker, 27 real, 3 minor). All addressed: the unit of proof became the scenario (9.12, about 300 of them), `data-view` is migrated before deletion and only the step anchors are banned, "removed" now means the exact obsolete markup is absent and retained controls have positive scenarios, body-state rules get a disposition list (delete, replace, rewrite), the painted-colour audit and a component-appearance check replace the three-property palette audit, CSS coverage became a report with classified families and an allowlist, the print proof calls the print action and checks a multi-page PDF, tap targets are defined on the effective surface, the fixture options for clipboard, tours, blocked storage and printing were specified, `run.mjs` gets a `--sweep` mode, and rows were corrected (T02 and T03, P07, X13, B01, B02, B05, D01, R11) and added (R13, Y18 to Y20, 9.13 browser-owned surfaces, the brand files in Task 11).
+- No fourth pass was run. The raw answers are kept privately under `.superpowers/sessions/reviews/` (`ui-design-a-plan.md`, `-2.md`, `-3.md`; not in git).
