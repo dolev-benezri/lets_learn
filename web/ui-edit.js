@@ -419,7 +419,11 @@ function resultsHtml(st, data, pr, n) {
   const r = V.result;
   if (!r) return ['', back];
   const notes = searchNotesHtml(r, st, data);
-  if (!n) return ['', `<div class="prop-panel">${notes}${back}</div>`];
+  // focused when a search found nothing: its text is its description, so a screen reader says what was found, not only that it is a group
+  if (!n) {
+    return ['', `<div class="prop-panel" id="editNotes" role="group" aria-label="תוצאת החיפוש" aria-describedby="editNotesText" tabindex="-1">
+      <div id="editNotesText">${notes}</div>${back}</div>`];
+  }
   const zero = { lessons: st.baseline, score: 0, changed: [], added: [], removed: [] };
   const actions = pr
     ? `<div class="prop-actions">${newDayButton(st, pr)}<button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
@@ -456,6 +460,7 @@ async function search() {
   V.running = true;
   V.result = null;
   renderEdit();
+  searchButton()?.focus({ preventScroll: true }); // drawn again in place as "מחפש…": it keeps the focus it had
   try {
     V.result = await runWorker({ kind: st.movable.length || !goal ? 'search' : 'tries', ...payload(st, data) });
   } catch (e) {
@@ -468,9 +473,40 @@ async function search() {
   V.i = V.result?.proposals.length ? 1 : 0;
   V.fx = 'prop';
   if (onChanges()) {
+    const active = document.activeElement, place = placeOf(active); // before the page is drawn again
     renderEdit();
-    $('editResults')?.scrollIntoView?.({ block: 'nearest' });
+    // focus that rests outside the page (the footer, the top bar) was not touched by the redraw: it stays, and the page is not scrolled
+    // away from it. The answer is brought into view only when focus goes to it, and the focused part of it too (an answer taller than
+    // the window shows its end by "nearest": the switcher at its top would stay above).
+    const away = active && active !== document.body && active.isConnected && !$('edit').contains(active);
+    const answer = away ? null : focusAnswer(place);
+    if (answer) {
+      $('editResults')?.scrollIntoView?.({ block: 'nearest' });
+      answer.scrollIntoView?.({ block: 'nearest' });
+    }
   }
+}
+// looked up in the edit page only: the build page stays in the document, hidden, with controls that look the same
+const inEdit = (selector) => $('edit').querySelector(selector);
+const searchButton = () => inEdit('[data-ed="search"]');
+// A selector that finds a control of the page again after it is drawn again (null: it is not in the page, it is the search button
+// itself, or nothing on it tells it apart).
+const REFIND = ['data-ed', 'data-ed-goal', 'data-ed-pick', 'data-day', 'data-course', 'data-k', 'data-act', 'href'];
+function placeOf(el) {
+  if (!el || !$('edit').contains(el) || el.dataset?.ed === 'search') return null;
+  if (el.id) return `#${CSS.escape(el.id)}`;
+  const at = REFIND.filter((a) => el.hasAttribute(a)).map((a) => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('');
+  return at ? el.localName + at : null;
+}
+// The page is drawn again when the answer comes, which drops whatever had focus. A keyboard user who moved on while the search ran keeps
+// their place (`place`); the one who waited on the button goes to the proposals' switcher, or to the message when nothing was found
+// (they start reading there). Never <body>. Not while a dialog or the lesson menu is open. Returns the answer's element when focus went
+// to it (the switcher or the message), else null: the control kept, or the button or the title, which the stale-result message is for.
+function focusAnswer(place) {
+  if (document.querySelector('dialog:modal') || $('pop').matches(':popover-open')) return null;
+  const kept = place && inEdit(place), answer = V.result?.proposals.length ? inEdit('.prop-nav') : $('editNotes');
+  (kept || answer || searchButton() || $('editTitle'))?.focus({ preventScroll: true });
+  return kept ? null : answer;
 }
 
 // ---------- the lesson menu (a block opens it in #pop) ----------
