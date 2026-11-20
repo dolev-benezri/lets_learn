@@ -48,7 +48,7 @@ const base = () => ({
       details: { credits: 5, prereqs: [{ kind: 'קדם', population: '', names: ['קורס הכנה פיזיקה'] }] }
     },
     '20816': {
-      groups: [g('272081601', { lecturer: 'ד"ר אחר' })],
+      groups: [g('272081601', { lecturer: 'ד"ר אחר', type: 'סופי-מעבדה' })], // a lab course: a lab on its own has no linked group
       details: {
         credits: 1,
         prereqs: [
@@ -342,6 +342,113 @@ const healthy = () => {
 
 test('validate: a healthy synthetic dataset has no errors', () => assert.deepEqual(validate(healthy()).errors, []));
 
+// ---- a lecture whose type promises a tutorial or lab (finding 1, 2026-11-19) ----
+// The yedion page of course 90902 group 279090227 and of 40220 group 274022003 (checked live 2026-11-20, groups page and details page)
+// names no related groups, though the tutorial `/1` is on the same page. The shapes here are synthetic.
+const tutorial = (id, extra = {}) => g(id, { type: 'תרגול', primary: false, lecturer: 'מר א', ...extra });
+const withGroups = (courseId, groups) => {
+  const b = base();
+  b.raw[courseId] = { groups, details: { credits: 4, prereqs: [] } };
+  return b;
+};
+const groupsOf = (d, courseId) => Object.fromEntries(d.courses[courseId].groups.map((x) => [x.id, x]));
+
+test('buildDataset: a lecture+tutorial the source links to nothing gets its own /n sub-groups, with a warning', () => {
+  const warnings = [];
+  const b = withGroups('20816', [
+    g('272081601', { linked: ['272081601/1', '272081601/2'] }),
+    tutorial('272081601/1'),
+    tutorial('272081601/2'),
+    g('272081603'), // the source names no link
+    tutorial('272081603/1'),
+    tutorial('272081603/2'),
+    tutorial('272081609/1') // belongs to another lecture: not taken
+  ]);
+  const gs = groupsOf(buildDataset({ ...b, warnings }), '20816');
+  assert.deepEqual(gs['272081601'].linked, ['272081601/1', '272081601/2'], 'a link the source gives is not touched');
+  assert.deepEqual(gs['272081603'].linked, ['272081603/1', '272081603/2']);
+  const mine = warnings.filter((w) => w.includes('272081603'));
+  assert.equal(mine.length, 1);
+  assert.match(mine[0], /^20816: .*272081603.*linked.*272081603\/1.*272081603\/2/);
+  assert.equal(warnings.filter((w) => w.includes('272081601')).length, 0);
+});
+
+test('buildDataset: the lab variant of the same gap is completed too', () => {
+  const b = withGroups('20816', [g('272081603', { type: 'סופי-הרצאה+מעבדה' }), tutorial('272081603/1', { type: 'מעבדה' })]);
+  assert.deepEqual(groupsOf(buildDataset(b), '20816')['272081603'].linked, ['272081603/1']);
+});
+
+test('buildDataset: a lecture with no tutorial in the data, a lab or tutorial on its own, and a plain lecture are left as they are, silently', () => {
+  const warnings = [];
+  const b = withGroups('20816', [
+    g('272081603'), // promises a tutorial, none in the data: validate() warns
+    g('272081604', { type: 'סופי-מעבדה' }),
+    g('272081605', { type: 'סופי-תרגול' }),
+    g('272081606', { type: 'סופי-הרצאה' }),
+    tutorial('272081606/1') // a sub-group a plain lecture does not claim
+  ]);
+  const gs = groupsOf(buildDataset({ ...b, warnings }), '20816');
+  for (const id of ['272081603', '272081604', '272081605', '272081606']) assert.deepEqual(gs[id].linked, [], id);
+  assert.deepEqual(warnings, []);
+});
+
+test('buildDataset: a link the source gives to a group that falls out is not replaced by another sub-group', () => {
+  const b = withGroups('20816', [
+    g('272081603', { linked: ['272081603/1'] }),
+    tutorial('272081603/1', { meetings: [] }), // dropped: no meetings
+    tutorial('272081603/2')
+  ]);
+  assert.deepEqual(groupsOf(buildDataset(b), '20816')['272081603'].linked, []);
+});
+
+test('buildDataset: only sub-groups of this semester complete a lecture', () => {
+  const other = [{ semester: 'ב', day: 2, start: '12:00', end: '13:50', room: 'r' }];
+  const b = withGroups('20816', [g('272081603'), tutorial('272081603/1', { meetings: other })]);
+  assert.deepEqual(groupsOf(buildDataset(b), '20816')['272081603'].linked, []);
+});
+
+test('validate: a lecture+tutorial or lecture+lab with no linked group is a warning, never an error; a lab on its own, or a linked lecture, gets none', () => {
+  const at = (type, linked) => {
+    const d = healthy();
+    Object.assign(d.courses['20000'].groups[0], { id: '200000001', type, linked });
+    const { errors, warnings } = validate(d);
+    assert.deepEqual(errors, [], 'a bare lecture must not stop the night (validate errors cannot be overridden with --force)');
+    return warnings.filter((w) => w.includes('200000001'));
+  };
+  assert.equal(at('סופי-הרצאה+תרגול', []).length, 1);
+  assert.match(at('סופי-הרצאה+תרגול', [])[0], /^20000: .*200000001.*סופי-הרצאה\+תרגול.*no linked/);
+  assert.equal(at('סופי-הרצאה+מעבדה', []).length, 1);
+  assert.deepEqual(at('סופי-הרצאה+תרגול', ['200000001/1']), []);
+  assert.deepEqual(at('סופי-מעבדה', []), []);
+  assert.deepEqual(at('סופי-תרגול', []), []);
+  assert.deepEqual(at('סופי-הרצאה', []), []);
+});
+
+// The shape of the two live pages (2026-11-20): the lecture block names no related groups, its tutorial block follows on the same page.
+const livePage = (lecture, semester) => {
+  const meeting = (hour) =>
+    `<div class="Table"><div class="row"><div class="col">&nbsp;${semester}</div><div class="col">&nbsp;יום שני</div><div class="col">&nbsp;${hour}:00</div><div class="col">&nbsp;${hour}:50</div><div class="col">מר א</div><div class="col">r</div></div></div>`;
+  const block = (head, id, hour) => `<div class="TextAlignRight">קורס מסוג ${head} קבוצה : ${id} מרצה הקורס : מר א פרטים נוספים</div>${meeting(hour)}`;
+  return block('סופי-הרצאה+תרגול', lecture, 10) + block('תרגול', `${lecture}/ 1`, 12);
+};
+
+test('the two live cases: from a page that names no link, the lecture gets its tutorial and the data passes validate', () => {
+  for (const [courseId, lecture, semester] of [
+    ['90902', '279090227', 'א'],
+    ['40220', '274022003', 'ב']
+  ]) {
+    const groups = parseGroups(livePage(lecture, semester));
+    assert.deepEqual(groups.map((x) => [x.id, x.linked]), [[lecture, []], [`${lecture}/1`, []]], 'the page names no link');
+    const b = withGroups(courseId, groups);
+    b.lists[0].courses.push({ id: courseId, name: 'x', offered: true });
+    const d = buildDataset({ ...b, semester });
+    assert.deepEqual(groupsOf(d, courseId)[lecture].linked, [`${lecture}/1`]);
+    const all = healthy();
+    all.courses[courseId] = d.courses[courseId];
+    assert.deepEqual(validate(all).errors, []);
+  }
+});
+
 test('validate: meetings with day === null are an error', () => {
   const d = healthy();
   d.courses['20001'].groups[0].meetings[0].day = null;
@@ -606,7 +713,7 @@ test('validate: a small program sets its own minimum course count', () => {
 // synthetic rows. This runs the real 2026 exam page (scripts/fixtures/exams-2026.html) through parseExams and the build onto
 // a real data file, then the solver's "no two exams on one day" rule: the chain the first night with exams will run.
 import { readFileSync } from 'node:fs';
-import { parseExams } from '../scripts/parse.mjs';
+import { parseExams, parseGroups } from '../scripts/parse.mjs';
 import { search } from '../web/solver-core.js';
 import { classify } from '../web/rules.js';
 import { real as frozen } from './fixtures/real.mjs';

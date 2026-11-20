@@ -5,6 +5,10 @@ export const normName = (s) =>
     .trim();
 export const normLecturer = (s) => normName(s).replace(/^(דר|פרופ|מר|גב|גברת)\.?\s+/, '');
 
+// A type that promises a second part: "סופי-הרצאה+תרגול", "סופי-הרצאה+מעבדה". A lab or tutorial on its own ("סופי-מעבדה") is that part itself
+// (161 such groups in the data on 2026-11-20, none linked, none missing anything).
+const promisesPart = (type = '') => /\+(תרגול|מעבדה)/.test(type);
+
 export function buildDataset({
   year,
   startYear,
@@ -38,13 +42,26 @@ export function buildDataset({
         warnings.push(`${c.id}: group(s) with meetings in two semesters dropped: ${twoSemesters.join(', ')}`);
       const kept = r.groups.filter((g) => g.meetings.length && g.meetings.every((m) => m.semester === semester));
       const ids = new Set(kept.map((g) => g.id));
-      const groups = kept.map(({ detailsArgs, meetings, linked, ...g }) => ({
-        ...g,
-        semester,
-        linked: linked.filter((id) => ids.has(id)),
-        meetings: meetings.map(({ semester: _s, ...m }) => m),
-        exams: [],
-      }));
+      const groups = kept.map(({ detailsArgs, meetings, linked, ...g }) => {
+        let own = linked.filter((id) => ids.has(id));
+        // The source can name no related group at all while the tutorial `<id>/n` sits on the same page (checked live 2026-11-20:
+        // 90902 group 279090227, 40220 group 274022003, both on the groups page and the details page). Its own sub-groups are its parts.
+        // A link the source did give to a group that fell out is not replaced: that lecture stays without it, and validate() warns.
+        if (!linked.length && promisesPart(g.type)) {
+          const subs = kept.filter((s) => !s.primary && s.id.startsWith(`${g.id}/`)).map((s) => s.id);
+          if (subs.length) {
+            own = subs;
+            warnings.push(`${c.id}: group ${g.id} (${g.type}) names no linked groups at the source; linked its sub-groups ${subs.join(', ')}`);
+          }
+        }
+        return {
+          ...g,
+          semester,
+          linked: own,
+          meetings: meetings.map(({ semester: _s, ...m }) => m),
+          exams: []
+        };
+      });
       courses[c.id] = {
         name: c.name,
         credits: r.details?.credits ?? 0,
@@ -132,6 +149,12 @@ export function validate(d, prev = null, anchor = null, minCourses = 40) {
     const linked = new Set(c.groups.flatMap((g) => g.linked));
     for (const g of c.groups)
       if (!g.primary && !linked.has(g.id)) warnings.push(`${id}: sub-group ${g.id} not linked to any primary`);
+    // buildDataset completes a lecture the source links to nothing; one left bare (its tutorial or lab has no hours yet) is only a warning:
+    // an error, which --force cannot override, would stop the whole night for every program. Keeping such a lecture out of a plan, and telling
+    // the student the hours are missing, is the solver's job (web/solver-core.js buildOptions), not the build's.
+    for (const g of c.groups)
+      if (promisesPart(g.type) && !g.linked.length)
+        warnings.push(`${id}: group ${g.id} (${g.type}) has no linked group; its tutorial or lab is missing from the data`);
     if (
       d.examsPublished &&
       c.offered &&
