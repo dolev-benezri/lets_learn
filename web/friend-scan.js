@@ -13,12 +13,15 @@ const WIDTH = 2880; // small text (8px in a 1045px screenshot) reads well at abo
 // One page's canvas never has more pixels than this: a 2,880-wide A4 page is 11.7 million (47MB), but a big scan or photo drawn at its own size can be
 // 20 to 50 million. iPhone Safari draws nothing on a canvas over 16,777,216 pixels, and a few of them in a row can close the tab.
 export const MAX_PIXELS = 16e6;
-// The scale to draw a w x h picture at: `want`, or less when that would be over MAX_PIXELS.
-export const fitScale = (w, h, want) => Math.min(want, Math.sqrt(MAX_PIXELS / (w * h)));
+// ...and no side longer than this (Safari's limit is 32,767; a very thin page is within the area and still too long).
+export const MAX_SIDE = 16384;
+// The scale to draw a w x h picture at: `want`, or less when that would be over MAX_PIXELS or MAX_SIDE.
+export const fitScale = (w, h, want) => Math.min(want, Math.sqrt(MAX_PIXELS / (w * h)), MAX_SIDE / Math.max(w, h));
 
 // A canvas of w x h whole pixels: rounded, unless that goes over the cap (a fit scale is exact, but a rounded side can tip it), then rounded down.
 function canvasOf(w, h) {
-  const [a, b] = Math.round(w) * Math.round(h) > MAX_PIXELS ? [Math.floor(w), Math.floor(h)] : [Math.round(w), Math.round(h)];
+  const over = Math.round(w) * Math.round(h) > MAX_PIXELS || Math.max(Math.round(w), Math.round(h)) > MAX_SIDE;
+  const [a, b] = over ? [Math.floor(w), Math.floor(h)] : [Math.round(w), Math.round(h)];
   return Object.assign(document.createElement('canvas'), { width: a, height: b });
 }
 
@@ -62,9 +65,10 @@ export async function pageCanvas(doc, n, width) {
 // A scanned slide is one picture: draw that, upscaled and smoothed. Letting pdf.js resample the page instead blurs small digits (course codes lose a digit).
 // The page's own copy of the picture (pdf.js keeps it until the page is cleaned up) is let go once it is drawn:
 // with a dozen slides it is the larger part of the memory.
-export async function bigPage(doc, n) {
+// `pdfjs` ({ OPS }) is for tests: the loaded pdf.js.
+export async function bigPage(doc, n, pdfjs = null) {
   const page = await pdfStep(doc.getPage(n)),
-    { OPS } = await loadPdfjs();
+    { OPS } = pdfjs ?? (await loadPdfjs());
   try {
     const ops = await pdfStep(page.getOperatorList());
     const ids = ops.fnArray.flatMap((fn, i) => (fn === OPS.paintImageXObject ? [ops.argsArray[i][0]] : []));

@@ -1,6 +1,6 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { scanCanvases, pageCanvas, pictureCanvas, fitScale, MAX_PIXELS } from '../web/friend-scan.js';
+import { scanCanvases, pageCanvas, pictureCanvas, bigPage, fitScale, MAX_PIXELS, MAX_SIDE } from '../web/friend-scan.js';
 
 // A stand-in for a canvas: the pixels are a plain RGBA array, `width = 0` frees it the way a real canvas lets go of its memory.
 function fakeCanvas(w = 400, h = 200) {
@@ -149,7 +149,16 @@ test('the merge still prefers a table over a grid, whatever the order of the pag
 // pageCanvas / fitScale: the size of one page's canvas
 const stubDocument = globalThis.document;
 const drawn = [];
-globalThis.document = { createElement: () => ({ getContext: () => ({ drawImage: (...a) => drawn.push(a) }) }) };
+globalThis.document = {
+  createElement: () => ({
+    getContext: () => ({
+      drawImage: (...a) => {
+        drawn.push(a);
+        if (a[0] === 'boom') throw new Error('too big');
+      }
+    })
+  })
+};
 after(() => {
   globalThis.document = stubDocument;
 });
@@ -216,4 +225,60 @@ test('pictureCanvas: a screenshot is upscaled as before; a big scan or photo is 
   assert.ok(Math.abs(scan.width / scan.height - 4000 / 5600) < 0.001);
   assert.deepEqual(drawn.at(-2), ['scan', 0, 0, scan.width, scan.height], 'the whole picture goes on the canvas');
   assert.deepEqual(drawn.at(-1), ['photo', 0, 0, photo.width, photo.height]);
+});
+
+test('no side of a canvas goes over 16,384 pixels, however thin the page or the picture', async () => {
+  for (const [w, h] of [[1, 1010], [1170, 100000], [100000, 500]]) {
+    const c = await pageCanvas(docOf(w, h), 1, 2880);
+    assert.ok(Math.max(c.width, c.height) <= MAX_SIDE && c.width * c.height <= MAX_PIXELS, `page ${w}x${h} became ${c.width}x${c.height}`);
+    const p = pictureCanvas('thin', w, h);
+    assert.ok(Math.max(p.width, p.height) <= MAX_SIDE && p.width * p.height <= MAX_PIXELS, `picture ${w}x${h} became ${p.width}x${p.height}`);
+  }
+});
+
+// bigPage: a scanned slide is one picture. The page is a stand-in: its operator list says which pictures it paints, its objects hold their bitmaps, and the
+// log says what happened to it and when (the number is how many draws had been made by then).
+const OPS = { paintImageXObject: 85 };
+function slide({ image = null, opsError = null } = {}) {
+  const log = [],
+    before = drawn.length;
+  const page = {
+    getViewport: ({ scale }) => ({ width: 595 * scale, height: 842 * scale }),
+    render: () => {
+      log.push('render');
+      return { promise: Promise.resolve() };
+    },
+    getOperatorList: async () => {
+      if (opsError) throw opsError;
+      return { fnArray: image ? [OPS.paintImageXObject] : [], argsArray: image ? [['img0']] : [] };
+    },
+    objs: { get: (id, done) => done(image) },
+    cleanup: () => log.push(`cleanup after ${drawn.length - before} draws`)
+  };
+  return { doc: { getPage: async () => page }, log };
+}
+
+test('bigPage draws the picture of a scanned slide within the pixel cap, then lets pdf.js go of the page', async () => {
+  const { doc, log } = slide({ image: { bitmap: 'bmp', width: 4000, height: 5600 } }); // 22 million pixels at its own size
+  const c = await bigPage(doc, 1, { OPS });
+  assert.ok(c.width * c.height <= MAX_PIXELS, `${c.width}x${c.height}`);
+  assert.ok(Math.abs(c.width / c.height - 4000 / 5600) < 0.001, 'the shape of the picture, not of the page');
+  assert.deepEqual(drawn.at(-1), ['bmp', 0, 0, c.width, c.height]);
+  assert.deepEqual(log, ['cleanup after 1 draws'], 'cleaned once, after the picture was drawn, and the page was not rendered');
+});
+
+test('bigPage lets pdf.js go of the page when drawing the picture fails, and when the operators cannot be read', async () => {
+  const bad = slide({ image: { bitmap: 'boom', width: 1000, height: 1000 } });
+  await assert.rejects(bigPage(bad.doc, 1, { OPS }), /too big/);
+  assert.equal(bad.log.filter((l) => l.startsWith('cleanup')).length, 1);
+  const none = slide({ opsError: new Error('no operators') });
+  await assert.rejects(bigPage(none.doc, 1, { OPS }), /no operators/);
+  assert.deepEqual(none.log, ['cleanup after 0 draws']);
+});
+
+test('bigPage renders the page when it is not one picture, and cleans up after the render', async () => {
+  const { doc, log } = slide();
+  const c = await bigPage(doc, 1, { OPS });
+  assert.deepEqual([c.width, c.height], [2880, 4076]);
+  assert.deepEqual(log, ['render', 'cleanup after 0 draws']);
 });
