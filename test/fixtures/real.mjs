@@ -10,16 +10,27 @@ export const FILES = [
   '2027-1/11-2027.json',
   '2027-1/12-2027.json',
   '2027-1/19-2026.json',
+  '2027-1/20-2025.json',
+  '2027-1/20-2026.json',
   '2027-1/22-2027.json',
+  '2027-1/30-2025.json',
   '2027-1/30-2026.json',
   '2027-1/30-2027.json',
   '2027-1/32-2024.json',
   '2027-1/32-2027.json',
   '2027-1/42-2027.json',
   '2027-2/19-2026.json',
+  '2027-2/20-2025.json',
+  '2027-2/20-2026.json',
+  '2027-2/30-2025.json',
   '2027-2/30-2026.json',
+  '2027-3/20-2025.json',
+  '2027-3/20-2026.json',
+  '2027-3/30-2025.json',
   '2027-3/30-2026.json'
 ];
+// What the site reads besides the cycles (web/data/afeka): the program catalog and the scraper's status. The browser tests serve them from here too.
+export const META = ['catalog.json', 'status.json'];
 export const REAL_DIR = new URL('./real/', import.meta.url);
 
 export const real = (path) => JSON.parse(readFileSync(new URL(path, REAL_DIR), 'utf8'));
@@ -33,14 +44,15 @@ const gitShow = (sha, path) => git(['show', `${sha}:${path}`]);
 // A failed write (disk full) can leave it half refreshed: git checkout -- test/fixtures/real restores it.
 export function freeze(ref, { resolve = gitRevParse, show = gitShow, dir = REAL_DIR } = {}) {
   const sha = resolve(ref);
-  const data = FILES.map((path) => {
+  const all = [...FILES, ...META];
+  const data = all.map((path) => {
     try {
       return JSON.parse(show(sha, 'web/data/afeka/' + path));
     } catch (e) {
       throw new Error(`${path}: ${e.message}`);
     }
   });
-  FILES.forEach((path, i) => {
+  all.forEach((path, i) => {
     const file = new URL(path, dir);
     mkdirSync(new URL('./', file), { recursive: true });
     writeFileSync(file, JSON.stringify(data[i]) + '\n');

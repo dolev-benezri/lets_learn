@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { FILES, REAL_DIR, real, freeze } from './fixtures/real.mjs';
+import { FILES, META, REAL_DIR, real, freeze } from './fixtures/real.mjs';
 import { checkFile } from '../scripts/check-export.mjs';
 
 const SEMESTER = { 1: 'א', 2: 'ב', 3: 'קיץ' };
@@ -22,6 +22,20 @@ test('frozen data: FILES matches the files on disk', () => {
     .flatMap((d) => readdirSync(new URL(`${d}/`, REAL_DIR)).map((f) => `${d}/${f}`))
     .sort();
   assert.deepEqual(onDisk, [...FILES].sort());
+});
+
+test('frozen data: META (the catalog and the status the site reads) is on disk', () => {
+  assert.deepEqual(META, ['catalog.json', 'status.json']);
+  for (const f of META) assert.ok(readFileSync(new URL(f, REAL_DIR), 'utf8').length > 2, f);
+});
+
+test('frozen data: every cycle is one the frozen catalog lists, in the catalog year', () => {
+  const cat = real('catalog.json');
+  for (const f of FILES) {
+    const d = real(f);
+    assert.equal(d.year, cat.year, f);
+    assert.ok(cat.programs.find((p) => p.id === d.program)?.startYears.includes(d.startYear), f);
+  }
 });
 
 test('frozen data: SOURCE is 40d90aa', () => {
@@ -48,7 +62,7 @@ test('frozen data: each file is the program, cohort and semester its name says',
 });
 
 test('frozen data: files are minified JSON with one trailing newline', () => {
-  for (const f of FILES) {
+  for (const f of [...FILES, ...META]) {
     const raw = readFileSync(new URL(f, REAL_DIR), 'utf8');
     assert.equal(raw, JSON.stringify(JSON.parse(raw)) + '\n', f);
   }
@@ -64,6 +78,18 @@ test('freeze: a missing file writes nothing', () => {
   assert.deepEqual(readdirSync(dir), []);
 });
 
+test('freeze: a missing catalog or status writes nothing', () => {
+  for (const name of META) {
+    const dir = tempDir();
+    const show = (s, p) => {
+      if (p.endsWith('/' + name)) throw new Error('missing');
+      return '{}';
+    };
+    assert.throws(() => freeze('x', { resolve: () => 'abc', show, dir }), new RegExp(`${name.replace('.', '\\.')}.*missing`));
+    assert.deepEqual(readdirSync(dir), []);
+  }
+});
+
 test('freeze: bad JSON writes nothing', () => {
   const dir = tempDir();
   const show = (s, p) => (p.endsWith('19-2026.json') ? '{' : '{}');
@@ -76,8 +102,8 @@ test('freeze: writes every file and SOURCE', () => {
   const show = () => JSON.stringify({ a: 1 }, null, 2);
   assert.equal(freeze('x', { resolve: () => 'abc', show, dir }), 'abc');
   assert.equal(readFileSync(new URL('SOURCE', dir), 'utf8'), 'abc\n');
-  for (const f of FILES) assert.equal(readFileSync(new URL(f, dir), 'utf8'), '{"a":1}\n', f);
-  assert.deepEqual(listed(dir), [...FILES, 'SOURCE'].sort());
+  for (const f of [...FILES, ...META]) assert.equal(readFileSync(new URL(f, dir), 'utf8'), '{"a":1}\n', f);
+  assert.deepEqual(listed(dir), [...FILES, ...META, 'SOURCE'].sort());
 });
 
 test('real.mjs imports with no script path (node -e) without running its CLI', () => {
