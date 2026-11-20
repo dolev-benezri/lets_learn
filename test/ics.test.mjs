@@ -125,6 +125,32 @@ test('toIcs: every event (lessons and exams, dated or timed) has a DESCRIPTION t
   );
 });
 
+test('toIcs: a timed exam says its end time is an estimate (before the disclaimer); a date-only exam and a lesson do not', () => {
+  const NOTE = 'שעת הסיום משוערת\\, משך הבחינה לא פורסם'; // the comma is escaped in iCalendar text
+  const data = {
+    courses: {
+      7: course(2, {
+        exams: [
+          { kind: 'בחינה', moed: 'א', date: '2027-02-01' },
+          { kind: 'בחינה', moed: 'ב', date: '2027-02-20', time: '09:00' },
+          { kind: 'בחינה', moed: 'ג', date: '2027-03-02', time: '22:00' }
+        ]
+      })
+    }
+  };
+  const events = toIcs([part(data, SEMESTER_DATES[2027]['א'])], NOW)
+    .replace(/\r\n /g, '')
+    .split('BEGIN:VEVENT')
+    .slice(1);
+  const description = (ev) => ev.split('\r\n').find((l) => l.startsWith('DESCRIPTION:'));
+  assert.equal(events.length, 4, 'one lesson and three exams');
+  const [lesson, dated, timed, late] = events;
+  assert.equal(description(lesson), `DESCRIPTION:קבוצה g1 · כהן\\n${DISCLAIMER}`, 'a lesson has a real end time: no note');
+  assert.equal(description(dated), `DESCRIPTION:${DISCLAIMER}`, 'a date-only exam has no end time: no note');
+  assert.equal(description(timed), `DESCRIPTION:${NOTE}\\n${DISCLAIMER}`, 'the note, an escaped newline, then the disclaimer');
+  assert.equal(description(late), `DESCRIPTION:${NOTE}\\n${DISCLAIMER}`, 'an exam cut at 23:59 is still an estimate');
+});
+
 test('times are Israel time (TZID with a VTIMEZONE), not floating; UNTIL is UTC (J17)', () => {
   const out = toIcs([part({ courses: { 101: course(3) } }, SEMESTER_DATES[2027]['א'])], NOW);
   assert.match(out, /BEGIN:VTIMEZONE\r\nTZID:Asia\/Jerusalem\r\n/);
