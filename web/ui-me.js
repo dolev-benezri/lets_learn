@@ -351,8 +351,12 @@ const setGradeMsg = (m) => {
   const el = $('gradeMsg');
   if (el) el.textContent = m;
 };
+const GRADE_STALE = 'המסלול או נתוני הלימודים השתנו בזמן הייבוא, ולכן לא עודכן כלום. ייבאו את הגליון שוב.';
 export async function importGrades(file) {
-  const { data, state } = app;
+  const { data, state, sem } = app;
+  // A track or cohort switch replaces the state and the data files. The sheet was read for the old ones: applying it would change an object nobody
+  // sees any more, and say "updated" over the new state. Checked twice, after the read and before the apply (audit 2026-11-19 finding 9).
+  const same = () => app.state === state && app.sem === sem;
   setGradeMsg('קוראים את הגליון…');
   let found, skipped;
   try {
@@ -362,6 +366,7 @@ export async function importGrades(file) {
   } catch (e) {
     return setGradeMsg(e.user ? e.message : 'לא הצלחנו לקרוא את הקובץ.');
   }
+  if (!same()) return setGradeMsg(GRADE_STALE); // before the preview opens
   // course rows with a grade the import does not read (e.g. in words) are said, not dropped silently (audit #40)
   const skipNote = !skipped
     ? ''
@@ -371,9 +376,13 @@ export async function importGrades(file) {
   const rows = found.filter((r) => r.result !== 'pending');
   if (!rows.length) return setGradeMsg(GRADE_NONE + skipNote);
   const WORD = { passed: 'עברתי', failed: 'נכשלתי', none: 'לא נלקח' };
-  sheetConfirms(state, found);
-  const todo = gradeChanges(found, state);
+  // The preview is judged as if the sheet's passes had already confirmed the assumed ones (sheetConfirms), but the state itself is only edited once the
+  // import is known to be for it still: a switch while the preview is open stashes the old state, and an edit made to it would travel to the new one.
+  const confirmed = { ...state };
+  sheetConfirms(confirmed, found);
+  const todo = gradeChanges(found, confirmed);
   if (!todo.length) {
+    sheetConfirms(state, found);
     setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.${skipNote}`);
     return enterList();
   }
@@ -388,7 +397,10 @@ export async function importGrades(file) {
     todo.map((r) => [data.courses[r.id].name, r.grade === null ? '—' : String(r.grade), label(r)]),
     { unchecked: todo.flatMap((r, i) => (r.check ? [] : [i])) }
   );
+  const current = same(); // the track may have changed while the preview was open
+  if (current) sheetConfirms(state, found);
   if (!pick) return setGradeMsg('');
+  if (!current) return setGradeMsg(GRADE_STALE);
   applyGradeChanges(state, pick.map((i) => todo[i]));
   setGradeMsg('');
   enterList();
