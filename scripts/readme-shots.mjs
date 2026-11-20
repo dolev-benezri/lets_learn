@@ -156,8 +156,10 @@ const DONE = {
   'afeka-sched-v1-onboarded': '1', 'afeka-sched-v1-entry': '1', 'afeka-sched-v1-tour': 'intro,plans', 'afeka-sched-v1-terms': TERMS_VERSION
 };
 
-// The first-visit shots: past the terms gate and the tour, but not yet onboarded.
-const FIRST_VISIT = { 'afeka-sched-v1-tour': DONE['afeka-sched-v1-tour'], 'afeka-sched-v1-terms': TERMS_VERSION };
+// The first-visit shots: past the terms gate and the tour, but not yet onboarded. NEW_VISIT has not picked build or edit yet;
+// FIRST_VISIT picked build (web/ui-mode.js MODE_KEY), so the identity questions come next.
+const NEW_VISIT = { 'afeka-sched-v1-tour': DONE['afeka-sched-v1-tour'], 'afeka-sched-v1-terms': TERMS_VERSION };
+const FIRST_VISIT = { ...NEW_VISIT, 'afeka-sched-v1-mode': 'build' };
 
 // The friends: alternatives 1 and 2 of the student without friends.
 await open({ state: student(), flags: DONE, size: DESK, ready: results });
@@ -171,8 +173,56 @@ const full = student({
   ].map(([name, groups]) => ({ name, groups, weight: 1, active: true }))
 });
 
+// The edit page: semester א of alternative 1 (the result is a year pair) loaded as the timetable the student already has, but with
+// חוזק חומרים 1 in its Tuesday-morning group, which leaves gaps; the goal "fewer gaps" moves it back to the same lecturer's other group.
+// The groups are those of the data on 2026-11-20: if alternative 1 changes, pick another swap.
+const SWAP = { 273012703: '273012702', '273012703/1': '273012702/1' };
+const semA = await evaluate(`(async () => { const c = await import('./ui-common.js'), r = c.ui.last.results[0]; return r.a?.groups ?? r.groups; })()`);
+if (!Object.keys(SWAP).every((g) => semA?.includes(g))) throw new Error('alternative 1 no longer has the groups of the edit shot: pick another swap');
+const base = await evaluate(`(async () => { const e = await import('./edit-state.js'), a = await import('./app.js');
+  return e.lessonsOf(${JSON.stringify(semA.map((g) => SWAP[g] ?? g))}, a.app.data); })()`);
+if (!Object.values(SWAP).every((g) => base?.some((l) => l.group === g))) throw new Error('a swapped-in group is missing from the data: pick another swap');
+// what the README and GUIDE alt texts describe; anything else is not saved
+const EDIT_SHOWS = { label: 'הצעה 1 מתוך 1', summary: '6 שעות פחות חלונות · קורס אחד זז · אותו מרצה' };
+// Like evaluate, but a page error stops the run.
+const strict = async (expression) => {
+  const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
+  if (r.error || r.result?.exceptionDetails) throw new Error(`page error in: ${expression.slice(0, 80)}`);
+  return r.result?.result?.value;
+};
+async function editShot(dark) {
+  const edit = {
+    v: 1, dataset: { year: 2027, sem: 'א', program: 30, startYear: 2026 }, registered: false, owned: [], original: base, baseline: base,
+    movable: [], swaps: {}, added: [], removed: [], goal: { dayOff: null, notAfter: null, fewerGaps: true }, draft: null
+  };
+  await open({
+    state: full,
+    flags: { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(edit) },
+    size: { ...PHONE, h: 1400 }, // tall: on a phone the proposal's summary comes under the day's week
+    dark,
+    hash: '#edit/changes',
+    ready: `!!document.querySelector('[data-ed="search"]')`
+  });
+  await strict(`document.querySelector('[data-ed="search"]').click(); true`);
+  await until(`!!document.querySelector('[data-ed="saveProposal"], #editNotes')`, 90000);
+  if (!await strict(`!!document.querySelector('[data-ed="saveProposal"]')`))
+    throw new Error(`no edit proposal: ${await evaluate(`(document.getElementById('edit')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 300)`)}`);
+  await strict(`document.querySelector('#editDays [data-day="3"]').click(); true`); // Tuesday: where the course was and where it went
+  await sleep(1200);
+  const seen = await strict(`({ tuesday: !!document.querySelector('#editDays [data-day="3"][aria-pressed="true"]'),
+    label: document.querySelector('.prop-nav .alt-label')?.textContent.trim(), summary: document.querySelector('.prop-sum')?.textContent.trim() })`);
+  if (!seen.tuesday || seen.label !== EDIT_SHOWS.label || seen.summary !== EDIT_SHOWS.summary)
+    throw new Error(`the edit proposal changed (${JSON.stringify(seen)}): update EDIT_SHOWS and the alt texts`);
+  await strict(`scrollBy(0, document.querySelector('.prop-nav').getBoundingClientRect().top - 64); true`);
+  await sleep(800);
+  await shot(`09-edit-phone${dark ? '-dark' : ''}`);
+}
+
 for (const dark of process.argv[2] === 'extras' ? [] : [false, true]) {
   const d = dark ? '-dark' : '';
+  await open({ flags: NEW_VISIT, size: PHONE, dark, ready: `!!document.querySelector('[data-act="pickMode"]')` });
+  await shot(`00-start-mode-phone${d}`);
+  await editShot(dark);
   await open({ flags: FIRST_VISIT, size: PHONE, dark, ready: `!!document.querySelector('[data-act="pickTrack"]')` });
   await shot(`05-start-track-phone${d}`);
   await open({
