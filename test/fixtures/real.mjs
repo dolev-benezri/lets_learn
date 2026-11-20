@@ -24,10 +24,12 @@ export const FILES = [
   '2027-2/20-2026.json',
   '2027-2/30-2025.json',
   '2027-2/30-2026.json',
+  '2027-2/30-2027.json',
   '2027-3/20-2025.json',
   '2027-3/20-2026.json',
   '2027-3/30-2025.json',
-  '2027-3/30-2026.json'
+  '2027-3/30-2026.json',
+  '2027-3/30-2027.json'
 ];
 // What the site reads besides the cycles (web/data/afeka): the program catalog and the scraper's status. The browser tests serve them from here too.
 export const META = ['catalog.json', 'status.json'];
