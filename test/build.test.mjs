@@ -381,7 +381,7 @@ test('buildDataset: the lab variant of the same gap is completed too', () => {
 test('buildDataset: a lecture with no tutorial in the data, a lab or tutorial on its own, and a plain lecture are left as they are, silently', () => {
   const warnings = [];
   const b = withGroups('20816', [
-    g('272081603'), // promises a tutorial, none in the data: validate() stops it
+    g('272081603'), // promises a tutorial, none in the data: validate() warns
     g('272081604', { type: 'סופי-מעבדה' }),
     g('272081605', { type: 'סופי-תרגול' }),
     g('272081606', { type: 'סופי-הרצאה' }),
@@ -407,11 +407,13 @@ test('buildDataset: only sub-groups of this semester complete a lecture', () => 
   assert.deepEqual(groupsOf(buildDataset(b), '20816')['272081603'].linked, []);
 });
 
-test('validate: a lecture+tutorial or lecture+lab with no linked group is an error; a lab on its own, or a linked lecture, is not', () => {
+test('validate: a lecture+tutorial or lecture+lab with no linked group is a warning, never an error; a lab on its own, or a linked lecture, gets none', () => {
   const at = (type, linked) => {
     const d = healthy();
     Object.assign(d.courses['20000'].groups[0], { id: '200000001', type, linked });
-    return validate(d).errors.filter((e) => e.includes('200000001'));
+    const { errors, warnings } = validate(d);
+    assert.deepEqual(errors, [], 'a bare lecture must not stop the night (validate errors cannot be overridden with --force)');
+    return warnings.filter((w) => w.includes('200000001'));
   };
   assert.equal(at('סופי-הרצאה+תרגול', []).length, 1);
   assert.match(at('סופי-הרצאה+תרגול', [])[0], /^20000: .*200000001.*סופי-הרצאה\+תרגול.*no linked/);
