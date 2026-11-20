@@ -96,11 +96,72 @@ export function loadEdit() {
   }
 }
 
+// true: stored. false: blocked, full or missing; the page keeps working from memory and says so (app.js setEditSaveFailed).
 export function saveEdit(st) {
   try {
     localStorage.setItem(EDIT_KEY, JSON.stringify(st));
+    held = canon(st);
+    return true;
   } catch {
-    /* storage unavailable: the page works without it */
+    return false;
+  }
+}
+
+// This tab's copy of the saved state: read once, replaced by each commit of the edit page and by a restored backup.
+// `held`: the last state this tab read from the key or wrote to it (null: it never has), what editMoved compares the key with.
+// A copy whose save failed is ahead of it, not different from it.
+let E = null;
+let held = null;
+let restored = 0;
+export const getEdit = () => {
+  if (!E) {
+    E = loadEdit();
+    held = canon(E);
+  }
+  return E;
+};
+export const setEdit = (st) => {
+  held ??= canon(loadEdit()); // a copy set before the key was ever read or written here: the stored state is what it started from
+  E = st;
+};
+export const forgetEdit = () => {
+  E = null;
+  held = null;
+};
+// A backup replaced the copy: what the edit page had worked out (its proposals) was for the old one (ui-edit.js stamp).
+export const restoredCount = () => restored;
+// `write` false (a stale tab: another tab holds a newer copy): the page takes the state, the storage is left alone.
+export function restoreEdit(raw, write = true) {
+  const st = normalizeEdit(raw);
+  setEdit(st);
+  restored++;
+  return write ? saveEdit(st) : false;
+}
+
+// The part of the state a backup link carries: the loaded schedule and the work on it, without the import draft (rows of text
+// read from a file would make the link long for nothing). null: no schedule was loaded, so the link has no edit part.
+export function backupEdit() {
+  const st = getEdit();
+  return st.original.length ? { ...st, draft: null } : null;
+}
+
+// Another tab wrote the edit key: is this tab's copy old now? Only when this tab has read the state and what is stored now differs
+// from what it read or wrote last (key order and what normalize fills in do not count). It reads the key itself, not the event's
+// value: events queue, and an older one must not freeze a tab that has read the newer state since.
+const canon = (st) =>
+  JSON.stringify(normalizeEdit(st), (_, x) => (isObj(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
+export function editMoved() {
+  if (held === null) return false; // never read here: nothing stale to protect, the next read gets the new state
+  let stored;
+  try {
+    stored = localStorage.getItem(EDIT_KEY);
+  } catch {
+    return false; // no storage: no other tab either
+  }
+  try {
+    return canon(JSON.parse(stored)) !== held;
+  } catch {
+    return true; // a broken value is not what this tab read
   }
 }
 

@@ -12,6 +12,7 @@ const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g
 const pipe = async (bytes, stream) =>
   new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
 
+const DECODED_MAX = 262144;
 export const encode = async (obj) =>
   toB64url(await pipe(new TextEncoder().encode(JSON.stringify(obj)), new CompressionStream('deflate')));
 
@@ -26,7 +27,7 @@ export const decode = async (s) => {
     const { done, value } = await decompressor.read();
     if (done) break;
     totalBytes += value.length;
-    if (totalBytes > 262144) throw new Error('Decompressed size exceeds limit');
+    if (totalBytes > DECODED_MAX) throw new Error('Decompressed size exceeds limit');
     chunks.push(value);
   }
   const decompressed = new Uint8Array(totalBytes);
@@ -49,7 +50,12 @@ export const friendPayload = (state, groups) => ({
 });
 
 export const friendLink = async (base, state, groups) => `${base}#f=${await encode(friendPayload(state, groups))}`;
-export const backupLink = async (base, state) => `${base}#b=${await encode({ ...state, v: 1 })}`;
+// `edit`: the edit page's state without its import draft (edit-state.js backupEdit); null leaves the part out, like a link from before it existed.
+export const backupLink = async (base, state, edit = null) => `${base}#b=${await encode({ ...state, v: 1, ...(edit ? { edit } : {}) })}`;
+// The longest backup readHash reads (and, decoded, DECODED_MAX bytes: decode). A link over either limit would be copied and then refused.
+export const BACKUP_MAX = 65536;
+// Would the link be read back? The caller asks before copying a link that carries the edit state.
+export const backupReadable = async (link, { year, semester }) => (await readHash(link.slice(link.indexOf('#')), { year, semester }))?.type === 'backup';
 
 export async function readHash(hash, { year, semester }) {
   const m = hash.match(/^#([fb])=(.+)$/);
@@ -59,7 +65,7 @@ export async function readHash(hash, { year, semester }) {
   const encoded = m[2];
 
   // Cap input size: friend ≤ 4096, backup ≤ 65536
-  const maxLen = type === 'f' ? 4096 : 65536;
+  const maxLen = type === 'f' ? 4096 : BACKUP_MAX;
   if (encoded.length > maxLen) return { error: 'הקישור פגום' };
 
   let payload;
@@ -129,6 +135,8 @@ export async function readHash(hash, { year, semester }) {
     if (typeof payload.startYear === 'number') rebuilt.startYear = payload.startYear;
     for (const [k, shape] of Object.entries(PERSISTED)) if (SHAPE[shape](payload[k])) rebuilt[k] = payload[k];
     if (rebuilt.profile) rebuilt.profile = cleanProfile(rebuilt.profile);
+    // The edit page's state (not in PERSISTED: it is another key, with its own gate, edit-state.js normalizeEdit, applied at restore)
+    if (payload.edit && typeof payload.edit === 'object' && !Array.isArray(payload.edit)) rebuilt.edit = payload.edit;
     // last year's backup moves on to this year at restore (app.js normalize -> migrateYear), like a local save
     return { type: 'backup', payload: rebuilt };
   }

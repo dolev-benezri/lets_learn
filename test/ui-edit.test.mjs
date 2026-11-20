@@ -298,3 +298,11 @@ test('no action of the proposal screens says החל or הרשמה', () => {
   const html = proposalHtml(edit, p, data) + navHtml(1, 2) + searchNotesHtml({ proposals: [], enabling: ['A'], timedOut: true, diagnosis: [] }, edit, data);
   for (const b of parse(html).querySelectorAll('button')) assert.ok(!/החל|הרשמ/.test(b.text), b.text);
 });
+
+test('stepOneHtml: "כל שינוי נשמר מיד" is shown only while saving really works, and by default', () => {
+  const hint = (opts) => html([SURE], {}, opts).querySelector('[data-saved]');
+  assert.match(hint(undefined).text, /כל שינוי נשמר מיד/);
+  assert.equal(hint(undefined).hasAttribute('hidden'), false);
+  assert.equal(hint({ saving: true }).hasAttribute('hidden'), false);
+  assert.equal(hint({ saving: false }).hasAttribute('hidden'), true, 'a failed save, or another tab, hides the promise');
+});

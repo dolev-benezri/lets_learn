@@ -1,6 +1,6 @@
 // The edit page (#edit, #edit/changes): a separate page from the build steps. Step 1 loads my schedule and reviews what was read;
 // step 2 and the proposals follow. Pure HTML helpers are exported (test/ui-edit.test.mjs); the DOM part is at the bottom.
-import { app, esc, seatsAt } from './app.js';
+import { app, esc, seatsAt, recordOf, saving, setEditSaveFailed } from './app.js';
 import { $, needsProgram, copy, toast } from './ui-common.js';
 import { DAYS, groupIndex, typeLabel, icon, nameHtml, hourRange, renderWeek, assignColors, placePop } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
@@ -9,7 +9,7 @@ import { kinds, overlaps, displayData, summaryLine, changeText, PROPOSAL_ONLY, F
 import { reqContext, reqMet } from './rules.js';
 import { groupNumber, ago, YEDION_HINT } from './ui-text.js';
 import { identityPick } from './ui-me.js';
-import { loadEdit, saveEdit, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
+import { getEdit, setEdit, saveEdit, restoredCount, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
 
 // ---------- step 1: rows -> lessons ----------
 // A row needs the student's word unless it is sure (a row with no group needs the tap too: it stays as a fixed lesson).
@@ -62,7 +62,7 @@ const snapshotHtml = (ls) =>
   `<ul class="plain snap">${ls.map((l) => `<li><b>${esc(l.name)}</b> ${esc(typeLabel(l.type))} · ${hours(l)}</li>`).join('')}</ul>`;
 
 // Step 1. edit: the saved state; data: the chosen semester's file; review: the rows read (the sure ones are not listed);
-// opts.same: the saved schedule belongs to the data now shown.
+// opts.same: the saved schedule belongs to the data now shown; opts.saving: saving really works (app.js saving), else the promise is hidden.
 // How many courses the file or the hand pick gave, so the student sees the load worked before step 2.
 const coursesLine = (rows, data) => {
   const idx = data && groupIndex(data);
@@ -70,7 +70,7 @@ const coursesLine = (rows, data) => {
   return n ? ` · ${n === 1 ? 'קורס אחד' : `${n} קורסים`}` : '';
 };
 
-export function stepOneHtml(edit, data, review, { same = true } = {}) {
+export function stepOneHtml(edit, data, review, { same = true, saving = true } = {}) {
   const d = edit.draft, choices = d?.choices ?? {}, rows = d ? review : [];
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
     <p class="me-step"><b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.</p></div><div id="editIdentity"></div>`;
@@ -95,7 +95,8 @@ export function stepOneHtml(edit, data, review, { same = true } = {}) {
       המערכת כבר רשומה במכללה</label>
       ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}${coursesLine(rows, data)}</p>` : ''}</section>${reload}` : ''}
     <p class="err-text" id="edMsg" role="alert"></p></div>
-    <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">הבא: שינויים</button></div>`;
+    <div class="me-foot"><span class="hint" data-saved${saving ? '' : ' hidden'}>כל שינוי נשמר מיד.</span>
+      <button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">הבא: שינויים</button></div>`;
 }
 
 // ---------- step 2: pure parts ----------
@@ -265,16 +266,31 @@ export function searchNotesHtml(result, edit, data) {
 }
 
 // ---------- the page (DOM) ----------
-let E = null; // the edit state, read once
 let fresh = false; // a schedule was read in this visit: its review shows even while the saved one belongs to other data
 // What step 2 shows and has under way (not saved): the shown day, the search in flight, its result.
-const V = { day: null, i: 0, fx: null, step: 1, running: false, result: null, seq: 0, edits: 0, worker: null }; // fx: what animates next
+// stamp: what the result was worked out on (resultStamp); a result is shown and saved only while that still holds.
+const V = { day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null }; // fx: what animates next
 const editColors = new Map();
-const edit = () => (E ??= loadEdit());
+const edit = getEdit; // the edit state, read once (edit-state.js)
+// Keeps the new state and saves it; false when nothing was written (storage blocked or full, or another tab holds a newer copy).
 const commit = (next) => {
-  E = next;
-  saveEdit(E);
+  setEdit(next);
+  if (app.otherTab) return false; // this copy is old: over the other tab's it would erase what that tab did
+  const ok = saveEdit(next);
+  setEditSaveFailed(!ok);
+  return ok;
 };
+// "כל שינוי נשמר מיד" follows the state of saving without drawing the page again (a redraw would take the focus and the typing).
+export const syncSavedHint = () => document.querySelector('#edit [data-saved]')?.toggleAttribute('hidden', !saving());
+
+// What a search's answer is worth only while this holds: the student's record (a prerequisite passed or not), the data file it ran on,
+// and the edit state a restored backup may have replaced. Taken before the question goes to the worker, so a change made while it runs shows too.
+const resultStamp = () => ({ record: recordOf(JSON.stringify(app.state)), data: dataOf(edit().dataset?.sem), restored: restoredCount() });
+const staleResult = () => {
+  const s = V.stamp, now = V.result && resultStamp();
+  return !!now && (!s || s.record !== now.record || s.data !== now.data || s.restored !== now.restored);
+};
+const STALE = 'המצב שלי או הנתונים השתנו מאז החיפוש. חפשו הצעות מחדש.';
 const dataOf = (sem) => app.sem?.[sem] ?? null;
 const sameNow = (st) => !st.baseline.length || (!!dataOf(st.dataset?.sem) && sameDataset(st, dataOf(st.dataset.sem), app.state));
 const say = (text, at = 'edMsg') => {
@@ -308,6 +324,9 @@ export function stopSearch() {
 export function renderEdit() {
   wire();
   if (!onChanges()) stopSearch();
+  // proposals worked out on a record or a data file that is not the current one are dropped, and a new search is asked for
+  const dropped = staleResult();
+  if (dropped) (V.result = null), (V.i = 0);
   const st = edit(), same = sameNow(st);
   if (onChanges() && (!st.baseline.length || !same)) history.replaceState(null, '', '#edit');
   const label = `<button type="button" class="mode-label" data-act="menu" data-k="editMode">עורכים מערכת קיימת · החלפה</button>`;
@@ -315,11 +334,12 @@ export function renderEdit() {
   if (step !== V.step) V.fx = 'step';
   V.step = step;
   const fx = V.fx === 'step' ? ' fx' : '';
-  const body = step === 2 ? stepTwo(st) : stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh });
+  const body = step === 2 ? stepTwo(st) : stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh, saving: saving() });
   V.fx = null;
   const gx = document.querySelector('#edit .goals')?.scrollLeft; // a phone's goal row scrolls sideways: a redraw keeps its place
   $('edit').innerHTML = `${label}<div class="edit-step${fx}">${body}</div>`;
   if (gx) document.querySelector('#edit .goals')?.scrollTo({ left: gx });
+  if (dropped && step === 2) say(STALE);
   if ($('editIdentity') && (!app.state.profile.year || needsProgram())) $('editIdentity').innerHTML = identityPick(app.state.profile.year, true);
 }
 
@@ -399,7 +419,11 @@ function resultsHtml(st, data, pr, n) {
   const r = V.result;
   if (!r) return ['', back];
   const notes = searchNotesHtml(r, st, data);
-  if (!n) return ['', `<div class="prop-panel">${notes}${back}</div>`];
+  // focused when a search found nothing: its text is its description, so a screen reader says what was found, not only that it is a group
+  if (!n) {
+    return ['', `<div class="prop-panel" id="editNotes" role="group" aria-label="תוצאת החיפוש" aria-describedby="editNotesText" tabindex="-1">
+      <div id="editNotesText">${notes}</div>${back}</div>`];
+  }
   const zero = { lessons: st.baseline, score: 0, changed: [], added: [], removed: [] };
   const actions = pr
     ? `<div class="prop-actions">${newDayButton(st, pr)}<button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
@@ -432,10 +456,11 @@ async function search() {
   const changed = st.movable.length || st.added.length || st.removed.length || swaps;
   if (!goal && !changed) return say('סמנו קורס שיכול לזוז או בחרו מטרה.');
   say('');
-  const stamp = V.edits;
+  const stamp = V.edits, at = resultStamp(); // before the question goes out: a change while it runs must show
   V.running = true;
   V.result = null;
   renderEdit();
+  searchButton()?.focus({ preventScroll: true }); // drawn again in place as "מחפש…": it keeps the focus it had
   try {
     V.result = await runWorker({ kind: st.movable.length || !goal ? 'search' : 'tries', ...payload(st, data) });
   } catch (e) {
@@ -443,13 +468,47 @@ async function search() {
     V.result = { proposals: [], enabling: [], timedOut: true, diagnosis: [] };
   }
   V.running = false;
+  V.stamp = at;
   if (stamp !== V.edits) V.result = null; // something changed while it ran: the answer is for an older question
   V.i = V.result?.proposals.length ? 1 : 0;
   V.fx = 'prop';
   if (onChanges()) {
+    const active = document.activeElement, place = placeOf(active); // before the page is drawn again
     renderEdit();
-    $('editResults')?.scrollIntoView?.({ block: 'nearest' });
+    // focus that rests outside the page (the footer, the top bar) was not touched by the redraw: it stays, and the page is not scrolled
+    // away from it. The answer is brought into view only when focus goes to it, and the focused part of it too (an answer taller than
+    // the window shows its end by "nearest": the switcher at its top would stay above).
+    const away = active && active !== document.body && active.isConnected && !$('edit').contains(active);
+    const answer = away ? null : focusAnswer(place);
+    if (answer) {
+      $('editResults')?.scrollIntoView?.({ block: 'nearest' });
+      answer.scrollIntoView?.({ block: 'nearest' });
+    }
   }
+}
+// looked up in the edit page only: the build page stays in the document, hidden, with controls that look the same
+const inEdit = (selector) => $('edit').querySelector(selector);
+const searchButton = () => inEdit('[data-ed="search"]');
+// A selector that finds a control of the page again after it is drawn again (null: it is not in the page, it is the search button
+// itself, or nothing on it tells it apart).
+const REFIND = ['data-ed', 'data-ed-goal', 'data-ed-pick', 'data-day', 'data-course', 'data-k', 'data-act', 'href'];
+function placeOf(el) {
+  if (!el || !$('edit').contains(el) || el.dataset?.ed === 'search') return null;
+  if (el.id) return `#${CSS.escape(el.id)}`;
+  const at = REFIND.filter((a) => el.hasAttribute(a)).map((a) => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('');
+  return at ? el.localName + at : null;
+}
+// The page is drawn again when the answer comes, which drops whatever had focus. A keyboard user who moved on while the search ran keeps
+// their place (`place`); the one who waited on the button goes to the proposals' switcher, or to the message when nothing was found
+// (they start reading there). Never <body>. Not while a dialog or the lesson menu is open. Returns the answer's element when focus went
+// to it (the switcher or the message), else null: the control kept, or the button or the title, which the stale-result message is for.
+function focusAnswer(place) {
+  if (document.querySelector('dialog:modal') || $('pop').matches(':popover-open')) return null;
+  const kept = place && inEdit(place), answer = V.result?.proposals.length ? inEdit('.prop-nav') : $('editNotes');
+  (kept || answer || searchButton() || $('editTitle'))?.focus({ preventScroll: true });
+  // the redraw can move the control kept (on a phone the proposals take the way back below the week): "nearest" does nothing when it is on screen
+  kept?.scrollIntoView?.({ block: 'nearest' });
+  return kept ? null : answer;
 }
 
 // ---------- the lesson menu (a block opens it in #pop) ----------
@@ -607,13 +666,23 @@ const ACT_ED = {
   saveProposal() {
     const p = shownProposal(), st = edit();
     if (!p) return;
+    if (staleResult()) {
+      // the record or the data changed since the search: this proposal may no longer fit
+      V.result = null;
+      V.i = 0;
+      renderEdit();
+      say(STALE);
+      document.querySelector('[data-ed="search"]')?.focus({ preventScroll: true });
+      return;
+    }
     V.result = null;
     V.i = 0;
     V.edits++;
-    commit(saveProposal(st, p.lessons));
+    const ok = commit(saveProposal(st, p.lessons));
     renderEdit();
     $('editTitle').focus({ preventScroll: true });
-    toast('ההצעה נשמרה כמערכת הנוכחית. ההרשמה נעשית במכללה.');
+    // never "saved" when nothing was written: the notice above says why, and the proposal stays in this page
+    toast(ok ? 'ההצעה נשמרה כמערכת הנוכחית. ההרשמה נעשית במכללה.' : 'ההצעה נשמרה רק בדף הזה. היא לא נשמרה בדפדפן, ותאבד כשתסגרו את הדף.');
   },
   copyChanges() {
     const p = shownProposal(), st = edit();

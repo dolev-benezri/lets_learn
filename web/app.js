@@ -15,6 +15,7 @@ import { askConfirm } from './ui-dialog.js';
 import { esc, freshAt } from './ui-text.js';
 import { pinsWithoutSplit } from './solver-core.js';
 import { cleanSettings, SETTINGS_DEFAULT } from './settings.js';
+import { EDIT_KEY, editMoved, restoreEdit } from './edit-state.js';
 
 export { esc };
 
@@ -354,6 +355,7 @@ export const app = {
   hashError: null,
   noSave: false,
   saveFailed: false,
+  editSaveFailed: false, // the edit page's key has its own flag: a good save of the other key must not hide this failure
   otherTab: false,
   settings: SETTINGS_DEFAULT,
   termsOk: () => true,
@@ -413,7 +415,7 @@ export const seatsAt = (cid, data) => app.status?.groupsAt?.[cid] ?? freshOf(dat
 // Summer is planned after the school year: on only when the profile asks for it and the summer file loaded.
 export const summerOn = () => !!(app.state?.profile.summer && app.sem?.['קיץ']);
 export const summerScope = () => app.state?.scope === 'קיץ' && summerOn();
-// The site says every change is saved, so a save that fails is told (ui-view.js renderBanner) until one succeeds.
+// The site says every change is saved, so a save that fails is told (ui-view.js renderNotice) until one succeeds.
 export function save() {
   if (app.noSave) return;
   let failed = false;
@@ -427,8 +429,17 @@ export function save() {
     app.onSaveChange?.();
   }
 }
-// Another tab changed the record: this tab's old copy must not write over it, so it stops saving and asks for a reload (ui-view.js renderBanner).
-// It does not reload by itself: two open windows would reload each other, and an open draft would be lost.
+// The edit page's key (ui-edit.js commit): the same, with its own flag. The notice shows while either one is set.
+export function setEditSaveFailed(failed) {
+  if (failed === app.editSaveFailed) return;
+  app.editSaveFailed = failed;
+  app.onSaveChange?.();
+}
+export const saveBroken = () => app.saveFailed || app.editSaveFailed;
+// "כל שינוי נשמר מיד" is true only now: both keys save and no other tab holds a newer copy.
+export const saving = () => !saveBroken() && !app.otherTab;
+// Another tab changed the record (the build page's key, or the edit page's): this tab's old copy must not write over it, so it stops saving
+// and asks for a reload (ui-view.js renderNotice). It does not reload by itself: two open windows would reload each other, and an open draft would be lost.
 // yearIds is what a tab's shown alternative holds, not the student's record: each tab writes its own when a search ends.
 const sortedKeys = (v) =>
   Array.isArray(v) ? v.map(sortedKeys) : isObj(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortedKeys(v[k])])) : v;
@@ -446,7 +457,11 @@ export const recordOf = (json) => {
 };
 export function watchOtherTabs() {
   addEventListener('storage', (e) => {
-    if ((e.key !== KEY && e.key !== null) || recordOf(e.newValue) === recordOf(JSON.stringify(app.state))) return;
+    const all = e.key === null; // storage cleared in another tab
+    const moved =
+      ((all || e.key === KEY) && recordOf(e.newValue) !== recordOf(JSON.stringify(app.state))) ||
+      ((all || e.key === EDIT_KEY) && editMoved());
+    if (!moved) return;
     app.noSave = true;
     app.otherTab = true;
     app.onSaveChange?.();
@@ -742,6 +757,12 @@ export async function restoreBackup(payload) {
   // its split-only pins would leave a course with no schedule
   p.pins = pinsWithoutSplit(Object.values(app.sem), p.pins);
   app.state = p;
+  // The edit page's part of the backup (an older link has none: the saved edit state stays). A stale tab takes it in memory and writes
+  // nothing, like the rest of the restore (its notice already says to reload).
+  if (payload?.edit) {
+    const ok = restoreEdit(payload.edit, !app.otherTab);
+    if (!app.otherTab) setEditSaveFailed(!ok);
+  }
   uiReset();
   return true;
 }
