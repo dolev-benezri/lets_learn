@@ -159,6 +159,24 @@ for (const [name, moveOn] of [['focus moved out of the edit page (to the footer)
     assert.equal(await page.evaluate(() => window.__scrolls), moveOn ? 0 : 1);
   });
 
+test('phone: a control that moves in the redraw (the way back to the original goes below the week) is on screen when focus returns to it', async (t) => {
+  const page = await visit(t, 'phone', seed());
+  await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
+  const held = holdWorker(page);
+  await page.locator('[data-ed="search"]').click();
+  await held.reached;
+  await page.locator('[data-ed="restoreOriginal"]').focus();
+  held.release();
+  await page.locator('.prop-nav').waitFor({ timeout: 30000 });
+  await page.waitForTimeout(150);
+  const r = await page.evaluate(() => {
+    const e = document.activeElement.getBoundingClientRect();
+    return { focus: document.activeElement.dataset.ed, top: e.top, bottom: e.bottom, height: innerHeight };
+  });
+  assert.equal(r.focus, 'restoreOriginal');
+  assert.ok(r.top >= 0 && r.bottom <= r.height, `on screen: ${JSON.stringify(r)}`);
+});
+
 test('a short window: the focused switcher is on screen when the answer is taller than the window', async (t) => {
   const page = await visit(t, { width: 1280, height: 200 }, seed());
   await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });

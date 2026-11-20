@@ -506,6 +506,8 @@ function focusAnswer(place) {
   if (document.querySelector('dialog:modal') || $('pop').matches(':popover-open')) return null;
   const kept = place && inEdit(place), answer = V.result?.proposals.length ? inEdit('.prop-nav') : $('editNotes');
   (kept || answer || searchButton() || $('editTitle'))?.focus({ preventScroll: true });
+  // the redraw can move the control kept (on a phone the proposals take the way back below the week): "nearest" does nothing when it is on screen
+  kept?.scrollIntoView?.({ block: 'nearest' });
   return kept ? null : answer;
 }
 
