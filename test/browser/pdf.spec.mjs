@@ -207,6 +207,8 @@ test('a refresh of the page while the sheet is read, and while the preview is op
   await preview.locator('button[value="ok"]').click();
   await page.locator('#toast').filter({ hasText: /עודכנו 2 קורסים/ }).waitFor();
   assert.equal(await gradeOf(page, '10016'), 85);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).grades);
+  assert.deepEqual([saved['10016'], saved['30003']], [85, 90], 'and it is in the saved record, not only in memory');
   assert.equal(await page.locator('#gradeMsg').filter({ hasText: STALE }).count(), 0);
 });
 
