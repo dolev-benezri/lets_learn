@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-18T23:20:34.746Z",
+ "fetchedAt": "2026-11-19T23:24:16.827Z",
  "year": 2027,
  "startYear": 2026,
  "program": 112,
@@ -4656,6 +4656,10 @@
       {
        "id": "10128",
        "name": "תכנות מונחה עצמים"
+      },
+      {
+       "id": "10128",
+       "name": "תכנות מונחה עצמים"
       }
      ]
     }
@@ -4679,7 +4683,14 @@
        "room": "קריה ה'11 מעב דואלי"
       }
      ],
-     "exams": []
+     "exams": [
+      {
+       "kind": "בוחן אמצע",
+       "moed": 1,
+       "date": "2026-12-13",
+       "time": "07:59"
+      }
+     ]
     },
     {
      "id": "271026301/1",
@@ -9477,7 +9488,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר איילי נחשון",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "279090522/1",
@@ -9671,7 +9682,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9923,7 +9934,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' עזרא גלית",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10962,6 +10973,12 @@
       }
      ],
      "exams": [
+      {
+       "kind": "בוחן אמצע",
+       "moed": 1,
+       "date": "2026-12-13",
+       "time": "07:59"
+      },
       {
        "kind": "בחינה",
        "moed": 1,
