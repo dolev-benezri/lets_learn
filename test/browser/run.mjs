@@ -1,42 +1,19 @@
 // Real-browser checks in Playwright, in WebKit (the engine of iPhone Safari) unless BROWSER says chromium or firefox. Outside `npm test`: it needs the browser's download
 // (npx playwright install webkit).
-// Serves web/ on a free local port, hands the address to every test/browser/*.spec.mjs as SITE_URL, and runs them with node:test.
+// Serves web/ on a free local port (site.mjs), hands the address to every test/browser/*.spec.mjs as SITE_URL, and runs them with node:test.
+// The student's files, the catalog and the status come only from the frozen copy: a file missing there is a 404 and fails the run.
 //   npm run test:browser              (all)
 //   npm run test:browser -- a11y      (only the specs whose name contains a11y)
 import { spawn } from 'node:child_process';
-import { createServer } from 'node:http';
-import { readFile, readdir } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { startSite, finalCode } from './site.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)),
   WEB = path.join(HERE, '..', '..', 'web'),
-  DATA = path.join(WEB, 'data', 'afeka') + path.sep,
   FROZEN = path.join(HERE, '..', 'fixtures', 'real');
-const TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.svg': 'image/svg+xml',
-  '.woff2': 'font/woff2',
-  '.webp': 'image/webp',
-  '.png': 'image/png',
-  '.mjs': 'text/javascript',
-  '.wasm': 'application/wasm'
-};
-const server = createServer(async (req, res) => {
-  const p = path.join(WEB, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html'));
-  // the student's files come from the frozen copy: a seat that fills up tonight must not fail a test tomorrow
-  const frozen = p.startsWith(DATA) ? path.join(FROZEN, p.slice(DATA.length)) : p;
-  const body = p.startsWith(WEB) ? await readFile(frozen).catch(() => readFile(p)).catch(() => null) : null;
-  if (!body) {
-    res.writeHead(404).end();
-    return;
-  }
-  res.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] ?? 'application/octet-stream' }).end(body);
-}).listen(0, '127.0.0.1');
-await new Promise((r) => server.once('listening', r));
+const site = await startSite({ web: WEB, frozen: FROZEN });
 
 const specs = (await readdir(HERE))
   .filter((f) => f.endsWith('.spec.mjs') && f.includes(process.argv[2] ?? ''))
@@ -44,9 +21,15 @@ const specs = (await readdir(HERE))
   .map((f) => path.join(HERE, f));
 const child = spawn(process.execPath, ['--test', ...specs], {
   stdio: 'inherit',
-  env: { ...process.env, SITE_URL: `http://127.0.0.1:${server.address().port}/` }
+  env: { ...process.env, SITE_URL: `http://127.0.0.1:${site.port}/` }
 });
-child.on('exit', (code) => {
-  server.close();
-  process.exit(code ?? 1);
+child.on('exit', async (code) => {
+  await site.close(); // answers the requests still being read first, so a missing file is counted
+  if (site.missing.size) {
+    console.error(
+      `\nnot in the frozen copy (test/fixtures/real), so served as 404 and not from web/data:\n  ${[...site.missing].join('\n  ')}\n` +
+        'Add the file to FILES (a cycle) or META in test/fixtures/real.mjs, then run: node test/fixtures/real.mjs <the commit in test/fixtures/real/SOURCE>'
+    );
+  }
+  process.exit(finalCode(code, site.missing));
 });
