@@ -14,7 +14,7 @@ import {
   planningCls,
   summerPinned
 } from './app.js';
-import { progress, studyYear, passedWarnings } from './rules.js';
+import { progress, studyYear, passedWarnings, afterANotes } from './rules.js';
 import { approvedOn } from './settings.js';
 import { unlockCounts } from './solver-core.js';
 import {
@@ -272,7 +272,7 @@ export function renderView() {
         <button type="button" class="btn" data-act="prefsOk" data-k="prefsOk">הבנתי</button>
         <button type="button" class="btn" data-act="prefsUndo" data-k="prefsUndo">להחזיר את הקודם</button></p>`
       : '') +
-    (pair ? raw.warnings.map((w) => note('info', w)).join('') : '') +
+    (pair ? raw.warnings : afterANotes(app.cls, ids)).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
     (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
   // as showWeights: the search runs as 'best'
