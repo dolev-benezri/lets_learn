@@ -212,10 +212,27 @@ const watchCanvases = (page) =>
       return real.apply(this, a);
     };
   });
+// Counts the times pdf.js is told to let go of a page (page.cleanup): every PDFPageProxy shares the prototype that is patched.
+async function watchCleanups(page) {
+  const b64 = deckPdf([{ w: 100, h: 100 }]).toString('base64');
+  await page.evaluate(async (data) => {
+    const { withPdf } = await import('./grade-import.js');
+    window.__cleaned = 0;
+    await withPdf(new File([Uint8Array.from(atob(data), (c) => c.charCodeAt(0))], 'x.pdf'), async (doc) => {
+      const proto = Object.getPrototypeOf(await doc.getPage(1)),
+        real = proto.cleanup;
+      proto.cleanup = function (...a) {
+        window.__cleaned++;
+        return real.apply(this, a);
+      };
+    });
+  }, b64);
+}
 async function scannedDeck(t, pages, recognize) {
   const page = await friendEditor(t);
   await page.route('**/vendor/tesseract/tesseract.esm.min.js', (r) => r.fulfill({ contentType: 'text/javascript', body: ocr(recognize) }));
   await watchCanvases(page);
+  await watchCleanups(page);
   await page.locator('#feFile').setInputFiles({ name: 'deck.pdf', mimeType: 'application/pdf', buffer: deckPdf(pages) });
   const boxes = page.locator('#feImpPages input[type="checkbox"]');
   for (let i = 0; i < pages.length; i++) await boxes.nth(i).check({ timeout: 30000 });
@@ -234,6 +251,7 @@ test('a scanned deck is read one slide at a time: each is freed before the next 
     ],
     `async (c, opts) => {
       (globalThis.__alive ??= []).push(window.__big.filter((x) => x.width > 0).length);
+      (globalThis.__cleanedAt ??= []).push(window.__cleaned);
       if (opts.rectangle) return { data: { text: '${BLOCK_NAME}' } };
       return { data: { text: ['', '${TABLE_SLIDE}', ''][(globalThis.__slide = (globalThis.__slide ?? -1) + 1)], blocks: [] } };
     }`
@@ -247,6 +265,11 @@ test('a scanned deck is read one slide at a time: each is freed before the next 
   assert.equal(await page.evaluate(() => window.__big.every((c) => c.width === 0)), true, 'and the last one is freed too');
   assert.equal(await page.evaluate(() => globalThis.__ocrDone()), 1);
   assert.deepEqual(await page.evaluate(() => globalThis.__slide), 2);
+  // pdf.js's own copy of a slide is let go as soon as the slide is drawn: when each read starts, the slides drawn so far are all cleaned
+  assert.deepEqual(await page.evaluate(() => globalThis.__cleanedAt), [1, 1, 2, 3]);
+  // the group is the table's (the grid says 270600101): the weekly view of the friend's schedule holds that one only
+  const placed = await page.evaluate(() => [...new Set([...document.querySelectorAll('#feWeek [data-gid]')].map((b) => b.dataset.gid))]);
+  assert.deepEqual(placed, ['270600102']);
 });
 
 test('a scanned page that is very tall is drawn within the pixel cap, and a normal page is drawn as before', async (t) => {
