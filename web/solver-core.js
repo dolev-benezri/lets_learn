@@ -1,5 +1,5 @@
 // Schedule search core. Pure ES module: used by node tests and by solver-worker.js.
-import { classify, modeFor, reqMet } from './rules.js';
+import { afterAText, classify, modeFor, reqMet } from './rules.js';
 
 const SLOT_START = 7 * 60; // 07:00
 const SLOT = 30;           // minutes per bit, 32 bits = 07:00-23:00
@@ -980,7 +980,7 @@ export function searchYear({
       missing,
       split: [...new Set([...a.split, ...(b?.split ?? [])])],
       warnings: [
-        ...(needs.length ? [`התכנון של ב׳ מניח שעוברים את ${needs.map(name).join(', ')} בא׳`] : []),
+        ...(needs.length ? [afterAText(needs.map((id) => [name(id)]))] : []),
         ...regrouped,
         ...missing.flatMap((id) => clashesOf(id, dataA, a.exams).concat(clashesOf(id, dataB, b?.exams ?? [])))
       ],

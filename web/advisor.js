@@ -1,6 +1,6 @@
 // The one-page summary to bring to an academic advisor. advisorBlocks is its content, in plain strings: advisorHtml draws it on screen and for print
 // (#print), and advisor-pdf.js into a file. Pure: no DOM; in HTML every string goes through esc().
-import { progress, gradeAverage, studyYear, missingRequired, passedWarnings } from './rules.js';
+import { progress, gradeAverage, studyYear, missingRequired, passedWarnings, afterANotes } from './rules.js';
 import {
   esc,
   DISCLAIMER,
@@ -84,7 +84,7 @@ export function advisorBlocks({ state, data, res, cls, catalog, now = new Date()
     ...conflicts.map(conflictLine),
     ...passedWarnings(data, state).flatMap(([id, texts]) => texts.map((t) => `${name(id)}: ${t}`)),
     ...(cls?.warnings ?? []),
-    ...(res && 'a' in res ? res.warnings ?? [] : []),
+    ...(res && 'a' in res ? res.warnings ?? [] : afterANotes(cls, res?.courses ?? [])),
     // the year view says so on screen (ui-view.js): mandatory courses this year plan could not place in either semester
     ...(res && 'a' in res && res.missing?.length ? [`קורסי חובה שביקשת ולא נכנסו לאף סמסטר: ${res.missing.map(name).join(', ')}`] : []),
     ...(split.length ? [SPLIT_NOTE, splitLine(split.map(name))] : []),

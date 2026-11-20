@@ -284,17 +284,46 @@ export function withAfterA(data, state, cls, dataA = null) {
     if (s.status !== 'blocked'
       || !inB(c)
       || !['available', 'conditional'].includes(second[id].status)) continue;
-    const names = [...new Set(c.prereqs.filter((p) => p.kind === 'קדם' && !reqMet(p, ctx))
-      .flatMap((p) => p.anyOf.filter((a) => candA.has(a.id)).map((a) => a.name)))];
+    // a group per open prerequisite: its alternatives that are א׳ candidates (passing any one of them is enough)
+    // (inA: the alternative is one of those candidates; a corequisite group keeps the ב׳ alternatives too, for the plan check)
+    const waits = (kind, all = false) => c.prereqs.filter((p) => p.kind === kind && !reqMet(p, ctx))
+      .map((p) => p.anyOf.map((a) => ({ id: a.id, name: a.name, inA: candA.has(a.id) })).filter((a) => all || a.inA))
+      .filter((g) => g.some((a) => a.inA));
+    const before = waits('קדם');
+    const names = [...new Set(before.flat().map((a) => a.name))];
     // a corequisite still owed in ב׳ stays: on a single ב׳ file these statuses go straight to the solver
     const par = second[id].missingParallel;
     statuses[id] = {
       status: 'afterA',
       reasons: [`אפשר בסמסטר ב׳ אחרי ${names.join(', ')}`, ...(par ? second[id].reasons.slice(0, 1) : [])],
+      // what it counts on from א׳, a group of alternatives per open prerequisite (afterANotes). A corequisite an א׳
+      // candidate meets is counted passed too, but a plan that holds it in ב׳ itself needs nothing from א׳ for it
+      // (one only ב׳ offers stays owed: missingParallel).
+      after: before,
+      afterCo: waits('מקביל', true),
       ...(par && { missingParallel: par })
     };
   }
   return { ...cls, statuses };
+}
+
+// The warning of a ב׳ plan that counts on א׳: the year pair (solver-core searchYear) and "רק ב׳" say it in these words.
+// groups: one array of alternative names per prerequisite ("X או Y": passing either is enough).
+export const afterAText = (groups) => `התכנון של ב׳ מניח שעוברים את ${groups.map((g) => g.join(' או ')).join(', ')} בא׳`;
+// "רק ב׳" has no pair to carry warnings: its notes come from the statuses of the planned courses (withAfterA). [] when
+// none of them waits for an א׳ course.
+export function afterANotes(cls, ids) {
+  const seen = new Map(); // one line for all: a prerequisite two courses wait for is named once
+  for (const id of ids) {
+    const s = cls?.statuses?.[id];
+    if (s?.status !== 'afterA') continue;
+    const co = (s.afterCo ?? []).filter((g) => !g.some((a) => ids.includes(a.id))); // no alternative of it is in the plan
+    for (const g of [...(s.after ?? []), ...co]) {
+      const from = g.filter((a) => a.inA); // the alternatives that א׳ would have to give
+      seen.set(from.map((a) => a.id).join('\0'), from.map((a) => a.name));
+    }
+  }
+  return seen.size ? [afterAText([...seen.values()])] : [];
 }
 
 // Direct status choice. Failures stay on file once passed: regulations 11.4.1 and 11.5.x count every failure. An

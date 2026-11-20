@@ -390,6 +390,33 @@ for (const size of Object.keys(SIZES)) {
   });
 }
 
+// Deep scan 2026-11-19 #6: a "רק ב׳" plan that holds such a course says it counts on the א׳ course, as the year view does.
+// (no top-level await in a spec: node:test then hangs after the run)
+const staticsId = async () => {
+  const B = JSON.parse(await readFile(new URL('../fixtures/real/2027-2/30-2026.json', import.meta.url), 'utf8'));
+  return Object.keys(B.courses).find((id) => B.courses[id].name === 'סטטיקה של גוף קשיח');
+};
+for (const size of Object.keys(SIZES)) {
+  test(`${size}: "רק ב׳" with סטטיקה של גוף קשיח planned says it counts on the א׳ course`, async (t) => {
+    const seed = JSON.parse(SUMMER_Y1['afeka-sched-v1']);
+    const id = await staticsId();
+    assert.ok(id, 'the frozen ב׳ file has the course');
+    const page = await visit(t, size, {
+      ...SUMMER_Y1,
+      'afeka-sched-v1': JSON.stringify({
+        ...seed,
+        profile: { ...seed.profile, summer: false },
+        scope: 'ב',
+        choices: { [id]: 'must' }
+      })
+    });
+    await idle(page);
+    await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+    await page.locator('#semnote .notice', { hasText: 'התכנון של ב׳ מניח שעוברים את' }).first().waitFor({ state: 'attached', timeout: 30000 });
+    assert.match(await page.locator('#semnote').textContent(), /בא׳/);
+  });
+}
+
 // Audit 2026-10-23 #38: "לא לפני" at or after "לא אחרי" is refused at the field, and the old value comes back.
 for (const size of Object.keys(SIZES)) {
   test(`${size}: an inverted hour is refused`, async (t) => {
