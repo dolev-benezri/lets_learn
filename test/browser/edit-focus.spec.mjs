@@ -20,7 +20,7 @@ const BASE = [
   L('30112', 'תרמודינמיקה 1', 'סופי-הרצאה+תרגול', '273011204', 3, '15:00', '16:50'), L('30112', 'תרמודינמיקה 1', 'תרגול', '273011204/1', 3, '17:00', '17:50')
 ];
 const DS = { year: 2027, sem: 'א', program: 30, startYear: 2026 };
-// found: chemistry may move and Thursday (day 4) should be free. nothing: Wednesday (day 3) cannot be freed while thermodynamics stays on it.
+// found: chemistry may move and Wednesday (ד׳, day 4; Sunday is 1) should be free. nothing: Tuesday (ג׳, day 3) cannot be freed while thermodynamics stays on it.
 const state = (over) => ({ v: 1, dataset: DS, registered: false, owned: [], original: BASE, baseline: BASE, movable: ['30003'], goal: { dayOff: 4 }, ...over });
 const seed = (over) => ({ ...DONE, 'afeka-sched-v1-edit': JSON.stringify(state(over)) });
 const visit = (t, size, s) => visitIn(browser, t, size, s, '#edit/changes');

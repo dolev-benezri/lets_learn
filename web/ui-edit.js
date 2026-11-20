@@ -5,9 +5,9 @@ import { $, needsProgram, copy, toast } from './ui-common.js';
 import { DAYS, groupIndex, typeLabel, icon, nameHtml, hourRange, renderWeek, assignColors, placePop } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { classify } from './rules.js';
-import { kinds, overlaps, displayData, summaryLine, changeText, PROPOSAL_ONLY, FIXED } from './edit-search.js';
+import { kinds, overlaps, displayData, summaryLine, changeText, splitOnlySwaps, PROPOSAL_ONLY, FIXED } from './edit-search.js';
 import { reqContext, reqMet } from './rules.js';
-import { groupNumber, ago, YEDION_HINT } from './ui-text.js';
+import { groupNumber, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine } from './ui-text.js';
 import { identityPick } from './ui-me.js';
 import { getEdit, setEdit, saveEdit, restoredCount, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
 
@@ -177,6 +177,7 @@ const opt = (v, label, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}
 const chipSelect = (goal, value, sr, shown, options) =>
   `<label class="chip${value ? ' on' : ''}"><span class="sr">${sr}</span><select data-ed-goal="${goal}">${opt('', shown, !value)}` +
   `${options.map(([v, label]) => opt(v, label, v === value)).join('')}</select></label>`;
+// text is HTML (a group line, and the split tag when the option needs a split)
 const swapButton = (course, ids, text) =>
   `<button type="button" class="btn" data-ed="pickSwap" data-course="${esc(course)}" data-groups="${esc(ids.join(','))}">${text}</button>`;
 // Goal chips: two are drop-downs (the phone's own picker), one a toggle, then "+ קורס".
@@ -189,6 +190,11 @@ export function goalsHtml(edit, addable) {
     ${addable.length ? chipSelect("addCourse", null, "הוספת קורס", "+ קורס", addable.map((c) => [c.id, c.name])) : ""}
   </div>`;
 }
+
+// The build page's option "להציג גם הרצאה ותרגול מופרדים" (state.constraints.split): the same checkbox, handled by CHG.split (ui-actions.js),
+// which asks for the advisor's warning to be acknowledged before it turns on. The search follows it (edit-search.js editQuery).
+export const splitOptionHtml = (on) =>
+  `<label class="check edit-split"><input type="checkbox" data-chg="split" data-k="editSplit"${on ? ' checked' : ''}> להציג גם הרצאה ותרגול מופרדים</label>`;
 
 // What the next search will use: movable courses, new groups, added and removed courses, each undone with one tap.
 export function changesHtml(edit, data) {
@@ -214,11 +220,12 @@ const lecturersOf = (ls, data, course) =>
 
 // One course's card: the old place struck through, the new one highlighted, the lecturer when it changes, the full-group tag.
 function cardHtml(edit, p, data, course, tag) {
+  const split = p.split?.includes(course);
   const old = edit.baseline.filter((l) => l.course === course), now = p.lessons.filter((l) => l.course === course);
   const name = data.courses[course]?.name ?? old[0]?.name ?? now[0]?.name ?? course;
   const was = lecturersOf(old, data, course), is = lecturersOf(now, data, course);
   const full = !edit.registered && now.some((l) => l.group && groupOf(data, course, l.group)?.full);
-  return `<li class="pcard"><h4>${nameHtml(name)}${tag ? ` <span class="tag">${tag}</span>` : ''}</h4>
+  return `<li class="pcard"><h4>${nameHtml(name)}${tag ? ` <span class="tag">${tag}</span>` : ''}${split ? ` <span class="tag warn">${esc(SPLIT_TAG)}</span>` : ''}</h4>
     ${old.length ? `<p class="was"><s>${whenOf(old)} · <span class="nw">קבוצה ${numsOf(old)}</span></s></p>` : ''}
     ${now.length ? `<p class="now">${whenOf(now)} · <span class="nw">קבוצה ${numsOf(now)}</span>${full ? ' <span class="tag bad">מלאה</span>' : ''}</p>` : ''}
     ${was !== is && is ? `<p class="hint">מרצה: ${was ? `<s>${esc(was)}</s> ` : ''}${esc(is)}</p>` : ''}
@@ -237,7 +244,11 @@ export function proposalHtml(edit, p, data, { zero = false } = {}) {
   const warn = zero
     ? overlaps(p.lessons).map(([a, b]) => `<p class="warn-text">${icon('alert')} <span>${esc(name(a))} ו${esc(name(b))} חופפים</span></p>`).join('')
     : '';
-  return `${head}${cards.length ? `<ul class="pcards">${cards.join('')}</ul>` : ''}${warn}<p class="disclaimer">${PROPOSAL_ONLY}</p>`;
+  // the build page's own note and line, for a proposal that splits a course (the student switched the option on there)
+  const split = !zero && p.split?.length
+    ? `<p class="warn-text">${icon('alert')} <span>${esc(SPLIT_NOTE)}</span></p><p class="split-line">${esc(splitLine(p.split.map(name)))}</p>`
+    : '';
+  return `${head}${split}${cards.length ? `<ul class="pcards">${cards.join('')}</ul>` : ''}${warn}<p class="disclaimer">${PROPOSAL_ONLY}</p>`;
 }
 
 // The days a phone's day tabs mark: where a changed group meets and where a moved course used to be ("היה כאן").
@@ -327,6 +338,7 @@ export function renderEdit() {
   // proposals worked out on a record or a data file that is not the current one are dropped, and a new search is asked for
   const dropped = staleResult();
   if (dropped) (V.result = null), (V.i = 0);
+  reconcileSplitSwaps();
   const st = edit(), same = sameNow(st);
   if (onChanges() && (!st.baseline.length || !same)) history.replaceState(null, '', '#edit');
   const label = `<button type="button" class="mode-label" data-act="menu" data-k="editMode">עורכים מערכת קיימת · החלפה</button>`;
@@ -341,6 +353,18 @@ export function renderEdit() {
   if (gx) document.querySelector('#edit .goals')?.scrollTo({ left: gx });
   if (dropped && step === 2) say(STALE);
   if ($('editIdentity') && (!app.state.profile.year || needsProgram())) $('editIdentity').innerHTML = identityPick(app.state.profile.year, true);
+}
+
+// A swap picked while the split option was on (a lecture with a tutorial the college does not link) cannot be searched once the option is
+// off, from this page or from the build page: it is taken back, and the student is told, instead of a search that finds nothing.
+function reconcileSplitSwaps() {
+  const st = edit(), data = dataOf(st.dataset?.sem);
+  if (app.state.constraints.split || !data || !Object.keys(st.swaps).length) return;
+  const gone = splitOnlySwaps(st.swaps, data);
+  if (!gone.length) return;
+  invalidate();
+  commit({ ...st, swaps: Object.fromEntries(Object.entries(st.swaps).filter(([c]) => !gone.includes(c))) });
+  toast(`ההחלפה של ${gone.map((c) => nameIn(st, data, c)).join(', ')} בוטלה: היא דרשה הפרדת הרצאה ותרגול, וההפרדה כבויה.`);
 }
 
 // ---------- step 2 ----------
@@ -374,7 +398,7 @@ function stepTwo(st) {
   const [top, panel] = resultsHtml(st, data, pr, props.length), below = props.length > 0 && !!globalThis.matchMedia?.('(max-width:759px)').matches;
   return `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
     <p class="me-step"><b>צעד 2 מתוך 2.</b> לחצו על שיעור כדי לסמן שיכול לזוז, ובחרו מה חשוב לכם.</p></div>
-    ${goalsHtml(st, addableCourses(data, statuses, st))}${changesHtml(st, data)}
+    ${goalsHtml(st, addableCourses(data, statuses, st))}${changesHtml(st, data)}${splitOptionHtml(!!app.state.constraints.split)}
     <div id="editResults">${top}${below ? '' : panel}</div>
     <h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
     <div class="daysel" id="editDays" role="group" aria-label="בחירת יום">${days}</div>
@@ -472,6 +496,9 @@ async function search() {
   if (stamp !== V.edits) V.result = null; // something changed while it ran: the answer is for an older question
   V.i = V.result?.proposals.length ? 1 : 0;
   V.fx = 'prop';
+  const had = !!V.result;
+  await dialogClosed();
+  if (had && !V.result) return; // dropped while the dialog was open (the record changed): the page was drawn then, saying to search again
   if (onChanges()) {
     const active = document.activeElement, place = placeOf(active); // before the page is drawn again
     renderEdit();
@@ -489,6 +516,14 @@ async function search() {
 // looked up in the edit page only: the build page stays in the document, hidden, with controls that look the same
 const inEdit = (selector) => $('edit').querySelector(selector);
 const searchButton = () => inEdit('[data-ed="search"]');
+// An answer that comes while a modal dialog is open (the split warning, a question about a parallel course) waits until it is closed:
+// drawing the page now would replace the control the dialog gives focus back to. A tick after "close", so the dialog's own handling
+// (focus back, the answer to its question) is done first.
+// One question can follow another (removing a course asks about each course that needs it in parallel): it waits for the last.
+const dialogClosed = async () => {
+  for (let d = document.querySelector('dialog:modal'); d; d = document.querySelector('dialog:modal'))
+    await new Promise((done) => d.addEventListener('close', () => setTimeout(done, 0), { once: true }));
+};
 // A selector that finds a control of the page again after it is drawn again (null: it is not in the page, it is the search button
 // itself, or nothing on it tells it apart).
 const REFIND = ['data-ed', 'data-ed-goal', 'data-ed-pick', 'data-day', 'data-course', 'data-k', 'data-act', 'href'];
@@ -528,6 +563,21 @@ const refocus = () => {
   if (!a || a === document.body) $('editTitle')?.focus({ preventScroll: true });
 };
 
+// The groups `course` has in each proposal, as options for the swap menu: the groups it has now (`now`, sorted and joined) and repeats are
+// left out. split: this option puts a lecture with a tutorial the college does not link (the build page's option, and its warning).
+export function swapOptions(proposals, course, now) {
+  const seen = new Set([now]), key = (ids) => ids.slice().sort().join();
+  return proposals
+    .map((p) => ({ ids: [...new Set(p.lessons.filter((l) => l.course === course && l.group).map((l) => l.group))], split: !!p.split?.includes(course) }))
+    .filter(({ ids }) => ids.length && !seen.has(key(ids)) && seen.add(key(ids)));
+}
+export function swapListHtml(options, course, data) {
+  const line = ({ ids, split }) => ids.map((id) => groupLine(id, data)).join(' + ') + (split ? ` <span class="tag warn">${esc(SPLIT_TAG)}</span>` : '');
+  return options.length
+    ? `<ul class="pop-alts">${options.map((o) => `<li>${swapButton(course, o.ids, line(o))}</li>`).join('')}</ul>`
+    : '<p class="hint">אין קבוצות אחרות שמתאימות לשאר המערכת.</p>';
+}
+
 // "קבוצות אחרות": the same search as the proposals with only this course movable; each proposal's groups for it are one option.
 async function others(course) {
   const st = edit(), data = dataOf(st.dataset.sem), out = $('popOthers');
@@ -543,13 +593,7 @@ async function others(course) {
   }
   if (!out.isConnected) return;
   const now = [...new Set(effectiveLessons(st, data).filter((l) => l.course === course).map((l) => l.group))].sort().join();
-  const seen = new Set([now]);
-  const options = r.proposals.map((p) => [...new Set(p.lessons.filter((l) => l.course === course && l.group).map((l) => l.group))])
-    .filter((ids) => ids.length && !seen.has(ids.slice().sort().join()) && seen.add(ids.slice().sort().join()));
-  const line = (ids) => ids.map((id) => groupLine(id, data)).join(' + ');
-  out.innerHTML = options.length
-    ? `<ul class="pop-alts">${options.map((ids) => `<li>${swapButton(course, ids, line(ids))}</li>`).join('')}</ul>`
-    : '<p class="hint">אין קבוצות אחרות שמתאימות לשאר המערכת.</p>';
+  out.innerHTML = swapListHtml(swapOptions(r.proposals, course, now), course, data);
   (out.querySelector('button') ?? out).focus?.({ preventScroll: true });
 }
 
@@ -686,7 +730,7 @@ const ACT_ED = {
   },
   copyChanges() {
     const p = shownProposal(), st = edit();
-    if (p) copy(changeText(st.registered ? st.original : st.baseline, p.lessons, dataOf(st.dataset.sem)), 'השינויים הועתקו');
+    if (p) copy(changeText(st.registered ? st.original : st.baseline, p.lessons, dataOf(st.dataset.sem), p.split), 'השינויים הועתקו');
   },
   restoreOriginal() {
     V.result = null;

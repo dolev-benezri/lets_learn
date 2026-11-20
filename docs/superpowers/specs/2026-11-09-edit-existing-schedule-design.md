@@ -12,7 +12,7 @@ Success: a student with a schedule on their phone gets a useful proposal in unde
 
 | Question | Answer |
 |---|---|
-| Where does the existing schedule come from | A file from the Afeka planner (the same PDF/screenshot format friends send) and picking by hand. The portal's own file is out of version 1: nobody here has seen its format; it comes in once there is a real sample. |
+| Where does the existing schedule come from | The portal's own Excel export (the yedion, "אפקה-נט", `.xlsx`: read as printed, so a known course code is exact; `web/yedion-xlsx.js`, added 2026-11-09 once a sample existed), a file from the Afeka planner (the same PDF/screenshot format friends send), and picking by hand. |
 | Before or after registration | Both. The student says at the start whether the schedule is already registered, and the full-group rule follows (see Search). |
 | What a student can do in version 1 | Move a course, add or remove a course, one-tap goals, and Codex's extras: say which course stands in the way, copy only the changed group numbers, restore the original in one tap. |
 | Where the mode switch lives | A choice on first entry, a small mode label at the top of the edit page, and the lasting switch in a side menu (☰). |
@@ -32,7 +32,6 @@ In version 1:
 - Smooth transitions: switching proposals, switching days, highlighting what changed.
 
 Out of version 1, with the reason:
-- The portal file: no sample of its format.
 - Two semesters at once: registration changes happen per semester.
 - A change budget inside the solver (approach B): needs changes deep in `search` and its pruning.
 - The lesson gliding to its new place: phones show one day at a time (`web/style.css:1256`), so a move to another day is out of sight, and the grid is re-rendered as HTML (`web/ui-view.js:425`), not moved element by element. Version 1 marks the old place and offers "הראה את היום החדש"; the glide is version 2.
@@ -85,8 +84,10 @@ Out of version 1, with the reason:
 
 - The edit page saves under its own localStorage key, `afeka-sched-v1-edit`, separate from the build page's save. The build page's loading ignores it, and the existing "erase everything" already removes it by its prefix (`web/app.js:256`, `web/app.js:299`).
 - Shape:
-  `{ v: 1, dataset: { year, sem, program, startYear }, registered: bool, owned: [group ids], original: [lesson], baseline: [lesson], movable: [course ids], swaps: { course id: [group ids] }, added: [course ids], removed: [course ids], goal: { dayOff, notAfter, fewerGaps } }`
+  `{ v: 1, dataset: { year, sem, program, startYear }, registered: bool, owned: [group ids], original: [lesson], baseline: [lesson], movable: [course ids], swaps: { course id: [group ids] }, added: [course ids], removed: [course ids], goal: { dayOff, notAfter, fewerGaps }, draft: null | { rows, choices, registered, sem } }`
   where a lesson is `{ course, name, type, group | null, day, start, end }`: a snapshot of what was loaded, so the schedule can be drawn and restored even when the data changes.
+- `draft`: the rows read from a file or picked by hand in step 1, with the student's choices, until "הבא" turns them into `original` and `baseline`. It is saved so a reload keeps the review, and it is left out of a backup link (rows of text read from a file would make the link long for nothing).
+- Saving and tabs (added 2026-11-20): `saveEdit` reports whether it wrote. The edit key has its own failure flag, so a good save of the build page's key does not hide a failed edit save; while either fails the page shows the same notice as the build page ("השינויים לא נשמרים…", with the backup-link button) on `#edit` too, and "כל שינוי נשמר מיד" is hidden. Another tab's write to the key (the build key or this one) turns on the "טען מחדש" notice and the older tab stops saving. A backup link carries the edit state (`edit`, without `draft`) and a restore reads it; an older link without it leaves the saved edit state as it is. A link that would be too long for a restore to read (over the reader's length or decoded-size limit; far from a real schedule) is copied without the edit part, and the copy says so. A proposal result is stamped with the student's record, the data file and the restore count; a changed stamp drops it, on entering the page and before "שמור הצעה", and asks for a new search.
 - `original`: the schedule as loaded, never changed until a new schedule is loaded. "חזרה למערכת המקורית" copies it into `baseline` and clears `movable`, `swaps`, `added` and `removed`.
 - `baseline`: the current schedule. "שמור הצעה" writes the proposal into it and clears `movable`, `swaps`, `added` and `removed`.
 - `owned`: the group ids confirmed as registered in step 1. Only these may stay while full. A saved proposal is not registered, so its new groups never join `owned`.
@@ -107,7 +108,7 @@ An adapter turns the edit state into `search` calls (`web/solver-core.js:413`):
 - A proposal must reach the goal: a free-day or finish-by goal is hard; a fewer-gaps proposal must improve on the baseline. A result identical to the baseline is dropped (it is proposal 0 already).
 - Registered: `includeFull: false` for every destination. One small solver option, `allowFull: [group ids]`, REPLACES the pin exemption when it is given: today a pinned full group passes whatever `includeFull` says (`web/solver-core.js:154`), and swaps and saved baselines are pinned, so with `allowFull` set a full group passes only if it is in that list, pinned or not. Only `owned` ids go in it. It applies both where options are built and where diagnoses rebuild them (`web/solver-core.js:101`, `web/solver-core.js:648`), with option de-duplication kept. Without `allowFull` (the build page) nothing changes.
 - Not registered: full groups show with their warning, as today.
-- Lecture and tutorial move together as today; split only through the existing option and its warning.
+- Lecture and tutorial move together as today. Split (a lecture with a tutorial the college does not link) is the build page's own option, `state.constraints.split`, with its own confirmation and warning (built 2026-11-20): step 2 shows the same checkbox (handled by `CHG.split`), and the search follows it (`editQuery`; `searchAll`, so proposals that split come after the regular ones). A proposal or a swap option that splits a course carries the build page's note, line and tag (`SPLIT_NOTE`, `splitLine`, `SPLIT_TAG`), and the copied changes name the course for the advisor. A split the student already has and keeps is not flagged. A swap picked while the option was on that only it allows is taken back, with a message, once the option is off (`splitOnlySwaps`), so a search is never asked for groups it cannot build. Changing the option changes the record, so the shown proposals are dropped (the stamp, "Saving and tabs").
 - Ranking: proposals are sorted by the number of courses whose groups differ from the baseline, then by the solver's score. The search keeps its top results by score and prunes by score (`web/solver-core.js:556`, `:581`, `:592`), so this is the fewest changes among the proposals found, not a proven minimum; the page never claims more. When the student marked one course movable, every proposal changes at most that course.
 - A goal with nothing marked movable: the adapter tries each baseline course as the only movable one, one short search each with an overall time cap, and shows the proposals with one change. If none reaches the goal, it says so and asks the student to mark what may move. Pairs are version 2.
 - No proposal: the same single-course tries name the courses that would make it possible ("אם תורת החומרים יזוז, יש פתרון", with a button "תן לה לזוז"). The page offers that only when such a try found a result; a timeout is reported as "לא הספקנו לבדוק הכל", not as "אין פתרון". The solver's text diagnosis (`web/solver-core.js:363`, `:626`, `:687`) is shown as today, without parsing course ids out of it.
@@ -186,7 +187,7 @@ Third round, same day: "sure" needs the exact code, one group, the same day and 
 
 ## Open after version 1
 
-- The portal file, once a sample exists.
+- (Done after this design: the portal's Excel file is read, see "Where does the existing schedule come from".)
 - The lesson glide.
 - Pairs in the automatic tries.
 - Approach B (a change budget inside the solver) if students ask for "change at most two courses".
