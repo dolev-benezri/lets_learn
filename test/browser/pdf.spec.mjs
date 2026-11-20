@@ -168,7 +168,46 @@ test('a track switch while the preview is open: applying it changes nothing, and
   await preview.locator('button[value="ok"]').click();
   await page.locator('#gradeMsg').filter({ hasText: STALE }).waitFor({ timeout: 15000 });
   assert.equal(await gradeOf(page, '10016'), null, 'the new track has no grade from the old sheet');
-  assert.equal(await page.locator('.toast').filter({ hasText: /עודכנ/ }).count(), 0, 'and no "updated" message');
+  await page.waitForTimeout(300); // the toast is filled 50 ms after it is shown
+  assert.equal(await page.locator('#toast').filter({ hasText: /עודכנ/ }).count(), 0, 'and no "updated" message');
+});
+
+test('a track switch while the preview is open leaves the state alone, also what the sheet would have confirmed (an assumed pass)', async (t) => {
+  const assumed = { ...SEED, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, passed: ['10016'], assumed: ['10016'] }) };
+  const page = await visitIn(browser, t, 'phone', assumed, '#me');
+  await page.locator('#gradeFile').waitFor({ state: 'attached' });
+  await uploadSheet(page);
+  const preview = page.locator('dialog.dlg-rows[open]');
+  await preview.waitFor({ timeout: 30000 });
+  assert.equal(await switchCohort(page), true);
+  await preview.locator('button[value="ok"]').click();
+  await page.locator('#gradeMsg').filter({ hasText: STALE }).waitFor({ timeout: 15000 });
+  assert.equal(await page.evaluate(async () => (await import('./app.js')).app.state.assumed.includes('10016')), true, 'the pass is still only assumed');
+});
+
+test('a refresh of the page while the sheet is read, and while the preview is open, is no track switch: the import goes through and is saved', async (t) => {
+  const page = await visitIn(browser, t, 'phone', SEED, '#me');
+  await page.locator('#gradeFile').waitFor({ state: 'attached' });
+  // in the year view every refresh makes a new data object: comparing that one would call this import stale
+  const refresh = () =>
+    page.evaluate(async () => {
+      const m = await import('./app.js'),
+        before = m.app.data;
+      m.refresh();
+      return before !== m.app.data;
+    });
+  const release = await holdPdf(page);
+  await uploadSheet(page);
+  await page.locator('#gradeMsg').filter({ hasText: /קוראים/ }).waitFor();
+  assert.equal(await refresh(), true, 'a refresh replaces the data object');
+  release();
+  const preview = page.locator('dialog.dlg-rows[open]');
+  await preview.waitFor({ timeout: 30000 });
+  assert.equal(await refresh(), true);
+  await preview.locator('button[value="ok"]').click();
+  await page.locator('#toast').filter({ hasText: /עודכנו 2 קורסים/ }).waitFor();
+  assert.equal(await gradeOf(page, '10016'), 85);
+  assert.equal(await page.locator('#gradeMsg').filter({ hasText: STALE }).count(), 0);
 });
 
 // A stand-in for tesseract: the path through thumbnails, the tick boxes, scanCanvases and the merge runs for real, and only the recognition is canned.
