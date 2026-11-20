@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-18T23:20:34.746Z",
+ "fetchedAt": "2026-11-20T23:24:46.887Z",
  "year": 2027,
  "startYear": 2027,
  "program": 40,
@@ -5155,7 +5155,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בן יעקב יואב",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "274022001/1"
@@ -5177,7 +5177,9 @@
      "lecturer": "ד\"ר בן יעקב יואב",
      "full": false,
      "semester": "ב",
-     "linked": [],
+     "linked": [
+      "274022003/1"
+     ],
      "meetings": [
       {
        "day": 1,
@@ -5193,7 +5195,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר בן יעקב יואב",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -6187,7 +6189,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "מר וולף רון",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-19T23:24:16.827Z",
+ "fetchedAt": "2026-11-20T23:24:46.887Z",
  "year": 2027,
  "startYear": 2024,
  "program": 10,
@@ -5294,7 +5294,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר בינסקי הדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "271030305/1"
@@ -5345,7 +5345,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "ד\"ר בינסקי הדר",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9035,7 +9035,9 @@
      "lecturer": "ד\"ר ביתן רוני",
      "full": false,
      "semester": "א",
-     "linked": [],
+     "linked": [
+      "279090227/1"
+     ],
      "meetings": [
       {
        "day": 2,

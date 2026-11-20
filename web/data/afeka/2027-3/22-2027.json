@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-16T23:19:49.249Z",
+ "fetchedAt": "2026-11-20T23:24:46.887Z",
  "year": 2027,
  "startYear": 2027,
  "program": 22,
@@ -3602,6 +3602,15 @@
    "credits": 2.5,
    "offered": false,
    "prereqs": [
+    {
+     "kind": "קדם",
+     "anyOf": [
+      {
+       "id": "90914",
+       "name": "משוואות דיפ' רגילות"
+      }
+     ]
+    },
     {
      "kind": "קדם",
      "anyOf": [
