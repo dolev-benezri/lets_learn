@@ -796,7 +796,7 @@ export async function applyPendingBackup() {
   app.pendingBackup = null;
   if (!p) return;
   const keep = await runBackup(p, pendingSaved);
-  if (keep) history.replaceState(null, '', location.pathname + keep);
+  if (keep) history.replaceState(null, '', location.pathname + location.search + keep);
   ensurePassed();
   refresh();
 }
@@ -817,7 +817,7 @@ export async function applyHash() {
   }
   ensurePassed();
   if (h?.type === 'friend') app.friendLanding = h.payload;
-  if (h) history.replaceState(null, '', location.pathname + keep);
+  if (h) history.replaceState(null, '', location.pathname + location.search + keep);
   refresh();
 }
 

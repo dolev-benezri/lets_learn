@@ -1,0 +1,106 @@
+/* Design A "הלוח" (docs/superpowers/plans/2026-11-21-design-a-adoption.md). Linked from index.html and legal.html, and every rule is scoped under
+   :root[data-design="a"] (web/design.js sets it before the first paint), so the classic site renders as it always did
+   (test/design-a-css.test.mjs). Task 1: the palette only. The light colours sit under :not([data-theme="dark"]) and the dark ones under
+   [data-theme="dark"]: style.css puts its dark tokens on :root[data-theme="dark"], which has the specificity of a plain scoped rule, and the
+   two blocks here never overlap, so no light value can leak into dark. test/design-contrast.test.mjs checks every pair in both. */
+:root[data-design="a"] {
+  --design:a; /* a sentinel the final proof (Task 13) reads; non-colour tokens of A go here */
+}
+:root[data-design="a"]:not([data-theme="dark"]) {
+  --bg:#E9EDF1;
+  --surface:#FFFFFF;
+  --surface-2:#F1F4F7;
+  --chrome:var(--surface);
+  --border:#CFD7DF;
+  --border-strong:#B4BFCA;
+  --border-input:#737F8C;
+  --text:#121820;
+  --text-2:#4D5A68;
+  --text-3:#56616F;
+  --primary:#0A6B66;
+  --primary-hover:#085A56;
+  --primary-press:#064A47;
+  --primary-soft:#DCF1EF;
+  --on-primary:#FFFFFF;
+  --success:#1D7A3E;
+  --success-soft:#E1F5E7;
+  --warning:#955400;
+  --warning-soft:#FFF3DC;
+  --danger:#C0262D;
+  --danger-soft:#FDE7E8;
+  --primary-line:#B2DAD6;
+  --success-line:#B7E4CF;
+  --warning-line:#F2D9A8;
+  --danger-line:#F6C7C9;
+  --friend:#8E2A7E;
+  --friend-soft:#F8EAF6;
+  --stripe:#F6F8FA;
+  --seg-on:var(--surface);
+  --hover-veil:rgba(255,255,255,.6);
+  --scrim:rgba(8,12,16,.4);
+  --c0-bg:#E6EEFB;
+  --c0-fg:#2962C2;
+  --c1-bg:#F9E6EF;
+  --c1-fg:#B8286F;
+  --c2-bg:#E2F1EC;
+  --c2-fg:#0A734F;
+  --c3-bg:#F9EFE1;
+  --c3-fg:#945A06;
+  --c4-bg:#EFE9FA;
+  --c4-fg:#7A45D6;
+  --c5-bg:#E2F1F5;
+  --c5-fg:#086D87;
+  --c6-bg:#FAE7E6;
+  --c6-fg:#B93427;
+  --c7-bg:#EBF2E2;
+  --c7-fg:#476F0B;
+}
+:root[data-design="a"][data-theme="dark"] {
+  --bg:#0B0F14;
+  --surface:#141A21;
+  --surface-2:#1C242D;
+  --chrome:#10161C;
+  --border:#2C3743;
+  --border-strong:#3F4D5C;
+  --border-input:#66768A;
+  --text:#E8EEF4;
+  --text-2:#9FB0C0;
+  --text-3:#92A0AF;
+  --primary:#3CCFC1;
+  --primary-hover:#5DDACE;
+  --primary-press:#2BB5A8;
+  --primary-soft:#0F3532;
+  --on-primary:#04201D;
+  --success:#5FD08A;
+  --success-soft:#12301E;
+  --warning:#F0B04A;
+  --warning-soft:#33270F;
+  --danger:#FF6B6B;
+  --danger-soft:#3A1618;
+  --primary-line:#1B5A55;
+  --success-line:#1E5A45;
+  --warning-line:#5A4216;
+  --danger-line:#5A2329;
+  --friend:#EBA6DF;
+  --friend-soft:#38193A;
+  --stripe:#171F28;
+  --seg-on:var(--border-strong);
+  --hover-veil:rgba(255,255,255,.06);
+  --scrim:rgba(0,0,0,.6);
+  --c0-bg:#132440;
+  --c0-fg:#5C8FE3;
+  --c1-bg:#36162B;
+  --c1-fg:#DC669F;
+  --c2-bg:#0B2A25;
+  --c2-fg:#43A482;
+  --c3-bg:#352711;
+  --c3-fg:#CF8A23;
+  --c4-bg:#231B3F;
+  --c4-fg:#9E76E0;
+  --c5-bg:#0B2A36;
+  --c5-fg:#359FBB;
+  --c6-bg:#371919;
+  --c6-fg:#DE6F64;
+  --c7-bg:#1D2B13;
+  --c7-fg:#78A238;
+}
