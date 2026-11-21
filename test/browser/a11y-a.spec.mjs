@@ -1,0 +1,185 @@
+// Accessibility of design A's frame and tools (web/ui-shell.js, web/design-a.css) in WebKit: axe on every tool and on the way in, no sideways scroll at
+// 320px (the page and the panel's own scroller), touch targets of at least 44px, a visible focus ring, and a landscape phone. Every visit sets
+// { design: 'a' }, so CI tests A as written. No top-level await in a spec: node:test then hangs after the run.
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import AxeBuilder from '@axe-core/playwright';
+import { SITE, DONE, DESIGN_KEY, TOUR_SEEN, MODE_BUILD, launch, visit as visitIn } from './helpers.mjs';
+
+let browser;
+before(async () => {
+  browser = await launch();
+});
+after(async () => {
+  await browser?.close();
+});
+
+const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+const WIDTHS = { 320: { width: 320, height: 640 }, 375: { width: 375, height: 812 }, 1280: { width: 1280, height: 800 } };
+const frame = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+const visit = (t, size, seed, hash, scheme) => visitIn(browser, t, size, seed, hash, scheme, false, false, { design: 'a' });
+const TOOLS = [['me', '#me', '#me', 'meTitle'], ['courses', '#courses', '#courses', 'coursesTitle'], ['wishes', '#prefs', '#prefs', 'prefsTitle'],
+  ['friends', '#friends', '#friends', 'friendsPageTitle'], ['out', '#out', '#out', 'outTitle']];
+
+// One checker per test: check(page, 'screen') runs axe and remembers the violations; done() fails with the whole list.
+function checker(scheme) {
+  const found = [];
+  return {
+    async check(page, screen) {
+      await frame(page);
+      assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), scheme, 'the site follows the device colour scheme');
+      const { violations } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
+      for (const v of violations)
+        found.push(`${screen}: ${v.id} (${v.impact}) x${v.nodes.length} ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);
+    },
+    note: (text) => found.push(text),
+    done: () => assert.deepEqual(found, [], 'violations')
+  };
+}
+
+// The targets of the frame and the open tool that are under 44px, on the effective clickable surface: a checkbox or radio is its label. A link inside a
+// sentence is exempt (its height is the text's); a link that is the whole paragraph is a button in disguise and is not.
+const smallTargets = (page) =>
+  page.evaluate(() => {
+    const sel = 'button, a[href], summary, select, input:not([type=hidden]), [role="button"]';
+    const prose = (a) => {
+      const c = a.matches('a:not(.btn, .modes a, [class*="tile"])') ? a.closest('p, li, .hint') : null;
+      return !!c && c.textContent.replace(a.textContent, '').trim().length > 0;
+    };
+    const bad = [];
+    for (const root of ['.a-top', '.a-board > .switcher', '.dock', '#panel']) {
+      for (const el of document.querySelector(root)?.querySelectorAll(sel) ?? []) {
+        if (!el.checkVisibility() || el.closest('[hidden]') || prose(el)) continue;
+        const box = el.matches('input[type=checkbox], input[type=radio]') ? (el.closest('label') ?? el) : el;
+        const r = box.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue;
+        if (r.width < 43.5 || r.height < 43.5)
+          bad.push(`${root} <${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${el.className ? '.' + String(el.className).split(' ').slice(0, 2).join('.') : ''}> "${(el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 18)}" ${Math.round(r.width)}x${Math.round(r.height)}`);
+      }
+    }
+    return bad;
+  });
+const sideways = (page) =>
+  page.evaluate(() => {
+    const p = document.getElementById('aPb');
+    return { page: document.documentElement.scrollWidth <= innerWidth, panel: p.scrollWidth <= p.clientWidth };
+  });
+const layoutOk = async (page, label, touch, note) => {
+  const s = await sideways(page);
+  if (!s.page || !s.panel) note(`${label}: scrolls sideways (page ${s.page}, panel ${s.panel})`);
+  if (touch) for (const b of await smallTargets(page)) note(`${label}: ${b}`);
+};
+
+for (const [w, size] of Object.entries(WIDTHS))
+  for (const scheme of ['light', 'dark']) {
+    test(`${w}/${scheme}: the way in (terms gate, track, year, the record's entry screen): axe, no sideways scroll, targets`, async (t) => {
+      const { check, done, note } = checker(scheme);
+      const touch = w !== '1280';
+      const page = await visit(t, size, null, '', scheme);
+      await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+      assert.equal(await page.evaluate(() => (document.getElementById('meTitle').focus(), document.activeElement.id)), 'meTitle', 'the gate heading takes focus');
+      await check(page, 'gate');
+      await layoutOk(page, 'gate', touch, note);
+      await page.locator('[data-k="termsTick"]').check();
+      await page.locator('[data-act="acceptTerms"]').click();
+      await page.locator('[data-act="pickTrack"]').first().waitFor();
+      await check(page, 'track');
+      await layoutOk(page, 'track', touch, note);
+      await page.locator('[data-act="pickTrack"][value="30"]').click();
+      await page.locator('[data-act="pickYear"]').first().waitFor();
+      await check(page, 'year');
+      await layoutOk(page, 'year', touch, note);
+      await page.locator('[data-act="pickYear"][value="2"]').click();
+      const manual = page.getByRole('button', { name: 'הזנה ידנית' });
+      await manual.waitFor();
+      await check(page, 'entry');
+      await layoutOk(page, 'entry', touch, note);
+      await manual.click();
+      await page.locator('#panel .crs').first().waitFor();
+      await check(page, 'record');
+      await layoutOk(page, 'record', touch, note);
+      done();
+    });
+
+    test(`${w}/${scheme}: the tools: axe, no sideways scroll, targets, a focusable heading, no step lines or "next" feet`, async (t) => {
+      const { check, done, note } = checker(scheme);
+      const page = await visit(t, size, DONE, '', scheme);
+      await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+      await check(page, 'board');
+      await layoutOk(page, 'board', w !== '1280', note);
+      for (const [tool, h, id, title] of TOOLS) {
+        await page.evaluate((x) => (location.hash = x), h);
+        await page.locator(`#panel ${id}`).waitFor({ state: 'visible' });
+        await check(page, tool);
+        await layoutOk(page, tool, w !== '1280', note);
+        if ((await page.evaluate((x) => (document.getElementById(x).focus(), document.activeElement.id), title)) !== title) note(`${tool}: the heading ${title} cannot take focus`);
+        const steps = await page.evaluate(() => [...document.querySelectorAll('#panel .me-step, #panel .me-foot')].filter((e) => e.checkVisibility()).length);
+        if (steps) note(`${tool}: ${steps} step line or "next" foot is shown in the panel`);
+      }
+      done();
+    });
+  }
+
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the Tab walk through the frame and an open tool: every stop shows a focus ring`, async (t) => {
+    const page = await visit(t, 'phone', DONE, '#courses', scheme);
+    await page.locator('#panel #courses').waitFor({ state: 'visible' });
+    // an address with a fragment starts Tab at that element: start at the first stop of the page instead
+    await page.evaluate(() => document.querySelector('.skip').focus());
+    const bad = [],
+      seen = { stops: 0, dock: 0, panel: 0, frame: 0 };
+    for (let i = 0; i < 60; i++) {
+      await page.keyboard.press('Tab');
+      const s = await page.evaluate(() => {
+        const el = document.activeElement;
+        if (el === document.body) return null;
+        const ring = (e) => e && getComputedStyle(e).outlineStyle !== 'none' && parseFloat(getComputedStyle(e).outlineWidth) >= 2;
+        // a segmented radio is a hidden input: the painted ring is on its label or the span beside it
+        return { id: `${el.tagName.toLowerCase()}#${el.id}.${String(el.className).split(' ')[0]}`, dock: !!el.closest('.dock'), panel: !!el.closest('#panel'),
+          frame: !!el.closest('.a-top'), ring: ring(el) || ring(el.nextElementSibling) || ring(el.closest('label')) };
+      });
+      if (!s) break;
+      seen.stops++;
+      seen.dock += s.dock;
+      seen.panel += s.panel;
+      seen.frame += s.frame;
+      if (!s.ring) bad.push(`${s.id}: no focus ring`);
+    }
+    assert.ok(seen.stops >= 12 && seen.dock >= 3 && seen.panel >= 3 && seen.frame >= 2, `the walk covers the frame, the dock and the tool: ${JSON.stringify(seen)}`);
+    assert.deepEqual([...new Set(bad)], []);
+  });
+
+// a landscape phone is 375px tall: touch is on (the helper turns it on only below 600px wide), the dock is a rail on the inline-start (right, RTL) edge
+for (const scheme of ['light', 'dark'])
+  test(`landscape phone, ${scheme}: the rail holds five targets on the right, the tool beside it, nothing scrolls sideways, axe is clean`, async (t) => {
+    const context = await browser.newContext({ viewport: { width: 667, height: 375 }, isMobile: true, hasTouch: true, locale: 'he-IL', colorScheme: scheme });
+    const page = await context.newPage();
+    await context.addInitScript((items) => {
+      for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v);
+    }, { ...DONE, ...TOUR_SEEN, ...MODE_BUILD, [DESIGN_KEY]: 'a' });
+    t.after(() => context.close());
+    await page.goto(SITE + '#courses');
+    await page.locator('#panel #courses').waitFor({ state: 'visible' });
+    const { check, done, note } = checker(scheme);
+    const m = await page.evaluate(() => {
+      const box = (el) => el.getBoundingClientRect();
+      const dock = box(document.querySelector('.dock')), panel = box(document.getElementById('panel'));
+      return { coarse: matchMedia('(pointer: coarse)').matches, dock: [dock.left, dock.right], panel: [panel.left, panel.right], iw: innerWidth,
+        buttons: [...document.querySelectorAll('.dock .dk')].map((b) => [Math.round(box(b).width), Math.round(box(b).height), Math.round(box(b).bottom)]) };
+    });
+    assert.equal(m.coarse, true, 'the touch emulation is on');
+    assert.ok(m.dock[1] >= m.iw - 1, `the rail is on the right edge: ${m.dock}`);
+    assert.ok(m.panel[1] <= m.dock[0] + 1, `the tool sits beside the rail, not over it: panel ${m.panel}, rail ${m.dock}`);
+    assert.equal(m.buttons.length, 5);
+    for (const [bw, bh, bottom] of m.buttons) assert.ok(bw >= 43.5 && bh >= 43.5 && bottom <= 376, `a rail button is a target on screen: ${bw}x${bh} bottom ${bottom}`);
+    await layoutOk(page, 'landscape', true, note);
+    await check(page, 'landscape');
+    done();
+  });
+
+test('the edit page keeps its own feet: the panel rules do not hide "הבא: שינויים"', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#edit', 'light');
+  await page.locator('#edit').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#edit [data-ed="next"]').isVisible(), true);
+  assert.equal(await page.locator('#edit .me-foot').first().isVisible(), true, 'the foot itself');
+});

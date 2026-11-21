@@ -44,7 +44,7 @@ export function shellInit() {
       <aside class="a-alts" id="alts" aria-label="חלופות" hidden></aside>
       <nav class="dock" aria-label="כלים">${dockHtml()}</nav>
       <button type="button" class="a-scrim" data-act="closeTool" tabindex="-1" aria-hidden="true"></button>
-      <section class="a-panel" id="panel" aria-modal="false" hidden>
+      <section class="a-panel" id="panel" hidden>
         <div class="a-grip" aria-hidden="true"></div>
         <div class="a-ph"><button type="button" class="btn icon-btn ghost" data-act="closeTool" data-k="closeTool" aria-label="סגירה">${icon('x')}</button></div>
         <div class="a-pb" id="aPb"></div>
@@ -82,7 +82,8 @@ export function applyShell() {
   for (const [tool, id] of Object.entries(TOOL_PAGE)) $(id).hidden = tool !== panel;
   const box = $('panel');
   box.hidden = !panel;
-  box.setAttribute('role', w ? 'region' : 'dialog');
+  box.setAttribute('role', w ? 'region' : 'dialog'); // a column on a wide screen, a (non-modal) sheet on a phone
+  w ? box.removeAttribute('aria-modal') : box.setAttribute('aria-modal', 'false'); // aria-modal is only allowed on a dialog
   panel ? box.setAttribute('aria-labelledby', TITLE_ID[panel]) : box.removeAttribute('aria-labelledby');
   ui.titleId = panel ? TITLE_ID[panel] : stage === 'edit' ? 'editTitle' : 'weekTitle';
   const lock = locked(),

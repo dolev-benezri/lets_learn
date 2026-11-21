@@ -7,12 +7,6 @@
   --design:a; /* a sentinel the final proof (Task 13) reads */
   --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
   --a-top:60px; /* the wide top bar, where the dock and the panel stick */
-  --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
-  --a-top:60px; /* the wide top bar, where the dock and the panel stick */
-  --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
-  --a-top:60px; /* the wide top bar, where the dock and the panel stick */
-  --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
-  --a-top:60px; /* the wide top bar, where the dock and the panel stick */
 }
 :root[data-design="a"]:not([data-theme="dark"]) {
   --bg:#E9EDF1;
@@ -118,7 +112,9 @@
 :root[data-design="a"] header.top, :root[data-design="a"] nav.steps {
   display:none;
 } /* replaced by the frame; the nodes that matter were moved into it (ui-shell.js) */
-:root[data-design="a"] body { padding-bottom:calc(var(--a-dock) + env(safe-area-inset-bottom)); }
+:root[data-design="a"] body:has(.a-shell) {
+  padding-bottom:calc(var(--a-dock) + env(safe-area-inset-bottom));
+} /* only where the frame is: not legal.html */
 :root[data-design="a"] .a-shell { display:block; }
 :root[data-design="a"] .a-top {
   display:flex;
@@ -220,7 +216,13 @@
 :root[data-design="a"] .a-ph [hidden] { display:none; }
 :root[data-design="a"] .a-pb { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 16px 24px; }
 :root[data-design="a"] .a-pb .step-page { max-width:none; margin:0; padding:0; scroll-margin-top:0; }
-:root[data-design="a"] .a-pb .me-grid, :root[data-design="a"] .a-pb .halves { display:grid; grid-template-columns:minmax(0, 1fr); gap:12px; }
+:root[data-design="a"] .a-pb .me-grid, :root[data-design="a"] .a-pb .halves, :root[data-design="a"] .a-pb .me-entry-cards {
+  display:grid;
+  grid-template-columns:minmax(0, 1fr);
+  gap:12px;
+}
+:root[data-design="a"] .a-pb .tiles { grid-template-columns:repeat(2, minmax(0, 1fr)); } /* a 400px column: two tiles a row */
+:root[data-design="a"] .a-pb .me-side { position:static; }
 :root[data-design="a"] .a-pb :is(#me, #courses, #prefs, #friends) :is(.me-foot, .me-step) { display:none; }
 :root[data-design="a"] .a-pb .a-friends-link { display:block; margin-top:6px; }
 :root[data-design="a"] .a-pb .a-friends-link a { display:inline-flex; align-items:center; gap:6px; min-height:var(--tap); }
@@ -240,7 +242,7 @@
 
 /* from 1080px: the tool is a column beside the board, the dock its tabs on top */
 @media (min-width:1080px) {
-  :root[data-design="a"] body { padding-bottom:0; }
+  :root[data-design="a"] body:has(.a-shell) { padding-bottom:0; }
   :root[data-design="a"] .a-top { flex-wrap:nowrap; position:sticky; top:0; z-index:25; min-height:var(--a-top); padding:6px 16px; }
   :root[data-design="a"] .modes { order:0; flex:0 0 auto; width:420px; }
   :root[data-design="a"] .a-stage {
@@ -270,3 +272,15 @@
 }
 @media (min-width:1080px) and (max-width:1279px) { :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); } }
 @media (max-width:359px) { :root[data-design="a"] .dk { font-size:10px; } :root[data-design="a"] .a-top { padding-inline:8px; } }
+/* a landscape phone is 375px tall: the dock becomes a rail on the inline-start edge and the tool a full-height panel beside it */
+@media (max-width:1079px) and (max-height:480px) and (orientation:landscape) and (pointer:coarse) {
+  :root[data-design="a"] body:has(.a-shell) { --a-dock:0px; padding-inline-start:76px; }
+  :root[data-design="a"] .dock {
+    top:0; bottom:0; inset-inline:0 auto; width:76px; grid-template-columns:1fr; grid-template-rows:repeat(5, 1fr);
+    border-top:0; border-inline-end:1px solid var(--border); padding-bottom:0;
+  }
+  :root[data-design="a"] .dk { min-height:var(--tap); }
+  :root[data-design="a"] .a-scrim { bottom:0; inset-inline-start:76px; }
+  :root[data-design="a"] .a-panel { top:0; bottom:0; inset-inline:76px auto; width:min(420px, calc(100% - 76px)); height:auto; border-radius:0; }
+  :root[data-design="a"] body[data-view="edit"] { padding-inline-start:0; }
+}
