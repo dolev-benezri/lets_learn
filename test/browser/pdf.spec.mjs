@@ -2,7 +2,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
-import { STUDENT, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
+import { STUDENT, friendsHash, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -64,7 +64,7 @@ const uploadSheet = (page) =>
 const uploadFriend = (page, lines) =>
   page.locator('#feFile').setInputFiles({ name: 'friend.pdf', mimeType: 'application/pdf', buffer: gradeSheetPdf(lines) });
 async function friendEditor(t, prepare = async () => {}) {
-  const page = await visitIn(browser, t, 'phone', SEED, '#prefs');
+  const page = await visitIn(browser, t, 'phone', SEED, friendsHash());
   await prepare(page);
   await page.locator('#openFriendEditor').click();
   await page.locator('#friendEd[open]').waitFor();

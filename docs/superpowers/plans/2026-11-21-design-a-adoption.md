@@ -39,6 +39,15 @@ Failure modes the owner's request implies but no feature list names (each gets a
 
 ---
 
+## Owner decisions (2026-11-21)
+
+The owner approved the plan and answered "מאשר הכול" to the manager's question whether every recommendation stands as written. So:
+
+- **Q1 to Q16 = the recommendation given for each**, with no change. For **Q6** (the bottom bar: five buttons, share kept on the board toolbar, map in "המצב שלי" and ☰) and **Q8** (terms and privacy links in ☰ and the "מידע" panel) that means the proposal exactly as written. In short: a first-run "what first" card (Q1); the one-day phone week with an "all week" toggle, default decided after a phone trial (Q2); the name stays "המערכת שלי" (Q3); Rubik stays (Q4); improve mode in two stages (Q5); a one-time three-stop "what's new" tour for returning visitors (Q7); two weeks of grace before classic is deleted (Q9); no wishes or export in the improve tab for now (Q11); plain black-on-white print with A's headings and type (Q12); map and friend editor stay full-screen dialogs (Q13); the legal page gets A's top bar and a back link (Q14); icon, WhatsApp image and browser colour follow A at Task 11 (Q15); the lesson popover stays floating on a computer (Q16).
+- **Q10:** the switch-over (Task 11) must not land during a registration period, and it needs the owner's own OK in any case.
+- **Backup of the design branch to GitHub:** the owner has not answered. Nothing is pushed.
+- **Scope of the first run:** Tasks 0 to 2, then a checkpoint on the owner's iPhone with `?design=a`.
+
 <div dir="rtl" lang="he">
 
 # סיכום לבעלים (בעברית, בלי שמות קבצים)

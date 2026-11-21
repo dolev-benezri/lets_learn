@@ -2,7 +2,7 @@
 // the replay button restarts it, and the plans part starts once on the first alternatives screen. The other specs mark the tour seen (helpers.mjs TOUR_SEEN).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { SIZES, DONE, TOUR_SEEN, visit as visitIn, launch } from './helpers.mjs';
+import { SIZES, DONE, TOUR_SEEN, openStep, visit as visitIn, launch } from './helpers.mjs';
 import { TOUR_INTRO, TOUR_PLANS, TOUR_KEY } from '../../web/tour.js';
 
 let browser;
@@ -201,7 +201,7 @@ for (const size of Object.keys(SIZES)) {
     await page.locator('#meTitle').waitFor();
     await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // the search finished behind step 1
     await nothingFor(page, 500);
-    await page.locator('.steps a[data-view="plan"]').click();
+    await openStep(page, 'plan');
     await opened(page);
     assert.equal(await progress(page), `1 מתוך ${TOUR_PLANS.length}`);
   });

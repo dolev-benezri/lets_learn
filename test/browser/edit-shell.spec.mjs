@@ -1,7 +1,7 @@
 // The edit page's shell in WebKit: the first-entry mode choice, the route, the side menu, and that the build search stays off on #edit.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -40,7 +40,7 @@ for (const size of ['phone', 'desktop'])
     await page.waitForFunction(() => location.hash === '#edit');
     await page.locator('#edit').waitFor({ state: 'visible' });
     assert.equal(await page.locator(menuLabel).textContent(), 'עורכים מערכת קיימת · החלפה');
-    assert.equal(await page.locator('nav.steps a').first().isVisible(), false, 'no step bar on the edit page');
+    if (DESIGN !== 'a') assert.equal(await page.locator('nav.steps a').first().isVisible(), false, 'no step bar on the edit page'); // classic only
     assert.equal(await page.locator('.actions').isVisible(), false);
     assert.equal(await page.locator('header [data-act="menu"]').isVisible(), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');

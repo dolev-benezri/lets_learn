@@ -6,6 +6,12 @@ export const SITE = process.env.SITE_URL;
 // BROWSER=chromium or firefox; WebKit, the engine of iPhone Safari, when not set.
 export const launch = () => playwright[process.env.BROWSER || 'webkit'].launch();
 export const SIZES = { phone: { width: 375, height: 812 }, desktop: { width: 1280, height: 800 } };
+// The design under test: 'a' (the A frame) or 'classic'. visit() takes it as an explicit option; DESIGN in the environment is only the
+// default for a local rerun, so a spec that needs A passes { design: 'a' } and tests what it says even where CI sets only BROWSER.
+export const DESIGN = process.env.DESIGN || '';
+export const DESIGN_KEY = 'afeka-sched-v1-design';
+// the hash that shows the friends: the preferences page holds them in classic, A has a tool of its own
+export const friendsHash = (design = DESIGN) => (design === 'a' ? '#friends' : '#prefs');
 export const PASSED = [
   '10016',
   '30003',
@@ -66,9 +72,11 @@ export function gradeSheetPdf(lines) {
 export const TOUR_SEEN = { 'afeka-sched-v1-tour': 'intro,plans' };
 // The first-entry mode choice is answered ('build'), so the fresh-visit specs go from the terms straight to the track question; `withModeChoice` leaves it open (edit-shell.spec.mjs).
 export const MODE_BUILD = { 'afeka-sched-v1-mode': 'build' };
-export async function visit(browser, t, size, seed = null, hash = '', scheme = 'light', withTour = false, withModeChoice = false) {
+// The last parameter, opts: { design: 'a' | 'classic' } (see DESIGN above).
+export async function visit(browser, t, size, seed = null, hash = '', scheme = 'light', withTour = false, withModeChoice = false, opts = {}) {
   const viewport = typeof size === 'string' ? SIZES[size] : size,
-    phone = viewport.width < 600;
+    phone = viewport.width < 600,
+    design = opts.design ?? DESIGN;
   const context = await browser.newContext({
     viewport,
     isMobile: phone,
@@ -86,7 +94,7 @@ export async function visit(browser, t, size, seed = null, hash = '', scheme = '
   });
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(
-    ({ items, tourSeen, mode }) => {
+    ({ items, tourSeen, mode, design }) => {
       navigator.clipboard.writeText = () => Promise.reject(new Error('no clipboard')); // the copy button then shows its text dialog
       window.__prints = 0;
       window.print = () => {
@@ -94,10 +102,10 @@ export async function visit(browser, t, size, seed = null, hash = '', scheme = '
       };
       if (!sessionStorage.getItem('__seeded')) {
         sessionStorage.setItem('__seeded', '1');
-        for (const [k, v] of Object.entries({ ...tourSeen, ...mode, ...items })) localStorage.setItem(k, v);
+        for (const [k, v] of Object.entries({ ...tourSeen, ...mode, ...design, ...items })) localStorage.setItem(k, v);
       }
     },
-    { items: seed, tourSeen: withTour ? null : TOUR_SEEN, mode: withModeChoice ? null : MODE_BUILD }
+    { items: seed, tourSeen: withTour ? null : TOUR_SEEN, mode: withModeChoice ? null : MODE_BUILD, design: design ? { [DESIGN_KEY]: design } : null }
   );
   t.after(async () => {
     await context.close();
@@ -106,4 +114,22 @@ export async function visit(browser, t, size, seed = null, hash = '', scheme = '
   });
   await page.goto(SITE + hash);
   return page;
+}
+
+const onA = (page) => page.evaluate(() => document.documentElement.dataset.design === 'a');
+// the dock buttons of the A frame (ui-shell.js): the wishes tool is the old "prefs" step
+const DOCK = { me: 'me', courses: 'courses', prefs: 'wishes', friends: 'friends' };
+// Goes to a step the way a student does. view: 'me' | 'courses' | 'prefs' | 'friends' | 'plan'.
+// Classic clicks the step bar ('friends' lives on the prefs step there); A taps the dock button, and 'plan' closes the open tool.
+export async function openStep(page, view) {
+  if (await onA(page)) {
+    if (view === 'plan') await page.evaluate(() => (location.hash = ''));
+    else await page.locator(`.dock [data-tool="${DOCK[view]}"]`).click();
+    return;
+  }
+  await page.locator(`nav.steps a[data-view="${view === 'friends' ? 'prefs' : view}"]`).click();
+}
+// The friends, by address (classic: the prefs page; A: the friends tool).
+export async function openFriends(page) {
+  await page.goto(SITE + friendsHash((await onA(page)) ? 'a' : ''));
 }

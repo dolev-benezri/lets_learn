@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { SITE, SIZES, STUDENT, DONE, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
+import { SITE, SIZES, STUDENT, DONE, DESIGN, friendsHash, gradeSheetPdf, openStep, openFriends, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -116,7 +116,7 @@ for (const size of Object.keys(SIZES)) {
     const before = await page.locator('.crs[data-st="passed"]').count(); // year ב׳ starts with year א׳ marked
     await page.locator('.crs[data-st="none"] label:has(input[value="passed"])').first().click();
     assert.equal(await page.locator('.crs[data-st="passed"]').count(), before + 1, 'one more course is marked passed');
-    await page.locator('nav.steps a[data-view="plan"]').click();
+    await openStep(page, 'plan');
     await weekReady(page);
     assert.match(await page.locator('#altLabel').textContent(), /חלופה 1 מתוך/);
   });
@@ -166,7 +166,7 @@ for (const size of Object.keys(SIZES)) {
     await page.locator('#pmap[open]').waitFor();
     await page.keyboard.press('Escape');
     await page.locator('#pmap[open]').waitFor({ state: 'detached' });
-    await page.goto(SITE + '#prefs');
+    await openFriends(page);
     await page.locator('#openFriendEditor').click();
     await page.locator('#friendEd[open]').waitFor();
     await page.keyboard.press('Escape');
@@ -353,9 +353,9 @@ const idle = (page) =>
   page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') === 'false', null, { timeout: 30000 });
 // the "לתכנן" choice in the preferences step (on a phone the board's copy of it is hidden)
 const setScope = async (page, v) => {
-  await page.locator('nav.steps a[data-view="prefs"]').click();
+  await openStep(page, 'prefs');
   await page.locator(`label:has(input[name="scope"][value="${v}"])`).click();
-  await page.locator('nav.steps a[data-view="plan"]').click();
+  await openStep(page, 'plan');
 };
 for (const size of Object.keys(SIZES)) {
   test(`${size}: "רק א׳" does not replace the year plan summer builds on`, async (t) => {
@@ -453,7 +453,7 @@ const twoGroups = async () =>
 async function noaLink(t, size, button) {
   const [G1, G2] = await twoGroups();
   const NOA = { ...STUDENT, friends: [{ name: 'נועה', groups: [G1], weight: 1, active: true }] };
-  const page = await visit(t, size, { ...DONE, 'afeka-sched-v1': JSON.stringify(NOA) }, '#prefs');
+  const page = await visit(t, size, { ...DONE, 'afeka-sched-v1': JSON.stringify(NOA) }, friendsHash());
   const link = await page.evaluate(
     async ([st, g]) => (await import('./share.js')).friendLink(location.origin + location.pathname, st, g),
     [{ ...NOA, name: 'נועה' }, [G2]]
@@ -498,7 +498,7 @@ for (const size of Object.keys(SIZES)) {
     const page = await visit(t, size, FIRST);
     await weekReady(page);
     assert.doesNotMatch(await page.locator('#boardNote').innerText(), /בהנחה/);
-    await page.locator('.steps a[data-view="me"]').click();
+    await openStep(page, 'me');
     await page.locator('.crs[data-st="passed"]').first().waitFor();
     assert.doesNotMatch(await page.locator('#me').innerText(), /בהנחה/);
   });
@@ -506,8 +506,8 @@ for (const size of Object.keys(SIZES)) {
   test(`${size}: the steps show where you are, with no tick for a step nobody finished`, async (t) => {
     const page = await visit(t, size, FIRST);
     await weekReady(page);
-    assert.equal(await page.locator('.steps a.done').count(), 0);
-    assert.equal(await page.locator('.steps a[data-view="plan"][aria-current="step"]').count(), 1);
+    if (DESIGN !== 'a') assert.equal(await page.locator('.steps a.done').count(), 0); // classic only: the step bar goes in Task 12
+    if (DESIGN !== 'a') assert.equal(await page.locator('.steps a[data-view="plan"][aria-current="step"]').count(), 1);
   });
 }
 
