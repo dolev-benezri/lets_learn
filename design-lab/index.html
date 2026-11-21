@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>שני קונספטים · מתכנן מערכת</title>
+<style>
+  :root { --bg: #f4f2ee; --ink: #16181d; --ink2: #50555f; --card: #fff; --line: #d9d5cc; --a: #0a6b66; --b: #5b3cc4; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #101215; --ink: #eceef2; --ink2: #a3a9b4; --card: #1a1d22; --line: #2e333b; --a: #3ccfc1; --b: #b6a0ff; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: clamp(1.6rem, 6vw, 2.4rem); margin: 0 0 6px; }
+  .sub { color: var(--ink2); margin: 0 0 24px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  a.card { display: block; padding: 22px; border-radius: 20px; background: var(--card); border: 1px solid var(--line); color: inherit; text-decoration: none; border-top: 6px solid var(--c); }
+  a.card:hover { box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+  a.card:focus-visible { outline: 3px solid #e8590c; outline-offset: 3px; }
+  .card .k { color: var(--c); font-weight: 800; font-size: .85rem; }
+  .card h2 { margin: 4px 0 8px; font-size: 1.5rem; }
+  .card p { margin: 0 0 10px; color: var(--ink2); }
+  .card .go { font-weight: 700; color: var(--c); }
+  .demo { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; font-size: .9rem; }
+  .demo a { color: var(--c); min-height: 44px; display: inline-flex; align-items: center; }
+  footer { margin-top: 28px; color: var(--ink2); font-size: .85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>שני קונספטים, מאפס</h1>
+  <p class="sub">אבות־טיפוס לחיצים למתכנן המערכת של אפקה. אותם נתונים ואותן יכולות — רעיון שונה לגמרי של ניווט ומבנה.</p>
+  <div class="grid">
+    <div>
+      <a class="card" href="fresh-a/" style="--c: var(--a)"><span class="k">קונספט א׳</span><h2>הלוח</h2><p>המערכת השבועית תמיד על המסך, כמו מפה באפליקציית ניווט. כל הכלים הם חלוניות שעולות מעליה.</p><span class="go">פתיחה ←</span></a>
+      <div class="demo" style="--c: var(--a)"><a href="fresh-a/?demo">עם סטודנט לדוגמה</a><a href="fresh-a/?demo=improve">שיפור מערכת לדוגמה</a></div>
+    </div>
+    <div>
+      <a class="card" href="fresh-b/" style="--c: var(--b)"><span class="k">קונספט ב׳</span><h2>המסלול</h2><p>מסלול של צעדים, החלטה אחת בכל מסך, וקבלה חיה שמסכמת מה נבחר. החלופות הן חפיסת קלפים.</p><span class="go">פתיחה ←</span></a>
+      <div class="demo" style="--c: var(--b)"><a href="fresh-b/?demo">עם סטודנט לדוגמה</a><a href="fresh-b/?demo=improve">שיפור מערכת לדוגמה</a></div>
+    </div>
+  </div>
+  <footer>אב־טיפוס בלבד: נתוני דוגמה, חלק מההתנהגות מדומה. לא קשור למכללה. כל אחד מהקונספטים שומר נתונים בנפרד בדפדפן.</footer>
+</main>
+</body>
+</html>
