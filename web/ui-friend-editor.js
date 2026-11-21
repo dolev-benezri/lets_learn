@@ -5,7 +5,7 @@ import { app, esc, yearView, semOfGroup, summerOn } from './app.js';
 import { DAYS, icon, typeLabel, groupIndex, hourRange, renderWeek, assignColors } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { groupsFromText, placeGroup, findCourse, clashIds } from './friend-import.js';
-import { groupNumber, courseCount, YEDION_HINT, notFoundHint } from './ui-text.js';
+import { groupNumber, lecturerText, courseCount, YEDION_HINT, notFoundHint } from './ui-text.js';
 import { imageCanvas, pageCanvas, bigPage, scanCanvases } from './friend-scan.js';
 import { withPdf, pdfStep } from './grade-import.js';
 import { rowsFromTable, matchRows } from './friend-schedule.js';
@@ -169,7 +169,7 @@ const meetingHtml = (m) => `יום ${DAYS[m.day] ?? '?'}׳ <bdi dir="ltr">${esc(
 function row(g) {
   const on = ed.draft.includes(g.id);
   return `<li class="fe-row${on ? ' on' : ''}"><div class="fe-info"><span>${g.meetings.map(meetingHtml).join(' · ') || 'ללא מועד'}</span>
-    <span>${esc(g.lecturer || '—')}${g.full ? ' <span class="tag bad">מלאה</span>' : ''} <bdi dir="ltr" class="gid">${esc(g.id)}</bdi></span></div>
+    <span>${esc(lecturerText(g.lecturer) || '—')}${g.full ? ' <span class="tag bad">מלאה</span>' : ''} <bdi dir="ltr" class="gid">${esc(g.id)}</bdi></span></div>
     <button type="button" class="btn${on ? '' : ' primary'}" data-fe="toggle" data-gid="${esc(g.id)}"><span
       class="sr">${esc(typeLabel(g.type))} ${esc(groupNumber(g.id))}: </span>${on ? 'משובץ · הסר' : 'שבץ'}</button></li>`;
 }

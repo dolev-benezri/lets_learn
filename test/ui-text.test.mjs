@@ -475,3 +475,24 @@ test('notFoundHint: names the course codes missing from the track data; a course
   const many = Array.from({ length: 10 }, (_, k) => String(40000 + k));
   assert.match(notFoundHint(many, courses, true), /40007<\/bdi> ועוד 2 לא קיימים/);
 });
+
+// ---------- lecturer names ----------
+import { lecturerNames, lecturerText, lecturerToast } from '../web/ui-text.js';
+
+test('lecturerText: the yedion puts ",," (or ", " or a leading ",") between co-lecturers; people read one comma and a space', () => {
+  assert.equal(lecturerText('מר אלקיים רמי,, מר שפירא יובל'), 'מר אלקיים רמי, מר שפירא יובל');
+  assert.equal(lecturerText('מר ארנפלד יוסף, גב\' ארן ירדן'), 'מר ארנפלד יוסף, גב\' ארן ירדן');
+  assert.equal(lecturerText(', מר אולבינסקי אלכסנדר'), 'מר אולבינסקי אלכסנדר');
+  assert.equal(lecturerText('ד"ר כץ אייל,,, מר הרשקוביץ שני , '), 'ד"ר כץ אייל, מר הרשקוביץ שני');
+  assert.equal(lecturerText('ד"ר יבור ינון'), 'ד"ר יבור ינון', 'one lecturer: untouched');
+  assert.equal(lecturerText(''), '');
+  assert.equal(lecturerText(undefined), '');
+  assert.deepEqual(lecturerNames('א,, ב,, א'), ['א', 'ב'], 'a name once');
+});
+
+test('lecturerToast: the toast after a prefer / avoid / cancel names the lecturers the way the popover does', () => {
+  const name = 'מר X,, מר Y';
+  assert.equal(lecturerToast(name, 'avoid', false), 'החיפוש לא ישבץ קבוצות של מר X, מר Y');
+  assert.equal(lecturerToast(name, 'prefer', false), 'כשאפשר, החיפוש יבחר קבוצות של מר X, מר Y');
+  assert.equal(lecturerToast(name, 'avoid', true), 'בוטל: מר X, מר Y');
+});

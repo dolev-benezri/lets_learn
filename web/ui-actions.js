@@ -23,7 +23,7 @@ import { toIcs } from './ics.js';
 import { groupIndex, openPop, pinWith, resGroups } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { openFriendEditor } from './ui-friend-editor.js';
-import { friendToast, gradeInput, rangeError, shareText, waUrl, SPLIT_WARNING } from './ui-text.js';
+import { friendToast, gradeInput, rangeError, shareText, waUrl, SPLIT_WARNING, lecturerToast } from './ui-text.js';
 import {
   colors,
   markOnboarded,
@@ -233,13 +233,7 @@ export const ACT = {
     $('pop').hidePopover?.();
     refresh();
     focusWeek();
-    toast(
-      was
-        ? `בוטל: ${name}`
-        : mode === 'avoid'
-          ? `החיפוש לא ישבץ קבוצות של ${name}`
-          : `כשאפשר, החיפוש יבחר קבוצות של ${name}`
-    );
+    toast(lecturerToast(name, mode, was));
   },
   lecturerDrop(el) {
     delete app.state.constraints.lecturers[el.dataset.name];

@@ -7,7 +7,7 @@ import { askConfirm } from './ui-dialog.js';
 import { classify } from './rules.js';
 import { kinds, overlaps, displayData, summaryLine, changeText, splitOnlySwaps, PROPOSAL_ONLY, FIXED } from './edit-search.js';
 import { reqContext, reqMet } from './rules.js';
-import { groupNumber, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine } from './ui-text.js';
+import { groupNumber, lecturerText, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine } from './ui-text.js';
 import { identityPick } from './ui-me.js';
 import { getEdit, setEdit, saveEdit, restoredCount, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
 
@@ -44,7 +44,8 @@ function groupLine(id, data) {
   const x = data && groupIndex(data).get(id);
   if (!x) return `<bdi dir="ltr">${esc(id)}</bdi>`;
   const { g } = x;
-  return `${esc(typeLabel(g.type))} ${esc(groupNumber(g.id))} · ${g.meetings.map(hours).join(', ')} · ${esc(g.lecturer || '—')}${g.full ? ' <span class="tag bad">מלאה</span>' : ''}`;
+  const meets = g.meetings.map(hours).join(', '), full = g.full ? ' <span class="tag bad">מלאה</span>' : '';
+  return `${esc(typeLabel(g.type))} ${esc(groupNumber(g.id))} · ${meets} · ${esc(lecturerText(g.lecturer) || '—')}${full}`;
 }
 
 function reviewRowHtml(r, i, choices, data) {
@@ -216,7 +217,7 @@ const whenOf = (ls) => uniq(ls.map((l) => `${DAYS[l.day]}׳ <bdi dir="ltr">${esc
 const numsOf = (ls) => uniq(ls.filter((l) => l.group).map((l) => groupNumber(l.group))).map((n) => `<bdi dir="ltr">${esc(n)}</bdi>`).join(' + ');
 const groupOf = (data, course, id) => data.courses[course]?.groups.find((g) => g.id === id);
 const lecturersOf = (ls, data, course) =>
-  uniq(ls.filter((l) => l.group).map((l) => groupOf(data, course, l.group)?.lecturer).filter(Boolean)).join(', ');
+  lecturerText(ls.filter((l) => l.group).map((l) => groupOf(data, course, l.group)?.lecturer).filter(Boolean).join(','));
 
 // One course's card: the old place struck through, the new one highlighted, the lecturer when it changes, the full-group tag.
 function cardHtml(edit, p, data, course, tag) {
