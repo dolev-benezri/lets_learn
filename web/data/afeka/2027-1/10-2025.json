@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-20T23:24:46.887Z",
+ "fetchedAt": "2026-11-21T23:24:41.578Z",
  "year": 2027,
  "startYear": 2025,
  "program": 10,
@@ -10698,7 +10698,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ויינר בועז",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -10770,7 +10770,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
