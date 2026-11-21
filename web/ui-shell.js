@@ -4,6 +4,7 @@
 // The route model is pure (shell-routes.js); this module is the DOM half. Everything here returns at once when design A is off.
 import { app } from './app.js';
 import { icon } from './ui-grid.js';
+import { go } from './ui-view.js';
 import { $, ui, gated, termsOk, needsProgram, designOn } from './ui-common.js';
 import { viewOf, routeA, stageOf, panelOf, TOOLS, hashOfTool } from './shell-routes.js';
 
@@ -40,7 +41,9 @@ export function shellInit() {
     </header>
     <div class="a-strip" id="aStrip"><p class="a-unofficial">${icon('info')}<span>לא רשמי · ההרשמה באפקה-נט</span></p></div>
     <div class="a-stage">
-      <div class="a-board" id="aBoard"></div>
+      <div class="a-board" id="aBoard">
+        <div class="a-bar" id="aBar"><button type="button" class="btn a-share" data-act="share" data-k="aShare">${icon('share')}<span>שתף</span></button></div>
+      </div>
       <aside class="a-alts" id="alts" aria-label="חלופות" hidden></aside>
       <nav class="dock" aria-label="כלים">${dockHtml()}</nav>
       <button type="button" class="a-scrim" data-act="closeTool" tabindex="-1" aria-hidden="true"></button>
@@ -55,10 +58,30 @@ export function shellInit() {
   shell.querySelector('.a-brand').append($('title'));
   $('aStrip').prepend($('meta'));
   $('aStrip').append($('notice'));
-  $('aBoard').append($('switcher'), $('layout'), $('edit'));
+  $('aBar').prepend($('switcher'));
+  $('aBoard').append($('layout'), $('edit'));
   $('aTopAct').append(document.querySelector('.theme-btn'), document.querySelector('.menu-btn'));
   for (const id of Object.values(TOOL_PAGE)) $('aPb').append($(id));
   document.addEventListener('keydown', onKey);
+  // a swipe on the week moves between alternatives, as the arrows do (a touch or a pen; the same direction as the arrow keys in a right-to-left page)
+  // One finger only (a second one is a pinch), dropped when the address changes (a tool opened mid-gesture), and never over the details popover or a
+  // dialog, as the arrow keys are not (ui-plan.js).
+  let from = null;
+  const drop = () => (from = null);
+  document.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    from = !from && e.target.closest?.('#week') ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
+  });
+  document.addEventListener('pointercancel', drop);
+  addEventListener('hashchange', drop);
+  document.addEventListener('pointerup', (e) => {
+    const g = from;
+    if (!g || e.pointerId !== g.id) return;
+    from = null;
+    const dx = e.clientX - g.x,
+      dy = e.clientY - g.y;
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 50 && !$('layout').hidden && !overlayOpen()) go(dx < 0 ? 1 : -1);
+  });
   matchMedia('(min-width: 1080px)').addEventListener('change', () => {
     // crossing 1080px shows or hides the panel: focus that was inside what is now hidden goes to the heading of what is shown
     const had = document.activeElement;
@@ -162,10 +185,10 @@ export function closeTool() {
   dispatchEvent(new Event('hashchange'));
 }
 
+const overlayOpen = () => !!document.querySelector('dialog[open]') || !!$('pop')?.matches(':popover-open');
+
 function onKey(e) {
-  if (e.key !== 'Escape' || e.defaultPrevented || wide() || !panelOpen()) return;
-  const pop = $('pop');
-  if (document.querySelector('dialog[open]') || (pop && pop.matches(':popover-open'))) return;
+  if (e.key !== 'Escape' || e.defaultPrevented || wide() || !panelOpen() || overlayOpen()) return;
   e.preventDefault();
   closeTool();
 }

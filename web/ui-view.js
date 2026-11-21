@@ -75,7 +75,8 @@ import {
   seg,
   yearSearch,
   $,
-  ui
+  ui,
+  designOn
 } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -444,6 +445,7 @@ export function renderView() {
   if (live && live !== ui.liveText) $('live').textContent = ui.liveText = live;
   renderSide(raw);
   renderDrawer(); // an open panel follows the shown alternative
+  if (designOn()) renderAltColumn(); // A: the wide screen's column of every alternative
   setBusy();
   scrollToDay();
   ui.onShown?.();
@@ -482,3 +484,62 @@ export function showAlt(k) {
   ui.cur = k;
   keepFocus(renderView);
 }
+
+// ---------- design A: the alternatives column (ui-shell.js puts #alts beside the board on a wide screen) ----------
+const toMin = (hm) => {
+  const [h, m] = hm.split(':').map(Number);
+  return h * 60 + m;
+};
+// One alternative as a tiny week: a column a day, a bar a meeting in the course's colour. Not interactive: no id, key or action, hidden from
+// assistive technology (the card says it all), so focus restoration and the board's block handlers never find it.
+export function miniWeekHtml(res, data, span) {
+  const byId = groupIndex(data);
+  const days = span.days;
+  const cols = Array.from({ length: days }, () => []);
+  for (const gid of res.groups) {
+    const x = byId.get(gid);
+    if (!x) continue;
+    for (const m of x.g.meetings) {
+      if (m.day < 1 || m.day > days) continue;
+      const top = ((toMin(m.start) - span.from * 60) / ((span.to - span.from) * 60)) * 100,
+        h = ((toMin(m.end) - toMin(m.start)) / ((span.to - span.from) * 60)) * 100;
+      cols[m.day - 1].push(`<em class="c${colors.get(x.cid) ?? 7}" style="top:${top.toFixed(1)}%;height:${h.toFixed(1)}%"></em>`);
+    }
+  }
+  return `<span class="mini" aria-hidden="true" style="--days:${days}">${cols.map((c) => `<i>${c.join('')}</i>`).join('')}</span>`;
+}
+
+// A card for each alternative, the shown one marked (aria-current). A year plan's card says the year's credits and draws the shown semester.
+export function renderAltColumn() {
+  const box = $('alts');
+  if (!box) return;
+  const results = ui.last?.results ?? [];
+  if (!results.length || results.every((r) => !resCourses(r).length)) {
+    box.hidden = true;
+    box.innerHTML = '';
+    box.closest('.a-stage')?.classList.remove('has-alts');
+    return;
+  }
+  const data = shownData(),
+    { friends, constraints } = app.state,
+    byId = groupIndex(data);
+  const meetings = results.flatMap((r) => semResult(r, ui.sem).groups.flatMap((g) => byId.get(g)?.g.meetings ?? []));
+  const span = hourRange(meetings);
+  const cards = results.map((raw, i) => {
+    const res = semResult(raw, ui.sem),
+      pair = isPair(raw),
+      s = summary(res, data, friends, constraints);
+    const dayN = new Set(res.groups.flatMap((g) => byId.get(g)?.g.meetings.map((m) => m.day) ?? [])).size;
+    const withF = s.withFriends.reduce((a, x) => a + x.n, 0);
+    const head = pair ? `בשנה: ${yearTotals(raw).credits} נ״ז · ${dayN} ימים` : `${s.credits} נ״ז · ${dayN} ימים`;
+    const sub = [pair ? `${s.credits} נ״ז בסמסטר ${ui.sem}׳` : '', s.gapH ? `${s.gapH} ש׳ חלון` : 'בלי חלונות', withF ? `${withF} עם חברים` : '',
+      raw.split?.length ? 'מופרדת' : ''].filter(Boolean).join(' · ');
+    return `<li><button type="button" class="alt-card" data-act="altPick" data-i="${i}" data-k="altcard-${i}" aria-current="${i === ui.cur}">
+      <span class="rank" aria-hidden="true">${i + 1}</span><span class="ac-b"><b><span class="sr">חלופה ${i + 1}: </span>${esc(head)}</b>
+      <small>${esc(sub)}</small>${miniWeekHtml(res, data, span)}</span></button></li>`;
+  });
+  box.hidden = false;
+  box.closest('.a-stage')?.classList.add('has-alts'); // the wide grid's third track (a class: no :has() needed)
+  box.innerHTML = `<h2 class="col-t">חלופות</h2><ol class="alt-list">${cards.join('')}</ol>`;
+}
+

@@ -156,13 +156,10 @@
 :root[data-design="a"] .a-strip .notice-top:empty { display:none; }
 :root[data-design="a"] .a-stage { position:relative; }
 :root[data-design="a"] .a-board { min-width:0; }
-:root[data-design="a"] .a-board > .switcher {
-  display:flex;
-  margin:8px auto 0;
-  width:max-content;
-  max-width:calc(100% - 24px);
-} /* classic hid it off the plans */
-:root[data-design="a"] body.gated .a-board > .switcher { display:none; }
+:root[data-design="a"] .a-bar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin:8px 12px 0; }
+:root[data-design="a"] .a-bar > .switcher { display:flex; margin:0; max-width:100%; } /* classic hid the switcher off the plans */
+:root[data-design="a"] .a-share { min-height:var(--tap); }
+:root[data-design="a"] body.gated .a-bar { display:none; }
 :root[data-design="a"] .a-board .layout { padding-top:6px; }
 
 /* the dock: five tools, the thumb's bar on a phone */
@@ -233,10 +230,26 @@
 
 /* what the live stylesheet keys to the page: it hid the switcher off the plans, docked the drawer and trimmed the page for the old sticky bar */
 :root[data-design="a"] body.drawer-open { padding-inline-end:0; }
-:root[data-design="a"] .a-alts[hidden] { display:none; }
+:root[data-design="a"] .a-alts { display:none; } /* a phone has the arrows and the swipe; the column is for a wide screen */
+:root[data-design="a"] .col-t { margin:0 0 8px; font-size:1rem; }
+:root[data-design="a"] #week {
+  touch-action:pan-y pinch-zoom;
+} /* the page keeps the horizontal gesture: the swipe between alternatives (ui-shell.js) */
+:root[data-design="a"] .alt-list { display:grid; gap:6px; margin:0; padding:0; list-style:none; }
+:root[data-design="a"] .alt-card {
+  display:flex; gap:10px; width:100%; min-height:var(--tap); padding:8px; border:1px solid var(--border); border-radius:12px;
+  background:var(--surface); color:var(--text); font:inherit; text-align:start; cursor:pointer;
+}
+:root[data-design="a"] .alt-card[aria-current="true"] { border-color:var(--primary); box-shadow:0 0 0 2px var(--primary); }
+:root[data-design="a"] .rank { min-width:1.4em; font-size:1.4rem; font-weight:800; color:var(--text-2); }
+:root[data-design="a"] .ac-b { display:flex; flex-direction:column; flex:1; gap:2px; min-width:0; }
+:root[data-design="a"] .ac-b small { color:var(--text-2); font-size:var(--fs-sm); }
+:root[data-design="a"] .mini { display:grid; grid-template-columns:repeat(var(--days, 5), 1fr); gap:2px; height:46px; margin-top:4px; }
+:root[data-design="a"] .mini i { position:relative; background:var(--surface-2); border-radius:3px; }
+:root[data-design="a"] .mini em { position:absolute; inset-inline:1px; background:var(--cfg); border-radius:2px; }
 /* improve mode (stage 1): the edit page is the whole stage, with no dock and no build switcher; the panel only shows for the terms */
 :root[data-design="a"] body[data-view="edit"] { --a-dock:0px; }
-:root[data-design="a"] body[data-view="edit"] .dock, :root[data-design="a"] body[data-view="edit"] .a-board > .switcher { display:none; }
+:root[data-design="a"] body[data-view="edit"] .dock, :root[data-design="a"] body[data-view="edit"] .a-bar { display:none; }
 :root[data-design="a"] .skip:focus { z-index:60; } /* above the wide top bar */
 :root[data-design="a"] .toast { bottom:calc(var(--a-dock) + env(safe-area-inset-bottom) + 12px); } /* above the dock, at every width it exists */
 
@@ -252,6 +265,14 @@
     align-items:start;
   }
   :root[data-design="a"] .a-board { grid-column:2; grid-row:1 / 3; }
+  :root[data-design="a"] .a-stage.has-alts { grid-template-columns:400px minmax(0, 1fr) 280px; }
+  :root[data-design="a"] .a-alts:not([hidden]) {
+    display:block; grid-column:3; grid-row:1 / 3; position:sticky; top:var(--a-top); max-height:calc(100dvh - var(--a-top));
+    overflow:auto; padding:12px; background:var(--surface); border-inline-start:1px solid var(--border);
+  }
+  :root[data-design="a"] body[data-view="edit"] .a-alts, :root[data-design="a"] body.gated .a-alts {
+    display:none;
+  } /* build alternatives belong to the board, not the edit page or the gate */
   :root[data-design="a"] .dock {
     position:sticky; top:var(--a-top); inset-inline:auto; bottom:auto; z-index:6; grid-column:1; grid-row:1;
     padding:0; border-top:0; border-bottom:1px solid var(--border); border-inline-end:1px solid var(--border);
@@ -270,7 +291,10 @@
   :root[data-design="a"] .toast { bottom:20px; }
   :root[data-design="a"] body[data-view="edit"] .a-stage { display:block; }
 }
-@media (min-width:1080px) and (max-width:1279px) { :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); } }
+@media (min-width:1080px) and (max-width:1279px) {
+  :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); }
+  :root[data-design="a"] .a-stage.has-alts { grid-template-columns:360px minmax(0, 1fr) 240px; }
+}
 @media (max-width:359px) { :root[data-design="a"] .dk { font-size:10px; } :root[data-design="a"] .a-top { padding-inline:8px; } }
 /* a landscape phone is 375px tall: the dock becomes a rail on the inline-start edge and the tool a full-height panel beside it */
 @media (max-width:1079px) and (max-height:480px) and (orientation:landscape) and (pointer:coarse) {

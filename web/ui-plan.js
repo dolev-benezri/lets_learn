@@ -11,7 +11,7 @@ import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, 
 import { scheduleRun, cancelRun } from './ui-search.js';
 import { renderEdit, stopSearch, syncSavedHint } from './ui-edit.js';
 import { needsModeChoice, modeOpen, renderModeChoice, getMode, setMode } from './ui-mode.js';
-import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
+import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, showAlt, hasAlternatives } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
@@ -279,6 +279,11 @@ addEventListener(
 );
 ACT.tool = (el) => openTool(el.dataset.tool, el); // design A's dock (ui-shell.js)
 ACT.closeTool = () => closeTool();
+// a card of A's alternatives column (ui-view.js renderAltColumn). WebKit does not focus a clicked button: take focus so keepFocus finds the twin card
+ACT.altPick = (el) => {
+  el.focus({ preventScroll: true });
+  showAlt(Number(el.dataset.i));
+};
 addEventListener('hashchange', onHash);
 // static container, so the friend-landing banner inserted later is announced
 $('banner').setAttribute('aria-live', 'polite');

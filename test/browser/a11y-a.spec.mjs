@@ -47,7 +47,7 @@ const smallTargets = (page) =>
       return !!c && c.textContent.replace(a.textContent, '').trim().length > 0;
     };
     const bad = [];
-    for (const root of ['.a-top', '.a-board > .switcher', '.dock', '#panel']) {
+    for (const root of ['.a-top', '.a-bar', '.dock', '#panel']) {
       for (const el of document.querySelector(root)?.querySelectorAll(sel) ?? []) {
         if (!el.checkVisibility() || el.closest('[hidden]') || prose(el)) continue;
         const box = el.matches('input[type=checkbox], input[type=radio]') ? (el.closest('label') ?? el) : el;
