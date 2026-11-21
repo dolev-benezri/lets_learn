@@ -708,9 +708,14 @@ async function init() {
   const failed = () => {
     app.cls = null; // a failure after the data was classified: ui-plan.js onHash must not route as if all were well
     app.loadFailed = true; // the step bar still switches pages (ui-plan.js onHash), each showing this message
-    for (const id of ['week', 'me', 'side', 'prefs', 'edit']) {
+    // design A also has the friends and the take-out tools, which would otherwise open as empty sheets
+    const A = document.documentElement.dataset.design === 'a';
+    // A focuses and names a tool by its heading, so the failure keeps one
+    const HEAD = { me: 'meTitle', prefs: 'prefsTitle', edit: 'editTitle', friends: 'friendsPageTitle', out: 'outTitle' };
+    for (const id of A ? ['week', 'me', 'side', 'prefs', 'edit', 'friends', 'out'] : ['week', 'me', 'side', 'prefs', 'edit']) {
       const el = document.getElementById(id);
       el.innerHTML =
+        (A && HEAD[id] ? `<h2 id="${HEAD[id]}" tabindex="-1" class="sr">טעינת הנתונים נכשלה</h2>` : '') +
         '<div class="msg bad" role="alert"><div><b>טעינת הנתונים נכשלה</b>' +
         '<p>בדקו את החיבור לאינטרנט ונסו שוב.</p><p class="msg-actions"><button class="btn" data-retry>נסה שוב</button></p></div></div>';
       el.querySelector('[data-retry]').onclick = init;

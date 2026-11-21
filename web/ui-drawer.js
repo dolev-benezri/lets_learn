@@ -34,7 +34,8 @@ import {
   allGroupIds,
   seg,
   $,
-  ui
+  ui,
+  designOn
 } from './ui-common.js';
 
 // ---------- step 3 and the drawer ----------
@@ -265,12 +266,23 @@ export function icsParts(r) {
 
 // Step 3: preferences, then friends, laid out like the status page (style.css .step-page); the search re-runs after every change.
 export function renderPrefs() {
+  if (designOn()) return renderWishesAndFriends();
   $('prefs').innerHTML =
     `<div class="me-head"><h2 id="prefsTitle" tabindex="-1">מה חשוב לי</h2><p class="me-step">סמנו מה חשוב לכם במערכת והוסיפו חברים. המערכות מתעדכנות לבד.</p></div>
     <div class="me-grid halves">
       <section class="me-card dr-body" aria-labelledby="prefsPrefs"><h2 id="prefsPrefs">העדפות</h2>${prefsPanel()}</section>
       <section class="me-card dr-body" aria-labelledby="friendsTitle"><h2 id="friendsTitle">חברים</h2>${friendsPanel()}</section></div>
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#">הבא: מערכות</a></div>`;
+}
+
+// Design A: the wishes and the friends are two tools (#prefs and #friends), each with its own labelled heading the shell can focus. The wishes carry
+// a link to the friends: a bookmark to #prefs used to hold both.
+function renderWishesAndFriends() {
+  $('prefs').innerHTML = `<div class="me-head"><h2 id="prefsTitle" tabindex="-1">מה חשוב לי</h2>
+      <p class="a-friends-link"><a href="#friends">${icon('users')} חברים</a></p></div>
+    <section class="me-card dr-body" aria-labelledby="prefsPrefs"><h2 id="prefsPrefs">העדפות</h2>${prefsPanel()}</section>`;
+  $('friends').innerHTML = `<div class="me-head"><h2 id="friendsPageTitle" tabindex="-1">חברים</h2></div>
+    <section class="me-card dr-body" aria-labelledby="friendsPageTitle">${friendsPanel()}</section>`;
 }
 
 const advisorArgs = () => ({
@@ -324,7 +336,7 @@ export function openPanel(name, from) {
   renderDrawer();
   if (!d.open) {
     // modal: native focus trap, inert page, Escape, scrim (::backdrop). The ☰ menu is a side sheet and modal at every width.
-    const modal = name === 'menu' || matchMedia(SHEET).matches;
+    const modal = name === 'menu' || matchMedia(SHEET).matches || designOn(); // A: the tool column holds the side, so a drawer is always a sheet
     d.classList.toggle('modal', modal);
     d.classList.toggle('side', name === 'menu');
     modal ? d.showModal() : d.show();

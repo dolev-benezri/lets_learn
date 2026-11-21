@@ -318,7 +318,15 @@ export const approvedText = (day) => `אושר על ידי המחלקה, ${day.s
 // "דיווח על טעות": a mailto with the subject and a body the tool fills (ctx: program, startYear, semester, group?, page).
 // The address goes through encodeURIComponent (so "?", "&", "," and "#" in it cannot add a header or a recipient), keeping only "@".
 // Each field is clipped to 40 characters: a Hebrew letter is 6 characters once encoded, and mail apps drop links over ~2000.
-export const PAGE_NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות', edit: 'עריכת מערכת קיימת' };
+export const PAGE_NAME = {
+  me: 'המצב שלי',
+  courses: 'קורסים',
+  prefs: 'מה חשוב לי',
+  plan: 'מערכות',
+  edit: 'עריכת מערכת קיימת',
+  friends: 'חברים', // the two below are design A's tools (ui-shell.js)
+  out: 'להוציא את המערכת'
+};
 const clip = (v) => [...String(v)].slice(0, 40).join('');
 export function reportMailto(email, ctx) {
   const lines = [

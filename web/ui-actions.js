@@ -38,7 +38,8 @@ import {
   focusWeek,
   shownTitle,
   $,
-  ui
+  ui,
+  designOn
 } from './ui-common.js';
 import { pinsWithoutSplit } from './solver-core.js';
 import { scheduleRun, probeCap, applyCapProbe } from './ui-search.js';
@@ -166,7 +167,7 @@ export const ACT = {
   },
   skip(el, e) {
     e.preventDefault();
-    ($('layout').hidden ? shownTitle() : $('week'))?.focus();
+    ($('layout').hidden || $('aBoard')?.inert ? shownTitle() : $('week'))?.focus(); // A: behind its gate the board is inert
   }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
   menu: (el) => openPanel('menu', el), // the ☰ button and the edit page's mode label
@@ -321,7 +322,7 @@ export const ACT = {
   removeFriend(el) {
     app.state.friends.splice(Number(el.dataset.i), 1);
     refresh();
-    $('prefsTitle')?.focus();
+    $(designOn() ? 'friendsPageTitle' : 'prefsTitle')?.focus();
   },
   openFriendEditor: () => openFriendEditor({ onSave: saveManualFriend, returnFocusId: 'openFriendEditor' }),
   editFriend: (el) =>

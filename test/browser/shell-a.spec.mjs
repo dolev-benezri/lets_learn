@@ -1,0 +1,293 @@
+// Design A's frame (web/ui-shell.js): the week board always on screen, one tool open as a panel over it (a bottom sheet on a phone, a side column
+// from 1080px), a dock of tools, build / improve as two tabs. Every visit passes { design: 'a' }, so CI tests A even though it runs the specs
+// with only BROWSER set. No top-level await in a spec: node:test then hangs after the run.
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { SITE, SIZES, STUDENT, DONE, DESIGN_KEY, TOUR_SEEN, MODE_BUILD, launch, visit as visitIn } from './helpers.mjs';
+
+let browser;
+before(async () => {
+  browser = await launch();
+});
+after(async () => {
+  await browser?.close();
+});
+
+const visit = (t, size, seed, hash = '') => visitIn(browser, t, size, seed, hash, 'light', false, false, { design: 'a' });
+const weekReady = (page) => page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+const hash = (page) => page.evaluate(() => location.hash);
+const activeId = (page) => page.evaluate(() => document.activeElement?.id ?? '');
+const visible = (page, sel) => page.locator(sel).first().isVisible();
+const TOOL_PAGE = { me: 'me', courses: 'courses', wishes: 'prefs', friends: 'friends', out: 'out' };
+const dock = (page, tool) => page.locator(`.dock [data-tool="${tool}"]`);
+const twoGroups = async () =>
+  Object.values(JSON.parse(await readFile(new URL('../fixtures/real/2027-1/30-2026.json', import.meta.url), 'utf8')).courses)
+    .flatMap((c) => c.groups.map((g) => g.id))
+    .slice(0, 2);
+
+for (const size of ['phone', 'desktop']) {
+  test(`${size}: the board stays on screen with a tool open, and each tool opens its own page in the panel`, async (t) => {
+    const page = await visit(t, size, DONE, '#me');
+    await weekReady(page);
+    assert.equal(await visible(page, '#layout'), true, 'the board');
+    for (const [tool, id] of Object.entries(TOOL_PAGE)) {
+      await page.evaluate((h) => (location.hash = h), { me: '#me', courses: '#courses', wishes: '#prefs', friends: '#friends', out: '#out' }[tool]);
+      await page.locator(`#panel #${id}`).waitFor({ state: 'visible' });
+      for (const other of Object.values(TOOL_PAGE).filter((p) => p !== id))
+        assert.equal(await visible(page, `#${other}`), false, `${tool}: #${other} is hidden`);
+      assert.equal(await visible(page, '#week .blk'), true, `${tool}: the week is still on screen`);
+    }
+  });
+}
+
+test('phone: no tool is open at the plain address, and the dock shows which one is', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  assert.equal(await visible(page, '#panel'), false);
+  assert.equal(await page.locator('.dock [aria-pressed="true"]').count(), 0);
+  await dock(page, 'courses').click();
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  assert.equal(await hash(page), '#courses');
+  assert.equal(await dock(page, 'courses').getAttribute('aria-pressed'), 'true');
+  assert.equal(await dock(page, 'me').getAttribute('aria-pressed'), 'false');
+});
+
+test('the old #prefs address opens the wishes, with a link to the friends it used to hold', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#prefs');
+  await page.locator('#panel #prefs').waitFor({ state: 'visible' });
+  assert.equal(await visible(page, '#friends'), false);
+  await page.locator('#prefs a[href="#friends"]').click();
+  await page.locator('#panel #friends').waitFor({ state: 'visible' });
+});
+
+test('phone: before the gate is passed only the record is open; every other tool is disabled and a tap does nothing', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  for (const tool of ['courses', 'wishes', 'friends', 'out']) {
+    assert.equal(await dock(page, tool).getAttribute('aria-disabled'), 'true', tool);
+    await dock(page, tool).click({ force: true });
+    assert.equal(await visible(page, '#panel #me .gate'), true, `${tool}: still the gate`);
+    assert.notEqual(await hash(page), { courses: '#courses', wishes: '#prefs', friends: '#friends', out: '#out' }[tool], `${tool}: the address did not move`);
+  }
+});
+
+test('an edit visitor is gated on the terms only: no builder track or year question over the edit page', async (t) => {
+  const page = await visit(t, 'phone', { 'afeka-sched-v1-terms': '2' }, '#edit');
+  await page.locator('#edit').waitFor({ state: 'visible' });
+  assert.equal(await visible(page, '#panel'), false);
+  assert.equal(await visible(page, '#layout'), false, 'the build board is not behind it');
+});
+
+test('behind the gate the board is inert, and the skip link goes to the gate', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), true);
+  await page.evaluate(() => document.querySelector('.skip').click());
+  assert.equal(await activeId(page), 'meTitle');
+});
+
+test('opening a tool from the plain board closes a drawer that was open (#friends is the plans to the classic router)', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await page.evaluate(() => document.querySelector('[data-act="panel"][data-panel="reg"]').click());
+  await page.locator('#drawer[open]').waitFor();
+  await page.evaluate(() => (location.hash = '#friends'));
+  await page.locator('#drawer[open]').waitFor({ state: 'detached' });
+  await page.locator('#panel #friends').waitFor({ state: 'visible' });
+});
+
+test('a tool opened after another one starts at its top', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#prefs');
+  await page.locator('#panel #prefs').waitFor({ state: 'visible' });
+  await page.evaluate(() => (document.getElementById('aPb').scrollTop = 400));
+  assert.ok((await page.evaluate(() => document.getElementById('aPb').scrollTop)) > 100, 'the wishes scroll');
+  await page.evaluate(() => (location.hash = '#courses'));
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => document.getElementById('aPb').scrollTop), 0);
+});
+
+test('the panels follow the board bar and the dock in the DOM order, which is the Tab order: top bar, board bar, dock, panel', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#courses');
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  const order = await page.evaluate(() => {
+    const at = (sel) => document.querySelector(sel);
+    const before = (a, b) => !!(at(a).compareDocumentPosition(at(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return [before('.a-top .modes a', '#prev'), before('#prev', '.dock button'), before('.dock button', '#panel')];
+  });
+  assert.deepEqual(order, [true, true, true]);
+});
+
+test('phone: Escape closes the sheet and focus returns to the dock button that opened it', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await dock(page, 'wishes').click();
+  await page.locator('#panel #prefs').waitFor({ state: 'visible' });
+  assert.equal(await activeId(page), 'prefsTitle', 'opening focuses the tool heading');
+  await page.keyboard.press('Escape');
+  await page.locator('#panel').waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.tool), 'wishes', 'back on the dock button');
+});
+
+test('phone: the close button leaves no tool in the address and keeps the query', async (t) => {
+  const page = await visit(t, 'phone', DONE, '?design=a#courses');
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  await page.locator('#panel [data-act="closeTool"]').click();
+  await page.locator('#panel').waitFor({ state: 'hidden' });
+  assert.equal(await hash(page), '');
+  assert.match(page.url(), /[?]design=a$/, 'the query stays, the fragment is gone');
+});
+
+test('phone: Back closes an open tool', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await dock(page, 'friends').click();
+  await page.locator('#panel #friends').waitFor({ state: 'visible' });
+  await page.goBack();
+  await page.locator('#panel').waitFor({ state: 'hidden' });
+});
+
+test('a tool opened by an address focuses its heading (and Back does too)', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await page.evaluate(() => (location.hash = '#courses'));
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  assert.equal(await activeId(page), 'coursesTitle');
+});
+
+test('opening and closing a tool keeps the board where it was scrolled', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await page.evaluate(() => scrollTo(0, 180));
+  const y0 = await page.evaluate(() => Math.round(scrollY));
+  assert.ok(y0 > 100, 'the page can scroll');
+  await dock(page, 'courses').click();
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => Math.round(scrollY)), y0, 'opening');
+  await page.keyboard.press('Escape');
+  await page.locator('#panel').waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => Math.round(scrollY)), y0, 'closing');
+});
+
+test('deleting a friend by keyboard lands on the friends heading', async (t) => {
+  const [G1] = await twoGroups();
+  const NOA = { ...STUDENT, friends: [{ name: 'נועה', groups: [G1], weight: 1, active: true }] };
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1': JSON.stringify(NOA) }, '#friends');
+  const remove = page.locator('#friends [data-act="removeFriend"]').first();
+  await remove.waitFor();
+  await remove.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => !document.querySelector('#friends [data-act="removeFriend"]'));
+  assert.equal(await activeId(page), 'friendsPageTitle');
+});
+
+test('desktop: three columns, the default tool is the courses, no scrim, no close button, Escape leaves the panel alone', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  const box = async (sel) => page.locator(sel).first().boundingBox();
+  const [panel, board, tabs] = [await box('#panel'), await box('#layout'), await box('.dock')];
+  assert.ok(panel.x > board.x, 'the panel is on the right (RTL), the board beside it');
+  assert.ok(tabs.y + tabs.height <= panel.y + 1 && Math.abs(tabs.x - panel.x) < 2, 'the dock is the row of tabs on top of the panel column');
+  assert.equal(await visible(page, '.a-scrim'), false);
+  assert.equal(await visible(page, '#panel [data-act="closeTool"]'), false);
+  await page.keyboard.press('Escape');
+  assert.equal(await visible(page, '#panel'), true);
+});
+
+test('320 px wide: nothing scrolls sideways, on the board and with a tool open', async (t) => {
+  const page = await visit(t, { width: 320, height: 640 }, DONE);
+  await weekReady(page);
+  const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  assert.equal(await fits(), true, 'the board');
+  for (const [tool, h] of [['me', '#me'], ['courses', '#courses'], ['wishes', '#prefs'], ['friends', '#friends'], ['out', '#out']]) {
+    await page.evaluate((x) => (location.hash = x), h);
+    await page.locator(`#panel #${TOOL_PAGE[tool]}`).waitFor({ state: 'visible' });
+    assert.equal(await fits(), true, tool);
+    assert.equal(await page.evaluate(() => document.getElementById('aPb').scrollWidth <= document.getElementById('aPb').clientWidth), true, `${tool}: the panel`);
+  }
+});
+
+test('the alternatives switcher is visible on the board and on every build tool (classic hides it off the plans)', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  for (const h of ['', '#me', '#courses', '#prefs', '#friends', '#out']) {
+    await page.evaluate((x) => (location.hash = x), h);
+    await page.waitForFunction((x) => location.hash === x, h);
+    assert.equal(await visible(page, '#switcher'), true, `${h || 'board'}`);
+  }
+});
+
+test('the mode tabs: improve opens #edit with the board out of the way, build brings it back; the arrows move alternatives in build mode only', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  const label = () => page.locator('#altLabel').textContent();
+  const first = await label();
+  assert.equal(await page.locator('.a-top .modes a[data-mode="build"]').getAttribute('aria-current'), 'page');
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForFunction((l) => document.getElementById('altLabel').textContent !== l, first);
+  await page.keyboard.press('ArrowRight');
+  await page.locator('.a-top .modes a[data-mode="edit"]').click();
+  await page.locator('#edit').waitFor({ state: 'visible' });
+  assert.equal(await hash(page), '#edit');
+  assert.equal(await visible(page, '#layout'), false);
+  assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page');
+  const inEdit = await label();
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await label(), inEdit, 'ArrowLeft: the build alternative does not move behind the edit page');
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await label(), inEdit, 'ArrowRight');
+  assert.equal(await visible(page, '.dock'), false, 'no build dock over the edit page');
+  assert.equal(await visible(page, '#switcher'), false, 'no build switcher either');
+  await page.locator('.a-top .modes a[data-mode="build"]').click();
+  await weekReady(page);
+  assert.equal(await visible(page, '#layout'), true);
+});
+
+test('improve mode fills the header too: the title and the data line are there on a direct #edit visit', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#edit');
+  await page.locator('#edit').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => document.getElementById('meta').textContent.trim().length > 0);
+  assert.ok((await page.locator('#title').textContent()).includes('המערכת שלי'));
+});
+
+test('the onboarded flag follows the route, not the panel: a bookmark to #courses sets it, #me and #edit do not', async (t) => {
+  const SAVED = { 'afeka-sched-v1-terms': '2', 'afeka-sched-v1-entry': '1', 'afeka-sched-v1': JSON.stringify(STUDENT) };
+  const flag = (page) => page.evaluate(() => localStorage.getItem('afeka-sched-v1-onboarded'));
+  const me = await visit(t, 'phone', SAVED, '#me');
+  await me.locator('#panel #me').waitFor({ state: 'visible' });
+  assert.equal(await flag(me), null, '#me');
+  const edit = await visit(t, 'phone', SAVED, '#edit');
+  await edit.locator('#edit').waitFor({ state: 'visible' });
+  assert.equal(await flag(edit), null, '#edit');
+  const courses = await visit(t, 'phone', SAVED, '#courses');
+  await courses.locator('#panel #courses').waitFor({ state: 'visible' });
+  assert.equal(await flag(courses), '1', '#courses');
+});
+
+test('a drawer that closes because of a navigation does not take the focus back from the new tool', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#out');
+  await page.locator('#panel #out').waitFor({ state: 'visible' });
+  await page.locator('#out [data-act="panel"][data-panel="reg"]').click();
+  await page.locator('#drawer[open]').waitFor();
+  await page.evaluate(() => (location.hash = '#courses'));
+  await page.locator('#drawer[open]').waitFor({ state: 'detached' });
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  await page.waitForTimeout(200); // the drawer's close event is queued: it must not move the focus afterwards
+  assert.equal(await activeId(page), 'coursesTitle');
+});
+
+test('a failed data load locks the dock, and a tool shows the board\'s retry, never an empty sheet', async (t) => {
+  const context = await browser.newContext({ viewport: SIZES.phone, locale: 'he-IL' });
+  const page = await context.newPage();
+  await context.addInitScript((items) => {
+    for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v);
+  }, { ...DONE, ...TOUR_SEEN, ...MODE_BUILD, [DESIGN_KEY]: 'a' });
+  await page.route('**/data/afeka/2027-*/30-2026.json', (r) => r.abort());
+  t.after(() => context.close());
+  await page.goto(SITE + '#friends');
+  await page.locator('#friends [data-retry]').waitFor({ state: 'visible', timeout: 30000 });
+  for (const tool of ['me', 'courses', 'wishes', 'friends', 'out'])
+    assert.equal(await dock(page, tool).getAttribute('aria-disabled'), 'true', `${tool} is locked`);
+  assert.equal(await visible(page, '#panel #friends [data-retry]'), true);
+});

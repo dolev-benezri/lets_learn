@@ -4,7 +4,15 @@
    [data-theme="dark"]: style.css puts its dark tokens on :root[data-theme="dark"], which has the specificity of a plain scoped rule, and the
    two blocks here never overlap, so no light value can leak into dark. test/design-contrast.test.mjs checks every pair in both. */
 :root[data-design="a"] {
-  --design:a; /* a sentinel the final proof (Task 13) reads; non-colour tokens of A go here */
+  --design:a; /* a sentinel the final proof (Task 13) reads */
+  --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
+  --a-top:60px; /* the wide top bar, where the dock and the panel stick */
+  --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
+  --a-top:60px; /* the wide top bar, where the dock and the panel stick */
+  --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
+  --a-top:60px; /* the wide top bar, where the dock and the panel stick */
+  --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
+  --a-top:60px; /* the wide top bar, where the dock and the panel stick */
 }
 :root[data-design="a"]:not([data-theme="dark"]) {
   --bg:#E9EDF1;
@@ -104,3 +112,161 @@
   --c7-bg:#1D2B13;
   --c7-fg:#78A238;
 }
+
+/* ---- the frame (Task 2): top bar, status strip, stage with the board, the tool panel and the dock. Written with the scope spelled out in full
+   (a nested rule would escape test/design-a-css.test.mjs). The document scrolls the board; the dock and the phone sheet are fixed. ---- */
+:root[data-design="a"] header.top, :root[data-design="a"] nav.steps {
+  display:none;
+} /* replaced by the frame; the nodes that matter were moved into it (ui-shell.js) */
+:root[data-design="a"] body { padding-bottom:calc(var(--a-dock) + env(safe-area-inset-bottom)); }
+:root[data-design="a"] .a-shell { display:block; }
+:root[data-design="a"] .a-top {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px 10px;
+  padding:6px 12px;
+  background:var(--chrome);
+  border-bottom:1px solid var(--border);
+}
+:root[data-design="a"] .a-brand { display:flex; align-items:center; gap:8px; margin-inline-end:auto; min-width:0; }
+:root[data-design="a"] .a-mark { width:30px; height:30px; flex:none; }
+:root[data-design="a"] .a-mark rect { fill:var(--primary); }
+:root[data-design="a"] .a-mark path { fill:var(--on-primary); }
+:root[data-design="a"] .a-brand h1 { margin:0; font-size:1.05rem; line-height:1.2; }
+:root[data-design="a"] .a-brand h1 small { display:block; color:var(--text-2); font-size:var(--fs-xs); font-weight:400; }
+:root[data-design="a"] .a-top-act { display:flex; align-items:center; gap:2px; }
+:root[data-design="a"] .a-top-act .btn { min-width:var(--tap); }
+:root[data-design="a"] .modes {
+  order:3;
+  flex:1 1 100%;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  padding:3px;
+  background:var(--surface-2);
+  border-radius:12px;
+}
+:root[data-design="a"] .modes a {
+  display:flex; align-items:center; justify-content:center; gap:6px; min-height:var(--tap); padding:0 8px; border-radius:9px;
+  color:var(--text-2); font-weight:600; font-size:var(--fs-sm); text-decoration:none;
+}
+:root[data-design="a"] .modes a[aria-current="page"] { background:var(--surface); color:var(--text); box-shadow:var(--shadow-sm); }
+:root[data-design="a"] .modes a .icon { width:18px; height:18px; flex:none; }
+:root[data-design="a"] .a-strip { display:flex; flex-direction:column; gap:2px; padding:4px 12px; font-size:var(--fs-sm); color:var(--text-2); }
+:root[data-design="a"] .a-strip .meta { margin:0; font-size:var(--fs-xs); }
+:root[data-design="a"] .a-unofficial { display:flex; align-items:center; gap:6px; margin:0; color:var(--text-2); }
+:root[data-design="a"] .a-unofficial .icon { width:14px; height:14px; flex:none; }
+:root[data-design="a"] .a-strip .notice-top:empty { display:none; }
+:root[data-design="a"] .a-stage { position:relative; }
+:root[data-design="a"] .a-board { min-width:0; }
+:root[data-design="a"] .a-board > .switcher {
+  display:flex;
+  margin:8px auto 0;
+  width:max-content;
+  max-width:calc(100% - 24px);
+} /* classic hid it off the plans */
+:root[data-design="a"] body.gated .a-board > .switcher { display:none; }
+:root[data-design="a"] .a-board .layout { padding-top:6px; }
+
+/* the dock: five tools, the thumb's bar on a phone */
+:root[data-design="a"] .dock {
+  position:fixed; inset-inline:0; bottom:0; z-index:21; display:grid; grid-template-columns:repeat(5, 1fr);
+  background:var(--chrome); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom);
+}
+:root[data-design="a"] .dk {
+  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:var(--a-dock);
+  padding:4px 2px; border:0; background:none; color:var(--text-2); font:inherit; font-size:11px; font-weight:600;
+  line-height:1.15; text-align:center; cursor:pointer;
+}
+:root[data-design="a"] .dk .icon { width:24px; height:24px; }
+:root[data-design="a"] .dk[aria-pressed="true"] { color:var(--primary); }
+:root[data-design="a"] .dk[aria-pressed="true"]::before {
+  content:"";
+  position:absolute;
+  top:0;
+  inset-inline:22%;
+  height:3px;
+  border-radius:0 0 3px 3px;
+  background:var(--primary);
+}
+:root[data-design="a"] .dk[aria-disabled="true"] { opacity:.45; cursor:default; }
+
+/* the tool panel: a bottom sheet on a phone */
+:root[data-design="a"] .a-scrim {
+  position:fixed;
+  inset:0;
+  bottom:calc(var(--a-dock) + env(safe-area-inset-bottom));
+  z-index:19;
+  border:0;
+  background:var(--scrim);
+  display:none;
+}
+:root[data-design="a"] body.a-panel-open .a-scrim:not([hidden]) { display:block; }
+:root[data-design="a"] .a-panel {
+  position:fixed; inset-inline:0; bottom:calc(var(--a-dock) + env(safe-area-inset-bottom)); z-index:20; display:flex; flex-direction:column;
+  height:min(84dvh, calc(100dvh - 120px)); background:var(--surface); border-radius:20px 20px 0 0; box-shadow:var(--shadow-sheet);
+}
+:root[data-design="a"] .a-panel[hidden] { display:none; }
+:root[data-design="a"] .a-grip { width:40px; height:5px; margin:8px auto 0; border-radius:3px; background:var(--border-strong); }
+:root[data-design="a"] .a-ph {
+  display:flex;
+  justify-content:flex-end;
+  padding:0 8px;
+  border-bottom:1px solid var(--border);
+  min-height:var(--tap);
+  align-items:center;
+}
+:root[data-design="a"] .a-ph [hidden] { display:none; }
+:root[data-design="a"] .a-pb { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 16px 24px; }
+:root[data-design="a"] .a-pb .step-page { max-width:none; margin:0; padding:0; scroll-margin-top:0; }
+:root[data-design="a"] .a-pb .me-grid, :root[data-design="a"] .a-pb .halves { display:grid; grid-template-columns:minmax(0, 1fr); gap:12px; }
+:root[data-design="a"] .a-pb :is(#me, #courses, #prefs, #friends) :is(.me-foot, .me-step) { display:none; }
+:root[data-design="a"] .a-pb .a-friends-link { display:block; margin-top:6px; }
+:root[data-design="a"] .a-pb .a-friends-link a { display:inline-flex; align-items:center; gap:6px; min-height:var(--tap); }
+:root[data-design="a"] .a-pb .a-friends-link .icon { width:18px; height:18px; }
+:root[data-design="a"] .a-out { display:grid; gap:10px; margin-top:12px; }
+:root[data-design="a"] .a-out .btn { justify-content:flex-start; }
+:root[data-design="a"] .site-foot { padding-bottom:calc(var(--a-dock) + 12px); }
+
+/* what the live stylesheet keys to the page: it hid the switcher off the plans, docked the drawer and trimmed the page for the old sticky bar */
+:root[data-design="a"] body.drawer-open { padding-inline-end:0; }
+:root[data-design="a"] .a-alts[hidden] { display:none; }
+/* improve mode (stage 1): the edit page is the whole stage, with no dock and no build switcher; the panel only shows for the terms */
+:root[data-design="a"] body[data-view="edit"] { --a-dock:0px; }
+:root[data-design="a"] body[data-view="edit"] .dock, :root[data-design="a"] body[data-view="edit"] .a-board > .switcher { display:none; }
+:root[data-design="a"] .skip:focus { z-index:60; } /* above the wide top bar */
+:root[data-design="a"] .toast { bottom:calc(var(--a-dock) + env(safe-area-inset-bottom) + 12px); } /* above the dock, at every width it exists */
+
+/* from 1080px: the tool is a column beside the board, the dock its tabs on top */
+@media (min-width:1080px) {
+  :root[data-design="a"] body { padding-bottom:0; }
+  :root[data-design="a"] .a-top { flex-wrap:nowrap; position:sticky; top:0; z-index:25; min-height:var(--a-top); padding:6px 16px; }
+  :root[data-design="a"] .modes { order:0; flex:0 0 auto; width:420px; }
+  :root[data-design="a"] .a-stage {
+    display:grid;
+    grid-template-columns:400px minmax(0, 1fr);
+    grid-template-rows:auto minmax(0, 1fr);
+    align-items:start;
+  }
+  :root[data-design="a"] .a-board { grid-column:2; grid-row:1 / 3; }
+  :root[data-design="a"] .dock {
+    position:sticky; top:var(--a-top); inset-inline:auto; bottom:auto; z-index:6; grid-column:1; grid-row:1;
+    padding:0; border-top:0; border-bottom:1px solid var(--border); border-inline-end:1px solid var(--border);
+  }
+  :root[data-design="a"] .dk { flex-direction:row; gap:6px; min-height:var(--tap); font-size:12px; }
+  :root[data-design="a"] .dk .icon { width:18px; height:18px; }
+  :root[data-design="a"] .dk[aria-pressed="true"]::before { top:auto; bottom:0; border-radius:3px 3px 0 0; }
+  :root[data-design="a"] .a-scrim { display:none !important; }
+  :root[data-design="a"] .a-panel {
+    position:sticky; top:calc(var(--a-top) + var(--tap)); inset-inline:auto; bottom:auto; z-index:5; grid-column:1; grid-row:2;
+    height:calc(100dvh - var(--a-top) - var(--tap));
+    border-radius:0; box-shadow:none; border-inline-end:1px solid var(--border);
+  }
+  :root[data-design="a"] .a-grip, :root[data-design="a"] .a-ph { display:none; }
+  :root[data-design="a"] .site-foot { padding-bottom:12px; }
+  :root[data-design="a"] .toast { bottom:20px; }
+  :root[data-design="a"] body[data-view="edit"] .a-stage { display:block; }
+}
+@media (min-width:1080px) and (max-width:1279px) { :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); } }
+@media (max-width:359px) { :root[data-design="a"] .dk { font-size:10px; } :root[data-design="a"] .a-top { padding-inline:8px; } }
