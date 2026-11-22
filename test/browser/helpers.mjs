@@ -148,3 +148,10 @@ export async function openRegistration(page) {
 }
 // where the opened summary or list is
 export const takeOutRoot = async (page) => ((await onA(page)) ? '#out' : '#drawer[open]');
+// The progress map: classic has a button in the header; A has it in the ☰ menu (the map opens over the menu).
+export async function openMap(page) {
+  if (await onA(page)) {
+    await page.locator('.menu-btn').click();
+    await page.locator('#drawer [data-act="openMap"]').click();
+  } else await page.locator('[data-act="openMap"]').click();
+}

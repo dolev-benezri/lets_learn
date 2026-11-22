@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
-import { SITE, DONE, DESIGN_KEY, TOUR_SEEN, MODE_BUILD, launch, visit as visitIn } from './helpers.mjs';
+import { SITE, DONE, DESIGN_KEY, TOUR_SEEN, MODE_BUILD, gradeSheetPdf, launch, visit as visitIn } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -28,7 +28,11 @@ function checker(scheme) {
     async check(page, screen) {
       await frame(page);
       assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), scheme, 'the site follows the device colour scheme');
-      const { violations } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
+      const { violations: all } = await new AxeBuilder({ page }).withTags(TAGS).analyze();
+      // the one rule left out, only for map nodes (a11y.spec.mjs says why): the label holds the full course name, the screen cuts a long one with "…"
+      const violations = all
+        .map((v) => (v.id === 'label-content-name-mismatch' ? { ...v, nodes: v.nodes.filter((n) => !n.html.startsWith('<g class="nd')) } : v))
+        .filter((v) => v.nodes.length);
       for (const v of violations)
         found.push(`${screen}: ${v.id} (${v.impact}) x${v.nodes.length} ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);
     },
@@ -207,6 +211,90 @@ for (const scheme of ['light', 'dark'])
       await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
       await check(page, `${w} edit step 2`);
       if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))) note(`${w} edit step 2: scrolls sideways`);
+    }
+    done();
+  });
+
+// The dialogs of design A and the legal page: the lesson popover, the ☰ menu, the information panel, the erase confirmation, the map, the text dialog,
+// the friend editor, and legal.html: axe at three widths in both colour schemes, and nothing scrolls sideways.
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the dialogs and the legal page at 320, 375 and 1280: axe, no sideways scroll`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    // the page, and the open dialog or popover with the scrollers inside it (a cut-off label, overflow:hidden, is not a scroller)
+    const fits = async (page, label) => {
+      const bad = await page.evaluate(() => {
+        const out = [];
+        if (document.documentElement.scrollWidth > innerWidth) out.push('the page');
+        const open = [...document.querySelectorAll('dialog[open], :popover-open')].at(-1);
+        if (open) {
+          const r = open.getBoundingClientRect();
+          if (r.left < -0.5 || r.right > innerWidth + 0.5) out.push(`the dialog is off screen (${Math.round(r.left)}..${Math.round(r.right)})`);
+          for (const e of [open, ...open.querySelectorAll('*')]) if (e.scrollWidth > e.clientWidth + 1 && ['auto', 'scroll'].includes(getComputedStyle(e).overflowX) && e.clientWidth > 0 && !e.closest('svg')) out.push(`${e.tagName.toLowerCase()}.${String(e.className).split(' ')[0]} scrolls sideways`);
+        }
+        return out;
+      });
+      for (const b of bad) note(`${label}: ${b}`);
+    };
+    for (const [w, size] of Object.entries(WIDTHS)) {
+      const page = await visit(t, size, DONE, '', scheme);
+      await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+      await page.locator('#week .blk').first().click();
+      await page.locator('#pop:popover-open').waitFor();
+      await check(page, `${w} lesson popover`);
+      await fits(page, `${w} lesson popover`);
+      await page.keyboard.press('Escape');
+      await page.locator('#pop:popover-open').waitFor({ state: 'detached' });
+      await page.locator('.menu-btn').click();
+      await page.locator('#drawer[open]').waitFor();
+      await check(page, `${w} menu`);
+      await fits(page, `${w} menu`);
+      await page.locator('#drawer [data-act="panel"][data-panel="info"]').click();
+      await page.locator('#drawer .info-sec').first().waitFor();
+      await check(page, `${w} information`);
+      await fits(page, `${w} information`);
+      await page.locator('#drawer [data-act="menu"]').click();
+      await page.locator('#drawer .a-menu').waitFor();
+      await page.locator('#drawer [data-act="eraseAll"]').click();
+      const ask = page.locator('dialog[open]').last();
+      await ask.getByRole('button', { name: 'ביטול' }).waitFor();
+      await check(page, `${w} confirm`);
+      await fits(page, `${w} confirm`);
+      await ask.getByRole('button', { name: 'ביטול' }).click();
+      await page.locator('#drawer [data-act="openMap"]').click();
+      await page.locator('#pmap .pm-svg.ready').waitFor({ timeout: 30000 });
+      await check(page, `${w} map`);
+      await fits(page, `${w} map`);
+      await page.keyboard.press('Escape');
+      await page.locator('#pmap[open]').waitFor({ state: 'detached' });
+      await page.keyboard.press('Escape');
+      await page.locator('#drawer[open]').waitFor({ state: 'detached' });
+      // the grade-sheet review: a table of rows to confirm, from a synthetic sheet
+      await page.evaluate(() => (location.hash = '#me'));
+      await page.locator('#gradeFile').waitFor({ state: 'attached' });
+      await page.locator('#gradeFile').setInputFiles({ name: 'sheet.pdf', mimeType: 'application/pdf', buffer: gradeSheetPdf(['10016 Calculus 4.0 85', '30135 Statics 3.0 Pass']) });
+      await page.locator('dialog.dlg-rows[open]').waitFor({ timeout: 30000 });
+      await check(page, `${w} grade review`);
+      await fits(page, `${w} grade review`);
+      await page.keyboard.press('Escape');
+      await page.locator('dialog.dlg-rows[open]').waitFor({ state: 'detached' });
+      await page.evaluate(() => (location.hash = '#out'));
+      await page.locator('#out [data-act="copyReg"]').waitFor();
+      await page.locator('#out [data-act="copyReg"]').click(); // the clipboard is stubbed to refuse: the text comes up as a dialog
+      await page.locator('dialog[open] textarea').waitFor();
+      await check(page, `${w} text dialog`);
+      await fits(page, `${w} text dialog`);
+      await page.locator('dialog[open]').getByRole('button', { name: 'סגור' }).click();
+      await page.evaluate(() => (location.hash = '#friends'));
+      await page.locator('#openFriendEditor').click();
+      await page.locator('#friendEd[open]').waitFor();
+      await check(page, `${w} friend editor`);
+      await fits(page, `${w} friend editor`);
+      await page.keyboard.press('Escape');
+      await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
+      await page.goto(SITE + 'legal.html#terms');
+      await page.locator('h1').waitFor();
+      await check(page, `${w} legal page`);
+      await fits(page, `${w} legal page`);
     }
     done();
   });
