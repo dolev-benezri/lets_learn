@@ -14,7 +14,7 @@ import {
   planningCls,
   summerPinned
 } from './app.js';
-import { progress, studyYear, passedWarnings, afterANotes } from './rules.js';
+import { progress, studyYear, passedWarnings, afterANotes, afterAGroups, afterAText, afterAShort } from './rules.js';
 import { approvedOn } from './settings.js';
 import { unlockCounts } from './solver-core.js';
 import {
@@ -42,6 +42,8 @@ import {
   approvedText,
   toolName,
   freshness,
+  freshnessA,
+  RULES_SHORT,
   turnWarning,
   stalePins,
   partialNote,
@@ -54,6 +56,8 @@ import {
   SPLIT_NOTE,
   splitLine,
   leftOutText,
+  leftOutShort,
+  outsideHoursShort,
   closeExamLines,
   outsideHoursText,
   RULES_UNAPPROVED
@@ -95,7 +99,9 @@ export function renderTop() {
     // named only when there is a choice and it was made
     prog = progs.length > 1 && !needsProgram() ? progs.find((p) => p.id === app.data.program)?.name : null;
   $('title').innerHTML =
-    `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
+    `המערכת שלי <small>${designOn() ? '' : '· '}${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${
+      prog ? ` · ${esc(heb(prog))}` : ''
+    }</small>`;
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
   const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear);
@@ -103,7 +109,12 @@ export function renderTop() {
   $('counsel').hidden = !app.settings.counselingUrl;
   if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
   renderReport();
-  $('meta').innerHTML = esc(f.text) + (approved ? ` · ${esc(approvedText(approved))}` : '');
+  if (designOn()) {
+    // A: the freshness line alone (a warning when stale); the rules clause is the legal line's, in the shell's strip
+    const fa = freshnessA(boardStatus(), app.data.fetchedAt);
+    $('meta').innerHTML = fa.stale ? `<span class="warn-text">${icon('alert')} ${esc(fa.text)}</span>` : esc(fa.text);
+    if ($('aRules')) $('aRules').textContent = ` · ${approved ? approvedText(approved) : RULES_SHORT}`;
+  } else $('meta').innerHTML = esc(f.text) + (approved ? ` · ${esc(approvedText(approved))}` : '');
 }
 
 // What qualifies every plan on this page, at any width: a phone hides the header's #meta. Written only on a change, so a screen reader is not told again.
@@ -111,14 +122,18 @@ function renderBoardNote() {
   const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear),
     warned = passedWarnings(app.data, app.state).length;
+  // A: from 600px the strip says the freshness and the rules (they are on screen with the board); on a phone this line, right above the week, says them
+  // as one line (each part only when it applies), and the longer "check with the advisor" sentence is in "פרטים" and in ☰ "מידע"
+  const fa = designOn() ? freshnessA(boardStatus(), app.data.fetchedAt) : null;
+  const phoneLine = fa && [fa.stale && `<span class="warn-text">${icon('alert')} ${esc(fa.text)}</span>`, !approved && RULES_SHORT].filter(Boolean).join(' · ');
   const html = [
-    f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
+    fa ? phoneLine && `<span class="a-warn-line">${phoneLine}</span>` : f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
     !approved && app.data.verified === false && '<span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>',
-    !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
+    !fa && !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
     warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים ב${toolName('me')}</a>`
   ]
     .filter(Boolean)
-    .map((line) => `<p class="hint">${line}</p>`)
+    .map((line) => `<p class="hint${line.startsWith('<span class="a-warn-line">') ? ' a-warn-p' : ''}">${line}</p>`)
     .join('');
   if ($('boardNote').dataset.html === html) return;
   $('boardNote').dataset.html = html;
@@ -203,6 +218,22 @@ const SORT_BY = [
   ['friends', 'הכי הרבה עם חברים'],
   ['unlocks', 'פותחת הכי הרבה קורסי המשך']
 ]; // "הצג לפי" (state.sortBy)
+// The sort select and, with nobody to sort by, the hint under it. Classic draws it above the summary (#showby). Design A draws it twice: in the alternatives
+// column (from 1080px) and inside "פרטים" (below it), each with a key of its own so the focus is restored on the one that holds it.
+function sortHtml(k, label) {
+  const { state } = app;
+  // as showWeights: the search runs as 'best'
+  const noFriend = state.sortBy === 'friends' && !state.friends.some((f) => f.active !== false);
+  return `<label class="field"><span class="ctl-l">${label}</span><select data-chg="sortBy" data-k="${k}">${SORT_BY.map(
+    ([v, t]) => `<option value="${v}"${v === state.sortBy ? ' selected' : ''}>${t}</option>`
+  ).join('')}</select></label>${
+    noFriend
+      ? `<p class="hint">${
+          state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם' : 'אין עדיין חברים. אפשר להוסיף'
+        } <a href="${designOn() ? '#friends' : '#prefs'}">ב${toolName('friends')}</a>.</p>`
+      : ''
+  }`;
+}
 function colorOrder() {
   const cand = Object.keys(app.data.courses).filter((id) => candidateMode(id));
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
@@ -232,6 +263,26 @@ function capLine(best, nameOf) {
     changed ? `<button type="button" class="btn" data-act="capApply" data-k="capApply">החל תקרה של ${p.cap} נ״ז</button>` : ''
   }</p>`;
 }
+// Design A: the facts as one plain line (each fact whole: it wraps between facts, never inside one) and, behind a native disclosure, the lines
+// that matter less. The summary says how many lines it holds. Its open state is kept in ui.detailsOpen (this function rewrites the markup on every
+// change); focus restoration (app.js keepFocus) finds the summary by its data-k.
+const factsHtml = (facts, lines, extra = '') => {
+  lines = lines.filter(Boolean);
+  return (
+    `<p class="a-facts">${facts.filter(Boolean).map((f) => `<span>${f}</span>`).join('')}</p>` +
+    (lines.length
+      ? `<details class="a-details"${ui.detailsOpen ? ' open' : ''}><summary data-k="aDetails">פרטים (${lines.length})</summary>
+        <div class="a-det-body">${lines.map((l) => `<p>${l}</p>`).join('')}${extra}</div></details>`
+      : '')
+  );
+};
+globalThis.document?.addEventListener(
+  'toggle',
+  (e) => {
+    if (e.target.classList?.contains('a-details')) ui.detailsOpen = e.target.open;
+  },
+  true
+);
 export function renderView() {
   const { state } = app;
   const results = ui.last?.results ?? [];
@@ -260,15 +311,18 @@ export function renderView() {
   ]); // both semesters, so the hours don't jump between tabs; busy blocks always show
   if (ui.mobileDay > range.days) ui.mobileDay = 1;
   // Board header: scope and semester controls first, then the notices that hold for the whole plan (shown once, whichever tab is open).
-  const note = (ic, t) => `<p class="notice">${icon(ic)}<span>${esc(t)}</span></p>`;
+  const note = (ic, t) => `<p class="notice${designOn() && ic === 'alert' ? ' warn' : ''}">${icon(ic)}<span>${esc(t)}</span></p>`; // A: a warning line takes the warning colour
   const ctl =
-    (app.sem['ב']
+    (app.sem['ב'] && !designOn() // A: the scope lives only in "מה חשוב לי"
       ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"')}</div>`
       : '') +
     (pair || summerScope()
       ? `<div class="ctl">${seg('sem', 'סמסטר מוצג', semTabs(), summerScope() ? 'קיץ' : ui.sem, 'data-chg="sem"')}</div>`
       : '');
   const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
+  const warnings = pair ? raw.warnings : afterANotes(app.cls, ids);
+  const afterA = designOn() ? (pair ? raw.afterA ?? [] : afterAGroups(app.cls, ids)) : [], // the groups ב׳ counts on from א׳ (A only)
+    afterAFull = afterA.length ? afterAText(afterA) : null;
   $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
   const summerNote = summerScope()
     ? (state.yearIds.length
@@ -284,21 +338,16 @@ export function renderView() {
         <button type="button" class="btn" data-act="prefsOk" data-k="prefsOk">הבנתי</button>
         <button type="button" class="btn" data-act="prefsUndo" data-k="prefsUndo">להחזיר את הקודם</button></p>`
       : '') +
-    (pair ? raw.warnings : afterANotes(app.cls, ids)).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
+    // A: what ב׳ counts on from א׳ is one short line (the count of prerequisites, "אילו?" opening the full sentence in "פרטים"); the other warnings stay
+    (afterA.length
+      ? `<p class="notice a-after">${icon('info')}<span>${esc(afterAShort(afterA.length))} <button type="button" class="a-which" data-act="detailsGo"
+          data-to="aAfterA" data-k="aWhich">אילו?</button></span></p>`
+      : '') +
+    warnings.filter((w) => w !== afterAFull).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
     (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
-  // as showWeights: the search runs as 'best'
-  const noFriend = state.sortBy === 'friends' && !state.friends.some((f) => f.active !== false);
-  $('showby').innerHTML =
-    `<label class="field"><span class="ctl-l">הצג לפי</span><select data-chg="sortBy" data-k="sortBy">${SORT_BY.map(
-      ([v, t]) => `<option value="${v}"${v === state.sortBy ? ' selected' : ''}>${t}</option>`
-    ).join('')}</select></label>${
-      noFriend
-        ? `<p class="hint">${
-            state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם' : 'אין עדיין חברים. אפשר להוסיף'
-          } <a href="${designOn() ? '#friends' : '#prefs'}">ב${toolName('friends')}</a>.</p>`
-        : ''
-    }`;
+  // A: in the alternatives column and in "פרטים"; with no alternatives to hold them (a search that found nothing) here, so the setting stays reachable
+  $('showby').innerHTML = designOn() && !noRes ? '' : sortHtml('sortBy', 'הצג לפי');
 
   // course ids built from a lecture and a tutorial the college does not link
   const split = raw && !none ? raw.split ?? [] : [];
@@ -392,13 +441,22 @@ export function renderView() {
       leftOut = Object.keys(app.data.courses)
         .filter((id) => ['must', 'optional'].includes(candidateMode(id)) && !inSummer.has(id) && !planHas.has(id) && !raw.missing?.includes(id))
         .map((id) => ({ name: app.data.courses[id].name, credits: app.data.courses[id].credits }));
-    const outsideH = outsideHoursText((1 - (res.breakdown.timeWindow ?? 1)) * 10);
+    const outsideH = (designOn() ? outsideHoursShort : outsideHoursText)((1 - (res.breakdown.timeWindow ?? 1)) * 10);
+    // A: several left-out courses are one short line (count and credits), "אילו?" opening their names in "פרטים"
+    const leftOutMany = designOn() && leftOut.length > 1;
     msg +=
-      (leftOut.length ? note('info', leftOutText(leftOut)) : '') +
+      (leftOutMany
+        ? `<p class="notice a-leftout">${icon('info')}<span>${esc(leftOutShort(leftOut))} <button type="button" class="a-which" data-act="detailsGo"
+          data-to="aLeftOut" data-k="aLeftOutBtn">אילו?</button></span></p>`
+        : leftOut.length
+          ? note('info', leftOutText(leftOut))
+          : '') +
       capLine(results[0], nameOf) +
       closeExamLines(res.closeExams ?? [], nameOf).map((t) => note('alert', t)).join('') +
       (outsideH && !state.constraints.windowHard
-        ? `<p class="notice">${icon('clock')}<span>${outsideH} אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.</span></p>`
+        ? `<p class="notice">${icon('clock')}<span>${outsideH} ${
+            designOn() ? '<a href="#prefs">להפוך לחובה</a>' : 'אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.'
+          }</span></p>`
         : '');
     // what this alternative changes against the first one (§14ז)
     const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null;
@@ -408,20 +466,60 @@ export function renderView() {
           .join(' · ')
       : '';
 
-    $('pills').innerHTML =
-      [
-        pill('calendar', courseCount(res.courses.length)),
-        pill('cap', `${s.credits} נ״ז`),
-        ...(pair ? [pill('calendar', `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []),
-        pill('sun', fd),
-        pill('clock', gap),
-        ...(myRank && regular.length > 1 ? [pill('check', rankText(myRank, regular.length))] : []),
-        ...fr.map((t) => pill('users', esc(t), 'friend')),
-        pill('file', exams)
-      ].join('') +
-      (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') +
-      (pair ? '<p class="pill-info">אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.</p>' : '') +
-      (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
+    // Design A: the facts every view needs as one plain line, the rest behind "פרטים" (docs/superpowers/specs/2026-11-22-design-a-declutter.md).
+    // Classic keeps its seven chips and sentences as they were.
+    const examFact = !data.examsPublished
+      ? 'בחינות: טרם פורסמו'
+      : s.examGap === 0
+        ? '' // the warning line says it (closeExamLines): not said twice
+        : s.examGap
+          ? `לפחות ${count(s.examGap, 'יום אחד', 'ימים')} בין בחינות`
+          : 'פער בין בחינות לא ידוע';
+    const examWarnings = closeExamLines(res.closeExams ?? [], nameOf),
+      approvedNow = approvedOn(app.settings, app.data.program, app.data.startYear);
+    // the disclosure's state is read now: its toggle event may still be queued when this replaces it
+    const shownDet = $('pills').querySelector('.a-details');
+    if (shownDet) ui.detailsOpen = shownDet.open;
+    if (designOn())
+      $('pills').innerHTML = factsHtml(
+        [
+          courseCount(res.courses.length),
+          `${s.credits} נ״ז`,
+          fd,
+          s.gapH >= 10 ? gap : s.gapH ? count(s.gapH, 'שעת חלון אחת', 'ש׳ חלונות') : gap,
+          fr[0] && esc(fr[0]),
+          examFact
+        ],
+        [
+          pair && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`,
+          myRank && regular.length > 1 && rankText(myRank, regular.length),
+          infoLine,
+          pair && 'אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.',
+          vs && `לעומת חלופה 1: ${vs}`,
+          afterAFull && `<span id="aAfterA" tabindex="-1" data-k="aAfterA">${esc(afterAFull)}</span>`,
+          leftOutMany && `<span id="aLeftOut" tabindex="-1" data-k="aLeftOut">${esc(leftOutText(leftOut))}</span>`,
+          ...fr.slice(1).map(esc),
+          disclaimerHtml(app.settings.counselingUrl),
+          !approvedNow && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`
+        ],
+        // below 1080px the sort is here (the alternatives column holds it from 1080px); not a line of its own: the count is of lines
+        `<div class="showby a-sort-d">${sortHtml('sortByD', 'הצג לפי')}</div>`
+      );
+    else
+      $('pills').innerHTML =
+        [
+          pill('calendar', courseCount(res.courses.length)),
+          pill('cap', `${s.credits} נ״ז`),
+          ...(pair ? [pill('calendar', `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []),
+          pill('sun', fd),
+          pill('clock', gap),
+          ...(myRank && regular.length > 1 ? [pill('check', rankText(myRank, regular.length))] : []),
+          ...fr.map((t) => pill('users', esc(t), 'friend')),
+          pill('file', exams)
+        ].join('') +
+        (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') +
+        (pair ? '<p class="pill-info">אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.</p>' : '') +
+        (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
     live = [
       `חלופה ${ui.cur + 1} מתוך ${nAlt}`,
       pair && `סמסטר ${ui.sem}׳`,
@@ -431,6 +529,8 @@ export function renderView() {
       fd,
       gap,
       ...fr,
+      // A: what left the screen's chips (the exam fact) and the exam warnings, so nothing visible is unannounced
+      ...(designOn() ? [examFact, ...examWarnings] : []),
       split.length && SPLIT_NOTE,
       pn?.text
     ]
@@ -438,7 +538,7 @@ export function renderView() {
       .join(', ');
   } else $('pills').innerHTML = '';
   $('advisorBtn').disabled = !res;
-  $('disclaimer').innerHTML = res ? disclaimerHtml(app.settings.counselingUrl) : ''; // also the step-4 counselling link
+  $('disclaimer').innerHTML = res && !designOn() ? disclaimerHtml(app.settings.counselingUrl) : ''; // also the step-4 counselling link; A: it is in "פרטים"
 
   $('week').innerHTML =
     msg +
@@ -555,6 +655,7 @@ export function renderAltColumn() {
   });
   box.hidden = false;
   box.closest('.a-stage')?.classList.add('has-alts'); // the wide grid's third track (a class: no :has() needed)
-  box.innerHTML = `<h2 class="col-t">חלופות</h2><ol class="alt-list">${cards.join('')}</ol>`;
+  // a year plan's cards are the year's alternatives; the sort select sits under the title
+  box.innerHTML = `<h2 class="col-t">${results.some(isPair) ? 'חלופות לשנה' : 'חלופות'}</h2><div class="showby a-sort">${sortHtml('sortBy', 'לפי')}</div><ol class="alt-list">${cards.join('')}</ol>`;
 }
 

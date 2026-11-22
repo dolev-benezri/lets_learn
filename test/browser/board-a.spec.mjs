@@ -119,9 +119,11 @@ test('phone: a swipe on the week moves to the next alternative, the other way ba
 test('320 px: the board bar, the sort and the semester controls fit and stay targets', async (t) => {
   const page = await visit(t, { width: 320, height: 640 }, DONE);
   await weekReady(page);
+  await page.locator('#pills .a-details > summary').click(); // below 1080px the sort is inside "פרטים"
+  await page.locator('.a-sort-d select').waitFor({ state: 'visible' });
   const m = await page.evaluate(() => {
     const r = (s) => document.querySelector(s)?.getBoundingClientRect();
-    const bar = r('.a-bar'), sort = r('#showby select'), sw = r('#switcher');
+    const bar = r('.a-bar'), sort = r('.a-sort-d select'), sw = r('#switcher');
     const ctl = [...document.querySelectorAll('.a-bar button, .a-bar select, .a-bar input, #semtabs label, #semtabs input')]
       .filter((e) => e.checkVisibility()).map((e) => ((b) => [e.id || e.className || e.tagName, b.left, b.right, b.height])(e.closest('label')?.getBoundingClientRect() ?? e.getBoundingClientRect()));
     return { fits: document.documentElement.scrollWidth <= innerWidth, bar: bar && [bar.left, bar.right], sort: sort && [sort.width, sort.height], sw: sw && [sw.left, sw.right, sw.height], ctl };

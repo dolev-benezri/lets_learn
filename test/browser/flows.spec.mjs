@@ -423,7 +423,7 @@ for (const size of Object.keys(SIZES)) {
     });
     await idle(page);
     await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
-    await page.locator('#semnote .notice', { hasText: 'התכנון של ב׳ מניח שעוברים את' }).first().waitFor({ state: 'attached', timeout: 30000 });
+    await page.locator('#semnote .notice', { hasText: 'התכנון של ב׳ מניח' }).first().waitFor({ state: 'attached', timeout: 30000 });
     assert.match(await page.locator('#semnote').textContent(), /בא׳/);
   });
 }
@@ -532,14 +532,16 @@ for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.
   test(`${name}: the board's warnings are seen, nothing overflows, and the week still starts on the first screens`, async (t) => {
     const page = await visit(t, size, FIRST);
     await weekReady(page);
-    const note = page.locator('#boardNote');
+    // design A says it once: in the strip from 600px, in the board's line on a phone ("בדקו מול היועץ" is in the details and in ☰ מידע)
+    const strip = DESIGN === 'a' && size.width >= 600;
+    const note = strip ? page.locator('.a-unofficial') : page.locator('#boardNote');
     assert.ok(await note.isVisible());
-    assert.match(await note.innerText(), /הכללים לא אושרו על ידי המחלקה/);
-    const m = await page.evaluate(() => ({
+    assert.match(await note.innerText(), DESIGN === 'a' ? /הכללים לא אושרו במחלקה/ : /הכללים לא אושרו על ידי המחלקה/);
+    const m = await page.evaluate((sel) => ({
       over: document.documentElement.scrollWidth - innerWidth,
-      note: document.getElementById('boardNote').getBoundingClientRect().height,
+      note: document.querySelector(sel).getBoundingClientRect().height,
       vh: innerHeight
-    }));
+    }), strip ? '.a-unofficial' : '#boardNote');
     assert.ok(m.over <= 0, `overflow ${m.over}`);
     assert.ok(m.note <= m.vh * 0.45, `the note takes ${m.note} of ${m.vh}`);
   });
@@ -1086,7 +1088,8 @@ for (const [name, scope] of [['one semester', 'א'], ['a year', 'year']]) {
   test(`${name}: one credit above the cap is shown on request and changes nothing until it is applied`, async (t) => {
     const page = await visit(t, { width: 320, height: 700 }, CAPPED(scope));
     await weekReady(page);
-    const before = await page.locator('#pills').innerText();
+    // textContent: design A keeps the lines that change with the plan (the follow-ups it opens) inside a closed disclosure, which innerText skips
+    const before = await page.locator('#pills').textContent();
     await page.locator('[data-act="capProbe"]').focus(); // by keyboard: Safari does not focus a button it clicks
     await page.keyboard.press('Enter');
     const apply = page.locator('[data-act="capApply"]');
@@ -1100,11 +1103,11 @@ for (const [name, scope] of [['one semester', 'א'], ['a year', 'year']]) {
     }));
     assert.ok(inside, 'the sentence and the button stay on the screen at 320 px');
     assert.equal(await capStored(page), 18, 'not saved yet');
-    assert.equal(await page.locator('#pills').innerText(), before, 'the plan on the screen did not change');
+    assert.equal(await page.locator('#pills').textContent(), before, 'the plan on the screen did not change');
     await apply.click();
     await page.locator('[data-act="capProbe"]').waitFor();
     assert.equal(await capStored(page), 19);
-    assert.notEqual(await page.locator('#pills').innerText(), before, 'the plan it showed is the plan now');
+    assert.notEqual(await page.locator('#pills').textContent(), before, 'the plan it showed is the plan now');
     await page.evaluate(() => (location.hash = '#prefs'));
     assert.equal(await page.locator('[data-k="maxCredits"]').inputValue(), '19', 'the field says the new cap');
   });
@@ -1115,7 +1118,11 @@ test('any new search drops the answer about the old settings', async (t) => {
   await weekReady(page);
   await page.locator('[data-act="capProbe"]').click();
   await page.locator('[data-act="capApply"]').waitFor({ timeout: 30000 });
-  await page.locator('label:has(input[name="bscope"][value="year"])').click();
+  // the scope is on the board in classic, only in "מה חשוב לי" under A (a column beside the board at this width)
+  if (DESIGN === 'a') {
+    await openStep(page, 'prefs');
+    await page.locator('label:has(input[name="scope"][value="year"])').click();
+  } else await page.locator('label:has(input[name="bscope"][value="year"])').click();
   assert.equal(await page.locator('.cap-preview').count(), 0, 'gone at once, not when the new search ends');
   await page.locator('[data-act="capProbe"]').waitFor({ timeout: 30000 });
   assert.equal(await page.locator('[data-act="capApply"]').count(), 0);

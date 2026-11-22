@@ -531,8 +531,16 @@ export function setUiReset(fn) {
 export function keepFocus(fn) {
   const k = document.activeElement?.dataset?.k;
   fn();
-  if (k && document.activeElement?.dataset?.k !== k)
-    document.querySelector(`[data-k="${CSS.escape(k)}"]`)?.focus({ preventScroll: true });
+  if (k && document.activeElement?.dataset?.k !== k) {
+    const el = document.querySelector(`[data-k="${CSS.escape(k)}"]`);
+    // design A: a control inside the board's closed "פרטים" (a re-render kept it shut) opens it first, or the focus would have nowhere to go
+    // (a summary is not inside its own disclosure's hidden part: a closed one stays closed)
+    if (document.documentElement.dataset.design === 'a') {
+      const shut = (n) => n?.closest('details:not([open])');
+      for (let d = shut(el?.matches('summary') ? el.parentElement.parentElement : el); d; d = shut(d.parentElement)) d.open = true;
+    }
+    el?.focus({ preventScroll: true });
+  }
 }
 
 // A saved choice must fit the loaded program: another program's area ids (or a different pick count) would mislead the progress map and the lists.

@@ -68,12 +68,26 @@ export const closeExamLines = (pairs, nameOf) =>
     const hours = a.time && b.time ? ` בשעות ${a.time} ו-${b.time}` : '';
     return `שתי בחינות באותו יום: ${names}, ${examWhen({ date: a.date })}${hours}. משך הבחינות לא ידוע, כדאי לבדוק שאין חפיפה.`;
   });
+// Design A's shorter form (declutter step 5): the count and the credits, the names behind "אילו?" (leftOutText says them in full, in "פרטים").
+export const leftOutShort = (list) =>
+  (list.length > 1 ? `${list.length} קורסים לא נכנסו (${list.reduce((a, c) => a + c.credits, 0)} נ״ז).` : leftOutText(list));
 // Hours outside the wished hours, from the metric, which stops counting at 10 (solver-core.js metrics).
 export function outsideHoursText(hours) {
   if (hours < 3) return '';
   return hours >= 10
     ? 'במערכת הזו 10 שעות שבועיות או יותר מחוץ לשעות הרצויות.'
     : `במערכת הזו כ-${Math.round(hours)} שעות שבועיות מחוץ לשעות הרצויות.`;
+}
+// Design A's form: the hours alone (a link "להפוך לחובה" follows the sentence).
+export function outsideHoursShort(hours) {
+  if (hours < 3) return '';
+  return hours >= 10 ? '10 שעות או יותר מחוץ לשעות שביקשת.' : `כ-${Math.round(hours)} שעות מחוץ לשעות שביקשת.`;
+}
+// A reason that ends in the regulation behind it, "…(קורס מקביל, תקנון 6.2.3)": the reason and, apart, its citation ("למה?" opens it). Only a trailing
+// parenthetical that names a regulation is split; any other text is the reason as it was. Render-time only: the statuses keep their strings.
+export function splitReason(text) {
+  const m = /^(.*?)\s*\(([^()]*תקנון[^()]*)\)\s*$/s.exec(text);
+  return m ? { short: m[1], cite: m[2] } : { short: text, cite: '' };
 }
 const typeName = (t) => String(t).replace('סופי-', '');
 
@@ -214,6 +228,19 @@ export function freshness(status, changedAt, now = new Date()) {
   return { text: `נבדק ${ago(age)} · ${changed}`, stale: !status.ok || age > 36 * 36e5 };
 }
 
+// Design A's freshness line: four states, each saying why the data may be stale (stale = a warning: icon + words + colour).
+//   fresh "נבדק לפני 10 שעות"; old "הנתונים נבדקו לפני 32 ימים, ייתכן שהשתנו"; the last check failed; never checked.
+export function freshnessA(status, changedAt, now = new Date()) {
+  const changed = `הם השתנו לאחרונה ב-${dayMonth(changedAt).replace('/', '.')}`;
+  if (!status?.checkedAt) return { text: `לא ידוע מתי הנתונים נבדקו. ${changed}`, stale: true };
+  if (!status.ok) return { text: `הבדיקה האחרונה של הנתונים נכשלה. ${changed}`, stale: true };
+  const age = now - new Date(status.checkedAt);
+  return age > 36 * 36e5 ? { text: `הנתונים נבדקו ${ago(age)}, ייתכן שהשתנו`, stale: true } : { text: `נבדק ${ago(age)}`, stale: false };
+}
+// Design A's one legal line (the strip): what it always says, and the two things the rules can be ("not approved" is a warning, "approved" a fact).
+export const LEGAL_LINE = 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט)';
+export const RULES_SHORT = 'הכללים לא אושרו במחלקה';
+
 // Pinned groups that no loaded semester has any more. Reported, never auto-removed. Group id = "27" + 5-digit course id + group.
 export function stalePins(pins, datasets) {
   const sets = datasets.filter(Boolean);
@@ -309,14 +336,23 @@ export function freshAt(data, status) {
 export const examsNoteHtml = (note) => (note ? `<p class="hint">${esc(note)}</p>` : '');
 // Not today in Israel time: the date comes first ("נכון ל-16.10, 21:08"), so an old count never reads as today's.
 const DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit' });
-export function groupFresh(g, fileFetchedAt, now = new Date()) {
+// The two halves of groupFresh: the state ("מלא", "פנוי", "נשארו 3 מקומות") and when it was read ("21.10, 21:13", "" when nobody knows), so a list can say a
+// time that every group shares once (design A's registration list).
+export function groupFreshParts(g, fileFetchedAt, now = new Date()) {
   const left = Number.isInteger(g.seatsLeft) && g.seatsLeft >= 0 ? g.seatsLeft : null;
   const state =
     g.full || left === 0 ? 'מלא' : left === null ? 'פנוי' : left === 1 ? 'נשאר מקום אחד' : `נשארו ${left} מקומות`;
   const t = instant(g.fetchedAt) ?? instant(fileFetchedAt);
   const day = t && DAY.format(t) !== DAY.format(now) ? `${DAY.format(t).replace('/', '.')}, ` : '';
-  return t ? `${state} · נכון ל-${day}${HHMM.format(t)}` : state;
+  // minute: the instant itself (the label alone repeats: the hour the clocks go back, or a date a year on)
+  return { state, at: t ? `${day}${HHMM.format(t)}` : '', minute: t ? Math.floor(t.getTime() / 6e4) : null };
 }
+export function groupFresh(g, fileFetchedAt, now = new Date()) {
+  const { state, at } = groupFreshParts(g, fileFetchedAt, now);
+  return at ? `${state} · נכון ל-${at}` : state;
+}
+// The time every listed group shares, or '' (some group has its own time, or none): then each keeps its own text. The instants are compared, not their labels.
+export const sharedFreshAt = (parts) => (parts.length && parts.every((p) => p.minute !== null && p.minute === parts[0].minute) ? parts[0].at : '');
 
 // The warning before my registration turn: my turn has opened, but the data was fetched before it did (seats may have gone since).
 export const TURN_WARNING = 'שימו לב: הנתונים נמשכו לפני פתיחת התור שלך. ייתכנו שינויים במקומות הפנויים.';

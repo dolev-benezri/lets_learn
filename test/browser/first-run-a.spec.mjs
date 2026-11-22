@@ -271,7 +271,7 @@ test('no visible string under A says "שלב N", "צעד N" or "הבא:", on eve
 test('a sentence that pointed at a numbered step names the tool under A, and classic keeps its number', async (t) => {
   const seed = { ...DONE, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, sortBy: 'friends' }) }; // sorting by friends with none: the hint under the sort
   const a = await visit(t, 'desktop', seed, '');
-  const link = a.locator('#showby .hint a');
+  const link = a.locator('#alts .a-sort .hint a'); // 1280px: the sort is in the alternatives column
   await link.waitFor({ timeout: 30000 });
   assert.equal(await link.getAttribute('href'), '#friends', 'A: the friends tool');
   assert.equal(await link.textContent(), 'ב״חברים״');

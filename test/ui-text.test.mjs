@@ -2,6 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   leftOutText,
+  leftOutShort,
+  splitReason,
+  outsideHoursShort,
   capPreviewText,
   closeExamLines,
   outsideHoursText,
@@ -13,6 +16,9 @@ import {
   defaultNotes,
   popStale,
   freshness,
+  freshnessA,
+  LEGAL_LINE,
+  RULES_SHORT,
   stalePins,
   creditsGoal,
   notFitReason,
@@ -22,6 +28,8 @@ import {
   disclaimerHtml,
   esc,
   groupFresh,
+  groupFreshParts,
+  sharedFreshAt,
   turnWarning,
   freshAt,
   examsNoteHtml,
@@ -71,6 +79,16 @@ test('closeExamLines: same day with both hours and a caution, next day with both
   ]);
 });
 
+test('leftOutShort / outsideHoursShort: design A says the count and the hours, the names and the link are elsewhere', () => {
+  assert.equal(leftOutShort([{ name: 'א', credits: 3.5 }]), 'לא נכנס לחלופה הזו: א (3.5 נ״ז).', 'one course keeps its single line');
+  assert.equal(leftOutShort([{ name: 'א', credits: 3.5 }, { name: 'ב', credits: 1 }, { name: 'ג', credits: 2.5 }]), '3 קורסים לא נכנסו (7 נ״ז).');
+  assert.equal(leftOutShort([{ name: 'א', credits: 3.5 }, { name: 'ב', credits: 28 }]), '2 קורסים לא נכנסו (31.5 נ״ז).', 'fractions are kept');
+  assert.equal(leftOutShort([]), '');
+  assert.equal(outsideHoursShort(2.9), '');
+  assert.equal(outsideHoursShort(3.83), 'כ-4 שעות מחוץ לשעות שביקשת.');
+  assert.equal(outsideHoursShort(10), '10 שעות או יותר מחוץ לשעות שביקשת.');
+});
+
 test('outsideHoursText: silent up to 3 hours, and says when the metric is at its ceiling', () => {
   assert.equal(outsideHoursText(2.9), '');
   assert.equal(outsideHoursText(3.83), 'במערכת הזו כ-4 שעות שבועיות מחוץ לשעות הרצויות.');
@@ -118,6 +136,29 @@ test('popStale: small scrolls keep the popover, long ones or an off-screen block
   assert.equal(popStale(300, 900, 800), true); // below the viewport
   assert.equal(popStale(300, -100, 800), true); // above it
   assert.equal(popStale(300, null, 800), true); // block gone
+});
+
+test('freshnessA: four states, each says why the data may be stale (design A)', () => {
+  const now = new Date('2026-10-01T12:00:00Z');
+  const ok = { checkedAt: '2026-10-01T09:00:00Z', ok: true };
+  assert.deepEqual(freshnessA(ok, '2026-09-28T09:00:00Z', now), { text: 'נבדק לפני 3 שעות', stale: false }, 'fresh: no date of the last change');
+  assert.deepEqual(freshnessA({ ...ok, checkedAt: '2026-08-30T12:00:00Z' }, '2026-09-28T09:00:00Z', now), {
+    text: 'הנתונים נבדקו לפני 32 ימים, ייתכן שהשתנו',
+    stale: true
+  });
+  assert.deepEqual(freshnessA({ ...ok, ok: false }, '2026-09-28T09:00:00Z', now), {
+    text: 'הבדיקה האחרונה של הנתונים נכשלה. הם השתנו לאחרונה ב-28.9',
+    stale: true
+  });
+  assert.deepEqual(freshnessA(null, '2026-09-28T09:00:00Z', now), { text: 'לא ידוע מתי הנתונים נבדקו. הם השתנו לאחרונה ב-28.9', stale: true });
+  assert.equal(freshnessA({ ...ok, checkedAt: '2026-09-29T23:00:00Z' }, ok.checkedAt, now).stale, true, 'over 36h old');
+  assert.equal(freshnessA({ ...ok, checkedAt: '2026-09-30T00:00:00Z', ok: false }, ok.checkedAt, now).text.startsWith('הבדיקה האחרונה'), true, 'a failed check wins over an old one');
+});
+
+test('the legal line of design A says what it must, in the owner-approved words (D2)', () => {
+  assert.equal(LEGAL_LINE, 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט)');
+  assert.equal(RULES_SHORT, 'הכללים לא אושרו במחלקה');
+  assert.equal(`${LEGAL_LINE} · ${RULES_SHORT} · פרטים`, 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט) · הכללים לא אושרו במחלקה · פרטים');
 });
 
 test('askConfirm: without <dialog> and confirm() it proceeds, like the old guard did', async () => {
@@ -506,4 +547,42 @@ test('lecturerToast: the toast after a prefer / avoid / cancel names the lecture
   assert.equal(lecturerToast(name, 'avoid', false), 'החיפוש לא ישבץ קבוצות של מר X, מר Y');
   assert.equal(lecturerToast(name, 'prefer', false), 'כשאפשר, החיפוש יבחר קבוצות של מר X, מר Y');
   assert.equal(lecturerToast(name, 'avoid', true), 'בוטל: מר X, מר Y');
+});
+
+test('splitReason: a trailing citation of a regulation is split off, any other text is left whole', () => {
+  assert.deepEqual(splitReason('רק יחד עם פיזיקה חשמל ומגנטיות (קורס מקביל, תקנון 6.2.3)'), { short: 'רק יחד עם פיזיקה חשמל ומגנטיות', cite: 'קורס מקביל, תקנון 6.2.3' });
+  assert.deepEqual(splitReason('רק יחד עם א או ב, ג (קורס מקביל, תקנון 6.2.3)'), { short: 'רק יחד עם א או ב, ג', cite: 'קורס מקביל, תקנון 6.2.3' });
+  assert.deepEqual(splitReason('אפשר בסמסטר ב׳ אחרי חוזק חומרים 1'), { short: 'אפשר בסמסטר ב׳ אחרי חוזק חומרים 1', cite: '' });
+  assert.deepEqual(splitReason('מבוא (חלק א) דורש משהו'), { short: 'מבוא (חלק א) דורש משהו', cite: '' }, 'a parenthetical in the middle, or one that names no regulation, stays');
+  assert.deepEqual(splitReason('דורש א (חלק ב)'), { short: 'דורש א (חלק ב)', cite: '' });
+  assert.deepEqual(splitReason(''), { short: '', cite: '' });
+});
+
+test('groupFreshParts / sharedFreshAt: the state and the time apart, and a time said once only when every group shares it', () => {
+  const now = new Date('2026-10-16T12:00:00Z'),
+    at = '2026-10-16T05:08:00Z';
+  const sa = (x, f) => ((p) => ({ state: p.state, at: p.at }))(groupFreshParts(x, f, now));
+  assert.deepEqual(sa({ full: true }, at), { state: 'מלא', at: '08:08' });
+  assert.deepEqual(sa({ full: false, seatsLeft: 3, fetchedAt: '2026-10-15T18:13:00Z' }, at), { state: 'נשארו 3 מקומות', at: '15.10, 21:13' });
+  assert.deepEqual(sa({ full: false }, undefined), { state: 'פנוי', at: '' });
+  assert.equal(groupFreshParts({ full: false }, undefined, now).minute, null);
+  const g = [{ full: false }, { full: true, seatsLeft: 2 }, { full: false }];
+  for (const x of g) assert.equal(groupFresh(x, at, now), `${groupFreshParts(x, at, now).state} · נכון ל-08:08`, 'groupFresh is the two halves joined');
+  const same = g.map((x) => groupFreshParts(x, at, now));
+  assert.equal(sharedFreshAt(same), '08:08');
+  assert.equal(sharedFreshAt([...same, groupFreshParts({ full: false, fetchedAt: '2026-10-15T18:13:00Z' }, at, now)]), '', 'a group with a time of its own');
+  assert.equal(sharedFreshAt([...same, groupFreshParts({ full: false }, undefined, now)]), '', 'a group with no time');
+  assert.equal(sharedFreshAt([]), '', 'nothing listed');
+  assert.equal(sharedFreshAt([groupFreshParts({ full: false }, at, now)]), '08:08', 'one group shares with itself');
+});
+
+test('sharedFreshAt compares the instants, not their labels: the hour the clocks go back and the same date a year on read alike but are not shared', () => {
+  const now = new Date('2026-10-24T12:00:00Z');
+  const p = (iso) => groupFreshParts({ full: false, fetchedAt: iso }, undefined, now);
+  const [x, y] = [p('2026-10-24T22:30:00Z'), p('2026-10-24T23:30:00Z')];
+  assert.equal(x.at, y.at, 'the labels are the same (the 02:30 / 01:30 repeat)');
+  assert.equal(sharedFreshAt([x, y]), '');
+  const [last, prev] = [p('2026-10-25T05:08:00Z'), p('2025-10-25T05:08:00Z')];
+  assert.equal(sharedFreshAt([last, prev]), '', 'a year apart');
+  assert.equal(sharedFreshAt([p('2026-10-25T05:08:00Z'), p('2026-10-25T05:08:30Z')]), '25.10, 07:08', 'the same minute is one time');
 });

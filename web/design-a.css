@@ -151,14 +151,27 @@
 :root[data-design="a"] .modes a .icon { width:18px; height:18px; flex:none; }
 :root[data-design="a"] .a-strip { display:flex; flex-direction:column; gap:2px; padding:4px 12px; font-size:var(--fs-sm); color:var(--text-2); }
 :root[data-design="a"] .a-strip .meta { margin:0; font-size:var(--fs-xs); }
-:root[data-design="a"] .a-unofficial { display:flex; align-items:center; gap:6px; margin:0; color:var(--text-2); }
-:root[data-design="a"] .a-unofficial .icon { width:14px; height:14px; flex:none; }
+/* the one legal line (declutter step 2): one flowing sentence, its "פרטים" an inline button whose 44px box is pulled back into the line */
+:root[data-design="a"] .a-unofficial { margin:0; color:var(--text-2); }
+:root[data-design="a"] .a-unofficial .icon { width:14px; height:14px; margin-inline-end:6px; vertical-align:-2px; }
+:root[data-design="a"] :is(.a-uno-more, .a-which) {
+  display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; margin-block:-12px; padding:0 8px; border:0;
+  background:none; color:var(--primary); font:inherit; font-weight:600; text-decoration:underline; cursor:pointer;
+}
+:root[data-design="a"] .a-warn-p { display:none; } /* the phone's line of warnings, shown below 600px */
+@media (max-width:599px) {
+  /* a phone's strip keeps the legal line: the board says the rest (the improve page has no board note, and the gate covers the board: the strip says all) */
+  :root[data-design="a"] body:not([data-view="edit"], .gated) :is(.a-rules, .a-strip .meta) { display:none; }
+  :root[data-design="a"] .a-warn-p { display:block; }
+}
 :root[data-design="a"] .a-strip .notice-top:empty { display:none; }
 :root[data-design="a"] .a-stage { position:relative; }
 :root[data-design="a"] .a-board { min-width:0; }
 :root[data-design="a"] .a-bar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin:8px 12px 0; }
 :root[data-design="a"] .a-bar > .switcher { display:flex; margin:0; max-width:100%; } /* classic hid the switcher off the plans */
 :root[data-design="a"] .a-share { min-height:var(--tap); }
+:root[data-design="a"] #showby:empty { display:none; } /* classic's slot for the sort is empty under A */
+:root[data-design="a"] .a-sort { margin-bottom:8px; }
 :root[data-design="a"] body.gated .a-bar { display:none; }
 :root[data-design="a"] .a-board .layout { padding-top:6px; }
 
@@ -296,6 +309,54 @@
 :root[data-design="a"] .mini { display:grid; grid-template-columns:repeat(var(--days, 5), 1fr); gap:2px; height:46px; margin-top:4px; }
 :root[data-design="a"] .mini i { position:relative; background:var(--surface-2); border-radius:3px; }
 :root[data-design="a"] .mini em { position:absolute; inset-inline:1px; background:var(--cfg); border-radius:2px; }
+/* the course card (declutter step 6): one status line under the importance row. The semester is a select on it (44px for a finger), "✓ במערכת, ב׳" is
+   icon + words in the success colour, and the warning tags keep a row of their own. */
+:root[data-design="a"] .a-status {
+  display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:6px; font-size:var(--fs-sm); color:var(--text-2);
+}
+:root[data-design="a"] .a-ok { display:inline-flex; align-items:center; gap:4px; color:var(--success); font-weight:600; }
+:root[data-design="a"] .a-ok .icon { flex:none; width:16px; height:16px; }
+:root[data-design="a"] .a-sem { display:inline-flex; align-items:center; gap:6px; }
+:root[data-design="a"] .a-sem select {
+  min-width:0; max-width:100%; min-height:var(--tap); padding:0 8px; border:1px solid var(--border-input); border-radius:10px; background:var(--surface);
+  color:var(--text); font:inherit;
+}
+:root[data-design="a"] .a-cite[hidden] { display:none; }
+:root[data-design="a"] .a-tip { margin:0; }
+:root[data-design="a"] .a-tip-btn {
+  display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 8px; border:0; background:none; color:var(--primary); font:inherit;
+  font-weight:600; cursor:pointer;
+}
+:root[data-design="a"] .a-tip-btn .icon { flex:none; width:18px; height:18px; }
+/* notices (declutter step 3): an info line has no fill and no box; a warning keeps its icon and its words and takes the warning colour. The partial-search
+   note, the defaults-changed ask and the cap probe are actionable and stay as they were. */
+:root[data-design="a"] :is(#semnote, #week) .notice:not(.asks, .partial, .cap-preview) {
+  margin:0 0 2px; padding:2px 4px; border-radius:0; background:none; color:var(--text-2); font-size:var(--fs-sm);
+}
+:root[data-design="a"] :is(#semnote, #week) .notice.warn { color:var(--warning); }
+:root[data-design="a"] #semnote .notice .icon { flex:none; width:16px; height:16px; }
+/* the board's summary (declutter step 1): the facts as one plain line, the rest behind a native "פרטים" disclosure (the chevron is style.css's). The
+   summary shares the facts' row from 600px (pulled up over the facts' reserved end padding); on a phone it has a row of its own. 44px is fixed here:
+   --tap is 36px with a fine pointer, and this is the one control of the row. */
+:root[data-design="a"] .pills { display:block; flex:1; min-width:0; overflow:visible; }
+:root[data-design="a"] .a-facts {
+  display:flex; flex-wrap:wrap; align-items:center; align-content:center; margin:0; min-height:44px; font-size:var(--fs-sm); color:var(--text);
+}
+:root[data-design="a"] .a-facts > span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+:root[data-design="a"] .a-facts > span:not(:last-child)::after { content:"·"; content:"·" / ""; margin-inline:7px; color:var(--text-2); }
+:root[data-design="a"] .a-details > summary {
+  width:max-content; min-height:44px; margin-inline-start:auto; padding:0 8px; color:var(--primary); font-weight:600;
+}
+:root[data-design="a"] .a-det-body {
+  display:grid; gap:6px; margin-bottom:8px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface);
+  font-size:var(--fs-sm); color:var(--text-2); overflow-wrap:anywhere;
+}
+:root[data-design="a"] .a-det-body p { margin:0; }
+:root[data-design="a"] .a-det-body a { color:inherit; text-decoration:underline; }
+@media (min-width:600px) {
+  :root[data-design="a"] .a-facts { padding-inline-end:7.5rem; }
+  :root[data-design="a"] .a-details > summary { margin-top:-44px; }
+}
 /* improve mode (stage 1): the edit page is the whole stage, with no dock and no build switcher; the panel only shows for the terms */
 :root[data-design="a"] body[data-view="edit"] .a-bar { display:none; }
 :root[data-design="a"] body[data-view="edit"] .dock { grid-template-columns:repeat(3, 1fr); }
@@ -338,6 +399,12 @@
     border-radius:0; box-shadow:none; border-inline-end:1px solid var(--border);
   }
   :root[data-design="a"] .a-grip, :root[data-design="a"] .a-ph { display:none; }
+  /* the bar: semester tabs, switcher, share (declutter step 4), spread over the row; each keeps its own width and the row wraps when the three do not fit
+     (a narrow board at 1080px). The sort is in the alternatives column from here, not in "פרטים". */
+  :root[data-design="a"] .a-bar { justify-content:space-between; gap:8px 12px; }
+  :root[data-design="a"] .a-bar > :is(#semtabs, .a-share) { flex:none; }
+  :root[data-design="a"] .a-bar #semtabs .board-ctl { margin:0; }
+  :root[data-design="a"] .a-sort-d { display:none; }
   :root[data-design="a"] .site-foot { padding-bottom:12px; }
   :root[data-design="a"] .toast { bottom:20px; }
   :root[data-design="a"] body[data-view="edit"] .a-stage { display:flex; flex-direction:column; }
@@ -351,7 +418,9 @@
   }
   :root[data-design="a"] .edit-board { grid-column:2; min-width:0; }
   :root[data-design="a"] .edit-sheet-x { display:none; }
-  :root[data-design="a"] .edit-tool .goals { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding:4px; margin:-4px -4px 6px; }
+  /* the column is wide enough to wrap: no clipped chip */
+  :root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; }
+  :root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; white-space:nowrap; }
   :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
     position:fixed; top:calc(var(--a-top) + var(--tap)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
     border-radius:0; border-inline-end:1px solid var(--border);

@@ -313,6 +313,11 @@ export const afterAText = (groups) => `התכנון של ב׳ מניח שעוב�
 // "רק ב׳" has no pair to carry warnings: its notes come from the statuses of the planned courses (withAfterA). [] when
 // none of them waits for an א׳ course.
 export function afterANotes(cls, ids) {
+  const groups = afterAGroups(cls, ids);
+  return groups.length ? [afterAText(groups)] : [];
+}
+// The groups behind that line, one array of alternative names per prerequisite (design A counts them: "6 דרישות קדם").
+export function afterAGroups(cls, ids) {
   const seen = new Map(); // one line for all: a prerequisite two courses wait for is named once
   for (const id of ids) {
     const s = cls?.statuses?.[id];
@@ -323,8 +328,10 @@ export function afterANotes(cls, ids) {
       seen.set(from.map((a) => a.id).join('\0'), from.map((a) => a.name));
     }
   }
-  return seen.size ? [afterAText([...seen.values()])] : [];
+  return [...seen.values()];
 }
+// Design A's short form of that warning: how many prerequisites the plan counts on from א׳ ("X או Y" is one: passing either is enough).
+export const afterAShort = (n) => `התכנון של ב׳ מניח שתעברו בא׳ ${n === 1 ? 'דרישת קדם אחת' : `${n} דרישות קדם`}.`;
 
 // Direct status choice. Failures stay on file once passed: regulations 11.4.1 and 11.5.x count every failure. An
 // exemption lasts while passed.

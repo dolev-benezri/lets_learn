@@ -16,7 +16,12 @@ after(async () => {
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 const WIDTHS = { 320: { width: 320, height: 640 }, 375: { width: 375, height: 812 }, 1280: { width: 1280, height: 800 } };
-const frame = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+// While a search runs the board is drawn faded on purpose (style.css .is-busy, opacity .45): axe would read that as low contrast, so the board is idle first
+// (a loaded machine kept it busy long enough to flag it once)
+const frame = async (page) => {
+  await page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') !== 'true', null, { timeout: 60000 });
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+};
 const visit = (t, size, seed, hash, scheme) => visitIn(browser, t, size, seed, hash, scheme, false, false, { design: 'a' });
 const TOOLS = [['me', '#me', '#me', 'meTitle'], ['courses', '#courses', '#courses', 'coursesTitle'], ['wishes', '#prefs', '#prefs', 'prefsTitle'],
   ['friends', '#friends', '#friends', 'friendsPageTitle'], ['out', '#out', '#out', 'outTitle']];
@@ -51,7 +56,7 @@ const smallTargets = (page) =>
       return !!c && c.textContent.replace(a.textContent, '').trim().length > 0;
     };
     const bad = [];
-    for (const root of ['.a-top', '.a-bar', '.dock', '#panel']) {
+    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs']) {
       for (const el of document.querySelector(root)?.querySelectorAll(sel) ?? []) {
         if (!el.checkVisibility() || el.closest('[hidden]') || prose(el)) continue;
         const box = el.matches('input[type=checkbox], input[type=radio]') ? (el.closest('label') ?? el) : el;

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse } from 'node-html-parser';
 import { search, searchYear } from '../web/solver-core.js';
-import { afterAText, afterANotes, classify, withAfterA } from '../web/rules.js';
+import { afterAText, afterANotes, afterAGroups, afterAShort, classify, withAfterA } from '../web/rules.js';
 import { advisorBlocks, advisorHtml } from '../web/advisor.js';
 import { mini } from './fixtures/mini-data.mjs';
 
@@ -99,6 +99,20 @@ test('the year pair says it in the same words as "רק ב׳"', () => {
   const pair = searchYear({ dataA, dataB, state, yearList: new Set(), weights: W0 }).results[0];
   assert.deepEqual([pair.a.courses, pair.b.courses], [['A'], ['B']]);
   assert.ok(pair.warnings.includes(LINE), pair.warnings.join(' | '));
+  assert.deepEqual(pair.afterA, [['פיזיקה-מכניקה']], 'the groups behind the line, for the short form of design A');
+  assert.equal(afterAText(pair.afterA), LINE);
+});
+
+test('afterAGroups counts groups ("X או Y" is one), afterANotes is built on it, and the short form says the count', () => {
+  const statuses = {
+    Z1: { status: 'afterA', reasons: [], after: [alt('X'), alt('Y')] },
+    Z2: { status: 'afterA', reasons: [], after: [[{ id: 'W', name: 'W', inA: true }, { id: 'V', name: 'V', inA: true }]] }
+  };
+  assert.deepEqual(afterAGroups({ statuses }, ['Z1', 'Z2']), [['X'], ['Y'], ['W', 'V']]);
+  assert.deepEqual(afterANotes({ statuses }, ['Z1', 'Z2']), [afterAText(afterAGroups({ statuses }, ['Z1', 'Z2']))]);
+  assert.deepEqual(afterAGroups({ statuses }, []), []);
+  assert.equal(afterAShort(1), 'התכנון של ב׳ מניח שתעברו בא׳ דרישת קדם אחת.');
+  assert.equal(afterAShort(6), 'התכנון של ב׳ מניח שתעברו בא׳ 6 דרישות קדם.');
 });
 
 // Codex review, rounds 2 and 3: a corequisite that an א׳ candidate meets is counted passed too, so the line names it,

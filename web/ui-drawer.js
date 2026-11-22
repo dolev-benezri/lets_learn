@@ -21,6 +21,8 @@ import {
   groupLabel,
   groupFresh,
   lecturerText,
+  groupFreshParts,
+  sharedFreshAt,
   strictnessHint,
   defaultNotes,
   hebYear,
@@ -32,6 +34,7 @@ import {
   conflictLine,
   freshness,
   approvedText,
+  disclaimerHtml,
   RULES_UNAPPROVED
 } from './ui-text.js';
 import { approvedOn } from './settings.js';
@@ -80,7 +83,7 @@ function prefsPanel() {
   return `
     ${
       app.sem['ב']
-        ? `<section class="dr-sec"><h3>תכנון</h3>
+        ? `<section class="dr-sec">${designOn() ? '' : '<h3>תכנון</h3>'}
       ${seg('scope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"', true)}
       ${scopeOf(state.scope) === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>`
         : ''
@@ -230,7 +233,7 @@ function regPanel() {
         .map((g) => {
           const back = backups(data, res, g.id, app.state.constraints);
           return `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
-        <span class="hint nw">(${esc(groupFresh(g, seatsAt(cid, data)))})</span>${
+        <span class="hint nw">(${esc(sharedAt ? groupFreshParts(g, seatsAt(cid, data)).state : groupFresh(g, seatsAt(cid, data)))})</span>${
           res.alts?.[g.id]
             ? ` <span class="hint">(או <bdi
         dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>`
@@ -247,13 +250,21 @@ function regPanel() {
       })
       .join('');
   const parts = regParts(raw);
+  // A: when every listed group was read at the same time, the list says it once ("המקומות נכונים ל-21.10, 21:13") and each group only its state; a group
+  // with a time of its own, or none, keeps its own text
+  const sharedAt = designOn()
+    ? sharedFreshAt(parts.flatMap((p) => p.res.courses.flatMap((cid) =>
+        p.data.courses[cid].groups.filter((g) => p.res.groups.includes(g.id)).map((g) => groupFreshParts(g, seatsAt(cid, p.data))))))
+    : '';
   const exams = parts
     .flatMap((p) => p.res.exams)
     .filter((e) => e.kind === 'בחינה')
     .sort((a, b) => a.date.localeCompare(b.date));
   return [
     'רשימה להרשמה',
-    `<p class="hint">חלופה ${ui.cur + 1} מתוך ${ui.last.results.length}. ההרשמה עצמה נעשית באפקה-נט.</p>
+    `<p class="hint">חלופה ${ui.cur + 1} מתוך ${ui.last.results.length}. ההרשמה עצמה נעשית באפקה-נט.</p>${
+      designOn() ? `<p class="hint">${disclaimerHtml(app.settings.counselingUrl)}</p>` : '' // A: the moment a student goes to register, and the board no longer says it
+    }${sharedAt ? `<p class="hint">המקומות נכונים ל-${esc(sharedAt)}</p>` : ''}
     ${parts
       .map(
         (p) =>
@@ -297,7 +308,7 @@ export function renderPrefs() {
 function renderWishesAndFriends() {
   $('prefs').innerHTML = `<div class="me-head"><h2 id="prefsTitle" tabindex="-1">מה חשוב לי</h2>
       <p class="a-friends-link"><a href="#friends">${icon('users')} חברים</a></p></div>
-    <section class="me-card dr-body" aria-labelledby="prefsPrefs"><h2 id="prefsPrefs">העדפות</h2>${prefsPanel()}</section>`;
+    <section class="me-card dr-body" aria-label="העדפות">${prefsPanel()}</section>`; // A: the tool's own heading is the one (no second "העדפות")
   $('friends').innerHTML = `<div class="me-head"><h2 id="friendsPageTitle" tabindex="-1">חברים</h2></div>
     <section class="me-card dr-body" aria-labelledby="friendsPageTitle">${friendsPanel()}</section>`;
 }
@@ -367,7 +378,9 @@ function infoPanel() {
     .concat(counsel ? [`<li><a href="${esc(counsel)}" target="_blank" rel="noopener">הכוון אקדמי<span class="sr"> (נפתח בחלון חדש)</span></a></li>`] : []);
   return [
     'מידע',
-    `<section class="dr-sec info-sec"><h3>על הכלי</h3><p>${esc(UNOFFICIAL)}</p></section>
+    `<section class="dr-sec info-sec"><h3>על הכלי</h3><p>${esc(UNOFFICIAL)}</p>${
+      designOn() ? `<p class="hint">${disclaimerHtml(counsel)}</p>` : ''
+    }</section>
     ${f ? `<section class="dr-sec info-sec"><h3>הנתונים</h3><p class="hint">${esc(f.text)}${approved ? ` · ${esc(approvedText(approved))}` : ''}</p>
       ${approved ? '' : `<p class="hint">${esc(RULES_UNAPPROVED)} בדקו מול היועץ לפני ההרשמה.</p>`}
       ${conflicts.map((c) => `<p class="hint warn-text">${icon('alert')} ${esc(conflictLine(c))}</p>`).join('')}</section>` : ''}
