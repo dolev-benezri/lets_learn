@@ -532,11 +532,12 @@ for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.
   test(`${name}: the board's warnings are seen, nothing overflows, and the week still starts on the first screens`, async (t) => {
     const page = await visit(t, size, FIRST);
     await weekReady(page);
-    // design A says it once: in the strip from 600px, in the board's line on a phone ("בדקו מול היועץ" is in the details and in ☰ מידע)
+    // design A says that the data is old once: in the strip from 600px, in the board's line on a phone (the rules and "בדקו מול היועץ" are in the
+    // details and in ☰ מידע)
     const strip = DESIGN === 'a' && size.width >= 600;
     const note = strip ? page.locator('.a-unofficial') : page.locator('#boardNote');
     assert.ok(await note.isVisible());
-    assert.match(await note.innerText(), DESIGN === 'a' ? /הכללים לא אושרו במחלקה/ : /הכללים לא אושרו על ידי המחלקה/);
+    assert.match(await note.innerText(), DESIGN === 'a' ? /נבדק לפני \d+ ימים/ : /הכללים לא אושרו על ידי המחלקה/);
     const m = await page.evaluate((sel) => ({
       over: document.documentElement.scrollWidth - innerWidth,
       note: document.querySelector(sel).getBoundingClientRect().height,
@@ -1084,12 +1085,23 @@ const CAPPED = (scope) => ({
   'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope, constraints: { maxCredits: 18 } })
 });
 const capStored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).constraints.maxCredits);
+// design A keeps the cap probe in the board's "פרטים" (closed by default); the plan's text is compared without the probe's own answer
+const planText = (page) =>
+  page.evaluate(() => {
+    const c = document.getElementById('pills').cloneNode(true);
+    c.querySelectorAll('.cap-preview').forEach((e) => e.remove());
+    return c.textContent;
+  });
+const openDetails = async (page) => {
+  if (DESIGN === 'a' && !(await page.locator('#pills .a-details').evaluate((d) => d.open))) await page.locator('#pills .a-details > summary').click();
+};
 for (const [name, scope] of [['one semester', 'א'], ['a year', 'year']]) {
   test(`${name}: one credit above the cap is shown on request and changes nothing until it is applied`, async (t) => {
     const page = await visit(t, { width: 320, height: 700 }, CAPPED(scope));
     await weekReady(page);
     // textContent: design A keeps the lines that change with the plan (the follow-ups it opens) inside a closed disclosure, which innerText skips
-    const before = await page.locator('#pills').textContent();
+    await openDetails(page);
+    const before = await planText(page);
     await page.locator('[data-act="capProbe"]').focus(); // by keyboard: Safari does not focus a button it clicks
     await page.keyboard.press('Enter');
     const apply = page.locator('[data-act="capApply"]');
@@ -1103,11 +1115,11 @@ for (const [name, scope] of [['one semester', 'א'], ['a year', 'year']]) {
     }));
     assert.ok(inside, 'the sentence and the button stay on the screen at 320 px');
     assert.equal(await capStored(page), 18, 'not saved yet');
-    assert.equal(await page.locator('#pills').textContent(), before, 'the plan on the screen did not change');
+    assert.equal(await planText(page), before, 'the plan on the screen did not change');
     await apply.click();
     await page.locator('[data-act="capProbe"]').waitFor();
     assert.equal(await capStored(page), 19);
-    assert.notEqual(await page.locator('#pills').textContent(), before, 'the plan it showed is the plan now');
+    assert.notEqual(await planText(page), before, 'the plan it showed is the plan now');
     await page.evaluate(() => (location.hash = '#prefs'));
     assert.equal(await page.locator('[data-k="maxCredits"]').inputValue(), '19', 'the field says the new cap');
   });
@@ -1116,6 +1128,7 @@ for (const [name, scope] of [['one semester', 'א'], ['a year', 'year']]) {
 test('any new search drops the answer about the old settings', async (t) => {
   const page = await visit(t, 'desktop', CAPPED('א'));
   await weekReady(page);
+  await openDetails(page);
   await page.locator('[data-act="capProbe"]').click();
   await page.locator('[data-act="capApply"]').waitFor({ timeout: 30000 });
   // the scope is on the board in classic, only in "מה חשוב לי" under A (a column beside the board at this width)
@@ -1133,6 +1146,7 @@ test('a check that fails says so, keeps the plan, and can be tried again', async
   const page = await visit(t, 'desktop', CAPPED('א'));
   await weekReady(page);
   await page.route('**/solver-worker.js', (r) => r.abort());
+  await openDetails(page);
   await page.locator('[data-act="capProbe"]').click();
   await page.locator('#toast').filter({ hasText: /הבדיקה לא הצליחה/ }).waitFor({ timeout: 30000 });
   const again = page.locator('[data-act="capProbe"]');

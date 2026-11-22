@@ -32,8 +32,10 @@ import {
   conflictsFor,
   conflictLine,
   freshness,
+  freshnessA,
   approvedText,
   disclaimerHtml,
+  LEGAL_LINE,
   RULES_UNAPPROVED
 } from './ui-text.js';
 import { approvedOn } from './settings.js';
@@ -369,7 +371,8 @@ function infoPanel() {
   const { data, state, settings } = app,
     report = data && state ? reportHref() : '',
     counsel = settings.counselingUrl;
-  const f = data && freshness(boardStatus(), data.fetchedAt),
+  // A: the freshness sentence in design A's words (the failed and never-checked states say so), the legal line in full: the board's strip says them short
+  const f = data && (designOn() ? freshnessA : freshness)(boardStatus(), data.fetchedAt),
     approved = data && state && approvedOn(settings, data.program, data.startYear),
     conflicts = state ? conflictsFor(settings, state.program, state.startYear) : [];
   const links = LEGAL.map(([id, text]) => `<li><a href="legal.html#${id}">${text}</a></li>`)
@@ -377,7 +380,7 @@ function infoPanel() {
     .concat(counsel ? [`<li><a href="${esc(counsel)}" target="_blank" rel="noopener">הכוון אקדמי<span class="sr"> (נפתח בחלון חדש)</span></a></li>`] : []);
   return [
     'מידע',
-    `<section class="dr-sec info-sec"><h3>על הכלי</h3><p>${esc(UNOFFICIAL)}</p>${
+    `<section class="dr-sec info-sec"><h3>על הכלי</h3>${designOn() ? `<p>${esc(LEGAL_LINE)}</p>` : ''}<p>${esc(UNOFFICIAL)}</p>${
       designOn() ? `<p class="hint">${disclaimerHtml(counsel)}</p>` : ''
     }</section>
     ${f ? `<section class="dr-sec info-sec"><h3>הנתונים</h3><p class="hint">${esc(f.text)}${approved ? ` · ${esc(approvedText(approved))}` : ''}</p>

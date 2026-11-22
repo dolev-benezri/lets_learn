@@ -11,7 +11,7 @@ import { renderMe } from './ui-me.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { $, ui, gated, termsOk, needsProgram, designOn } from './ui-common.js';
 import { viewOf, routeA, stageOf, panelOf, TOOLS, hashOfTool } from './shell-routes.js';
-import { LEGAL_LINE } from './ui-text.js';
+import { LEGAL_SHORT } from './ui-text.js';
 
 export { designOn, viewOf, routeA, stageOf, panelOf, TOOLS };
 
@@ -57,7 +57,7 @@ export function shellInit() {
       </nav>
       <div class="a-top-act" id="aTopAct"></div>
     </header>
-    <div class="a-strip" id="aStrip"><p class="a-unofficial">${icon('info')}<span class="a-uno-t">${LEGAL_LINE}<span id="aRules" class="a-rules"></span> · <button
+    <div class="a-strip" id="aStrip"><p class="a-unofficial">${icon('info')}<span class="a-uno-t">${LEGAL_SHORT}<span id="aStale" hidden></span> · <button
       type="button" class="a-uno-more" data-act="panel" data-panel="info" data-k="aUnoMore" aria-haspopup="dialog">פרטים</button></span></p></div>
     <div class="a-stage">
       <div class="a-board" id="aBoard">
@@ -73,9 +73,9 @@ export function shellInit() {
       </section>
     </div>`;
   document.querySelector('.skip').after(shell);
-  // the live nodes move in: the title and the data line, the notices, the alternatives switcher, the board and the edit page, the two header buttons
+  // the live nodes move in: the title, the notices, the alternatives switcher, the board and the edit page, the two header buttons (the data line #meta
+  // stays in the classic header: the strip's #aStale says the one thing about it that matters)
   shell.querySelector('.a-brand').append($('title'));
-  $('aStrip').prepend($('meta'));
   $('aStrip').append($('notice'));
   $('aBar').prepend($('switcher'));
   $('aBoard').append($('layout'), $('edit'));

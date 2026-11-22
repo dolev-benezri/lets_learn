@@ -234,9 +234,24 @@ export function altLabelText({ nAlt, cur, split, running }) {
   if (nAlt) return `חלופה ${cur + 1} מתוך ${nAlt}${split ? ' · מופרדת' : ''}`;
   return running ? 'מחשב חלופות…' : 'אין חלופות';
 }
-// Design A's one legal line (the strip): what it always says, and the two things the rules can be ("not approved" is a warning, "approved" a fact).
+// Design A's legal line: in full ("פרטים", מידע), and the strip's shorter words (the board shows the legal minimum, the rest is behind "פרטים").
 export const LEGAL_LINE = 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט)';
+export const LEGAL_SHORT = 'לא רשמי · אינו הרשמה ואינו המלצה';
 export const RULES_SHORT = 'הכללים לא אושרו במחלקה';
+// The strip's and the phone line's warning about old data: nothing when fresh (freshnessA's 36-hour rule), else the shortest true words.
+export function staleShortA(status, changedAt, now = new Date()) {
+  if (!freshnessA(status, changedAt, now).stale) return '';
+  if (!status?.checkedAt) return 'לא ידוע מתי נבדק';
+  return status.ok ? `נבדק ${ago(now - new Date(status.checkedAt))}` : 'הבדיקה האחרונה נכשלה';
+}
+// Design A's one line for a plan's close first sittings (closeExamLines says each pair in full, behind "פרטים"): how many, and when if it is one pair.
+export function examLineShort(pairs) {
+  const part = (list, what, when) =>
+    list.length > 1 ? `${list.length} זוגות בחינות ${what}` : list.length ? `2 בחינות ${what}, ${examWhen(when(list[0]))}` : '';
+  const same = pairs.filter((p) => p.days !== 1),
+    next = pairs.filter((p) => p.days === 1);
+  return [part(same, 'באותו יום', (p) => ({ date: p.a.date })), part(next, 'בימים צמודים', (p) => p.a)].filter(Boolean).join(' · ');
+}
 
 // Pinned groups that no loaded semester has any more. Reported, never auto-removed. Group id = "27" + 5-digit course id + group.
 export function stalePins(pins, datasets) {

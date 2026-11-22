@@ -296,3 +296,113 @@ test('1440px: a focused rail button that a resize below 1080px hides hands the f
   await page.setViewportSize({ width: 900, height: 900 });
   await page.waitForFunction(() => !!document.activeElement?.closest('#switcher') || document.activeElement?.id === 'switcher');
 });
+
+// ---- phase 1 Task 6: the block above the week. A clash is one warning line, a search that ran out of time is a small button beside the switcher, and
+// the cap probe and the hours outside the wished ones are lines of "פרטים" (docs/superpowers/plans/2026-11-22-design-a-system.md) ----
+const idleBoard = (page) => page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') === 'false', null, { timeout: 30000 });
+// a plan with a clash, a cut search, a credit cap and hours outside the wished ones, set on the shown result and drawn again
+const withTroubles = async (page, { ms = 3000, partial = true } = {}) => {
+  await page.waitForFunction(() => /^חלופה 1 מתוך/.test(document.getElementById('altLabel')?.textContent), null, { timeout: 30000 });
+  await idleBoard(page);
+  await page.evaluate(
+    async ({ ms: limit, partial: cut }) => {
+      const { ui, current } = await import('./ui-common.js');
+      const { app } = await import('./app.js');
+      const { renderView } = await import('./ui-view.js');
+      const raw = current(),
+        res = raw.a ? raw[ui.sem === 'א' ? 'a' : 'b'] : raw, // the semester's own result: shown() hands out a copy
+        [a, b] = res.courses;
+      res.closeExams = [{ days: 0, a: { course: a, date: '2027-01-28', time: '13:00' }, b: { course: b, date: '2027-01-28', time: '17:00' } }];
+      res.breakdown.timeWindow = 0.5;
+      app.state.constraints.maxCredits = 99;
+      ui.last.partial = cut;
+      ui.last.ms = limit;
+      renderView();
+    },
+    { ms, partial }
+  );
+};
+
+test('1280: a clash is one warning line with "פרטים", which opens the full sentences first in the board\'s "פרטים"', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page);
+  const line = page.locator('#week .a-exam');
+  assert.equal(await line.count(), 1, 'one line');
+  assert.match(await line.innerText().then((s) => s.replace(/\s+/g, ' ').trim()), /^2 בחינות באותו יום, \d\d\.\d\d\.\d{4} · פרטים$/);
+  assert.equal(await line.locator('svg').count(), 1, 'the alert icon');
+  assert.equal(await page.locator('#week .notice', { hasText: 'משך הבחינות לא ידוע' }).count(), 0, 'the sentence is not above the week');
+  assert.equal(await page.locator('#pills .a-details').evaluate((d) => d.open), false);
+  assert.match(await page.locator('#live').textContent(), /2 בחינות באותו יום, \d\d\.\d\d\.\d{4}/, 'announced, short');
+  await line.locator('.a-which').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#pills .a-details').evaluate((d) => d.open), true);
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'aExams', 'the focus follows the answer');
+  assert.match(await page.locator('#aExams').innerText(), /משך הבחינות לא ידוע/);
+  assert.equal(await page.evaluate(() => document.querySelector('#pills .a-det-body p')?.contains(document.getElementById('aExams'))), true, 'first in the list');
+});
+
+test('1280: a search that ran out of time has no banner: a small "חפש עוד" beside the switcher, its sentence in "פרטים"', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page);
+  assert.equal(await page.locator('.notice.partial').count(), 0, 'no banner');
+  const more = page.locator('[data-k="searchMore"]');
+  assert.equal(await more.count(), 1);
+  assert.ok(await more.isVisible());
+  assert.equal(await more.evaluate((b) => b.classList.contains('a-more-link') && b.previousElementSibling?.id === 'switcher'), true, 'right after the switcher');
+  assert.ok((await more.boundingBox()).height >= 43.5, 'a 44px target');
+  assert.ok((await page.locator('#pills .a-det-body').textContent()).includes('החיפוש לא הספיק לבדוק את כל האפשרויות'), 'the sentence is in "פרטים"');
+  assert.match(await page.locator('#live').textContent(), /החיפוש לא הספיק/, 'announced');
+  await more.focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(async () => (await import('./ui-common.js')).ui.moreMul), 2, 'the same action as the banner\'s button');
+  await page.waitForFunction(() => !document.querySelector('[data-k="searchMore"]'), null, { timeout: 60000 }); // the real search was not cut: the button goes
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'week', 'and the focus goes to the week, not to the page');
+});
+
+test('1280: at the time cap there is no button, only the sentence in "פרטים"', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page, { ms: 12000 });
+  assert.equal(await page.locator('[data-k="searchMore"]').count(), 0);
+  assert.ok((await page.locator('#pills .a-det-body').textContent()).includes('גם אחרי 12 שניות'), 'the sentence says so');
+});
+
+test('the button is gone again when the search was not cut', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page);
+  assert.equal(await page.locator('.a-more-link').count(), 1);
+  await withTroubles(page, { partial: false });
+  assert.equal(await page.locator('.a-more-link').count(), 0, 'removed with the condition, not left behind');
+});
+
+test('1280: the cap probe and the hours outside the wished ones are lines of "פרטים", with their buttons, not above the week', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page);
+  assert.equal(await page.locator('#week .cap-preview, #week .notice:has(a[href="#prefs"])').count(), 0, 'nothing above the week');
+  await page.locator('#pills .a-details > summary').click();
+  const cap = page.locator('#pills .a-det-body .cap-preview');
+  assert.equal(await cap.count(), 1);
+  assert.ok(await cap.locator('[data-act="capProbe"]').isVisible());
+  const hours = page.locator('#pills .a-det-body p', { hasText: 'מחוץ לשעות שביקשת' });
+  assert.match((await hours.innerText()).replace(/\s+/g, ' ').trim(), /^כ-5 שעות מחוץ לשעות שביקשת\. להפוך לחובה$/);
+  assert.equal(await hours.locator('a').getAttribute('href'), '#prefs');
+});
+
+for (const [name, size] of [['375', 'phone'], ['320', { width: 320, height: 640 }]]) {
+  test(`${name}: the clash line and "חפש עוד" fit, with 44px targets, and the page does not scroll sideways`, async (t) => {
+    const page = await visit(t, size, DONE);
+    await weekReady(page);
+    await withTroubles(page);
+    for (const sel of ['#week .a-exam .a-which', '.a-more-link']) {
+      const box = await page.locator(sel).boundingBox();
+      assert.ok(box.height >= 43.5 && box.width >= 43.5, `${sel}: ${box.width}x${box.height}`);
+    }
+    assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0);
+    const right = await page.evaluate(() => [...document.querySelectorAll('#week .a-exam, .a-bar')].every((e) => e.getBoundingClientRect().right <= innerWidth + 0.5));
+    assert.ok(right, 'inside the screen');
+  });
+}

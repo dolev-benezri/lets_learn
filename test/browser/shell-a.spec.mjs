@@ -244,10 +244,10 @@ test('the mode tabs: improve opens #edit with the board out of the way, build br
   assert.equal(await visible(page, '#layout'), true);
 });
 
-test('improve mode fills the header too: the title and the data line are there on a direct #edit visit', async (t) => {
+test('improve mode fills the header too: the title and the old-data warning are there on a direct #edit visit', async (t) => {
   const page = await visit(t, 'phone', DONE, '#edit');
   await page.locator('#edit').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => document.getElementById('meta').textContent.trim().length > 0);
+  await page.waitForFunction(() => document.getElementById('aStale').textContent.trim().length > 0);
   assert.ok((await page.locator('#title').textContent()).includes('המערכת שלי'));
 });
 

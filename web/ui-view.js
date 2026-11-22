@@ -43,8 +43,10 @@ import {
   toolName,
   freshness,
   freshnessA,
+  staleShortA,
   altLabelText,
-  RULES_SHORT,
+  LEGAL_LINE,
+  examLineShort,
   turnWarning,
   stalePins,
   partialNote,
@@ -112,10 +114,12 @@ export function renderTop() {
   if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
   renderReport();
   if (designOn()) {
-    // A: the freshness line alone (a warning when stale); the rules clause is the legal line's, in the shell's strip
-    const fa = freshnessA(boardStatus(), app.data.fetchedAt);
-    $('meta').innerHTML = fa.stale ? `<span class="warn-text">${icon('alert')} ${esc(fa.text)}</span>` : esc(fa.text);
-    if ($('aRules')) $('aRules').textContent = ` · ${approved ? approvedText(approved) : RULES_SHORT}`;
+    // A: the strip says only that the data is old, when it is (icon, words and colour); the whole sentence and the rules are in "פרטים" and in מידע
+    const stale = staleShortA(boardStatus(), app.data.fetchedAt);
+    if ($('aStale')) {
+      $('aStale').hidden = !stale;
+      $('aStale').innerHTML = stale ? ` · <span class="warn-text">${icon('alert')} ${esc(stale)}</span>` : '';
+    }
   } else $('meta').innerHTML = esc(f.text) + (approved ? ` · ${esc(approvedText(approved))}` : '');
 }
 
@@ -124,14 +128,16 @@ function renderBoardNote() {
   const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear),
     warned = passedWarnings(app.data, app.state).length;
-  // A: from 600px the strip says the freshness and the rules (they are on screen with the board); on a phone this line, right above the week, says them
-  // as one line (each part only when it applies), and the longer "check with the advisor" sentence is in "פרטים" and in ☰ "מידע"
-  const fa = designOn() ? freshnessA(boardStatus(), app.data.fetchedAt) : null;
-  const phoneLine = fa && [fa.stale && `<span class="warn-text">${icon('alert')} ${esc(fa.text)}</span>`, !approved && RULES_SHORT].filter(Boolean).join(' · ');
+  // A: from 600px the strip says the data is old; on a phone this line, right above the week, says it (the rest of what qualifies the plan is in "פרטים"
+  // and in ☰ "מידע")
+  const A = designOn(),
+    stale = A ? staleShortA(boardStatus(), app.data.fetchedAt) : '';
   const html = [
-    fa ? phoneLine && `<span class="a-warn-line">${phoneLine}</span>` : f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
+    A
+      ? stale && `<span class="a-warn-line"><span class="warn-text">${icon('alert')} ${esc(stale)}</span></span>`
+      : f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
     !approved && app.data.verified === false && '<span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>',
-    !fa && !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
+    !A && !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
     warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים ב${toolName('me')}</a>`
   ]
     .filter(Boolean)
@@ -245,12 +251,17 @@ function colorOrder() {
 export const hasAlternatives = () => (ui.last?.results ?? []).some((r) => resCourses(r).length);
 
 // #11: the cap stays hard; on request, what one credit more would change. Beside the left-out line: it wraps on a phone, which the swipe row does not.
-function capLine(best, nameOf) {
+// Design A puts the same content in a line of "פרטים" (capInner is what the <p> holds, so the one markup serves both).
+const capLine = (best, nameOf) => {
+  const inner = capInner(best, nameOf);
+  return inner ? `<p class="notice cap-preview">${inner}</p>` : '';
+};
+function capInner(best, nameOf) {
   const p = ui.capProbe;
   if (app.state.constraints.maxCredits == null || !best || ui.running) return '';
   if (!p?.res) {
     const busy = p ? ' aria-disabled="true"' : '';
-    return `<p class="notice cap-preview">${icon('cap')}<button type="button" class="btn" data-act="capProbe" data-k="capProbe"${busy}>${p ? 'בודקים…' : 'מה אם נקודה אחת יותר?'}</button></p>`;
+    return `${icon('cap')}<button type="button" class="btn" data-act="capProbe" data-k="capProbe"${busy}>${p ? 'בודקים…' : 'מה אם נקודה אחת יותר?'}</button>`;
   }
   const facts = (r) => r && planFacts(r, app.data),
     { changed, text } = capPreviewText({
@@ -261,9 +272,9 @@ function capLine(best, nameOf) {
       year: isPair(best),
       partial: p.res.partial
     });
-  return `<p class="notice cap-preview">${icon('cap')}<span tabindex="-1">${esc(text)}</span>${
+  return `${icon('cap')}<span tabindex="-1">${esc(text)}</span>${
     changed ? `<button type="button" class="btn" data-act="capApply" data-k="capApply">החל תקרה של ${p.cap} נ״ז</button>` : ''
-  }</p>`;
+  }`;
 }
 // Design A: the facts as one plain line (each fact whole: it wraps between facts, never inside one) and, behind a native disclosure, the lines
 // that matter less. The summary says how many lines it holds. Its open state is kept in ui.detailsOpen (this function rewrites the markup on every
@@ -324,7 +335,8 @@ export function renderView() {
   const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
   const warnings = pair ? raw.warnings : afterANotes(app.cls, ids);
   const afterA = designOn() ? (pair ? raw.afterA ?? [] : afterAGroups(app.cls, ids)) : [], // the groups ב׳ counts on from א׳ (A only)
-    afterAFull = afterA.length ? afterAText(afterA) : null;
+    afterAFull = afterA.length ? afterAText(afterA) : null,
+    shownSem = pair ? ui.sem : app.data.semester; // the semester on the board: the tab of a year plan, else the data file's
   $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
   const summerNote = summerScope()
     ? (state.yearIds.length
@@ -340,12 +352,13 @@ export function renderView() {
         <button type="button" class="btn" data-act="prefsOk" data-k="prefsOk">הבנתי</button>
         <button type="button" class="btn" data-act="prefsUndo" data-k="prefsUndo">להחזיר את הקודם</button></p>`
       : '') +
-    // A: what ב׳ counts on from א׳ is one short line (the count of prerequisites, "אילו?" opening the full sentence in "פרטים"); the other warnings stay
-    (afterA.length
+    // A: what ב׳ counts on from א׳ is one short line on ב׳ only (it speaks about ב׳): the count of prerequisites, "אילו?" opening the full sentence in
+    // "פרטים", which holds it on both semesters; the other warnings are "פרטים" lines too (phase 1: only what matters now stays on the board)
+    (afterA.length && shownSem === 'ב'
       ? `<p class="notice a-after">${icon('info')}<span>${esc(afterAShort(afterA.length))} <button type="button" class="a-which" data-act="detailsGo"
           data-to="aAfterA" data-k="aWhich">אילו?</button></span></p>`
       : '') +
-    warnings.filter((w) => w !== afterAFull).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
+    (designOn() ? '' : warnings.filter((w) => w !== afterAFull).map((w) => note('info', w)).join('')) + // "רק ב׳": from the statuses
     (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
   // A: in the alternatives column and in "פרטים"; with no alternatives to hold them (a search that found nothing) here, so the setting stays reachable
@@ -364,8 +377,9 @@ export function renderView() {
 
   const pn = ui.last?.partial ? partialNote(ui.last.ms, MAX_MS) : null;
   const more = pn?.more ? '<button type="button" class="btn" data-act="more" data-k="searchMore">חפש עוד</button>' : '';
+  // A: no banner for a search that ran out of time: a small "חפש עוד" beside the switcher (below, once msg is known) and the sentence in "פרטים"
   let msg =
-      pn && !noRes
+      pn && !noRes && !designOn()
         ? `<p class="notice partial" aria-live="polite">${icon('info')}<span>${pn.text}</span>${more}</p>`
         : '',
     live = '';
@@ -448,6 +462,14 @@ export function renderView() {
     const outsideH = (designOn() ? outsideHoursShort : outsideHoursText)((1 - (res.breakdown.timeWindow ?? 1)) * 10);
     // A: several left-out courses are one short line (count and credits), "אילו?" opening their names in "פרטים"
     const leftOutMany = designOn() && leftOut.length > 1;
+    const examSentences = closeExamLines(res.closeExams ?? [], nameOf),
+      examShort = designOn() ? examLineShort(res.closeExams ?? []) : '',
+      capA = designOn() ? capInner(results[0], nameOf) : '',
+      outside = outsideH && !state.constraints.windowHard
+        ? `${icon('clock')}<span>${outsideH} ${
+            designOn() ? '<a href="#prefs">להפוך לחובה</a>' : 'אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.'
+          }</span>`
+        : '';
     msg +=
       (leftOutMany
         ? `<p class="notice a-leftout">${icon('info')}<span>${esc(leftOutShort(leftOut))} <button type="button" class="a-which" data-act="detailsGo"
@@ -455,13 +477,15 @@ export function renderView() {
         : leftOut.length
           ? note('info', leftOutText(leftOut))
           : '') +
-      capLine(results[0], nameOf) +
-      closeExamLines(res.closeExams ?? [], nameOf).map((t) => note('alert', t)).join('') +
-      (outsideH && !state.constraints.windowHard
-        ? `<p class="notice">${icon('clock')}<span>${outsideH} ${
-            designOn() ? '<a href="#prefs">להפוך לחובה</a>' : 'אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.'
-          }</span></p>`
-        : '');
+      (designOn()
+        ? // A: one warning line for the clashing exams ("פרטים" opens the sentences); the cap probe and the hours are lines of "פרטים" (below)
+          (examShort
+            ? `<p class="notice warn a-exam">${icon('alert')}<span><span class="warn-text">${esc(examShort)}</span> · <button type="button" class="a-which"
+              data-act="detailsGo" data-to="aExams" data-k="aExamsBtn">פרטים</button></span></p>`
+            : '')
+        : capLine(results[0], nameOf) +
+          examSentences.map((t) => note('alert', t)).join('') +
+          (outside ? `<p class="notice">${outside}</p>` : ''));
     // what this alternative changes against the first one (§14ז)
     const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null;
     const vs = best
@@ -479,8 +503,7 @@ export function renderView() {
         : s.examGap
           ? `לפחות ${count(s.examGap, 'יום אחד', 'ימים')} בין בחינות`
           : 'פער בין בחינות לא ידוע';
-    const examWarnings = closeExamLines(res.closeExams ?? [], nameOf),
-      approvedNow = approvedOn(app.settings, app.data.program, app.data.startYear);
+    const approvedNow = approvedOn(app.settings, app.data.program, app.data.startYear);
     // the disclosure's state is read now: its toggle event may still be queued when this replaces it
     const shownDet = $('pills').querySelector('.a-details');
     if (shownDet) ui.detailsOpen = shownDet.open;
@@ -495,14 +518,22 @@ export function renderView() {
           examFact
         ],
         [
+          // what the lines above the week point at, in the order they appear there (the exam warning, the search, ב׳'s assumption, the left-out courses)
+          examSentences.length && `<span id="aExams" tabindex="-1" data-k="aExams">${examSentences.map(esc).join('<br>')}</span>`,
+          pn && esc(pn.text),
+          afterAFull && `<span id="aAfterA" tabindex="-1" data-k="aAfterA">${esc(afterAFull)}</span>`,
+          leftOutMany && `<span id="aLeftOut" tabindex="-1" data-k="aLeftOut">${esc(leftOutText(leftOut))}</span>`,
           pair && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`,
           myRank && regular.length > 1 && rankText(myRank, regular.length),
           infoLine,
           pair && 'אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.',
           vs && `לעומת חלופה 1: ${vs}`,
-          afterAFull && `<span id="aAfterA" tabindex="-1" data-k="aAfterA">${esc(afterAFull)}</span>`,
-          leftOutMany && `<span id="aLeftOut" tabindex="-1" data-k="aLeftOut">${esc(leftOutText(leftOut))}</span>`,
+          ...warnings.filter((w) => w !== afterAFull).map(esc), // "רק ב׳" and the like, from the statuses
           ...fr.slice(1).map(esc),
+          capA && `<span class="cap-preview">${capA}</span>`,
+          outside,
+          esc(freshnessA(boardStatus(), app.data.fetchedAt).text), // the full sentence (the strip says only that the data is old), then the legal ones
+          esc(LEGAL_LINE),
           disclaimerHtml(app.settings.counselingUrl),
           !approvedNow && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`
         ],
@@ -533,8 +564,8 @@ export function renderView() {
       fd,
       gap,
       ...fr,
-      // A: what left the screen's chips (the exam fact) and the exam warnings, so nothing visible is unannounced
-      ...(designOn() ? [examFact, ...examWarnings] : []),
+      // A: what left the screen's chips (the exam fact) and the exam warning line, so nothing visible is unannounced
+      ...(designOn() ? [examFact, examShort] : []),
       split.length && SPLIT_NOTE,
       pn?.text
     ]
@@ -558,6 +589,10 @@ export function renderView() {
       blocks: state.constraints.blocks
     });
   $('daysel').innerHTML = renderDaySelector(range, res, data, ui.mobileDay);
+  // A: the search ran out of time and left alternatives: a small button beside the switcher (the sentence is in "פרטים"); it never outlives the condition
+  document.querySelector('.a-more-link')?.remove();
+  if (designOn() && pn?.more && res && !noRes && !ui.runError)
+    $('switcher').insertAdjacentHTML('afterend', `<button type="button" class="a-more-link" data-act="more" data-k="searchMore" title="${esc(pn.text)}">חפש עוד</button>`);
   if (live && live !== ui.liveText) $('live').textContent = ui.liveText = live;
   renderSide(raw);
   renderDrawer(); // an open panel follows the shown alternative

@@ -163,7 +163,6 @@
 :root[data-design="a"] .modes a[aria-current="page"] { background:var(--surface); color:var(--text); box-shadow:var(--shadow-sm); }
 :root[data-design="a"] .modes a .icon { width:18px; height:18px; flex:none; }
 :root[data-design="a"] .a-strip { display:flex; flex-direction:column; gap:2px; padding:4px 12px; font-size:var(--fs-sm); color:var(--text-2); }
-:root[data-design="a"] .a-strip .meta { margin:0; font-size:var(--fs-xs); }
 /* the one legal line (declutter step 2): one flowing sentence, its "פרטים" an inline button whose 44px box is pulled back into the line */
 :root[data-design="a"] .a-unofficial { margin:0; color:var(--text-2); }
 :root[data-design="a"] .a-unofficial .icon { width:14px; height:14px; margin-inline-end:6px; vertical-align:-2px; }
@@ -173,8 +172,8 @@
 }
 :root[data-design="a"] .a-warn-p { display:none; } /* the phone's line of warnings, shown below 600px */
 @media (max-width:599px) {
-  /* a phone's strip keeps the legal line: the board says the rest (the improve page has no board note, and the gate covers the board: the strip says all) */
-  :root[data-design="a"] body:not([data-view="edit"], .gated) :is(.a-rules, .a-strip .meta) { display:none; }
+  /* a phone's strip keeps the legal line: the board says the old data (the improve page has no board note, and the gate covers the board: the strip says it) */
+  :root[data-design="a"] body:not([data-view="edit"], .gated) #aStale { display:none; }
   :root[data-design="a"] .a-warn-p { display:block; }
 }
 :root[data-design="a"] .a-strip .notice-top:empty { display:none; }
@@ -361,11 +360,22 @@
   width:max-content; min-height:44px; margin-inline-start:auto; padding:0 8px; color:var(--primary); font-weight:600;
 }
 :root[data-design="a"] .a-det-body {
-  display:grid; gap:6px; margin-bottom:8px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface);
+  display:grid; grid-template-columns:minmax(0, 1fr); gap:6px; margin-bottom:8px; padding:8px 12px; border:1px solid var(--border); border-radius:10px;
+  background:var(--surface);
   font-size:var(--fs-sm); color:var(--text-2); overflow-wrap:anywhere;
 }
 :root[data-design="a"] .a-det-body p { margin:0; }
 :root[data-design="a"] .a-det-body a { color:inherit; text-decoration:underline; }
+/* the cap probe moved in here (phase 1, the block above the week): its sentence and buttons wrap as a row */
+:root[data-design="a"] .a-det-body .cap-preview { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; }
+:root[data-design="a"] .a-det-body .cap-preview > span { flex:1 1 12rem; min-width:0; }
+/* the search ran out of time and left alternatives: a text button beside the switcher; the exam clash is one warning line (its "פרטים" is .a-which) */
+:root[data-design="a"] .a-more-link {
+  min-height:44px; padding:0 8px; border:0; background:none; color:var(--primary); font:inherit; font-size:var(--fs-sm); font-weight:600;
+  text-decoration:underline; cursor:pointer;
+}
+:root[data-design="a"] .a-exam { font-size:var(--fs-sm); }
+:root[data-design="a"] .a-exam .warn-text { font-weight:600; }
 @media (min-width:600px) {
   :root[data-design="a"] .a-facts { padding-inline-end:7.5rem; }
   :root[data-design="a"] .a-details > summary { margin-top:-44px; }

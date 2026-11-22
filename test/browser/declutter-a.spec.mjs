@@ -92,39 +92,40 @@ test('a year plan: the year total, the rank and the "best found" sentence are in
   assert.match(body, /אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות/);
 });
 
-// ---- step 2: one legal line in the strip; the phone's warnings in one line above the week ----
+// ---- step 2 (phase 1 Task 6): the strip is one short legal line; above the week only what matters now, the rest is in "פרטים" ----
 const flat = (s) => s.replace(/\s+/g, ' ').trim();
-const LEGAL_WIDE = 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט) · הכללים לא אושרו במחלקה · פרטים';
-const LEGAL_PHONE = 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט) · פרטים';
+const LEGAL_SHORT = 'לא רשמי · אינו הרשמה ואינו המלצה';
+const LEGAL_FULL = 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט)';
 const DISCLAIMER = 'אינו הרשמה ואינו המלצה. לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.';
+const STALE = 'נבדק לפני \\d+ ימים'; // the frozen test status is old
 
 for (const [name, size] of [['1280', 'desktop'], ['a phone on its side', { width: 667, height: 375 }]]) {
-  test(`${name}: the strip has one legal line with the rules clause, and the board does not say it again`, async (t) => {
+  test(`${name}: the strip is the short legal line and, when the data is old, one warning; nothing else, and the board does not say it again`, async (t) => {
     const page = await visit(t, size, DONE);
     await weekReady(page);
-    assert.equal(flat(await page.locator('.a-unofficial').innerText()), LEGAL_WIDE);
+    assert.match(flat(await page.locator('.a-unofficial').innerText()), new RegExp(`^${LEGAL_SHORT} · ${STALE} · פרטים$`));
+    assert.equal(await page.locator('#aStale .warn-text svg').count(), 1, 'the alert icon, not colour alone');
     assert.equal(await page.locator('#boardNote .a-warn-p').isVisible(), false, 'the phone line is not shown from 600px');
     assert.equal(await page.locator('#disclaimer').innerText(), '', 'the full sentence left the board');
-    assert.ok(await page.locator('#meta').isVisible(), 'the freshness line is in the strip');
+    assert.doesNotMatch(await page.locator('.a-unofficial').innerText(), /אפקה-נט|הכללים/, 'the registration pointer and the rules are in "פרטים"');
+    assert.equal(await page.locator('#meta').isVisible(), false, 'the data line is not in the strip any more');
   });
 }
 
 for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', 'phone']]) {
-  test(`${name}: the strip keeps the legal line, the warnings are one line right above the week`, async (t) => {
+  test(`${name}: the strip keeps only the legal line; the old-data warning is one short line right above the week`, async (t) => {
     const page = await visit(t, size, DONE);
     await weekReady(page);
-    assert.equal(flat(await page.locator('.a-unofficial').innerText()), LEGAL_PHONE);
-    assert.equal(await page.locator('#meta').isVisible(), false, 'no freshness line in a phone strip');
+    assert.equal(flat(await page.locator('.a-unofficial').innerText()), `${LEGAL_SHORT} · פרטים`);
     const line = page.locator('#boardNote .a-warn-p');
     assert.ok(await line.isVisible());
-    const text = flat(await line.innerText());
-    assert.match(text, /^הנתונים נבדקו לפני \d+ ימים, ייתכן שהשתנו · הכללים לא אושרו במחלקה$/, 'the old frozen status, then the rules');
-    assert.ok(!/בדקו מול היועץ/.test(text), 'the long sentence is in "פרטים"');
+    assert.match(flat(await line.innerText()), new RegExp(`^${STALE}$`), 'the short warning alone: no rules clause, no long sentence');
+    assert.equal(await line.locator('svg').count(), 1, 'with the alert icon');
     assert.equal(await page.locator('#boardNote .a-warn-p').count(), 1, 'one line, not two');
   });
 }
 
-test('the "פרטים" link of the strip opens ☰ "מידע" with the full sentence, and Escape returns to it', async (t) => {
+test('the "פרטים" link of the strip opens ☰ "מידע" with the full sentences, and Escape returns to it', async (t) => {
   const page = await visit(t, 'phone', DONE);
   await weekReady(page);
   const link = page.locator('.a-uno-more');
@@ -133,14 +134,17 @@ test('the "פרטים" link of the strip opens ☰ "מידע" with the full sent
   await link.click();
   const drawer = page.locator('#drawer[open]');
   await drawer.waitFor();
-  assert.ok(flat(await drawer.innerText()).includes(DISCLAIMER), 'the full sentence is in "מידע"');
-  assert.ok(flat(await drawer.innerText()).includes('בדקו מול היועץ לפני ההרשמה'), 'and the advisor line for unapproved rules');
+  const text = flat(await drawer.innerText());
+  assert.ok(text.includes(DISCLAIMER), 'the full sentence is in "מידע"');
+  assert.ok(text.includes(LEGAL_FULL), 'and the legal line in full, with the registration pointer');
+  assert.ok(text.includes('בדקו מול היועץ לפני ההרשמה'), 'and the advisor line for unapproved rules');
+  assert.match(text, /הנתונים נבדקו לפני \d+ ימים, ייתכן שהשתנו/, 'and the freshness sentence in full');
   await page.keyboard.press('Escape');
   await page.locator('#drawer[open]').waitFor({ state: 'detached' });
   await page.waitForFunction(() => document.activeElement?.dataset.k === 'aUnoMore', null, { timeout: 5000 }); // the close handler returns the focus to the opener
 });
 
-test('a phone: the line follows the data state without a reload (fresh data leaves only the rules clause), and the full sentence opens in "פרטים"', async (t) => {
+test('a phone: the line follows the data state without a reload (fresh data leaves no line), and the full sentences are in "פרטים"', async (t) => {
   const page = await visit(t, 'phone', DONE);
   await weekReady(page);
   const line = page.locator('#boardNote .a-warn-p');
@@ -154,11 +158,11 @@ test('a phone: the line follows the data state without a reload (fresh data leav
     }, status);
   const now = new Date().toISOString();
   await set({ checkedAt: now, ok: true, semesters: { '2027-1/30-2026': { checkedAt: now }, '2027-2/30-2026': { checkedAt: now } } });
-  assert.equal(flat(await line.innerText()), 'הכללים לא אושרו במחלקה', 'fresh: only the rules clause');
+  assert.equal(await line.count(), 0, 'fresh: nothing to say');
   await set({ checkedAt: now, ok: false });
-  assert.match(flat(await line.innerText()), /^הבדיקה האחרונה של הנתונים נכשלה\. הם השתנו לאחרונה ב-\d+\.\d+ · הכללים לא אושרו במחלקה$/);
+  assert.equal(flat(await line.innerText()), 'הבדיקה האחרונה נכשלה');
   await set(null);
-  assert.match(flat(await line.innerText()), /^לא ידוע מתי הנתונים נבדקו/);
+  assert.equal(flat(await line.innerText()), 'לא ידוע מתי נבדק');
   await page.locator('#pills .a-details > summary').click();
   const body = page.locator('#pills .a-det-body');
   assert.ok(await body.isVisible(), 'the opened details are visible on a phone');
@@ -166,37 +170,40 @@ test('a phone: the line follows the data state without a reload (fresh data leav
   assert.ok(flat(await body.innerText()).includes('בדקו מול היועץ לפני ההרשמה'));
 });
 
-test('a phone behind the first-visit gate: the strip still says the rules clause (the board that would say it is covered)', async (t) => {
+test('a phone behind the first-visit gate: the strip still says the data is old (the board that would say it is covered)', async (t) => {
   const page = await visit(t, 'phone', { 'afeka-sched-v1-terms': '2' });
   await page.locator('.gate').first().waitFor({ timeout: 30000 });
-  assert.equal(await page.locator('#aRules').evaluate((e) => getComputedStyle(e).display !== 'none'), true);
+  await page.waitForFunction(() => document.getElementById('aStale')?.textContent.trim().length > 0);
+  assert.equal(await page.locator('#aStale').isVisible(), true);
+  assert.match(flat(await page.locator('.a-unofficial').innerText()), new RegExp(`^${LEGAL_SHORT} · ${STALE} · פרטים$`));
 });
 
-test('the improve page has no board note: a phone strip there keeps the rules clause and the freshness line', async (t) => {
+test('the improve page has no board note: a phone strip there keeps the old-data warning', async (t) => {
   const page = await visit(t, 'phone', DONE, '#edit');
   await page.locator('#edit .edit-stage').waitFor({ timeout: 30000 });
-  assert.match(flat(await page.locator('.a-unofficial').innerText()), /הכללים לא אושרו במחלקה/);
-  assert.ok(await page.locator('#meta').isVisible());
+  assert.match(flat(await page.locator('.a-unofficial').innerText()), new RegExp(`^${LEGAL_SHORT} · ${STALE} · פרטים$`));
 });
 
-test('the full sentence is in "פרטים" and in the take-out tool', async (t) => {
+test('"פרטים" ends with the legal sentences, in full ("(ההרשמה באפקה-נט)", the disclaimer, the rules), and so does the take-out tool', async (t) => {
   const page = await visit(t, 'desktop', DONE);
   await weekReady(page);
-  const body = flat(await page.locator('#pills .a-det-body').textContent());
-  assert.ok(body.includes(DISCLAIMER), '"פרטים"');
-  assert.ok(body.includes('הכללים לא אושרו על ידי המחלקה. בדקו מול היועץ לפני ההרשמה.'));
+  const lines = (await page.locator('#pills .a-det-body > p').allTextContents()).map(flat);
+  const n = lines.length;
+  assert.match(lines[n - 4], /^הנתונים נבדקו לפני \d+ ימים, ייתכן שהשתנו$/, 'the freshness sentence in full, before the legal ones');
+  assert.equal(lines[n - 3], LEGAL_FULL, 'the legal line in full');
+  assert.ok(lines[n - 2].includes(DISCLAIMER), 'the disclaimer');
+  assert.equal(lines[n - 1], 'הכללים לא אושרו על ידי המחלקה. בדקו מול היועץ לפני ההרשמה.', 'and the rules, last');
   await page.evaluate(() => (location.hash = '#out'));
   await page.locator('#out [data-act="copyReg"]').waitFor();
   assert.ok(flat(await page.locator('#out').innerText()).includes(DISCLAIMER), 'the take-out tool, where a student goes to register');
 });
 
-// the freshness line has four states: the frozen status is old (it says so); a failed check and no check say their own words
-test('the freshness line: old, failed and never checked each say why (a warning with the alert icon), fresh is plain', async (t) => {
+// the warning has four states: the frozen status is old (it says so); a failed check and no check say their own words; a fresh one says nothing in the strip
+test('the strip warns when the data is old, failed or never checked (alert icon + short words); fresh says nothing; ☰ "מידע" has the whole sentence', async (t) => {
   const page = await visit(t, 'desktop', DONE);
   await weekReady(page);
-  const old = page.locator('#meta .warn-text');
-  assert.match(flat(await old.innerText()), /^הנתונים נבדקו לפני \d+ ימים, ייתכן שהשתנו$/);
-  assert.equal(await page.locator('#meta .warn-text svg').count(), 1, 'the alert icon, not colour alone');
+  assert.match(flat(await page.locator('#aStale .warn-text').innerText()), new RegExp(`^${STALE}$`));
+  assert.equal(await page.locator('#aStale .warn-text svg').count(), 1, 'the alert icon, not colour alone');
   // the file counts as checked at the time of a later successful check that covers it (app.js boardStatus: freshAt), so the status names this file
   const keys = await page.evaluate(async () => {
     const { app } = await import('./app.js'); // a year plan reads the older of the two semester files
@@ -204,24 +211,46 @@ test('the freshness line: old, failed and never checked each say why (a warning 
   });
   const now = new Date().toISOString();
   const states = [
-    [{ checkedAt: now, ok: true, semesters: Object.fromEntries(keys.map((k) => [k, { checkedAt: now }])) }, /^נבדק (עכשיו|לפני \d+ (דקות|דקה|שעות|שעה))$/, 0],
-    [{ checkedAt: now, ok: false }, /^הבדיקה האחרונה של הנתונים נכשלה\. הם השתנו לאחרונה ב-\d+\.\d+$/, 1],
-    [null, /^לא ידוע מתי הנתונים נבדקו\. הם השתנו לאחרונה ב-\d+\.\d+$/, 1] // no status file at all
+    [{ checkedAt: now, ok: true, semesters: Object.fromEntries(keys.map((k) => [k, { checkedAt: now }])) }, null, /נבדק (עכשיו|לפני \d+ (דקות|דקה|שעות|שעה))/],
+    [{ checkedAt: now, ok: false }, 'הבדיקה האחרונה נכשלה', /הבדיקה האחרונה של הנתונים נכשלה\. הם השתנו לאחרונה ב-\d+\.\d+/],
+    [null, 'לא ידוע מתי נבדק', /לא ידוע מתי הנתונים נבדקו\. הם השתנו לאחרונה ב-\d+\.\d+/] // no status file at all
   ];
-  for (const [status, text, warn] of states) {
+  for (const [status, short, full] of states) {
     await page.route('**/data/afeka/status.json', (r) => (status ? r.fulfill({ contentType: 'application/json', body: JSON.stringify(status) }) : r.fulfill({ status: 404, body: '' })));
     await page.reload();
     await weekReady(page);
-    assert.match(flat(await page.locator('#meta').innerText()), text);
-    assert.equal(await page.locator('#meta .warn-text').count(), warn);
+    if (short) assert.equal(flat(await page.locator('#aStale .warn-text').innerText()), short);
+    else assert.equal(await page.locator('#aStale').isVisible(), false, 'fresh: the strip has nothing to add');
+    await page.locator('.a-uno-more').click();
+    await page.locator('#drawer[open]').waitFor();
+    assert.match(flat(await page.locator('#drawer').innerText()), full);
+    await page.keyboard.press('Escape');
+    await page.locator('#drawer[open]').waitFor({ state: 'detached' });
     await page.unroute('**/data/afeka/status.json');
   }
 });
 
-// ---- step 3: what ב׳ counts on from א׳ is one short info line ----
-test('the A-semester assumption is one short line with its count, no fill; "אילו?" opens "פרטים" at the full sentence', async (t) => {
+// ---- step 3: what ב׳ counts on from א׳ is one short info line on ב׳ only, its sentence is in "פרטים" ----
+const onB = async (page) => {
+  await page.locator('label:has(input[name="sem"][value="ב"])').first().click();
+  await page.waitForFunction(() => document.querySelector('input[name="sem"][value="ב"]')?.checked);
+  await idle(page);
+};
+
+test('on א׳ the A-semester assumption has no line on the board: it is a sentence in "פרטים"', async (t) => {
   const page = await visit(t, 'desktop', DONE);
   await weekReady(page);
+  await idle(page);
+  assert.equal(await page.locator('#semnote .a-after').count(), 0, 'it speaks about ב׳: no line on א׳');
+  assert.equal(await page.locator('#aAfterA').isVisible(), false, 'behind "פרטים"');
+  await page.locator('#pills .a-details > summary').click();
+  assert.match(flat(await page.locator('#aAfterA').innerText()), /^התכנון של ב׳ מניח שעוברים את .+ בא׳$/, 'today\'s words, with the groups');
+});
+
+test('on ב׳ the A-semester assumption is one short line with its count, no fill; "אילו?" opens "פרטים" at the full sentence', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await onB(page);
   const line = page.locator('#semnote .a-after');
   await line.waitFor();
   assert.match(flat(await line.innerText()), /^התכנון של ב׳ מניח שתעברו בא׳ (\d+ דרישות קדם|דרישת קדם אחת)\. אילו\?$/);
@@ -242,9 +271,10 @@ test('the A-semester assumption is one short line with its count, no fill; "אי
 });
 
 for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', 'phone']]) {
-  test(`${name}: the "אילו?" button is a 44px target and the line does not scroll the page sideways`, async (t) => {
+  test(`${name}: the "אילו?" button of ב׳'s line is a 44px target and the line does not scroll the page sideways`, async (t) => {
     const page = await visit(t, size, DONE);
     await weekReady(page);
+    await onB(page);
     const box = await page.locator('#semnote .a-which').boundingBox();
     assert.ok(box.height >= 43.5 && box.width >= 43.5, `${box.width}x${box.height}`);
     assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0);
@@ -416,11 +446,13 @@ test('several left-out courses are one short line with the count and the credits
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'aLeftOut');
 });
 
-test('the hours outside the wished ones: one short line with a "להפוך לחובה" link', async (t) => {
+test('the hours outside the wished ones: a short "פרטים" line with a "להפוך לחובה" link, not a line above the week', async (t) => {
   const page = await visit(t, 'desktop', MANY);
-  const line = page.locator('#week .notice', { hasText: 'מחוץ לשעות שביקשת' });
-  await line.waitFor({ timeout: 60000 });
+  const line = page.locator('#pills .a-det-body p', { hasText: 'מחוץ לשעות שביקשת' });
+  await line.waitFor({ state: 'attached', timeout: 60000 });
   await idle(page);
+  assert.equal(await page.locator('#week .notice', { hasText: 'מחוץ לשעות שביקשת' }).count(), 0, 'nothing above the week');
+  await page.locator('#pills .a-details > summary').click();
   assert.match(flat(await line.innerText()), /^(כ-\d+ שעות|10 שעות או יותר) מחוץ לשעות שביקשת\. להפוך לחובה$/);
   assert.equal(await line.locator('a').getAttribute('href'), '#prefs');
   assert.doesNotMatch(await line.innerText(), /אפשר להפוך את השעות לחובה/);
