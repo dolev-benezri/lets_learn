@@ -22,4 +22,7 @@
   }
   if (choice !== 'a' && choice !== 'classic') choice = DEFAULT;
   if (choice === 'a') document.documentElement.dataset.design = 'a';
+  // legal.html: its ways back carry the explicit choice, so a visit with blocked storage does not lose the design on the way back
+  if (param === 'a' || param === 'classic' || param === 'default')
+    document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('a[data-keep-design]').forEach((a) => a.setAttribute('href', `./?design=${param}`)));
 })();

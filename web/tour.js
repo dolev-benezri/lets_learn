@@ -52,6 +52,12 @@ export const TOUR_INTRO_A = [
   { sel: '.dock [data-tool="out"]', text: 'להוציא: רשימה להרשמה, סיכום לפגישה עם היועץ, ושיתוף וגיבוי.' },
   { sel: '.menu-btn', text: 'בתפריט: סיור, מפה, תנאי שימוש ומידע. זה כלי עזר לתכנון, ההרשמה עצמה באפקה-נט.' }
 ];
+// Design A, once, for a visitor who saw the old tour (or the new intro already): what changed, in three stops. Part `shell`.
+export const TOUR_NEW_A = [
+  { sel: '.a-top .modes', text: 'חדש: הלוח תמיד על המסך. שתי הלשוניות למעלה: מערכת חדשה, או שיפור של מערכת שכבר יש לך.' },
+  { sel: '.dock', text: 'חדש: הכלים כאן, וכל כלי נפתח ליד הלוח. המצב שלי, הקורסים וההעדפות נשארו כמו שהיו.' },
+  { sel: '.dock [data-tool="out"]', text: 'חדש: ״להוציא״ מחזיק את רשימת ההרשמה, הסיכום ליועץ והשיתוף. הסיור המלא נמצא בתפריט.' }
+];
 export const TOUR_PLANS_A = [
   { sel: '#switcher', text: 'כל חלופה היא מערכת שלמה בלי התנגשויות. החיצים עוברים ביניהן, ובטלפון גם החלקה על הלוח.' },
   { sel: '#week .blk', text: 'לחיצה על קבוצה מראה מרצה, מקומות פנויים ומתי זה נבדק.' },
@@ -71,7 +77,8 @@ const onA = () => document.documentElement.dataset.design === 'a';
 // Runs a part (also the replay). A stop whose element is missing or hidden is skipped, so "1 מתוך N" counts the stops that are shown.
 // Not over an open dialog, not on the print page, not while another tour runs. Returns whether a tour started.
 // `home` (optional): where the focus goes at the end when the element focused at the start is gone (the gate's tile was redrawn).
-export async function startTour(part, home) {
+// `still` (optional): asked again after the module has loaded, right before the tour is drawn: the board may have been covered meanwhile.
+export async function startTour(part, home, still) {
   if (running || document.querySelector('dialog[open]') || document.documentElement.classList.contains('print-summary'))
     return false;
   running = true;
@@ -85,12 +92,12 @@ export async function startTour(part, home) {
   };
   try {
     const { driver } = await import('./vendor/driver/driver.js.mjs');
-    if (document.querySelector('dialog[open]')) {
-      end(); // a dialog opened while the module loaded: not over it, and asked again when it closes
+    if (document.querySelector('dialog[open]') || (still && !still())) {
+      end(); // a dialog opened, or the board was covered, while the module loaded: not over it, and asked again when it closes
       return false;
     }
     const A = onA();
-    const steps = (part === 'plans' ? (A ? TOUR_PLANS_A : TOUR_PLANS) : A ? TOUR_INTRO_A : TOUR_INTRO)
+    const steps = (part === 'shell' ? TOUR_NEW_A : part === 'plans' ? (A ? TOUR_PLANS_A : TOUR_PLANS) : A ? TOUR_INTRO_A : TOUR_INTRO)
       .map((s) => ({ element: find(s.sel), popover: { description: s.text, align: 'center' } }))
       .filter((s) => s.element);
     if (!steps.length) {
@@ -150,13 +157,14 @@ export async function startTour(part, home) {
     addEventListener('keydown', keys, true);
     tour.drive();
     markTour(part); // only once the tour is on screen: a failed start is asked again next time
+    if (part === 'intro' && A) markTour('shell'); // the full intro already says what the short one would
     return true;
   } catch {
     end();
     return false;
   } // the module did not load (offline, a stale cache): the tour is skipped and asked again next time
 }
-export const tourOnce = (part, home) => (tourSeen(part) ? false : startTour(part, home));
+export const tourOnce = (part, home, still) => (tourSeen(part) ? false : startTour(part, home, still));
 
 // The intro waits for the gate to be done (ACT.acceptTerms asks, ui-plan.js renderAll answers when the step bar is on screen).
 let introDue = false;
@@ -165,6 +173,8 @@ export const dueIntro = () => {
 };
 // still to be shown after the gate; design A also offers it to a returning visitor who saw neither part, and holds the plans part back until it is
 // done (ui-plan.js). Classic: only a first visit's gate asks for it.
+// design A: someone who saw the intro (the old one too) and not yet "what's new"; the plans part waits for it
+export const shellPending = () => onA() && tourSeen('intro') && !tourSeen('shell');
 export const introPending = () => !tourSeen('intro') && (introDue || onA());
 export async function tourCheck(ready, home) {
   if (!ready || !(introDue || onA())) return;

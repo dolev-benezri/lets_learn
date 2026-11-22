@@ -5,7 +5,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { STUDENT, DONE, launch, visit as visitIn } from './helpers.mjs';
-import { TOUR_INTRO_A, TOUR_PLANS_A } from '../../web/tour.js';
+import { TOUR_INTRO_A, TOUR_PLANS_A, TOUR_NEW_A } from '../../web/tour.js';
 
 let browser;
 before(async () => {
@@ -142,7 +142,7 @@ test('the first visit ends the gate with the intro tour, and no tour shows over 
   while ((await page.locator('.driver-popover-next-btn').textContent()) !== 'סיום') await page.locator('.driver-popover-next-btn').click();
   await page.locator('.driver-popover-next-btn').click();
   await popover(page).waitFor({ state: 'detached' });
-  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), 'intro', 'the intro is marked, the plans part is not');
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), 'intro,shell', 'the intro is marked (and "what\'s new", which it covers), the plans part is not');
 });
 
 for (const size of ['phone', 'desktop']) {
@@ -155,13 +155,13 @@ for (const size of ['phone', 'desktop']) {
     while ((await page.locator('.driver-popover-next-btn').textContent()) !== 'סיום') await page.locator('.driver-popover-next-btn').click();
     await page.locator('.driver-popover-next-btn').click();
     await page.waitForFunction(() => /חלופה|קבוצה|רשימה|סיכום/.test(document.querySelector('.driver-popover-description')?.textContent ?? ''), null, { timeout: 15000 });
-    assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), 'intro,plans', 'then the plans part, once the intro is done');
+    assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), 'intro,shell,plans', 'then the plans part, once the intro is done');
     assert.equal((await page.locator('.driver-popover-progress-text').textContent()), `1 מתוך ${TOUR_PLANS_A.length}`);
   });
 }
 
 test('the plans part waits behind an open tool and behind the ☰ menu, and starts when the board is clear', async (t) => {
-  const seen = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-tour': 'intro' }, '#courses', true);
+  const seen = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-tour': 'intro,shell' }, '#courses', true);
   await seen.locator('#panel #courses').waitFor({ state: 'visible' });
   await seen.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
   await settled(seen);
@@ -172,9 +172,9 @@ test('the plans part waits behind an open tool and behind the ☰ menu, and star
   assert.match((await seen.locator('.driver-popover-description').textContent()) ?? '', /חלופה|קבוצה|סיכום|רשימה/, 'the plans tour starts once the board is clear');
 
   // results that arrive while the menu is open: the tour waits for it to close and then starts by itself
-  const menu = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-tour': 'intro' }, '', true);
+  const menu = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-tour': 'intro,shell' }, '', true);
   await menu.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // let the first load finish: a reload would abort its fetches
-  await menu.evaluate(() => localStorage.setItem('afeka-sched-v1-tour', 'intro')); // the first load already showed the plans part: ask again
+  await menu.evaluate(() => localStorage.setItem('afeka-sched-v1-tour', 'intro,shell')); // the first load already showed the plans part: ask again
   await menu.route('**/data/afeka/2027-*/*.json', async (r) => {
     await new Promise((ok) => setTimeout(ok, 2500));
     await r.continue();
@@ -280,4 +280,138 @@ test('a sentence that pointed at a numbered step names the tool under A, and cla
   await old.waitFor({ timeout: 30000 });
   assert.equal(await old.getAttribute('href'), '#prefs');
   assert.equal(await old.textContent(), 'בשלב 3');
+});
+
+// ---- Q7: "what's new", once, for someone who knew the old design ----
+for (const size of ['phone', 'desktop'])
+  test(`${size}: a visitor who finished the classic tour gets the three-stop "what's new" once, not the old intro`, async (t) => {
+    const page = await visit(t, size, { ...DONE, 'afeka-sched-v1-tour': 'intro,plans' }, '', true);
+    await popover(page).waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('.driver-popover-progress-text').textContent(), `1 מתוך ${TOUR_NEW_A.length}`);
+    assert.equal(TOUR_NEW_A.length, 3);
+    const texts = [];
+    for (let i = 0; i < 3; i++) {
+      texts.push(await page.locator('.driver-popover-description').textContent());
+      assert.equal(await page.evaluate(() => !!document.querySelector('.driver-active-element')?.checkVisibility()), true, `stop ${i + 1} is on a visible element`);
+      await page.locator('.driver-popover-next-btn').click();
+    }
+    assert.deepEqual(texts, TOUR_NEW_A.map((x) => x.text), 'the three stops, in order');
+    await popover(page).waitFor({ state: 'detached' });
+    assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), 'intro,plans,shell');
+    await page.reload();
+    await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+    await settled(page);
+    await page.waitForTimeout(800);
+    assert.equal(await popover(page).count(), 0, 'once: not again');
+  });
+
+test('"what\'s new" waits behind an open tool on a phone, and is skipped by "דלג" for good', async (t) => {
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-tour': 'intro,plans' }, '#courses', true);
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  await settled(page);
+  await page.waitForTimeout(800);
+  assert.equal(await popover(page).count(), 0, 'not behind the open tool');
+  await page.locator('#panel [data-act="closeTool"]').first().click();
+  await popover(page).waitFor({ timeout: 10000 });
+  await page.locator('.driver-popover-close-btn').click();
+  await popover(page).waitFor({ state: 'detached' });
+  assert.match(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), /shell/);
+});
+
+test('a new visitor does not get "what\'s new" after the intro: the intro covers it', async (t) => {
+  const page = await visit(t, 'phone', DONE, '', true); // nothing seen: the intro, then the plans part, never the short tour
+  await popover(page).waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('.driver-popover-progress-text').textContent(), `1 מתוך ${TOUR_INTRO_A.length}`);
+  assert.match(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), /shell/);
+});
+
+// ---- Q6: the map from "המצב שלי" as well as from ☰ ----
+for (const size of ['phone', 'desktop'])
+  test(`${size}: the progress map opens from "המצב שלי", and Escape returns focus to its button`, async (t) => {
+    const page = await visit(t, size, DONE, '#me');
+    await page.locator('#panel #me [data-act="openMap"]').waitFor({ state: 'visible', timeout: 30000 });
+    await page.locator('#panel #me [data-act="openMap"]').focus();
+    await page.keyboard.press('Enter');
+    await page.locator('#pmap[open]').waitFor();
+    await page.keyboard.press('Escape');
+    await page.locator('#pmap[open]').waitFor({ state: 'detached' });
+    await page.waitForFunction(() => document.activeElement?.dataset.k === 'meMap', null, { timeout: 3000 });
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'meMap');
+  });
+
+// ---- the "what's new" checks are made again right before the tour is drawn, and again when a dialog closes ----
+// holds the tour module's request until release(): the test acts while the module is loading, however slow the machine is
+const holdDriver = (page) => {
+  let release, reached;
+  const gate = new Promise((r) => (release = r)), arrived = new Promise((r) => (reached = r));
+  page.route('**/vendor/driver/driver.js.mjs', async (route) => {
+    reached();
+    await gate;
+    await route.continue();
+  });
+  return { release, reached: arrived };
+};
+
+test('"what\'s new": a dialog opened while its module loads holds it back until the dialog closes', async (t) => {
+  const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1-tour': 'intro,plans' }, '', true);
+  await popover(page).waitFor({ timeout: 30000 }); // first load: shown once
+  await page.evaluate(() => localStorage.setItem('afeka-sched-v1-tour', 'intro,plans'));
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  const held = holdDriver(page);
+  await page.reload();
+  await held.reached; // the tour is on its way: its module is loading
+  await page.evaluate(async () => {
+    window.__ask = (await import('./ui-dialog.js')).askConfirm('לבדיקה', { ok: 'אישור', cancel: null }); // while the module loads
+  });
+  await page.locator('dialog[open]').waitFor();
+  held.release();
+  await page.waitForTimeout(1200);
+  assert.equal(await popover(page).count(), 0, 'not over the dialog');
+  await page.locator('dialog[open]').getByRole('button', { name: 'אישור' }).click();
+  await popover(page).waitFor({ timeout: 10000 }); // the close asked again
+});
+
+test('"what\'s new": a tool opened on a phone while its module loads holds it back, and it comes when the tool closes', async (t) => {
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-tour': 'intro,plans' }, '', true);
+  await popover(page).waitFor({ timeout: 30000 });
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => localStorage.setItem('afeka-sched-v1-tour', 'intro,plans'));
+  const held = holdDriver(page);
+  await page.reload();
+  await held.reached;
+  await page.evaluate(() => (location.hash = '#courses')); // while the module loads
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  held.release();
+  await page.waitForTimeout(1200);
+  assert.equal(await popover(page).count(), 0, 'not over the tool');
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), 'intro,plans', 'and not marked as seen');
+  await page.locator('#panel [data-act="closeTool"]').first().click();
+  await popover(page).waitFor({ timeout: 10000 });
+});
+
+test('"what\'s new" is not used up by the edit page: it waits for the build board', async (t) => {
+  const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1-tour': 'intro,plans' }, '#edit', true);
+  await page.locator('#edit .edit-stage').waitFor({ timeout: 30000 });
+  await page.locator('.menu-btn').click();
+  await page.locator('#drawer[open]').waitFor();
+  await page.keyboard.press('Escape'); // a dialog closing in improve mode asks the tours again
+  await page.waitForTimeout(800);
+  assert.equal(await popover(page).count(), 0, 'nothing on the edit page');
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-tour')), 'intro,plans', 'still to be shown');
+  await page.locator('.a-top .modes a[data-mode="build"]').click();
+  await popover(page).waitFor({ timeout: 15000 });
+  assert.equal(await page.locator('.driver-popover-progress-text').textContent(), '1 מתוך 3', 'all three stops are on the build board');
+});
+
+test('the map opened from "המצב שלי" returns focus to the button even when the record was drawn again meanwhile', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  await page.locator('#panel #me [data-act="openMap"]').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('#panel #me [data-act="openMap"]').click();
+  await page.locator('#pmap[open]').waitFor();
+  await page.evaluate(async () => (await import('./ui-me.js')).renderMe()); // the record is drawn again under the map
+  await page.keyboard.press('Escape');
+  await page.locator('#pmap[open]').waitFor({ state: 'detached' });
+  await page.waitForFunction(() => document.activeElement?.dataset.k === 'meMap', null, { timeout: 3000 }); // the close event is queued: it returns the focus
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'meMap');
 });

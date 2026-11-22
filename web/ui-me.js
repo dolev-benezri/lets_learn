@@ -27,7 +27,8 @@ import {
   outsideBoxes,
   outsideBox,
   $,
-  ui
+  ui,
+  designOn
 } from './ui-common.js';
 
 // ---------- status page (#me) ----------
@@ -307,7 +308,10 @@ export function renderMe() {
             style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div>`
             : ''}</div>
           ${checklist(data, state)}
-          <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>
+          <p class="hint" id="gradeAvg" aria-live="polite">${avgLine()}</p>${
+            designOn() ? `
+          <button type="button" class="btn" data-act="openMap" data-k="meMap" aria-haspopup="dialog">${icon('map')} מפת התקדמות</button>` : ''
+          }
           ${entry ? '' : importBtn('') + gradeMsg}</section>`;
   // A first visit: the import first, the course list only after a choice (enterList).
   if (entry) {
