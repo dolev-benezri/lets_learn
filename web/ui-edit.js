@@ -333,6 +333,7 @@ export function stopSearch() {
 }
 
 export function renderEdit() {
+  if (!editorMod) preloadEditor();
   wire();
   if (!onChanges()) stopSearch();
   // proposals worked out on a record or a data file that is not the current one are dropped, and a new search is asked for
@@ -685,13 +686,22 @@ const noIdentity = (at = 'edMsg') => {
   return true;
 };
 
-async function openLoader(file) {
+// A browser lets a file chooser open only inside the tap that asked (Safari not after an awaited import). The editor's module is already loaded (ui-actions.js
+// imports it), but a dynamic import still resolves a turn later, so renderEdit takes hold of it ahead and a tap opens the editor in its own turn. A tap that
+// comes before that waits for the import and opens the dialog on the file field: the file-first view, with no chooser.
+let editorMod = null;
+const preloadEditor = () => import('./ui-friend-editor.js').then((m) => (editorMod = m), () => {});
+
+function openLoader(file) {
   if (noIdentity('edWaysMsg')) return;
-  const { openFriendEditor } = await import('./ui-friend-editor.js');
+  if (editorMod) return openEditor(editorMod, file, file);
+  return import('./ui-friend-editor.js').then((m) => openEditor((editorMod = m), file, false)); // too late for a chooser: the file-first view only
+}
+function openEditor({ openFriendEditor }, file, pick) {
   const d = edit().draft;
   openFriendEditor({
     // a semester whose data did not load this time (summer) is not offered back
-    mode: 'edit', groups: groupsOfDraft(d), rows: fixedRows(d), sem: dataOf(d?.sem) ? d.sem : null, returnFocusId: 'editTitle', focusFile: file,
+    mode: 'edit', groups: groupsOfDraft(d), rows: fixedRows(d), sem: dataOf(d?.sem) ? d.sem : null, returnFocusId: 'editTitle', focusFile: file, pickFile: pick,
     onSave({ rows, sem }) {
       // a choice made earlier stays with its row when the rows are read again
       const key = (r) => [r.code, r.type, r.text, JSON.stringify(r.meets)].join('|');

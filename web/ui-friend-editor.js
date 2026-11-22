@@ -43,7 +43,9 @@ const firstDay = () => {
 // returns an error string (the editor stays open and shows it) or null; returnFocusId: element id to focus after close.
 // mode 'edit' (the edit page's step 1): no name, the semesters א, ב and קיץ. groups, rows (review rows of an earlier visit) and sem
 // start it; onSave({ groups, rows, sem }) gets the chosen semester's groups and a review row for each, and for every unknown row.
-export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null, focusFile = false }) {
+// focusFile: start in the file field; pickFile (with it): and open the file chooser at once. That is only allowed inside the tap that asked, so the caller
+// must call this in the tap's own turn (ui-edit.js loads this module ahead). A browser that refuses leaves the dialog open on the file field.
+export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null, focusFile = false, pickFile = false }) {
   if (dlg.open) return;
   const draft = friend ? friend.groups.slice() : mode === 'edit' ? groups.slice() : [];
   ed = {
@@ -62,7 +64,9 @@ export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 
     start: draft.join()
   };
   dlg.innerHTML = shell();
-  setTab(draft.length ? 'grid' : 'pick'); // nothing picked yet: start where groups are picked
+  // nothing picked yet: start where groups are picked. The file field is in that pane on a phone: asked for the file, the editor starts there too, whatever
+  // the earlier draft holds (the grid pane would hide the field the chooser and the focus are for)
+  setTab(draft.length && !(mode === 'edit' && focusFile) ? 'grid' : 'pick');
   renderTabs();
   renderCourses();
   renderGroups();
@@ -72,6 +76,11 @@ export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 
   dlg.showModal();
   if (mode === 'edit') $(focusFile ? 'feFile' : 'feTitle').focus(); // no field to start in: the heading, so the keyboard stays down on a phone
   else if (!(phone.matches && friend)) $('feName').focus(); // editing on a phone: don't raise the keyboard over the page
+  if (mode === 'edit' && focusFile && pickFile) {
+    try {
+      $('feFile').click();
+    } catch {} // no recent tap, or no chooser here: the dialog is there with the file field focused
+  }
 }
 phone.addEventListener('change', () => {
   if (ed) setTab($('feRoot').dataset.tab);
