@@ -226,7 +226,10 @@ export const PAGE = {
   plan: ['layout', 'weekTitle'],
   edit: ['edit', 'editTitle']
 };
-export const shownTitle = () => $(Object.values(PAGE).find(([p]) => !$(p).hidden)?.[1]);
+// Design A (web/design.js sets the attribute): the frame of ui-shell.js. Asked here, in a leaf module, so any renderer can ask without importing the shell.
+export const designOn = () => globalThis.document?.documentElement?.dataset?.design === 'a';
+// the heading to focus: the first shown page's in classic; under A the shell says (ui.titleId: the open tool's, the edit page's or the board's)
+export const shownTitle = () => $(designOn() && ui.titleId ? ui.titleId : Object.values(PAGE).find(([p]) => !$(p).hidden)?.[1]);
 
 // state shared by the modules (sem: the shown semester of a year result)
 export const ui = {
@@ -252,6 +255,9 @@ export const ui = {
   dayScroll: true,
   specPick: null,
   onShown: null,
-  onResult: null
+  onResult: null,
+  titleId: null, // A: the id of the heading of what is shown (ui-shell.js applyShell)
+  toolOpener: null, // A: the dock button that opened the tool, where the focus returns when it closes
+  nav: null // A: why the address changed: 'open' or 'close' when the shell did it, nothing for a Back or a link
 }; // onShown: set by the progress map, called after every renderView (a switched alternative or a search result)
 // onResult: set by ui-plan.js, called when step 4 shows at least one alternative (the plans part of the tour)

@@ -32,6 +32,17 @@ import {
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
 
+test('toolName: classic numbers its steps, design A names the tool and the board', async () => {
+  const { toolName } = await import('../web/ui-text.js');
+  assert.deepEqual(['me', 'courses', 'wishes', 'plan'].map((k) => toolName(k, false)), ['שלב 1', 'שלב 2', 'שלב 3', 'שלב 4']);
+  assert.equal(toolName('friends', false), 'שלב 3', 'classic keeps the friends on the preferences step');
+  assert.deepEqual(
+    ['me', 'courses', 'wishes', 'friends', 'out', 'plan'].map((k) => toolName(k, true)),
+    ['״המצב שלי״', '״קורסים״', '״מה חשוב לי״', '״חברים״', '״להוציא״', 'לוח']
+  );
+  assert.equal(toolName('me'), 'שלב 1', 'no document: the classic wording');
+});
+
 test('leftOutText: names and credits, one or many, and a long list is cut with its count', () => {
   assert.equal(leftOutText([]), '');
   assert.equal(leftOutText([{ name: 'א', credits: 3.5 }]), 'לא נכנס לחלופה הזו: א (3.5 נ״ז).');

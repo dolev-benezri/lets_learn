@@ -7,6 +7,17 @@ export const DISCLAIMER = 'אינו הרשמה ואינו המלצה. לפני �
 export const SPLIT_WARNING =
   'הפרדה בין הרצאה לתרגול עלולה ליצור פער בין החומר שנלמד בהרצאה לחומר שבתרגול, כי הקצב שלהם מתואם. הפרדה כזו מותרת רק באישור ההכוון האקדמי.';
 export const SPLIT_TAG = 'מופרד · דורש אישור ההכוון'; // beside each split course in the registration list
+// What a screen is called inside a sentence. Classic numbers its steps; design A names the tool (and the board). One place knows both, so a sentence
+// like "פרטים ב…" is written once. `A` defaults to the page's design; the tests pass it.
+const TOOL_NAME = {
+  me: ['שלב 1', '״המצב שלי״'],
+  courses: ['שלב 2', '״קורסים״'],
+  wishes: ['שלב 3', '״מה חשוב לי״'],
+  friends: ['שלב 3', '״חברים״'],
+  plan: ['שלב 4', 'לוח'],
+  out: ['שלב 4', '״להוציא״']
+};
+export const toolName = (key, A = globalThis.document?.documentElement?.dataset?.design === 'a') => TOOL_NAME[key][A ? 1 : 0];
 export const RULES_UNAPPROVED = 'הכללים לא אושרו על ידי המחלקה.';
 export const conflictLine = (t) => `יש סתירה בין המקורות הרשמיים לגבי ${t}.`;
 // The yedion's login page (it opens in a new tab: the site cannot fetch the student's file itself, the yedion's sign-in is its own).
@@ -327,7 +338,15 @@ export const approvedText = (day) => `אושר על ידי המחלקה, ${day.s
 // "דיווח על טעות": a mailto with the subject and a body the tool fills (ctx: program, startYear, semester, group?, page).
 // The address goes through encodeURIComponent (so "?", "&", "," and "#" in it cannot add a header or a recipient), keeping only "@".
 // Each field is clipped to 40 characters: a Hebrew letter is 6 characters once encoded, and mail apps drop links over ~2000.
-export const PAGE_NAME = { me: 'המצב שלי', courses: 'קורסים', prefs: 'מה חשוב לי', plan: 'מערכות', edit: 'עריכת מערכת קיימת' };
+export const PAGE_NAME = {
+  me: 'המצב שלי',
+  courses: 'קורסים',
+  prefs: 'מה חשוב לי',
+  plan: 'מערכות',
+  edit: 'עריכת מערכת קיימת',
+  friends: 'חברים', // the two below are design A's tools (ui-shell.js)
+  out: 'להוציא את המערכת'
+};
 const clip = (v) => [...String(v)].slice(0, 40).join('');
 export function reportMailto(email, ctx) {
   const lines = [

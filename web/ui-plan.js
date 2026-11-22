@@ -7,31 +7,39 @@ import { trapTab, askConfirm } from './ui-dialog.js';
 import { retakeNotice } from './rules.js';
 import './ui-map.js';
 import { popStale, PAGE_NAME } from './ui-text.js';
-import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, termsOk, heb, $, ui } from './ui-common.js';
+import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, termsOk, heb, $, ui, designOn } from './ui-common.js';
 import { scheduleRun, cancelRun } from './ui-search.js';
 import { renderEdit, stopSearch, syncSavedHint } from './ui-edit.js';
 import { needsModeChoice, modeOpen, renderModeChoice, getMode, setMode } from './ui-mode.js';
-import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, hasAlternatives } from './ui-view.js';
+import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, showAlt, hasAlternatives } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
-import { tourCheck, tourOnce } from './tour.js';
+import { tourCheck, tourOnce, introPending, onTourEnd } from './tour.js';
+import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear, toggleEditSheet } from './ui-shell.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 let firstVisit = !onboarded() && !location.hash;
 // The remembered mode: a visit with no link opens the edit page (spec "The mode choice"); any link (#me, #edit, #f=, #b=) wins.
 if (!location.hash && getMode() === 'edit') history.replaceState(null, '', '#edit');
+// design A (web/design.js): the frame is built around the live containers before anything is drawn into them
+if (designOn()) shellInit();
 
 // The step follows the hash (app.js routeOf): one page shown at a time (index.html #me, #courses, #prefs, #layout).
 // The top bar keeps only the title off the plans (style.css [data-view]): the alternatives and the plan actions belong to step 4.
 function renderRoute() {
-  const view = routeOf(location.hash),
-    // the gate question takes the status page's container; the edit page asks for the terms only (it asks track and year itself)
-    choice = view !== 'edit' && needsModeChoice(),
+  const A = designOn(),
+    view = A ? viewOf(location.hash) : routeOf(location.hash),
+    // the gate question takes the status page's container; the edit page asks for the terms only (it asks track and year itself); A has no
+    // mode-choice screen: its two tabs are the choice
+    choice = !A && view !== 'edit' && needsModeChoice(),
     gate = view === 'edit' ? !termsOk() : gated() || choice;
-  const page = PAGE[gate ? 'me' : view][0];
-  for (const [p] of Object.values(PAGE)) $(p).hidden = p !== page;
+  if (A) applyShell(); // the stage and the one tool panel, from the address (ui-shell.js)
+  else {
+    const page = PAGE[gate ? 'me' : view][0];
+    for (const [p] of Object.values(PAGE)) $(p).hidden = p !== page;
+  }
   document.body.dataset.view = view;
   document.title = `${gate ? 'התחלה' : PAGE_NAME[view]} · המערכת שלי · אפקה`; // a tab title per step (a11y)
   document.body.classList.toggle('gated', gate);
@@ -61,8 +69,20 @@ function retakeNote() {
   if (text) askConfirm(text, { ok: 'הבנתי', cancel: null });
 }
 const focusView = () => shownTitle()?.focus({ preventScroll: true });
+// Where the page goes after a route change. Classic resets the scroll and focuses the page's heading; A keeps the board where it was and has the
+// shell focus the tool's heading, or the dock button that opened a tool that was just closed (one owner for focus and scroll, ui-shell.js).
+const settle = (reason) => {
+  if (designOn()) {
+    routeScroll(reason);
+    routeFocus(reason);
+  } else {
+    scrollTo(0, 0);
+    focusView();
+  }
+};
 // builder overlays do not follow a view switch
 const closeOverlays = () => {
+  if (designOn() && $('drawer').open) ui.noDrawerFocus = true; // A: the navigation focuses the new tool, so the drawer's close event must not
   $('drawer').open && $('drawer').close();
   $('pop').matches(':popover-open') && $('pop').hidePopover();
 };
@@ -70,12 +90,12 @@ const closeOverlays = () => {
 // A friend or backup link pasted into the open tab is applied like at load, then lands on the builder.
 function onHash() {
   document.activeElement?.blur(); // commit a typed grade or Amirnet value (fires change) before #me is emptied
+  const reason = designOn() ? navReason() : 'back'; // why the address changed (A only: the shell's own open and close)
   if (!app.cls) {
     // loading: init() reads the hash when the data arrives; failed: the step bar switches pages, each showing the error (app.js)
     if (app.loadFailed) {
       renderRoute();
-      scrollTo(0, 0);
-      focusView();
+      settle(reason);
     }
     return;
   }
@@ -83,9 +103,10 @@ function onHash() {
     closeOverlays();
     cancelRun();
     renderRoute();
+    if (designOn()) renderTop(); // the title and the data line belong to both modes
     renderEdit();
-    scrollTo(0, 0);
-    focusView();
+    if (designOn()) applyShell();
+    settle(reason);
     return;
   }
   stopSearch(); // any way off the edit page (a pasted friend or backup link too) stops its search
@@ -99,18 +120,20 @@ function onHash() {
     setMode('build'); // the mode in use is the one remembered, so a reload here stays on the build page
     closeOverlays();
     renderAll();
-    scrollTo(0, 0);
-    focusView();
+    settle(reason);
     return;
   }
-  if (routeOf(location.hash) !== document.body.dataset.view) {
+  if ((designOn() ? viewOf : routeOf)(location.hash) !== document.body.dataset.view) {
     closeOverlays(); // focusView below keeps focus out of <body>
   }
   renderRoute();
-  scrollTo(0, 0);
-  ui.dayScroll = true; // back on the builder: show the day's first lesson again (no-op while #me is shown)
-  scrollToDay();
-  focusView();
+  if (designOn()) settle(reason);
+  else {
+    scrollTo(0, 0);
+    ui.dayScroll = true; // back on the builder: show the day's first lesson again (no-op while #me is shown)
+    scrollToDay();
+    focusView();
+  }
   // the results came while another step was open: arriving at step 4 is the first time it shows one
   if (hasAlternatives() && !$('layout').hidden) ui.onResult();
 }
@@ -120,10 +143,13 @@ function renderAll() {
     cancelRun();
     renderRoute();
     renderNotice(); // the site notice, a failed save and another tab's copy: every page, not only the build page's banner
+    if (designOn()) renderTop(); // the title and the data line belong to both modes
     renderEdit();
+    if (designOn()) applyShell(); // the page may have sent #edit/changes back to #edit: the dock and the sheet follow the step shown
+    if (designOn() && ui.overlay === 'me') renderMe(); // the record over the edit page follows what is changed in it
     return;
   }
-  if (firstVisit && !modeOpen()) {
+  if (firstVisit && (!modeOpen() || designOn())) {
     firstVisit = false;
     history.replaceState(null, '', '#me');
   } // replace, not a new entry: Back must not bounce
@@ -133,9 +159,14 @@ function renderAll() {
   renderView();
   renderPrefs();
   scheduleRun();
-  tourCheck(!gated(), shownTitle); // the intro of a first visit, once the gate is done and the step bar is on screen
+  tourCheck(!gated(), shownTitle); // the intro of a first visit, once the gate is done (classic: and the step bar is on screen)
 }
-ui.onResult = () => tourOnce('plans', shownTitle); // renderView: step 4 shows an alternative
+// renderView, and a route change that leaves results behind: the first alternative on screen. A: not before the intro is done, and not behind a tool
+// that covers the board (the board is always there, so "step 4 shows" no longer means anything)
+ui.onResult = () => !(designOn() && (introPending() || !boardClear())) && tourOnce('plans', shownTitle);
+// A: the plans part was refused (a dialog, the intro running) and nothing else will ask again: do it when the obstacle goes
+const askToursAgain = () => designOn() && hasAlternatives() && !$('layout').hidden && ui.onResult();
+onTourEnd(askToursAgain);
 
 // ---------- wiring (static shell from index.html) ----------
 watchOtherTabs();
@@ -225,8 +256,13 @@ document.addEventListener('keydown', (e) => {
 });
 $('drawer').addEventListener('close', () => {
   ui.panel = null;
-  dropAdvisorPdf();
+  if (!designOn()) dropAdvisorPdf(); // A: the take-out tool owns the file (ui-shell.js applyShell)
   document.body.classList.remove('drawer-open');
+  setTimeout(askToursAgain);
+  if (ui.noDrawerFocus) {
+    ui.noDrawerFocus = false; // a navigation closed it (A): the new tool has the focus
+    return;
+  }
   (ui.opener?.isConnected ? ui.opener : $('week')).focus({ preventScroll: true });
 });
 $('pop').addEventListener('toggle', (e) => {
@@ -250,6 +286,14 @@ addEventListener(
   },
   { passive: true }
 );
+ACT.tool = (el) => openTool(el.dataset.tool, el); // design A's dock (ui-shell.js)
+ACT.closeTool = () => closeTool();
+ACT.editSheet = () => toggleEditSheet(); // the phone's sheet over the improve week
+// a card of A's alternatives column (ui-view.js renderAltColumn). WebKit does not focus a clicked button: take focus so keepFocus finds the twin card
+ACT.altPick = (el) => {
+  el.focus({ preventScroll: true });
+  showAlt(Number(el.dataset.i));
+};
 addEventListener('hashchange', onHash);
 // static container, so the friend-landing banner inserted later is announced
 $('banner').setAttribute('aria-live', 'polite');

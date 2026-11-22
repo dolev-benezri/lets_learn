@@ -1,0 +1,390 @@
+/* Design A "הלוח" (docs/superpowers/plans/2026-11-21-design-a-adoption.md). Linked from index.html and legal.html, and every rule is scoped under
+   :root[data-design="a"] (web/design.js sets it before the first paint), so the classic site renders as it always did
+   (test/design-a-css.test.mjs). Task 1: the palette only. The light colours sit under :not([data-theme="dark"]) and the dark ones under
+   [data-theme="dark"]: style.css puts its dark tokens on :root[data-theme="dark"], which has the specificity of a plain scoped rule, and the
+   two blocks here never overlap, so no light value can leak into dark. test/design-contrast.test.mjs checks every pair in both. */
+:root[data-design="a"] {
+  --design:a; /* a sentinel the final proof (Task 13) reads */
+  --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
+  --a-top:60px; /* the wide top bar, where the dock and the panel stick */
+}
+:root[data-design="a"]:not([data-theme="dark"]) {
+  --bg:#E9EDF1;
+  --surface:#FFFFFF;
+  --surface-2:#F1F4F7;
+  --chrome:var(--surface);
+  --border:#CFD7DF;
+  --border-strong:#B4BFCA;
+  --border-input:#737F8C;
+  --text:#121820;
+  --text-2:#4D5A68;
+  --text-3:#56616F;
+  --primary:#0A6B66;
+  --primary-hover:#085A56;
+  --primary-press:#064A47;
+  --primary-soft:#DCF1EF;
+  --on-primary:#FFFFFF;
+  --success:#1D7A3E;
+  --success-soft:#E1F5E7;
+  --warning:#955400;
+  --warning-soft:#FFF3DC;
+  --danger:#C0262D;
+  --danger-soft:#FDE7E8;
+  --primary-line:#B2DAD6;
+  --success-line:#B7E4CF;
+  --warning-line:#F2D9A8;
+  --danger-line:#F6C7C9;
+  --friend:#8E2A7E;
+  --friend-soft:#F8EAF6;
+  --stripe:#F6F8FA;
+  --seg-on:var(--surface);
+  --hover-veil:rgba(255,255,255,.6);
+  --scrim:rgba(8,12,16,.4);
+  --c0-bg:#E6EEFB;
+  --c0-fg:#2962C2;
+  --c1-bg:#F9E6EF;
+  --c1-fg:#B8286F;
+  --c2-bg:#E2F1EC;
+  --c2-fg:#0A734F;
+  --c3-bg:#F9EFE1;
+  --c3-fg:#945A06;
+  --c4-bg:#EFE9FA;
+  --c4-fg:#7A45D6;
+  --c5-bg:#E2F1F5;
+  --c5-fg:#086D87;
+  --c6-bg:#FAE7E6;
+  --c6-fg:#B93427;
+  --c7-bg:#EBF2E2;
+  --c7-fg:#476F0B;
+}
+:root[data-design="a"][data-theme="dark"] {
+  --bg:#0B0F14;
+  --surface:#141A21;
+  --surface-2:#1C242D;
+  --chrome:#10161C;
+  --border:#2C3743;
+  --border-strong:#3F4D5C;
+  --border-input:#66768A;
+  --text:#E8EEF4;
+  --text-2:#9FB0C0;
+  --text-3:#92A0AF;
+  --primary:#3CCFC1;
+  --primary-hover:#5DDACE;
+  --primary-press:#2BB5A8;
+  --primary-soft:#0F3532;
+  --on-primary:#04201D;
+  --success:#5FD08A;
+  --success-soft:#12301E;
+  --warning:#F0B04A;
+  --warning-soft:#33270F;
+  --danger:#FF6B6B;
+  --danger-soft:#3A1618;
+  --primary-line:#1B5A55;
+  --success-line:#1E5A45;
+  --warning-line:#5A4216;
+  --danger-line:#5A2329;
+  --friend:#EBA6DF;
+  --friend-soft:#38193A;
+  --stripe:#171F28;
+  --seg-on:var(--border-strong);
+  --hover-veil:rgba(255,255,255,.06);
+  --scrim:rgba(0,0,0,.6);
+  --c0-bg:#132440;
+  --c0-fg:#5C8FE3;
+  --c1-bg:#36162B;
+  --c1-fg:#DC669F;
+  --c2-bg:#0B2A25;
+  --c2-fg:#43A482;
+  --c3-bg:#352711;
+  --c3-fg:#CF8A23;
+  --c4-bg:#231B3F;
+  --c4-fg:#9E76E0;
+  --c5-bg:#0B2A36;
+  --c5-fg:#359FBB;
+  --c6-bg:#371919;
+  --c6-fg:#DE6F64;
+  --c7-bg:#1D2B13;
+  --c7-fg:#78A238;
+}
+
+/* ---- the frame (Task 2): top bar, status strip, stage with the board, the tool panel and the dock. Written with the scope spelled out in full
+   (a nested rule would escape test/design-a-css.test.mjs). The document scrolls the board; the dock and the phone sheet are fixed. ---- */
+:root[data-design="a"] header.top, :root[data-design="a"] nav.steps {
+  display:none;
+} /* replaced by the frame; the nodes that matter were moved into it (ui-shell.js) */
+:root[data-design="a"] body:has(.a-shell) {
+  padding-bottom:calc(var(--a-dock) + env(safe-area-inset-bottom));
+} /* only where the frame is: not legal.html */
+:root[data-design="a"] .a-shell { display:block; }
+:root[data-design="a"] .a-top {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px 10px;
+  padding:6px 12px;
+  background:var(--chrome);
+  border-bottom:1px solid var(--border);
+}
+:root[data-design="a"] .a-brand { display:flex; align-items:center; gap:8px; margin-inline-end:auto; min-width:0; }
+:root[data-design="a"] .a-mark { width:30px; height:30px; flex:none; }
+:root[data-design="a"] .a-mark rect { fill:var(--primary); }
+:root[data-design="a"] .a-mark path { fill:var(--on-primary); }
+:root[data-design="a"] .a-brand h1 { margin:0; font-size:1.05rem; line-height:1.2; }
+:root[data-design="a"] .a-brand h1 small { display:block; color:var(--text-2); font-size:var(--fs-xs); font-weight:400; }
+:root[data-design="a"] .a-top-act { display:flex; align-items:center; gap:2px; }
+:root[data-design="a"] .a-top-act .btn { min-width:var(--tap); }
+:root[data-design="a"] .modes {
+  order:3;
+  flex:1 1 100%;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  padding:3px;
+  background:var(--surface-2);
+  border-radius:12px;
+}
+:root[data-design="a"] .modes a {
+  display:flex; align-items:center; justify-content:center; gap:6px; min-height:var(--tap); padding:0 8px; border-radius:9px;
+  color:var(--text-2); font-weight:600; font-size:var(--fs-sm); text-decoration:none;
+}
+:root[data-design="a"] .modes a[aria-current="page"] { background:var(--surface); color:var(--text); box-shadow:var(--shadow-sm); }
+:root[data-design="a"] .modes a .icon { width:18px; height:18px; flex:none; }
+:root[data-design="a"] .a-strip { display:flex; flex-direction:column; gap:2px; padding:4px 12px; font-size:var(--fs-sm); color:var(--text-2); }
+:root[data-design="a"] .a-strip .meta { margin:0; font-size:var(--fs-xs); }
+:root[data-design="a"] .a-unofficial { display:flex; align-items:center; gap:6px; margin:0; color:var(--text-2); }
+:root[data-design="a"] .a-unofficial .icon { width:14px; height:14px; flex:none; }
+:root[data-design="a"] .a-strip .notice-top:empty { display:none; }
+:root[data-design="a"] .a-stage { position:relative; }
+:root[data-design="a"] .a-board { min-width:0; }
+:root[data-design="a"] .a-bar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin:8px 12px 0; }
+:root[data-design="a"] .a-bar > .switcher { display:flex; margin:0; max-width:100%; } /* classic hid the switcher off the plans */
+:root[data-design="a"] .a-share { min-height:var(--tap); }
+:root[data-design="a"] body.gated .a-bar { display:none; }
+:root[data-design="a"] .a-board .layout { padding-top:6px; }
+
+/* the dock: five tools, the thumb's bar on a phone */
+:root[data-design="a"] .dock {
+  position:fixed; inset-inline:0; bottom:0; z-index:21; display:grid; grid-template-columns:repeat(5, 1fr);
+  background:var(--chrome); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom);
+}
+:root[data-design="a"] .dk {
+  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:var(--a-dock);
+  padding:4px 2px; border:0; background:none; color:var(--text-2); font:inherit; font-size:11px; font-weight:600;
+  line-height:1.15; text-align:center; cursor:pointer;
+}
+:root[data-design="a"] .dk .icon { width:24px; height:24px; }
+:root[data-design="a"] .dk[aria-pressed="true"] { color:var(--primary); }
+:root[data-design="a"] .dk[aria-pressed="true"]::before {
+  content:"";
+  position:absolute;
+  top:0;
+  inset-inline:22%;
+  height:3px;
+  border-radius:0 0 3px 3px;
+  background:var(--primary);
+}
+:root[data-design="a"] .dk[aria-disabled="true"] { opacity:.45; cursor:default; }
+
+/* the tool panel: a bottom sheet on a phone */
+:root[data-design="a"] .a-scrim {
+  position:fixed;
+  inset:0;
+  bottom:calc(var(--a-dock) + env(safe-area-inset-bottom));
+  z-index:19;
+  border:0;
+  background:var(--scrim);
+  display:none;
+}
+:root[data-design="a"] body.a-panel-open .a-scrim:not([hidden]) { display:block; }
+:root[data-design="a"] .a-panel {
+  position:fixed; inset-inline:0; bottom:calc(var(--a-dock) + env(safe-area-inset-bottom)); z-index:20; display:flex; flex-direction:column;
+  height:min(84dvh, calc(100dvh - 120px)); background:var(--surface); border-radius:20px 20px 0 0; box-shadow:var(--shadow-sheet);
+}
+:root[data-design="a"] .a-panel[hidden] { display:none; }
+@media (max-width:1079px) {
+  :root[data-design="a"] body.gated .a-panel { height:calc(100dvh - var(--a-chrome, 120px) - var(--a-dock) - env(safe-area-inset-bottom));
+  };
+}
+:root[data-design="a"] .edit-stage { display:block; }
+:root[data-design="a"] .edit-sheet-x { display:none; }
+@media (prefers-reduced-motion: no-preference) { :root[data-design="a"] .edit-tool-in.fx { animation:edit-in 200ms var(--ease-out); } }
+@media (max-width:1079px) {
+  :root[data-design="a"] .edit-tool {
+    position:fixed; inset-inline:0; bottom:calc(var(--a-dock) + env(safe-area-inset-bottom)); z-index:20; max-height:min(78dvh, calc(100dvh - 120px));
+    overflow:auto; overscroll-behavior:contain;
+    padding:8px 16px 0; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:var(--shadow-sheet);
+  }
+  :root[data-design="a"] .edit-stage[data-sheet="closed"] .edit-tool { display:none; }
+  :root[data-design="a"] .edit-tool > .edit-sheet-x { display:flex; position:sticky; top:0; z-index:2; margin:0 0 -8px auto; }
+}
+:root[data-design="a"] .a-grip { width:40px; height:5px; margin:8px auto 0; border-radius:3px; background:var(--border-strong); }
+:root[data-design="a"] .a-ph {
+  display:flex;
+  justify-content:flex-end;
+  padding:0 8px;
+  border-bottom:1px solid var(--border);
+  min-height:var(--tap);
+  align-items:center;
+}
+:root[data-design="a"] .a-ph [hidden] { display:none; }
+:root[data-design="a"] .a-pb { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 16px 24px; }
+:root[data-design="a"] .a-pb .step-page { max-width:none; margin:0; padding:0; scroll-margin-top:0; }
+:root[data-design="a"] .a-pb .me-grid, :root[data-design="a"] .a-pb .halves, :root[data-design="a"] .a-pb .me-entry-cards {
+  display:grid;
+  grid-template-columns:minmax(0, 1fr);
+  gap:12px;
+}
+:root[data-design="a"] .a-pb .tiles { grid-template-columns:repeat(2, minmax(0, 1fr)); } /* a 400px column: two tiles a row */
+:root[data-design="a"] .a-pb .me-side { position:static; }
+:root[data-design="a"] .a-pb :is(#me, #courses, #prefs, #friends) :is(.me-foot, .me-step) { display:none; }
+:root[data-design="a"] .a-pb .a-friends-link { display:block; margin-top:6px; }
+:root[data-design="a"] .a-pb .a-friends-link a { display:inline-flex; align-items:center; gap:6px; min-height:var(--tap); }
+:root[data-design="a"] .a-pb .a-friends-link .icon { width:18px; height:18px; }
+:root[data-design="a"] .a-out { display:grid; gap:10px; margin-top:12px; }
+:root[data-design="a"] .a-out .btn { justify-content:flex-start; }
+:root[data-design="a"] .site-foot { padding-bottom:calc(var(--a-dock) + 12px); }
+
+/* what the live stylesheet keys to the page: it hid the switcher off the plans, docked the drawer and trimmed the page for the old sticky bar */
+:root[data-design="a"] body.drawer-open { padding-inline-end:0; }
+:root[data-design="a"] .a-alts { display:none; } /* a phone has the arrows and the swipe; the column is for a wide screen */
+:root[data-design="a"] .col-t { margin:0 0 8px; font-size:1rem; }
+:root[data-design="a"] .site-foot {
+  display:none;
+} /* the notice stays in the strip; the legal links, the report and counselling links are in ☰ and the information panel */
+:root[data-design="a"] .out-actions { display:flex; flex-wrap:wrap; gap:8px; }
+:root[data-design="a"] .out-actions .btn { flex:1 1 auto; min-height:var(--tap); }
+:root[data-design="a"] .out-sec .hint { margin:0; }
+:root[data-design="a"] .a-first-list { display:grid; gap:8px; margin:10px 0 0; padding:0; list-style:none; }
+:root[data-design="a"] .a-first-list .btn { width:100%; justify-content:flex-start; min-height:var(--tap); text-align:start; }
+:root[data-design="a"] .a-menu { display:grid; gap:8px; }
+:root[data-design="a"] .a-menu-item { justify-content:flex-start; width:100%; min-height:var(--tap); }
+:root[data-design="a"] .a-menu-item.danger { color:var(--danger, var(--text)); }
+:root[data-design="a"] .a-menu .theme-btn {
+  margin:0;
+  padding-inline:16px;
+  border-radius:10px;
+  color:var(--text);
+} /* classic's round icon button of the header */
+:root[data-design="a"] .a-menu .theme-btn { width:100%; height:auto; } /* classic's phone rule makes it a square icon button */
+:root[data-design="a"] .a-menu .theme-btn .lbl {
+  position:static;
+  display:inline;
+  width:auto;
+  height:auto;
+  overflow:visible;
+  clip:auto;
+  white-space:normal;
+}
+:root[data-design="a"] .info-links { display:grid; gap:4px; }
+:root[data-design="a"] .info-links a { display:flex; align-items:center; min-height:var(--tap); }
+:root[data-design="a"] #week {
+  touch-action:pan-y pinch-zoom;
+} /* the page keeps the horizontal gesture: the swipe between alternatives (ui-shell.js) */
+:root[data-design="a"] .alt-list { display:grid; gap:6px; margin:0; padding:0; list-style:none; }
+:root[data-design="a"] .alt-card {
+  display:flex; gap:10px; width:100%; min-height:var(--tap); padding:8px; border:1px solid var(--border); border-radius:12px;
+  background:var(--surface); color:var(--text); font:inherit; text-align:start; cursor:pointer;
+}
+:root[data-design="a"] .alt-card[aria-current="true"] { border-color:var(--primary); box-shadow:0 0 0 2px var(--primary); }
+:root[data-design="a"] .rank { min-width:1.4em; font-size:1.4rem; font-weight:800; color:var(--text-2); }
+:root[data-design="a"] .ac-b { display:flex; flex-direction:column; flex:1; gap:2px; min-width:0; }
+:root[data-design="a"] .ac-b small { color:var(--text-2); font-size:var(--fs-sm); }
+:root[data-design="a"] .mini { display:grid; grid-template-columns:repeat(var(--days, 5), 1fr); gap:2px; height:46px; margin-top:4px; }
+:root[data-design="a"] .mini i { position:relative; background:var(--surface-2); border-radius:3px; }
+:root[data-design="a"] .mini em { position:absolute; inset-inline:1px; background:var(--cfg); border-radius:2px; }
+/* improve mode (stage 1): the edit page is the whole stage, with no dock and no build switcher; the panel only shows for the terms */
+:root[data-design="a"] body[data-view="edit"] .a-bar { display:none; }
+:root[data-design="a"] body[data-view="edit"] .dock { grid-template-columns:repeat(3, 1fr); }
+:root[data-design="a"] .dk[hidden] { display:none; }
+:root[data-design="a"] body[data-view="edit"] .dk[data-tool="me"] { order:3; }
+:root[data-design="a"] .skip:focus { z-index:60; } /* above the wide top bar */
+:root[data-design="a"] .toast { bottom:calc(var(--a-dock) + env(safe-area-inset-bottom) + 12px); } /* above the dock, at every width it exists */
+
+/* from 1080px: the tool is a column beside the board, the dock its tabs on top */
+@media (min-width:1080px) {
+  :root[data-design="a"] body:has(.a-shell) { padding-bottom:0; }
+  :root[data-design="a"] .a-top { flex-wrap:nowrap; position:sticky; top:0; z-index:25; min-height:var(--a-top); padding:6px 16px; }
+  :root[data-design="a"] .modes { order:0; flex:0 0 auto; width:420px; }
+  :root[data-design="a"] .a-stage {
+    display:grid;
+    grid-template-columns:400px minmax(0, 1fr);
+    grid-template-rows:auto minmax(0, 1fr);
+    align-items:start;
+  }
+  :root[data-design="a"] .a-board { grid-column:2; grid-row:1 / 3; }
+  :root[data-design="a"] .a-stage.has-alts { grid-template-columns:400px minmax(0, 1fr) 280px; }
+  :root[data-design="a"] .a-alts:not([hidden]) {
+    display:block; grid-column:3; grid-row:1 / 3; position:sticky; top:var(--a-top); max-height:calc(100dvh - var(--a-top));
+    overflow:auto; padding:12px; background:var(--surface); border-inline-start:1px solid var(--border);
+  }
+  :root[data-design="a"] body[data-view="edit"] .a-alts, :root[data-design="a"] body.gated .a-alts {
+    display:none;
+  } /* build alternatives belong to the board, not the edit page or the gate */
+  :root[data-design="a"] .dock {
+    position:sticky; top:var(--a-top); inset-inline:auto; bottom:auto; z-index:6; grid-column:1; grid-row:1;
+    padding:0; border-top:0; border-bottom:1px solid var(--border); border-inline-end:1px solid var(--border);
+  }
+  :root[data-design="a"] .dk { flex-direction:row; gap:6px; min-height:var(--tap); font-size:12px; }
+  :root[data-design="a"] .dk .icon { width:18px; height:18px; }
+  :root[data-design="a"] .dk[aria-pressed="true"]::before { top:auto; bottom:0; border-radius:3px 3px 0 0; }
+  :root[data-design="a"] .a-scrim { display:none !important; }
+  :root[data-design="a"] .a-panel {
+    position:sticky; top:calc(var(--a-top) + var(--tap)); inset-inline:auto; bottom:auto; z-index:5; grid-column:1; grid-row:2;
+    height:calc(100dvh - var(--a-top) - var(--tap));
+    border-radius:0; box-shadow:none; border-inline-end:1px solid var(--border);
+  }
+  :root[data-design="a"] .a-grip, :root[data-design="a"] .a-ph { display:none; }
+  :root[data-design="a"] .site-foot { padding-bottom:12px; }
+  :root[data-design="a"] .toast { bottom:20px; }
+  :root[data-design="a"] body[data-view="edit"] .a-stage { display:flex; flex-direction:column; }
+  :root[data-design="a"] body[data-view="edit"] .dock { order:-1; }
+  :root[data-design="a"] body[data-view="edit"] .a-stage > :is(.a-board, .dock) { width:100%; } /* auto margins in a flex column shrink an item */
+  /* improve mode, wide: the tool is a sticky column (its own scroller), the week is the board beside it */
+  :root[data-design="a"] .edit-stage { display:grid; grid-template-columns:minmax(340px, 440px) minmax(0, 1fr); gap:0 24px; align-items:start; }
+  :root[data-design="a"] .edit-tool {
+    grid-column:1; position:sticky; top:calc(var(--a-top) + var(--tap) + 8px); max-height:calc(100dvh - var(--a-top) - var(--tap) - 16px);
+    overflow:auto; overscroll-behavior:contain;
+  }
+  :root[data-design="a"] .edit-board { grid-column:2; min-width:0; }
+  :root[data-design="a"] .edit-sheet-x { display:none; }
+  :root[data-design="a"] .edit-tool .goals { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding:4px; margin:-4px -4px 6px; }
+  :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
+    position:fixed; top:calc(var(--a-top) + var(--tap)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
+    border-radius:0; border-inline-end:1px solid var(--border);
+  }
+}
+@media (min-width:1080px) and (max-width:1279px) {
+  :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); }
+  :root[data-design="a"] .a-stage.has-alts { grid-template-columns:360px minmax(0, 1fr) 240px; }
+}
+@media (max-width:359px) { :root[data-design="a"] .dk { font-size:10px; } :root[data-design="a"] .a-top { padding-inline:8px; } }
+/* a landscape phone is 375px tall: the dock becomes a rail on the inline-start edge and the tool a full-height panel beside it */
+@media (max-width:1079px) and (max-height:480px) and (orientation:landscape) and (pointer:coarse) {
+  :root[data-design="a"] body:has(.a-shell) { --a-dock:0px; padding-inline-start:76px; }
+  :root[data-design="a"] .dock {
+    top:0; bottom:0; inset-inline:0 auto; width:76px; grid-template-columns:1fr; grid-template-rows:repeat(5, 1fr);
+    border-top:0; border-inline-end:1px solid var(--border); padding-bottom:0;
+  }
+  :root[data-design="a"] .dk { min-height:var(--tap); }
+  :root[data-design="a"] .a-scrim { bottom:0; inset-inline-start:76px; }
+  :root[data-design="a"] .a-panel, :root[data-design="a"] body.gated .a-panel {
+    top:0;
+    bottom:0;
+    inset-inline:76px auto;
+    width:min(420px, calc(100% - 76px));
+    height:auto;
+    border-radius:0;
+  }
+  :root[data-design="a"] body.gated .a-panel { top:var(--a-chrome, 0px); } /* a locked sheet leaves the tabs and the notice above it, here too */
+  :root[data-design="a"] body[data-view="edit"] .edit-tool {
+    inset-inline:76px auto; width:min(420px, calc(100% - 76px)); top:0; bottom:0; max-height:none; border-radius:0;
+  }
+  :root[data-design="a"] body[data-view="edit"] .dock { grid-template-columns:1fr; grid-template-rows:repeat(3, 1fr); }
+  :root[data-design="a"] body[data-view="edit"] .edit-sheet-x { display:none; }
+  :root[data-design="a"] body[data-view="edit"]:not(.gated) .a-panel:not([hidden]) {
+    top:0;
+    inset-inline:76px auto;
+    width:min(420px, calc(100% - 76px));
+  }
+  :root[data-design="a"] body[data-view="edit"] { padding-inline-start:76px; }
+}

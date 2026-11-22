@@ -3,7 +3,7 @@
 // Run through `npm run test:browser -- map-targets`. Student and seeding: helpers.mjs.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, visit, launch } from './helpers.mjs';
+import { DONE, openMap, visit, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -50,7 +50,7 @@ for (const size of PHONES) {
   test(`${size.width}px wide: every map control is at least ${MIN}px tall and wide and the map layout holds`, async (t) => {
     const page = await visit(browser, t, size, { ...DONE });
     await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
-    await page.locator('[data-act="openMap"]').click();
+    await openMap(page);
     await page.locator('#pmap[open]').waitFor();
     await page.locator('#pmap .pm-svg.ready').waitFor({ timeout: 30000 });
     assert.ok(await page.locator('#pmap .pm-alt').count(), 'the seeded plan has alternatives, so the switcher is on the map');

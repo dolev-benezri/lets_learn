@@ -3,7 +3,7 @@ import { app, esc, candidateMode, planningCls, summerPinned } from './app.js';
 import { englishOptions, specLists } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, isPair, resCourses, placedIn, semResult, summary, freeDaysText } from './ui-grid.js';
-import { notFitReason, courseCount } from './ui-text.js';
+import { notFitReason, courseCount, toolName } from './ui-text.js';
 import {
   CAND,
   SEM_PICK,
@@ -158,7 +158,7 @@ export function renderSide(res) {
   // the search finished without a plan: say so, step 4 says why
   const noPlan = ui.last && !ui.last.results.some((r) => resCourses(r).length);
   $('coursesTop').innerHTML = noPlan
-    ? `${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}. הפרטים <a href="#">בשלב 4</a>.`
+    ? `${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}. הפרטים <a href="#">ב${toolName('plan')}</a>.`
     : coursesSummary(res);
   $('side').innerHTML = `<p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
     ${details(

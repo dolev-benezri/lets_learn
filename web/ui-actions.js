@@ -38,7 +38,8 @@ import {
   focusWeek,
   shownTitle,
   $,
-  ui
+  ui,
+  designOn
 } from './ui-common.js';
 import { pinsWithoutSplit } from './solver-core.js';
 import { scheduleRun, probeCap, applyCapProbe } from './ui-search.js';
@@ -130,6 +131,16 @@ export const ACT = {
     shownTitle()?.focus();
   }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
   tour() {
+    if (designOn()) {
+      // A: the replay is in ☰; the menu closes first, and the tour returns to the ☰ button (the step bar is not on screen)
+      const d = $('drawer'),
+        start = () => startTour('intro', () => document.querySelector('.menu-btn'));
+      if (d.open) {
+        d.addEventListener('close', () => setTimeout(start), { once: true });
+        d.close();
+      } else start();
+      return;
+    }
     startTour('intro', () => $('tourBtn'));
   }, // the replay button in the step bar (WebKit does not focus a clicked button: focus goes back to it anyway)
   gateTrack() {
@@ -166,7 +177,7 @@ export const ACT = {
   },
   skip(el, e) {
     e.preventDefault();
-    ($('layout').hidden ? shownTitle() : $('week'))?.focus();
+    ($('layout').hidden || $('aBoard')?.inert ? shownTitle() : $('week'))?.focus(); // A: behind its gate the board is inert
   }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
   menu: (el) => openPanel('menu', el), // the ☰ button and the edit page's mode label
@@ -315,7 +326,7 @@ export const ACT = {
   removeFriend(el) {
     app.state.friends.splice(Number(el.dataset.i), 1);
     refresh();
-    $('prefsTitle')?.focus();
+    $(designOn() ? 'friendsPageTitle' : 'prefsTitle')?.focus();
   },
   openFriendEditor: () => openFriendEditor({ onSave: saveManualFriend, returnFocusId: 'openFriendEditor' }),
   editFriend: (el) =>

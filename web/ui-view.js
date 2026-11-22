@@ -40,6 +40,7 @@ import {
 } from './ui-grid.js';
 import {
   approvedText,
+  toolName,
   freshness,
   turnWarning,
   stalePins,
@@ -75,11 +76,12 @@ import {
   seg,
   yearSearch,
   $,
-  ui
+  ui,
+  designOn
 } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
-import { renderDrawer } from './ui-drawer.js';
+import { renderDrawer, renderOut } from './ui-drawer.js';
 
 // ---------- top bar and banners ----------
 // The footer link "דיווח על טעות": only when settings.json gives an address; its mailto names the page, so a step change refreshes it too.
@@ -113,7 +115,7 @@ function renderBoardNote() {
     f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
     !approved && app.data.verified === false && '<span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>',
     !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
-    warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים בשלב 1</a>`
+    warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים ב${toolName('me')}</a>`
   ]
     .filter(Boolean)
     .map((line) => `<p class="hint">${line}</p>`)
@@ -144,6 +146,16 @@ export function renderNotice() {
   $('notice').dataset.text = html;
   $('notice').innerHTML = html;
 }
+
+// Design A, before any course is planned: where to begin, one tap each (it is gone with the first result, the message it replaces is the same one)
+const whatFirstHtml = (pickSpec) => {
+  const row = (tool, ic, text) => `<li><button type="button" class="btn" data-act="tool" data-tool="${tool}">${icon(ic)} ${text}</button></li>`;
+  return `<div class="msg a-first">${icon('calendar')}<div><b>מאיפה מתחילים?</b>
+    <p>המערכת תופיע כאן ברגע שיהיו קורסים בתכנון, ותתעדכן לבד.</p>
+    <ul class="a-first-list">${row('me', 'user', pickSpec ? 'בחרו התמחות וסמנו מה כבר עברתם' : 'סמנו מה כבר עברתם')}
+    ${row('courses', 'list', 'בחרו קורסים: ״חובה״ או ״אולי״')}
+    ${row('wishes', 'sliders', 'ספרו מה חשוב לכם, אם רוצים')}</ul></div></div>`;
+};
 
 export function renderBanner() {
   renderBoardNote();
@@ -284,7 +296,7 @@ export function renderView() {
       noFriend
         ? `<p class="hint">${
             state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם' : 'אין עדיין חברים. אפשר להוסיף'
-          } <a href="#prefs">בשלב 3</a>.</p>`
+          } <a href="${designOn() ? '#friends' : '#prefs'}">ב${toolName('friends')}</a>.</p>`
         : ''
     }`;
 
@@ -312,7 +324,8 @@ export function renderView() {
     const how = pickSpec
       ? 'בחרו התמחות ב<a href="#me">״המצב שלי״</a>: משנה ג׳ קורסי ההתמחות נכנסים לבד. אפשר גם לסמן'
       : 'סמנו';
-    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב<a href="#courses">שלב 2</a>, והמערכת תיבנה לבד.</p></div></div>`;
+    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב<a href="#courses">${toolName('courses')}</a>, והמערכת תיבנה לבד.</p></div></div>`;
+    if (designOn()) msg = whatFirstHtml(!!pickSpec);
     live = 'לא נבחרו קורסים';
   } else if (noRes) {
     // partial and empty: only this message, with the "search more" button (no second notice)
@@ -444,6 +457,10 @@ export function renderView() {
   if (live && live !== ui.liveText) $('live').textContent = ui.liveText = live;
   renderSide(raw);
   renderDrawer(); // an open panel follows the shown alternative
+  if (designOn()) {
+    renderAltColumn(); // A: the wide screen's column of every alternative
+    renderOut(); // and an open take-out tool follows the shown alternative and semester
+  }
   setBusy();
   scrollToDay();
   ui.onShown?.();
@@ -482,3 +499,62 @@ export function showAlt(k) {
   ui.cur = k;
   keepFocus(renderView);
 }
+
+// ---------- design A: the alternatives column (ui-shell.js puts #alts beside the board on a wide screen) ----------
+const toMin = (hm) => {
+  const [h, m] = hm.split(':').map(Number);
+  return h * 60 + m;
+};
+// One alternative as a tiny week: a column a day, a bar a meeting in the course's colour. Not interactive: no id, key or action, hidden from
+// assistive technology (the card says it all), so focus restoration and the board's block handlers never find it.
+export function miniWeekHtml(res, data, span) {
+  const byId = groupIndex(data);
+  const days = span.days;
+  const cols = Array.from({ length: days }, () => []);
+  for (const gid of res.groups) {
+    const x = byId.get(gid);
+    if (!x) continue;
+    for (const m of x.g.meetings) {
+      if (m.day < 1 || m.day > days) continue;
+      const top = ((toMin(m.start) - span.from * 60) / ((span.to - span.from) * 60)) * 100,
+        h = ((toMin(m.end) - toMin(m.start)) / ((span.to - span.from) * 60)) * 100;
+      cols[m.day - 1].push(`<em class="c${colors.get(x.cid) ?? 7}" style="top:${top.toFixed(1)}%;height:${h.toFixed(1)}%"></em>`);
+    }
+  }
+  return `<span class="mini" aria-hidden="true" style="--days:${days}">${cols.map((c) => `<i>${c.join('')}</i>`).join('')}</span>`;
+}
+
+// A card for each alternative, the shown one marked (aria-current). A year plan's card says the year's credits and draws the shown semester.
+export function renderAltColumn() {
+  const box = $('alts');
+  if (!box) return;
+  const results = ui.last?.results ?? [];
+  if (!results.length || results.every((r) => !resCourses(r).length)) {
+    box.hidden = true;
+    box.innerHTML = '';
+    box.closest('.a-stage')?.classList.remove('has-alts');
+    return;
+  }
+  const data = shownData(),
+    { friends, constraints } = app.state,
+    byId = groupIndex(data);
+  const meetings = results.flatMap((r) => semResult(r, ui.sem).groups.flatMap((g) => byId.get(g)?.g.meetings ?? []));
+  const span = hourRange(meetings);
+  const cards = results.map((raw, i) => {
+    const res = semResult(raw, ui.sem),
+      pair = isPair(raw),
+      s = summary(res, data, friends, constraints);
+    const dayN = new Set(res.groups.flatMap((g) => byId.get(g)?.g.meetings.map((m) => m.day) ?? [])).size;
+    const withF = s.withFriends.reduce((a, x) => a + x.n, 0);
+    const head = pair ? `בשנה: ${yearTotals(raw).credits} נ״ז · ${dayN} ימים` : `${s.credits} נ״ז · ${dayN} ימים`;
+    const sub = [pair ? `${s.credits} נ״ז בסמסטר ${ui.sem}׳` : '', s.gapH ? `${s.gapH} ש׳ חלון` : 'בלי חלונות', withF ? `${withF} עם חברים` : '',
+      raw.split?.length ? 'מופרדת' : ''].filter(Boolean).join(' · ');
+    return `<li><button type="button" class="alt-card" data-act="altPick" data-i="${i}" data-k="altcard-${i}" aria-current="${i === ui.cur}">
+      <span class="rank" aria-hidden="true">${i + 1}</span><span class="ac-b"><b><span class="sr">חלופה ${i + 1}: </span>${esc(head)}</b>
+      <small>${esc(sub)}</small>${miniWeekHtml(res, data, span)}</span></button></li>`;
+  });
+  box.hidden = false;
+  box.closest('.a-stage')?.classList.add('has-alts'); // the wide grid's third track (a class: no :has() needed)
+  box.innerHTML = `<h2 class="col-t">חלופות</h2><ol class="alt-list">${cards.join('')}</ol>`;
+}
+

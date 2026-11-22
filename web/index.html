@@ -24,6 +24,7 @@
 <meta property="og:image:alt" content="לוח שבועי עם חלופה 1 מתוך 10, חברים ומפת התקדמות, ולידו: המערכת שלי, מערכת שעות לאפקה, בדקה">
 <meta name="twitter:card" content="summary_large_image">
 <script src="theme.js"></script><!-- light or dark before the first paint -->
+<script src="design.js"></script><!-- ?design=a|classic: design A scoped under html[data-design="a"], before the first paint (design.js) -->
 <link rel="preload" href="fonts/rubik-hebrew-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/rubik-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <!-- digits and times -->
@@ -32,6 +33,7 @@
 <!-- the first-visit tour (tour.js); style.css restyles its popover, so it comes after this -->
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="design-a.css"><!-- every rule scoped under html[data-design="a"]: classic is unchanged -->
 </head>
 <body>
 <a class="skip" href="#week" data-act="skip">דלג לתוכן הראשי</a>
@@ -103,6 +105,9 @@
 </main>
 <main id="prefs" class="step-page" aria-labelledby="prefsTitle" hidden></main>
 <main id="edit" class="step-page" aria-labelledby="editTitle" hidden></main>
+<!-- the tools of design A (ui-shell.js): the friends and the take-out; always hidden in classic -->
+<main id="friends" class="step-page" aria-labelledby="friendsPageTitle" hidden></main>
+<main id="out" class="step-page" aria-labelledby="outTitle" hidden></main>
 <div class="scrim" data-act="closeDrawer" aria-hidden="true"></div>
 <footer class="site-foot">
   <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה

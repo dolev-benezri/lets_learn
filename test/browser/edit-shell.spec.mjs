@@ -1,7 +1,7 @@
 // The edit page's shell in WebKit: the first-entry mode choice, the route, the side menu, and that the build search stays off on #edit.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -33,6 +33,18 @@ for (const size of ['phone', 'desktop'])
   test(`${size}: a fresh visitor sees both mode cards after the terms; edit lands on #edit with the label`, async (t) => {
     const page = await visit(t, size, null, '', true);
     await acceptTerms(page);
+    if (DESIGN === 'a') {
+      // A has no mode cards: the two tabs are the choice, and the edit one needs only the terms
+      assert.equal(await page.locator('[data-act="pickMode"]').count(), 0, 'no mode cards');
+      await page.locator('.a-top .modes a[data-mode="edit"]').click();
+      await page.waitForFunction(() => location.hash === '#edit');
+      await page.locator('#edit').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page', 'the improve tab is selected');
+      assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.dock .dk')].filter((b) => !b.hidden).map((b) => b.dataset.tool).sort()), ['changes', 'me', 'mine'], 'the dock of improve mode');
+      assert.equal(await page.locator('.mode-label').count(), 0, 'no mode label');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');
+      return;
+    }
     const cards = page.locator('[data-act="pickMode"]');
     await cards.first().waitFor();
     assert.deepEqual(await cards.locator('b').allTextContents(), ['לבנות מערכת חדשה', 'לשפר מערכת שכבר יש לי']);
@@ -40,7 +52,7 @@ for (const size of ['phone', 'desktop'])
     await page.waitForFunction(() => location.hash === '#edit');
     await page.locator('#edit').waitFor({ state: 'visible' });
     assert.equal(await page.locator(menuLabel).textContent(), 'עורכים מערכת קיימת · החלפה');
-    assert.equal(await page.locator('nav.steps a').first().isVisible(), false, 'no step bar on the edit page');
+    if (DESIGN !== 'a') assert.equal(await page.locator('nav.steps a').first().isVisible(), false, 'no step bar on the edit page'); // classic only
     assert.equal(await page.locator('.actions').isVisible(), false);
     assert.equal(await page.locator('header [data-act="menu"]').isVisible(), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');
@@ -49,7 +61,7 @@ for (const size of ['phone', 'desktop'])
 test('phone: choosing build goes on to the track question', async (t) => {
   const page = await visit(t, 'phone', null, '', true);
   await acceptTerms(page);
-  await page.locator('[data-act="pickMode"]').first().click();
+  if (DESIGN !== 'a') await page.locator('[data-act="pickMode"]').first().click(); // A: no mode question, the track comes next
   await page.locator('[data-act="pickTrack"]').first().waitFor();
 });
 
@@ -72,6 +84,19 @@ test('desktop: the menu lists the two modes; back on the build page the search w
   await page.addInitScript(COUNT);
   await page.reload();
   await page.locator('#edit').waitFor({ state: 'visible' });
+  if (DESIGN === 'a') {
+    // A: the tabs switch the mode (the ☰ menu has no mode links)
+    assert.equal(await page.locator('.mode-label').count(), 0);
+    await page.locator('.a-top .modes a[data-mode="build"]').click();
+    await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+    assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-mode')), 'build');
+    assert.equal(await page.locator('#edit').isVisible(), false);
+    assert.ok((await searches(page)) >= 1, 'the build search ran once back on the build page');
+    await page.locator('.a-top .modes a[data-mode="edit"]').click();
+    await page.locator('#edit').waitFor({ state: 'visible' });
+    assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-mode')), 'edit');
+    return;
+  }
   await page.locator(menuLabel).click(); // the label opens the same menu as the ☰ button
   const links = page.locator('#drawer a');
   assert.deepEqual(await links.allTextContents(), ['בניית מערכת', 'עריכת מערכת קיימת']);
@@ -108,12 +133,14 @@ test('320 px wide: the mode choice and the edit page do not scroll sideways; the
   const page = await visit(t, { width: 320, height: 640 }, null, '', true);
   const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   await acceptTerms(page);
-  await page.locator('[data-act="pickMode"]').first().waitFor();
+  const A = DESIGN === 'a'; // A: the tracks come next, and the tab takes the place of the second card
+  await page.locator(A ? '[data-act="pickTrack"]' : '[data-act="pickMode"]').first().waitFor();
   assert.equal(await fits(), true, 'the mode choice');
-  const menu = page.locator('header [data-act="menu"]');
+  const menu = page.locator(A ? '.menu-btn' : 'header [data-act="menu"]');
   const box = await menu.boundingBox();
   assert.ok(box.width >= 44 && box.height >= 44, 'tap target');
-  await page.locator('[data-act="pickMode"]').nth(1).click();
+  if (A) await page.locator('.a-top .modes a[data-mode="edit"]').click();
+  else await page.locator('[data-act="pickMode"]').nth(1).click();
   await page.locator('#edit').waitFor({ state: 'visible' });
   assert.equal(await fits(), true, 'the edit page');
   assert.deepEqual(await menu.boundingBox(), box, 'the button does not move between pages');

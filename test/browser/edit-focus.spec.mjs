@@ -4,7 +4,11 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
-import { DONE, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, visit as visitIn, launch } from './helpers.mjs';
+
+// An element outside the edit page that holds focus. Classic: the footer's terms link (WebKit's Tab skips links, so focus goes there directly). A: no footer
+// (its links are in ☰ and the information panel), so the ☰ button of the top bar.
+const OUTSIDE = DESIGN === 'a' ? '.menu-btn' : '.site-foot a[href="legal.html#terms"]';
 
 let browser;
 before(async () => {
@@ -127,11 +131,11 @@ test('desktop: focus that moved out of the edit page (to the footer) while the s
   await page.keyboard.press('Enter');
   await held.reached;
   // WebKit's Tab skips links, so the move to the footer link is made directly
-  await page.evaluate(() => document.querySelector('.site-foot a[href="legal.html#terms"]').focus());
+  await page.evaluate((sel) => document.querySelector(sel).focus(), OUTSIDE);
   held.release();
   await page.locator('.prop-nav').waitFor({ timeout: 30000 });
   await page.waitForTimeout(100);
-  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('href')), 'legal.html#terms');
+  assert.equal(await page.evaluate((sel) => document.activeElement?.matches(sel), OUTSIDE), true, 'focus stayed outside the edit page');
 });
 
 // Counts the page's own scrolls to the answer (scrollIntoView on #editResults): a user who moved on is not taken back up to it.
@@ -152,7 +156,7 @@ for (const [name, moveOn] of [['focus moved out of the edit page (to the footer)
     const held = holdWorker(page);
     await page.locator('[data-ed="search"]').click();
     await held.reached;
-    if (moveOn) await page.evaluate(() => document.querySelector('.site-foot a[href="legal.html#terms"]').focus());
+    if (moveOn) await page.evaluate((sel) => document.querySelector(sel).focus(), OUTSIDE);
     held.release();
     await page.locator('.prop-nav').waitFor({ timeout: 30000 });
     await page.waitForTimeout(100);
