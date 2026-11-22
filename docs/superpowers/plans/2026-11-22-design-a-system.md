@@ -511,7 +511,7 @@ test('the short stale line of the strip', () => {
   chips, the focus and the caret across `renderEdit()` redraws (state, not the DOM); "הוספה" adds the course with its option fixed
   (today's addCourse path, :855, plus the option; the worker keeps it or reports no solution), and for a `conditional` course its
   parallel course too; "מעבר לקבוצה" is `pickSwap`. Another program's file is fetched on demand into its own cache (the last choice
-  wins over an earlier answer); semesters are already loaded (app.js:598). The proposal's arrow keys are off while the search is open;
+  wins over an earlier answer); its rows are read only, with no "הוספה" and no "מעבר לקבוצה" (manager's ruling; a test checks it); semesters are already loaded (app.js:598). The proposal's arrow keys are off while the search is open;
   Escape reaches the search before the phone sheet (ui-shell.js:266). Browser tests in edit-a: a code, a name part, a lecturer part; day + hour; the
   "נכנס" and "מתנגש עם" tags; "הוספה" puts the course in the week in that option after the search; a fixed option that cannot fit says
   so; a `conditional` course added with its parallel course; Escape twice returns focus to "חיפוש קורס", also on a phone; arrow keys on a

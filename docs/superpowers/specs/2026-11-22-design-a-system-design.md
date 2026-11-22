@@ -208,8 +208,8 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
     a parallel course (`conditional`) shows "דורש במקביל: <course>" and its "הוספה" adds both, said on the line. A course closed to the
     student (passed, a missing prerequisite) shows the reason in place of a button.
   - Another program's and another semester's courses are read only: times, lecturer and the tag show, the row says why ("לא בתוכנית
-    שלך", "בסמסטר ב׳") and has no button. Adding a course from outside the program is the owner's call (credits, prerequisites, the
-    department), not decided here.
+    שלך", "בסמסטר ב׳") and has no button. Ruling (manager, 2026-11-22): another program's courses stay read only for now; adding one
+    (credits, prerequisites, the department) becomes a later task only if the owner asks for it.
   - Keyboard and screen reader: the field, the chips, then the results in Tab order; each course a list item under an h3; Escape in the
     field clears it, a second Escape closes the search and returns focus to "חיפוש קורס" (the search takes Escape before the phone sheet
     does, ui-shell.js:266); while the search is open the proposal's arrow keys (ui-edit.js:871) do nothing; a redraw (a search finishing)
