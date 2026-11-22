@@ -118,3 +118,11 @@ test('design.js is read before the stylesheets in both pages, so the attribute i
     assert.ok(html.indexOf('<link rel="stylesheet" href="design-a.css">') > css, `${page}: design-a.css after style.css`);
   }
 });
+
+test('design A defines the spacing and type scale and the frame widths of the system design', () => {
+  const css = noComments(readFileSync(new URL('../web/design-a.css', import.meta.url), 'utf8'));
+  const root = /:root\[data-design="a"\]\s*\{([^}]*)\}/.exec(css)[1];
+  const want = { '--sp-1': '4px', '--sp-2': '8px', '--sp-3': '12px', '--sp-4': '16px', '--sp-5': '24px', '--sp-6': '32px', '--sp-7': '48px',
+    '--fs-key': '21px', '--fs-title': '18px', '--frame': '1680px', '--frame-edit': '1200px' };
+  for (const [k, v] of Object.entries(want)) assert.match(root, new RegExp(`${k}\\s*:\\s*${v}\\s*;`), `${k} is ${v}`);
+});

@@ -7,6 +7,18 @@
   --design:a; /* a sentinel the final proof (Task 13) reads */
   --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
   --a-top:60px; /* the wide top bar, where the dock and the panel stick */
+  /* the system design (docs/superpowers/specs/2026-11-22-design-a-system-design.md): one spacing scale, one type scale, the frame widths */
+  --sp-1:4px;
+  --sp-2:8px;
+  --sp-3:12px;
+  --sp-4:16px;
+  --sp-5:24px;
+  --sp-6:32px;
+  --sp-7:48px;
+  --fs-key:21px; /* the one key element of a screen */
+  --fs-title:18px;
+  --frame:1680px; /* build mode: the content never gets wider than this, centred */
+  --frame-edit:1200px; /* improve mode */
 }
 :root[data-design="a"]:not([data-theme="dark"]) {
   --bg:#E9EDF1;
