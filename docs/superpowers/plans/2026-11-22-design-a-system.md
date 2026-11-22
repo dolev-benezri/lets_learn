@@ -30,8 +30,8 @@
 1. Around the cap: 1679, 1680 and 1700px keep the same column widths; only the outer margins grow (no jump of a column or the dock).
 2. RTL order at 1920: the tool column on the right edge of the frame, the alternatives (rail or open) on its left edge; the margins outside the frame equal on both sides.
 3. The sticky header and strip: their background still spans the full window width while their content lines up with the frame.
-4. Improve mode at ≥ 1080 before phase 3: the record panel is still `position: fixed`; Task 2 moves it to the frame's edge so it covers
-   the tool column only, never the week. Phase 3 replaces it.
+4. Improve mode at ≥ 1080 before phase 2: the record panel is still `position: fixed`; Task 2 moves it to the frame's edge so it covers
+   the tool column only, never the week. Phase 2 replaces it.
 5. 1080-1279px keeps today's 360 | board columns (the open alternatives column 240, the rail 64), and the frame padding there is 0.
 6. The folded column after a redraw: a new search, a semester switch or a resize redraws `#alts`; it stays in the state the student chose,
    and focus stays on the rail button or the open/fold button that had it.
@@ -476,7 +476,32 @@ test('the short stale line of the strip', () => {
 
 ## Phases 2-5 (outline; each gets its own task plan after its mockup is approved)
 
-### Phase 2: the tools (המצב שלי, קורסים, מה חשוב לי, חברים, להוציא)
+### Phase 2: improve mode (moved up, manager 2026-11-22; mockup `mockups/edit-collage.png`, waiting for the owner)
+- The spec's "Phase 2, the improve-mode mockup" is the target, copy included.
+- Task A, the frame and the tabs: `#edit` inside `--frame-edit` with the chrome on it (Task 2's rule); the improve dock as a segmented
+  control centred over the content (44px segments, `aria-pressed` only on the shown screen, the record included); the tool column and
+  the week each one surface. Tests: a 1920 and a 1280 rect test (content and tabs inside the frame, tabs narrower than the frame).
+- Task B, the empty state: one centred card, max 640, the spec's copy; "טוענים קובץ" primary over "בוחרים קורסים ידנית"; buttons
+  `min(320px, 100%)` wide (a 320px test: no sideways scroll); no `.edit-empty` hint and no `.me-foot` before a schedule is loaded; "איך מורידים מאפקה-נט?" reveals today's `.edit-yedion` text in place.
+- Task C, the file button: the spec's "Phase 2, the file button" (track/year check first, a hidden `input[type=file]`, then the editor
+  at its file step with the file read). Tests: chooser, then a file, then the editor at its file step with the file read; cancel changes nothing; a missing track/year
+  opens no chooser; an unreadable file shows today's error. Update the A runs of edit.spec.mjs:138, :159 and edit-shell.spec.mjs:183,
+  which expect the editor before a file is chosen.
+- Task D, the record in the tool column's slot: the spec's "Phase 2, the record" (state-driven class on the stage, "→ חזרה", Escape,
+  focus back to the dock's "המצב שלי"); `#panel` is not moved into `#edit` (ui-edit.js:358 replaces that subtree): CSS places it in
+  the tool column's slot. Keep the edit-a.spec.mjs:141 guarantees; a rect test that the record never overlaps the week; a test that a
+  search finishing while the record is open keeps the record open and focus where it was.
+- Task E, the changes screen: the goal chips wrap (replace improve-a.spec.mjs:104 and edit-a.spec.mjs:76: every chip label whole, the
+  row wraps, no horizontal scroll at 320 and 1280); one primary at a time ("חפש הצעות", then "שמור הצעה"); "חפש שוב", "העתק שינויים"
+  secondary; "עוד" a disclosure button (`aria-expanded`, `aria-controls`; the list is plain buttons in Tab order, Escape closes, focus returns to
+  "עוד"; the proposal arrow keys at ui-edit.js:871 ignore keys inside it) holding "הראה את היום החדש" and "לבטל את כל השינויים" (D4);
+  the footer bar and the card's disclaimer go; "לשינויים" moves into the המערכת שלי section. Phone: one sticky bar at most. The tests
+  that read `.me-foot` (improve-a.spec.mjs:29, :38, :43, :59, :79; a11y-a.spec.mjs:188, :206) move to the new places ("לשינויים" in
+  the section, the way back is the tab), keeping the short-window check that every action is reachable. a11y-a's target scan covers
+  `.edit-tool` and the open "עוד"; keyboard tests for "עוד".
+- Each task: its tests, then `-- edit-a`, `-- improve-a`, `-- a11y-a`, the classic `flows`, Codex, one commit.
+
+### Phase 3: the tools (המצב שלי, קורסים, מה חשוב לי, חברים, להוציא)
 - Sections, not cards inside the panel (one surface level); key element per tool as in the spec's phase table, at `--fs-key`.
 - ⓘ inline disclosure component (spec §6): a pure `helpHtml(id, topic, text)` in `web/ui-text.js` with unit tests; one click handler in
   `web/ui-actions.js`; keyboard and Escape tests in a11y-a.
@@ -484,14 +509,6 @@ test('the short stale line of the strip', () => {
 - Delete-all only in ☰ (remove from `web/ui-me.js:335`).
 - Phone sheets at about 60% with the expansion button on `#panel` and `.edit-tool`; the open-scroll rule; replace shell-a.spec.mjs:158.
 - (The tablet dock is done in phase 1b, Task 3.)
-
-### Phase 3: improve mode
-- Empty state before load (one centred column, max 640) and the 440 | week layout after it, inside `--frame-edit`.
-- The record in the tool column's slot, state-driven (`ui.overlay === 'me'` adds a class on the stage), back control, Escape, focus
-  return; keep the edit-a.spec.mjs:141 guarantees.
-- "קובץ מערכת" opens the device's file picker, then the existing editor at its file step (spec "Phase details").
-- Goal chips wrap; replace improve-a.spec.mjs:104 and edit-a.spec.mjs:76 as the spec says. One primary button; the rest secondary or
-  under "עוד"; one sticky bar on a phone.
 
 ### Phase 4: ☰, מידע, dialogs
 - List rows (48px, icon, label, chevron or external-link icon, dividers) for ☰ and מידע; a back arrow in the sheet header in place of

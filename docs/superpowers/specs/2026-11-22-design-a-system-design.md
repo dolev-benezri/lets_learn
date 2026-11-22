@@ -144,7 +144,7 @@ and a divider, not a second card. No card inside a card inside a panel (today's 
   page so the board's first lesson row sits in the visible area above it (today the scroll position is kept, shell-a.spec.mjs:158, so
   that test changes). Each sheet gets an expansion button at its top: the `#panel` grip (today decorative, `aria-hidden`, ui-shell.js:56)
   and a new one on `.edit-tool`, named "הגדלה" / "הקטנה" with `aria-expanded`. No drag gesture (none exists today; a drag needs snap
-  points and a keyboard alternative). My call; the phase 2 mockup shows it to the owner.
+  points and a keyboard alternative). My call; the phase 3 (tools) mockup shows it to the owner.
 - One sticky bar at most above the dock (today improve mode stacks two).
 - Tablet (600-1079): the dock is centred with a max width of 560px instead of stretching across 768px.
 
@@ -156,13 +156,35 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
 | # | Phase | Key element (the one emphasized thing) | What changes | Defects fixed |
 |---|---|---|---|---|
 | 1 | Board (declutter, in progress) + frame | the week; above it the facts line of the shown alternative | the approved declutter; then the frame (§1), tab bar (§5), loading state, alternatives column folded to a rail (§1), its cards on the type scale, the block above the week folded (Phase details) | W1, W2, W4; owner-3 (part), owner-6, owner-7, owner-8 |
-| 2 | Tools: המצב שלי, קורסים, מה חשוב לי, חברים, להוציא | המצב שלי: progress ("41 מתוך 41 נ״ז"); קורסים: the planned count and the "חובה/אולי/לא" choice; מה חשוב לי: the 5 importance rows; חברים: add a friend; להוציא: "העתק הכל" | one surface level, sections not cards; helper lines behind ⓘ; the course card status line (declutter C); one destructive control (delete-all lives in ☰ only); the phone sheet at 60% | W3, P2; owner-3 |
-| 3 | Improve mode | before load: the load choice; after: the week with the change; שינויים: "חפש הצעות", then the shown proposal | frame (§1) with the empty state; the record opens in the tool column's place (wide) with a back control, never over it; tabs over the content; "קובץ מערכת" opens the device's file picker at once and the editor opens with the file already read (manual stays a second button); the goal chips wrap; buttons: one primary, the rest secondary or under "עוד"; one sticky bar on a phone | owner-1, owner-2, owner-4; W7-W12, P1 |
+| 2 | Improve mode | before load: the load choice; after: the week with the change; שינויים: "חפש הצעות", then the shown proposal | frame (§1) with the empty state; the record opens in the tool column's place (wide) with a back control, never over it; tabs over the content; "קובץ מערכת" opens the device's file picker at once and the editor opens with the file already read (manual stays a second button); the goal chips wrap; buttons: one primary, the rest secondary or under "עוד"; one sticky bar on a phone | owner-1, owner-2, owner-4; W7-W12, P1 |
+| 3 | Tools: המצב שלי, קורסים, מה חשוב לי, חברים, להוציא | המצב שלי: progress ("41 מתוך 41 נ״ז"); קורסים: the planned count and the "חובה/אולי/לא" choice; מה חשוב לי: the 5 importance rows; חברים: add a friend; להוציא: "העתק הכל" | one surface level, sections not cards; helper lines behind ⓘ; the course card status line (declutter C); one destructive control (delete-all lives in ☰ only); the phone sheet at 60% | W3, P2; owner-3 |
 | 4 | ☰, מידע, dialogs (schedule editor, friend editor, map, confirmations) | ☰: the list itself; מידע: "על הכלי" first sentence; the editor: the week being built | list rows; a back arrow in the sheet header instead of "חזרה לתפריט"; links as rows with an external-link icon; "מצב כהה" leaves ☰ (the header has it); the editor's side column: one input method visible, the other two under "דרכים נוספות" | owner-5; W5, W6, W12 |
 | 5 | First run (terms, track and year, "מאיפה מתחילים", the tour) | the terms card, then the first choice | the gate stays where it is (in `#panel`; the board is `inert` while gated, ui-shell.js:152, so the gate cannot move into it); the empty week gets an empty state that points to it ("המערכת תופיע כאן. מתחילים בכרטיס שבצד."); the gate card on the type scale | D1 |
 
 ### Phase details (calls made for the builder)
 
+- Phase order (manager, 2026-11-22): improve mode moves up to phase 2, before the tools; the owner keeps meeting it at 1920. Phase 1's
+  frame (Task 2) only partly helps there.
+- Phase 2, the improve-mode mockup (design-lead's `mockups/edit-collage.png`, 1920, today beside the proposal; frames in `mockups/edit/`):
+  - Chrome: the header and the strip line up with the 1200 frame (plan Task 2); the strip is phase 1's one line.
+  - Tabs: "המערכת שלי / שינויים / המצב שלי" as a segmented control centred over the content (44px segments, the shown one on the
+    surface colour, primary text); only the shown one is pressed (today "שינויים" stays pressed while "המצב שלי" is open).
+  - Before load: one centred card, max 640: "טוענים את המערכת שלכם" (key size), one line "מאפקה-נט, או בוחרים בעצמכם.", then
+    "טוענים קובץ" (primary, the file picker as in "the file button" below) over "בוחרים קורסים ידנית" (secondary), both `min(320px, 100%)` wide, and
+    "אקסל, PDF או צילום · איך מורידים מאפקה-נט?" (the link opens today's yedion instructions in place). No week, no hint sentence, no
+    footer bar ("לשינויים" with no schedule leads nowhere).
+  - After load (המערכת שלי): the 440 tool column as one surface, the week as one surface beside it. The tool: the title, one line of
+    what is loaded ("2 קורסים · ימים ג׳ ו-ד׳"), "המערכת כבר רשומה במכללה", "טעינה מחדש או שינוי ידני" (as today), then "לשינויים"
+    (primary) inside the section. "כל שינוי נשמר מיד." goes (manager's ruling).
+  - שינויים: the step line shortens to "לחצו על שיעור כדי לסמן שיכול לזוז."; the goal chips wrap, every label whole; "חפש הצעות" is the
+    section's primary button until there is a proposal, then a secondary "חפש שוב". The proposal: "שמור הצעה" (primary), "העתק שינויים",
+    and "עוד" (a disclosure: "הראה את היום החדש", "לבטל את כל השינויים", declutter D4; the mockup shows the old label). The card's
+    "הצעה בלבד. ההרשמה נעשית במכללה." (`PROPOSAL_ONLY`) goes: the strip's "אינו הרשמה" is on the same screen (each notice once;
+    manager's ruling, 2026-11-22, over Codex's wish to keep it by the button). The footer bar goes: "חזרה למערכת שלי" is the tab, "חפש הצעות" is in the section.
+  - המצב שלי: in the tool column's slot, "→ חזרה" above its title, sections on one surface; the week stays beside it. `#panel` stays
+    where it is in the DOM (the mockup moved it only for the picture): `renderEdit()` replaces `#edit`'s subtree (ui-edit.js:358), so the
+    record is placed over the hidden tool column's slot by CSS (the frame's inline start, 440 wide, under the tabs), never inside `#edit`.
+  - Phone: the same buttons and copy; one sticky bar at most (the dock); the sheet rules of phase 3 do not block this phase.
 - Plan depth (my call): the implementation plan covers phase 1 in full (both steps) and outlines phases 2-5. Each later phase gets its
   task-level plan after its mockup is approved, since the mockup may change it.
 - Phase 1 steps: 1a is the declutter spec as approved (the ui session is building it). 1b is the frame (§1), the tab bar (§5), the loading
@@ -194,21 +216,21 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
     the switcher row and the facts line; with nothing wrong: the strip, the switcher row and the facts line only.
 - Wording: the phase mockup carries the exact Hebrew. The owner's approval of the mockup approves its words; the builder does not invent
   copy. A string the mockup does not show follows the copy rules (§6), and I review it when I browse the build.
-- Phase 3, the file button: it keeps today's check first (track or year missing: focus the missing field, say why, open nothing;
+- Phase 2, the file button: it keeps today's check first (track or year missing: focus the missing field, say why, open nothing;
   ui-edit.js:678). Then it clicks a hidden `<input type="file">` with today's accepted types (the yedion's xlsx, PDF, an image). After a
   file is chosen, the existing schedule editor (ui-friend-editor.js, edit mode) opens at its file step with that file handed over, and
   everything after that is today's flow: a scanned PDF still asks which pages to read (ui-friend-editor.js:434) and shows its reading
   progress; an unreadable file shows today's error at the file control. The only change is the click on "בחירת קובץ" that the student no
   longer has to find. Cancel in the picker: nothing happens. The track and year cannot change while the file is read: the editor is a
   modal dialog (`showModal`, ui-friend-editor.js:72) over the fields, as today.
-- Phase 3, "the record": in improve mode the dock's "המצב שלי" opens the המצב שלי tool (`#me` inside `#panel`, `ui.overlay = 'me'`). Today,
+- Phase 2, "the record": in improve mode the dock's "המצב שלי" opens the המצב שלי tool (`#me` inside `#panel`, `ui.overlay = 'me'`). Today,
   on a wide screen, that panel is `position: fixed`, 440px, at the inline start (design-a.css:355), covering the improve tool column. In the
   new layout it takes the tool column's grid slot with a back control ("חזרה") in its header; on a phone it stays the bottom sheet.
   The swap is driven by state, not by DOM removal: `ui.overlay === 'me'` sets a class on the stage that hides `.edit-tool` by CSS, so
   `renderEdit()` redrawing the tool (ui-edit.js:554, e.g. when search results arrive) does not bring it back. A running search continues.
   Back or Escape closes the record and returns focus to the dock's "המצב שלי" button. The guarantees edit-a.spec.mjs:141 checks today
   (the route and a running search survive the record) carry over.
-- Phase 2, delete-all: today it is in ☰ (ui-mode.js:51) and in "המצב שלי" (ui-me.js:335). The "המצב שלי" copy goes; ☰ keeps it with its
+- Phase 3, delete-all: today it is in ☰ (ui-mode.js:51) and in "המצב שלי" (ui-me.js:335). The "המצב שלי" copy goes; ☰ keeps it with its
   confirmation (ui-actions.js:373).
 - Screenshots: docs/media and the README are re-shot once, after the flip to A (adoption plan Task 11), not after each phase.
 
@@ -233,7 +255,7 @@ scale on top. Where both speak, the declutter spec's wording and legal rules win
   picker (an `input[type=file]` click), the phone sheet's height, the empty states. No word-count tests.
 - Risk: the 1680 frame changes the position of everything on very wide screens; screenshots in docs/media and the README need a re-shoot
   (scripts/readme-shots.mjs).
-- Risk: the 60% phone sheet changes how a tool feels on a phone, where the owner works; it gets its own mockup and the owner's OK in phase 2.
+- Risk: the 60% phone sheet changes how a tool feels on a phone, where the owner works; it gets its own mockup and the owner's OK in phase 3.
 - Risk: moving delete-all out of "המצב שלי" changes where a student finds it; ☰ keeps it, with its confirmation.
 
 ## Left to the builder
