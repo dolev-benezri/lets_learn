@@ -4,7 +4,9 @@ import * as playwright from 'playwright';
 
 export const SITE = process.env.SITE_URL;
 // BROWSER=chromium or firefox; WebKit, the engine of iPhone Safari, when not set.
-export const launch = () => playwright[process.env.BROWSER || 'webkit'].launch();
+// CHROMIUM_PATH: a local run where Playwright's own Chromium build is not the installed one (CI uses the default).
+export const launch = () =>
+  playwright[process.env.BROWSER || 'webkit'].launch(process.env.BROWSER === 'chromium' && process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : undefined);
 export const SIZES = { phone: { width: 375, height: 812 }, desktop: { width: 1280, height: 800 } };
 // The design under test: 'a' (the A frame) or 'classic'. visit() takes it as an explicit option; DESIGN in the environment is only the
 // default for a local rerun, so a spec that needs A passes { design: 'a' } and tests what it says even where CI sets only BROWSER.

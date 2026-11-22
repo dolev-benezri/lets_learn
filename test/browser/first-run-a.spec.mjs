@@ -216,13 +216,23 @@ test('the "what first" card shows while no course is planned, offers the tools, 
   assert.doesNotMatch(await card.innerText(), /שלב|צעד|הבא:/, 'no numbered steps');
   await card.locator('[data-act="tool"][data-tool="courses"]').click();
   await page.locator('#panel #courses').waitFor({ state: 'visible' });
-  await page.evaluate(() => document.querySelectorAll('#courses details').forEach((d) => (d.open = true))); // the lists start closed
+  const openLists = () => page.evaluate(() => document.querySelectorAll('#courses details').forEach((d) => (d.open = true))); // the lists start closed
+  await openLists();
   const id = await page.evaluate(async () => {
     const { app } = await import('./app.js');
     return [...document.querySelectorAll('#courses input[data-chg="mode"][value="must"]')].map((e) => e.dataset.id).find((i) => app.data.courses[i]?.groups.some((g) => g.meetings.length));
   });
   assert.ok(id, 'a course with lessons is on offer');
-  await page.locator(`#courses label:has(input[data-chg="mode"][data-id="${id}"][value="must"])`).click();
+  // the lists are drawn again while the first search settles, and start closed: open them and press, until a press lands
+  for (let i = 0; ; i++) {
+    await openLists();
+    try {
+      await page.locator(`#courses label:has(input[data-chg="mode"][data-id="${id}"][value="must"])`).click({ timeout: 3000 });
+      break;
+    } catch (e) {
+      if (i >= 5) throw e;
+    }
+  }
   await page.locator('.a-first').first().waitFor({ state: 'hidden', timeout: 30000 });
   await page.locator('#panel [data-act="closeTool"]').first().click();
   await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });

@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
-import { SITE, SIZES, STUDENT, DONE, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
+import { SITE, SIZES, STUDENT, DONE, DESIGN, gradeSheetPdf, visit as visitIn, launch } from './helpers.mjs';
 import { TOUR_INTRO, TOUR_PLANS } from '../../web/tour.js';
 
 let browser;
@@ -83,6 +83,7 @@ for (const [size, scheme] of COMBOS) {
 
   // The tour popover and its dimmed page (Driver.js, restyled in style.css): every stop of the intro from the replay button, then the plans part on its own.
   test(`${size}/${scheme}: axe, the first-visit tour: every stop of the intro and of the plans part`, async (t) => {
+    if (DESIGN === 'a') return t.skip('classic layout (step bar, header buttons): design A is in a11y-a.spec.mjs');
     const { check, done } = checker(scheme);
     const page = await visitIn(browser, t, size, DONE, '#me', scheme, true); // the tour unseen: the plans part waits for step 4, the intro for the replay button
     await page.locator('#meTitle').waitFor();
@@ -108,6 +109,7 @@ for (const [size, scheme] of COMBOS) {
   });
 
   test(`${size}/${scheme}: axe, steps 2 and 3, the legal page`, async (t) => {
+    if (DESIGN === 'a') return t.skip('classic layout (step bar, header buttons): design A is in a11y-a.spec.mjs');
     const { check, done } = checker(scheme);
     const page = await visit(t, DONE, '#courses');
     await page.locator('#side *').first().waitFor();
@@ -152,6 +154,7 @@ for (const [size, scheme] of COMBOS) {
   });
 
   test(`${size}/${scheme}: axe, step 4, the course popover, the map, the registration list, the text dialog`, async (t) => {
+    if (DESIGN === 'a') return t.skip('classic layout (step bar, header buttons): design A is in a11y-a.spec.mjs');
     const { check, done } = checker(scheme);
     const page = await visit(t, DONE);
     await weekReady(page);
@@ -233,6 +236,7 @@ const sideways = (page) =>
   });
 for (const size of NARROW) {
   test(`${size.width}px wide: no sideways scrolling on the screens and dialogs`, async (t) => {
+    if (DESIGN === 'a') return t.skip('classic layout (step bar, header buttons): design A is in a11y-a.spec.mjs');
     const page = await visitIn(browser, t, size, { ...DONE });
     await weekReady(page);
     const bad = [];
@@ -328,6 +332,7 @@ test('keyboard: the first 60 Tab stops of each step show a focus ring, in docume
 
 // Names (4.1.2): axe checks that buttons, links and fields have one; here the step bar and the dialogs are read the way a screen reader gets them.
 test('names: step bar links, dialogs and the theme button have a name', async (t) => {
+  if (DESIGN === 'a') return t.skip('classic layout (step bar, header buttons): design A is in a11y-a.spec.mjs');
   const page = await visitIn(browser, t, 'desktop', DONE);
   await weekReady(page);
   const steps = await page.getByRole('navigation', { name: 'שלבים' }).getByRole('link').allInnerTexts();
@@ -356,6 +361,27 @@ test('names: step bar links, dialogs and the theme button have a name', async (t
 test('keyboard: Escape returns the focus to the opener, a focused map node shows its halo', async (t) => {
   const page = await visitIn(browser, t, 'desktop', DONE);
   await weekReady(page);
+  if (DESIGN === 'a') {
+    // A: the map is opened from the ☰ menu, over it; Escape closes the map and focus is back on the menu's map item
+    await page.locator('.menu-btn').focus();
+    await page.keyboard.press('Enter');
+    await page.locator('#drawer[open]').waitFor();
+    const item = page.locator('#drawer [data-act="openMap"]');
+    await item.focus();
+    await page.keyboard.press('Enter');
+    await page.locator('#pmap[open]').waitFor();
+    let onNode = false;
+    for (let i = 0; i < 60 && !onNode; i++) {
+      await page.keyboard.press('Tab');
+      onNode = await page.evaluate(() => document.activeElement.matches('.nd'));
+    }
+    assert.ok(onNode, 'Tab reaches a map node');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.activeElement.querySelector('.halo')).opacity), '1', 'the focused node has a halo');
+    await page.keyboard.press('Escape');
+    await page.locator('#pmap[open]').waitFor({ state: 'detached' });
+    assert.ok(await item.evaluate((b) => b === document.activeElement), 'focus is back on the menu item');
+    return;
+  }
   for (const [open, shown] of [
     ['[data-act="openMap"]', '#pmap[open]'],
     ['[data-act="panel"][data-panel="reg"]', '#drawer[open]']
