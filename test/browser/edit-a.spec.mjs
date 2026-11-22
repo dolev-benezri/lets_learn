@@ -129,7 +129,7 @@ test('a stale proposal is dropped after a record change and a new search is aske
   await dock(page, 'me').click();
   await page.locator('#panel #me').waitFor({ state: 'visible' });
   await page.locator('#panel [data-chg="amirnet"]').fill('120');
-  await page.locator('#panel [data-chg="amirnet"]').dispatchEvent('change');
+  await page.locator('#panel [data-chg="amirnet"]').blur(); // one change event, in every engine
   await page.keyboard.press('Escape');
   await page.locator('#panel').waitFor({ state: 'hidden' });
   await page.locator('.prop-nav').waitFor({ state: 'detached', timeout: 10000 });
