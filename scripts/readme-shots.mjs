@@ -360,15 +360,15 @@ async function swipe(from, to, steps = 6) {
   const at = (i) => ({ x: Math.round(from.x + ((to.x - from.x) * i) / steps), y: Math.round(from.y + ((to.y - from.y) * i) / steps) });
   const px = (p) => ({ x: p.x * PHONE.dpr, y: p.y * PHONE.dpr });
   await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [px(at(0))] });
-  await act(`dot(${from.x}, ${from.y})`);
+  await act(`window.dot?.(${from.x}, ${from.y})`);
   for (let i = 1; i <= steps; i++) {
     await sleep(60);
     await send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [px(at(i))] });
-    await act(`dot(${at(i).x}, ${at(i).y})`);
+    await act(`window.dot?.(${at(i).x}, ${at(i).y})`);
   }
   await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await sleep(120);
-  await act('dot()');
+  await act("window.dot?.()");
 }
 async function demo(dark) {
   const d = dark ? '-dark' : '';
