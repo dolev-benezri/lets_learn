@@ -327,14 +327,23 @@ export function freshAt(data, status) {
 export const examsNoteHtml = (note) => (note ? `<p class="hint">${esc(note)}</p>` : '');
 // Not today in Israel time: the date comes first ("נכון ל-16.10, 21:08"), so an old count never reads as today's.
 const DAY = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit' });
-export function groupFresh(g, fileFetchedAt, now = new Date()) {
+// The two halves of groupFresh: the state ("מלא", "פנוי", "נשארו 3 מקומות") and when it was read ("21.10, 21:13", "" when nobody knows), so a list can say a
+// time that every group shares once (design A's registration list).
+export function groupFreshParts(g, fileFetchedAt, now = new Date()) {
   const left = Number.isInteger(g.seatsLeft) && g.seatsLeft >= 0 ? g.seatsLeft : null;
   const state =
     g.full || left === 0 ? 'מלא' : left === null ? 'פנוי' : left === 1 ? 'נשאר מקום אחד' : `נשארו ${left} מקומות`;
   const t = instant(g.fetchedAt) ?? instant(fileFetchedAt);
   const day = t && DAY.format(t) !== DAY.format(now) ? `${DAY.format(t).replace('/', '.')}, ` : '';
-  return t ? `${state} · נכון ל-${day}${HHMM.format(t)}` : state;
+  // minute: the instant itself (the label alone repeats: the hour the clocks go back, or a date a year on)
+  return { state, at: t ? `${day}${HHMM.format(t)}` : '', minute: t ? Math.floor(t.getTime() / 6e4) : null };
 }
+export function groupFresh(g, fileFetchedAt, now = new Date()) {
+  const { state, at } = groupFreshParts(g, fileFetchedAt, now);
+  return at ? `${state} · נכון ל-${at}` : state;
+}
+// The time every listed group shares, or '' (some group has its own time, or none): then each keeps its own text. The instants are compared, not their labels.
+export const sharedFreshAt = (parts) => (parts.length && parts.every((p) => p.minute !== null && p.minute === parts[0].minute) ? parts[0].at : '');
 
 // The warning before my registration turn: my turn has opened, but the data was fetched before it did (seats may have gone since).
 export const TURN_WARNING = 'שימו לב: הנתונים נמשכו לפני פתיחת התור שלך. ייתכנו שינויים במקומות הפנויים.';

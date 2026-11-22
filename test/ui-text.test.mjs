@@ -28,6 +28,8 @@ import {
   disclaimerHtml,
   esc,
   groupFresh,
+  groupFreshParts,
+  sharedFreshAt,
   turnWarning,
   freshAt,
   examsNoteHtml,
@@ -533,4 +535,33 @@ test('splitReason: a trailing citation of a regulation is split off, any other t
   assert.deepEqual(splitReason('מבוא (חלק א) דורש משהו'), { short: 'מבוא (חלק א) דורש משהו', cite: '' }, 'a parenthetical in the middle, or one that names no regulation, stays');
   assert.deepEqual(splitReason('דורש א (חלק ב)'), { short: 'דורש א (חלק ב)', cite: '' });
   assert.deepEqual(splitReason(''), { short: '', cite: '' });
+});
+
+test('groupFreshParts / sharedFreshAt: the state and the time apart, and a time said once only when every group shares it', () => {
+  const now = new Date('2026-10-16T12:00:00Z'),
+    at = '2026-10-16T05:08:00Z';
+  const sa = (x, f) => ((p) => ({ state: p.state, at: p.at }))(groupFreshParts(x, f, now));
+  assert.deepEqual(sa({ full: true }, at), { state: 'מלא', at: '08:08' });
+  assert.deepEqual(sa({ full: false, seatsLeft: 3, fetchedAt: '2026-10-15T18:13:00Z' }, at), { state: 'נשארו 3 מקומות', at: '15.10, 21:13' });
+  assert.deepEqual(sa({ full: false }, undefined), { state: 'פנוי', at: '' });
+  assert.equal(groupFreshParts({ full: false }, undefined, now).minute, null);
+  const g = [{ full: false }, { full: true, seatsLeft: 2 }, { full: false }];
+  for (const x of g) assert.equal(groupFresh(x, at, now), `${groupFreshParts(x, at, now).state} · נכון ל-08:08`, 'groupFresh is the two halves joined');
+  const same = g.map((x) => groupFreshParts(x, at, now));
+  assert.equal(sharedFreshAt(same), '08:08');
+  assert.equal(sharedFreshAt([...same, groupFreshParts({ full: false, fetchedAt: '2026-10-15T18:13:00Z' }, at, now)]), '', 'a group with a time of its own');
+  assert.equal(sharedFreshAt([...same, groupFreshParts({ full: false }, undefined, now)]), '', 'a group with no time');
+  assert.equal(sharedFreshAt([]), '', 'nothing listed');
+  assert.equal(sharedFreshAt([groupFreshParts({ full: false }, at, now)]), '08:08', 'one group shares with itself');
+});
+
+test('sharedFreshAt compares the instants, not their labels: the hour the clocks go back and the same date a year on read alike but are not shared', () => {
+  const now = new Date('2026-10-24T12:00:00Z');
+  const p = (iso) => groupFreshParts({ full: false, fetchedAt: iso }, undefined, now);
+  const [x, y] = [p('2026-10-24T22:30:00Z'), p('2026-10-24T23:30:00Z')];
+  assert.equal(x.at, y.at, 'the labels are the same (the 02:30 / 01:30 repeat)');
+  assert.equal(sharedFreshAt([x, y]), '');
+  const [last, prev] = [p('2026-10-25T05:08:00Z'), p('2025-10-25T05:08:00Z')];
+  assert.equal(sharedFreshAt([last, prev]), '', 'a year apart');
+  assert.equal(sharedFreshAt([p('2026-10-25T05:08:00Z'), p('2026-10-25T05:08:30Z')]), '25.10, 07:08', 'the same minute is one time');
 });

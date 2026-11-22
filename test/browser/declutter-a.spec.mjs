@@ -540,3 +540,58 @@ test('classic keeps the card as it was: three semester buttons, tags, the full r
   assert.equal(await page.locator('#side .a-tip-btn, #side .a-status, #side .a-which').count(), 0);
   assert.match(await page.locator('#side > .hint').first().innerText(), /חובה: בכל מערכת\. אולי: רק אם משתלב טוב\. לא: לא בתכנון\./);
 });
+
+// ---- step 7: the registration list says the seat time once ----
+const STATE = /^\((פנוי|מלא|נשאר מקום אחד|נשארו \d+ מקומות)\)$/;
+test('the registration list says "המקומות נכונים ל-…" once, and each group only its state', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#out');
+  await page.locator('#out [data-act="copyReg"]').waitFor({ timeout: 30000 });
+  await idle(page);
+  await page.locator('#out .reglist').first().waitFor();
+  const text = flat(await page.locator('#out').innerText());
+  assert.equal([...text.matchAll(/המקומות נכונים ל-(\d+\.\d+, )?\d\d:\d\d/g)].length, 1, 'the time is said once');
+  assert.equal([...text.matchAll(/נכון ל-/g)].length, 0, 'and not after any group');
+  const states = await page.locator('#out .reglist li p .hint.nw').allTextContents();
+  assert.ok(states.length >= 2, 'groups in every list (a year plan has two)');
+  for (const s of states) assert.match(s.trim(), STATE, 'only the state');
+});
+
+test('one listed group with a time of its own: the shared line goes, and every group keeps exactly its own text', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#out');
+  await page.locator('#out [data-act="copyReg"]').waitFor({ timeout: 30000 });
+  await idle(page);
+  const own = await page.evaluate(async () => {
+    const { app } = await import('./app.js');
+    const { groupFresh } = await import('./ui-text.js');
+    const { seatsAt } = await import('./app.js');
+    const rows = [...document.querySelectorAll('#out .reglist li')];
+    // one group of the first listed course, found by the id the row prints
+    const row = rows[0], cid = row.querySelector('.hint').textContent.split(' · ')[0].trim();
+    const gid = row.querySelector('bdi').textContent.trim();
+    const sem = ['א', 'ב', 'קיץ'].find((s) => app.sem[s]?.courses[cid]?.groups.some((g) => g.id === gid));
+    const g = app.sem[sem].courses[cid].groups.find((x) => x.id === gid);
+    g.fetchedAt = '2020-01-01T10:00:00Z';
+    (await import('./ui-drawer.js')).renderOut();
+    return { gid, text: groupFresh(g, seatsAt(cid, app.sem[sem])) };
+  });
+  const lists = page.locator('#out .reglist li p');
+  const all = (await lists.allTextContents()).map((s) => flat(s));
+  const text = flat(await page.locator('#out').innerText());
+  assert.equal([...text.matchAll(/המקומות נכונים ל-/g)].length, 0, 'no shared time when one group differs');
+  const mine = all.filter((s) => s.includes(own.gid));
+  assert.equal(mine.length, 1);
+  assert.ok(mine[0].includes(`(${own.text})`), `that group says its own text: ${mine[0]} / ${own.text}`);
+  assert.match(own.text, /נכון ל-1\.1, 12:00|נכון ל-01\.01, 12:00/, 'the exceptional time itself');
+  for (const s of all.filter((x) => x !== mine[0])) assert.ok(/נכון ל-/.test(s), `every other group keeps its time too: ${s}`);
+});
+
+test('classic keeps the time after every group', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '', 'classic');
+  await weekReady(page);
+  await page.locator('[data-act="panel"][data-panel="reg"]').click();
+  await page.locator('#drawer .reglist').first().waitFor();
+  const all = (await page.locator('#drawer .reglist li p').allTextContents()).map((s) => flat(s));
+  assert.ok(all.length >= 2);
+  for (const s of all) assert.match(s, /\((פנוי|מלא|נשאר מקום אחד|נשארו \d+ מקומות) · נכון ל-(\d+\.\d+, )?\d\d:\d\d\)/, `each group says its time: ${s}`);
+  assert.equal([...flat(await page.locator('#drawer').innerText()).matchAll(/המקומות נכונים ל-/g)].length, 0);
+});

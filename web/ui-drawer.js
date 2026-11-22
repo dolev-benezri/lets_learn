@@ -20,6 +20,8 @@ import {
 import {
   groupLabel,
   groupFresh,
+  groupFreshParts,
+  sharedFreshAt,
   strictnessHint,
   defaultNotes,
   hebYear,
@@ -230,7 +232,7 @@ function regPanel() {
         .map((g) => {
           const back = backups(data, res, g.id, app.state.constraints);
           return `${g.primary ? 'קבוצה' : esc(typeLabel(g.type))} <bdi dir="ltr">${esc(g.id)}</bdi>
-        <span class="hint nw">(${esc(groupFresh(g, seatsAt(cid, data)))})</span>${
+        <span class="hint nw">(${esc(sharedAt ? groupFreshParts(g, seatsAt(cid, data)).state : groupFresh(g, seatsAt(cid, data)))})</span>${
           res.alts?.[g.id]
             ? ` <span class="hint">(או <bdi
         dir="ltr">${res.alts[g.id].map(esc).join(', ')}</bdi>, באותן שעות)</span>`
@@ -247,6 +249,12 @@ function regPanel() {
       })
       .join('');
   const parts = regParts(raw);
+  // A: when every listed group was read at the same time, the list says it once ("המקומות נכונים ל-21.10, 21:13") and each group only its state; a group
+  // with a time of its own, or none, keeps its own text
+  const sharedAt = designOn()
+    ? sharedFreshAt(parts.flatMap((p) => p.res.courses.flatMap((cid) =>
+        p.data.courses[cid].groups.filter((g) => p.res.groups.includes(g.id)).map((g) => groupFreshParts(g, seatsAt(cid, p.data))))))
+    : '';
   const exams = parts
     .flatMap((p) => p.res.exams)
     .filter((e) => e.kind === 'בחינה')
@@ -255,7 +263,7 @@ function regPanel() {
     'רשימה להרשמה',
     `<p class="hint">חלופה ${ui.cur + 1} מתוך ${ui.last.results.length}. ההרשמה עצמה נעשית באפקה-נט.</p>${
       designOn() ? `<p class="hint">${disclaimerHtml(app.settings.counselingUrl)}</p>` : '' // A: the moment a student goes to register, and the board no longer says it
-    }
+    }${sharedAt ? `<p class="hint">המקומות נכונים ל-${esc(sharedAt)}</p>` : ''}
     ${parts
       .map(
         (p) =>
