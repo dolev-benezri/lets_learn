@@ -438,6 +438,23 @@
     border-radius:0; border-inline-end:1px solid var(--border);
   }
 }
+/* the frame (system design §1): from 1080px the content never gets wider than --frame (build) or --frame-edit (improve) and is centred; the header and the strip
+   keep a full-width background and pad their content to the frame, the stage pads itself. Below the cap nothing moves (the padding is the old one). */
+@media (min-width:1080px) {
+  :root[data-design="a"] .a-top { padding-inline:max(16px, calc((100% - var(--frame)) / 2)); }
+  :root[data-design="a"] .a-strip { padding-inline:max(12px, calc((100% - var(--frame)) / 2)); }
+  :root[data-design="a"] .a-stage { padding-inline:max(0px, calc((100% - var(--frame)) / 2)); }
+  :root[data-design="a"] body[data-view="edit"] .a-top { padding-inline:max(16px, calc((100% - var(--frame-edit)) / 2)); }
+  :root[data-design="a"] body[data-view="edit"] .a-strip { padding-inline:max(12px, calc((100% - var(--frame-edit)) / 2)); }
+  :root[data-design="a"] body[data-view="edit"] .a-stage { padding-inline:max(0px, calc((100% - var(--frame-edit)) / 2)); }
+  /* the record over the improve page sits at the frame's edge and covers the tool column only, never the week */
+  :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
+    inset-inline-start:max(0px, calc((100% - var(--frame-edit)) / 2));
+  }
+  :root[data-design="a"] :is(.a-alts, .a-pb, .edit-tool) { scrollbar-width:thin; }
+  :root[data-design="a"] .ac-b b { font-size:var(--fs); font-weight:600; }
+  :root[data-design="a"] .ac-b small { font-size:var(--fs-sm); }
+}
 @media (min-width:1080px) and (max-width:1279px) {
   :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); }
   :root[data-design="a"] .a-stage.has-alts { grid-template-columns:360px minmax(0, 1fr) 240px; }
