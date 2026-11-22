@@ -101,9 +101,19 @@ test('1279px and a phone: the tool is a sheet over the week with the dock under 
   }
 });
 
-test('1280px: the goal chips stay in one row, a scroller in the column', async (t) => {
+test('1280px: the goal chips wrap in the column (declutter step 8): every chip is whole inside it, and the row is not a scroller', async (t) => {
   const page = await visit(t, { width: 1280, height: 800 }, SEED, '#edit/changes');
   await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
-  const rows = await page.evaluate(() => new Set([...document.querySelector('.edit-tool .goals').children].filter((c) => c.getClientRects().length).map((c) => Math.round(c.getBoundingClientRect().top))).size);
-  assert.equal(rows, 1, 'one row of chips');
+  const m = await page.evaluate(() => {
+    const tool = document.querySelector('.edit-tool').getBoundingClientRect(), goals = document.querySelector('.edit-tool .goals');
+    const chips = [...goals.children].filter((c) => c.getClientRects().length);
+    return {
+      inside: chips.every((c) => c.getBoundingClientRect().left >= tool.left - 0.5 && c.getBoundingClientRect().right <= tool.right + 0.5),
+      noScroll: goals.scrollWidth <= goals.clientWidth + 1 && getComputedStyle(goals).overflowX === 'visible',
+      n: chips.length
+    };
+  });
+  assert.ok(m.n >= 3);
+  assert.equal(m.inside, true, 'no chip is cut by the column');
+  assert.equal(m.noScroll, true, 'nothing to scroll sideways');
 });

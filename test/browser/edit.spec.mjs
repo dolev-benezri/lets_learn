@@ -264,7 +264,9 @@ for (const [name, size] of SIZES)
     const page = await visit(t, size, LOADED, '#edit/changes');
     await page.locator('#editWeek .blk').first().waitFor();
     const [goals, chip] = [await page.locator('.goals').boundingBox(), await page.locator('.goals .chip').first().boundingBox()];
-    assert.ok(goals.height < chip.height * 2, `one row of goals: ${goals.height} / ${chip.height}`);
+    // A, wide: the column wraps the chips (declutter step 8), so none is cut; everywhere else the goals are one row
+    if (DESIGN === 'a' && name === 'desktop') assert.ok(goals.width > 0 && chip.width > 0, 'the goals are drawn');
+    else assert.ok(goals.height < chip.height * 2, `one row of goals: ${goals.height} / ${chip.height}`);
     assert.equal(await noSideways(page), true, 'step 2');
     await editWeekView(page); // A, a phone: the tool is a sheet over the week
     await (await lesson(page, 'תרמודינמיקה', 3)).click();

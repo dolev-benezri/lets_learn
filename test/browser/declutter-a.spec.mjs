@@ -595,3 +595,98 @@ test('classic keeps the time after every group', async (t) => {
   for (const s of all) assert.match(s, /\((פנוי|מלא|נשאר מקום אחד|נשארו \d+ מקומות) · נכון ל-(\d+\.\d+, )?\d\d:\d\d\)/, `each group says its time: ${s}`);
   assert.equal([...flat(await page.locator('#drawer').innerText()).matchAll(/המקומות נכונים ל-/g)].length, 0);
 });
+
+// ---- step 8: the small ones ----
+test('the line under the name does not start with a separator', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  const small = flat(await page.locator('#title small').textContent());
+  assert.match(small, /^(שנה מלאה|סמסטר .׳) /, small);
+  assert.doesNotMatch(small, /^·/);
+  const classic = await visit(t, 'desktop', DONE, '', 'classic');
+  await weekReady(classic);
+  assert.match(flat(await classic.locator('#title small').textContent()), /^· /, 'classic keeps its separator');
+});
+
+test('"מה חשוב לי": one label "לתכנן" over the scope, no "העדפות" and "תכנון" headings; classic keeps them', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#prefs');
+  await page.locator('#prefs input[name="scope"]').first().waitFor({ state: 'attached', timeout: 30000 });
+  const heads = (await page.locator('#prefs h2, #prefs h3').allTextContents()).map(flat);
+  assert.deepEqual(heads.slice(0, 2), ['מה חשוב לי', 'מה חשוב לך?'], `the tool's heading, then the first section: ${heads}`);
+  assert.ok(!heads.includes('העדפות') && !heads.includes('תכנון'), `headings: ${heads}`);
+  assert.equal(flat(await page.locator('#prefs legend', { hasText: 'לתכנן' }).first().innerText()), 'לתכנן');
+  assert.equal(await page.locator('#prefs [aria-label="העדפות"]').count(), 1, 'the card keeps a name for assistive technology');
+  const classic = await visit(t, 'desktop', DONE, '#prefs', 'classic');
+  await classic.locator('#prefs input[name="scope"]').first().waitFor({ state: 'attached', timeout: 30000 });
+  const old = (await classic.locator('#prefs h2, #prefs h3').allTextContents()).map(flat);
+  assert.deepEqual(old.slice(0, 4), ['מה חשוב לי', 'העדפות', 'תכנון', 'מה חשוב לך?'], `classic: ${old}`);
+});
+
+test('"המצב שלי": the grade scale is two short sentences with "עוד" for the rest, outside the input\'s label, and keeps its state and focus over a redraw', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  const hint = page.locator('#amirnetHint');
+  await hint.waitFor({ timeout: 30000 });
+  assert.equal(flat(await hint.innerText()), '50–150. ריק אם לא ידוע. עוד');
+  const input = page.getByRole('spinbutton', { name: /ציון אנגלית/ });
+  assert.ok(!/עוד/.test((await input.evaluate((e) => e.labels[0].textContent)) ?? ''), 'the button is not in the label');
+  assert.equal(await input.getAttribute('aria-describedby'), 'amirnetHint');
+  const more = hint.locator('.a-which');
+  assert.equal(await more.evaluate((b) => !!b.closest('label')), false, 'no control inside the label');
+  assert.equal(await more.getAttribute('aria-expanded'), 'false');
+  await more.focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await more.getAttribute('aria-expanded'), 'true');
+  assert.equal(flat(await hint.innerText()), '50–150. ריק אם לא ידוע. עוד יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.');
+  await page.evaluate(async () => (await import('./app.js')).refresh()); // the record is drawn again through keepFocus
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'amirnetMore', 'the focus is on the new button');
+  assert.match(flat(await page.locator('#amirnetHint').innerText()), /בדקו מול המזכירות/, 'still open');
+  await page.keyboard.press('Space');
+  assert.equal(flat(await page.locator('#amirnetHint').innerText()), '50–150. ריק אם לא ידוע. עוד', 'closed by the keyboard');
+  await page.evaluate(async () => (await import('./app.js')).refresh());
+  assert.equal(flat(await page.locator('#amirnetHint').innerText()), '50–150. ריק אם לא ידוע. עוד', 'and a closed one stays closed');
+  const classic = await visit(t, 'desktop', DONE, '#me', 'classic');
+  const old = classic.locator('#me label.field', { hasText: 'ציון אנגלית' }).locator('.hint');
+  await old.waitFor({ timeout: 30000 });
+  assert.equal(flat(await old.innerText()), 'סולם 50–150. ריק אם לא ידוע. יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.');
+});
+
+// improve mode: the seeded schedule of edit-a.spec.mjs
+const L = (course, name, type, group, day, start, end) => ({ course, name, type, group, day, start, end });
+const IBASE = [
+  L('30003', 'מבוא לכימיה', 'סופי-הרצאה+תרגול', '273000302', 4, '14:00', '15:50'), L('30003', 'מבוא לכימיה', 'תרגול', '273000302/1', 4, '16:00', '16:50'),
+  L('30112', 'תרמודינמיקה 1', 'סופי-הרצאה+תרגול', '273011204', 3, '15:00', '16:50'), L('30112', 'תרמודינמיקה 1', 'תרגול', '273011204/1', 3, '17:00', '17:50')
+];
+const IMPROVE = {
+  ...DONE,
+  'afeka-sched-v1-edit': JSON.stringify({ v: 1, dataset: { year: 2027, sem: 'א', program: 30, startYear: 2026 }, registered: false, owned: [], original: IBASE, baseline: IBASE, movable: ['30003'], goal: { dayOff: 4 } })
+};
+
+test('improve mode, wide: the goal chips wrap in the column, none is clipped and none breaks its own label', async (t) => {
+  for (const width of [1280, 1080]) {
+    const page = await visit(t, { width, height: 800 }, IMPROVE, '#edit/changes');
+    await page.locator('#edit .edit-tool .goals').waitFor({ timeout: 30000 });
+    const m = await page.evaluate(() => {
+      const tool = document.querySelector('#edit .edit-tool').getBoundingClientRect();
+      return [...document.querySelectorAll('#edit .edit-tool .goals > .chip')].map((c) => {
+        const r = c.getBoundingClientRect(), label = c.querySelector('select, span:not(.sr)') ?? c;
+        return { name: c.textContent.trim().slice(0, 14), inside: r.left >= tool.left - 0.5 && r.right <= tool.right + 0.5, h: Math.round(r.height), label: Math.round(label.getBoundingClientRect().height) };
+      });
+    });
+    assert.ok(m.length >= 3, 'the chips are there');
+    const low = Math.min(...m.map((c) => c.h));
+    for (const c of m) assert.ok(c.inside && c.h <= low + 4 && c.label <= low, `${width}: a chip is cut or its label wraps: ${JSON.stringify(c)} (the lowest chip is ${low})`);
+    assert.ok(m.some((c) => /קורס/.test(c.name)), `${width}: the "+ קורס" chip is reachable`);
+  }
+});
+
+test('improve mode: the reset of the proposals says "לבטל את כל השינויים", classic keeps its words', async (t) => {
+  const page = await visit(t, 'desktop', IMPROVE, '#edit/changes');
+  const reset = page.locator('[data-ed="restoreOriginal"]');
+  await reset.waitFor({ timeout: 30000 });
+  assert.equal(flat(await reset.innerText()), 'לבטל את כל השינויים');
+  const classic = await visit(t, 'desktop', IMPROVE, '#edit', 'classic');
+  await classic.locator('[data-ed="next"]').click();
+  const old = classic.locator('[data-ed="restoreOriginal"]');
+  await old.waitFor({ timeout: 30000 });
+  assert.equal(flat(await old.innerText()), 'חזרה למערכת המקורית');
+});

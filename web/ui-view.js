@@ -99,7 +99,7 @@ export function renderTop() {
     // named only when there is a choice and it was made
     prog = progs.length > 1 && !needsProgram() ? progs.find((p) => p.id === app.data.program)?.name : null;
   $('title').innerHTML =
-    `המערכת שלי <small>· ${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
+    `המערכת שלי <small>${designOn() ? '' : '· '}${app.data.semester === 'שנה' ? 'שנה מלאה' : `סמסטר ${esc(app.data.semester)}׳`} ${hebYear(app.data.year)}${prog ? ` · ${esc(heb(prog))}` : ''}</small>`;
   // The exams-not-published note lives in the summary pills only; the header keeps the freshness line.
   const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear);

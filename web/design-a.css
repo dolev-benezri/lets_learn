@@ -414,7 +414,8 @@
   }
   :root[data-design="a"] .edit-board { grid-column:2; min-width:0; }
   :root[data-design="a"] .edit-sheet-x { display:none; }
-  :root[data-design="a"] .edit-tool .goals { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding:4px; margin:-4px -4px 6px; }
+  :root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; } /* the column is wide enough to wrap: no clipped chip */
+  :root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; white-space:nowrap; }
   :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
     position:fixed; top:calc(var(--a-top) + var(--tap)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
     border-radius:0; border-inline-end:1px solid var(--border);

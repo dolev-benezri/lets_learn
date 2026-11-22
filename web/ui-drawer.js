@@ -82,7 +82,7 @@ function prefsPanel() {
   return `
     ${
       app.sem['ב']
-        ? `<section class="dr-sec"><h3>תכנון</h3>
+        ? `<section class="dr-sec">${designOn() ? '' : '<h3>תכנון</h3>'}
       ${seg('scope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"', true)}
       ${scopeOf(state.scope) === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>`
         : ''
@@ -307,7 +307,7 @@ export function renderPrefs() {
 function renderWishesAndFriends() {
   $('prefs').innerHTML = `<div class="me-head"><h2 id="prefsTitle" tabindex="-1">מה חשוב לי</h2>
       <p class="a-friends-link"><a href="#friends">${icon('users')} חברים</a></p></div>
-    <section class="me-card dr-body" aria-labelledby="prefsPrefs"><h2 id="prefsPrefs">העדפות</h2>${prefsPanel()}</section>`;
+    <section class="me-card dr-body" aria-label="העדפות">${prefsPanel()}</section>`; // A: the tool's own heading is the one (no second "העדפות")
   $('friends').innerHTML = `<div class="me-head"><h2 id="friendsPageTitle" tabindex="-1">חברים</h2></div>
     <section class="me-card dr-body" aria-labelledby="friendsPageTitle">${friendsPanel()}</section>`;
 }
