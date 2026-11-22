@@ -155,7 +155,7 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
 
 | # | Phase | Key element (the one emphasized thing) | What changes | Defects fixed |
 |---|---|---|---|---|
-| 1 | Board (declutter, in progress) + frame | the week; above it the facts line of the shown alternative | the approved declutter; then the frame (§1), tab bar (§5), loading state, alternatives column folded to a rail (§1), its cards on the type scale | W1, W2, W4; owner-3 (part), owner-6, owner-7 |
+| 1 | Board (declutter, in progress) + frame | the week; above it the facts line of the shown alternative | the approved declutter; then the frame (§1), tab bar (§5), loading state, alternatives column folded to a rail (§1), its cards on the type scale, the block above the week folded (Phase details) | W1, W2, W4; owner-3 (part), owner-6, owner-7, owner-8 |
 | 2 | Tools: המצב שלי, קורסים, מה חשוב לי, חברים, להוציא | המצב שלי: progress ("41 מתוך 41 נ״ז"); קורסים: the planned count and the "חובה/אולי/לא" choice; מה חשוב לי: the 5 importance rows; חברים: add a friend; להוציא: "העתק הכל" | one surface level, sections not cards; helper lines behind ⓘ; the course card status line (declutter C); one destructive control (delete-all lives in ☰ only); the phone sheet at 60% | W3, P2; owner-3 |
 | 3 | Improve mode | before load: the load choice; after: the week with the change; שינויים: "חפש הצעות", then the shown proposal | frame (§1) with the empty state; the record opens in the tool column's place (wide) with a back control, never over it; tabs over the content; "קובץ מערכת" opens the device's file picker at once and the editor opens with the file already read (manual stays a second button); the goal chips wrap; buttons: one primary, the rest secondary or under "עוד"; one sticky bar on a phone | owner-1, owner-2, owner-4; W7-W12, P1 |
 | 4 | ☰, מידע, dialogs (schedule editor, friend editor, map, confirmations) | ☰: the list itself; מידע: "על הכלי" first sentence; the editor: the week being built | list rows; a back arrow in the sheet header instead of "חזרה לתפריט"; links as rows with an external-link icon; "מצב כהה" leaves ☰ (the header has it); the editor's side column: one input method visible, the other two under "דרכים נוספות" | owner-5; W5, W6, W12 |
@@ -171,6 +171,27 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
   is stored in localStorage under its own key (a private window starts folded). Rail buttons carry the alternative's summary in their
   accessible name ("חלופה 3: 42 נ״ז · 5 ימים") and pick it like a card does; the sort control ("לפי") shows only in the open state. The
   open button is `aria-expanded` with `aria-controls` on the column. Opening or folding keeps focus on the button that did it.
+- Phase 1, the block above the week (owner, 2026-11-22, approving phase 1: "כל המלל המוגזם שיש פה שהקפתי בעיגול שחור תצמצם ותקפל
+  ותשאיר רק את הרלוונטי"; he circled everything from the board's top to the week). The rule for what stays visible, my judgment, no
+  word limit: something wrong with the plan on screen that the student must check before registering, plus the legal minimum. Everything
+  that explains goes into "פרטים", one tap away. Built on top of declutter steps 1-8:
+  - The strip: one line, "לא רשמי · אינו הרשמה ואינו המלצה", then, only when the data is stale, a short warning ("נבדק לפני 32 ימים",
+    "הבדיקה האחרונה נכשלה", "לא ידוע מתי נבדק"), then "פרטים" (the מידע panel, as today). "(ההרשמה באפקה-נט)", the rules clause
+    ("הכללים לא אושרו במחלקה") and the full freshness sentence move to the board's "פרטים" and stay in מידע. Phone: the line above the
+    week (#boardNote) shows the short stale warning instead of today's stale + rules line; its other warnings (an unverified program,
+    courses passed without their prerequisite) stay. מידע says the full freshness sentence (design A's wording) and the full legal line.
+  - The A-semester assumption ("התכנון של ב׳ מניח…"): on semester ב׳ it stays as today's short line with "אילו?"; on א׳ (it speaks about
+    ב׳) only its sentence in "פרטים" (which holds it on both semesters). The other info lines of that area (a course only in ב׳, and so on) go into "פרטים"; "לא נכנס לאף סמסטר" stays.
+  - The search ran out of time: no banner. When there are alternatives, a small text button "חפש עוד" beside the switcher (the same action and `data-k` as today), its
+    sentence in "פרטים". At the time cap there is no button, only the sentence in "פרטים".
+  - Exam clashes: one warning line, warning colour and icon: "2 בחינות באותו יום, 28.01.2027 · פרטים" for one pair (the date as `examWhen` writes it); "3 זוגות בחינות באותו
+    יום · פרטים" for more; adjacent days likewise ("2 בחינות בימים צמודים, …"). "פרטים" opens the board's "פרטים" at the full sentences
+    (names, hours, "משך הבחינות לא ידוע, כדאי לבדוק שאין חפיפה"), first in its list. This is the owner's call and replaces, for exam
+    warnings only, §5's rule that a safety qualifier stays in the visible block and the declutter spec's "exam warnings stay whole".
+  - Courses left out ("2 קורסים לא נכנסו · אילו?", declutter step 5) stay visible: the plan is missing something the student asked for.
+  - The credit-cap probe ("מה אם נקודה אחת יותר?") and the outside-hours line ("להפוך לחובה") move into "פרטים" with their buttons.
+  - Result, worst case (year plan, stale data, search cut short, one clash): about 180 words above the week today, about 50 after, most of them
+    the switcher row and the facts line; with nothing wrong: the strip, the switcher row and the facts line only.
 - Wording: the phase mockup carries the exact Hebrew. The owner's approval of the mockup approves its words; the builder does not invent
   copy. A string the mockup does not show follows the copy rules (§6), and I review it when I browse the build.
 - Phase 3, the file button: it keeps today's check first (track or year missing: focus the missing field, say why, open nothing;
@@ -233,6 +254,7 @@ From the owner (screenshots kept privately, 2026-11-22) and my browsing of a loc
 | owner-5 | ☰ מידע | unstyled: a big outline "חזרה לתפריט" button, plain list, bare links |
 | owner-6 | board | the words above the week on alternative 9 (banners, chips, comparison lines) |
 | owner-7 | board, wide | the alternatives column (a mini-week card per alternative) is always open and loads the page |
+| owner-8 | board | everything between the board's top and the week: tabs, banners, chips, notices, the legal sentences, the search and exam banners |
 | W1 | wide | no page max-width: header items at the far edges, three columns edge to edge, three scrollbars side by side |
 | W2 | wide | tool tab labels wrap |
 | W3 | tools | card inside a card; "התמחות" segment labels wrap; small outline buttons at the far end; delete-all twice |

@@ -47,7 +47,7 @@ Each line has its test in the task that owns it (Tasks 2, 3 and 5 below). Also w
    declutter step 4 puts the semester tabs in the switcher row and the sort select in the alternatives column header. Task 2 below sizes
    those rows and must start after step 4 has merged. Declutter step 1 (the facts line and "פרטים") is the board's key element and must
    not be restyled by Task 1's tokens beyond the type scale.
-2. **Phase 1b: Tasks 1-6 below.**
+2. **Phase 1b: Tasks 1-7 below.** Task 6 needs declutter step 8 merged on claude/design-a (it rewrites what steps 2-5 drew).
 3. **Phase 1 review:** design-lead browses the build (local copy, test data) at 1920, 1680, 1440, 1280, 1080, 768, 375, light and dark,
    and reports to the manager before the owner sees it.
 4. **Phases 2-5:** for each, design-lead makes the mockup → the owner approves → design-lead writes that phase's task plan → ui session
@@ -366,11 +366,109 @@ test('1440px: a new search that leaves fewer alternatives moves focus to the swi
   and 1280, light and dark, against the approved phase-1 picture.
 - [ ] **Step 5: Codex review, then commit:** `feat(design): A alternatives column folds to a rail, remembered (owner-7)`.
 
-### Task 6: Phase 1 read-through (no code unless it finds something)
+### Task 6: The block above the week: only what matters now visible, the rest in "פרטים" (owner-8)
 
-- [ ] **Step 1:** After Tasks 1-5 and declutter steps 1-8 are on claude/design-a, design-lead serves that branch locally and reads the
+Owner, 2026-11-22, approving phase 1: "כל המלל המוגזם שיש פה שהקפתי בעיגול שחור תצמצם ותקפל ותשאיר רק את הרלוונטי". The rules and the
+exact copy are in the spec's Phase details ("Phase 1, the block above the week"); the approved picture is design-lead's
+`mockups/fold-collage.png`. Built on claude/design-a after declutter step 8; line numbers below are of 5a1da4f (declutter step 7) and
+may have moved.
+
+**Files:**
+- Modify: `web/ui-text.js` (three new exports, next to `closeExamLines` :64 and `freshnessA` :224), `web/ui-view.js` (`renderTop`'s
+  `#meta` :110-114, `renderBoardNote` :119-135, the `#semnote` area :330-345, the partial notice :359-364, the notices added to `msg`
+  :444-460, the `factsHtml` lines :482-505), `web/ui-shell.js` (the strip :60, the `#meta` move :78), `web/ui-drawer.js` (`infoPanel` :372, A only), `web/design-a.css`
+  (`.a-more-link`, `.a-exam`)
+- Test: `test/ui-text.test.mjs`, `test/browser/declutter-a.spec.mjs` (the tests that assert today's wording or placement, all replaced in
+  Step 1: the legal-line and freshness tests :97-200 and onward to the last freshness case, the A-semester tests from :225 including the
+  phone target test at :245, the outside-hours test at :419; the classic regression test at :258 stays as it is), `test/browser/board-a.spec.mjs`
+
+**Interfaces:**
+- Produces in `web/ui-text.js`:
+  - `LEGAL_SHORT = 'לא רשמי · אינו הרשמה ואינו המלצה'` (the strip's words; `LEGAL_LINE` and `RULES_SHORT` stay for "פרטים" and מידע).
+  - `staleShortA(status, changedAt, now = new Date()) -> string` : `''` when fresh (the same 36-hour rule as `freshnessA`), else
+    `'נבדק ' + ago(age)` ("נבדק לפני 32 ימים"), `'הבדיקה האחרונה נכשלה'`, or `'לא ידוע מתי נבדק'`.
+  - `examLineShort(pairs) -> string` (`pairs` as `closeExamLines` takes them): same-day pairs S and adjacent-day pairs C; S = 1:
+    `'2 בחינות באותו יום, ' + examWhen({ date })`; S > 1: `` `${S} זוגות בחינות באותו יום` ``; C likewise with `'בימים צמודים'`
+    (C = 1: `'2 בחינות בימים צמודים, ' + examWhen(a)`); both: the two joined with `' · '`; no pairs: `''`.
+- Design A only (`designOn()`); classic renders as before.
+- The strip (ui-shell.js:60): `LEGAL_SHORT`, then a `<span id="aStale" class="warn-text">` (icon + `staleShortA`, empty and hidden when
+  fresh), then "פרטים" (`aUnoMore`, unchanged). `#meta` is no longer moved into the strip in A (ui-shell.js:78); `#aRules` goes.
+- `renderBoardNote` in A: its `phoneLine` (:125) becomes only the stale span (the rules clause is in "פרטים"). The other two lines it
+  draws stay as they are: the unverified-program warning (:129) and the passed-without-prerequisites warning (:131).
+- `#semnote` in A: `missing` ("לא נכנס לאף סמסטר") and the app notices (`semNotice`, summer, `prefsNote`) as today; the A-semester short
+  line only when the shown semester is ב׳ (`ui.sem` as the semester tabs set it, or a one-semester plan of ב׳); on א׳ it is not drawn.
+  The full sentence (`#aAfterA`) stays in "פרטים" on both semesters whenever `afterA` has groups, so the ב׳ line's "אילו?"
+  (`detailsGo` to `aAfterA`) keeps its target. The other info `warnings` go to "פרטים".
+- The partial notice in A: no `<p class="notice partial">`. When `pn.more` and the search left at least one alternative (`!noRes`;
+  with no result the empty-result message keeps its own "חפש עוד", unchanged, and there is no second one), and only then: `<button type="button" class="a-more-link" data-act="more"
+  data-k="searchMore" title="${pn.text}">חפש עוד</button>` right after `#switcher`; `pn.text` is a "פרטים" line (with or without
+  `more`). Each `renderView` removes the button before deciding (it lives outside `#week`, after `#switcher`), so it never outlives the
+  condition. `ui-search.js:61-64` keeps working: same `data-k`.
+- Exam warnings in A: one `<p class="notice a-exam">` with the alert icon, `examLineShort(res.closeExams)` in a `warn-text` span and
+  `<button type="button" class="a-which" data-act="detailsGo" data-to="aExams" data-k="aExamsBtn">פרטים</button>`; the full
+  `closeExamLines` go first in "פרטים", wrapped in `<span id="aExams" tabindex="-1" data-k="aExams">`. In `#live`, the short line.
+- The cap probe and the outside-hours line move to the end of "פרטים", buttons and link included. `factsHtml` wraps each entry in a
+  `<p>` (ui-view.js:273), so they go in as inner content, not whole paragraphs: `capLine` gets a sibling `capInner(best, nameOf)` that
+  returns its `<p>`'s content (icon, span, buttons) with the same `data-k` values (`capProbe`, `capApply`) and the entry is wrapped in
+  `<span class="cap-preview">`; the outside-hours entry is its icon, text and link without the `<p>`. Each counts as one "פרטים" line in
+  declutter-a.spec.mjs:33's count. The left-out line stays visible.
+- "פרטים" order: exam sentences, the search sentence, the A-semester sentence (on א׳), the left-out names, the rest as today, the legal
+  sentences last (`LEGAL_LINE` in full, with "(ההרשמה באפקה-נט)", and `RULES_UNAPPROVED` when not approved).
+- The מידע panel (`infoPanel`, ui-drawer.js:372) in A: its freshness line uses `freshnessA(...).text` (the failed-check and never-checked
+  sentences included) instead of `freshness()`, and its unofficial line is `LEGAL_LINE` in full; classic keeps `freshness()` and
+  `UNOFFICIAL`. So the full freshness sentence, "(ההרשמה באפקה-נט)" and the rules clause are each in "פרטים" and in מידע.
+- CSS: `.a-more-link` a text button (no border or background, `--primary`, underlined, `--fs-sm`, `min-height: 44px`); `.a-exam`
+  `--fs-sm`, its `warn-text` 600.
+
+- [ ] **Step 1: Write the failing tests.** In `test/ui-text.test.mjs`:
+
+```js
+test('the short exam line: one pair, several, adjacent, none', () => {
+  const p = (days, date) => ({ days, a: { course: 'x', date, time: '13:00' }, b: { course: 'y', date, time: '17:00' } });
+  assert.equal(examLineShort([p(0, '2027-01-28')]), '2 בחינות באותו יום, 28.01.2027');
+  assert.equal(examLineShort([p(0, '2027-01-28'), p(0, '2027-02-03'), p(0, '2027-02-07')]), '3 זוגות בחינות באותו יום');
+  assert.equal(examLineShort([p(0, '2027-01-28'), p(1, '2027-02-03')]), '2 בחינות באותו יום, 28.01.2027 · 2 בחינות בימים צמודים, 03.02.2027 13:00');
+  assert.equal(examLineShort([]), '');
+});
+test('the short stale line of the strip', () => {
+  const now = new Date('2026-11-22T12:00:00Z');
+  assert.equal(staleShortA({ checkedAt: '2026-11-22T06:00:00Z', ok: true }, '2026-10-21', now), '');
+  assert.match(staleShortA({ checkedAt: '2026-10-21T06:00:00Z', ok: true }, '2026-10-21', now), /^נבדק לפני \d+ ימים$/);
+  assert.equal(staleShortA({ checkedAt: '2026-11-22T06:00:00Z', ok: false }, '2026-10-21', now), 'הבדיקה האחרונה נכשלה');
+  assert.equal(staleShortA(null, '2026-10-21', now), 'לא ידוע מתי נבדק');
+});
+```
+
+  In `test/browser/declutter-a.spec.mjs` replace the legal-line constants and their tests (:97-187) with: the strip's text is
+  `LEGAL_SHORT + ' · פרטים'` when fresh and `LEGAL_SHORT + ' · נבדק לפני N ימים · פרטים'` when stale, at 1280 and 375; "פרטים" on the
+  board holds "(ההרשמה באפקה-נט)" and, when the rules are not approved, `RULES_UNAPPROVED`; the מידע panel still holds both. Replace the
+  A-semester tests from :225 (keep :258, the classic test): on א׳ `#semnote .a-after` is absent and `#aAfterA` is in "פרטים"; on ב׳
+  the short line is there and its "אילו?" opens "פרטים" at `#aAfterA`. The phone target test at :245 switches to the ב׳ tab first. The
+  outside-hours test at :419 looks for the line and its "להפוך לחובה" link inside the open "פרטים", not under `#week`. The מידע panel test
+  checks `LEGAL_LINE` and the `freshnessA` sentence there.
+
+  In `test/browser/board-a.spec.mjs` (board-a has no clash or partial fixture): wait for the first search to finish (`#altLabel`
+  matches `/^חלופה 1 מתוך/`), then in the page set the shown result's `closeExams` to one same-day pair of two of its courses with a date
+  and times, set `ui.last.partial = true` and `ui.last.ms` to 3000, and call `renderView()` (ui-view.js exports it; import it in
+  `page.evaluate` with `await import('./ui-view.js')` and `ui` from `./ui-common.js`, as declutter-a.spec.mjs:148-150 does). Then:
+  - one `.a-exam` line whose text matches `/^2 בחינות באותו יום, \d\d\.\d\d\.\d{4} · פרטים$/`; its button opens "פרטים" and focuses
+    `#aExams`, which holds "משך הבחינות לא ידוע";
+  - no `.notice.partial`; `[data-k="searchMore"]` is a visible `.a-more-link` next to `#switcher`, at least 44px high, and clicking it
+    starts a search (`#altLabel` becomes "מחשב חלופות…", Task 4);
+  - no `.cap-preview` and no outside-hours notice above `#week`'s grid; both inside "פרטים".
+- [ ] **Step 2: Run** `npx -y -p node@24 node --test test/ui-text.test.mjs`, `npm run test:browser -- declutter-a`, `-- board-a`.
+  Expected: FAIL.
+- [ ] **Step 3: Implement** as in Interfaces.
+- [ ] **Step 4: Run, one suite per command:** the unit tests, `-- declutter-a`, `-- board-a`, `-- a11y-a`, `-- shell-a`, then in
+  PowerShell `$env:DESIGN='classic'; npm run test:browser -- flows; Remove-Item Env:DESIGN`. Expected: PASS. Then look at 1920, 1280 and
+  375, light and dark, with a clash and a cut search, against the approved picture.
+- [ ] **Step 5: Codex review, then commit:** `feat(design): A above the week, one legal line, one exam line, the rest in "פרטים" (owner-8)`.
+
+### Task 7: Phase 1 read-through (no code unless it finds something)
+
+- [ ] **Step 1:** After Tasks 1-6 and declutter steps 1-8 are on claude/design-a, design-lead serves that branch locally and reads the
   board at 1920, 1440, 1280, 768 and 375, light and dark, against the phase-1 picture: the words above the week (target about 25 inside
-  the board, warnings and the legal strip aside), the one emphasized thing, the frame edges, the rail folded and open.
+  the board, warnings and the legal strip aside), the one emphasized thing, the frame edges, the rail folded and open, and the block above the week with a clash and a cut search (Task 6).
 - [ ] **Step 2:** design-lead writes the result, with the count made by hand and any exception with its one-line reason, to the manager.
   A gap becomes a small task for the ui session; otherwise phase 1 goes to the owner.
 
