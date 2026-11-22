@@ -561,7 +561,9 @@ function setup() {
     (e) => {
       if (e.target !== dlg) return;
       const k = M.opener;
-      (k?.isConnected ? k : document.querySelector('[data-k="openMap"]'))?.focus({ preventScroll: true });
+      // the opener, or its twin by key (a panel drawn again while the map was open), or the classic header's button
+      const twin = k?.dataset?.k && document.querySelector(`[data-k="${CSS.escape(k.dataset.k)}"]`);
+      (k?.isConnected ? k : twin || document.querySelector('[data-k="openMap"]'))?.focus({ preventScroll: true });
     },
     true
   );

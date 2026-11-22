@@ -7,6 +7,7 @@ import { TOUR_INTRO, TOUR_PLANS, TOUR_INTRO_A, TOUR_PLANS_A, TOUR_KEY } from '..
 
 // DESIGN=a runs this file against design A: its stops, and the replay from the ☰ menu (its first-run flow is in first-run-a.spec.mjs)
 const A = DESIGN === 'a';
+const INTRO_SEEN = A ? 'intro,shell' : 'intro'; // A: the intro also counts as "what's new" seen
 const INTRO = A ? TOUR_INTRO_A : TOUR_INTRO;
 const PLANS = A ? TOUR_PLANS_A : TOUR_PLANS;
 const replayTour = async (page) => {
@@ -123,7 +124,7 @@ for (const size of Object.keys(SIZES)) {
       'every stop, in order, with its text'
     );
     assert.equal(await page.evaluate(() => document.body.classList.contains('touring')), false);
-    assert.equal(await stored(page), 'intro');
+    assert.equal(await stored(page), INTRO_SEEN);
     assert.notEqual(
       await page.evaluate(() => document.activeElement.tagName),
       'BODY',
@@ -144,7 +145,7 @@ for (const size of Object.keys(SIZES)) {
     if (A) await weekReady(page);
     else await replayTour(page);
     await opened(page);
-    assert.equal(await stored(page), 'intro', 'the intro is seen when it starts');
+    assert.equal(await stored(page), INTRO_SEEN, 'the intro is seen when it starts');
     await page.locator('.driver-popover-close-btn').click();
     await closed(page);
     assert.match(await stored(page), /plans/);
@@ -221,7 +222,7 @@ for (const size of Object.keys(SIZES)) {
   });
 
   test(`${size}: the plans part waits for step 4 when the results came while another step was open`, async (t) => {
-    const page = await visit(t, { ...DONE, [TOUR_KEY]: 'intro' }, '#me');
+    const page = await visit(t, { ...DONE, [TOUR_KEY]: INTRO_SEEN }, '#me');
     await page.locator('#meTitle').waitFor();
     await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // the search finished behind step 1
     await nothingFor(page, 500);
@@ -231,7 +232,7 @@ for (const size of Object.keys(SIZES)) {
   });
 
   test(`${size}: the plans part starts once, on the first screen with an alternative`, async (t) => {
-    const page = await visit(t, { ...DONE, [TOUR_KEY]: 'intro' });
+    const page = await visit(t, { ...DONE, [TOUR_KEY]: INTRO_SEEN });
     await weekReady(page);
     await opened(page);
     assert.equal(await progress(page), `1 מתוך ${PLANS.length}`);
@@ -239,7 +240,7 @@ for (const size of Object.keys(SIZES)) {
       await walk(page),
       PLANS.map((s) => s.text)
     );
-    assert.equal(await stored(page), 'intro,plans');
+    assert.equal(await stored(page), A ? 'intro,shell,plans' : 'intro,plans');
     await page.reload();
     await weekReady(page);
     await nothingFor(page);

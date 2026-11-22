@@ -71,7 +71,7 @@ export function gradeSheetPdf(lines) {
 // A new browser context (empty storage) at this size; `seed` is written into localStorage once, before the site's first script. print() is counted, not shown.
 // `size` is 'phone' or 'desktop', or a { width, height } of its own. `scheme` is the device's colour scheme (the site follows it). The outside-request and script-error checks run when the test ends.
 // The first-visit tour is marked seen, so it never stands between a test and the page; `withTour` leaves it unseen (tour.spec.mjs, and the axe run with its popover open).
-export const TOUR_SEEN = { 'afeka-sched-v1-tour': 'intro,plans' };
+export const TOUR_SEEN = { 'afeka-sched-v1-tour': 'intro,plans,shell' }; // shell: design A's "what's new" (classic never reads it)
 // The first-entry mode choice is answered ('build'), so the fresh-visit specs go from the terms straight to the track question; `withModeChoice` leaves it open (edit-shell.spec.mjs).
 export const MODE_BUILD = { 'afeka-sched-v1-mode': 'build' };
 // The last parameter, opts: { design: 'a' | 'classic' } (see DESIGN above).

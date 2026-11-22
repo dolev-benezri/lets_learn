@@ -362,3 +362,63 @@ test('landscape phone at the gate: the sheet is beside the rail and below the ta
   assert.equal(m.coarse, true, 'the touch emulation is on');
   assert.equal(m.ok, true, 'the improve tab is not under the sheet in landscape');
 });
+
+// ---- Q14: the legal page's top bar and the way back ----
+for (const size of [{ width: 320, height: 640 }, { width: 1280, height: 800 }])
+  test(`${size.width}px: legal.html has design A's top bar with the way back, nothing scrolls sideways; classic has neither`, async (t) => {
+    const page = await visit(t, size, DONE);
+    await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+    await page.waitForLoadState('networkidle'); // every fetch of the app is done: none is cut off by the page change
+    await page.goto(SITE + 'legal.html#privacy');
+    const bar = page.locator('.a-legal-top');
+    await bar.waitFor({ state: 'visible' });
+    assert.equal(await bar.locator('a[href="./"]').count(), 1, 'the way back');
+    const box = await bar.locator('a[href="./"]').boundingBox();
+    assert.ok(box.height >= 43.5 && box.width >= 43.5, `a target: ${Math.round(box.width)}x${Math.round(box.height)}`);
+    assert.equal(await page.locator('.legal .back').isVisible(), false, 'its own link is the bar now');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');
+    // an anchor is not left under the sticky bar
+    const measure = () =>
+      page.evaluate(() => {
+        const bar = document.querySelector('.a-legal-top'), sticky = getComputedStyle(bar).position === 'sticky';
+        return { top: document.getElementById('privacy').getBoundingClientRect().top, under: sticky ? bar.getBoundingClientRect().bottom : 0 };
+      });
+    // the fonts arrive after the first scroll to the anchor and move the text (in classic too): go to the anchor again once they are there
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      location.hash = '#terms';
+      location.hash = '#privacy';
+    });
+    await page.waitForTimeout(400);
+    const m = await measure();
+    assert.ok(m.top >= m.under - 1 && m.top < 400, `the section starts below the bar (${m.top} / bar ends ${m.under})`);
+    await bar.locator('a[href="./"]').click();
+    await page.locator('.a-shell').waitFor({ timeout: 30000 });
+    await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // the app has loaded: nothing is cut off at the end
+    await page.waitForLoadState('networkidle');
+    // classic: the old page, no bar
+    const old = await visitIn(browser, t, size, DONE, '', 'light', false, false, { design: 'classic' });
+    await old.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+    await old.waitForLoadState('networkidle');
+    await old.goto(SITE + 'legal.html');
+    assert.equal(await old.locator('.a-legal-top').isVisible(), false);
+    assert.equal(await old.locator('.legal .back').isVisible(), true);
+  });
+
+test('legal.html with blocked storage: the way back keeps ?design=a', async (t) => {
+  const context = await browser.newContext({ viewport: SIZES.desktop, locale: 'he-IL' });
+  t.after(() => context.close());
+  await context.addInitScript(() => {
+    const boom = () => {
+      throw new Error('blocked');
+    };
+    Object.defineProperty(window, 'localStorage', { get: boom });
+  });
+  const page = await context.newPage();
+  await page.goto(SITE + 'legal.html?design=a');
+  await page.locator('.a-legal-top').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.a-legal-top a[data-keep-design]').getAttribute('href'), './?design=a');
+  await page.locator('.a-legal-top a[data-keep-design]').click();
+  await page.locator('.a-shell').waitFor({ timeout: 30000 });
+  await page.waitForLoadState('networkidle');
+});

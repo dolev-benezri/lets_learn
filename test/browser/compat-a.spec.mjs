@@ -54,6 +54,8 @@ const snapshot = (page) =>
   page.evaluate(async () => {
     const { app } = await import('./app.js'), { current } = await import('./ui-common.js'), { registrationText } = await import('./ui-drawer.js');
     const stored = Object.fromEntries(Object.entries(localStorage).filter(([k]) => k.startsWith('afeka-sched-v1') && k !== 'afeka-sched-v1-design').sort());
+    // the one thing A writes that classic does not: the part "shell" ("what's new") of the tour, once it was shown
+    stored['afeka-sched-v1-tour'] = stored['afeka-sched-v1-tour']?.replace(',shell', '');
     const c = current();
     // the edit routes run no build search: there the shown lessons of the edit page stand for the plan
     const lessons = [...document.querySelectorAll('#editWeek .blk')].map((b) => b.textContent.replace(/\s+/g, ' ').trim());

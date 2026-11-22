@@ -16,7 +16,7 @@ import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
-import { tourCheck, tourOnce, introPending, onTourEnd } from './tour.js';
+import { tourCheck, tourOnce, introPending, shellPending, onTourEnd } from './tour.js';
 import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear, toggleEditSheet } from './ui-shell.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
@@ -135,6 +135,7 @@ function onHash() {
     focusView();
   }
   // the results came while another step was open: arriving at step 4 is the first time it shows one
+  whatsNew();
   if (hasAlternatives() && !$('layout').hidden) ui.onResult();
 }
 
@@ -160,12 +161,20 @@ function renderAll() {
   renderPrefs();
   scheduleRun();
   tourCheck(!gated(), shownTitle); // the intro of a first visit, once the gate is done (classic: and the step bar is on screen)
+  whatsNew();
 }
 // renderView, and a route change that leaves results behind: the first alternative on screen. A: not before the intro is done, and not behind a tool
 // that covers the board (the board is always there, so "step 4 shows" no longer means anything)
-ui.onResult = () => !(designOn() && (introPending() || !boardClear())) && tourOnce('plans', shownTitle);
+const plansOk = () => !(designOn() && (introPending() || shellPending() || !boardClear()));
+ui.onResult = () => plansOk() && tourOnce('plans', shownTitle, plansOk);
+// A: "what's new", once, for someone who knew the old design: when the gate is done and nothing covers the board
+// (a loaded build route: not the edit page, which has no "out" tool to show, and not an error screen)
+const shellOk = () => designOn() && shellPending() && !gated() && boardClear() && !app.loadFailed && !isEditHash(location.hash);
+const whatsNew = () => shellOk() && tourOnce('shell', shownTitle, shellOk);
+// A: any dialog closing may have been what a tour was waiting for (the retake note, a restore question, the menu)
+document.addEventListener('close', () => designOn() && setTimeout(() => askToursAgain()), true);
 // A: the plans part was refused (a dialog, the intro running) and nothing else will ask again: do it when the obstacle goes
-const askToursAgain = () => designOn() && hasAlternatives() && !$('layout').hidden && ui.onResult();
+const askToursAgain = () => designOn() && (whatsNew() || (hasAlternatives() && !$('layout').hidden && ui.onResult()));
 onTourEnd(askToursAgain);
 
 // ---------- wiring (static shell from index.html) ----------

@@ -248,8 +248,12 @@
 :root[data-design="a"] body.drawer-open { padding-inline-end:0; }
 :root[data-design="a"] .a-alts { display:none; } /* a phone has the arrows and the swipe; the column is for a wide screen */
 :root[data-design="a"] .col-t { margin:0 0 8px; font-size:1rem; }
-:root[data-design="a"] .site-foot {
-  display:none;
+:root[data-design="a"] .site-foot { display:none; }
+/* the legal page (legal.html): the top bar with the way back replaces its own link */
+:root[data-design="a"] .a-legal-top .a-legal-back { min-height:44px; min-width:44px; }
+:root[data-design="a"] .legal .back { display:none; }
+:root[data-design="a"] .legal h2 {
+  scroll-margin-top:calc(var(--a-top) + 16px);
 } /* the notice stays in the strip; the legal links, the report and counselling links are in ☰ and the information panel */
 :root[data-design="a"] .out-actions { display:flex; flex-wrap:wrap; gap:8px; }
 :root[data-design="a"] .out-actions .btn { flex:1 1 auto; min-height:var(--tap); }
