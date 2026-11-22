@@ -82,7 +82,8 @@ import {
   yearSearch,
   $,
   ui,
-  designOn
+  designOn,
+  altsOpen
 } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -632,7 +633,12 @@ export function renderAltColumn() {
   const box = $('alts');
   if (!box) return;
   const results = ui.last?.results ?? [];
+  // the focus of a control this redraw removes goes to the switcher (a visible arrow, else the group itself), never to the page
+  const strand = () => ([$('next'), $('prev')].find((b) => b && !b.disabled && b.checkVisibility?.()) ?? $('switcher'))?.focus({ preventScroll: true });
+  const wasIn = box.contains(document.activeElement),
+    wasK = wasIn ? document.activeElement.dataset?.k : null;
   if (!results.length || results.every((r) => !resCourses(r).length)) {
+    if (wasIn) strand();
     box.hidden = true;
     box.innerHTML = '';
     box.closest('.a-stage')?.classList.remove('has-alts');
@@ -656,9 +662,27 @@ export function renderAltColumn() {
       <span class="rank" aria-hidden="true">${i + 1}</span><span class="ac-b"><b><span class="sr">חלופה ${i + 1}: </span>${esc(head)}</b>
       <small>${esc(sub)}</small>${miniWeekHtml(res, data, span)}</span></button></li>`;
   });
+  const open = altsOpen();
   box.hidden = false;
   box.closest('.a-stage')?.classList.add('has-alts'); // the wide grid's third track (a class: no :has() needed)
-  // a year plan's cards are the year's alternatives; the sort select sits under the title
-  box.innerHTML = `<h2 class="col-t">${results.some(isPair) ? 'חלופות לשנה' : 'חלופות'}</h2><div class="showby a-sort">${sortHtml('sortBy', 'לפי')}</div><ol class="alt-list">${cards.join('')}</ol>`;
+  box.closest('.a-stage')?.classList.toggle('alts-rail', !open); // folded: a 64px rail, the default
+  if (open)
+    // a year plan's cards are the year's alternatives; the sort select sits under the title (it shows only here)
+    box.innerHTML = `<div class="col-h"><h2 class="col-t">${results.some(isPair) ? 'חלופות לשנה' : 'חלופות'}</h2>
+      <button type="button" class="rail-btn" data-act="altsFold" data-k="alts-fold" aria-expanded="true" aria-controls="alts">${icon('chevron-left')}<span>הקטנה</span></button></div>
+      <div class="showby a-sort">${sortHtml('sortBy', 'לפי')}</div><ol class="alt-list">${cards.join('')}</ol>`;
+  else {
+    const rail = results.map((raw, i) => {
+      const res = semResult(raw, ui.sem),
+        days = new Set(res.groups.flatMap((g) => byId.get(g)?.g.meetings.map((m) => m.day) ?? [])),
+        head = isPair(raw) ? `בשנה: ${yearTotals(raw).credits} נ״ז` : `${summary(res, data, friends, constraints).credits} נ״ז`;
+      const dots = Array.from({ length: span.days }, (_, d) => `<i${days.has(d + 1) ? ' class="on"' : ''}></i>`).join('');
+      return `<li><button type="button" class="rail-n" data-act="altPick" data-i="${i}" data-k="altcard-${i}" aria-current="${i === ui.cur}"
+        aria-label="חלופה ${i + 1}: ${esc(head)} · ${days.size} ימים"><span>${i + 1}</span><span class="rail-d" aria-hidden="true">${dots}</span></button></li>`;
+    });
+    box.innerHTML = `<div class="alt-rail"><button type="button" class="rail-btn" data-act="altsFold" data-k="alts-fold" aria-expanded="false" aria-controls="alts"
+      aria-label="הצגת ${results.length} החלופות">${icon('chevron-right')}<b>${results.length}</b></button><ol class="rail-list">${rail.join('')}</ol></div>`;
+  }
+  if (wasIn && (!wasK || !box.querySelector(`[data-k="${CSS.escape(wasK)}"]`))) strand(); // a control with no key (the sort hint's link) cannot be found again either
 }
 

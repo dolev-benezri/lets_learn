@@ -114,7 +114,10 @@ export function shellInit() {
     const had = document.activeElement;
     placeSemtabs();
     applyShell();
-    if (had && had !== document.body && !had.checkVisibility?.()) {
+    if (had?.closest?.('#alts') && !had.checkVisibility?.()) {
+      // the alternatives column is gone below 1080px: the switcher's arrow is where the alternatives are now
+      ([$('next'), $('prev')].find((b) => b && !b.disabled && b.checkVisibility?.()) ?? $('switcher'))?.focus({ preventScroll: true });
+    } else if (had && had !== document.body && !had.checkVisibility?.()) {
       // the heading of what is shown, or (a closed sheet) the dock button of the screen
       const h = $(ui.titleId);
       (h?.checkVisibility?.() ? h : document.querySelector('.dock .dk[aria-pressed="true"]:not([hidden])') ?? document.querySelector('.dock .dk:not([hidden])'))

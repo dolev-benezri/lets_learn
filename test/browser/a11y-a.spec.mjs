@@ -56,7 +56,7 @@ const smallTargets = (page) =>
       return !!c && c.textContent.replace(a.textContent, '').trim().length > 0;
     };
     const bad = [];
-    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs']) {
+    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs', '#alts']) {
       for (const el of document.querySelector(root)?.querySelectorAll(sel) ?? []) {
         if (!el.checkVisibility() || el.closest('[hidden]') || prose(el)) continue;
         const box = el.matches('input[type=checkbox], input[type=radio]') ? (el.closest('label') ?? el) : el;
@@ -301,5 +301,28 @@ for (const scheme of ['light', 'dark'])
       await check(page, `${w} legal page`);
       await fits(page, `${w} legal page`);
     }
+    done();
+  });
+
+// phase 1 task 5: the alternatives column folded (the rail) and open, at 1440 (1280 skips the target scan, the other widths hide the column)
+const railTargets = async (page, label, note) => {
+  const small = await page.evaluate(() =>
+    [...document.querySelectorAll('#alts button')].filter((b) => b.checkVisibility()).map((b) => [b.dataset.k, b.getBoundingClientRect()]).filter(([, r]) => r.width < 43.5 || r.height < 43.5).map(([k, r]) => `${k} ${Math.round(r.width)}x${Math.round(r.height)}`)
+  );
+  for (const x of small) note(`${label}: a target under 44px: ${x}`);
+};
+for (const scheme of ['light', 'dark'])
+  test(`1440/${scheme}: the alternatives rail and the open column: axe, targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const page = await visit(t, { width: 1440, height: 900 }, DONE, '', scheme);
+    await page.locator('#alts .rail-n').first().waitFor({ state: 'visible', timeout: 30000 });
+    await check(page, 'rail');
+    await layoutOk(page, 'rail', false, note);
+    await railTargets(page, 'rail', note);
+    await page.locator('#alts [data-k="alts-fold"]').click();
+    await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+    await check(page, 'open column');
+    await layoutOk(page, 'open column', false, note);
+    await railTargets(page, 'open column', note);
     done();
   });

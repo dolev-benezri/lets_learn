@@ -7,6 +7,7 @@
   --design:a; /* a sentinel the final proof (Task 13) reads */
   --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
   --a-top:60px; /* the wide top bar, where the dock and the panel stick */
+  --a-dock-h:52px; /* the wide dock's own height (from 1080px): --tap is 36px with a mouse, and the tabs are a column */
   /* the system design (docs/superpowers/specs/2026-11-22-design-a-system-design.md): one spacing scale, one type scale, the frame widths */
   --sp-1:4px;
   --sp-2:8px;
@@ -402,7 +403,6 @@
     padding:0; border-top:0; border-bottom:0; box-shadow:inset 0 -1px 0 var(--border); /* the line is a shadow: the dock is exactly --a-dock-h */
     border-inline-end:1px solid var(--border);
   }
-  :root[data-design="a"] { --a-dock-h:52px; } /* the wide dock's own height: --tap is 36px with a mouse, and the tabs are a column */
   :root[data-design="a"] .dk { flex-direction:column; gap:2px; min-height:var(--a-dock-h); font-size:var(--fs-xs); }
   :root[data-design="a"] .dk span { white-space:nowrap; }
   :root[data-design="a"] .dk .icon { width:18px; height:18px; }
@@ -462,10 +462,33 @@
   :root[data-design="a"] :is(.a-alts, .a-pb, .edit-tool) { scrollbar-width:thin; }
   :root[data-design="a"] .ac-b b { font-size:var(--fs); font-weight:600; }
   :root[data-design="a"] .ac-b small { font-size:var(--fs-sm); }
+  /* the alternatives column folds to a 64px rail (system design, owner-7); the switcher's arrows stay the main way between alternatives */
+  :root[data-design="a"] .a-stage.has-alts.alts-rail { grid-template-columns:400px minmax(0, 1fr) 64px; }
+  :root[data-design="a"] .alts-rail .a-alts:not([hidden]) { padding:8px; }
 }
+:root[data-design="a"] .col-h { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-2); margin-bottom:var(--sp-2); }
+:root[data-design="a"] .col-h .col-t { margin:0; }
+:root[data-design="a"] .alt-rail { display:flex; flex-direction:column; align-items:center; gap:var(--sp-2); }
+:root[data-design="a"] .rail-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:48px; min-height:56px; padding:0; border:0;
+  border-radius:12px; background:var(--surface-2); color:var(--text); font:inherit; font-size:var(--fs-xs); cursor:pointer;
+}
+:root[data-design="a"] .rail-btn b { font-size:var(--fs); font-weight:700; }
+:root[data-design="a"] .rail-btn .icon { width:18px; height:18px; }
+:root[data-design="a"] .col-h .rail-btn { flex-direction:row; width:auto; min-height:44px; padding:0 var(--sp-3); }
+:root[data-design="a"] .rail-list { display:grid; gap:6px; margin:0; padding:0; list-style:none; }
+:root[data-design="a"] .rail-n {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:48px; height:48px; padding:0; border:1px solid var(--border);
+  border-radius:12px; background:var(--surface); color:var(--text); font:inherit; font-size:var(--fs); font-weight:700; cursor:pointer;
+}
+:root[data-design="a"] .rail-d { display:flex; gap:2px; }
+:root[data-design="a"] .rail-d i { width:4px; height:4px; background:currentColor; opacity:.25; }
+:root[data-design="a"] .rail-d i.on { opacity:1; }
+:root[data-design="a"] .rail-n[aria-current="true"] { border-color:var(--primary); background:var(--primary); color:var(--on-primary); }
 @media (min-width:1080px) and (max-width:1279px) {
   :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); }
   :root[data-design="a"] .a-stage.has-alts { grid-template-columns:360px minmax(0, 1fr) 240px; }
+  :root[data-design="a"] .a-stage.has-alts.alts-rail { grid-template-columns:360px minmax(0, 1fr) 64px; }
 }
 @media (max-width:359px) { :root[data-design="a"] .dk { font-size:10px; } :root[data-design="a"] .a-top { padding-inline:8px; } }
 /* a landscape phone is 375px tall: the dock becomes a rail on the inline-start edge and the tool a full-height panel beside it */

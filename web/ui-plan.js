@@ -7,11 +7,11 @@ import { trapTab, askConfirm } from './ui-dialog.js';
 import { retakeNotice } from './rules.js';
 import './ui-map.js';
 import { popStale, PAGE_NAME } from './ui-text.js';
-import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, termsOk, heb, $, ui, designOn } from './ui-common.js';
+import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, termsOk, heb, $, ui, designOn, altsOpen, setAltsOpen } from './ui-common.js';
 import { scheduleRun, cancelRun } from './ui-search.js';
 import { renderEdit, stopSearch, syncSavedHint } from './ui-edit.js';
 import { needsModeChoice, modeOpen, renderModeChoice, getMode, setMode } from './ui-mode.js';
-import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, showAlt, hasAlternatives } from './ui-view.js';
+import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, showAlt, hasAlternatives, renderAltColumn } from './ui-view.js';
 import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
@@ -302,6 +302,12 @@ ACT.editSheet = () => toggleEditSheet(); // the phone's sheet over the improve w
 ACT.altPick = (el) => {
   el.focus({ preventScroll: true });
   showAlt(Number(el.dataset.i));
+};
+// the alternatives column folds to a rail and opens again (the choice is kept); the button keeps the focus (WebKit does not focus a clicked button)
+ACT.altsFold = (el) => {
+  el.focus({ preventScroll: true });
+  setAltsOpen(!altsOpen());
+  keepFocus(renderAltColumn);
 };
 addEventListener('hashchange', onHash);
 // static container, so the friend-landing banner inserted later is announced

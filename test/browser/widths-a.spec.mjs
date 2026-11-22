@@ -49,7 +49,11 @@ for (const w of [320, 599, 600, 759, 760, 1079, 1080, 1279, 1280])
       assert.equal(m.alts, true, 'the alternatives column is there');
       if (w < 1280) {
         const cols = await page.evaluate(() => [document.getElementById('panel').getBoundingClientRect().width, document.getElementById('alts').getBoundingClientRect().width]);
-        assert.deepEqual(cols.map(Math.round), [360, 240], 'the 1080-1279 columns are unchanged (Task 5: [360, 64])');
+        assert.deepEqual(cols.map(Math.round), [360, 64], 'the 1080-1279 columns: the tool 360, the alternatives folded to a 64px rail');
+        await page.locator('#alts [data-k="alts-fold"]').click();
+        await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+        const open = await page.evaluate(() => [document.getElementById('panel').getBoundingClientRect().width, document.getElementById('alts').getBoundingClientRect().width]);
+        assert.deepEqual(open.map(Math.round), [360, 240], 'opened: the 240px column of before');
       }
     }
   });
@@ -105,7 +109,12 @@ for (const w of [1440, 1679, 1680, 1700, 1920])
     assert.ok(Math.abs(m.altsLeft - side) <= 1, `alternatives on the frame's left edge: ${JSON.stringify(m)}`);
     assert.ok(Math.abs(m.cw - m.panelRight - side) <= 1, `tool column on the frame's right edge: ${JSON.stringify(m)}`);
     assert.equal(Math.round(m.panelW), 400, 'tool column 400px');
-    assert.equal(Math.round(m.altsW), 280, 'alternatives column 280px (Task 5 changes it to the 64px rail)');
+    assert.equal(Math.round(m.altsW), 64, 'the alternatives start as the 64px rail');
+    await page.locator('#alts [data-k="alts-fold"]').click();
+    await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+    const wide = await frame(page);
+    assert.equal(Math.round(wide.altsW), 280, 'opened: the 280px column');
+    assert.ok(Math.abs(wide.altsLeft - side) <= 1 && Math.abs(m.cw - wide.panelRight - side) <= 1, `the frame's edges do not move when it opens: ${JSON.stringify(wide)}`);
     assert.ok(Math.abs(m.topW - m.cw) <= 1 && Math.abs(m.stripW - m.cw) <= 1, 'header and strip backgrounds span the window');
     const stripPad = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.a-strip')).paddingInlineStart));
     assert.ok(Math.abs(stripPad - Math.max(12, side)) <= 1, `the strip's content lines up with the frame: ${stripPad}`);
