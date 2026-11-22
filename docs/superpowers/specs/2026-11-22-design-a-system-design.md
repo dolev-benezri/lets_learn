@@ -63,12 +63,17 @@ The owner chose C, with the "big but" above. From B we keep its principle: one e
 ```
 ≥1440px   | ☰ ◐      [מערכת חדשה | שיפור מערכת קיימת]            המערכת שלי |   header inside the frame
           |  נבדק לפני 10 שעות        לא רשמי · אינו הרשמה ואינו המלצה …      |   strip inside the frame
-          | [alternatives 280] [        board        ] [tool 400]             |   build: three columns
+          | [▸ rail 64] [            board            ] [tool 400]             |   build: alternatives folded to a rail
           '----------------------- max 1680, centred -----------------------'
 ```
 
 - Build mode: one frame, max-width 1680px, centred; outside it, the page background. The header, the strip and the three columns all
   sit inside it, so their edges line up. Below 1680 nothing changes from today's widths.
+- The alternatives column folds (owner, 2026-11-22: "זה מעמיס על הדף זה צריך להיות מתקפל"). From 1080px it starts as a 64px rail: an
+  open button with the count, then one 48px button per alternative with its number and one tiny dot per teaching day (filled = a day
+  with lessons), the shown one filled in the primary colour. The open button widens it to today's 280px (240 at 1080-1279) cards
+  with a "הקטנה" button in the header; the choice is remembered on the device. The week gets the space back. The switcher arrows stay
+  the main way between alternatives; on a phone nothing changes (swipe and the switcher, no column).
 - Improve mode: max-width 1200px, centred. Before a schedule is loaded there is no week to show: one centred column (max 640) with the
   load choice. After loading: the tool column (440) beside the week.
 - One scroll area per region where possible: the page scrolls; a column scrolls on its own only when it is sticky (tool, alternatives),
@@ -113,6 +118,7 @@ and a divider, not a second card. No card inside a card inside a panel (today's 
 | List row | a full-width row: icon, label, optional value or chevron; dividers between rows; 48px | stacked outline buttons and bare links (☰, מידע) |
 | Section | heading + divider + content | card inside a card |
 | Buttons | one primary (filled) per screen; secondary (outline) for alternatives; tertiary (text) for minor ones; destructive in red text, never next to the primary | rows of equal-weight outline buttons |
+| Folding column | a sticky side column with a 64px rail state (an icon button with a count, then one compact button per item) and an open state (full cards, a "הקטנה" button in its header); the open/closed choice remembered on the device | a column that is always open |
 | Tab bar | icon above a label, label never wraps (`white-space: nowrap`), ≤ 5 tabs | icon beside a wrapping label |
 | Overlay | on a wide screen a tool takes a column and never covers content; a modal side sheet has a scrim, a close button and traps focus; on a phone, the bottom sheet | the record panel fixed over the improve column |
 | Empty state | one line saying what will appear here + the one button that makes it appear, centred in the area it fills | a hint floating at the top of a grey field |
@@ -149,7 +155,7 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
 
 | # | Phase | Key element (the one emphasized thing) | What changes | Defects fixed |
 |---|---|---|---|---|
-| 1 | Board (declutter, in progress) + frame | the week; above it the facts line of the shown alternative | the approved declutter; then the frame (§1), tab bar (§5), loading state, alternatives cards on the type scale | W1, W2, W4; owner-3 (part), owner-6 |
+| 1 | Board (declutter, in progress) + frame | the week; above it the facts line of the shown alternative | the approved declutter; then the frame (§1), tab bar (§5), loading state, alternatives column folded to a rail (§1), its cards on the type scale | W1, W2, W4; owner-3 (part), owner-6, owner-7 |
 | 2 | Tools: המצב שלי, קורסים, מה חשוב לי, חברים, להוציא | המצב שלי: progress ("41 מתוך 41 נ״ז"); קורסים: the planned count and the "חובה/אולי/לא" choice; מה חשוב לי: the 5 importance rows; חברים: add a friend; להוציא: "העתק הכל" | one surface level, sections not cards; helper lines behind ⓘ; the course card status line (declutter C); one destructive control (delete-all lives in ☰ only); the phone sheet at 60% | W3, P2; owner-3 |
 | 3 | Improve mode | before load: the load choice; after: the week with the change; שינויים: "חפש הצעות", then the shown proposal | frame (§1) with the empty state; the record opens in the tool column's place (wide) with a back control, never over it; tabs over the content; "קובץ מערכת" opens the device's file picker at once and the editor opens with the file already read (manual stays a second button); the goal chips wrap; buttons: one primary, the rest secondary or under "עוד"; one sticky bar on a phone | owner-1, owner-2, owner-4; W7-W12, P1 |
 | 4 | ☰, מידע, dialogs (schedule editor, friend editor, map, confirmations) | ☰: the list itself; מידע: "על הכלי" first sentence; the editor: the week being built | list rows; a back arrow in the sheet header instead of "חזרה לתפריט"; links as rows with an external-link icon; "מצב כהה" leaves ☰ (the header has it); the editor's side column: one input method visible, the other two under "דרכים נוספות" | owner-5; W5, W6, W12 |
@@ -160,7 +166,11 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
 - Plan depth (my call): the implementation plan covers phase 1 in full (both steps) and outlines phases 2-5. Each later phase gets its
   task-level plan after its mockup is approved, since the mockup may change it.
 - Phase 1 steps: 1a is the declutter spec as approved (the ui session is building it). 1b is the frame (§1), the tab bar (§5), the loading
-  state and the alternatives cards on the type scale. The board's ≈25-word target applies from 1b on.
+  state, the folding alternatives column (§1) and its cards on the type scale. The board's ≈25-word target applies from 1b on.
+- The folding column (my calls): the rail is the default for every student, including returning ones, until they open it; the choice
+  is stored in localStorage under its own key (a private window starts folded). Rail buttons carry the alternative's summary in their
+  accessible name ("חלופה 3: 42 נ״ז · 5 ימים") and pick it like a card does; the sort control ("לפי") shows only in the open state. The
+  open button is `aria-expanded` with `aria-controls` on the column. Opening or folding keeps focus on the button that did it.
 - Wording: the phase mockup carries the exact Hebrew. The owner's approval of the mockup approves its words; the builder does not invent
   copy. A string the mockup does not show follows the copy rules (§6), and I review it when I browse the build.
 - Phase 3, the file button: it keeps today's check first (track or year missing: focus the missing field, say why, open nothing;
@@ -222,6 +232,7 @@ From the owner (screenshots kept privately, 2026-11-22) and my browsing of a loc
 | owner-4 | improve, load | the green "קובץ מערכת" button does the same as "לבחור קורסים וקבוצות ידנית" |
 | owner-5 | ☰ מידע | unstyled: a big outline "חזרה לתפריט" button, plain list, bare links |
 | owner-6 | board | the words above the week on alternative 9 (banners, chips, comparison lines) |
+| owner-7 | board, wide | the alternatives column (a mini-week card per alternative) is always open and loads the page |
 | W1 | wide | no page max-width: header items at the far edges, three columns edge to edge, three scrollbars side by side |
 | W2 | wide | tool tab labels wrap |
 | W3 | tools | card inside a card; "התמחות" segment labels wrap; small outline buttons at the far end; delete-all twice |

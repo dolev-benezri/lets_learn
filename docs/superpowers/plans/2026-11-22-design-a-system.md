@@ -28,13 +28,15 @@
 ## Review Focus
 
 1. Around the cap: 1679, 1680 and 1700px keep the same column widths; only the outer margins grow (no jump of a column or the dock).
-2. RTL order at 1920: the tool column on the right edge of the frame, the alternatives on its left edge; the margins outside the frame equal on both sides.
+2. RTL order at 1920: the tool column on the right edge of the frame, the alternatives (rail or open) on its left edge; the margins outside the frame equal on both sides.
 3. The sticky header and strip: their background still spans the full window width while their content lines up with the frame.
 4. Improve mode at ≥ 1080 before phase 3: the record panel is still `position: fixed`; Task 2 moves it to the frame's edge so it covers
    the tool column only, never the week. Phase 3 replaces it.
-5. 1080-1279px keeps today's 360 | board | 240 columns, and the frame padding there is 0.
+5. 1080-1279px keeps today's 360 | board columns (the open alternatives column 240, the rail 64), and the frame padding there is 0.
+6. The folded column after a redraw: a new search, a semester switch or a resize redraws `#alts`; it stays in the state the student chose,
+   and focus stays on the rail button or the open/fold button that had it.
 
-Each line has its test in the task that owns it (Tasks 2 and 3 below). Also watched: the dock's real height with a mouse (`--tap` is
+Each line has its test in the task that owns it (Tasks 2, 3 and 5 below). Also watched: the dock's real height with a mouse (`--tap` is
 36px there), which Task 3 fixes and Task 2's scrolled check guards.
 
 ---
@@ -45,7 +47,7 @@ Each line has its test in the task that owns it (Tasks 2 and 3 below). Also watc
    declutter step 4 puts the semester tabs in the switcher row and the sort select in the alternatives column header. Task 2 below sizes
    those rows and must start after step 4 has merged. Declutter step 1 (the facts line and "פרטים") is the board's key element and must
    not be restyled by Task 1's tokens beyond the type scale.
-2. **Phase 1b: Tasks 1-5 below.**
+2. **Phase 1b: Tasks 1-6 below.**
 3. **Phase 1 review:** design-lead browses the build (local copy, test data) at 1920, 1680, 1440, 1280, 1080, 768, 375, light and dark,
    and reports to the manager before the owner sees it.
 4. **Phases 2-5:** for each, design-lead makes the mockup → the owner approves → design-lead writes that phase's task plan → ui session
@@ -116,7 +118,7 @@ for (const w of [1440, 1679, 1680, 1700, 1920])
     assert.ok(Math.abs(m.altsLeft - side) <= 1, `alternatives on the frame's left edge: ${JSON.stringify(m)}`);
     assert.ok(Math.abs(w - m.panelRight - side) <= 1, `tool column on the frame's right edge: ${JSON.stringify(m)}`);
     assert.equal(Math.round(m.panelW), 400, 'tool column 400px');
-    assert.equal(Math.round(m.altsW), 280, 'alternatives column 280px');
+    assert.equal(Math.round(m.altsW), 280, 'alternatives column 280px (Task 5 changes it to the 64px rail)');
     assert.ok(Math.abs(m.topW - w) <= 1 && Math.abs(m.stripW - w) <= 1, 'header and strip backgrounds span the window');
     const stripPad = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.a-strip')).paddingInlineStart));
     assert.ok(Math.abs(stripPad - Math.max(12, side)) <= 1, `the strip's content lines up with the frame: ${stripPad}`);
@@ -135,7 +137,7 @@ for (const w of [1440, 1679, 1680, 1700, 1920])
       if (w < 1280) {
         const cols = await page.evaluate(() => [document.getElementById('panel').getBoundingClientRect().width,
           document.getElementById('alts').getBoundingClientRect().width]);
-        assert.deepEqual(cols.map(Math.round), [360, 240], 'the 1080-1279 columns are unchanged');
+        assert.deepEqual(cols.map(Math.round), [360, 240], 'the 1080-1279 columns are unchanged (Task 5: [360, 64])');
       }
 ```
 
@@ -260,11 +262,115 @@ test('while the first search runs the switcher says it is computing, then shows 
 The second "מחשב…" (`#coursesBusy` in the tool column) stays: the board's `#busy` is not sticky and scrolls away, so the column's indicator
 is the one still on screen after a scroll. The spec asked for one spinner; this is the one-line exception the spec allows (§6).
 
-### Task 5: Phase 1 read-through (no code unless it finds something)
+### Task 5: The alternatives column folds to a rail (owner-7)
 
-- [ ] **Step 1:** After Tasks 1-4 and declutter steps 1-8 are on claude/design-a, design-lead serves that branch locally and reads the
+Owner, 2026-11-22, on the declutter picture: "זה מעמיס על הדף זה צריך להיות מתקפל". From 1080px the column starts folded and the week gets
+the space. The switcher arrows stay the main way between alternatives. Phone and tablet (below 1080): no change, there is no column.
+
+**Files:**
+- Modify: `web/ui-common.js` (two storage helpers), `web/ui-view.js` (`renderAltColumn`, :528), `web/ui-plan.js` (one action, next to
+  `ACT.altPick` at :302), `web/design-a.css` (the `@media (min-width:1080px)` block, :319-323, and :361-362)
+- Test: `test/browser/board-a.spec.mjs` (new tests, and the existing card tests at :22, :42, :60, :169, :175, :181 open the column
+  first: they wait for `.alt-card` on a fresh visit, which is folded now); `test/browser/widths-a.spec.mjs` (Task 2's widths, both
+  states); `test/browser/a11y-a.spec.mjs` (a dedicated 1440 check, see Step 1: the 1280 case skips the target scan, a11y-a.spec.mjs:113,
+  and the other widths hide the column)
+
+**Interfaces:**
+- Consumes: `.alt-card` markup and `ACT.altPick` (today's), `keepFocus` by `data-k`, `--fs`, `--fs-xs`, `--primary`, `--on-primary`,
+  `--surface-2`.
+- Produces: in `web/ui-common.js`, `altsOpen() -> boolean` and `setAltsOpen(open: boolean)`. The state lives in a module variable,
+  read once from the key `'afeka-sched-v1-alts'` (value `'open'`; anything else, or storage that throws, means folded); `setAltsOpen`
+  sets the variable first and then writes storage best-effort in try/catch, so folding works in a window without storage.
+  `ACT.altsFold = (el) => { el.focus({ preventScroll: true }); setAltsOpen(!altsOpen()); keepFocus(renderAltColumn); }` (WebKit does
+  not focus a clicked button; ui-plan.js:301 says the same for `altPick`).
+- Markup (from the approved phase-1 picture, `rail()` in design-lead's mock.mjs):
+  - Folded: `.a-stage` gets the class `alts-rail`. `#alts` holds `<div class="alt-rail">`: first `<button type="button" class="rail-btn"
+    data-act="altsFold" data-k="alts-fold" aria-expanded="false" aria-controls="alts" aria-label="הצגת N החלופות">` (a chevron pointing
+    into the board, then `<b>N</b>`), then `<ol class="rail-list">` with, per alternative, `<button type="button" class="rail-n"
+    data-act="altPick" data-i="i" data-k="altcard-i" aria-current="…" aria-label="חלופה i+1: <the card's head>">` holding the number
+    and `<span class="rail-d" aria-hidden="true">`: one `<i>` per day column of the card's mini week, class `on` when that day has a
+    lesson (the data `miniWeekHtml` already uses).
+  - Open: today's column; its heading becomes a row `.col-h` with the `h2` and `<button type="button" class="rail-btn" data-act="altsFold"
+    data-k="alts-fold" aria-expanded="true" aria-controls="alts">` (a chevron pointing away from the board, then "הקטנה"). The sort
+    control ("לפי", declutter step 4) shows only in this state.
+  - The fold button keeps `data-k="alts-fold"` in both states and a rail button shares its card's `altcard-i`, so `keepFocus` keeps focus
+    on the control that was used. When a redraw removes the focused control (a new search with fewer alternatives, or none), focus goes
+    to `#altLabel`'s switcher button that is visible (the next arrow, else the previous one), never to `body`. Below 1080 the column is
+    `display:none`; a focused rail button there loses focus to the same switcher button on the resize redraw.
+- CSS (as in the picture): `.a-stage.has-alts.alts-rail` third track `64px` from 1080 (both the 1080-1279 and the ≥1280 grids); the rail
+  padding 8px; `.rail-btn` 48px wide and at least 56px high in the rail, 44px high in the open header; `.rail-n` 48×48 with the number at
+  `--fs`/700 and the dots 4px square, 2px apart, unlit at opacity .25; `.rail-n[aria-current="true"]` filled `--primary`, text
+  `--on-primary`. Below 1080 `.a-alts` stays `display:none` (design-a.css:249).
+
+- [ ] **Step 1: Write the failing tests** in `test/browser/board-a.spec.mjs` (its own `visit` helper and `DONE`):
+
+```js
+test('1440px: the alternatives start as a 64px rail, open on one tap, and the choice is remembered', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, DONE);
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+  const total = Number(/מתוך (\d+)/.exec(await page.locator('#altLabel').textContent())[1]);
+  assert.ok(total >= 3, 'the test data gives at least three alternatives');
+  assert.equal(await page.locator('#alts .rail-n').count(), total, 'one rail button per alternative');
+  assert.equal(Math.round((await page.locator('#alts').boundingBox()).width), 64);
+  assert.equal((await page.locator('#alts .rail-n[aria-current="true"]').textContent()).trim(), '1');
+  const fold = page.locator('#alts [data-k="alts-fold"]');
+  assert.equal(await fold.getAttribute('aria-expanded'), 'false');
+  await page.locator('#alts .rail-n').nth(2).click();
+  await page.waitForFunction(() => /^חלופה 3 מתוך/.test(document.getElementById('altLabel').textContent));
+  assert.equal(await page.locator('#alts .rail-n[aria-current="true"]').count(), 1);
+  assert.equal(await page.locator('#alts .rail-n').nth(2).getAttribute('aria-current'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'altcard-2', 'focus stays on the picked rail button');
+  await fold.click();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  assert.equal(Math.round((await page.locator('#alts').boundingBox()).width), 280);
+  assert.equal(await fold.getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'alts-fold', 'focus stays on the fold button');
+  await page.reload();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' }); // remembered open
+  await page.locator('#alts [data-k="alts-fold"]').press('Enter');
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' }); // folds again by keyboard
+});
+test('375px: no alternatives column, the switcher stays', async (t) => {
+  const page = await visit(t, { width: 375, height: 812 }, DONE);
+  await page.locator('#altLabel').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#alts').isVisible(), false);
+});
+test('1440px: storage that throws still folds and opens', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, DONE);
+  await page.addInitScript(() => { Storage.prototype.setItem = () => { throw new Error('blocked'); }; });
+  await page.reload();
+  await page.locator('#alts [data-k="alts-fold"]').click();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+});
+test('1440px: a new search that leaves fewer alternatives moves focus to the switcher, not to the page', async (t) => {
+  // open the rail, focus the last rail button, then change a constraint that cuts the alternatives (the way board-a's existing
+  // "search again" test changes one) and wait for the new label
+  // assert: document.activeElement is a visible button of the switcher row (`#altLabel`'s arrows), not body
+});
+```
+
+  The last test's body is left to the builder: the change that cuts the alternatives depends on the test data; any change that
+  leaves fewer alternatives than the focused index works.
+
+  In Task 2's widths tests check both states: folded (the default) 64 at the ≥1440 loop and `[360, 64]` at 1080-1279; then click
+  `[data-k="alts-fold"]` and check 280 and `[360, 240]`, with the frame edges (`altsLeft`, `panelRight`) unchanged in both.
+
+  In `test/browser/a11y-a.spec.mjs` add one 1440 test, light and dark (that file's `checker`, `check`, `layoutOk` with targets on):
+  the board with the column folded, then open, each passing axe and the 44px target scan with `#alts` among the roots.
+  In the existing board-a tests that use `.alt-card` (:22, :42, :60, :169, :175, :181) add `await page.locator('#alts
+  [data-k="alts-fold"]').click()` before the first card wait; their assertions stay.
+- [ ] **Step 2: Run** `npm run test:browser -- board-a`. Expected: FAIL (no `.rail-n`).
+- [ ] **Step 3: Implement** the helpers, `ACT.altsFold`, the two states in `renderAltColumn` (the column exists only in design A) and
+  the CSS.
+- [ ] **Step 4: Run, one suite per command:** `-- board-a`, `-- widths-a`, `-- a11y-a`, `-- shell-a`. Expected: PASS. Then look at 1920
+  and 1280, light and dark, against the approved phase-1 picture.
+- [ ] **Step 5: Codex review, then commit:** `feat(design): A alternatives column folds to a rail, remembered (owner-7)`.
+
+### Task 6: Phase 1 read-through (no code unless it finds something)
+
+- [ ] **Step 1:** After Tasks 1-5 and declutter steps 1-8 are on claude/design-a, design-lead serves that branch locally and reads the
   board at 1920, 1440, 1280, 768 and 375, light and dark, against the phase-1 picture: the words above the week (target about 25 inside
-  the board, warnings and the legal strip aside), the one emphasized thing, the frame edges.
+  the board, warnings and the legal strip aside), the one emphasized thing, the frame edges, the rail folded and open.
 - [ ] **Step 2:** design-lead writes the result, with the count made by hand and any exception with its one-line reason, to the manager.
   A gap becomes a small task for the ui session; otherwise phase 1 goes to the owner.
 
