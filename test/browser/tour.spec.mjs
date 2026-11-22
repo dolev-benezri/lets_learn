@@ -2,8 +2,23 @@
 // the replay button restarts it, and the plans part starts once on the first alternatives screen. The other specs mark the tour seen (helpers.mjs TOUR_SEEN).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { SIZES, DONE, TOUR_SEEN, openStep, visit as visitIn, launch } from './helpers.mjs';
-import { TOUR_INTRO, TOUR_PLANS, TOUR_KEY } from '../../web/tour.js';
+import { SIZES, DONE, DESIGN, TOUR_SEEN, openStep, visit as visitIn, launch } from './helpers.mjs';
+import { TOUR_INTRO, TOUR_PLANS, TOUR_INTRO_A, TOUR_PLANS_A, TOUR_KEY } from '../../web/tour.js';
+
+// DESIGN=a runs this file against design A: its stops, and the replay from the ☰ menu (its first-run flow is in first-run-a.spec.mjs)
+const A = DESIGN === 'a';
+const INTRO = A ? TOUR_INTRO_A : TOUR_INTRO;
+const PLANS = A ? TOUR_PLANS_A : TOUR_PLANS;
+const replayTour = async (page) => {
+  if (A) {
+    // by keyboard: a ring on the popover's button is the keyboard's (a mouse press leaves no :focus-visible)
+    await page.locator('.menu-btn').focus();
+    await page.keyboard.press('Enter');
+    await page.locator('#drawer[open]').waitFor();
+    await page.locator('#drawer [data-act="tour"]').focus();
+    await page.keyboard.press('Enter');
+  } else await page.locator('#tourBtn').click();
+};
 
 let browser;
 before(async () => {
@@ -47,8 +62,9 @@ for (const size of Object.keys(SIZES)) {
 
   // An iPhone collapsed the box to its padding, one word a line (3.11). This engine does not do that alone: containment gives the text no width to size by.
   test(`${size}: the bubble keeps a readable width and stays on screen, whatever its text measures`, async (t) => {
-    const page = await visit(t, DONE, '#me');
-    await page.locator('#tourBtn').click();
+    const page = await visit(t, A ? { ...DONE, ...TOUR_SEEN } : DONE, A ? '' : '#me');
+    if (A) await weekReady(page);
+    await replayTour(page);
     await opened(page);
     await page.addStyleTag({ content: '.driver-popover-description, .driver-popover-footer { contain:inline-size; }' });
     for (let i = 1; ; i++) {
@@ -69,6 +85,7 @@ for (const size of Object.keys(SIZES)) {
   });
 
   test(`${size}: after the gate the tour walks the step bar, never shows twice, and the replay button starts it again`, async (t) => {
+    if (A) return t.skip('A: the gate, the intro and the replay are in first-run-a.spec.mjs');
     const page = await visit(t);
     await page.locator('.gate').waitFor();
     // on the gate the tour button is hidden: the theme button keeps its place at the end of the bar (its auto margin)
@@ -122,9 +139,12 @@ for (const size of Object.keys(SIZES)) {
   });
 
   test(`${size}: "דלג" on the first tour drops the second one too`, async (t) => {
-    const page = await visit(t, DONE, '#me');
-    await page.locator('#tourBtn').click();
+    // A: a visitor who saw neither part gets the intro by itself, so skipping it is tested from nothing seen
+    const page = await visit(t, DONE, A ? '' : '#me');
+    if (A) await weekReady(page);
+    else await replayTour(page);
     await opened(page);
+    assert.equal(await stored(page), 'intro', 'the intro is seen when it starts');
     await page.locator('.driver-popover-close-btn').click();
     await closed(page);
     assert.match(await stored(page), /plans/);
@@ -138,9 +158,12 @@ for (const size of Object.keys(SIZES)) {
   test(`${size}: Escape and "דלג" close the tour, the focus goes back, the arrows follow the reading direction`, async (t) => {
     const page = await visit(t, { ...DONE, ...TOUR_SEEN });
     await weekReady(page);
-    const replay = page.locator('#tourBtn');
-    await replay.focus();
-    await page.keyboard.press('Enter');
+    const replay = page.locator(A ? '.menu-btn' : '#tourBtn');
+    if (A) await replayTour(page);
+    else {
+      await replay.focus();
+      await page.keyboard.press('Enter');
+    }
     await opened(page);
     await page.waitForFunction(() => document.activeElement.className.includes('driver-popover-next-btn'), null, {
       timeout: 5000
@@ -161,7 +184,7 @@ for (const size of Object.keys(SIZES)) {
     await page.waitForFunction(() =>
       document.querySelector('.driver-popover-progress-text')?.textContent.startsWith('2 מתוך')
     );
-    assert.match(await page.locator('.driver-popover-description').innerText(), /^המצב שלי/);
+    assert.match(await page.locator('.driver-popover-description').innerText(), A ? /^הכלים/ : /^המצב שלי/);
     assert.equal(
       await page.evaluate(() => document.querySelector('#altLabel').textContent.startsWith('חלופה 1 ')),
       true,
@@ -178,11 +201,12 @@ for (const size of Object.keys(SIZES)) {
       true,
       'focus is back on the replay button'
     );
-    await replay.click();
+    await (A ? replayTour(page) : replay.click());
     await opened(page);
     await page.locator('.driver-popover-close-btn').click();
     await closed(page);
     assert.equal(await page.locator('.driver-popover').count(), 0);
+    if (A) return; // the click on ☰ opens the menu, not the tour: its focus return is in first-run-a.spec.mjs
     // A mouse or touch replay: WebKit does not focus a clicked button, so the tour must put the focus back itself.
     await page.click('#tourBtn');
     await opened(page);
@@ -203,17 +227,17 @@ for (const size of Object.keys(SIZES)) {
     await nothingFor(page, 500);
     await openStep(page, 'plan');
     await opened(page);
-    assert.equal(await progress(page), `1 מתוך ${TOUR_PLANS.length}`);
+    assert.equal(await progress(page), `1 מתוך ${PLANS.length}`);
   });
 
   test(`${size}: the plans part starts once, on the first screen with an alternative`, async (t) => {
     const page = await visit(t, { ...DONE, [TOUR_KEY]: 'intro' });
     await weekReady(page);
     await opened(page);
-    assert.equal(await progress(page), `1 מתוך ${TOUR_PLANS.length}`);
+    assert.equal(await progress(page), `1 מתוך ${PLANS.length}`);
     assert.deepEqual(
       await walk(page),
-      TOUR_PLANS.map((s) => s.text)
+      PLANS.map((s) => s.text)
     );
     assert.equal(await stored(page), 'intro,plans');
     await page.reload();

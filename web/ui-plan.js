@@ -16,8 +16,8 @@ import { renderMe } from './ui-me.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
-import { tourCheck, tourOnce } from './tour.js';
-import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf } from './ui-shell.js';
+import { tourCheck, tourOnce, introPending, onTourEnd } from './tour.js';
+import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear } from './ui-shell.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 let firstVisit = !onboarded() && !location.hash;
@@ -156,9 +156,14 @@ function renderAll() {
   renderView();
   renderPrefs();
   scheduleRun();
-  if (!designOn()) tourCheck(!gated(), shownTitle); // the intro of a first visit, once the gate is done and the step bar is on screen (A: Task 6)
+  tourCheck(!gated(), shownTitle); // the intro of a first visit, once the gate is done (classic: and the step bar is on screen)
 }
-ui.onResult = () => !designOn() && tourOnce('plans', shownTitle); // renderView: step 4 shows an alternative (A: Task 6)
+// renderView, and a route change that leaves results behind: the first alternative on screen. A: not before the intro is done, and not behind a tool
+// that covers the board (the board is always there, so "step 4 shows" no longer means anything)
+ui.onResult = () => !(designOn() && (introPending() || !boardClear())) && tourOnce('plans', shownTitle);
+// A: the plans part was refused (a dialog, the intro running) and nothing else will ask again: do it when the obstacle goes
+const askToursAgain = () => designOn() && hasAlternatives() && !$('layout').hidden && ui.onResult();
+onTourEnd(askToursAgain);
 
 // ---------- wiring (static shell from index.html) ----------
 watchOtherTabs();
@@ -250,6 +255,7 @@ $('drawer').addEventListener('close', () => {
   ui.panel = null;
   if (!designOn()) dropAdvisorPdf(); // A: the take-out tool owns the file (ui-shell.js applyShell)
   document.body.classList.remove('drawer-open');
+  setTimeout(askToursAgain);
   if (ui.noDrawerFocus) {
     ui.noDrawerFocus = false; // a navigation closed it (A): the new tool has the focus
     return;

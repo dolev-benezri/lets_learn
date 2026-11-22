@@ -7,6 +7,17 @@ export const DISCLAIMER = 'אינו הרשמה ואינו המלצה. לפני �
 export const SPLIT_WARNING =
   'הפרדה בין הרצאה לתרגול עלולה ליצור פער בין החומר שנלמד בהרצאה לחומר שבתרגול, כי הקצב שלהם מתואם. הפרדה כזו מותרת רק באישור ההכוון האקדמי.';
 export const SPLIT_TAG = 'מופרד · דורש אישור ההכוון'; // beside each split course in the registration list
+// What a screen is called inside a sentence. Classic numbers its steps; design A names the tool (and the board). One place knows both, so a sentence
+// like "פרטים ב…" is written once. `A` defaults to the page's design; the tests pass it.
+const TOOL_NAME = {
+  me: ['שלב 1', '״המצב שלי״'],
+  courses: ['שלב 2', '״קורסים״'],
+  wishes: ['שלב 3', '״מה חשוב לי״'],
+  friends: ['שלב 3', '״חברים״'],
+  plan: ['שלב 4', 'לוח'],
+  out: ['שלב 4', '״להוציא״']
+};
+export const toolName = (key, A = globalThis.document?.documentElement?.dataset?.design === 'a') => TOOL_NAME[key][A ? 1 : 0];
 export const RULES_UNAPPROVED = 'הכללים לא אושרו על ידי המחלקה.';
 export const conflictLine = (t) => `יש סתירה בין המקורות הרשמיים לגבי ${t}.`;
 // The yedion's login page (it opens in a new tab: the site cannot fetch the student's file itself, the yedion's sign-in is its own).

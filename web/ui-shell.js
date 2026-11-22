@@ -136,6 +136,8 @@ export function applyShell() {
 }
 
 const panelOpen = () => !$('panel').hidden;
+// Nothing covers the board: no tool is open on a phone; a wide screen always has one beside the board, which only the record (an unfinished first run) is not
+export const boardClear = () => !panelOpen() || (wide() && ui.shownTool !== 'me');
 
 // Why the address changed: the shell says so when it did it ('open', 'close'); anything else is a Back or a link, and is read once.
 export const navReason = () => {

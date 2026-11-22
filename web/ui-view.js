@@ -40,6 +40,7 @@ import {
 } from './ui-grid.js';
 import {
   approvedText,
+  toolName,
   freshness,
   turnWarning,
   stalePins,
@@ -114,7 +115,7 @@ function renderBoardNote() {
     f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
     !approved && app.data.verified === false && '<span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>',
     !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
-    warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים בשלב 1</a>`
+    warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים ב${toolName('me')}</a>`
   ]
     .filter(Boolean)
     .map((line) => `<p class="hint">${line}</p>`)
@@ -145,6 +146,16 @@ export function renderNotice() {
   $('notice').dataset.text = html;
   $('notice').innerHTML = html;
 }
+
+// Design A, before any course is planned: where to begin, one tap each (it is gone with the first result, the message it replaces is the same one)
+const whatFirstHtml = (pickSpec) => {
+  const row = (tool, ic, text) => `<li><button type="button" class="btn" data-act="tool" data-tool="${tool}">${icon(ic)} ${text}</button></li>`;
+  return `<div class="msg a-first">${icon('calendar')}<div><b>מאיפה מתחילים?</b>
+    <p>המערכת תופיע כאן ברגע שיהיו קורסים בתכנון, ותתעדכן לבד.</p>
+    <ul class="a-first-list">${row('me', 'user', pickSpec ? 'בחרו התמחות וסמנו מה כבר עברתם' : 'סמנו מה כבר עברתם')}
+    ${row('courses', 'list', 'בחרו קורסים: ״חובה״ או ״אולי״')}
+    ${row('wishes', 'sliders', 'ספרו מה חשוב לכם, אם רוצים')}</ul></div></div>`;
+};
 
 export function renderBanner() {
   renderBoardNote();
@@ -285,7 +296,7 @@ export function renderView() {
       noFriend
         ? `<p class="hint">${
             state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם' : 'אין עדיין חברים. אפשר להוסיף'
-          } <a href="#prefs">בשלב 3</a>.</p>`
+          } <a href="${designOn() ? '#friends' : '#prefs'}">ב${toolName('friends')}</a>.</p>`
         : ''
     }`;
 
@@ -313,7 +324,8 @@ export function renderView() {
     const how = pickSpec
       ? 'בחרו התמחות ב<a href="#me">״המצב שלי״</a>: משנה ג׳ קורסי ההתמחות נכנסים לבד. אפשר גם לסמן'
       : 'סמנו';
-    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב<a href="#courses">שלב 2</a>, והמערכת תיבנה לבד.</p></div></div>`;
+    msg = `<div class="msg">${icon('calendar')}<div><b>עוד לא נבחרו קורסים</b><p>${how} "חובה" או "אולי" ליד קורסים ב<a href="#courses">${toolName('courses')}</a>, והמערכת תיבנה לבד.</p></div></div>`;
+    if (designOn()) msg = whatFirstHtml(!!pickSpec);
     live = 'לא נבחרו קורסים';
   } else if (noRes) {
     // partial and empty: only this message, with the "search more" button (no second notice)

@@ -11,7 +11,7 @@ globalThis.localStorage = {
   removeItem: (k) => store.delete(k)
 };
 const fresh = (n) => import(`../web/tour.js?${n}`); // a new module instance: its in-memory fallback starts empty
-const { TOUR_KEY, TOUR_INTRO, TOUR_PLANS } = await fresh('steps');
+const { TOUR_KEY, TOUR_INTRO, TOUR_PLANS, TOUR_INTRO_A, TOUR_PLANS_A } = await fresh('steps');
 
 test('a fresh store has seen no part; marking one does not mark the other', async () => {
   store.clear();
@@ -52,17 +52,24 @@ test('when localStorage throws, a part is seen for the rest of the page load onl
   }
 });
 
-const copy = [...TOUR_INTRO, ...TOUR_PLANS].map((s) => s.text);
+const copy = [...TOUR_INTRO, ...TOUR_PLANS, ...TOUR_INTRO_A, ...TOUR_PLANS_A].map((s) => s.text);
 test('every stop text is Hebrew, at most 140 characters, with no emoji', () => {
   assert.equal(TOUR_INTRO.length, 8);
   assert.ok(TOUR_INTRO.some((s) => s.text.includes('מסומנים מראש')), 'the intro says earlier years start marked passed');
   assert.equal(TOUR_PLANS.length, 4);
+  assert.equal(TOUR_INTRO_A.length, 8);
+  assert.equal(TOUR_PLANS_A.length, 3);
+  assert.ok(TOUR_INTRO_A.some((s) => s.text.includes('מסומנים מראש')), 'design A says it too');
   for (const t of copy) {
     assert.ok(t.length <= 140, `too long (${t.length}): ${t}`);
     assert.match(t, /[֐-׿]/, `no Hebrew: ${t}`);
     assert.doesNotMatch(t, /\p{Extended_Pictographic}/u, `emoji: ${t}`);
     assert.doesNotMatch(t, /[<>&]/, `the popover writes this as HTML: ${t}`);
   }
+});
+
+test("design A's tour never names a numbered step or the step bar", () => {
+  for (const { text } of [...TOUR_INTRO_A, ...TOUR_PLANS_A]) assert.doesNotMatch(text, /שלב|צעד|סרגל/, text);
 });
 
 test('every selector of the intro exists in index.html', () => {

@@ -238,6 +238,8 @@
 :root[data-design="a"] .out-actions { display:flex; flex-wrap:wrap; gap:8px; }
 :root[data-design="a"] .out-actions .btn { flex:1 1 auto; min-height:var(--tap); }
 :root[data-design="a"] .out-sec .hint { margin:0; }
+:root[data-design="a"] .a-first-list { display:grid; gap:8px; margin:10px 0 0; padding:0; list-style:none; }
+:root[data-design="a"] .a-first-list .btn { width:100%; justify-content:flex-start; min-height:var(--tap); text-align:start; }
 :root[data-design="a"] .a-menu { display:grid; gap:8px; }
 :root[data-design="a"] .a-menu-item { justify-content:flex-start; width:100%; min-height:var(--tap); }
 :root[data-design="a"] .a-menu-item.danger { color:var(--danger, var(--text)); }

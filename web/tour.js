@@ -41,10 +41,32 @@ export const TOUR_PLANS = [
   { sel: '[data-act="panel"][data-panel="reg"]', text: 'רשימת הקבוצות להרשמה, וייצוא ליומן.' },
 ];
 
+// Design A: the tabs, the tools in the dock, the menu. The board is always on screen, so its part is the second one.
+export const TOUR_INTRO_A = [
+  { sel: '.a-top .modes', text: 'שני מצבים: לבנות מערכת חדשה, או לשפר מערכת שכבר יש לך.' },
+  { sel: '.dock', text: 'הכלים נמצאים כאן. כל כלי נפתח ליד הלוח, ואפשר לעבור ביניהם בכל רגע.' },
+  { sel: '.dock [data-tool="me"]', text: 'המצב שלי: מסלול, שנה ומה כבר עברת. אפשר לייבא את גליון הציונים.' },
+  { sel: '.dock [data-tool="me"]', text: 'משנה ב׳ ומעלה, קורסי החובה של שנים קודמות מסומנים מראש כ״עברתי״. מסמנים מה לא עברת.' },
+  { sel: '.dock [data-tool="courses"]', text: 'קורסים: מה ללמוד בסמסטר. מוצגים רק קורסים שפתוחים לך.' },
+  { sel: '.dock [data-tool="wishes"]', text: 'מה חשוב לי: יום פנוי, בלי חלונות, עם חברים, שעות התחלה וסיום.' },
+  { sel: '.dock [data-tool="out"]', text: 'להוציא: רשימה להרשמה, סיכום לפגישה עם היועץ, ושיתוף וגיבוי.' },
+  { sel: '.menu-btn', text: 'בתפריט: סיור, מפה, תנאי שימוש ומידע. זה כלי עזר לתכנון, ההרשמה עצמה באפקה-נט.' }
+];
+export const TOUR_PLANS_A = [
+  { sel: '#switcher', text: 'כל חלופה היא מערכת שלמה בלי התנגשויות. החיצים עוברים ביניהן, ובטלפון גם החלקה על הלוח.' },
+  { sel: '#week .blk', text: 'לחיצה על קבוצה מראה מרצה, מקומות פנויים ומתי זה נבדק.' },
+  { sel: '.dock [data-tool="out"]', text: 'להוציא: רשימה להרשמה, סיכום לפגישה עם היועץ, ושיתוף.' }
+];
+
 const shown = (el) => (el.checkVisibility ? el.checkVisibility() : el.getClientRects().length > 0);
 // a phone shows one day of the week: the first block on screen, not the first in the page
 const find = (sel) => [...document.querySelectorAll(sel)].find(shown);
 let running = false;
+let afterTour = () => {};
+export const onTourEnd = (fn) => {
+  afterTour = fn;
+};
+const onA = () => document.documentElement.dataset.design === 'a';
 
 // Runs a part (also the replay). A stop whose element is missing or hidden is skipped, so "1 מתוך N" counts the stops that are shown.
 // Not over an open dialog, not on the print page, not while another tour runs. Returns whether a tour started.
@@ -63,7 +85,12 @@ export async function startTour(part, home) {
   };
   try {
     const { driver } = await import('./vendor/driver/driver.js.mjs');
-    const steps = (part === 'plans' ? TOUR_PLANS : TOUR_INTRO)
+    if (document.querySelector('dialog[open]')) {
+      end(); // a dialog opened while the module loaded: not over it, and asked again when it closes
+      return false;
+    }
+    const A = onA();
+    const steps = (part === 'plans' ? (A ? TOUR_PLANS_A : TOUR_PLANS) : A ? TOUR_INTRO_A : TOUR_INTRO)
       .map((s) => ({ element: find(s.sel), popover: { description: s.text, align: 'center' } }))
       .filter((s) => s.element);
     if (!steps.length) {
@@ -101,6 +128,7 @@ export async function startTour(part, home) {
       },
       onDestroyed: () => {
         end();
+        setTimeout(afterTour); // a part that was held back by this one (design A: the plans part waits for the intro)
         (origin?.isConnected && origin !== document.body ? origin : home?.())?.focus({ preventScroll: true });
       },
     });
@@ -135,8 +163,11 @@ let introDue = false;
 export const dueIntro = () => {
   introDue = true;
 };
+// still to be shown after the gate; design A also offers it to a returning visitor who saw neither part, and holds the plans part back until it is
+// done (ui-plan.js). Classic: only a first visit's gate asks for it.
+export const introPending = () => !tourSeen('intro') && (introDue || onA());
 export async function tourCheck(ready, home) {
-  if (!introDue || !ready) return;
+  if (!ready || !(introDue || onA())) return;
   // refused (a dialog is open): still due at the next render
   if (tourSeen('intro') || await startTour('intro', home)) introDue = false;
 }
