@@ -152,3 +152,24 @@ for (const w of [1440, 1920])
     assert.ok(Math.abs(m.panel.right - (m.cw - side)) <= 1, `the record sits at the frame's right edge: ${JSON.stringify(m)}`);
     assert.ok(m.panel.left >= m.week.right - 1, `the record covers no part of the week: ${JSON.stringify(m)}`);
   });
+
+// owner-12: the page is no taller than the board and the dock. A tool's visually hidden inputs (position:absolute) once escaped its scroll and stretched the
+// document far below the board, into empty grey, under the sticky column from 1080px. Each tool in turn, at the three sizes the owner and the phones use.
+for (const [w, h] of [[1920, 1080], [1280, 800], [375, 812]])
+  test(`${w}px: the page is no taller than the board and the dock, whichever tool is open`, async (t) => {
+    const page = await visit(t, { width: w, height: h }, DONE, '#courses');
+    await page.locator('#panel #courses').waitFor({ state: 'visible' });
+    await settle(page);
+    for (const tool of ['courses', 'me', 'prefs', 'friends', 'out']) {
+      await page.evaluate((id) => (location.hash = `#${id}`), tool);
+      await page.locator(`#panel #${tool}`).waitFor({ state: 'visible' });
+      await page.waitForTimeout(300);
+      const m = await page.evaluate(() => ({
+        doc: document.documentElement.scrollHeight,
+        shell: Math.round(document.getElementById('ashell').getBoundingClientRect().bottom + scrollY),
+        dock: Math.round(document.querySelector('.dock').getBoundingClientRect().height),
+        inner: innerHeight
+      }));
+      assert.ok(m.doc <= Math.max(m.shell + m.dock, m.inner), `${tool}: the document is ${m.doc}px, the board ends at ${m.shell}px (dock ${m.dock}px, window ${m.inner}px)`);
+    }
+  });

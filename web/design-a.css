@@ -252,7 +252,9 @@
   align-items:center;
 }
 :root[data-design="a"] .a-ph [hidden] { display:none; }
-:root[data-design="a"] .a-pb { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 16px 24px; }
+/* position:relative: the tool's visually hidden inputs and .sr text are position:absolute; without a positioned scroller their containing block is the
+   panel (sticky from 1080px), so they escape the scroll and stretch the page far below the board (owner-12) */
+:root[data-design="a"] .a-pb { position:relative; flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 16px 24px; }
 :root[data-design="a"] .a-pb .step-page { max-width:none; margin:0; padding:0; scroll-margin-top:0; }
 :root[data-design="a"] .a-pb .me-grid, :root[data-design="a"] .a-pb .halves, :root[data-design="a"] .a-pb .me-entry-cards {
   display:grid;
