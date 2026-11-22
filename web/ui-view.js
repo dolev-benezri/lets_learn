@@ -56,6 +56,8 @@ import {
   SPLIT_NOTE,
   splitLine,
   leftOutText,
+  leftOutShort,
+  outsideHoursShort,
   closeExamLines,
   outsideHoursText,
   RULES_UNAPPROVED
@@ -336,8 +338,8 @@ export function renderView() {
       : '') +
     // A: what ב׳ counts on from א׳ is one short line (the count of prerequisites, "אילו?" opening the full sentence in "פרטים"); the other warnings stay
     (afterA.length
-      ? `<p class="notice a-after">${icon('info')}<span>${esc(afterAShort(afterA.length))} <button type="button" class="a-which" data-act="afterAOpen"
-          data-k="aWhich">אילו?</button></span></p>`
+      ? `<p class="notice a-after">${icon('info')}<span>${esc(afterAShort(afterA.length))} <button type="button" class="a-which" data-act="detailsGo"
+          data-to="aAfterA" data-k="aWhich">אילו?</button></span></p>`
       : '') +
     warnings.filter((w) => w !== afterAFull).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
     (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
@@ -437,13 +439,22 @@ export function renderView() {
       leftOut = Object.keys(app.data.courses)
         .filter((id) => ['must', 'optional'].includes(candidateMode(id)) && !inSummer.has(id) && !planHas.has(id) && !raw.missing?.includes(id))
         .map((id) => ({ name: app.data.courses[id].name, credits: app.data.courses[id].credits }));
-    const outsideH = outsideHoursText((1 - (res.breakdown.timeWindow ?? 1)) * 10);
+    const outsideH = (designOn() ? outsideHoursShort : outsideHoursText)((1 - (res.breakdown.timeWindow ?? 1)) * 10);
+    // A: several left-out courses are one short line (count and credits), "אילו?" opening their names in "פרטים"
+    const leftOutMany = designOn() && leftOut.length > 1;
     msg +=
-      (leftOut.length ? note('info', leftOutText(leftOut)) : '') +
+      (leftOutMany
+        ? `<p class="notice a-leftout">${icon('info')}<span>${esc(leftOutShort(leftOut))} <button type="button" class="a-which" data-act="detailsGo"
+          data-to="aLeftOut" data-k="aLeftOutBtn">אילו?</button></span></p>`
+        : leftOut.length
+          ? note('info', leftOutText(leftOut))
+          : '') +
       capLine(results[0], nameOf) +
       closeExamLines(res.closeExams ?? [], nameOf).map((t) => note('alert', t)).join('') +
       (outsideH && !state.constraints.windowHard
-        ? `<p class="notice">${icon('clock')}<span>${outsideH} אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.</span></p>`
+        ? `<p class="notice">${icon('clock')}<span>${outsideH} ${
+            designOn() ? '<a href="#prefs">להפוך לחובה</a>' : 'אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.'
+          }</span></p>`
         : '');
     // what this alternative changes against the first one (§14ז)
     const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null;
@@ -484,6 +495,7 @@ export function renderView() {
           pair && 'אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.',
           vs && `לעומת חלופה 1: ${vs}`,
           afterAFull && `<span id="aAfterA" tabindex="-1" data-k="aAfterA">${esc(afterAFull)}</span>`,
+          leftOutMany && `<span id="aLeftOut" tabindex="-1" data-k="aLeftOut">${esc(leftOutText(leftOut))}</span>`,
           ...fr.slice(1).map(esc),
           disclaimerHtml(app.settings.counselingUrl),
           !approvedNow && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`

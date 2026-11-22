@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   leftOutText,
+  leftOutShort,
+  outsideHoursShort,
   capPreviewText,
   closeExamLines,
   outsideHoursText,
@@ -72,6 +74,16 @@ test('closeExamLines: same day with both hours and a caution, next day with both
   assert.deepEqual(closeExamLines([{ days: 0, a: { ...y, time: null }, b: { course: 'Z', date: '2027-01-28', time: null } }], nm), [
     'שתי בחינות באותו יום: תרמו ו-הסתברות, 28.01.2027. משך הבחינות לא ידוע, כדאי לבדוק שאין חפיפה.'
   ]);
+});
+
+test('leftOutShort / outsideHoursShort: design A says the count and the hours, the names and the link are elsewhere', () => {
+  assert.equal(leftOutShort([{ name: 'א', credits: 3.5 }]), 'לא נכנס לחלופה הזו: א (3.5 נ״ז).', 'one course keeps its single line');
+  assert.equal(leftOutShort([{ name: 'א', credits: 3.5 }, { name: 'ב', credits: 1 }, { name: 'ג', credits: 2.5 }]), '3 קורסים לא נכנסו (7 נ״ז).');
+  assert.equal(leftOutShort([{ name: 'א', credits: 3.5 }, { name: 'ב', credits: 28 }]), '2 קורסים לא נכנסו (31.5 נ״ז).', 'fractions are kept');
+  assert.equal(leftOutShort([]), '');
+  assert.equal(outsideHoursShort(2.9), '');
+  assert.equal(outsideHoursShort(3.83), 'כ-4 שעות מחוץ לשעות שביקשת.');
+  assert.equal(outsideHoursShort(10), '10 שעות או יותר מחוץ לשעות שביקשת.');
 });
 
 test('outsideHoursText: silent up to 3 hours, and says when the metric is at its ceiling', () => {

@@ -68,12 +68,20 @@ export const closeExamLines = (pairs, nameOf) =>
     const hours = a.time && b.time ? ` בשעות ${a.time} ו-${b.time}` : '';
     return `שתי בחינות באותו יום: ${names}, ${examWhen({ date: a.date })}${hours}. משך הבחינות לא ידוע, כדאי לבדוק שאין חפיפה.`;
   });
+// Design A's shorter form (declutter step 5): the count and the credits, the names behind "אילו?" (leftOutText says them in full, in "פרטים").
+export const leftOutShort = (list) =>
+  (list.length > 1 ? `${list.length} קורסים לא נכנסו (${list.reduce((a, c) => a + c.credits, 0)} נ״ז).` : leftOutText(list));
 // Hours outside the wished hours, from the metric, which stops counting at 10 (solver-core.js metrics).
 export function outsideHoursText(hours) {
   if (hours < 3) return '';
   return hours >= 10
     ? 'במערכת הזו 10 שעות שבועיות או יותר מחוץ לשעות הרצויות.'
     : `במערכת הזו כ-${Math.round(hours)} שעות שבועיות מחוץ לשעות הרצויות.`;
+}
+// Design A's form: the hours alone (a link "להפוך לחובה" follows the sentence).
+export function outsideHoursShort(hours) {
+  if (hours < 3) return '';
+  return hours >= 10 ? '10 שעות או יותר מחוץ לשעות שביקשת.' : `כ-${Math.round(hours)} שעות מחוץ לשעות שביקשת.`;
 }
 const typeName = (t) => String(t).replace('סופי-', '');
 

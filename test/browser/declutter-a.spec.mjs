@@ -388,3 +388,49 @@ test('1280 and a phone: the "אילו?" and the strip link and the sort are targ
     assert.deepEqual(small, [], `${size}: targets`);
   }
 });
+
+// ---- step 5: shorter notices (several left-out courses, the hours outside the wished ones) ----
+import { readFileSync } from 'node:fs';
+const FIXTURE_IDS = Object.keys(JSON.parse(readFileSync(new URL('../fixtures/real/2027-1/30-2026.json', import.meta.url), 'utf8')).courses);
+// many "אולי" courses: the plan cannot hold them all, and a soft "not before 12:00" leaves hours outside the wished ones
+const MANY = {
+  ...DONE,
+  'afeka-sched-v1': JSON.stringify({ ...STUDENT, choices: Object.fromEntries(FIXTURE_IDS.slice(0, 60).map((i) => [i, 'optional'])), constraints: { notBefore: '12:00' } })
+};
+
+test('several left-out courses are one short line with the count and the credits; "אילו?" opens the names in "פרטים"', async (t) => {
+  const page = await visit(t, 'desktop', MANY);
+  const line = page.locator('#week .a-leftout');
+  await line.waitFor({ timeout: 60000 });
+  await idle(page);
+  assert.match(flat(await line.innerText()), /^(\d+) קורסים לא נכנסו \(\d+(\.\d)? נ״ז\)\. אילו\?$/);
+  assert.equal(await page.locator('#aLeftOut').isVisible(), false, 'the names are behind "פרטים"');
+  const n = Number(/^(\d+)/.exec(flat(await line.innerText()))[1]);
+  await page.locator('#week .a-leftout .a-which').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#pills .a-details').evaluate((d) => d.open), true);
+  const full = flat(await page.locator('#aLeftOut').innerText());
+  assert.match(full, new RegExp(`^לא נכנסו לחלופה הזו ${n} קורסים, [\\d.]+ נ״ז: `), 'today\'s words, with the same count');
+  assert.equal((full.match(/\([\d.]+ נ״ז\)/g) ?? []).length, Math.min(n, 6), 'the names, six at most, each with its credits');
+  if (n > 6) assert.match(full, new RegExp(`ועוד ${n - 6}\\.$`), 'and how many more');
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'aLeftOut');
+});
+
+test('the hours outside the wished ones: one short line with a "להפוך לחובה" link', async (t) => {
+  const page = await visit(t, 'desktop', MANY);
+  const line = page.locator('#week .notice', { hasText: 'מחוץ לשעות שביקשת' });
+  await line.waitFor({ timeout: 60000 });
+  await idle(page);
+  assert.match(flat(await line.innerText()), /^(כ-\d+ שעות|10 שעות או יותר) מחוץ לשעות שביקשת\. להפוך לחובה$/);
+  assert.equal(await line.locator('a').getAttribute('href'), '#prefs');
+  assert.doesNotMatch(await line.innerText(), /אפשר להפוך את השעות לחובה/);
+});
+
+test('classic keeps its long left-out and outside-hours sentences', async (t) => {
+  const page = await visit(t, 'desktop', MANY, '', 'classic');
+  await page.locator('#week .notice', { hasText: 'לא נכנסו לחלופה הזו' }).first().waitFor({ timeout: 60000 });
+  await idle(page);
+  assert.match(await page.locator('#week').innerText(), /במערכת הזו (כ-\d+ שעות שבועיות|10 שעות שבועיות או יותר) מחוץ לשעות הרצויות\. אפשר להפוך את השעות לחובה בהעדפות\./);
+  assert.match(flat(await page.locator('#week .notice', { hasText: 'לא נכנסו לחלופה הזו' }).first().innerText()), /^לא נכנסו לחלופה הזו \d+ קורסים, [\d.]+ נ״ז: .+\.$/, 'the whole sentence, as before');
+  assert.equal(await page.locator('#week .a-leftout, #week .a-which, #aLeftOut').count(), 0, 'nothing of design A');
+});
