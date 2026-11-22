@@ -158,3 +158,10 @@ test('times are Israel time (TZID with a VTIMEZONE), not floating; UNTIL is UTC 
   assert.doesNotMatch(out.split('END:VTIMEZONE')[1], /\r\nDT(START|END):\d{8}T/, 'no floating lesson or exam time');
   assert.match(out, /UNTIL=\d{8}T\d{6}Z/);
 });
+
+test('toIcs: co-lecturers in a description are read with one comma (escaped, as every comma in an .ics text)', () => {
+  const dates = SEMESTER_DATES[2027]['א'];
+  const out = toIcs([part({ courses: { 101: course(3, { lecturer: 'מר X,, מר Y' }) } }, dates)], NOW);
+  const line = out.split('\r\n').find((l) => l.startsWith('DESCRIPTION:'));
+  assert.ok(line.startsWith('DESCRIPTION:קבוצה g1 · מר X\\, מר Y'), line);
+});

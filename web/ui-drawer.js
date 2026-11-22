@@ -16,7 +16,9 @@ import {
   isPair,
   semResult
 } from './ui-grid.js';
-import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen, examsNoteHtml, conflictsFor } from './ui-text.js';
+import {
+  groupLabel, groupFresh, lecturerText, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen, examsNoteHtml, conflictsFor
+} from './ui-text.js';
 import { approvedOn } from './settings.js';
 import { menuPanel } from './ui-mode.js';
 import {
@@ -171,8 +173,8 @@ const lecturerSec = (L) =>
         .map(
           ([name, mode]) => `<li>${
             mode === 'avoid' ? 'להימנע מקבוצות של ' : 'להעדיף את '
-          }<b>${esc(name)}</b> <button type="button" class="btn sm" data-act="lecturerDrop" data-name="${esc(name)}"
-  aria-label="${esc(`הסר את ${name}`)}">הסר</button></li>`
+          }<b>${esc(lecturerText(name))}</b> <button type="button" class="btn sm" data-act="lecturerDrop" data-name="${esc(name)}"
+  aria-label="${esc(`הסר את ${lecturerText(name)}`)}">הסר</button></li>`
         )
         .join('')}</ul><p class="hint">בוחרים מתוך חלון השיעור בלוח.</p></section>`
     : '');

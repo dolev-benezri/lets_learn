@@ -4,7 +4,7 @@ import {
   toMin, meetingsMask, overlaps, merge, daysUsed, buildOptions, forbiddenBy, freeDayCandidates,
   examRuleOf, examKeysOf, sittingKeys
 } from './solver-core.js';
-import { groupLabel, groupNumber, groupFresh, heb, reportMailto, PAGE_NAME, examWhen, examsNoteHtml } from './ui-text.js';
+import { groupLabel, groupNumber, groupFresh, lecturerText, heb, reportMailto, PAGE_NAME, examWhen, examsNoteHtml } from './ui-text.js';
 // A course name as HTML: escaped, with its Latin runs marked lang="en" so a Hebrew screen reader voice says "IOS", not letters. Entities (&lt;) are not words.
 export const nameHtml = (t) =>
   esc(heb(t)).replace(
@@ -364,8 +364,8 @@ export function renderDaySelector(range, res, data, day) {
 // Prefer / avoid this lecturer in every search (constraints.lecturers); pressed again, the choice is cleared.
 const lecturerBtns = (name, mine) =>
   [
-    ['prefer', 'העדף מרצה', `העדף מרצה: ${name}`],
-    ['avoid', 'הימנע ממרצה', `הימנע ממרצה: ${name}`]
+    ['prefer', 'העדף מרצה', `העדף מרצה: ${lecturerText(name)}`],
+    ['avoid', 'הימנע ממרצה', `הימנע ממרצה: ${lecturerText(name)}`]
   ]
     .map(
       ([mode, label, aria]) => ` <button
@@ -431,7 +431,7 @@ export function openPop(btn, ctx) {
     <div class="pop-body">
     ${g.full ? `<p class="tag bad">${icon('alert')} הקבוצה מלאה</p>` : ''}
     <dl>
-      <dt>מרצה</dt><dd>${esc(g.lecturer || '—')}${g.lecturer && g.primary ? lecturerBtns(g.lecturer, ctx.lecturers?.[g.lecturer]) : ''}</dd>
+      <dt>מרצה</dt><dd>${esc(lecturerText(g.lecturer) || '—')}${g.lecturer && g.primary ? lecturerBtns(g.lecturer, ctx.lecturers?.[g.lecturer]) : ''}</dd>
       <dt>מפגשים</dt><dd>${g.meetings.map((m) => `יום ${DAYS[m.day] ?? '?'}׳ <bdi dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>${m.room ? ` · ${esc(m.room)}` : ''}`).join('<br>')}</dd>
       <dt>בחינות</dt><dd>${
         !ctx.data.examsPublished
@@ -457,7 +457,7 @@ export function openPop(btn, ctx) {
                     (m) => `${DAYS[m.day] ?? '?'}׳ <bdi
         dir="ltr">${esc(m.start)}–${esc(m.end)}</bdi>`
                   )
-                  .join(', ')} · ${esc(x.lecturer || '—')}` +
+                  .join(', ')} · ${esc(lecturerText(x.lecturer) || '—')}` +
                 `${why.length ? ` <span class="tag bad">${why[0]}</span>${why.length > 1 ? ` <span class="gid">(${why.slice(1).join(', ')})</span>` : ''}` : ''}` +
                 ` <bdi dir="ltr" class="gid">${esc(x.id)}</bdi>`;
               return x.id === g.id

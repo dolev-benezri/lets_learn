@@ -344,3 +344,23 @@ test('swapListHtml: a swap that only a split option allows is offered with the s
   assert.ok(buttons[1].querySelector('.tag.warn').text.includes(SPLIT_TAG), 'inside the button, so it is in its name');
   assert.equal(swapListHtml([], 'A', data).includes('אין קבוצות אחרות'), true);
 });
+
+test('proposalHtml: co-lecturers are read with one comma, from one group or from several (the data holds ",," between them)', () => {
+  const data = mv();
+  data.courses.A.groups[0].lecturer = 'מר X,, מר Y';
+  data.courses.A.groups[1].lecturer = 'מר Y,, מר Z';
+  const { edit, p } = oneMove(data);
+  const hint = parse(proposalHtml(edit, p, data)).querySelector('.pcard .hint');
+  assert.equal(hint.text, 'מרצה: מר X, מר Y מר Y, מר Z');
+  assert.ok(!hint.text.includes(',,'));
+});
+
+test('stepOneHtml: a group line never shows ",,"', () => {
+  const g = Object.values(data.courses).flatMap((c) => c.groups).find((x) => x.primary);
+  const copy = structuredClone(data);
+  Object.values(copy.courses).flatMap((c) => c.groups).find((x) => x.id === g.id).lecturer = 'מר X,, מר Y';
+  const r = row({ candidates: [g.id], chosen: g.id });
+  const root = parse(stepOneHtml(withDraft([r], {}), copy, [r], {}));
+  assert.ok(root.text.includes('מר X, מר Y'), root.text.slice(0, 300));
+  assert.ok(!root.text.includes(',,'));
+});

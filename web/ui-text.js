@@ -122,6 +122,15 @@ export const count = (n, one, many) => (n === 1 ? one : `${n} ${many}`); // Hebr
 // A length of time in half hours, the way a student says it: "חצי שעה", "שעה וחצי", "שעתיים", "6 שעות"
 export const hoursText = (h) =>
   ({ 0.5: 'חצי שעה', 1: 'שעה', 1.5: 'שעה וחצי', 2: 'שעתיים' })[h] ?? `${h} שעות`;
+// The yedion joins a group's lecturers with ",," (some with ", ", one with a leading ","): shown, it is one comma and a space.
+// The stored string stays as it is: a lecturer choice (constraints.lecturers) is keyed by it.
+export const lecturerNames = (s) => [...new Set(String(s ?? '').split(',').map((n) => n.trim()).filter(Boolean))];
+export const lecturerText = (s) => lecturerNames(s).join(', ');
+// The toast after a prefer / avoid press in a group's popover; "was": the same press again, which clears the choice.
+export const lecturerToast = (name, mode, was) =>
+  was ? `בוטל: ${lecturerText(name)}`
+    : mode === 'avoid' ? `החיפוש לא ישבץ קבוצות של ${lecturerText(name)}`
+    : `כשאפשר, החיפוש יבחר קבוצות של ${lecturerText(name)}`;
 export const courseCount = (n) => count(n, 'קורס אחד', 'קורסים');
 export const groupCount = (n) => count(n, 'קבוצה אחת', 'קבוצות');
 export const meetingText = (m) => `יום ${D[m.day] ?? '?'}׳ ${m.start}–${m.end}`;

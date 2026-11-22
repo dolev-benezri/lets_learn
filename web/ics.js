@@ -1,7 +1,7 @@
 // Calendar export (RFC 5545), pure: the shown plan as weekly lessons and its exams, for Google Calendar, iPhone and
 // Outlook. No DOM, unit-tested (test/ics.test.mjs).
 
-import { DISCLAIMER } from './ui-text.js';
+import { DISCLAIMER, lecturerText } from './ui-text.js';
 
 // Afeka academic calendar (https://www.afeka.ac.il/about-afeka/general-information/academic-calendar/), checked 2026-10-03.
 // end = the last day of classes; off = days without classes inside the semester (a date or an inclusive [from, to]). Add a year at the rollover (README).
@@ -96,7 +96,7 @@ export function toIcs(parts, now = new Date()) {
             ...skip.map((d) => `EXDATE${TZ}${compact(d, m.start)}`),
             `SUMMARY:${text(c.name)}`,
             `LOCATION:${text(m.room)}`,
-            `DESCRIPTION:${text(`קבוצה ${g.id}${g.lecturer ? ` · ${g.lecturer}` : ''}
+            `DESCRIPTION:${text(`קבוצה ${g.id}${lecturerText(g.lecturer) ? ` · ${lecturerText(g.lecturer)}` : ''}
 ${DISCLAIMER}`)}`
           ]);
         }
