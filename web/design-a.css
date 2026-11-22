@@ -323,10 +323,44 @@
   :root[data-design="a"] .site-foot { padding-bottom:12px; }
   :root[data-design="a"] .toast { bottom:20px; }
   :root[data-design="a"] body[data-view="edit"] .a-stage { display:block; }
+  /* the changes screen: the controls in a column, the week beside it. A grid on the page's wrapper: the DOM and the Tab order stay */
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) {
+    display:grid;
+    grid-template-columns:minmax(320px, 420px) minmax(0, 1fr);
+    column-gap:24px;
+    align-items:start;
+    grid-template-rows:repeat(9, auto) 80px;
+  }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > :is(.me-head, .goals, .changes) { grid-column:1; min-width:0; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > :is(.edit-split, #editResults, #edMsg) { grid-column:1; min-width:0; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > :is(#editDays, #editWeek, .edit-warn) { grid-column:2; min-width:0; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > #editWeek { grid-row:1 / span 8; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > .edit-warn { grid-row:9; }
+  /* explicit rows: the foot's area covers every row, and an item placed by the browser would skip all of them */
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > .me-head { grid-row:1; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > .goals { grid-row:2; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > .changes { grid-row:3; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > .edit-split { grid-row:4; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > #editResults { grid-row:5; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > #edMsg { grid-row:6; }
+  /* the foot is sticky: its area is the whole grid, with a last row of its own, so it stays in view over a content taller than the window */
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) > .me-foot { grid-column:1 / -1; grid-row:1 / 11; align-self:end; }
+  /* the chips of the goals are one row in a narrow column, a scroller, as on a phone (style.css) */
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) .goals {
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    scrollbar-width:none;
+    padding:4px;
+    margin:-4px -4px 6px;
+  }
 }
 @media (min-width:1080px) and (max-width:1279px) {
   :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); }
   :root[data-design="a"] .a-stage.has-alts { grid-template-columns:360px minmax(0, 1fr) 240px; }
+  :root[data-design="a"] body[data-view="edit"] .edit-step:has(> #editWeek) {
+    grid-template-columns:minmax(300px, 340px) minmax(0, 1fr);
+    column-gap:16px;
+  }
 }
 @media (max-width:359px) { :root[data-design="a"] .dk { font-size:10px; } :root[data-design="a"] .a-top { padding-inline:8px; } }
 /* a landscape phone is 375px tall: the dock becomes a rail on the inline-start edge and the tool a full-height panel beside it */
