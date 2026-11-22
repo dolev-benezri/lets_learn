@@ -144,7 +144,7 @@ and a divider, not a second card. No card inside a card inside a panel (today's 
   page so the board's first lesson row sits in the visible area above it (today the scroll position is kept, shell-a.spec.mjs:158, so
   that test changes). Each sheet gets an expansion button at its top: the `#panel` grip (today decorative, `aria-hidden`, ui-shell.js:56)
   and a new one on `.edit-tool`, named "הגדלה" / "הקטנה" with `aria-expanded`. No drag gesture (none exists today; a drag needs snap
-  points and a keyboard alternative). My call; the phase 3 (tools) mockup shows it to the owner.
+  points and a keyboard alternative). My call; the phase 4 (tools) mockup shows it to the owner.
 - One sticky bar at most above the dock (today improve mode stacks two).
 - Tablet (600-1079): the dock is centred with a max width of 560px instead of stretching across 768px.
 
@@ -156,15 +156,17 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
 | # | Phase | Key element (the one emphasized thing) | What changes | Defects fixed |
 |---|---|---|---|---|
 | 1 | Board (declutter, in progress) + frame | the week; above it the facts line of the shown alternative | the approved declutter; then the frame (§1), tab bar (§5), loading state, alternatives column folded to a rail (§1), its cards on the type scale, the block above the week folded (Phase details) | W1, W2, W4; owner-3 (part), owner-6, owner-7, owner-8 |
-| 2 | Improve mode | before load: the load choice; after: the week with the change; שינויים: "חפש הצעות", then the shown proposal | frame (§1) with the empty state; the record opens in the tool column's place (wide) with a back control, never over it; tabs over the content; "קובץ מערכת" opens the device's file picker at once and the editor opens with the file already read (manual stays a second button); the goal chips wrap; buttons: one primary, the rest secondary or under "עוד"; one sticky bar on a phone | owner-1, owner-2, owner-4; W7-W12, P1 |
-| 3 | Tools: המצב שלי, קורסים, מה חשוב לי, חברים, להוציא | המצב שלי: progress ("41 מתוך 41 נ״ז"); קורסים: the planned count and the "חובה/אולי/לא" choice; מה חשוב לי: the 5 importance rows; חברים: add a friend; להוציא: "העתק הכל" | one surface level, sections not cards; helper lines behind ⓘ; the course card status line (declutter C); one destructive control (delete-all lives in ☰ only); the phone sheet at 60% | W3, P2; owner-3 |
-| 4 | ☰, מידע, dialogs (schedule editor, friend editor, map, confirmations) | ☰: the list itself; מידע: "על הכלי" first sentence; the editor: the week being built | list rows; a back arrow in the sheet header instead of "חזרה לתפריט"; links as rows with an external-link icon; "מצב כהה" leaves ☰ (the header has it); the editor's side column: one input method visible, the other two under "דרכים נוספות" | owner-5; W5, W6, W12 |
-| 5 | First run (terms, track and year, "מאיפה מתחילים", the tour) | the terms card, then the first choice | the gate stays where it is (in `#panel`; the board is `inert` while gated, ui-shell.js:152, so the gate cannot move into it); the empty week gets an empty state that points to it ("המערכת תופיע כאן. מתחילים בכרטיס שבצד."); the gate card on the type scale | D1 |
+| 2 | Improve mode | before load: the load choice; after: the week with the change; שינויים: "חפש הצעות", then the shown proposal | frame (§1) with the empty state; the record opens in the tool column's place (wide) with a back control, never over it; tabs over the content; "קובץ מערכת" opens the device's file picker at once and the editor opens with the file already read (manual stays a second button); the goal chips wrap; buttons: one primary, the rest secondary or under "עוד"; one sticky bar on a phone; the course search (Phase details) | owner-1, owner-2, owner-4; W7-W12, P1; owner-13 |
+| 3 | First run (terms, track and year, what I passed, the guided pass) | the terms on the whole screen, then one step card at a time | the terms cover the whole screen on the first visit; a guided pass of one centred card per step before the first schedule (Phase details, "Phase 3, first run") | D1; owner-9, owner-10 |
+| 4 | Tools: המצב שלי, קורסים, מה חשוב לי, חברים, להוציא | המצב שלי: progress ("41 מתוך 41 נ״ז"); קורסים: the planned count and the "חובה/אולי/לא" choice; מה חשוב לי: the 5 importance rows; חברים: add a friend; להוציא: "העתק הכל" | one surface level, sections not cards; helper lines behind ⓘ; the course card status line (declutter C); one destructive control (delete-all lives in ☰ only); the phone sheet at 60% | W3, P2; owner-3 |
+| 5 | ☰, מידע, dialogs (schedule editor, friend editor, map, confirmations), the progress map colours (owner-11) | ☰: the list itself; מידע: "על הכלי" first sentence; the editor: the week being built | list rows; a back arrow in the sheet header instead of "חזרה לתפריט"; links as rows with an external-link icon; "מצב כהה" leaves ☰ (the header has it); the editor's side column: one input method visible, the other two under "דרכים נוספות" | owner-5; W5, W6, W12 |
 
 ### Phase details (calls made for the builder)
 
 - Phase order (manager, 2026-11-22): improve mode moves up to phase 2, before the tools; the owner keeps meeting it at 1920. Phase 1's
-  frame (Task 2) only partly helps there.
+  frame (Task 2) only partly helps there. Then (manager, the same day, owner-9 and owner-10): first run moves up to phase 3, the tools
+  to phase 4, ☰/מידע/dialogs to phase 5 with the progress map colours (owner-11). The owner approved phase 2's picture the same day,
+  with one addition, the course search.
 - Phase 2, the improve-mode mockup (design-lead's `mockups/edit-collage.png`, 1920, today beside the proposal; frames in `mockups/edit/`):
   - Chrome: the header and the strip line up with the 1200 frame (plan Task 2); the strip is phase 1's one line.
   - Tabs: "המערכת שלי / שינויים / המצב שלי" as a segmented control centred over the content (44px segments, the shown one on the
@@ -184,7 +186,60 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
   - המצב שלי: in the tool column's slot, "→ חזרה" above its title, sections on one surface; the week stays beside it. `#panel` stays
     where it is in the DOM (the mockup moved it only for the picture): `renderEdit()` replaces `#edit`'s subtree (ui-edit.js:358), so the
     record is placed over the hidden tool column's slot by CSS (the frame's inline start, 440 wide, under the tabs), never inside `#edit`.
-  - Phone: the same buttons and copy; one sticky bar at most (the dock); the sheet rules of phase 3 do not block this phase.
+  - Phone: the same buttons and copy; one sticky bar at most (the dock); the sheet rules of phase 4 do not block this phase.
+- Phase 2, the course search (owner, approving phase 2: "חייב להיות שם אפשרות לחפש קורס לפי כל אחד מהקריטריונים האלה שיהיה נגיש";
+  his recording shows the yedion's "חיפוש קורסים במערכת": by code, by the name's first letter, by day + hour + semester, by program, by
+  the lecturer's first letter in Hebrew or English). One field and a few chips, not five forms:
+  - Where: in שינויים, "+ קורס" (today the `addCourse` select, ui-edit.js:190) becomes a button "חיפוש קורס" that opens the search in the
+    tool column (on a phone, the sheet), in place of the goals and the proposal, with "→ חזרה" at its top.
+  - The field: `<input type="search">`, label "חיפוש קורס", placeholder "קוד, שם או מרצה". It matches as you type, from the first
+    character: the course code (the start of the course key or of a group id), the name (any part, so a first letter works), a group's
+    lecturer (any part; titles such as ד״ר and מר do not count).
+  - Chips under it, the goal-chip select pattern: "יום ▾" (א׳-ו׳), "שעה ▾" (08:00-20:00: a group with a meeting that covers that hour, on
+    the chosen day or on any), "סמסטר ▾" (the record's by default), "תוכנית ▾" (the student's by default, then the catalog's programs).
+  - Results: with no criterion, one line "מקלידים קוד, שם או מרצה, או בוחרים יום ושעה." and no list. Otherwise up to 30 courses, those
+    open to the student first, then by name; a count line in a polite live region ("12 קורסים", "אין קורס כזה", "יש עוד, מצמצמים?").
+    Each course: its name as a heading, the code and credits; one line per option the site can actually register, as the swap list
+    builds them today (a primary group with its required tutorial or lab, `buildOptions()` with the student's registration and the split
+    setting): days and hours, lecturer, and a tag: "נכנס" (no part clashes with the shown week, the course itself left out), "מתנגש עם
+    <course>" (warning colour), "מלא" (a part is full). A course with no option that can be built: "אין קבוצה פתוחה", no button.
+    A course not in the schedule: "הוספה" on each option, which adds the course with that option fixed (the next search keeps it as given
+    or says "לא נמצאה מערכת עם הקבוצה הזו"). A course in it: "מעבר לקבוצה" on each other option (today's `pickSwap`). A course that needs
+    a parallel course (`conditional`) shows "דורש במקביל: <course>" and its "הוספה" adds both, said on the line. A course closed to the
+    student (passed, a missing prerequisite) shows the reason in place of a button.
+  - Another program's and another semester's courses are read only: times, lecturer and the tag show, the row says why ("לא בתוכנית
+    שלך", "בסמסטר ב׳") and has no button. Adding a course from outside the program is the owner's call (credits, prerequisites, the
+    department), not decided here.
+  - Keyboard and screen reader: the field, the chips, then the results in Tab order; each course a list item under an h3; Escape in the
+    field clears it, a second Escape closes the search and returns focus to "חיפוש קורס" (the search takes Escape before the phone sheet
+    does, ui-shell.js:266); while the search is open the proposal's arrow keys (ui-edit.js:871) do nothing; a redraw (a search finishing)
+    keeps the focused control and the caret. Targets 44px.
+  - Data: each program file (`web/data/afeka/<year>-<sem>/<program>-<startYear>.json`) holds the courses with their groups: lecturer,
+    meetings (day, start, end, room), `full`, exams; `catalog.json` holds the programs and their start years. Missing: English lecturer
+    names (the yedion's English letters; the Hebrew search covers a lecturer), and other programs are not loaded today: choosing one in
+    "תוכנית" fetches that program's file for the same semester and the student's start year (or the latest start year it has), once per
+    visit; a failed fetch says so in the count line, and only the last chosen program's answer is shown. The program's three semesters
+    are already loaded (app.js:598), so "סמסטר" needs no fetch.
+  - The build mode's "קורסים" tool gets the same field and matcher (code, name, lecturer; no day or hour, which the solver decides) in
+    phase 4. My call: one way to find a course everywhere.
+- Phase 3, first run (owner, 2026-11-22. owner-9: "האישור תנאים צריך להופיע בהתחלה על כל המסך ככה שפעם ראשונה אף אחד לא יכול להתחיל
+  לתכנן אפילו בטעות בלי לאשר תנאים". owner-10: "אם מישהו בוחר מסלול ואז שנה הוא צריך לעבור את התהליך של קורסים מה חשוב לי וחברים לפני
+  שנבנה מערכת"). Decided with the owner in design-lead's session:
+  - The first visit: the terms on the whole screen, nothing behind them usable. Then a guided pass, one centred card per step (the owner
+    chose it over the steps in the side column after seeing both, `mockups/first-run/way1-1920.png`): תנאים · מה עברתי · קורסים · מה חשוב
+    לי · חברים, "שלב N מתוך 5", "→ חזרה" and "המשך". The first schedule is built only after the last step.
+  - מה עברתי: the grade sheet first ("מעלים גליון ציונים (PDF)", today's import). Without one, the earlier years' mandatory courses are
+    listed ticked and the student unticks what they did not pass before "המשך" (the owner chose this over silently all ticked, today's
+    app.js:471, and over nothing ticked). A first-year student has no such step.
+  - No step can be skipped; each continues with a default (my proposal, not objected to): קורסים the year's courses as today, מה חשוב לי
+    today's settings, חברים "אין לי חברים להוסיף".
+  - Changing the year later reruns only מה עברתי, for the years that became earlier; courses, what matters and friends stay (owner).
+    What the student confirmed (a course unticked, a failure on file) is kept.
+  - The pass is part of the gate: a saved "first run done" flag; until it is set no schedule is computed and the board behind stays
+    inert, a reload returns to the step reached. The earlier years are not filled in silently for a new student (app.js:471, :679 become
+    the ticked list of מה עברתי); saves from before keep their `assumed` and do not see the pass.
+  - Still open, for the owner before this phase's plan: the contents of the קורסים, מה חשוב לי and חברים steps, the phone, and where the
+    track and year sit (on the terms card or a step of their own).
 - Plan depth (my call): the implementation plan covers phase 1 in full (both steps) and outlines phases 2-5. Each later phase gets its
   task-level plan after its mockup is approved, since the mockup may change it.
 - Phase 1 steps: 1a is the declutter spec as approved (the ui session is building it). 1b is the frame (§1), the tab bar (§5), the loading
@@ -230,7 +285,7 @@ it on claude/design-a, then I review it by browsing, then the manager merges. A 
   `renderEdit()` redrawing the tool (ui-edit.js:554, e.g. when search results arrive) does not bring it back. A running search continues.
   Back or Escape closes the record and returns focus to the dock's "המצב שלי" button. The guarantees edit-a.spec.mjs:141 checks today
   (the route and a running search survive the record) carry over.
-- Phase 3, delete-all: today it is in ☰ (ui-mode.js:51) and in "המצב שלי" (ui-me.js:335). The "המצב שלי" copy goes; ☰ keeps it with its
+- Phase 4, delete-all: today it is in ☰ (ui-mode.js:51) and in "המצב שלי" (ui-me.js:335). The "המצב שלי" copy goes; ☰ keeps it with its
   confirmation (ui-actions.js:373).
 - Screenshots: docs/media and the README are re-shot once, after the flip to A (adoption plan Task 11), not after each phase.
 
@@ -255,7 +310,7 @@ scale on top. Where both speak, the declutter spec's wording and legal rules win
   picker (an `input[type=file]` click), the phone sheet's height, the empty states. No word-count tests.
 - Risk: the 1680 frame changes the position of everything on very wide screens; screenshots in docs/media and the README need a re-shoot
   (scripts/readme-shots.mjs).
-- Risk: the 60% phone sheet changes how a tool feels on a phone, where the owner works; it gets its own mockup and the owner's OK in phase 3.
+- Risk: the 60% phone sheet changes how a tool feels on a phone, where the owner works; it gets its own mockup and the owner's OK in phase 4.
 - Risk: moving delete-all out of "המצב שלי" changes where a student finds it; ☰ keeps it, with its confirmation.
 
 ## Left to the builder
@@ -277,6 +332,11 @@ From the owner (screenshots kept privately, 2026-11-22) and my browsing of a loc
 | owner-6 | board | the words above the week on alternative 9 (banners, chips, comparison lines) |
 | owner-7 | board, wide | the alternatives column (a mini-week card per alternative) is always open and loads the page |
 | owner-8 | board | everything between the board's top and the week: tabs, banners, chips, notices, the legal sentences, the search and exam banners |
+| owner-9 | first run | the terms card sits in the tool column beside an empty board; it must cover the whole screen on the first visit |
+| owner-10 | first run | after choosing year ב the site took all of year א as passed and built a schedule at once |
+| owner-11 | progress map | almost every course in one colour; the status does not read at a glance |
+| owner-12 | board | the page scrolls far past the content into empty grey (a layout bug, the ui session, phase 1) |
+| owner-13 | improve | no way to find a course by code, name, day and hour, program or lecturer (the yedion's "חיפוש קורסים במערכת") |
 | W1 | wide | no page max-width: header items at the far edges, three columns edge to edge, three scrollbars side by side |
 | W2 | wide | tool tab labels wrap |
 | W3 | tools | card inside a card; "התמחות" segment labels wrap; small outline buttons at the far end; delete-all twice |

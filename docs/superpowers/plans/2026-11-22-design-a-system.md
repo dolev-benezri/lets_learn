@@ -474,9 +474,9 @@ test('the short stale line of the strip', () => {
 
 ---
 
-## Phases 2-5 (outline; each gets its own task plan after its mockup is approved)
+## Phases 2-5 (outline; each gets its own task plan after its mockup is approved; order changed 2026-11-22: improve, first run, tools, ☰)
 
-### Phase 2: improve mode (moved up, manager 2026-11-22; mockup `mockups/edit-collage.png`, waiting for the owner)
+### Phase 2: improve mode (moved up, manager 2026-11-22; mockup `mockups/edit-collage.png`, approved by the owner the same day, with the course search added)
 - The spec's "Phase 2, the improve-mode mockup" is the target, copy included.
 - Task A, the frame and the tabs: `#edit` inside `--frame-edit` with the chrome on it (Task 2's rule); the improve dock as a segmented
   control centred over the content (44px segments, `aria-pressed` only on the shown screen, the record included); the tool column and
@@ -499,9 +499,36 @@ test('the short stale line of the strip', () => {
   that read `.me-foot` (improve-a.spec.mjs:29, :38, :43, :59, :79; a11y-a.spec.mjs:188, :206) move to the new places ("לשינויים" in
   the section, the way back is the tab), keeping the short-window check that every action is reachable. a11y-a's target scan covers
   `.edit-tool` and the open "עוד"; keyboard tests for "עוד".
+- Task F, the course search (owner-13): the spec's "Phase 2, the course search". A pure `web/course-search.js`:
+  `searchCourses(ctx, query, { day, hour, sem, program }) -> { list: [{ id, name, code, credits, open, why, needs, readOnly,
+  options: [{ ids, line, lecturer, fit: 'fits' | 'clash' | 'full', clash: [names] }] }], more }`, where `ctx` = { data (the shown
+  program, all its semesters), foreign (another program's data or null), sem, week, statuses, registered, split }; options come from the
+  swap list's `buildOptions()` so linked tutorials and labs count. `test/course-search.test.mjs`: a code prefix, a group-id prefix, a name
+  part, a lecturer part with a title, day, an hour inside a meeting, fit and the clash names (the course itself left out), a clash or a
+  full part in a linked tutorial, a course with no buildable option (e.g. 90902 in 2027-1/30-2026.json), a `conditional` course's
+  `needs`, a closed course's reason, read-only rows, the order and the 30 cap. In `web/ui-edit.js` the
+  "חיפוש קורס" button replaces `chipSelect("addCourse", …)` (:190); the search view lives in the tool column and keeps the query, the
+  chips, the focus and the caret across `renderEdit()` redraws (state, not the DOM); "הוספה" adds the course with its option fixed
+  (today's addCourse path, :855, plus the option; the worker keeps it or reports no solution), and for a `conditional` course its
+  parallel course too; "מעבר לקבוצה" is `pickSwap`. Another program's file is fetched on demand into its own cache (the last choice
+  wins over an earlier answer); semesters are already loaded (app.js:598). The proposal's arrow keys are off while the search is open;
+  Escape reaches the search before the phone sheet (ui-shell.js:266). Browser tests in edit-a: a code, a name part, a lecturer part; day + hour; the
+  "נכנס" and "מתנגש עם" tags; "הוספה" puts the course in the week in that option after the search; a fixed option that cannot fit says
+  so; a `conditional` course added with its parallel course; Escape twice returns focus to "חיפוש קורס", also on a phone; arrow keys on a
+  result do not change the proposal; typing while a search finishes keeps the caret; a failed and an out-of-order program fetch; the
+  live count; 320px without sideways scroll; a11y-a scans the open search.
 - Each task: its tests, then `-- edit-a`, `-- improve-a`, `-- a11y-a`, the classic `flows`, Codex, one commit.
 
-### Phase 3: the tools (המצב שלי, קורסים, מה חשוב לי, חברים, להוציא)
+### Phase 3: first run (owner-9, owner-10; moved up, manager 2026-11-22)
+- The spec's "Phase 3, first run": the terms on the whole screen on the first visit; then the guided pass, one centred card per step,
+  the first schedule only after the last step; מה עברתי grade sheet first, else the earlier years listed ticked to untick; a year change
+  reruns only מה עברתי. New students no longer get app.js:471's silent assumption; saves from before keep their `assumed`.
+- The gate: `gated()` (ui-common.js) also waits for a saved first-run flag; tests: no solver run before the last step, a reload or Back
+  returns to the step reached, a first-year student sees 4 steps, an old save with `assumed` skips the pass, a year change keeps an
+  unticked course and a failure on file.
+- Its task plan follows the open questions (the step contents, the phone, the track and year's place) and the owner's answers.
+
+### Phase 4: the tools (המצב שלי, קורסים, מה חשוב לי, חברים, להוציא)
 - Sections, not cards inside the panel (one surface level); key element per tool as in the spec's phase table, at `--fs-key`.
 - ⓘ inline disclosure component (spec §6): a pure `helpHtml(id, topic, text)` in `web/ui-text.js` with unit tests; one click handler in
   `web/ui-actions.js`; keyboard and Escape tests in a11y-a.
@@ -509,12 +536,11 @@ test('the short stale line of the strip', () => {
 - Delete-all only in ☰ (remove from `web/ui-me.js:335`).
 - Phone sheets at about 60% with the expansion button on `#panel` and `.edit-tool`; the open-scroll rule; replace shell-a.spec.mjs:158.
 - (The tablet dock is done in phase 1b, Task 3.)
+- The course search field in קורסים (code, name, lecturer), reusing `web/course-search.js` (Phase 2, Task F).
 
-### Phase 4: ☰, מידע, dialogs
+### Phase 5: ☰, מידע, dialogs, the progress map
 - List rows (48px, icon, label, chevron or external-link icon, dividers) for ☰ and מידע; a back arrow in the sheet header in place of
   "חזרה לתפריט"; "מצב כהה" leaves ☰.
 - The schedule editor: one input method visible, the other two under "דרכים נוספות"; "שמור / ביטול" beside the content.
 - a11y-a roots extended to `#drawer` and `#friendEd`.
-
-### Phase 5: first run
-- The gate stays in `#panel`; the empty week gets the empty state "המערכת תופיע כאן. מתחילים בכרטיס שבצד."; gate card on the type scale.
+- The progress map colours (owner-11): each status reads at a glance; a quick mockup first (one or two plain screenshots).
