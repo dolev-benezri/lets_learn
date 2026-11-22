@@ -80,7 +80,7 @@ import {
 } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
-import { renderDrawer } from './ui-drawer.js';
+import { renderDrawer, renderOut } from './ui-drawer.js';
 
 // ---------- top bar and banners ----------
 // The footer link "דיווח על טעות": only when settings.json gives an address; its mailto names the page, so a step change refreshes it too.
@@ -445,7 +445,10 @@ export function renderView() {
   if (live && live !== ui.liveText) $('live').textContent = ui.liveText = live;
   renderSide(raw);
   renderDrawer(); // an open panel follows the shown alternative
-  if (designOn()) renderAltColumn(); // A: the wide screen's column of every alternative
+  if (designOn()) {
+    renderAltColumn(); // A: the wide screen's column of every alternative
+    renderOut(); // and an open take-out tool follows the shown alternative and semester
+  }
   setBusy();
   scrollToDay();
   ui.onShown?.();

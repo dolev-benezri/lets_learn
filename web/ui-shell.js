@@ -5,6 +5,8 @@
 import { app } from './app.js';
 import { icon } from './ui-grid.js';
 import { go } from './ui-view.js';
+import { renderOut } from './ui-drawer.js';
+import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { $, ui, gated, termsOk, needsProgram, designOn } from './ui-common.js';
 import { viewOf, routeA, stageOf, panelOf, TOOLS, hashOfTool } from './shell-routes.js';
 
@@ -120,24 +122,17 @@ export function applyShell() {
     (a.dataset.mode === 'edit') === (route.mode === 'improve') ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current');
   for (const b of document.querySelectorAll('#panel [data-act="closeTool"], .a-scrim')) b.hidden = lock && !!panel;
   document.body.classList.toggle('a-panel-open', !!panel);
-  // while the gate (terms, track, year) is open nothing behind it can be used: the board is inert (and the skip link goes to the gate)
-  $('aBoard').inert = !!panel && (route.mode === 'improve' ? !termsOk() : lock);
+  // while the gate (terms, track, year) is open nothing behind it can be used: the board is inert (and the skip link goes to the gate).
+  // A failed load is not a gate: the board holds a retry button of its own, which has to stay pressable.
+  $('aBoard').inert = !!panel && (route.mode === 'improve' ? !termsOk() : lock && !broken);
   // a tool opened after another one starts at its top (the document keeps the board's scroll)
-  if (panel !== ui.shownTool) $('aPb').scrollTop = 0;
+  const before = ui.shownTool;
+  if (panel !== before) $('aPb').scrollTop = 0;
   ui.shownTool = panel;
-  if (panel === 'out' && !app.loadFailed && !$('out').querySelector('.a-out')) renderOut();
+  // every exit from the take-out tool: another tool, Back, closing the sheet, the other mode; and a failed load, which replaces the tool's content
+  if ((before === 'out' && panel !== 'out') || broken) dropAdvisorPdf();
+  if (panel === 'out' && before !== 'out' && !app.loadFailed) renderOut(); // later changes reach it through renderView
   return panel;
-}
-
-// "להוציא" until Task 5 builds it: the existing panels and acts, one tap each
-function renderOut() {
-  $('out').innerHTML = `<div class="me-head"><h2 id="outTitle" tabindex="-1">להוציא את המערכת</h2></div>
-    <div class="a-out">
-      <button type="button" class="btn" data-act="panel" data-panel="reg" aria-haspopup="dialog">${icon('clipboard-list')} רשימה להרשמה</button>
-      <button type="button" class="btn" data-act="panel" data-panel="advisor" aria-haspopup="dialog">${icon('file')} סיכום ליועץ</button>
-      <button type="button" class="btn primary" data-act="share">${icon('share')} שתף</button>
-      <button type="button" class="btn" data-act="openMap" aria-haspopup="dialog">${icon('map')} מפת התקדמות</button>
-    </div>`;
 }
 
 const panelOpen = () => !$('panel').hidden;

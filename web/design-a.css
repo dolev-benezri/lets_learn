@@ -232,6 +232,33 @@
 :root[data-design="a"] body.drawer-open { padding-inline-end:0; }
 :root[data-design="a"] .a-alts { display:none; } /* a phone has the arrows and the swipe; the column is for a wide screen */
 :root[data-design="a"] .col-t { margin:0 0 8px; font-size:1rem; }
+:root[data-design="a"] .site-foot {
+  display:none;
+} /* the notice stays in the strip; the legal links, the report and counselling links are in ☰ and the information panel */
+:root[data-design="a"] .out-actions { display:flex; flex-wrap:wrap; gap:8px; }
+:root[data-design="a"] .out-actions .btn { flex:1 1 auto; min-height:var(--tap); }
+:root[data-design="a"] .out-sec .hint { margin:0; }
+:root[data-design="a"] .a-menu { display:grid; gap:8px; }
+:root[data-design="a"] .a-menu-item { justify-content:flex-start; width:100%; min-height:var(--tap); }
+:root[data-design="a"] .a-menu-item.danger { color:var(--danger, var(--text)); }
+:root[data-design="a"] .a-menu .theme-btn {
+  margin:0;
+  padding-inline:16px;
+  border-radius:10px;
+  color:var(--text);
+} /* classic's round icon button of the header */
+:root[data-design="a"] .a-menu .theme-btn { width:100%; height:auto; } /* classic's phone rule makes it a square icon button */
+:root[data-design="a"] .a-menu .theme-btn .lbl {
+  position:static;
+  display:inline;
+  width:auto;
+  height:auto;
+  overflow:visible;
+  clip:auto;
+  white-space:normal;
+}
+:root[data-design="a"] .info-links { display:grid; gap:4px; }
+:root[data-design="a"] .info-links a { display:flex; align-items:center; min-height:var(--tap); }
 :root[data-design="a"] #week {
   touch-action:pan-y pinch-zoom;
 } /* the page keeps the horizontal gesture: the swipe between alternatives (ui-shell.js) */

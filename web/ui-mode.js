@@ -1,6 +1,7 @@
 // Build or edit: the choice on first entry (a card for each, in the #me container before the identity questions) and the side menu (☰) that holds both.
 import { app } from './app.js';
-import { termsOk, $ } from './ui-common.js';
+import { termsOk, $, designOn } from './ui-common.js';
+import { icon } from './ui-grid.js';
 
 export const MODE_KEY = 'afeka-sched-v1-mode'; // 'build' | 'edit'
 let chosen = null; // blocked storage: the choice still holds for this visit
@@ -36,8 +37,23 @@ export const renderModeChoice = () => {
   </div></div>`;
 };
 
+// Design A: the tabs of the top bar are the mode switch, so the menu holds what has no place on the board: the theme, the tour, the map, the
+// information (terms, privacy, how fresh the data is) and erasing everything.
+const menuA = () => [
+  'תפריט',
+  `<nav class="a-menu" aria-label="תפריט">
+    <button type="button" class="btn theme-btn a-menu-item" data-k="menu-theme">
+      <span class="to-dark">${icon('moon')}<span class="lbl">מצב כהה</span></span>
+      <span class="to-light">${icon('sun')}<span class="lbl">מצב בהיר</span></span></button>
+    <button type="button" class="btn a-menu-item" data-act="tour" data-k="menu-tour">${icon('info')} סיור באתר</button>
+    <button type="button" class="btn a-menu-item" data-act="openMap" data-k="menu-map" aria-haspopup="dialog">${icon('map')} מפת התקדמות</button>
+    <button type="button" class="btn a-menu-item" data-act="panel" data-panel="info" data-k="menu-info">${icon('file')} מידע ותנאים</button>
+    <button type="button" class="btn a-menu-item danger" data-act="eraseAll" data-k="menu-erase">${icon('trash')} מחק את כל הנתונים שלי</button></nav>`
+];
+
 // The side menu's panel (ui-drawer.js PANELS): [title, body]
 export function menuPanel() {
+  if (designOn()) return menuA();
   const editing = location.hash === '#edit' || location.hash.startsWith('#edit/');
   const link = (mode, href, text) =>
     `<a class="mode-link" href="${href}" data-act="mode" data-mode="${mode}" data-k="menu-${mode}"${editing === (mode === 'edit') ? ' aria-current="page"' : ''}>${text}</a>`;

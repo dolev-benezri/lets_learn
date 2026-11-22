@@ -116,7 +116,7 @@ export async function visit(browser, t, size, seed = null, hash = '', scheme = '
   return page;
 }
 
-const onA = (page) => page.evaluate(() => document.documentElement.dataset.design === 'a');
+export const onA = (page) => page.evaluate(() => document.documentElement.dataset.design === 'a');
 // the dock buttons of the A frame (ui-shell.js): the wishes tool is the old "prefs" step
 const DOCK = { me: 'me', courses: 'courses', prefs: 'wishes', friends: 'friends' };
 // Goes to a step the way a student does. view: 'me' | 'courses' | 'prefs' | 'friends' | 'plan'.
@@ -133,3 +133,18 @@ export async function openStep(page, view) {
 export async function openFriends(page) {
   await page.goto(SITE + friendsHash((await onA(page)) ? 'a' : ''));
 }
+// "סיכום ליועץ" and "רשימה להרשמה": classic opens a drawer from the header; A has one take-out tool (#out) that holds both, opened by its address.
+export async function openAdvisor(page) {
+  if (await onA(page)) {
+    await page.evaluate(() => (location.hash = '#out'));
+    await page.locator('#out .advisor-sum').waitFor();
+  } else await page.locator('#advisorBtn').click();
+}
+export async function openRegistration(page) {
+  if (await onA(page)) {
+    await page.evaluate(() => (location.hash = '#out'));
+    await page.locator('#out [data-act="copyReg"]').waitFor();
+  } else await page.locator('[data-act="panel"][data-panel="reg"]').click();
+}
+// where the opened summary or list is
+export const takeOutRoot = async (page) => ((await onA(page)) ? '#out' : '#drawer[open]');

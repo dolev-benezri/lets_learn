@@ -266,9 +266,9 @@ test('the onboarded flag follows the route, not the panel: a bookmark to #course
 });
 
 test('a drawer that closes because of a navigation does not take the focus back from the new tool', async (t) => {
-  const page = await visit(t, 'phone', DONE, '#out');
-  await page.locator('#panel #out').waitFor({ state: 'visible' });
-  await page.locator('#out [data-act="panel"][data-panel="reg"]').click();
+  const page = await visit(t, 'phone', DONE, '');
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  await page.locator('.menu-btn').click(); // the ☰ menu: the one drawer left under A
   await page.locator('#drawer[open]').waitFor();
   await page.evaluate(() => (location.hash = '#courses'));
   await page.locator('#drawer[open]').waitFor({ state: 'detached' });
@@ -290,4 +290,25 @@ test('a failed data load locks the dock, and a tool shows the board\'s retry, ne
   for (const tool of ['me', 'courses', 'wishes', 'friends', 'out'])
     assert.equal(await dock(page, tool).getAttribute('aria-disabled'), 'true', `${tool} is locked`);
   assert.equal(await visible(page, '#panel #friends [data-retry]'), true);
+});
+
+test('a failed data load at 1280: every retry button on screen can be pressed (the board is not inert behind it)', async (t) => {
+  const context = await browser.newContext({ viewport: SIZES.desktop, locale: 'he-IL' });
+  const page = await context.newPage();
+  await context.addInitScript((items) => {
+    for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v);
+  }, { ...DONE, ...TOUR_SEEN, ...MODE_BUILD, [DESIGN_KEY]: 'a' });
+  await page.route('**/data/afeka/2027-*/30-2026.json', (r) => r.abort());
+  t.after(() => context.close());
+  await page.goto(SITE);
+  await page.locator('[data-retry]:visible').first().waitFor({ timeout: 30000 });
+  const hits = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-retry]')].filter((b) => b.checkVisibility()).map((b) => {
+      const r = b.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { inBoard: !!b.closest('#aBoard'), ok: hit === b || b.contains(hit) };
+    })
+  );
+  assert.ok(hits.length >= 2, 'the board and the open tool each say so');
+  assert.deepEqual(hits.filter((h) => !h.ok), [], 'every retry button is the element under its own centre');
+  assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), false);
 });

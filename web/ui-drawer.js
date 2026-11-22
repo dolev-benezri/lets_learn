@@ -1,5 +1,5 @@
 // The preferences page (step 3: preferences and friends) and the registration drawer.
-import { app, esc, seatsAt, DEFAULT } from './app.js';
+import { app, esc, seatsAt, DEFAULT, boardStatus } from './app.js';
 import { SEMESTER_DATES } from './ics.js';
 import { advisorBlocks, advisorHtml } from './advisor.js';
 import { advisorPdfButton, advisorPdfNote, dropAdvisorPdf, syncAdvisorPdf } from './ui-advisor-pdf.js';
@@ -14,9 +14,25 @@ import {
   groupIndex,
   backups,
   isPair,
-  semResult
+  semResult,
+  reportHref
 } from './ui-grid.js';
-import { groupLabel, groupFresh, strictnessHint, defaultNotes, hebYear, groupCount, SPLIT_TAG, examWhen, examsNoteHtml, conflictsFor } from './ui-text.js';
+import {
+  groupLabel,
+  groupFresh,
+  strictnessHint,
+  defaultNotes,
+  hebYear,
+  groupCount,
+  SPLIT_TAG,
+  examWhen,
+  examsNoteHtml,
+  conflictsFor,
+  conflictLine,
+  freshness,
+  approvedText,
+  RULES_UNAPPROVED
+} from './ui-text.js';
 import { approvedOn } from './settings.js';
 import { menuPanel } from './ui-mode.js';
 import {
@@ -308,9 +324,63 @@ function advisorPanel() {
   ${printable ? '<p class="hint advisor-hint">לא נפתחת הדפסה? בדפדפן שבתוך אפליקציה היא לא תמיד עובדת. אפשר לשתף את ה-PDF.</p>' : ''}`
   ];
 }
-const PANELS = { reg: regPanel, advisor: advisorPanel, menu: menuPanel };
+// ---------- design A: the take-out tool (#out), and the information panel of the ☰ menu ----------
+// One tool for everything that leaves the site: the registration list (copy, calendar file), the advisor summary (PDF, print, copy) and the links
+// (to friends, a full backup). The panels above fill it, so the drawer and the tool cannot drift apart. The advisor PDF belongs to this tool: it is
+// built when the tool renders and dropped when the tool is left (ui-shell.js applyShell), never by ☰ opening or a drawer closing.
+const outCard = (id, title, body, actions = '') =>
+  `<section class="me-card dr-body out-sec" aria-labelledby="${id}"><h2 id="${id}">${title}</h2>${actions ? `<div class="out-actions">${actions}</div>` : ''}${body}</section>`;
+export function renderOut() {
+  const box = $('out');
+  if (!box || box.hidden || !app.data || !app.state || app.loadFailed) return;
+  // a re-render replaces the buttons and the heading: focus that was inside goes back to the same key or id
+  const had = box.contains(document.activeElement) ? document.activeElement : null,
+    key = had && (had.dataset.k ? `[data-k="${CSS.escape(had.dataset.k)}"]` : had.id && `#${CSS.escape(had.id)}`);
+  const [regTitle, regBody, regActions] = regPanel(),
+    [advTitle, advBody, advActions] = advisorPanel();
+  // keys of their own: the friends and wishes tools hold "copyMine", "shareOut" and "backup" and are hidden, but before this tool in the page
+  const share = `<div class="out-actions">
+    <button type="button" class="btn" data-act="share" data-k="outShare">${icon('copy')} העתק את הקישור שלי</button>
+    <button type="button" class="btn" data-act="shareOut" data-k="outShareOut">${icon('share')} שתף (וואטסאפ ועוד)</button>
+    <button type="button" class="btn" data-act="backup" data-k="outBackup">${icon('copy')} העתק קישור גיבוי מלא</button></div>
+    <p class="hint">הקישור לחברים כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים. קישור הגיבוי פרטי: הוא כולל את כל המצב שלכם, לשימוש רק במכשירים שלכם.</p>`;
+  box.innerHTML = `<div class="me-head"><h2 id="outTitle" tabindex="-1">להוציא את המערכת</h2></div>${outCard('outReg', regTitle, regBody, regActions)}${
+    outCard('outAdv', advTitle, advBody, advActions)
+  }${outCard('outShareSec', 'שיתוף וגיבוי', share)}`;
+  if (key) box.querySelector(key)?.focus({ preventScroll: true });
+}
+
+const UNOFFICIAL = 'כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.';
+const LEGAL = [['terms', 'תנאי שימוש'], ['privacy', 'פרטיות ועוגיות'], ['accessibility', 'הצהרת נגישות'], ['contact', 'בקשת הסרה']];
+// What the classic page keeps in its footer and its header line, in one place: the notice, how fresh the data is and who approved the rules, the
+// legal pages, the report address and the counselling page (both only when settings.json gives them).
+function infoPanel() {
+  const { data, state, settings } = app,
+    report = data && state ? reportHref() : '',
+    counsel = settings.counselingUrl;
+  const f = data && freshness(boardStatus(), data.fetchedAt),
+    approved = data && state && approvedOn(settings, data.program, data.startYear),
+    conflicts = state ? conflictsFor(settings, state.program, state.startYear) : [];
+  const links = LEGAL.map(([id, text]) => `<li><a href="legal.html#${id}">${text}</a></li>`)
+    .concat(report ? [`<li><a href="${esc(report)}">דיווח על טעות</a></li>`] : [])
+    .concat(counsel ? [`<li><a href="${esc(counsel)}" target="_blank" rel="noopener">הכוון אקדמי<span class="sr"> (נפתח בחלון חדש)</span></a></li>`] : []);
+  return [
+    'מידע',
+    `<section class="dr-sec info-sec"><h3>על הכלי</h3><p>${esc(UNOFFICIAL)}</p></section>
+    ${f ? `<section class="dr-sec info-sec"><h3>הנתונים</h3><p class="hint">${esc(f.text)}${approved ? ` · ${esc(approvedText(approved))}` : ''}</p>
+      ${approved ? '' : `<p class="hint">${esc(RULES_UNAPPROVED)} בדקו מול היועץ לפני ההרשמה.</p>`}
+      ${conflicts.map((c) => `<p class="hint warn-text">${icon('alert')} ${esc(conflictLine(c))}</p>`).join('')}</section>` : ''}
+    <section class="dr-sec info-sec"><h3>קישורים</h3><ul class="plain info-links">${links.join('')}</ul></section>`,
+    '<button type="button" class="btn" data-act="menu" data-k="infoBack">חזרה לתפריט</button>'
+  ];
+}
+
+const PANELS = { reg: regPanel, advisor: advisorPanel, menu: menuPanel, info: infoPanel };
+// the ☰ menu and its information panel are a modal side sheet; under A nothing else opens as a drawer
+const sideSheet = (name) => name === 'menu' || (designOn() && name === 'info');
 export function renderDrawer() {
   if (!ui.panel) return;
+  const onTitle = designOn() && document.activeElement?.id === 'drawerTitle'; // the heading that took focus when the panel changed (A)
   // actions: a row that stays under the header while the body scrolls
   const [title, body, actions = ''] = PANELS[ui.panel]();
   $('drawer').innerHTML = `<div class="dr-top"><div class="dr-head"><h2 id="drawerTitle">${title}</h2>
@@ -320,26 +390,38 @@ export function renderDrawer() {
       class="dr-actions">${actions}</div>`
         : ''
     }</div><div class="dr-body">${body}</div>`;
+  if (onTitle) {
+    $('drawerTitle').tabIndex = -1;
+    $('drawerTitle').focus({ preventScroll: true });
+  }
 }
 // ponytail: the modal/docked mode is picked when the drawer opens; resizing across the boundary while it is open keeps the old mode.
 export function openPanel(name, from) {
-  if (name !== 'advisor') dropAdvisorPdf(); // on a desktop one panel can replace another, with no close between them
+  // on a desktop one panel can replace another, with no close between them. A: the file belongs to the take-out tool, not to a drawer (renderOut)
+  if (name !== 'advisor' && !designOn()) dropAdvisorPdf();
   const d = $('drawer');
   // the ☰ menu is modal and a side sheet, other panels are not: switching between them reopens the dialog in its new mode
-  if (d.open && (d.classList.contains('side') !== (name === 'menu') || (name === 'menu' && !d.classList.contains('modal')))) {
+  if (d.open && (d.classList.contains('side') !== sideSheet(name) || (sideSheet(name) && !d.classList.contains('modal')))) {
     d.addEventListener('close', () => openPanel(name, from), { once: true }); // after the shared close handler (ui-plan.js) has run
     d.close();
     return;
   }
+  const switching = d.open;
   ui.panel = name;
-  ui.opener = from;
+  if (!(switching && designOn())) ui.opener = from; // A: ☰ -> information -> back is one sheet; closing returns to the ☰ button, not to a gone one
   renderDrawer();
+  if (switching && designOn()) {
+    // the button that was pressed is gone: the new panel's heading takes the focus (a fresh dialog keeps its first button)
+    const h = $('drawerTitle');
+    h.tabIndex = -1;
+    h.focus({ preventScroll: true });
+  }
   if (!d.open) {
     // modal: native focus trap, inert page, Escape, scrim (::backdrop). The ☰ menu is a side sheet and modal at every width.
-    const modal = name === 'menu' || matchMedia(SHEET).matches || designOn(); // A: the tool column holds the side, so a drawer is always a sheet
+    const modal = sideSheet(name) || matchMedia(SHEET).matches || designOn(); // A: the tool column holds the side, so a drawer is always a sheet
     d.classList.toggle('modal', modal);
-    d.classList.toggle('side', name === 'menu');
+    d.classList.toggle('side', sideSheet(name));
     modal ? d.showModal() : d.show();
   }
-  if (name !== 'menu' || matchMedia(SHEET).matches) document.body.classList.add('drawer-open'); // wide: the page does not make room for the menu
+  if (!sideSheet(name) || matchMedia(SHEET).matches) document.body.classList.add('drawer-open'); // wide: the page does not make room for the menu
 }

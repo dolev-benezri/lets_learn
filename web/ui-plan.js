@@ -248,7 +248,7 @@ document.addEventListener('keydown', (e) => {
 });
 $('drawer').addEventListener('close', () => {
   ui.panel = null;
-  dropAdvisorPdf();
+  if (!designOn()) dropAdvisorPdf(); // A: the take-out tool owns the file (ui-shell.js applyShell)
   document.body.classList.remove('drawer-open');
   if (ui.noDrawerFocus) {
     ui.noDrawerFocus = false; // a navigation closed it (A): the new tool has the focus
