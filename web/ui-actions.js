@@ -180,6 +180,13 @@ export const ACT = {
     ($('layout').hidden || $('aBoard')?.inert ? shownTitle() : $('week'))?.focus(); // A: behind its gate the board is inert
   }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
+  afterAOpen() {
+    // design A: "אילו?" opens the board's "פרטים" at the line that names them
+    const d = document.querySelector('#pills .a-details');
+    if (!d) return;
+    ui.detailsOpen = d.open = true;
+    $('aAfterA')?.focus();
+  },
   menu: (el) => openPanel('menu', el), // the ☰ button and the edit page's mode label
   mode(el) {
     setMode(el.dataset.mode);

@@ -423,7 +423,7 @@ for (const size of Object.keys(SIZES)) {
     });
     await idle(page);
     await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
-    await page.locator('#semnote .notice', { hasText: 'התכנון של ב׳ מניח שעוברים את' }).first().waitFor({ state: 'attached', timeout: 30000 });
+    await page.locator('#semnote .notice', { hasText: 'התכנון של ב׳ מניח' }).first().waitFor({ state: 'attached', timeout: 30000 });
     assert.match(await page.locator('#semnote').textContent(), /בא׳/);
   });
 }
@@ -532,14 +532,16 @@ for (const [name, size] of [['320', { width: 320, height: 640 }], ['375', SIZES.
   test(`${name}: the board's warnings are seen, nothing overflows, and the week still starts on the first screens`, async (t) => {
     const page = await visit(t, size, FIRST);
     await weekReady(page);
-    const note = page.locator('#boardNote');
+    // design A says it once: in the strip from 600px, in the board's line on a phone ("בדקו מול היועץ" is in the details and in ☰ מידע)
+    const strip = DESIGN === 'a' && size.width >= 600;
+    const note = strip ? page.locator('.a-unofficial') : page.locator('#boardNote');
     assert.ok(await note.isVisible());
-    assert.match(await note.innerText(), /הכללים לא אושרו על ידי המחלקה/);
-    const m = await page.evaluate(() => ({
+    assert.match(await note.innerText(), DESIGN === 'a' ? /הכללים לא אושרו במחלקה/ : /הכללים לא אושרו על ידי המחלקה/);
+    const m = await page.evaluate((sel) => ({
       over: document.documentElement.scrollWidth - innerWidth,
-      note: document.getElementById('boardNote').getBoundingClientRect().height,
+      note: document.querySelector(sel).getBoundingClientRect().height,
       vh: innerHeight
-    }));
+    }), strip ? '.a-unofficial' : '#boardNote');
     assert.ok(m.over <= 0, `overflow ${m.over}`);
     assert.ok(m.note <= m.vh * 0.45, `the note takes ${m.note} of ${m.vh}`);
   });

@@ -13,6 +13,9 @@ import {
   defaultNotes,
   popStale,
   freshness,
+  freshnessA,
+  LEGAL_LINE,
+  RULES_SHORT,
   stalePins,
   creditsGoal,
   notFitReason,
@@ -118,6 +121,29 @@ test('popStale: small scrolls keep the popover, long ones or an off-screen block
   assert.equal(popStale(300, 900, 800), true); // below the viewport
   assert.equal(popStale(300, -100, 800), true); // above it
   assert.equal(popStale(300, null, 800), true); // block gone
+});
+
+test('freshnessA: four states, each says why the data may be stale (design A)', () => {
+  const now = new Date('2026-10-01T12:00:00Z');
+  const ok = { checkedAt: '2026-10-01T09:00:00Z', ok: true };
+  assert.deepEqual(freshnessA(ok, '2026-09-28T09:00:00Z', now), { text: 'נבדק לפני 3 שעות', stale: false }, 'fresh: no date of the last change');
+  assert.deepEqual(freshnessA({ ...ok, checkedAt: '2026-08-30T12:00:00Z' }, '2026-09-28T09:00:00Z', now), {
+    text: 'הנתונים נבדקו לפני 32 ימים, ייתכן שהשתנו',
+    stale: true
+  });
+  assert.deepEqual(freshnessA({ ...ok, ok: false }, '2026-09-28T09:00:00Z', now), {
+    text: 'הבדיקה האחרונה של הנתונים נכשלה. הם השתנו לאחרונה ב-28.9',
+    stale: true
+  });
+  assert.deepEqual(freshnessA(null, '2026-09-28T09:00:00Z', now), { text: 'לא ידוע מתי הנתונים נבדקו. הם השתנו לאחרונה ב-28.9', stale: true });
+  assert.equal(freshnessA({ ...ok, checkedAt: '2026-09-29T23:00:00Z' }, ok.checkedAt, now).stale, true, 'over 36h old');
+  assert.equal(freshnessA({ ...ok, checkedAt: '2026-09-30T00:00:00Z', ok: false }, ok.checkedAt, now).text.startsWith('הבדיקה האחרונה'), true, 'a failed check wins over an old one');
+});
+
+test('the legal line of design A says what it must, in the owner-approved words (D2)', () => {
+  assert.equal(LEGAL_LINE, 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט)');
+  assert.equal(RULES_SHORT, 'הכללים לא אושרו במחלקה');
+  assert.equal(`${LEGAL_LINE} · ${RULES_SHORT} · פרטים`, 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט) · הכללים לא אושרו במחלקה · פרטים');
 });
 
 test('askConfirm: without <dialog> and confirm() it proceeds, like the old guard did', async () => {

@@ -31,6 +31,7 @@ import {
   conflictLine,
   freshness,
   approvedText,
+  disclaimerHtml,
   RULES_UNAPPROVED
 } from './ui-text.js';
 import { approvedOn } from './settings.js';
@@ -252,7 +253,9 @@ function regPanel() {
     .sort((a, b) => a.date.localeCompare(b.date));
   return [
     'רשימה להרשמה',
-    `<p class="hint">חלופה ${ui.cur + 1} מתוך ${ui.last.results.length}. ההרשמה עצמה נעשית באפקה-נט.</p>
+    `<p class="hint">חלופה ${ui.cur + 1} מתוך ${ui.last.results.length}. ההרשמה עצמה נעשית באפקה-נט.</p>${
+      designOn() ? `<p class="hint">${disclaimerHtml(app.settings.counselingUrl)}</p>` : '' // A: the moment a student goes to register, and the board no longer says it
+    }
     ${parts
       .map(
         (p) =>
@@ -366,7 +369,9 @@ function infoPanel() {
     .concat(counsel ? [`<li><a href="${esc(counsel)}" target="_blank" rel="noopener">הכוון אקדמי<span class="sr"> (נפתח בחלון חדש)</span></a></li>`] : []);
   return [
     'מידע',
-    `<section class="dr-sec info-sec"><h3>על הכלי</h3><p>${esc(UNOFFICIAL)}</p></section>
+    `<section class="dr-sec info-sec"><h3>על הכלי</h3><p>${esc(UNOFFICIAL)}</p>${
+      designOn() ? `<p class="hint">${disclaimerHtml(counsel)}</p>` : ''
+    }</section>
     ${f ? `<section class="dr-sec info-sec"><h3>הנתונים</h3><p class="hint">${esc(f.text)}${approved ? ` · ${esc(approvedText(approved))}` : ''}</p>
       ${approved ? '' : `<p class="hint">${esc(RULES_UNAPPROVED)} בדקו מול היועץ לפני ההרשמה.</p>`}
       ${conflicts.map((c) => `<p class="hint warn-text">${icon('alert')} ${esc(conflictLine(c))}</p>`).join('')}</section>` : ''}

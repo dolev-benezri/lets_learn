@@ -205,6 +205,19 @@ export function freshness(status, changedAt, now = new Date()) {
   return { text: `נבדק ${ago(age)} · ${changed}`, stale: !status.ok || age > 36 * 36e5 };
 }
 
+// Design A's freshness line: four states, each saying why the data may be stale (stale = a warning: icon + words + colour).
+//   fresh "נבדק לפני 10 שעות"; old "הנתונים נבדקו לפני 32 ימים, ייתכן שהשתנו"; the last check failed; never checked.
+export function freshnessA(status, changedAt, now = new Date()) {
+  const changed = `הם השתנו לאחרונה ב-${dayMonth(changedAt).replace('/', '.')}`;
+  if (!status?.checkedAt) return { text: `לא ידוע מתי הנתונים נבדקו. ${changed}`, stale: true };
+  if (!status.ok) return { text: `הבדיקה האחרונה של הנתונים נכשלה. ${changed}`, stale: true };
+  const age = now - new Date(status.checkedAt);
+  return age > 36 * 36e5 ? { text: `הנתונים נבדקו ${ago(age)}, ייתכן שהשתנו`, stale: true } : { text: `נבדק ${ago(age)}`, stale: false };
+}
+// Design A's one legal line (the strip): what it always says, and the two things the rules can be ("not approved" is a warning, "approved" a fact).
+export const LEGAL_LINE = 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט)';
+export const RULES_SHORT = 'הכללים לא אושרו במחלקה';
+
 // Pinned groups that no loaded semester has any more. Reported, never auto-removed. Group id = "27" + 5-digit course id + group.
 export function stalePins(pins, datasets) {
   const sets = datasets.filter(Boolean);

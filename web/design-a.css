@@ -151,8 +151,19 @@
 :root[data-design="a"] .modes a .icon { width:18px; height:18px; flex:none; }
 :root[data-design="a"] .a-strip { display:flex; flex-direction:column; gap:2px; padding:4px 12px; font-size:var(--fs-sm); color:var(--text-2); }
 :root[data-design="a"] .a-strip .meta { margin:0; font-size:var(--fs-xs); }
-:root[data-design="a"] .a-unofficial { display:flex; align-items:center; gap:6px; margin:0; color:var(--text-2); }
-:root[data-design="a"] .a-unofficial .icon { width:14px; height:14px; flex:none; }
+/* the one legal line (declutter step 2): one flowing sentence, its "פרטים" an inline button whose 44px box is pulled back into the line */
+:root[data-design="a"] .a-unofficial { margin:0; color:var(--text-2); }
+:root[data-design="a"] .a-unofficial .icon { width:14px; height:14px; margin-inline-end:6px; vertical-align:-2px; }
+:root[data-design="a"] :is(.a-uno-more, .a-which) {
+  display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; margin-block:-12px; padding:0 8px; border:0;
+  background:none; color:var(--primary); font:inherit; font-weight:600; text-decoration:underline; cursor:pointer;
+}
+:root[data-design="a"] .a-warn-p { display:none; } /* the phone's line of warnings, shown below 600px */
+@media (max-width:599px) {
+  /* a phone's strip keeps the legal line: the board says the rest (the improve page has no board note, and the gate covers the board: there the strip says all) */
+  :root[data-design="a"] body:not([data-view="edit"], .gated) :is(.a-rules, .a-strip .meta) { display:none; }
+  :root[data-design="a"] .a-warn-p { display:block; }
+}
 :root[data-design="a"] .a-strip .notice-top:empty { display:none; }
 :root[data-design="a"] .a-stage { position:relative; }
 :root[data-design="a"] .a-board { min-width:0; }
@@ -296,6 +307,13 @@
 :root[data-design="a"] .mini { display:grid; grid-template-columns:repeat(var(--days, 5), 1fr); gap:2px; height:46px; margin-top:4px; }
 :root[data-design="a"] .mini i { position:relative; background:var(--surface-2); border-radius:3px; }
 :root[data-design="a"] .mini em { position:absolute; inset-inline:1px; background:var(--cfg); border-radius:2px; }
+/* notices (declutter step 3): an info line has no fill and no box; a warning keeps its icon and its words and takes the warning colour. The partial-search
+   note, the defaults-changed ask and the cap probe are actionable and stay as they were. */
+:root[data-design="a"] :is(#semnote, #week) .notice:not(.asks, .partial, .cap-preview) {
+  margin:0 0 2px; padding:2px 4px; border-radius:0; background:none; color:var(--text-2); font-size:var(--fs-sm);
+}
+:root[data-design="a"] :is(#semnote, #week) .notice.warn { color:var(--warning); }
+:root[data-design="a"] #semnote .notice .icon { flex:none; width:16px; height:16px; }
 /* the board's summary (declutter step 1): the facts as one plain line, the rest behind a native "פרטים" disclosure (the chevron is style.css's). The
    summary shares the facts' row from 600px (pulled up over the facts' reserved end padding); on a phone it has a row of its own. 44px is fixed here:
    --tap is 36px with a fine pointer, and this is the one control of the row. */

@@ -11,6 +11,7 @@ import { renderMe } from './ui-me.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { $, ui, gated, termsOk, needsProgram, designOn } from './ui-common.js';
 import { viewOf, routeA, stageOf, panelOf, TOOLS, hashOfTool } from './shell-routes.js';
+import { LEGAL_LINE } from './ui-text.js';
 
 export { designOn, viewOf, routeA, stageOf, panelOf, TOOLS };
 
@@ -44,7 +45,8 @@ export function shellInit() {
       </nav>
       <div class="a-top-act" id="aTopAct"></div>
     </header>
-    <div class="a-strip" id="aStrip"><p class="a-unofficial">${icon('info')}<span>לא רשמי · ההרשמה באפקה-נט</span></p></div>
+    <div class="a-strip" id="aStrip"><p class="a-unofficial">${icon('info')}<span class="a-uno-t">${LEGAL_LINE}<span id="aRules" class="a-rules"></span> · <button
+      type="button" class="a-uno-more" data-act="panel" data-panel="info" data-k="aUnoMore" aria-haspopup="dialog">פרטים</button></span></p></div>
     <div class="a-stage">
       <div class="a-board" id="aBoard">
         <div class="a-bar" id="aBar"><button type="button" class="btn a-share" data-act="share" data-k="aShare">${icon('share')}<span>שתף</span></button></div>

@@ -1024,6 +1024,7 @@ export function searchYear({
       unlocks,
       missing,
       split: [...new Set([...a.split, ...(b?.split ?? [])])],
+      afterA: needs.map((id) => [name(id)]), // the groups behind the first warning (design A counts them)
       warnings: [
         ...(needs.length ? [afterAText(needs.map((id) => [name(id)]))] : []),
         ...regrouped,

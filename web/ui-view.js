@@ -14,7 +14,7 @@ import {
   planningCls,
   summerPinned
 } from './app.js';
-import { progress, studyYear, passedWarnings, afterANotes } from './rules.js';
+import { progress, studyYear, passedWarnings, afterANotes, afterAGroups, afterAText, afterAShort } from './rules.js';
 import { approvedOn } from './settings.js';
 import { unlockCounts } from './solver-core.js';
 import {
@@ -42,6 +42,8 @@ import {
   approvedText,
   toolName,
   freshness,
+  freshnessA,
+  RULES_SHORT,
   turnWarning,
   stalePins,
   partialNote,
@@ -103,7 +105,12 @@ export function renderTop() {
   $('counsel').hidden = !app.settings.counselingUrl;
   if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
   renderReport();
-  $('meta').innerHTML = esc(f.text) + (approved ? ` · ${esc(approvedText(approved))}` : '');
+  if (designOn()) {
+    // A: the freshness line alone (a warning when stale); the rules clause is the legal line's, in the shell's strip
+    const fa = freshnessA(boardStatus(), app.data.fetchedAt);
+    $('meta').innerHTML = fa.stale ? `<span class="warn-text">${icon('alert')} ${esc(fa.text)}</span>` : esc(fa.text);
+    if ($('aRules')) $('aRules').textContent = ` · ${approved ? approvedText(approved) : RULES_SHORT}`;
+  } else $('meta').innerHTML = esc(f.text) + (approved ? ` · ${esc(approvedText(approved))}` : '');
 }
 
 // What qualifies every plan on this page, at any width: a phone hides the header's #meta. Written only on a change, so a screen reader is not told again.
@@ -111,14 +118,18 @@ function renderBoardNote() {
   const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear),
     warned = passedWarnings(app.data, app.state).length;
+  // A: from 600px the strip says the freshness and the rules (they are on screen with the board); on a phone this line, right above the week, says them
+  // as one line (each part only when it applies), and the longer "check with the advisor" sentence is in "פרטים" and in ☰ "מידע"
+  const fa = designOn() ? freshnessA(boardStatus(), app.data.fetchedAt) : null;
+  const phoneLine = fa && [fa.stale && `<span class="warn-text">${icon('alert')} ${esc(fa.text)}</span>`, !approved && RULES_SHORT].filter(Boolean).join(' · ');
   const html = [
-    f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
+    fa ? phoneLine && `<span class="a-warn-line">${phoneLine}</span>` : f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
     !approved && app.data.verified === false && '<span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>',
-    !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
+    !fa && !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
     warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים ב${toolName('me')}</a>`
   ]
     .filter(Boolean)
-    .map((line) => `<p class="hint">${line}</p>`)
+    .map((line) => `<p class="hint${line.startsWith('<span class="a-warn-line">') ? ' a-warn-p' : ''}">${line}</p>`)
     .join('');
   if ($('boardNote').dataset.html === html) return;
   $('boardNote').dataset.html = html;
@@ -280,7 +291,7 @@ export function renderView() {
   ]); // both semesters, so the hours don't jump between tabs; busy blocks always show
   if (ui.mobileDay > range.days) ui.mobileDay = 1;
   // Board header: scope and semester controls first, then the notices that hold for the whole plan (shown once, whichever tab is open).
-  const note = (ic, t) => `<p class="notice">${icon(ic)}<span>${esc(t)}</span></p>`;
+  const note = (ic, t) => `<p class="notice${designOn() && ic === 'alert' ? ' warn' : ''}">${icon(ic)}<span>${esc(t)}</span></p>`; // A: a warning line takes the warning colour
   const ctl =
     (app.sem['ב']
       ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"')}</div>`
@@ -289,6 +300,9 @@ export function renderView() {
       ? `<div class="ctl">${seg('sem', 'סמסטר מוצג', semTabs(), summerScope() ? 'קיץ' : ui.sem, 'data-chg="sem"')}</div>`
       : '');
   const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
+  const warnings = pair ? raw.warnings : afterANotes(app.cls, ids);
+  const afterA = designOn() ? (pair ? raw.afterA ?? [] : afterAGroups(app.cls, ids)) : [], // the groups ב׳ counts on from א׳ (A only)
+    afterAFull = afterA.length ? afterAText(afterA) : null;
   $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
   const summerNote = summerScope()
     ? (state.yearIds.length
@@ -304,7 +318,12 @@ export function renderView() {
         <button type="button" class="btn" data-act="prefsOk" data-k="prefsOk">הבנתי</button>
         <button type="button" class="btn" data-act="prefsUndo" data-k="prefsUndo">להחזיר את הקודם</button></p>`
       : '') +
-    (pair ? raw.warnings : afterANotes(app.cls, ids)).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
+    // A: what ב׳ counts on from א׳ is one short line (the count of prerequisites, "אילו?" opening the full sentence in "פרטים"); the other warnings stay
+    (afterA.length
+      ? `<p class="notice a-after">${icon('info')}<span>${esc(afterAShort(afterA.length))} <button type="button" class="a-which" data-act="afterAOpen"
+          data-k="aWhich">אילו?</button></span></p>`
+      : '') +
+    warnings.filter((w) => w !== afterAFull).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
     (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
   // as showWeights: the search runs as 'best'
@@ -437,7 +456,8 @@ export function renderView() {
         : s.examGap
           ? `לפחות ${count(s.examGap, 'יום אחד', 'ימים')} בין בחינות`
           : 'פער בין בחינות לא ידוע';
-    const examWarnings = closeExamLines(res.closeExams ?? [], nameOf);
+    const examWarnings = closeExamLines(res.closeExams ?? [], nameOf),
+      approvedNow = approvedOn(app.settings, app.data.program, app.data.startYear);
     // the disclosure's state is read now: its toggle event may still be queued when this replaces it
     const shownDet = $('pills').querySelector('.a-details');
     if (shownDet) ui.detailsOpen = shownDet.open;
@@ -457,7 +477,10 @@ export function renderView() {
           infoLine,
           pair && 'אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.',
           vs && `לעומת חלופה 1: ${vs}`,
-          ...fr.slice(1).map(esc)
+          afterAFull && `<span id="aAfterA" tabindex="-1" data-k="aAfterA">${esc(afterAFull)}</span>`,
+          ...fr.slice(1).map(esc),
+          disclaimerHtml(app.settings.counselingUrl),
+          !approvedNow && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`
         ]
       );
     else
@@ -493,7 +516,7 @@ export function renderView() {
       .join(', ');
   } else $('pills').innerHTML = '';
   $('advisorBtn').disabled = !res;
-  $('disclaimer').innerHTML = res ? disclaimerHtml(app.settings.counselingUrl) : ''; // also the step-4 counselling link
+  $('disclaimer').innerHTML = res && !designOn() ? disclaimerHtml(app.settings.counselingUrl) : ''; // also the step-4 counselling link; A: it is in "פרטים"
 
   $('week').innerHTML =
     msg +
