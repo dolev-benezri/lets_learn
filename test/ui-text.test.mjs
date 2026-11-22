@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   leftOutText,
   leftOutShort,
+  splitReason,
   outsideHoursShort,
   capPreviewText,
   closeExamLines,
@@ -523,4 +524,13 @@ test('notFoundHint: names the course codes missing from the track data; a course
   );
   const many = Array.from({ length: 10 }, (_, k) => String(40000 + k));
   assert.match(notFoundHint(many, courses, true), /40007<\/bdi> ועוד 2 לא קיימים/);
+});
+
+test('splitReason: a trailing citation of a regulation is split off, any other text is left whole', () => {
+  assert.deepEqual(splitReason('רק יחד עם פיזיקה חשמל ומגנטיות (קורס מקביל, תקנון 6.2.3)'), { short: 'רק יחד עם פיזיקה חשמל ומגנטיות', cite: 'קורס מקביל, תקנון 6.2.3' });
+  assert.deepEqual(splitReason('רק יחד עם א או ב, ג (קורס מקביל, תקנון 6.2.3)'), { short: 'רק יחד עם א או ב, ג', cite: 'קורס מקביל, תקנון 6.2.3' });
+  assert.deepEqual(splitReason('אפשר בסמסטר ב׳ אחרי חוזק חומרים 1'), { short: 'אפשר בסמסטר ב׳ אחרי חוזק חומרים 1', cite: '' });
+  assert.deepEqual(splitReason('מבוא (חלק א) דורש משהו'), { short: 'מבוא (חלק א) דורש משהו', cite: '' }, 'a parenthetical in the middle, or one that names no regulation, stays');
+  assert.deepEqual(splitReason('דורש א (חלק ב)'), { short: 'דורש א (חלק ב)', cite: '' });
+  assert.deepEqual(splitReason(''), { short: '', cite: '' });
 });

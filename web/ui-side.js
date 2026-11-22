@@ -3,7 +3,7 @@ import { app, esc, candidateMode, planningCls, summerPinned } from './app.js';
 import { englishOptions, specLists } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, isPair, resCourses, placedIn, semResult, summary, freeDaysText } from './ui-grid.js';
-import { notFitReason, courseCount, toolName } from './ui-text.js';
+import { notFitReason, courseCount, toolName, splitReason } from './ui-text.js';
 import {
   CAND,
   SEM_PICK,
@@ -19,7 +19,8 @@ import {
   listTitle,
   outsideBoxes,
   $,
-  ui
+  ui,
+  designOn
 } from './ui-common.js';
 
 // ---------- course list ----------
@@ -61,6 +62,7 @@ function card(id, res, unlocks, musts) {
   const yearPick =
     // afterA only fits ב׳; a course set to no has nothing to place
     app.state.scope === 'year' && offered?.length === 2 && s.status !== 'afterA' && ['must', 'optional'].includes(mode) && !inSummer;
+  if (designOn()) return cardA({ id, c, s, mode, where, inAlt, out, dropped, dropWhy, why, inSummer, offered, yearPick, required, unlocks });
   const tags = [
     app.state.scope === 'year' && offered?.length === 1 ? `<span class="tag">רק בסמסטר ${esc(offered[0])}׳</span>` : '',
     s.status === 'retake' ? '<span class="tag warn">חזרה</span>' : '',
@@ -96,6 +98,53 @@ function card(id, res, unlocks, musts) {
     }
     ${tags ? `<div class="tags">${tags}</div>` : ''}
     ${s.reasons.length ? `<p class="reason">${s.reasons.map(esc).join('<br>')}</p>` : ''}
+    ${required && app.state.choices[id] === 'no' ? '<p class="reason warn-text">תצטרך/י ללמוד אותו בהמשך</p>' : ''}
+    ${dropped ? `<p class="reason warn-text">לא נכנס למערכת${dropWhy ? ` כי ${esc(dropWhy)}` : ''}</p>` : ''}
+  </article>`;
+}
+
+// Design A's card (declutter step 6): the importance row, ONE status line (the semester select, "✓ במערכת, ב׳", what it opens, the summer pin and why it is
+// out), the warning tags alone below it, and short reasons whose regulation citation is behind "למה?".
+function cardA({ id, c, s, mode, where, inAlt, out, dropped, dropWhy, why, inSummer, offered, yearPick, required, unlocks }) {
+  const sem = yearPick
+    ? `<label class="a-sem"><span>סמסטר</span><select data-chg="semOf" data-id="${esc(id)}" data-k="sem-${esc(id)}"
+        aria-label="באיזה סמסטר ללמוד את ${esc(c.name)}">${SEM_PICK.map(
+          ([v, t]) => `<option value="${v}"${v === (app.state.semesterOf[id] ?? '') ? ' selected' : ''}>${t}</option>`
+        ).join('')}</select></label>`
+    : app.state.scope === 'year' && offered?.length === 1
+      ? `<span>סמסטר ${esc(offered[0])}׳ בלבד</span>`
+      : '';
+  const status = [
+    sem,
+    inAlt ? `<span class="a-ok">${icon('check')} במערכת${where ? `, ${esc(where)}׳` : ''}</span>` : '',
+    unlocks[id] ? `<span>${unlocks[id] === 1 ? 'פותח קורס אחד' : `פותח ${unlocks[id]} קורסים`}</span>` : '',
+    inSummer ? `<span class="tag ok">${icon('pin')} נעוץ בקיץ</span>` : '',
+    out && !dropped ? `<span class="tag">לא נכנס${why ? `: ${esc(why)}` : ''}</span>` : ''
+  ].join('');
+  const warn = [
+    s.status === 'retake' ? '<span class="tag warn">חזרה</span>' : '',
+    s.status === 'conditional' ? '<span class="tag warn">זמין בתנאי</span>' : ''
+  ].join('');
+  const reasons = s.reasons
+    .map((r, i) => {
+      const { short, cite } = splitReason(r),
+        key = `${id}-${i}`,
+        token = `cite-${key.replace(/[^\w-]/g,(ch) => `_${ch.codePointAt(0).toString(16)}`)}`, // a whitespace-free id for aria-controls
+        open = ui.whyOpen.has(key);
+      return `<p class="reason">${esc(short)}${
+        cite
+          ? ` <button type="button" class="a-which" data-act="why" data-why="${esc(key)}" data-k="why-${esc(key)}" aria-expanded="${open}"
+              aria-controls="${token}" aria-label="למה? ${esc(`${c.name}: ${short}`)}">למה?</button><span id="${token}" class="a-cite"${open ? '' : ' hidden'}> (${esc(cite)})</span>`
+          : ''
+      }</p>`;
+    })
+    .join('');
+  return `<article class="course c${colors.get(id) ?? 7}${ui.dashed.has(id) ? ' rep' : ''}${inAlt ? ' in' : ''}${out ? ' out' : ''}">
+    <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${nameHtml(c.name)}</h3><span class="cr">${c.credits} נ״ז</span></div>
+    ${seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`)}
+    ${status ? `<div class="a-status">${status}</div>` : ''}
+    ${warn ? `<div class="tags">${warn}</div>` : ''}
+    ${reasons}
     ${required && app.state.choices[id] === 'no' ? '<p class="reason warn-text">תצטרך/י ללמוד אותו בהמשך</p>' : ''}
     ${dropped ? `<p class="reason warn-text">לא נכנס למערכת${dropWhy ? ` כי ${esc(dropWhy)}` : ''}</p>` : ''}
   </article>`;
@@ -160,7 +209,13 @@ export function renderSide(res) {
   $('coursesTop').innerHTML = noPlan
     ? `${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}. הפרטים <a href="#">ב${toolName('plan')}</a>.`
     : coursesSummary(res);
-  $('side').innerHTML = `<p class="hint">חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.</p>
+  const HOW = 'חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.';
+  // A: the explanation is behind a button above the list ("מה ההבדל?"); classic keeps the sentence on the page
+  const how = designOn()
+    ? `<p class="a-tip"><button type="button" class="a-tip-btn" data-act="tip" data-k="aTip" aria-expanded="${ui.tipOpen}" aria-controls="aTipBody">${icon('info')} מה ההבדל?</button></p>
+      <p class="hint" id="aTipBody"${ui.tipOpen ? '' : ' hidden'}>${HOW}</p>`
+    : `<p class="hint">${HOW}</p>`;
+  $('side').innerHTML = `${how}
     ${details(
       'plan',
       `בתכנון (${plan.length})`,

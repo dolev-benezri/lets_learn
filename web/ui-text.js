@@ -83,6 +83,12 @@ export function outsideHoursShort(hours) {
   if (hours < 3) return '';
   return hours >= 10 ? '10 שעות או יותר מחוץ לשעות שביקשת.' : `כ-${Math.round(hours)} שעות מחוץ לשעות שביקשת.`;
 }
+// A reason that ends in the regulation behind it, "…(קורס מקביל, תקנון 6.2.3)": the reason and, apart, its citation ("למה?" opens it). Only a trailing
+// parenthetical that names a regulation is split; any other text is the reason as it was. Render-time only: the statuses keep their strings.
+export function splitReason(text) {
+  const m = /^(.*?)\s*\(([^()]*תקנון[^()]*)\)\s*$/s.exec(text);
+  return m ? { short: m[1], cite: m[2] } : { short: text, cite: '' };
+}
 const typeName = (t) => String(t).replace('סופי-', '');
 
 // "271001601/1" -> "01/1", "270600301" -> "01": the part of a 9-digit Afeka group id a student actually recognises.

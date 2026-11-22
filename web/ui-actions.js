@@ -180,6 +180,20 @@ export const ACT = {
     ($('layout').hidden || $('aBoard')?.inert ? shownTitle() : $('week'))?.focus(); // A: behind its gate the board is inert
   }, // a real #fragment would switch the view
   panel: (el) => openPanel(el.dataset.panel, el),
+  // design A's courses tool: "מה ההבדל?" and a card's "למה?" show and hide their text in place (the tool is drawn again on every change: ui.tipOpen
+  // and ui.whyOpen keep them)
+  tip(el) {
+    const open = el.getAttribute('aria-expanded') !== 'true';
+    el.setAttribute('aria-expanded', String(open));
+    $('aTipBody').hidden = !open;
+    ui.tipOpen = open;
+  },
+  why(el) {
+    const open = el.getAttribute('aria-expanded') !== 'true';
+    el.setAttribute('aria-expanded', String(open));
+    document.getElementById(el.getAttribute('aria-controls')).hidden = !open;
+    ui.whyOpen[open ? 'add' : 'delete'](el.dataset.why);
+  },
   detailsGo(el) {
     // design A: "אילו?" opens the board's "פרטים" at the line that names them (data-to: its id)
     const d = document.querySelector('#pills .a-details');

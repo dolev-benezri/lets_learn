@@ -434,3 +434,109 @@ test('classic keeps its long left-out and outside-hours sentences', async (t) =>
   assert.match(flat(await page.locator('#week .notice', { hasText: 'לא נכנסו לחלופה הזו' }).first().innerText()), /^לא נכנסו לחלופה הזו \d+ קורסים, [\d.]+ נ״ז: .+\.$/, 'the whole sentence, as before');
   assert.equal(await page.locator('#week .a-leftout, #week .a-which, #aLeftOut').count(), 0, 'nothing of design A');
 });
+
+// ---- step 6: the course card's status line, the toggletip and the citation behind "למה?" ----
+const card = (page, name) => page.locator('#side article.course', { has: page.locator('h3', { hasText: name }) }).first();
+const COURSE = 'מבוא להנדסת חשמל';
+// the plan is computed (the status line says "in the plan" only once it is) and the tool is on screen
+const coursesReady = async (page) => {
+  await page.locator('#side article.course').first().waitFor({ timeout: 30000 });
+  await idle(page);
+  await card(page, COURSE).locator('.a-ok').waitFor({ timeout: 30000 });
+};
+// A real change of the card's course ("must": it was "maybe"), which redraws the whole tool: the card's node is replaced, then the search ends
+async function redraw(page) {
+  await card(page, COURSE).evaluate((e) => (e.dataset.old = '1'));
+  await card(page, COURSE).locator('input[name^="mode-"][value="must"]').first().evaluate((e) => e.click());
+  await page.waitForFunction((n) => !document.querySelector(`#side article.course[data-old]`) && document.querySelector('#side article.course h3'), null, { timeout: 30000 });
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).choices['20816'] === 'must');
+  await idle(page);
+}
+
+test('the courses tool: "מה ההבדל?" holds the sentence that explained must / maybe / no, and keeps it open over a redraw', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#courses');
+  await coursesReady(page);
+  const btn = page.locator('#side .a-tip-btn'),
+    body = page.locator('#aTipBody');
+  assert.equal(await btn.getAttribute('aria-expanded'), 'false');
+  assert.equal(await body.isVisible(), false);
+  await btn.focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await btn.getAttribute('aria-expanded'), 'true');
+  assert.equal(flat(await body.innerText()), 'חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.', 'the text, unchanged');
+  await redraw(page);
+  assert.equal(await page.locator('#side .a-tip-btn').getAttribute('aria-expanded'), 'true', 'still open');
+  assert.equal(await page.locator('#aTipBody').isVisible(), true);
+  await page.locator('#side .a-tip-btn').focus();
+  await page.keyboard.press('Space');
+  assert.equal(await page.locator('#aTipBody').isVisible(), false, 'and closed again by the keyboard');
+});
+
+test('a course card: the importance row, one status line, the warning tag alone, a short reason with "למה?"', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#courses');
+  await coursesReady(page);
+  const c = card(page, COURSE);
+  assert.equal(await c.locator('.sem-row, .sem-lbl').count(), 0, 'no row of three semester buttons');
+  const status = c.locator('.a-status');
+  const select = status.locator('select');
+  assert.match((await select.getAttribute('aria-label')) ?? '', /^באיזה סמסטר ללמוד את /, 'labelled as before');
+  assert.deepEqual(await select.locator('option').allTextContents(), ['אוטומטי', 'א׳', 'ב׳']);
+  assert.match(flat(await status.innerText()), /במערכת, [אב]׳/, 'in the plan, and in which semester');
+  assert.equal(await status.locator('.a-ok svg').count(), 1, 'the check icon, not colour alone');
+  assert.match(flat(await status.innerText()), /פותח \d+ קורסים|פותח קורס אחד/, 'what it opens is plain text on the line');
+  assert.equal(await status.locator('.tag.ok:has-text("במערכת")').count(), 0, 'no tag for "in the plan"');
+  assert.equal(await c.locator('.tags .tag.warn').count(), 1, 'the warning tag stays a tag');
+  assert.match(flat(await c.locator('.tags').innerText()), /זמין בתנאי/);
+  assert.equal(await status.locator('.tag.warn').count(), 0, 'and is not on the status line');
+});
+
+test('"למה?" opens the regulation citation in place, stays open over a redraw with the focus on it; the reason says it short', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#courses');
+  await coursesReady(page);
+  const reason = () => card(page, COURSE).locator('p.reason', { hasText: 'רק יחד עם' });
+  assert.equal(flat(await reason().innerText()), 'רק יחד עם פיזיקה חשמל ומגנטיות למה?', 'the short reason');
+  const why = () => reason().locator('.a-which');
+  assert.match((await why().getAttribute('aria-label')) ?? '', /^למה\? .+: רק יחד עם/, 'the name says which course and reason, and keeps the visible words');
+  assert.equal(await why().getAttribute('aria-expanded'), 'false');
+  assert.match((await why().getAttribute('aria-controls')) ?? '', /^cite-[\w-]+$/, 'an id token without spaces');
+  await why().focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await why().getAttribute('aria-expanded'), 'true');
+  assert.match(flat(await reason().innerText()), /\(קורס מקביל, תקנון 6\.2\.3\)/, 'the citation, in the words of the regulation');
+  const k = await page.evaluate(() => document.activeElement?.dataset.k);
+  assert.match(k, /^why-/);
+  await redraw(page);
+  assert.match(flat(await reason().innerText()), /\(קורס מקביל, תקנון 6\.2\.3\)/, 'still open');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), k, 'and the focus is on the new button');
+});
+
+test('the semester select on the card sets the course\'s semester and comes back drawn the same, a 44px target on a phone', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#courses');
+  await page.locator('#panel #side article.course').first().waitFor({ timeout: 30000 });
+  await idle(page);
+  const select = () => card(page, COURSE).locator('.a-status select');
+  assert.ok((await select().boundingBox()).height >= 43.5);
+  const id = await select().getAttribute('data-id');
+  const stored = (i) => page.evaluate((x) => JSON.parse(localStorage.getItem('afeka-sched-v1')).semesterOf?.[x], i);
+  await select().focus();
+  await select().selectOption('א');
+  await page.waitForFunction((i) => JSON.parse(localStorage.getItem('afeka-sched-v1')).semesterOf?.[i] === 'א', id);
+  await idle(page);
+  assert.equal(await select().inputValue(), 'א', 'the new select says what was chosen');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), `sem-${id}`, 'and holds the focus');
+  await select().selectOption('');
+  await page.waitForFunction((i) => !JSON.parse(localStorage.getItem('afeka-sched-v1')).semesterOf?.[i], id);
+  assert.equal(await stored(id), undefined, 'automatic again: the choice is removed');
+});
+
+test('classic keeps the card as it was: three semester buttons, tags, the full reason, the sentence on the page', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#courses', 'classic');
+  await page.locator('#side article.course').first().waitFor({ timeout: 30000 });
+  await idle(page);
+  const c = card(page, COURSE);
+  await c.locator('.tags .tag.ok', { hasText: 'במערכת' }).waitFor({ timeout: 30000 });
+  assert.equal(await c.locator('.sem-row').count(), 1);
+  assert.match(await c.locator('p.reason').innerText(), /\(קורס מקביל, תקנון 6\.2\.3\)/);
+  assert.equal(await page.locator('#side .a-tip-btn, #side .a-status, #side .a-which').count(), 0);
+  assert.match(await page.locator('#side > .hint').first().innerText(), /חובה: בכל מערכת\. אולי: רק אם משתלב טוב\. לא: לא בתכנון\./);
+});

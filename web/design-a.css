@@ -309,6 +309,23 @@
 :root[data-design="a"] .mini { display:grid; grid-template-columns:repeat(var(--days, 5), 1fr); gap:2px; height:46px; margin-top:4px; }
 :root[data-design="a"] .mini i { position:relative; background:var(--surface-2); border-radius:3px; }
 :root[data-design="a"] .mini em { position:absolute; inset-inline:1px; background:var(--cfg); border-radius:2px; }
+/* the course card (declutter step 6): one status line under the importance row. The semester is a select on it (44px for a finger), "✓ במערכת, ב׳" is
+   icon + words in the success colour, and the warning tags keep a row of their own. */
+:root[data-design="a"] .a-status { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:6px; font-size:var(--fs-sm); color:var(--text-2); }
+:root[data-design="a"] .a-ok { display:inline-flex; align-items:center; gap:4px; color:var(--success); font-weight:600; }
+:root[data-design="a"] .a-ok .icon { flex:none; width:16px; height:16px; }
+:root[data-design="a"] .a-sem { display:inline-flex; align-items:center; gap:6px; }
+:root[data-design="a"] .a-sem select {
+  min-width:0; max-width:100%; min-height:var(--tap); padding:0 8px; border:1px solid var(--border-input); border-radius:10px; background:var(--surface);
+  color:var(--text); font:inherit;
+}
+:root[data-design="a"] .a-cite[hidden] { display:none; }
+:root[data-design="a"] .a-tip { margin:0; }
+:root[data-design="a"] .a-tip-btn {
+  display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 8px; border:0; background:none; color:var(--primary); font:inherit;
+  font-weight:600; cursor:pointer;
+}
+:root[data-design="a"] .a-tip-btn .icon { flex:none; width:18px; height:18px; }
 /* notices (declutter step 3): an info line has no fill and no box; a warning keeps its icon and its words and takes the warning colour. The partial-search
    note, the defaults-changed ask and the cap probe are actionable and stay as they were. */
 :root[data-design="a"] :is(#semnote, #week) .notice:not(.asks, .partial, .cap-preview) {
