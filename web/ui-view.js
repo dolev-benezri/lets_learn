@@ -43,6 +43,7 @@ import {
   toolName,
   freshness,
   freshnessA,
+  altLabelText,
   RULES_SHORT,
   turnWarning,
   stalePins,
@@ -351,9 +352,11 @@ export function renderView() {
 
   // course ids built from a lecture and a tutorial the college does not link
   const split = raw && !none ? raw.split ?? [] : [];
-  $('altLabel').textContent = nAlt
-    ? `חלופה ${ui.cur + 1} מתוך ${nAlt}${split.length ? ' · מופרדת' : ''}`
-    : 'אין חלופות';
+  $('altLabel').textContent = designOn()
+    ? altLabelText({ nAlt, cur: ui.cur, split: split.length > 0, running: ui.running })
+    : nAlt
+      ? `חלופה ${ui.cur + 1} מתוך ${nAlt}${split.length ? ' · מופרדת' : ''}`
+      : 'אין חלופות';
   const stranded = [$('prev'), $('next')].includes(document.activeElement) && nAlt < 2;
   $('prev').disabled = $('next').disabled = nAlt < 2;
   if (stranded) $('switcher').focus();

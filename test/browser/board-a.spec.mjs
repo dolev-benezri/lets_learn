@@ -190,3 +190,36 @@ test('desktop: the column sticks below the top bar, never under it', async (t) =
   assert.ok(m.scrolled > 100, 'the page scrolls');
   assert.ok(m.altsTop >= m.barBottom - 0.5, `the column starts at ${m.altsTop}, the top bar ends at ${m.barBottom}`);
 });
+
+// ---- phase 1 task 4: the switcher says it is computing ----
+// holds the first request for the solver worker until released (edit-a.spec.mjs does the same for the edit worker)
+const holdWorker = (page, pattern) => {
+  let release, reached, first = true;
+  const gate = new Promise((r) => (release = r)), arrived = new Promise((r) => (reached = r));
+  page.route(pattern, async (route) => {
+    if (first) {
+      first = false;
+      reached();
+      await gate;
+    }
+    await route.continue();
+  });
+  return { release, reached: arrived };
+};
+test('while the first search runs the switcher says it is computing, then shows the first alternative', async (t) => {
+  const page = await visit(t, { width: 1280, height: 800 }, DONE);
+  await weekReady(page); // the first load settles, then the held run is a new page
+  const held = holdWorker(page, '**/solver-worker.js');
+  await page.reload(); // the route survives the reload, so the first search of the new page waits at the gate
+  await held.reached;
+  assert.equal(await page.locator('#altLabel').textContent(), 'מחשב חלופות…');
+  held.release();
+  await page.waitForFunction(() => /^חלופה 1 מתוך/.test(document.getElementById('altLabel').textContent));
+});
+
+test('behind the gate no search runs: the switcher does not stay on "מחשב חלופות…"', async (t) => {
+  const page = await visit(t, { width: 1280, height: 800 }, { 'afeka-sched-v1-terms': '2' }); // a first visit: the terms gate is up, nothing is searched
+  await page.locator('.gate').first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(500);
+  assert.notEqual(await page.locator('#altLabel').textContent(), 'מחשב חלופות…');
+});

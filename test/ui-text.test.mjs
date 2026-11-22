@@ -17,6 +17,7 @@ import {
   popStale,
   freshness,
   freshnessA,
+  altLabelText,
   LEGAL_LINE,
   RULES_SHORT,
   stalePins,
@@ -564,4 +565,11 @@ test('sharedFreshAt compares the instants, not their labels: the hour the clocks
   const [last, prev] = [p('2026-10-25T05:08:00Z'), p('2025-10-25T05:08:00Z')];
   assert.equal(sharedFreshAt([last, prev]), '', 'a year apart');
   assert.equal(sharedFreshAt([p('2026-10-25T05:08:00Z'), p('2026-10-25T05:08:30Z')]), '25.10, 07:08', 'the same minute is one time');
+});
+
+test('the switcher label: computing, an alternative, or none', () => {
+  assert.equal(altLabelText({ nAlt: 0, cur: 0, split: false, running: true }), 'מחשב חלופות…');
+  assert.equal(altLabelText({ nAlt: 10, cur: 2, split: false, running: true }), 'חלופה 3 מתוך 10');
+  assert.equal(altLabelText({ nAlt: 10, cur: 0, split: true, running: false }), 'חלופה 1 מתוך 10 · מופרדת');
+  assert.equal(altLabelText({ nAlt: 0, cur: 0, split: false, running: false }), 'אין חלופות');
 });

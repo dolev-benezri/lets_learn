@@ -1,7 +1,8 @@
 // The auto search: debounce, worker, "חפש עוד" budget.
 import { app, candidateMode, yearCourses, keepFocus, planningCls, summerPinned } from './app.js';
-import { gated, yearSearch, toast, focusWeek, $, ui } from './ui-common.js';
-import { renderView } from './ui-view.js';
+import { gated, yearSearch, toast, focusWeek, $, ui, designOn } from './ui-common.js';
+import { renderView, hasAlternatives } from './ui-view.js';
+import { altLabelText } from './ui-text.js';
 import { showWeights } from './solver-core.js';
 
 // ---------- search ----------
@@ -159,4 +160,7 @@ export function setBusy() {
   $('board').classList.toggle('is-busy', ui.running);
   $('board').setAttribute('aria-busy', String(ui.running));
   $('busy').hidden = $('coursesBusy').hidden = !ui.running; // step 2 has no board: its own indicator
+  // A: until the first search has an alternative to show, the switcher says it is computing, and says none again when a pending search is cancelled
+  // (gating clears `running` after the board was drawn); renderView writes the label once results are in
+  if (designOn() && !hasAlternatives()) $('altLabel').textContent = altLabelText({ nAlt: 0, cur: 0, split: false, running: ui.running });
 }

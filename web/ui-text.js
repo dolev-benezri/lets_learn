@@ -228,6 +228,12 @@ export function freshnessA(status, changedAt, now = new Date()) {
   const age = now - new Date(status.checkedAt);
   return age > 36 * 36e5 ? { text: `הנתונים נבדקו ${ago(age)}, ייתכן שהשתנו`, stale: true } : { text: `נבדק ${ago(age)}`, stale: false };
 }
+// Design A's switcher label (docs/superpowers/plans/2026-11-22-design-a-system.md, Task 4): the alternative shown, or "computing" while the first search has no
+// alternative yet, or none. Classic keeps its own two-way label (ui-view.js).
+export function altLabelText({ nAlt, cur, split, running }) {
+  if (nAlt) return `חלופה ${cur + 1} מתוך ${nAlt}${split ? ' · מופרדת' : ''}`;
+  return running ? 'מחשב חלופות…' : 'אין חלופות';
+}
 // Design A's one legal line (the strip): what it always says, and the two things the rules can be ("not approved" is a warning, "approved" a fact).
 export const LEGAL_LINE = 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט)';
 export const RULES_SHORT = 'הכללים לא אושרו במחלקה';
