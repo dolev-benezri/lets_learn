@@ -492,7 +492,8 @@ function newDayButton(st, p) {
 // The way back to the original, then the proposals (or what the search found instead): [switcher, panel], each '' when none.
 function resultsHtml(st, data, pr, n) {
   const pending = st.movable.length || st.added.length || st.removed.length || Object.values(st.swaps).some((x) => x.length);
-  const back = same(st.baseline, st.original) && !pending ? '' : '<p><button type="button" class="btn" data-ed="restoreOriginal">' + (designOn() ? 'לבטל את כל השינויים' : 'חזרה למערכת המקורית') + '</button></p>';
+  const reset = designOn() ? 'לבטל את כל השינויים' : 'חזרה למערכת המקורית'; // A: it does not read like "חזרה למערכת שלי"
+  const back = same(st.baseline, st.original) && !pending ? '' : `<p><button type="button" class="btn" data-ed="restoreOriginal">${reset}</button></p>`;
   const r = V.result;
   if (!r) return ['', back];
   const notes = searchNotesHtml(r, st, data);

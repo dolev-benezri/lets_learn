@@ -535,8 +535,10 @@ export function keepFocus(fn) {
     const el = document.querySelector(`[data-k="${CSS.escape(k)}"]`);
     // design A: a control inside the board's closed "פרטים" (a re-render kept it shut) opens it first, or the focus would have nowhere to go
     // (a summary is not inside its own disclosure's hidden part: a closed one stays closed)
-    if (document.documentElement.dataset.design === 'a')
-      for (let d = (el?.matches('summary') ? el.parentElement.parentElement : el)?.closest('details:not([open])'); d; d = d.parentElement?.closest('details:not([open])')) d.open = true;
+    if (document.documentElement.dataset.design === 'a') {
+      const shut = (n) => n?.closest('details:not([open])');
+      for (let d = shut(el?.matches('summary') ? el.parentElement.parentElement : el); d; d = shut(d.parentElement)) d.open = true;
+    }
     el?.focus({ preventScroll: true });
   }
 }

@@ -45,7 +45,9 @@ const firstDay = () => {
 // start it; onSave({ groups, rows, sem }) gets the chosen semester's groups and a review row for each, and for every unknown row.
 // focusFile: start in the file field; pickFile (with it): and open the file chooser at once. That is only allowed inside the tap that asked, so the caller
 // must call this in the tap's own turn (ui-edit.js loads this module ahead). A browser that refuses leaves the dialog open on the file field.
-export function openFriendEditor({ friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null, focusFile = false, pickFile = false }) {
+export function openFriendEditor({
+  friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null, focusFile = false, pickFile = false
+}) {
   if (dlg.open) return;
   const draft = friend ? friend.groups.slice() : mode === 'edit' ? groups.slice() : [];
   ed = {

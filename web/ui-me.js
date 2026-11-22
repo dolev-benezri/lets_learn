@@ -294,7 +294,9 @@ export function renderMe() {
                 `<label class="field">ציון אנגלית (אמירנט או פרק האנגלית בפסיכומטרי) <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}" aria-describedby="amirnetHint"></label>
           <p class="hint" id="amirnetHint">50–150. ריק אם לא ידוע. <button type="button" class="a-which" data-act="why" data-why="amirnet" data-k="amirnetMore"
-            aria-expanded="${ui.whyOpen.has('amirnet')}" aria-controls="amirnetMore">עוד</button><span id="amirnetMore" class="a-cite"${ui.whyOpen.has('amirnet') ? '' : ' hidden'}> יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.</span></p>`
+            aria-expanded="${ui.whyOpen.has('amirnet')}" aria-controls="amirnetMore">עוד</button><span id="amirnetMore" class="a-cite"${
+              ui.whyOpen.has('amirnet') ? '' : ' hidden'
+            }> יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.</span></p>`
               : `<label class="field">ציון אנגלית (אמירנט או פרק האנגלית בפסיכומטרי) <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">סולם 50–150. ריק אם לא ידוע. יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.</span></label>`
           }
