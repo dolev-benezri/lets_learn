@@ -256,6 +256,7 @@ export const ui = {
   specPick: null,
   onShown: null,
   onResult: null,
+  detailsOpen: false, // A: the board's "פרטים" disclosure, kept over the re-renders (ui-view.js factsHtml)
   titleId: null, // A: the id of the heading of what is shown (ui-shell.js applyShell)
   toolOpener: null, // A: the dock button that opened the tool, where the focus returns when it closes
   nav: null // A: why the address changed: 'open' or 'close' when the shell did it, nothing for a Back or a link

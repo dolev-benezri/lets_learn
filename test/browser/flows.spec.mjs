@@ -1086,7 +1086,8 @@ for (const [name, scope] of [['one semester', 'א'], ['a year', 'year']]) {
   test(`${name}: one credit above the cap is shown on request and changes nothing until it is applied`, async (t) => {
     const page = await visit(t, { width: 320, height: 700 }, CAPPED(scope));
     await weekReady(page);
-    const before = await page.locator('#pills').innerText();
+    // textContent: design A keeps the lines that change with the plan (the follow-ups it opens) inside a closed disclosure, which innerText skips
+    const before = await page.locator('#pills').textContent();
     await page.locator('[data-act="capProbe"]').focus(); // by keyboard: Safari does not focus a button it clicks
     await page.keyboard.press('Enter');
     const apply = page.locator('[data-act="capApply"]');
@@ -1100,11 +1101,11 @@ for (const [name, scope] of [['one semester', 'א'], ['a year', 'year']]) {
     }));
     assert.ok(inside, 'the sentence and the button stay on the screen at 320 px');
     assert.equal(await capStored(page), 18, 'not saved yet');
-    assert.equal(await page.locator('#pills').innerText(), before, 'the plan on the screen did not change');
+    assert.equal(await page.locator('#pills').textContent(), before, 'the plan on the screen did not change');
     await apply.click();
     await page.locator('[data-act="capProbe"]').waitFor();
     assert.equal(await capStored(page), 19);
-    assert.notEqual(await page.locator('#pills').innerText(), before, 'the plan it showed is the plan now');
+    assert.notEqual(await page.locator('#pills').textContent(), before, 'the plan it showed is the plan now');
     await page.evaluate(() => (location.hash = '#prefs'));
     assert.equal(await page.locator('[data-k="maxCredits"]').inputValue(), '19', 'the field says the new cap');
   });

@@ -232,6 +232,26 @@ function capLine(best, nameOf) {
     changed ? `<button type="button" class="btn" data-act="capApply" data-k="capApply">החל תקרה של ${p.cap} נ״ז</button>` : ''
   }</p>`;
 }
+// Design A: the facts as one plain line (each fact whole: it wraps between facts, never inside one) and, behind a native disclosure, the lines
+// that matter less. The summary says how many lines it holds. Its open state is kept in ui.detailsOpen (this function rewrites the markup on every
+// change); focus restoration (app.js keepFocus) finds the summary by its data-k.
+const factsHtml = (facts, lines) => {
+  lines = lines.filter(Boolean);
+  return (
+    `<p class="a-facts">${facts.filter(Boolean).map((f) => `<span>${f}</span>`).join('')}</p>` +
+    (lines.length
+      ? `<details class="a-details"${ui.detailsOpen ? ' open' : ''}><summary data-k="aDetails">פרטים (${lines.length})</summary>
+        <div class="a-det-body">${lines.map((l) => `<p>${l}</p>`).join('')}</div></details>`
+      : '')
+  );
+};
+globalThis.document?.addEventListener(
+  'toggle',
+  (e) => {
+    if (e.target.classList?.contains('a-details')) ui.detailsOpen = e.target.open;
+  },
+  true
+);
 export function renderView() {
   const { state } = app;
   const results = ui.last?.results ?? [];
@@ -408,20 +428,53 @@ export function renderView() {
           .join(' · ')
       : '';
 
-    $('pills').innerHTML =
-      [
-        pill('calendar', courseCount(res.courses.length)),
-        pill('cap', `${s.credits} נ״ז`),
-        ...(pair ? [pill('calendar', `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []),
-        pill('sun', fd),
-        pill('clock', gap),
-        ...(myRank && regular.length > 1 ? [pill('check', rankText(myRank, regular.length))] : []),
-        ...fr.map((t) => pill('users', esc(t), 'friend')),
-        pill('file', exams)
-      ].join('') +
-      (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') +
-      (pair ? '<p class="pill-info">אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.</p>' : '') +
-      (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
+    // Design A: the facts every view needs as one plain line, the rest behind "פרטים" (docs/superpowers/specs/2026-11-22-design-a-declutter.md).
+    // Classic keeps its seven chips and sentences as they were.
+    const examFact = !data.examsPublished
+      ? 'בחינות: טרם פורסמו'
+      : s.examGap === 0
+        ? '' // the warning line says it (closeExamLines): not said twice
+        : s.examGap
+          ? `לפחות ${count(s.examGap, 'יום אחד', 'ימים')} בין בחינות`
+          : 'פער בין בחינות לא ידוע';
+    const examWarnings = closeExamLines(res.closeExams ?? [], nameOf);
+    // the disclosure's state is read now: its toggle event may still be queued when this replaces it
+    const shownDet = $('pills').querySelector('.a-details');
+    if (shownDet) ui.detailsOpen = shownDet.open;
+    if (designOn())
+      $('pills').innerHTML = factsHtml(
+        [
+          courseCount(res.courses.length),
+          `${s.credits} נ״ז`,
+          fd,
+          s.gapH >= 10 ? gap : s.gapH ? count(s.gapH, 'שעת חלון אחת', 'ש׳ חלונות') : gap,
+          fr[0] && esc(fr[0]),
+          examFact
+        ],
+        [
+          pair && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`,
+          myRank && regular.length > 1 && rankText(myRank, regular.length),
+          infoLine,
+          pair && 'אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.',
+          vs && `לעומת חלופה 1: ${vs}`,
+          ...fr.slice(1).map(esc)
+        ]
+      );
+    else
+      $('pills').innerHTML =
+        [
+          pill('calendar', courseCount(res.courses.length)),
+          pill('cap', `${s.credits} נ״ז`),
+          ...(pair ? [pill('calendar', `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`)] : []),
+          pill('sun', fd),
+          pill('clock', gap),
+          ...(myRank && regular.length > 1 ? [pill('check', rankText(myRank, regular.length))] : []),
+          ...fr.map((t) => pill('users', esc(t), 'friend')),
+          pill('file', exams)
+        ].join('') +
+        (infoLine ? `<p class="pill-info">${infoLine}</p>` : '') +
+        (pair ? '<p class="pill-info">אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.</p>' : '') +
+        (vs ? `<p class="pill-info vs">לעומת חלופה 1: ${vs}</p>` : '');
     live = [
       `חלופה ${ui.cur + 1} מתוך ${nAlt}`,
       pair && `סמסטר ${ui.sem}׳`,
@@ -431,6 +484,8 @@ export function renderView() {
       fd,
       gap,
       ...fr,
+      // A: what left the screen's chips (the exam fact) and the exam warnings, so nothing visible is unannounced
+      ...(designOn() ? [examFact, ...examWarnings] : []),
       split.length && SPLIT_NOTE,
       pn?.text
     ]
