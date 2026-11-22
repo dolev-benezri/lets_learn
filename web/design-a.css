@@ -399,15 +399,18 @@
   } /* build alternatives belong to the board, not the edit page or the gate */
   :root[data-design="a"] .dock {
     position:sticky; top:var(--a-top); inset-inline:auto; bottom:auto; z-index:6; grid-column:1; grid-row:1;
-    padding:0; border-top:0; border-bottom:1px solid var(--border); border-inline-end:1px solid var(--border);
+    padding:0; border-top:0; border-bottom:0; box-shadow:inset 0 -1px 0 var(--border); /* the line is a shadow: the dock is exactly --a-dock-h */
+    border-inline-end:1px solid var(--border);
   }
-  :root[data-design="a"] .dk { flex-direction:row; gap:6px; min-height:var(--tap); font-size:12px; }
+  :root[data-design="a"] { --a-dock-h:52px; } /* the wide dock's own height: --tap is 36px with a mouse, and the tabs are a column */
+  :root[data-design="a"] .dk { flex-direction:column; gap:2px; min-height:var(--a-dock-h); font-size:var(--fs-xs); }
+  :root[data-design="a"] .dk span { white-space:nowrap; }
   :root[data-design="a"] .dk .icon { width:18px; height:18px; }
   :root[data-design="a"] .dk[aria-pressed="true"]::before { top:auto; bottom:0; border-radius:3px 3px 0 0; }
   :root[data-design="a"] .a-scrim { display:none !important; }
   :root[data-design="a"] .a-panel {
-    position:sticky; top:calc(var(--a-top) + var(--tap)); inset-inline:auto; bottom:auto; z-index:5; grid-column:1; grid-row:2;
-    height:calc(100dvh - var(--a-top) - var(--tap));
+    position:sticky; top:calc(var(--a-top) + var(--a-dock-h)); inset-inline:auto; bottom:auto; z-index:5; grid-column:1; grid-row:2;
+    height:calc(100dvh - var(--a-top) - var(--a-dock-h));
     border-radius:0; box-shadow:none; border-inline-end:1px solid var(--border);
   }
   :root[data-design="a"] .a-grip, :root[data-design="a"] .a-ph { display:none; }
@@ -425,7 +428,8 @@
   /* improve mode, wide: the tool is a sticky column (its own scroller), the week is the board beside it */
   :root[data-design="a"] .edit-stage { display:grid; grid-template-columns:minmax(340px, 440px) minmax(0, 1fr); gap:0 24px; align-items:start; }
   :root[data-design="a"] .edit-tool {
-    grid-column:1; position:sticky; top:calc(var(--a-top) + var(--tap) + 8px); max-height:calc(100dvh - var(--a-top) - var(--tap) - 16px);
+    grid-column:1; position:sticky; top:calc(var(--a-top) + var(--a-dock-h) + 8px);
+    max-height:calc(100dvh - var(--a-top) - var(--a-dock-h) - 16px);
     overflow:auto; overscroll-behavior:contain;
   }
   :root[data-design="a"] .edit-board { grid-column:2; min-width:0; }
@@ -434,12 +438,16 @@
   :root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; }
   :root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; white-space:nowrap; }
   :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
-    position:fixed; top:calc(var(--a-top) + var(--tap)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
+    position:fixed; top:calc(var(--a-top) + var(--a-dock-h)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
     border-radius:0; border-inline-end:1px solid var(--border);
   }
 }
-/* the frame (system design §1): from 1080px the content never gets wider than --frame (build) or --frame-edit (improve) and is centred; the header and the strip
-   keep a full-width background and pad their content to the frame, the stage pads itself. Below the cap nothing moves (the padding is the old one). */
+/* a tablet (600 to 1079px): the dock at the bottom is centred and at most 560px wide, not stretched across the page */
+@media (min-width:600px) and (max-width:1079px) {
+  :root[data-design="a"] .dock { inset-inline:max(0px, calc((100% - 560px) / 2)); }
+}
+/* the frame (system design §1): from 1080px the content never gets wider than --frame (build) or --frame-edit (improve) and is centred; the header and
+   the strip keep a full-width background and pad their content to the frame, the stage pads itself. Below the cap nothing moves. */
 @media (min-width:1080px) {
   :root[data-design="a"] .a-top { padding-inline:max(16px, calc((100% - var(--frame)) / 2)); }
   :root[data-design="a"] .a-strip { padding-inline:max(12px, calc((100% - var(--frame)) / 2)); }
