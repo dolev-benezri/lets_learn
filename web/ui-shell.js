@@ -30,6 +30,18 @@ const dockHtml = () =>
     )
     .join('');
 
+// From 1080px the semester tabs share the bar with the switcher, first in tab order; below it they keep a row of their own at the top of the board
+// (sticky on a phone: style.css). The one node moves, so the renderer keeps writing to #semtabs.
+function placeSemtabs() {
+  const tabs = $('semtabs'), bar = $('aBar');
+  if (!tabs || !bar) return;
+  const had = document.activeElement; // a moved node loses the focus: the same control gets it back
+  if (wide()) {
+    if (tabs.parentElement !== bar) bar.prepend(tabs);
+  } else if (tabs.parentElement === bar) $('weekTitle').after(tabs);
+  if (had && tabs.contains(had) && document.activeElement !== had) had.focus({ preventScroll: true });
+}
+
 let built = false;
 export function shellInit() {
   if (built || !designOn()) return;
@@ -67,6 +79,7 @@ export function shellInit() {
   $('aStrip').append($('notice'));
   $('aBar').prepend($('switcher'));
   $('aBoard').append($('layout'), $('edit'));
+  placeSemtabs();
   $('aTopAct').append(document.querySelector('.theme-btn'), document.querySelector('.menu-btn'));
   for (const id of Object.values(TOOL_PAGE)) $('aPb').append($(id));
   document.addEventListener('keydown', onKey);
@@ -99,6 +112,7 @@ export function shellInit() {
   matchMedia('(min-width: 1080px)').addEventListener('change', () => {
     // crossing 1080px shows or hides the panel: focus that was inside what is now hidden goes to the heading of what is shown
     const had = document.activeElement;
+    placeSemtabs();
     applyShell();
     if (had && had !== document.body && !had.checkVisibility?.()) {
       // the heading of what is shown, or (a closed sheet) the dock button of the screen

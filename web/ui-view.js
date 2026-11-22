@@ -214,6 +214,22 @@ const SORT_BY = [
   ['friends', 'הכי הרבה עם חברים'],
   ['unlocks', 'פותחת הכי הרבה קורסי המשך']
 ]; // "הצג לפי" (state.sortBy)
+// The sort select and, with nobody to sort by, the hint under it. Classic draws it above the summary (#showby). Design A draws it twice: in the alternatives
+// column (from 1080px) and inside "פרטים" (below it), each with a key of its own so the focus is restored on the one that holds it.
+function sortHtml(k, label) {
+  const { state } = app;
+  // as showWeights: the search runs as 'best'
+  const noFriend = state.sortBy === 'friends' && !state.friends.some((f) => f.active !== false);
+  return `<label class="field"><span class="ctl-l">${label}</span><select data-chg="sortBy" data-k="${k}">${SORT_BY.map(
+    ([v, t]) => `<option value="${v}"${v === state.sortBy ? ' selected' : ''}>${t}</option>`
+  ).join('')}</select></label>${
+    noFriend
+      ? `<p class="hint">${
+          state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם' : 'אין עדיין חברים. אפשר להוסיף'
+        } <a href="${designOn() ? '#friends' : '#prefs'}">ב${toolName('friends')}</a>.</p>`
+      : ''
+  }`;
+}
 function colorOrder() {
   const cand = Object.keys(app.data.courses).filter((id) => candidateMode(id));
   return [...cand.filter(planned).sort(), ...cand.filter((id) => !planned(id)).sort()];
@@ -246,13 +262,13 @@ function capLine(best, nameOf) {
 // Design A: the facts as one plain line (each fact whole: it wraps between facts, never inside one) and, behind a native disclosure, the lines
 // that matter less. The summary says how many lines it holds. Its open state is kept in ui.detailsOpen (this function rewrites the markup on every
 // change); focus restoration (app.js keepFocus) finds the summary by its data-k.
-const factsHtml = (facts, lines) => {
+const factsHtml = (facts, lines, extra = '') => {
   lines = lines.filter(Boolean);
   return (
     `<p class="a-facts">${facts.filter(Boolean).map((f) => `<span>${f}</span>`).join('')}</p>` +
     (lines.length
       ? `<details class="a-details"${ui.detailsOpen ? ' open' : ''}><summary data-k="aDetails">פרטים (${lines.length})</summary>
-        <div class="a-det-body">${lines.map((l) => `<p>${l}</p>`).join('')}</div></details>`
+        <div class="a-det-body">${lines.map((l) => `<p>${l}</p>`).join('')}${extra}</div></details>`
       : '')
   );
 };
@@ -293,7 +309,7 @@ export function renderView() {
   // Board header: scope and semester controls first, then the notices that hold for the whole plan (shown once, whichever tab is open).
   const note = (ic, t) => `<p class="notice${designOn() && ic === 'alert' ? ' warn' : ''}">${icon(ic)}<span>${esc(t)}</span></p>`; // A: a warning line takes the warning colour
   const ctl =
-    (app.sem['ב']
+    (app.sem['ב'] && !designOn() // A: the scope lives only in "מה חשוב לי"
       ? `<div class="ctl"><span class="ctl-l" aria-hidden="true">לתכנן</span>${seg('bscope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"')}</div>`
       : '') +
     (pair || summerScope()
@@ -326,18 +342,8 @@ export function renderView() {
     warnings.filter((w) => w !== afterAFull).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
     (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
-  // as showWeights: the search runs as 'best'
-  const noFriend = state.sortBy === 'friends' && !state.friends.some((f) => f.active !== false);
-  $('showby').innerHTML =
-    `<label class="field"><span class="ctl-l">הצג לפי</span><select data-chg="sortBy" data-k="sortBy">${SORT_BY.map(
-      ([v, t]) => `<option value="${v}"${v === state.sortBy ? ' selected' : ''}>${t}</option>`
-    ).join('')}</select></label>${
-      noFriend
-        ? `<p class="hint">${
-            state.friends.length ? 'החברים מוסתרים. אפשר להציג אותם' : 'אין עדיין חברים. אפשר להוסיף'
-          } <a href="${designOn() ? '#friends' : '#prefs'}">ב${toolName('friends')}</a>.</p>`
-        : ''
-    }`;
+  // A: in the alternatives column and in "פרטים"; with no alternatives to hold them (a search that found nothing) here, so the setting stays reachable
+  $('showby').innerHTML = designOn() && !noRes ? '' : sortHtml('sortBy', 'הצג לפי');
 
   // course ids built from a lecture and a tutorial the college does not link
   const split = raw && !none ? raw.split ?? [] : [];
@@ -481,7 +487,9 @@ export function renderView() {
           ...fr.slice(1).map(esc),
           disclaimerHtml(app.settings.counselingUrl),
           !approvedNow && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`
-        ]
+        ],
+        // below 1080px the sort is here (the alternatives column holds it from 1080px); not a line of its own: the count is of lines
+        `<div class="showby a-sort-d">${sortHtml('sortByD', 'הצג לפי')}</div>`
       );
     else
       $('pills').innerHTML =
@@ -633,6 +641,7 @@ export function renderAltColumn() {
   });
   box.hidden = false;
   box.closest('.a-stage')?.classList.add('has-alts'); // the wide grid's third track (a class: no :has() needed)
-  box.innerHTML = `<h2 class="col-t">חלופות</h2><ol class="alt-list">${cards.join('')}</ol>`;
+  // a year plan's cards are the year's alternatives; the sort select sits under the title
+  box.innerHTML = `<h2 class="col-t">${results.some(isPair) ? 'חלופות לשנה' : 'חלופות'}</h2><div class="showby a-sort">${sortHtml('sortBy', 'לפי')}</div><ol class="alt-list">${cards.join('')}</ol>`;
 }
 

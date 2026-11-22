@@ -257,3 +257,134 @@ test('classic keeps its teal sentence', async (t) => {
   await page.locator('#semnote .notice', { hasText: 'התכנון של ב׳ מניח שעוברים את' }).first().waitFor({ timeout: 30000 });
   assert.equal(await page.locator('#semnote .a-after, #aAfterA').count(), 0);
 });
+
+// ---- step 4: the controls (scope off the board, semester tabs in the bar, the sort in the column or in "פרטים") ----
+const idle = (page) => page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') === 'false', null, { timeout: 30000 });
+const order = (page, ids) =>
+  page.evaluate((list) => {
+    const els = list.map((s) => document.querySelector(s));
+    return els.every((e, i) => i === 0 || els[i - 1].compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING);
+  }, ids);
+
+test('the plan scope is not on the board; it lives in "מה חשוב לי"', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  assert.equal(await page.locator('input[name="bscope"]').count(), 0, 'no scope tabs on the board');
+  await page.locator('.dock [data-tool="wishes"]').click();
+  await page.locator('#prefs input[name="scope"]').first().waitFor({ state: 'attached', timeout: 30000 });
+  assert.ok((await page.locator('#prefs input[name="scope"]').count()) >= 2, 'the one home of the scope');
+});
+
+test('1280: the semester tabs are in the bar before the switcher and the share button; the sort is in the column under "חלופות לשנה"', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  assert.equal(await page.locator('.a-bar #semtabs').count(), 1);
+  assert.ok(await order(page, ['#semtabs', '#switcher', '.a-share']), 'tab order: semester tabs, alternatives, share');
+  assert.equal(flat(await page.locator('#alts .col-t').innerText()), 'חלופות לשנה');
+  const sort = page.locator('#alts .a-sort select');
+  assert.ok(await sort.isVisible());
+  assert.equal(flat(await page.locator('#alts .a-sort .ctl-l').innerText()), 'לפי');
+  assert.equal(await page.locator('.a-sort-d').isVisible(), false, 'not twice on a wide screen');
+  assert.equal(await page.locator('#showby').isVisible(), false, 'classic\'s slot stays empty');
+  const m = await page.evaluate(() => {
+    const r = (s) => document.querySelector(s).getBoundingClientRect();
+    return { tabs: r('#semtabs'), sw: r('#switcher'), share: r('.a-share') };
+  });
+  assert.ok(m.tabs.left > m.sw.right && m.sw.left > m.share.right, 'in RTL: tabs on the right, the switcher in the middle, share on the left');
+});
+
+test('a single-semester plan titles the column "חלופות" and has no semester tabs', async (t) => {
+  const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope: 'א' }) });
+  await weekReady(page);
+  await idle(page);
+  assert.equal(flat(await page.locator('#alts .col-t').innerText()), 'חלופות');
+  assert.equal(await page.locator('#semtabs input').count(), 0);
+});
+
+test('a phone: the semester tabs keep their own row in the board; the sort is in "פרטים", and changing it keeps the panel open and the focus', async (t) => {
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
+  await idle(page);
+  assert.equal(await page.locator('.a-bar #semtabs').count(), 0, 'not in the bar below 1080px');
+  assert.equal(await page.locator('#board > #semtabs').count(), 1);
+  assert.equal(await page.locator('#alts').isVisible(), false);
+  const select = page.locator('.a-sort-d select');
+  assert.equal(await select.isVisible(), false, 'closed: behind "פרטים"');
+  await page.locator('#pills .a-details > summary').click();
+  assert.ok(await select.isVisible());
+  await select.focus();
+  await select.selectOption('credits');
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).sortBy === 'credits');
+  await idle(page);
+  assert.equal(await page.locator('#pills .a-details').evaluate((d) => d.open), true, 'the panel stays open');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'sortByD', 'and the focus stays on the select');
+  assert.equal(await page.locator('.a-sort-d select').inputValue(), 'credits');
+});
+
+test('crossing 1080px moves the semester tabs into the bar and back, and a focused tab keeps its focus', async (t) => {
+  const page = await visit(t, { width: 900, height: 800 }, DONE);
+  await weekReady(page);
+  await idle(page);
+  assert.equal(await page.locator('#board > #semtabs').count(), 1);
+  const focused = () => page.evaluate(() => document.activeElement?.dataset.k);
+  await page.locator('#semtabs input[name="sem"]').first().focus();
+  const k = await focused();
+  assert.match(k, /^sem-/);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForFunction(() => document.querySelector('.a-bar > #semtabs'));
+  assert.equal(await focused(), k, 'focus kept on the way into the bar');
+  await page.setViewportSize({ width: 900, height: 800 });
+  await page.waitForFunction(() => document.querySelector('#board > #semtabs'));
+  assert.equal(await focused(), k, 'and on the way back');
+  assert.equal(await page.locator('#semtabs input[name="sem"]').count(), 2, 'the tabs survive the moves');
+});
+
+// the bar at its tightest: a 480px board (1080px: a 360px tool column and a 240px alternatives column), with the summer tab
+const SUMMER = { ...DONE, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, profile: { ...STUDENT.profile, summer: true } }) };
+for (const [name, seed] of [['two tabs', DONE], ['with the summer tab', SUMMER]]) {
+  test(`1080px ${name}: the bar's controls stay inside the bar, none on top of another`, async (t) => {
+    const page = await visit(t, { width: 1080, height: 800 }, seed);
+    await weekReady(page);
+    await idle(page);
+    const m = await page.evaluate(() => {
+      const box = (e) => e.getBoundingClientRect();
+      const bar = box(document.getElementById('aBar'));
+      const parts = [...document.querySelectorAll('#semtabs label, #switcher, .a-share')].map((e) => ({ n: e.id || e.className || e.tagName, r: box(e) }));
+      const outside = parts.filter(({ r }) => r.left < bar.left - 0.5 || r.right > bar.right + 0.5).map(({ n }) => n);
+      const clash = [];
+      for (const [i, a] of parts.entries())
+        for (const b of parts.slice(i + 1))
+          if (a.r.left < b.r.right - 0.5 && b.r.left < a.r.right - 0.5 && a.r.top < b.r.bottom - 0.5 && b.r.top < a.r.bottom - 0.5) clash.push(`${a.n}/${b.n}`);
+      return { outside, clash, labels: parts.filter(({ n }) => n === 'LABEL' || /sem/.test(n)).length };
+    });
+    assert.deepEqual(m.outside, [], 'inside the bar');
+    assert.deepEqual(m.clash, [], 'no overlap');
+  });
+}
+
+test('a search that found nothing leaves the sort where it can be reached (the column and "פרטים" are gone then)', async (t) => {
+  const none = { ...STUDENT, constraints: { ...(STUDENT.constraints ?? {}), dayOff: [1, 2, 3, 4, 5, 6], dayOffHard: true } };
+  const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1': JSON.stringify(none) });
+  await page.locator('#week .msg.bad').waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('#showby select').isVisible(), true);
+  assert.equal(await page.locator('#alts').isVisible(), false);
+});
+
+test('1280 and a phone: the "אילו?" and the strip link and the sort are targets, with the semester tabs (44px on a phone)', async (t) => {
+  for (const size of ['desktop', 'phone']) {
+    const page = await visit(t, size, DONE);
+    await weekReady(page);
+    if (size === 'phone') await page.locator('#pills .a-details > summary').click();
+    const small = await page.evaluate(() => {
+      const bad = [];
+      const min = innerWidth < 600 ? 43.5 : 35.5; // --tap is 44px for a finger and 36px for a mouse (style.css)
+      for (const el of document.querySelectorAll('.a-strip button, .a-which, #semtabs label, #alts select, .a-sort-d select, #pills summary')) {
+        if (!el.checkVisibility()) continue;
+        const r = el.getBoundingClientRect();
+        if (r.height < min || r.width < 43.5) bad.push(`${el.tagName} ${el.className} ${Math.round(r.width)}x${Math.round(r.height)}`);
+      }
+      return bad;
+    });
+    assert.deepEqual(small, [], `${size}: targets`);
+  }
+});

@@ -1118,7 +1118,11 @@ test('any new search drops the answer about the old settings', async (t) => {
   await weekReady(page);
   await page.locator('[data-act="capProbe"]').click();
   await page.locator('[data-act="capApply"]').waitFor({ timeout: 30000 });
-  await page.locator('label:has(input[name="bscope"][value="year"])').click();
+  // the scope is on the board in classic, only in "מה חשוב לי" under A (a column beside the board at this width)
+  if (DESIGN === 'a') {
+    await openStep(page, 'prefs');
+    await page.locator('label:has(input[name="scope"][value="year"])').click();
+  } else await page.locator('label:has(input[name="bscope"][value="year"])').click();
   assert.equal(await page.locator('.cap-preview').count(), 0, 'gone at once, not when the new search ends');
   await page.locator('[data-act="capProbe"]').waitFor({ timeout: 30000 });
   assert.equal(await page.locator('[data-act="capApply"]').count(), 0);

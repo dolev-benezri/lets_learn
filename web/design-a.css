@@ -170,6 +170,8 @@
 :root[data-design="a"] .a-bar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin:8px 12px 0; }
 :root[data-design="a"] .a-bar > .switcher { display:flex; margin:0; max-width:100%; } /* classic hid the switcher off the plans */
 :root[data-design="a"] .a-share { min-height:var(--tap); }
+:root[data-design="a"] #showby:empty { display:none; } /* classic's slot for the sort is empty under A */
+:root[data-design="a"] .a-sort { margin-bottom:8px; }
 :root[data-design="a"] body.gated .a-bar { display:none; }
 :root[data-design="a"] .a-board .layout { padding-top:6px; }
 
@@ -376,6 +378,12 @@
     border-radius:0; box-shadow:none; border-inline-end:1px solid var(--border);
   }
   :root[data-design="a"] .a-grip, :root[data-design="a"] .a-ph { display:none; }
+  /* the bar: semester tabs, switcher, share (declutter step 4), spread over the row; each keeps its own width and the row wraps when the three do not fit
+     (a narrow board at 1080px). The sort is in the alternatives column from here, not in "פרטים". */
+  :root[data-design="a"] .a-bar { justify-content:space-between; gap:8px 12px; }
+  :root[data-design="a"] .a-bar > :is(#semtabs, .a-share) { flex:none; }
+  :root[data-design="a"] .a-bar #semtabs .board-ctl { margin:0; }
+  :root[data-design="a"] .a-sort-d { display:none; }
   :root[data-design="a"] .site-foot { padding-bottom:12px; }
   :root[data-design="a"] .toast { bottom:20px; }
   :root[data-design="a"] body[data-view="edit"] .a-stage { display:flex; flex-direction:column; }
