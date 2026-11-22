@@ -14,16 +14,16 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/00-start-mode-phone-dark.webp?v=20261120">
-  <img src="media/00-start-mode-phone.webp?v=20261120" alt="מה רוצים לעשות: לבנות מערכת חדשה, או לשפר מערכת שכבר יש לי" width="240">
+  <source media="(prefers-color-scheme: dark)" srcset="media/00-start-tabs-phone-dark.webp?v=20261122">
+  <img src="media/00-start-tabs-phone.webp?v=20261122" alt="לוח ריק בטלפון: הלשוניות מערכת חדשה ושיפור מערכת קיימת, וכרטיס ״מאיפה מתחילים?״ עם שלוש פעולות: לסמן מה כבר עברתם, לבחור קורסים ולספר מה חשוב לכם" width="240">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/05-start-track-phone-dark.webp?v=20261120">
-  <img src="media/05-start-track-phone.webp?v=20261120" alt="שאלה 1 מתוך 2, מה המסלול שלך: כפתור גדול לכל תוכנית, יום וערב" width="240">
+  <source media="(prefers-color-scheme: dark)" srcset="media/05-start-track-phone-dark.webp?v=20261122">
+  <img src="media/05-start-track-phone.webp?v=20261122" alt="שאלה 1 מתוך 2, מה המסלול שלך: כפתור גדול לכל תוכנית, יום וערב" width="240">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/06-start-year-phone-dark.webp?v=20261120">
-  <img src="media/06-start-year-phone.webp?v=20261120" alt="שאלה 2 מתוך 2, באיזו שנה: המסלול שנבחר עם כפתור שינוי, וכפתורים לשנים א׳ עד ד׳" width="240">
+  <source media="(prefers-color-scheme: dark)" srcset="media/06-start-year-phone-dark.webp?v=20261122">
+  <img src="media/06-start-year-phone.webp?v=20261122" alt="שאלה 2 מתוך 2, באיזו שנה: המסלול שנבחר עם כפתור שינוי, וכפתורים לשנים א׳ עד ד׳" width="240">
 </picture>
 </p>
 
@@ -38,8 +38,8 @@
 הפרופיל וההתקדמות בתואר, והצעה לייבא את גיליון הציונים הרשמי מהפורטל (PDF). הגיליון מסמן מה עברתם, במה נכשלתם ומאילו קורסים קיבלתם פטור. מי שמעדיף לוחץ "הזנה ידנית" ומסמן בעצמו את הקורסים, לפי שנה.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/07-start-entry-desktop-dark.webp?v=20261120">
-  <img src="media/07-start-entry-desktop.webp?v=20261120" alt="שלב 1, המצב שלי: כרטיס פרופיל, כרטיס התקדמות, ומתחתם השאלה איך מסמנים מה עברתם עם הכפתורים ייבוא מגיליון ציונים והזנה ידנית" width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="media/07-start-entry-desktop-dark.webp?v=20261122">
+  <img src="media/07-start-entry-desktop.webp?v=20261122" alt="המצב שלי במחשב: הפרופיל, שנת הלימודים, ציון האנגלית וההתקדמות בעמודה ליד הלוח השבועי" width="720">
 </picture>
 
 ## קורסים
@@ -48,8 +48,8 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/08-courses-phone-dark.webp?v=20261120">
-  <img src="media/08-courses-phone.webp?v=20261120" alt="שלב 2, הקורסים שלי בטלפון: לכל קורס חובה, אולי או לא, בחירת סמסטר, וכמה קורסים הוא פותח" width="260">
+  <source media="(prefers-color-scheme: dark)" srcset="media/08-courses-phone-dark.webp?v=20261122">
+  <img src="media/08-courses-phone.webp?v=20261122" alt="הקורסים שלי בטלפון, בחלונית מעל הלוח: לכל קורס חובה, אולי או לא, בחירת סמסטר, וכמה קורסים הוא פותח" width="260">
 </picture>
 </p>
 
@@ -59,8 +59,8 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/04-friends-phone-dark.webp?v=20261120">
-  <img src="media/04-friends-phone.webp?v=20261120" alt="החברים בשלב 3 בטלפון: שדה להדבקת קישור, כפתור להזנת מערכת של חבר, ושני חברים עם מידת החשיבות של כל אחד" width="260">
+  <source media="(prefers-color-scheme: dark)" srcset="media/04-friends-phone-dark.webp?v=20261122">
+  <img src="media/04-friends-phone.webp?v=20261122" alt="החברים בטלפון, בחלונית מעל הלוח: שדה להדבקת קישור, כפתור להזנת מערכת של חבר, הכרטיס של נועה עם מידת החשיבות ״קצת״, ותחילת הכרטיס של רון" width="260">
 </picture>
 </p>
 
@@ -69,14 +69,14 @@
 המערכות נבנות מיד. מדפדפים בין החלופות עם החצים בראש הלוח, ובטלפון גם בהחלקה. במחשב רחב רשימת החלופות מוצגת בעמודה ליד הלוח. לחיצה על שיעור פותחת פרטים ונעיצה. בטלפון רואים יום אחד בכל פעם.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/01-week-desktop-dark.webp?v=20261120">
-  <img src="media/01-week-desktop.webp?v=20261120" alt="שלב 4, מערכות: לוח שבועי של חלופה 1 מתוך 10 מתחת לסרגל ארבעת השלבים, שיעורים בצבע לכל קורס, ושיעורים משותפים עם חברים מסומנים בשמם" width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="media/01-week-desktop-dark.webp?v=20261122">
+  <img src="media/01-week-desktop.webp?v=20261122" alt="הלוח במחשב: חלופה 1 מתוך 10, עמודת החלופות עם שבוע מוקטן לכל אחת, והקורסים שלי בעמודה בצד" width="720">
 </picture>
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/02-week-phone-dark.webp?v=20261120">
-  <img src="media/02-week-phone.webp?v=20261120" alt="המערכת בטלפון: יום אחד עם שיעורים משותפים עם חברים, החצים לחלופות בראש המסך וסרגל פעולות בתחתית" width="260">
+  <source media="(prefers-color-scheme: dark)" srcset="media/02-week-phone-dark.webp?v=20261122">
+  <img src="media/02-week-phone.webp?v=20261122" alt="המערכת בטלפון: יום אחד של חלופה 1 מתוך 10, עם החצים לחלופות, הכפתור שתף, שיעור משותף עם חבר מסומן בשמו, וסרגל הכלים בתחתית" width="260">
 </picture>
 </p>
 
@@ -98,8 +98,8 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/09-edit-phone-dark.webp?v=20261120">
-  <img src="media/09-edit-phone.webp?v=20261120" alt="שיפור מערכת קיימת בטלפון, יום ג׳ של הצעה 1 מתוך 1: חוזק חומרים 1 עובר מ-10:00 ל-13:00 והמקום הישן מסומן &quot;היה כאן&quot;. מתחת ללוח: 6 שעות פחות חלונות, קורס אחד זז, אותו מרצה, עם הכפתורים שמור הצעה והעתק שינויים" width="260">
+  <source media="(prefers-color-scheme: dark)" srcset="media/09-edit-phone-dark.webp?v=20261122">
+  <img src="media/09-edit-phone.webp?v=20261122" alt="שיפור מערכת קיימת בטלפון: חלונית השינויים מעל השבוע, עם המטרה פחות חלונות והצעה 1 מתוך 1: 6 שעות פחות חלונות, קורס אחד זז, אותו מרצה. חוזק חומרים 1 עובר לקבוצה אחרת, עם הכפתורים שמור הצעה והעתק שינויים" width="260">
 </picture>
 </p>
 

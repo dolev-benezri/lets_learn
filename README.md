@@ -2,8 +2,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/banner-dark.webp?v=20261120">
-  <img src="docs/media/banner.webp?v=20261120" alt="המערכת שלי: כלי לא רשמי לתכנון מערכת שעות באפקה">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/banner-dark.webp?v=20261122">
+  <img src="docs/media/banner.webp?v=20261122" alt="המערכת שלי: כלי לא רשמי לתכנון מערכת שעות באפקה">
 </picture>
 
 **בוחרים קורסים ומקבלים מערכות שעות מוכנות בלי חפיפות, לפי התקנון וההתקדמות האישית. מי שכבר יש לו מערכת יכול לבקש הצעות לשנות רק חלק ממנה.**
@@ -14,10 +14,10 @@
 [![data updated](https://img.shields.io/github/last-commit/dolev-benezri/lets_learn?path=web%2Fdata%2Fafeka%2Fstatus.json&label=data%20updated)](https://dolev-benezri.github.io/lets_learn/)
 
 <picture>
-  <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: dark)" srcset="docs/media/02-week-phone-dark.webp?v=20261120">
-  <source media="(prefers-reduced-motion: reduce)" srcset="docs/media/02-week-phone.webp?v=20261120">
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/demo-dark.gif?v=20261120">
-  <img src="docs/media/demo.gif?v=20261120" alt="הדגמה באתר בטלפון: בוחרים קורס, עוברים להעדפות, מקבלים מערכת שבועית, מדפדפים בין החלופות, בוחרים יום ופותחים את מפת ההתקדמות" width="300">
+  <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: dark)" srcset="docs/media/02-week-phone-dark.webp?v=20261122">
+  <source media="(prefers-reduced-motion: reduce)" srcset="docs/media/02-week-phone.webp?v=20261122">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/demo-dark.gif?v=20261122">
+  <img src="docs/media/demo.gif?v=20261122" alt="הדגמה באתר בטלפון: מסמנים קורס כ״חובה״ בכלי הקורסים, סוגרים את החלונית ומקבלים מערכת שבועית, מדפדפים בין החלופות, בוחרים יום ופותחים את מפת ההתקדמות מהתפריט" width="300">
 </picture>
 
 </div>
@@ -33,18 +33,18 @@
 - **רשימה להרשמה.** מספרי הקבוצות להעתקה לאפקה-נט, עם קבוצות באותן שעות וקבוצות גיבוי שמתאימות לשאר המערכת, למקרה שקבוצה מתמלאת. משם גם מייצאים ליומן (`.ics`), כולל הבחינות.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/03-map-desktop-dark.webp?v=20261120">
-  <img src="docs/media/03-map-desktop.webp?v=20261120" alt="מפת ההתקדמות: הקורסים לפי שנים עם קווים של דרישות קדם, מד התקדמות בתואר וחלונית קטנה של השבוע הנבחר" width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/03-map-desktop-dark.webp?v=20261122">
+  <img src="docs/media/03-map-desktop.webp?v=20261122" alt="מפת ההתקדמות: הקורסים לפי שנים עם קווים של דרישות קדם, מד התקדמות בתואר וחלונית קטנה של השבוע הנבחר" width="720">
 </picture>
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/00-start-mode-phone-dark.webp?v=20261120">
-  <img src="docs/media/00-start-mode-phone.webp?v=20261120" alt="הכניסה הראשונה בטלפון: מה רוצים לעשות, לבנות מערכת חדשה או לשפר מערכת שכבר יש לי" width="240">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/00-start-tabs-phone-dark.webp?v=20261122">
+  <img src="docs/media/00-start-tabs-phone.webp?v=20261122" alt="לוח ריק בטלפון: הלשוניות מערכת חדשה ושיפור מערכת קיימת, וכרטיס ״מאיפה מתחילים?״ עם שלוש פעולות: לסמן מה כבר עברתם, לבחור קורסים ולספר מה חשוב לכם" width="240">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/media/09-edit-phone-dark.webp?v=20261120">
-  <img src="docs/media/09-edit-phone.webp?v=20261120" alt="שיפור מערכת קיימת בטלפון, יום ג׳ של הצעה 1 מתוך 1: חוזק חומרים 1 עובר מ-10:00 ל-13:00 והמקום הישן מסומן &quot;היה כאן&quot;. מתחת ללוח: 6 שעות פחות חלונות, קורס אחד זז, אותו מרצה, עם הכפתורים שמור הצעה והעתק שינויים" width="240">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/09-edit-phone-dark.webp?v=20261122">
+  <img src="docs/media/09-edit-phone.webp?v=20261122" alt="שיפור מערכת קיימת בטלפון: חלונית השינויים מעל השבוע, עם המטרה פחות חלונות והצעה 1 מתוך 1: 6 שעות פחות חלונות, קורס אחד זז, אותו מרצה. חוזק חומרים 1 עובר לקבוצה אחרת, עם הכפתורים שמור הצעה והעתק שינויים" width="240">
 </picture>
 </p>
 
