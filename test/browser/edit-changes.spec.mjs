@@ -1,7 +1,7 @@
 // The edit page's step 2 (Task 11) in WebKit: the week with its marks, the lesson menu, goals, and what a search posts to the worker.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -84,7 +84,7 @@ test('phone: no courses left says so instead of searching', async (t) => {
   await page.locator('[data-ed="search"]').waitFor();
   await page.evaluate(COUNT);
   await page.locator('[data-ed="search"]').click();
-  assert.match(await page.locator('#edMsg').textContent(), /אין קורסים במערכת. חזרו לשלב 1./);
+  assert.match(await page.locator('#edMsg').textContent(), DESIGN === 'a' ? /אין קורסים במערכת. חזרו למערכת שלי./ : /אין קורסים במערכת. חזרו לשלב 1./);
   assert.deepEqual(await page.evaluate(() => window.__posts), []);
 });
 
@@ -163,6 +163,7 @@ for (const [size, w, h] of [['phone', 375, 812], ['desktop', 1280, 800]])
 
 test('desktop: ☰ pressed while the registration panel is docked reopens the drawer as the side menu', async (t) => {
   const page = await visit(t, 'desktop', DONE, '');
+  if (DESIGN === 'a') return t.skip('A: the registration list is the take-out tool, and ☰ has no mode links (out-a.spec.mjs)');
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   await page.locator('[data-panel="reg"]').click();
   await page.waitForFunction(() => document.getElementById('drawer').open);

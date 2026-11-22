@@ -201,6 +201,10 @@
   height:min(84dvh, calc(100dvh - 120px)); background:var(--surface); border-radius:20px 20px 0 0; box-shadow:var(--shadow-sheet);
 }
 :root[data-design="a"] .a-panel[hidden] { display:none; }
+@media (max-width:1079px) {
+  :root[data-design="a"] body.gated .a-panel { height:calc(100dvh - var(--a-chrome, 120px) - var(--a-dock) - env(safe-area-inset-bottom));
+  };
+}
 :root[data-design="a"] .a-grip { width:40px; height:5px; margin:8px auto 0; border-radius:3px; background:var(--border-strong); }
 :root[data-design="a"] .a-ph {
   display:flex;
@@ -334,6 +338,14 @@
   }
   :root[data-design="a"] .dk { min-height:var(--tap); }
   :root[data-design="a"] .a-scrim { bottom:0; inset-inline-start:76px; }
-  :root[data-design="a"] .a-panel { top:0; bottom:0; inset-inline:76px auto; width:min(420px, calc(100% - 76px)); height:auto; border-radius:0; }
+  :root[data-design="a"] .a-panel, :root[data-design="a"] body.gated .a-panel {
+    top:0;
+    bottom:0;
+    inset-inline:76px auto;
+    width:min(420px, calc(100% - 76px));
+    height:auto;
+    border-radius:0;
+  }
+  :root[data-design="a"] body.gated .a-panel { top:var(--a-chrome, 0px); } /* a locked sheet leaves the tabs and the notice above it, here too */
   :root[data-design="a"] body[data-view="edit"] { padding-inline-start:0; }
 }

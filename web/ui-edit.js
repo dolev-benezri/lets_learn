@@ -1,7 +1,7 @@
 // The edit page (#edit, #edit/changes): a separate page from the build steps. Step 1 loads my schedule and reviews what was read;
 // step 2 and the proposals follow. Pure HTML helpers are exported (test/ui-edit.test.mjs); the DOM part is at the bottom.
 import { app, esc, seatsAt, recordOf, saving, setEditSaveFailed } from './app.js';
-import { $, needsProgram, copy, toast } from './ui-common.js';
+import { $, needsProgram, copy, toast, designOn } from './ui-common.js';
 import { DAYS, groupIndex, typeLabel, icon, nameHtml, hourRange, renderWeek, assignColors, placePop } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { classify } from './rules.js';
@@ -73,7 +73,7 @@ const coursesLine = (rows, data) => {
 export function stepOneHtml(edit, data, review, { same = true, saving = true } = {}) {
   const d = edit.draft, choices = d?.choices ?? {}, rows = d ? review : [];
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
-    <p class="me-step"><b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.</p></div><div id="editIdentity"></div>`;
+    <p class="me-step">${designOn() ? '' : '<b>צעד 1 מתוך 2.</b> '}טוענים את המערכת שיש לכם.</p></div><div id="editIdentity"></div>`;
   // edWaysMsg: why a load button did nothing (track or year missing), said beside the button that was pressed
   const waysBody = (primary) => `<p class="err-text" id="edWaysMsg" role="alert"></p><div class="me-choice-btns">
     <button type="button" class="btn${primary ? ' primary' : ''}" data-ed="loadFile">קובץ מערכת (אקסל מאפקה-נט, PDF או צילום)</button>
@@ -96,7 +96,7 @@ export function stepOneHtml(edit, data, review, { same = true, saving = true } =
       ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}${coursesLine(rows, data)}</p>` : ''}</section>${reload}` : ''}
     <p class="err-text" id="edMsg" role="alert"></p></div>
     <div class="me-foot"><span class="hint" data-saved${saving ? '' : ' hidden'}>כל שינוי נשמר מיד.</span>
-      <button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">הבא: שינויים</button></div>`;
+      <button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">${designOn() ? 'לשינויים' : 'הבא: שינויים'}</button></div>`;
 }
 
 // ---------- step 2: pure parts ----------
@@ -341,7 +341,8 @@ export function renderEdit() {
   reconcileSplitSwaps();
   const st = edit(), same = sameNow(st);
   if (onChanges() && (!st.baseline.length || !same)) history.replaceState(null, '', '#edit');
-  const label = `<button type="button" class="mode-label" data-act="menu" data-k="editMode">עורכים מערכת קיימת · החלפה</button>`;
+  // A: the tabs of the top bar are the mode switch, there is no label to open the menu
+  const label = designOn() ? '' : `<button type="button" class="mode-label" data-act="menu" data-k="editMode">עורכים מערכת קיימת · החלפה</button>`;
   const step = onChanges() ? 2 : 1;
   if (step !== V.step) V.fx = 'step';
   V.step = step;
@@ -397,14 +398,14 @@ function stepTwo(st) {
   // the order is chosen when drawn, so reading and Tab order follow what is seen
   const [top, panel] = resultsHtml(st, data, pr, props.length), below = props.length > 0 && !!globalThis.matchMedia?.('(max-width:759px)').matches;
   return `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
-    <p class="me-step"><b>צעד 2 מתוך 2.</b> לחצו על שיעור כדי לסמן שיכול לזוז, ובחרו מה חשוב לכם.</p></div>
+    <p class="me-step">${designOn() ? '' : '<b>צעד 2 מתוך 2.</b> '}לחצו על שיעור כדי לסמן שיכול לזוז, ובחרו מה חשוב לכם.</p></div>
     ${goalsHtml(st, addableCourses(data, statuses, st))}${changesHtml(st, data)}${splitOptionHtml(!!app.state.constraints.split)}
     <div id="editResults">${top}${below ? '' : panel}</div>
     <h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
     <div class="daysel" id="editDays" role="group" aria-label="בחירת יום">${days}</div>
     <div id="editWeek" class="edit-week${V.fx ? ' fx' : ''}">${week}</div>${warn ? `<div class="edit-warn">${warn}</div>` : ''}${below ? panel : ''}
     <p class="err-text" id="edMsg" role="alert"></p>
-    <div class="me-foot"><a class="btn" href="#edit">חזרה לצעד 1</a>
+    <div class="me-foot"><a class="btn" href="#edit">${designOn() ? 'חזרה למערכת שלי' : 'חזרה לצעד 1'}</a>
       <button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${V.running ? 'מחפש…' : 'חפש הצעות'}</button></div>`;
 }
 
@@ -473,7 +474,7 @@ const payload = (st, data) => ({ edit: { ...st, draft: null }, data, record: app
 async function search() {
   if (V.running) return;
   const st = edit(), data = dataOf(st.dataset.sem), lessons = effectiveLessons(st, data);
-  if (!lessons.length && !st.added.length) return say('אין קורסים במערכת. חזרו לשלב 1.');
+  if (!lessons.length && !st.added.length) return say(`אין קורסים במערכת. חזרו ${designOn() ? 'למערכת שלי' : 'לשלב 1'}.`);
   const blocked = overlapMessage(st, lessons, data);
   if (blocked) return say(blocked);
   const g = st.goal, goal = !!(g.dayOff || g.notAfter || g.fewerGaps), swaps = Object.values(st.swaps).some((s) => s.length);

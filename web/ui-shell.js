@@ -84,6 +84,12 @@ export function shellInit() {
       dy = e.clientY - g.y;
     if (Math.abs(dx) > 70 && Math.abs(dy) < 50 && !$('layout').hidden && !overlayOpen()) go(dx < 0 ? 1 : -1);
   });
+  // a locked sheet (the gate) must leave the title, the mode tabs and the unofficial line above it: its top follows the bottom of the notice strip
+  const chrome = () => document.documentElement.style.setProperty('--a-chrome', `${Math.ceil($('aStrip').getBoundingClientRect().bottom + scrollY) + 6}px`);
+  const watch = new ResizeObserver(chrome);
+  watch.observe(document.querySelector('.a-top'));
+  watch.observe($('aStrip'));
+  chrome();
   matchMedia('(min-width: 1080px)').addEventListener('change', () => {
     // crossing 1080px shows or hides the panel: focus that was inside what is now hidden goes to the heading of what is shown
     const had = document.activeElement;

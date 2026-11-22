@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
-import { DONE, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, visit as visitIn, launch } from './helpers.mjs';
 import { zipSync, strToU8 } from '../../web/vendor/fflate/fflate.js';
 
 let browser;
@@ -316,7 +316,7 @@ test('desktop: keyboard only reaches every control of step 1, step 2 and the pro
   const page = await visit(t, 'desktop', DONE);
   await loadByHand(page);
   const one = await tabThrough(page, '#edit');
-  assert.ok(one.length >= 5, one.join());
+  assert.ok(one.length >= (DESIGN === 'a' ? 4 : 5), one.join()); // A: no mode label before the first control
   assert.deepEqual(await skipped(page, '#edit'), [], 'step 1');
   // the folded load buttons: Enter on the summary opens them and Tab reaches both
   await page.locator('#edit details.edit-ways summary').focus();

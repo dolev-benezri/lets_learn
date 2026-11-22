@@ -312,3 +312,53 @@ test('a failed data load at 1280: every retry button on screen can be pressed (t
   assert.deepEqual(hits.filter((h) => !h.ok), [], 'every retry button is the element under its own centre');
   assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), false);
 });
+
+for (const size of ['phone', { width: 320, height: 640 }])
+  test(`${size.width ?? 'phone'}: at the gate the title, the mode tabs and the unofficial line stay above the sheet, and a tab can be pressed`, async (t) => {
+    const page = await visitIn(browser, t, size, null, '', 'light', false, false, { design: 'a' });
+    await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+    await page.waitForTimeout(300);
+    const m = await page.evaluate(() => {
+      const hit = (sel) => {
+        const e = document.querySelector(sel), r = e.getBoundingClientRect(), at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return { ok: at === e || e.contains(at), bottom: r.bottom };
+      };
+      return { edit: hit('.a-top .modes a[data-mode="edit"]'), build: hit('.a-top .modes a[data-mode="build"]'), unofficial: hit('.a-unofficial'), sheet: document.getElementById('panel').getBoundingClientRect().top };
+    });
+    assert.equal(m.edit.ok, true, 'the improve tab is not under the sheet');
+    assert.equal(m.build.ok, true);
+    assert.equal(m.unofficial.ok, true, 'the unofficial line is not under the sheet');
+    assert.ok(m.sheet >= m.unofficial.bottom - 1, `the sheet (${m.sheet}) starts below the notice (${m.unofficial.bottom})`);
+  });
+
+test('a first visitor can choose the improve tab at the terms: it stays selected, and after the terms the edit page opens, not the track question', async (t) => {
+  const page = await visit(t, 'phone', null, '');
+  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.locator('.a-top .modes a[data-mode="edit"]').click();
+  await page.waitForFunction(() => location.hash === '#edit');
+  assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page');
+  await page.locator('[data-k="termsTick"]').waitFor({ state: 'visible' });
+  await page.locator('[data-k="termsTick"]').check();
+  await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('#edit').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('[data-act="pickTrack"]:visible').count(), 0, 'not the build gate');
+});
+
+test('landscape phone at the gate: the sheet is beside the rail and below the tabs, which can be pressed', async (t) => {
+  const context = await browser.newContext({ viewport: { width: 568, height: 320 }, isMobile: true, hasTouch: true, locale: 'he-IL', colorScheme: 'light' });
+  const page = await context.newPage();
+  await context.addInitScript((items) => {
+    for (const [k, v] of Object.entries(items)) localStorage.setItem(k, v);
+  }, { ...TOUR_SEEN, ...MODE_BUILD, [DESIGN_KEY]: 'a' });
+  t.after(() => context.close());
+  await page.goto(SITE);
+  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.waitForTimeout(300);
+  const m = await page.evaluate(() => {
+    const e = document.querySelector('.a-top .modes a[data-mode="edit"]'), r = e.getBoundingClientRect();
+    const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return { ok: at === e || e.contains(at), coarse: matchMedia('(pointer: coarse)').matches };
+  });
+  assert.equal(m.coarse, true, 'the touch emulation is on');
+  assert.equal(m.ok, true, 'the improve tab is not under the sheet in landscape');
+});

@@ -140,7 +140,7 @@ test('desktop: registering again in step 1 drops the proposals; proposal 0 is th
   await page.locator('[data-ed="propPrev"]').click();
   assert.equal(await page.locator('#editWeek .off.ghost').count(), 0, 'proposal 0 draws no ghosts');
   assert.equal(await page.locator('[data-ed="restoreOriginal"]').count(), 1, 'a movable course is a pending edit: restore shows');
-  await page.locator('a[href="#edit"]').click();
+  await page.locator('#edit a[href="#edit"]').click(); // the foot's way back (A also has the improve tab with this address)
   await page.locator('[data-ed-reg]').check();
   await page.locator('[data-ed="next"]').click();
   await page.waitForFunction(() => location.hash === '#edit/changes');

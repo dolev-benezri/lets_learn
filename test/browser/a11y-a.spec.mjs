@@ -183,3 +183,30 @@ test('the edit page keeps its own feet: the panel rules do not hide "הבא: ש�
   assert.equal(await page.locator('#edit [data-ed="next"]').isVisible(), true);
   assert.equal(await page.locator('#edit .me-foot').first().isVisible(), true, 'the foot itself');
 });
+
+// Improve mode (stage 1): the edit page in the frame, both screens, at the three widths, in both colour schemes.
+const EDIT_STATE = {
+  v: 1, dataset: { year: 2027, sem: 'א', program: 30, startYear: 2026 }, registered: false, owned: [], movable: ['30003'], goal: { dayOff: 4 },
+  original: [
+    { course: '30003', name: 'מבוא לכימיה', type: 'סופי-הרצאה+תרגול', group: '273000302', day: 4, start: '14:00', end: '15:50' },
+    { course: '30112', name: 'תרמודינמיקה 1', type: 'סופי-הרצאה+תרגול', group: '273011204', day: 3, start: '15:00', end: '16:50' }
+  ]
+};
+EDIT_STATE.baseline = EDIT_STATE.original;
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the edit page in the frame (both screens) at 320, 375 and 1280: axe, no sideways scroll, the tabs and the menu are targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const seed = { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) };
+    for (const [w, size] of Object.entries(WIDTHS)) {
+      const page = await visit(t, size, seed, '#edit', scheme);
+      await page.locator('#edit .me-foot [data-ed="next"]').waitFor({ timeout: 30000 });
+      await check(page, `${w} edit step 1`);
+      if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))) note(`${w} edit step 1: scrolls sideways`);
+      if (w !== '1280') for (const b of await smallTargets(page)) note(`${w} edit step 1: ${b}`);
+      await page.locator('[data-ed="next"]').click();
+      await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
+      await check(page, `${w} edit step 2`);
+      if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))) note(`${w} edit step 2: scrolls sideways`);
+    }
+    done();
+  });

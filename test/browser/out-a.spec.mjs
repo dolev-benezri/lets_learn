@@ -239,6 +239,7 @@ test('printing in Chromium paginates a long summary: more than one page, the las
 
 test('the info panel lists every footer link and the unofficial notice', async (t) => {
   const page = await visit(t, 'phone', DONE, '');
+  await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // let the first load finish: a reload would abort its fetches
   await page.context().route('**/settings.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ supportEmail: 'help@planner-tools.org', counselingUrl: 'https://example.test/counsel' }) }));
   await page.reload();
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
