@@ -1,7 +1,7 @@
 // The edit page's proposals (Task 12) in WebKit: a real search over the frozen data, the before/after, save, copy, restore.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, editWeekView, editToolView, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -36,21 +36,27 @@ for (const size of ['phone', 'desktop'])
     assert.equal(await page.locator('.pcard s').count(), 1);
     assert.match(await page.locator('.pcard .now').textContent(), /קבוצה/);
     assert.ok((await page.locator('.prop-panel').innerText()).includes('הצעה בלבד. ההרשמה נעשית במכללה.'), 'disclaimer');
-    for (const b of await page.locator('#edit .edit-step button').allInnerTexts()) assert.ok(!/החל|הרשמ/.test(b), b);
+    const buttons = await page.locator('#edit .edit-step button, #edit .edit-stage button').allInnerTexts(); // A: the stage
+    assert.ok(buttons.length > 3, 'there are buttons to check');
+    for (const b of buttons) assert.ok(!/החל|הרשמ/.test(b), b);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');
   });
 
 test('phone: "הראה את היום החדש" appears where the old lesson was and switches to the new day; the old place is "היה כאן"', async (t) => {
   const page = await visit(t, 'phone', seed());
   await search(page);
+  await editWeekView(page); // A, a phone: the tool is a sheet over the week
   await page.locator('#editDays [data-day="4"]').click();
   assert.ok((await page.locator('#editWeek .off.ghost').first().textContent()).includes('היה כאן'));
+  await editToolView(page);
   await page.locator('[data-ed="newDay"]').click();
   assert.notEqual(await page.locator('#editDays [aria-pressed="true"]').getAttribute('data-day'), '4');
   assert.equal((await page.locator('#editWeek .day.on .blk.changed').count()) > 0, true, 'the new lesson is highlighted');
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle');
   const to = await page.locator('#editDays [aria-pressed="true"]').getAttribute('data-day');
+  await editWeekView(page);
   await page.locator('#editDays [data-day="3"]').click(); // a day the change does not touch: the button is still offered
+  await editToolView(page);
   await page.locator('[data-ed="newDay"]').click();
   assert.equal(await page.locator('#editDays [aria-pressed="true"]').getAttribute('data-day'), to);
   assert.equal(await page.locator('[data-ed="newDay"]').count(), 0, 'on the new day there is nothing to show');

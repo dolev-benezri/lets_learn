@@ -84,7 +84,7 @@ test('desktop: a tab that never opened the edit page is not told about another t
 for (const hash of ['#edit', '#edit/changes'])
   test(`phone: the site notice is drawn on a direct visit to ${hash}`, async (t) => {
     const page = await visit(t, 'phone', seed(), hash);
-    await page.locator('#edit .edit-step').waitFor({ timeout: 30000 }); // loaded, so the reload below cuts nothing off
+    await page.locator('#edit .edit-step, #edit .edit-stage').waitFor({ timeout: 30000 }); // loaded, so the reload below cuts nothing off (A: the stage)
     await page.waitForLoadState('networkidle');
     await page.context().route('**/settings.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ notice: 'הודעת בדיקה מהמפעיל' }) }));
     await page.reload();

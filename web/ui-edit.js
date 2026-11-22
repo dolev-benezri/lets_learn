@@ -1,7 +1,7 @@
 // The edit page (#edit, #edit/changes): a separate page from the build steps. Step 1 loads my schedule and reviews what was read;
 // step 2 and the proposals follow. Pure HTML helpers are exported (test/ui-edit.test.mjs); the DOM part is at the bottom.
 import { app, esc, seatsAt, recordOf, saving, setEditSaveFailed } from './app.js';
-import { $, needsProgram, copy, toast, designOn } from './ui-common.js';
+import { $, needsProgram, copy, toast, designOn, ui } from './ui-common.js';
 import { DAYS, groupIndex, typeLabel, icon, nameHtml, hourRange, renderWeek, assignColors, placePop } from './ui-grid.js';
 import { askConfirm } from './ui-dialog.js';
 import { classify } from './rules.js';
@@ -347,10 +347,21 @@ export function renderEdit() {
   if (step !== V.step) V.fx = 'step';
   V.step = step;
   const fx = V.fx === 'step' ? ' fx' : '';
-  const body = step === 2 ? stepTwo(st) : stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh, saving: saving() });
+  const one = () => stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh, saving: saving() });
+  const parts = designOn() ? (step === 2 ? stepTwoA(st) : { tool: one(), board: boardOne(st) }) : null;
+  const covered = !matchMedia('(min-width: 1080px)').matches && ui.editSheet !== false; // a phone's sheet is over the week: nothing under it is reachable
+  const body = parts ? '' : step === 2 ? stepTwo(st) : one();
   V.fx = null;
   const gx = document.querySelector('#edit .goals')?.scrollLeft; // a phone's goal row scrolls sideways: a redraw keeps its place
-  $('edit').innerHTML = `${label}<div class="edit-step${fx}">${body}</div>`;
+  // A: the stage holds the tool (a column, on a phone a sheet) and the board; the step animation runs on the tool's inner part,
+  // never on an ancestor of the sheet
+  $('edit').innerHTML = parts
+    ? `<div class="edit-stage" data-tool="${step === 2 ? 'changes' : 'mine'}" data-sheet="${ui.editSheet === false ? 'closed' : 'open'}">
+      <div class="edit-tool" role="region" aria-labelledby="editTitle">
+        <button type="button" class="btn icon-btn ghost edit-sheet-x" data-act="editSheet" data-k="editSheet" aria-label="סגירת הכלי">${icon('x')}</button>
+        <div class="edit-tool-in${fx}">${parts.tool}</div></div>
+      <div class="edit-board"${covered ? ' inert' : ''}>${parts.board}</div></div>`
+    : `${label}<div class="edit-step${fx}">${body}</div>`;
   if (gx) document.querySelector('#edit .goals')?.scrollTo({ left: gx });
   if (dropped && step === 2) say(STALE);
   if ($('editIdentity') && (!app.state.profile.year || needsProgram())) $('editIdentity').innerHTML = identityPick(app.state.profile.year, true);
@@ -369,12 +380,10 @@ function reconcileSplitSwaps() {
 }
 
 // ---------- step 2 ----------
-function stepTwo(st) {
-  const data = dataOf(st.dataset.sem), props = V.result?.proposals ?? [];
-  V.i = Math.min(V.i, props.length);
-  const pr = V.i > 0 ? props[V.i - 1] : null, zero = !pr && props.length > 0; // 0: the baseline as it is, no pending edits drawn
+// The week of the edit page: the lessons of a proposal (`pr`), of the baseline as it is (`zero`), or of the pending edits. Classic draws it inside the
+// step; design A draws it on the board beside the tool (and, read only, in step 1). Returns the week, the day buttons and the blocked-lines note.
+function weekOf(st, data, pr, zero, statuses) {
   const lessons = pr ? pr.lessons : zero ? st.baseline : effectiveLessons(st, data);
-  const statuses = classify(data, app.state).statuses;
   const dd = displayData(lessons, data), swapped = Object.keys(st.swaps).filter((c) => st.swaps[c].length && !st.removed.includes(c));
   const moved = pr ? pr.changed : zero ? [] : swapped; // courses whose old place is drawn as "היה כאן"
   const at = ({ day, start, end }) => ({ day, start, end });
@@ -394,6 +403,20 @@ function stepTwo(st) {
     .map((d) => `<button type="button" data-ed="day" data-day="${d}" aria-pressed="${d === V.day}">${DAYS[d]}׳${
       marked.has(d) ? '<span class="chg" aria-hidden="true"></span><span class="sr"> (יש שינוי)</span>' : ''}</button>`).join('');
   const warn = blockedLines(st, data, statuses).map((t) => `<p class="warn-text">${icon('alert')} <span>${esc(t)}</span></p>`).join('');
+  return { week, days, warn };
+}
+
+// what step 2 and its week both need: the data, the proposals, the one shown, the record's statuses
+function stepTwoBase(st) {
+  const data = dataOf(st.dataset.sem), props = V.result?.proposals ?? [];
+  V.i = Math.min(V.i, props.length);
+  const pr = V.i > 0 ? props[V.i - 1] : null, zero = !pr && props.length > 0; // 0: the baseline as it is, no pending edits drawn
+  return { data, props, pr, zero, statuses: classify(data, app.state).statuses };
+}
+
+function stepTwo(st) {
+  const { data, props, pr, zero, statuses } = stepTwoBase(st);
+  const { week, days, warn } = weekOf(st, data, pr, zero, statuses);
   // a phone (one day at a time) shows the week right under the proposal switcher and the proposal's details under the week;
   // the order is chosen when drawn, so reading and Tab order follow what is seen
   const [top, panel] = resultsHtml(st, data, pr, props.length), below = props.length > 0 && !!globalThis.matchMedia?.('(max-width:759px)').matches;
@@ -407,6 +430,34 @@ function stepTwo(st) {
     <p class="err-text" id="edMsg" role="alert"></p>
     <div class="me-foot"><a class="btn" href="#edit">${designOn() ? 'חזרה למערכת שלי' : 'חזרה לצעד 1'}</a>
       <button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${V.running ? 'מחפש…' : 'חפש הצעות'}</button></div>`;
+}
+
+// Design A, step 2: the controls and the answer are the tool, the week is the board. The proposals stay with the controls (no "week first" order).
+function stepTwoA(st) {
+  const { data, props, pr, zero, statuses } = stepTwoBase(st);
+  const { week, days, warn } = weekOf(st, data, pr, zero, statuses);
+  const [top, panel] = resultsHtml(st, data, pr, props.length);
+  const tool = `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
+    <p class="me-step">לחצו על שיעור כדי לסמן שיכול לזוז, ובחרו מה חשוב לכם.</p></div>
+    ${goalsHtml(st, addableCourses(data, statuses, st))}${changesHtml(st, data)}${splitOptionHtml(!!app.state.constraints.split)}
+    <div id="editResults">${top}${panel}</div>
+    <p class="err-text" id="edMsg" role="alert"></p>
+    <div class="me-foot"><a class="btn" href="#edit">חזרה למערכת שלי</a>
+      <button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${V.running ? 'מחפש…' : 'חפש הצעות'}</button></div>`;
+  const board = `<h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
+    <div class="daysel" id="editDays" role="group" aria-label="בחירת יום">${days}</div>
+    <div id="editWeek" class="edit-week${V.fx ? ' fx' : ''}">${week}</div>${warn ? `<div class="edit-warn">${warn}</div>` : ''}`;
+  return { tool, board };
+}
+
+// Design A, step 1: the loaded schedule as a week on the board, to look at (its lessons are marked in step 2); before there is one, a line saying so.
+function boardOne(st) {
+  const data = dataOf(st.dataset?.sem);
+  if (!data || !st.baseline.length || !sameNow(st)) return '<p class="hint edit-empty">המערכת שתטענו תופיע כאן, שבוע אחד על הלוח.</p>';
+  const { week, days } = weekOf(st, data, null, false, classify(data, app.state).statuses);
+  return `<h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
+    <div class="daysel" id="editDays" role="group" aria-label="בחירת יום">${days}</div>
+    <div id="editWeek" class="edit-week" inert>${week}</div>`;
 }
 
 // The groups a proposal puts in place of the old ones (highlighted in the week).
@@ -678,6 +729,16 @@ function next() {
   location.hash = '#edit/changes';
 }
 
+// Design A, a phone: a step that sends the person to the week closes the sheet over it first (the shell updates the stage, the dock and the board)
+function showBoard() {
+  if (!designOn() || ui.editSheet === false || matchMedia('(min-width: 1080px)').matches) return;
+  ui.editSheet = false;
+  dispatchEvent(new Event('a-edit-sheet'));
+}
+
+// the dock's "changes" button (design A): what "next" does, with the same checks
+export const goChanges = () => next();
+
 const STEP_ONE = {
   loadFile: () => openLoader(true),
   loadHand: () => openLoader(false),
@@ -704,6 +765,7 @@ const ACT_ED = {
   newDay(b) {
     V.day = Number(b.dataset.day);
     V.fx = 'week';
+    showBoard(); // A, a phone: the week is where focus goes next, so the sheet goes away
     renderEdit();
     $('editWeekTitle').focus({ preventScroll: true });
     $('editDays').scrollIntoView?.({ block: 'start' }); // on a phone the button sits under the week: bring the new day into view
@@ -808,6 +870,7 @@ function wire() {
   // the build switcher's keys: ArrowLeft is next, ArrowRight previous (right to left); not while typing or while something is open
   document.addEventListener('keydown', (e) => {
     if (!onChanges() || !V.result?.proposals.length || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    if (designOn() && (ui.overlay || !document.querySelector('#edit .edit-tool')?.checkVisibility?.())) return; // the record over the page, or a closed sheet
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || $('pop').matches(':popover-open') || document.querySelector('dialog:modal')) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable], [tabindex="0"]')) return;
     e.preventDefault();

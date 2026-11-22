@@ -3,8 +3,9 @@
 // Classic keeps using routeOf from app.js; only the A shell (ui-shell.js) and the test/shell-panels.test.mjs table call these.
 import { routeOf } from './app.js';
 
-// the tools of the dock, in order. The improve mode has none in stage 1: the edit page is its own stage and asks for the terms only.
-export const TOOLS = { build: ['me', 'courses', 'wishes', 'friends', 'out'], improve: [] };
+// the tools of the dock. Improve mode: the two screens of the edit page (the schedule I have, the changes I want) and the record, which opens over
+// the edit page as an in-memory overlay (no address of its own: the edit step stays the address).
+export const TOOLS = { build: ['me', 'courses', 'wishes', 'friends', 'out'], improve: ['mine', 'changes', 'me'] };
 const TOOL_HASH = { me: '#me', courses: '#courses', wishes: '#prefs', friends: '#friends', out: '#out' };
 const VIEW_TOOL = { me: 'me', courses: 'courses', prefs: 'wishes', friends: 'friends', out: 'out' };
 export const hashOfTool = (tool) => TOOL_HASH[tool];
@@ -21,11 +22,11 @@ export function routeA(hash) {
 
 export const stageOf = (route) => (route.mode === 'improve' ? 'edit' : 'board');
 
-// The overlay: the tool panel to show, or null. ctx: { wide, program, gated, termsOk }. Improve mode is gated by the terms only (the edit page asks
-// for the track and year inside its own loader). In build mode the gate (terms, track, year) locks the panel to the record. A wide screen always
-// has a panel: the courses, or the record while there is no program yet.
+// The overlay: the tool panel to show, or null. ctx: { wide, program, gated, termsOk, overlay }. Improve mode is gated by the terms only (the edit page asks
+// for the track and year inside its own loader); its only panel is the record, when `overlay` says so. In build mode the gate (terms, track, year)
+// locks the panel to the record. A wide screen always has a panel: the courses, or the record while there is no program yet.
 export function panelOf(route, ctx) {
-  if (route.mode === 'improve') return ctx.termsOk ? null : 'me';
+  if (route.mode === 'improve') return ctx.termsOk ? (ctx.overlay === 'me' ? 'me' : null) : 'me';
   if (ctx.gated) return 'me';
   if (route.tool) return route.tool;
   return ctx.wide ? (ctx.program ? 'courses' : 'me') : null;

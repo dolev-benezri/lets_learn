@@ -40,7 +40,7 @@ for (const size of ['phone', 'desktop'])
       await page.waitForFunction(() => location.hash === '#edit');
       await page.locator('#edit').waitFor({ state: 'visible' });
       assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page', 'the improve tab is selected');
-      assert.equal(await page.locator('.dock').isVisible(), false, 'no dock');
+      assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.dock .dk')].filter((b) => !b.hidden).map((b) => b.dataset.tool).sort()), ['changes', 'me', 'mine'], 'the dock of improve mode');
       assert.equal(await page.locator('.mode-label').count(), 0, 'no mode label');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');
       return;

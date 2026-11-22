@@ -77,8 +77,12 @@ for (const hash of ['', '#me', '#courses', '#prefs', '#edit', '#edit/changes'])
     assert.equal(shot.a.first, shot.classic.first, 'the same first alternative');
     assert.equal(shot.a.hash, hash, 'the address is kept, not rewritten');
     assert.equal(shot.classic.hash, hash);
-    assert.deepEqual(shot.a.lessons, shot.classic.lessons, 'the same lessons on the edit page');
-    if (hash === '#edit/changes') assert.ok(shot.a.lessons.length > 0, 'the edit page shows the saved schedule, it did not fall back to the first screen');
+    // the changes screen draws the week in both designs; the first screen of A also shows it as a preview on the board (classic has no week there)
+    if (hash === '#edit/changes') {
+      assert.deepEqual(shot.a.lessons, shot.classic.lessons, 'the same lessons on the edit page');
+      assert.ok(shot.a.lessons.length > 0, 'the edit page shows the saved schedule, it did not fall back to the first screen');
+    }
+    if (hash === '#edit') assert.ok(shot.a.lessons.length > 0 && shot.classic.lessons.length === 0, 'A previews the saved schedule on its board');
     const before = await oldVisit();
     assert.equal(shot.a.stored['afeka-sched-v1-edit'], before['afeka-sched-v1-edit'], 'the edit state is untouched');
     assert.equal(shot.a.stored['afeka-sched-v1:30-2025'], before['afeka-sched-v1:30-2025'], "another cohort's stash is untouched");

@@ -157,3 +157,16 @@ export async function openMap(page) {
     await page.locator('#drawer [data-act="openMap"]').click();
   } else await page.locator('[data-act="openMap"]').click();
 }
+
+// Design A, a phone: the edit page's tool is a sheet over the week. These put the week in view, or the tool, whichever the next step needs; the lesson
+// buttons cannot be pressed under the sheet, nor the controls over a closed one. Classic and a wide screen: nothing to do.
+export async function editWeekView(page) {
+  if (!(await onA(page))) return;
+  const x = page.locator('.edit-sheet-x');
+  if (await x.isVisible()) await x.click();
+}
+export async function editToolView(page) {
+  if (!(await onA(page))) return;
+  const stage = page.locator('.edit-stage[data-sheet="closed"]');
+  if (await stage.count()) await page.locator('.dock [data-tool="changes"]').click();
+}

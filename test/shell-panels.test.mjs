@@ -36,7 +36,7 @@ test('a hash that is neither #friends nor #out is the live router\'s answer: cla
   assert.equal(routeOf('#out'), 'plan');
   assert.notEqual(viewOf('#friends'), routeOf('#friends'), 'which is why A compares its own views when it closes the overlays');
   assert.deepEqual(TOOLS.build, ['me', 'courses', 'wishes', 'friends', 'out']);
-  assert.deepEqual(TOOLS.improve, [], 'stage 1: the improve mode has no dock');
+  assert.deepEqual(TOOLS.improve, ['mine', 'changes', 'me'], 'improve: the two screens of the edit page, and the record as an overlay');
 });
 
 test('the stage is the board in build mode and the edit page in improve mode', () => {
@@ -79,4 +79,12 @@ test('panelOf: an improve route never yields a build tool', () => {
 test('hashOfTool is the inverse of routeA for the build tools', () => {
   for (const tool of TOOLS.build) assert.equal(routeA(hashOfTool(tool)).tool, tool);
   assert.equal(hashOfTool('wishes'), '#prefs');
+});
+
+test('panelOf: in improve mode the only panel is the record, and only when the overlay asks for it (the terms gate comes first)', () => {
+  assert.equal(panelOf(routeA('#edit'), ctx({ termsOk: true })), null);
+  assert.equal(panelOf(routeA('#edit/changes'), ctx({ termsOk: true, wide: true })), null, 'not even on a wide screen');
+  assert.equal(panelOf(routeA('#edit'), ctx({ termsOk: true, overlay: 'me' })), 'me');
+  assert.equal(panelOf(routeA('#edit'), ctx({ termsOk: false })), 'me', 'the terms first');
+  assert.equal(panelOf(routeA('#courses'), ctx({ overlay: 'me' })), 'courses', 'the overlay is improve mode only');
 });

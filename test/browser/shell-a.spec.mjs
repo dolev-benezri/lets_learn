@@ -237,7 +237,7 @@ test('the mode tabs: improve opens #edit with the board out of the way, build br
   assert.equal(await label(), inEdit, 'ArrowLeft: the build alternative does not move behind the edit page');
   await page.keyboard.press('ArrowRight');
   assert.equal(await label(), inEdit, 'ArrowRight');
-  assert.equal(await visible(page, '.dock'), false, 'no build dock over the edit page');
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.dock .dk')].filter((b) => !b.hidden).map((b) => b.dataset.tool).sort()), ['changes', 'me', 'mine'], 'no build tool in the dock over the edit page');
   assert.equal(await visible(page, '#switcher'), false, 'no build switcher either');
   await page.locator('.a-top .modes a[data-mode="build"]').click();
   await weekReady(page);

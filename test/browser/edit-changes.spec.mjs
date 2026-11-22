@@ -1,7 +1,7 @@
 // The edit page's step 2 (Task 11) in WebKit: the week with its marks, the lesson menu, goals, and what a search posts to the worker.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, DESIGN, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, editWeekView, editToolView, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -38,6 +38,7 @@ for (const size of ['phone', 'desktop'])
     const blk = page.locator('#editWeek .day.on .blk').first();
     assert.match(await blk.textContent(), /נשאר במקום/);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await editWeekView(page); // A, a phone: the tool is a sheet over the week
     await blk.click();
     const menu = page.locator('#pop');
     await menu.locator('[data-ed]').first().waitFor();
@@ -71,8 +72,10 @@ test('phone: nothing to move and no goal says what to do; a goal alone posts "tr
   assert.deepEqual(await page.evaluate(() => window.__posts), ['tries']);
   await page.locator('.prop-panel').waitFor({ timeout: 30000 }); // the answer redraws the page: click after it
   if (await page.locator('[data-ed="propPrev"]').count()) await page.locator('[data-ed="propPrev"]').click(); // the original: its lessons are on the shown day
+  await editWeekView(page); // A, a phone: the tool is a sheet over the week
   await page.locator('#editWeek .day.on .blk').first().click();
   await page.locator('#pop [data-ed="toggleMove"]').click();
+  await editToolView(page);
   await page.evaluate(() => (window.__posts = []));
   await page.locator('[data-ed="search"]').click();
   await page.waitForFunction(() => window.__posts.length >= 1);

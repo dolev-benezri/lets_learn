@@ -17,7 +17,7 @@ import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
 import { tourCheck, tourOnce, introPending, onTourEnd } from './tour.js';
-import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear } from './ui-shell.js';
+import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear, toggleEditSheet } from './ui-shell.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 let firstVisit = !onboarded() && !location.hash;
@@ -105,6 +105,7 @@ function onHash() {
     renderRoute();
     if (designOn()) renderTop(); // the title and the data line belong to both modes
     renderEdit();
+    if (designOn()) applyShell();
     settle(reason);
     return;
   }
@@ -144,6 +145,8 @@ function renderAll() {
     renderNotice(); // the site notice, a failed save and another tab's copy: every page, not only the build page's banner
     if (designOn()) renderTop(); // the title and the data line belong to both modes
     renderEdit();
+    if (designOn()) applyShell(); // the page may have sent #edit/changes back to #edit: the dock and the sheet follow the step shown
+    if (designOn() && ui.overlay === 'me') renderMe(); // the record over the edit page follows what is changed in it
     return;
   }
   if (firstVisit && (!modeOpen() || designOn())) {
@@ -285,6 +288,7 @@ addEventListener(
 );
 ACT.tool = (el) => openTool(el.dataset.tool, el); // design A's dock (ui-shell.js)
 ACT.closeTool = () => closeTool();
+ACT.editSheet = () => toggleEditSheet(); // the phone's sheet over the improve week
 // a card of A's alternatives column (ui-view.js renderAltColumn). WebKit does not focus a clicked button: take focus so keepFocus finds the twin card
 ACT.altPick = (el) => {
   el.focus({ preventScroll: true });

@@ -1,5 +1,5 @@
 // Improve mode inside design A's frame (stage 1: the existing edit page is the whole stage): no numbered-step wording, no mode label (the tabs are the
-// mode switch), no dock, and the tabs and the menu where they are on the build page. Every visit sets { design: 'a' }.
+// mode switch), the dock of improve mode, and the tabs and the menu where they are on the build page. Every visit sets { design: 'a' }.
 // No top-level await in a spec: node:test then hangs after the run.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -44,66 +44,66 @@ test('the edit page has no mode label: the tabs are the mode switch, the dock an
   assert.equal(await page.locator('.mode-label').count(), 0, 'no "עורכים מערכת קיימת · החלפה" button');
   assert.equal(await page.locator('.a-top .modes a[data-mode="edit"][aria-current="page"]').count(), 1);
   assert.equal(await page.locator('.a-top .modes a[data-mode="build"][aria-current]').count(), 0);
-  assert.equal(await page.locator('.dock').isVisible(), false, 'no dock');
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.dock .dk')].filter((b) => !b.hidden).map((b) => b.dataset.tool).sort()), ['changes', 'me', 'mine'], 'the dock holds the edit steps and the record, not the build tools');
   assert.equal(await page.locator('#panel').isVisible(), false, 'no tool panel');
   assert.equal(await page.locator('.menu-btn').isVisible(), true, '☰ is where it is on the board');
 });
 
-// Stage 1b: on a wide screen the changes screen puts the week beside the controls (a CSS grid on the existing wrapper: the DOM and its order stay)
-const WIDE = [[1280, 800], [1440, 900], [1080, 800]];
-for (const [w, h] of WIDE)
-  test(`${w}px: the changes screen shows the week beside the controls, and keeps the order a keyboard reads`, async (t) => {
+// Stage 2: from 1080px the tool is a column (sticky, its own scroller) and the week is the board beside it; below, the tool is a sheet over the week.
+for (const [w, h] of [[1280, 800], [1440, 900], [1080, 800]])
+  test(`${w}px: the tool is a column on the right, the week the board beside it, and the foot stays in view`, async (t) => {
     const page = await visit(t, { width: w, height: h }, SEED, '#edit/changes');
     await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
     const m = await page.evaluate(() => {
       const r = (s) => document.querySelector(s).getBoundingClientRect();
-      const goals = r('.edit-step .goals'), week = r('#editWeek'), foot = r('.edit-step .me-foot');
-      const order = [...document.querySelectorAll('.edit-step .goals, #editWeek')].map((e) => e.id || e.className);
-      return { goalsLeft: goals.left, goalsRight: goals.right, goalsTop: goals.top, weekLeft: week.left, weekRight: week.right, weekTop: week.top, footTop: foot.top, weekBottom: week.bottom, order, fits: document.documentElement.scrollWidth <= innerWidth };
+      const tool = r('.edit-tool'), board = r('.edit-board'), foot = r('.edit-tool .me-foot');
+      return { toolLeft: tool.left, toolTop: tool.top, boardRight: board.right, boardTop: board.top, boardW: board.width, footBottom: foot.bottom, h: innerHeight,
+        pos: getComputedStyle(document.querySelector('.edit-tool')).position, dir: getComputedStyle(document.getElementById('edit')).direction,
+        fits: document.documentElement.scrollWidth <= innerWidth };
     });
     assert.equal(m.fits, true, 'no sideways scroll');
-    assert.ok(m.weekRight <= m.goalsLeft + 1, `RTL: the controls are on the right (${m.goalsLeft}), the week is to their left (it ends at ${m.weekRight})`);
-    assert.ok(Math.abs(m.weekTop - m.goalsTop) < 120, `they start at the same height (${m.weekTop} / ${m.goalsTop})`);
-    assert.ok(m.weekBottom <= m.footTop + 1, 'the foot is below both');
-    assert.ok(m.weekRight - m.weekLeft > 400, `the week has room: ${Math.round(m.weekRight - m.weekLeft)}px`);
-    assert.deepEqual(m.order, ['goals', 'editWeek'], 'the controls come before the week in the page, as they are read');
+    assert.equal(m.dir, 'rtl');
+    assert.ok(m.boardRight <= m.toolLeft + 1, `RTL: the tool is on the right (${m.toolLeft}), the board to its left (ends at ${m.boardRight})`);
+    assert.ok(Math.abs(m.boardTop - m.toolTop) < 150, 'they start at the same height');
+    assert.ok(m.boardW > 400, `the week has room: ${Math.round(m.boardW)}px`);
+    assert.equal(m.pos, 'sticky', 'the tool column stays in view');
+    assert.ok(m.footBottom <= m.h + 1, `the foot (search, back) is in view (${m.footBottom} of ${m.h})`);
   });
 
-test('1079px and a phone: the changes screen stays one column, the week under the controls', async (t) => {
+test('1280px, a short window: the tool column is pinned below the top bar and its foot comes into view', async (t) => {
+  const page = await visit(t, { width: 1280, height: 420 }, SEED, '#edit/changes');
+  await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+  const m = await page.evaluate(async () => {
+    window.scrollTo(0, 400); // the column sticks below the top bar: once the page is scrolled, the whole tool and its foot are in view
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const tool = document.querySelector('.edit-tool'), foot = tool.querySelector('.me-foot').getBoundingClientRect(), box = tool.getBoundingClientRect();
+    return { footBottom: foot.bottom, h: innerHeight, top: box.top, bottom: box.bottom, overflowY: getComputedStyle(tool).overflowY };
+  });
+  assert.ok(m.footBottom <= m.h + 1, `the foot is in view (${m.footBottom} of ${m.h})`);
+  assert.ok(m.bottom <= m.h + 1 && m.top >= 0, `the column is pinned inside the window (${m.top}..${m.bottom})`);
+  assert.equal(m.overflowY, 'auto');
+  await page.locator('[data-ed="search"]').scrollIntoViewIfNeeded();
+  assert.equal(await page.locator('[data-ed="search"]').isVisible(), true);
+});
+
+test('1279px and a phone: the tool is a sheet over the week with the dock under it', async (t) => {
   for (const [w, h] of [[1079, 800], [375, 812]]) {
     const page = await visit(t, { width: w, height: h }, SEED, '#edit/changes');
     await page.locator('#editWeek .blk').first().waitFor({ state: 'attached', timeout: 30000 });
     const m = await page.evaluate(() => {
-      const goals = document.querySelector('.edit-step .goals').getBoundingClientRect(), week = document.getElementById('editWeek').getBoundingClientRect();
-      return { below: week.top >= goals.bottom - 1, same: week.left < goals.right && week.right > goals.left && week.width > 100 && goals.width > 100, fits: document.documentElement.scrollWidth <= innerWidth };
+      const tool = document.querySelector('.edit-tool').getBoundingClientRect(), dock = document.querySelector('.dock').getBoundingClientRect(), board = document.querySelector('.edit-board').getBoundingClientRect();
+      return { pos: getComputedStyle(document.querySelector('.edit-tool')).position, toolBottom: tool.bottom, dockTop: dock.top, boardW: board.width, iw: innerWidth, fits: document.documentElement.scrollWidth <= innerWidth };
     });
-    assert.equal(m.same, true, `${w}: the same column, both with a size`);
-    assert.equal(m.below, true, `${w}: the week is under the controls`);
+    assert.equal(m.pos, 'fixed', `${w}: a sheet`);
+    assert.ok(Math.abs(m.toolBottom - m.dockTop) <= 2, `${w}: it sits on the dock (${m.toolBottom} / ${m.dockTop})`);
+    assert.ok(m.boardW >= m.iw - 40, `${w}: the board is the full width`);
     assert.equal(m.fits, true, `${w}: no sideways scroll`);
   }
 });
 
-// Codex review of stage 1b: the foot is sticky, so it must stay in the viewport while the week and the controls are taller than the window
-test('1280px, a short window: the foot (search, back) stays in view over a changes screen taller than the window', async (t) => {
-  const page = await visit(t, { width: 1280, height: 420 }, SEED, '#edit/changes');
-  await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
-  const m = await page.evaluate(() => {
-    const foot = document.querySelector('.edit-step .me-foot').getBoundingClientRect();
-    return { tall: document.documentElement.scrollHeight > innerHeight + 50, footBottom: foot.bottom, height: innerHeight, direction: getComputedStyle(document.getElementById('edit')).direction };
-  });
-  assert.equal(m.direction, 'rtl');
-  assert.equal(m.tall, true, 'the page is taller than the window');
-  assert.ok(m.footBottom <= m.height + 1, `the foot is in view at the top of the page (bottom ${m.footBottom} of ${m.height})`);
-  await page.locator('[data-ed="search"]').scrollIntoViewIfNeeded();
-  assert.equal(await page.locator('[data-ed="search"]').isVisible(), true, 'the search button can be pressed without scrolling to the end');
-});
-
-test('1280px: the goal chips stay in one row (a scroller when the column is narrow), as on a phone', async (t) => {
+test('1280px: the goal chips stay in one row, a scroller in the column', async (t) => {
   const page = await visit(t, { width: 1280, height: 800 }, SEED, '#edit/changes');
   await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
-  const m = await page.evaluate(() => {
-    const g = document.querySelector('.edit-step .goals'), chips = [...g.children].filter((c) => c.getClientRects().length);
-    return { rows: new Set(chips.map((c) => Math.round(c.getBoundingClientRect().top))).size, overflowX: getComputedStyle(g).overflowX };
-  });
-  assert.equal(m.rows, 1, 'one row of chips');
+  const rows = await page.evaluate(() => new Set([...document.querySelector('.edit-tool .goals').children].filter((c) => c.getClientRects().length).map((c) => Math.round(c.getBoundingClientRect().top))).size);
+  assert.equal(rows, 1, 'one row of chips');
 });

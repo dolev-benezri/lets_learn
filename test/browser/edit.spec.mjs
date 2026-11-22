@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
-import { DONE, DESIGN, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, editWeekView, editToolView, visit as visitIn, launch } from './helpers.mjs';
 import { zipSync, strToU8 } from '../../web/vendor/fflate/fflate.js';
 
 let browser;
@@ -90,7 +90,8 @@ const tabThrough = async (page, root) => {
   // start on the first control of root (it must take focus) and Tab on from there: the focus point before it is the browser's business
   const first = await page.evaluate((r) => {
     scrollTo(0, 0);
-    const el = document.querySelector(r).querySelector('button, input, select, textarea, a[href], [tabindex="0"]');
+    // the first control on screen (A, a wide screen: the sheet's close button is not)
+    const el = [...document.querySelector(r).querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')].find((e) => e.getClientRects().length);
     el.focus();
     el.setAttribute('data-tab-seen', '1');
     return document.activeElement === el;
@@ -234,8 +235,10 @@ for (const [name, size] of [SIZES[0], SIZES[2]])
   test(`${name}: mark a course movable, free a day, a proposal with its summary and card, its new day, save, restore the original`, async (t) => {
     const page = await visit(t, size, LOADED, '#edit/changes');
     await page.locator('#editWeek .blk').first().waitFor();
+    await editWeekView(page); // A, a phone: the tool is a sheet over the week
     await (await lesson(page, 'תרמודינמיקה', 3)).click();
     await page.locator('#pop [data-ed="toggleMove"]').click();
+    await editToolView(page);
     await page.locator('[data-ed-goal="dayOff"]').selectOption('3'); // Tuesday: where thermodynamics is
     assert.equal((await saved(page)).goal.dayOff, 3);
     await search(page);
@@ -247,6 +250,7 @@ for (const [name, size] of [SIZES[0], SIZES[2]])
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle');
     if (name === 'phone') // the button sits under the week there: the new day is brought into view
       assert.equal(await page.locator('#editDays').evaluate((e) => e.getBoundingClientRect().top >= 0 && e.getBoundingClientRect().bottom <= innerHeight), true);
+    await editToolView(page);
     await page.locator('[data-ed="saveProposal"]').click();
     assert.notDeepEqual((await saved(page)).baseline, before.baseline);
     await page.locator('[data-ed="restoreOriginal"]').click();
@@ -262,14 +266,18 @@ for (const [name, size] of SIZES)
     const [goals, chip] = [await page.locator('.goals').boundingBox(), await page.locator('.goals .chip').first().boundingBox()];
     assert.ok(goals.height < chip.height * 2, `one row of goals: ${goals.height} / ${chip.height}`);
     assert.equal(await noSideways(page), true, 'step 2');
+    await editWeekView(page); // A, a phone: the tool is a sheet over the week
     await (await lesson(page, 'תרמודינמיקה', 3)).click();
     await page.locator('#pop [data-ed="toggleMove"]').click();
+    await editToolView(page);
     await page.locator('[data-ed-goal="dayOff"]').selectOption('3'); // thermodynamics leaves Tuesday
     await search(page);
     const order = await page.evaluate(() => [...document.querySelectorAll('.prop-nav, .prop-panel, #editWeek')].map((e) => e.className.split(' ')[0]));
     const phone = name !== 'desktop';
-    assert.deepEqual(order, phone ? ['prop-nav', 'edit-week', 'prop-panel'] : ['prop-nav', 'prop-panel', 'edit-week']);
+    // A: the answer is the tool, the week the board: the tool's parts come first at every width
+    assert.deepEqual(order, phone && DESIGN !== 'a' ? ['prop-nav', 'edit-week', 'prop-panel'] : ['prop-nav', 'prop-panel', 'edit-week']);
     if (phone) {
+      await editWeekView(page);
       assert.match(await page.locator('#editDays [data-day="3"]').textContent(), /\(יש שינוי\)/, 'the day it left is marked');
       assert.equal(await page.locator('#editDays [data-day="3"] .chg').isVisible(), true);
     }
@@ -348,8 +356,10 @@ for (const size of ['phone', 'desktop'])
     await axe(page, 'step 1, load buttons open');
     await confirmRows(page);
     await axe(page, 'step 2');
+    await editWeekView(page); // A, a phone: the tool is a sheet over the week
     await (await lesson(page, 'כימיה', 4)).click();
     await page.locator('#pop [data-ed="toggleMove"]').click();
+    await editToolView(page);
     await page.locator('[data-ed-goal="dayOff"]').selectOption('4');
     await search(page);
     await axe(page, 'proposal');
@@ -360,8 +370,10 @@ test('320 px: step 1 and a proposal do not scroll sideways', async (t) => {
   await loadByHand(page);
   assert.equal(await noSideways(page), true, 'step 1');
   await confirmRows(page);
+  await editWeekView(page);
   await (await lesson(page, 'כימיה', 4)).click();
   await page.locator('#pop [data-ed="toggleMove"]').click();
+  await editToolView(page);
   await page.locator('[data-ed-goal="dayOff"]').selectOption('4');
   await search(page);
   assert.equal(await noSideways(page), true, 'a proposal');

@@ -169,7 +169,7 @@ for (const scheme of ['light', 'dark'])
       const box = (el) => el.getBoundingClientRect();
       const dock = box(document.querySelector('.dock')), panel = box(document.getElementById('panel'));
       return { coarse: matchMedia('(pointer: coarse)').matches, dock: [dock.left, dock.right], panel: [panel.left, panel.right], iw: innerWidth,
-        buttons: [...document.querySelectorAll('.dock .dk')].map((b) => [Math.round(box(b).width), Math.round(box(b).height), Math.round(box(b).bottom)]) };
+        buttons: [...document.querySelectorAll('.dock .dk:not([hidden])')].map((b) => [Math.round(box(b).width), Math.round(box(b).height), Math.round(box(b).bottom)]) };
     });
     assert.equal(m.coarse, true, 'the touch emulation is on');
     assert.ok(m.dock[1] >= m.iw - 1, `the rail is on the right edge: ${m.dock}`);
