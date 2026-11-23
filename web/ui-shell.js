@@ -68,7 +68,8 @@ export function shellInit() {
       <button type="button" class="a-scrim" data-act="closeTool" tabindex="-1" aria-hidden="true"></button>
       <section class="a-panel" id="panel" hidden>
         <div class="a-grip" aria-hidden="true"></div>
-        <div class="a-ph"><button type="button" class="btn icon-btn ghost" data-act="closeTool" data-k="closeTool" aria-label="סגירה">${icon('x')}</button></div>
+        <div class="a-ph"><button type="button" class="btn icon-btn ghost" data-act="closeTool" data-k="closeTool" aria-label="סגירה">${icon('x')}</button>
+          <button type="button" class="btn ghost a-back" data-act="closeTool" data-k="closeBack">${icon('chevron-right')}<span>חזרה</span></button></div>
         <div class="a-pb" id="aPb"></div>
       </section>
     </div>`;
@@ -141,7 +142,10 @@ export function applyShell() {
   const w = wide();
   const improve = route.mode === 'improve';
   if (!improve) ui.overlay = null; // the record over the edit page does not outlive it
-  if (improve) ui.altsOver = false; // the alternatives column over the week belongs to the board: not left open behind the edit page
+  if (improve) {
+    ui.altsOver = false; // the alternatives column over the week belongs to the board: not left open behind the edit page
+    $('alts')?.classList.remove('alts-over');
+  }
   if (improve && ui.lastStep !== route.tool) ui.editSheet = true; // a step shows its tool
   ui.lastStep = improve ? route.tool : null;
   const panel = panelOf(route, { wide: w, program: !needsProgram(), gated: !!app.state && gated(), termsOk: termsOk(), overlay: ui.overlay });
@@ -175,6 +179,8 @@ export function applyShell() {
     (a.dataset.mode === 'edit') === (route.mode === 'improve') ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current');
   for (const b of document.querySelectorAll('#panel [data-act="closeTool"], .a-scrim')) b.hidden = lock && !!panel;
   document.body.classList.toggle('a-panel-open', !!panel);
+  // improve mode: the record takes the tool column's place (state, not DOM removal: a redraw of the tool does not bring the tool back over it)
+  document.querySelector('.a-stage')?.classList.toggle('record-open', improve && panel === 'me'); // the record, opened or the improve page's own terms gate
   // while the gate (terms, track, year) is open nothing behind it can be used: the board is inert (and the skip link goes to the gate).
   // A failed load is not a gate: the board holds a retry button of its own, which has to stay pressable.
   $('aBoard').inert = !!panel && (improve ? !termsOk() : lock && !broken);

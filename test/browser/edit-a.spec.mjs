@@ -266,3 +266,96 @@ test('the changes button leaves the record open when the changes screen cannot o
   await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(() => location.hash), '#edit', 'Escape does not navigate');
 });
+
+// phase 2, Task D: the record takes the tool column's slot (state, not DOM removal), with a back control; the week never moves; a redraw of the tool does not
+// bring the tool back over it; Escape and "חזרה" close it and focus returns to the dock's "המצב שלי"
+for (const w of [1920, 1280, 1100])
+  test(`${w}px: the record sits in the hidden tool column's slot, never over the week, and the week does not move`, async (t) => {
+    const page = await visit(t, { width: w, height: 900 }, seed());
+    await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+    await page.waitForLoadState('networkidle');
+    const rect = (sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width }; }, sel);
+    const tool = await rect('.edit-tool'), week = await rect('.edit-board');
+    await dock(page, 'me').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    const panel = await rect('#panel'), weekAfter = await rect('.edit-board');
+    assert.equal(await page.locator('.edit-tool').isVisible(), false, 'the tool is hidden while the record is open');
+    assert.equal(await page.evaluate(() => document.querySelector('.a-stage').classList.contains('record-open')), true, 'by a class on the stage');
+    assert.deepEqual(weekAfter, week, 'the week stays where it was');
+    assert.ok(panel.l >= week.r - 1 || panel.r <= week.l + 1, `the record is beside the week, not over it: ${JSON.stringify({ panel, week })}`);
+    assert.ok(Math.abs(panel.l - tool.l) <= 1.5 && Math.abs(panel.r - tool.r) <= 1.5, `in the tool column's slot: ${JSON.stringify({ panel, tool })}`);
+    assert.ok(panel.t >= tool.t - 1.5, `under the tabs: ${panel.t} vs ${tool.t}`);
+    assert.ok(panel.b <= 900 + 0.5, `inside the window: ${panel.b}`);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.dock .dk[aria-pressed="true"]')].map((b) => b.dataset.tool)), ['me'], 'only the record is pressed');
+  });
+
+test('the record has a back control: "חזרה" closes it, so does Escape, and focus returns to the dock\'s "המצב שלי"', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+  for (const close of ['back', 'escape']) {
+    await dock(page, 'me').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'meTitle', `${close}: opening moves focus into the record, to its heading`);
+    const back = page.locator('#panel .a-back');
+    assert.equal(await back.isVisible(), true, 'the way back is in the header');
+    assert.match(await back.innerText(), /חזרה/);
+    assert.ok((await back.boundingBox()).height >= 43.5, 'a 44px target');
+    if (close === 'back') await back.click();
+    else await page.keyboard.press('Escape');
+    await page.locator('#panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('.edit-tool').isVisible(), true, `${close}: the tool is back`);
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'dock-me', `${close}: focus returns to "המצב שלי"`);
+  }
+});
+
+test('a search finishing while the record is open keeps it open, the tool hidden and focus where it was', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  const held = holdWorker(page);
+  await page.locator('[data-ed="search"]').click();
+  await held.reached;
+  await dock(page, 'me').click();
+  await page.locator('#panel #me').waitFor({ state: 'visible' });
+  await page.locator('#panel [data-chg="amirnet"]').focus();
+  held.release();
+  await page.locator('.prop-nav').waitFor({ state: 'attached', timeout: 30000 }); // the answer redraws the tool underneath
+  assert.equal(await page.locator('#panel #me').isVisible(), true, 'the record is still open');
+  assert.equal(await page.locator('.edit-tool').isVisible(), false, 'and the redraw did not bring the tool back over it');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.chg), 'amirnet', 'focus stays on the field it was on');
+});
+
+test('a phone: the record is a sheet with "חזרה", the tool sheet is hidden under it, and closing brings the tool back', async (t) => {
+  const page = await visit(t, 'phone', seed());
+  await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
+  for (const close of ['back', 'escape']) {
+    await dock(page, 'me').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('.edit-tool').isVisible(), false, `${close}: no second sheet under the record`);
+    const m = await page.evaluate(() => {
+      const p = document.getElementById('panel'), r = p.getBoundingClientRect(), d = document.querySelector('.dock').getBoundingClientRect();
+      return { role: p.getAttribute('role'), name: p.getAttribute('aria-labelledby'), bottom: r.bottom, dockTop: d.top, top: r.top };
+    });
+    assert.equal(m.role, 'dialog', `${close}: a sheet is a dialog`);
+    assert.equal(m.name, 'meTitle', `${close}: named by its heading`);
+    assert.ok(m.bottom <= m.dockTop + 1 && m.top >= 0, `${close}: the sheet sits above the dock: ${JSON.stringify(m)}`);
+    if (close === 'back') await page.locator('#panel .a-back').click();
+    else await page.keyboard.press('Escape');
+    await page.locator('#panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('.edit-tool').isVisible(), true, `${close}: the tool is back`);
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'dock-me', `${close}: focus returns to the dock's "המצב שלי"`);
+  }
+});
+
+test('1280 x 420: with the page scrolled the record sticks under the strip with its "חזרה" in view, as the tool column did', async (t) => {
+  const page = await visit(t, { width: 1280, height: 420 }, seed());
+  await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+  await dock(page, 'me').click();
+  await page.locator('#panel #me').waitFor({ state: 'visible' });
+  const m = await page.evaluate(async () => {
+    window.scrollTo(0, 300);
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const strip = document.querySelector('.a-strip').getBoundingClientRect(), back = document.querySelector('#panel .a-back').getBoundingClientRect(), p = document.getElementById('panel').getBoundingClientRect();
+    return { scrolled: scrollY, stripBottom: strip.bottom, backTop: back.top, backBottom: back.bottom, panelTop: p.top, h: innerHeight };
+  });
+  assert.ok(m.scrolled > 50, 'the page scrolls');
+  assert.ok(m.backTop >= m.stripBottom - 0.5 && m.backBottom <= m.h, `"חזרה" is in view, under the strip: ${JSON.stringify(m)}`);
+});

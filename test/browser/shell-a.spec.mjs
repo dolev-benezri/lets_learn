@@ -132,7 +132,7 @@ test('phone: Escape closes the sheet and focus returns to the dock button that o
 test('phone: the close button leaves no tool in the address and keeps the query', async (t) => {
   const page = await visit(t, 'phone', DONE, '?design=a#courses');
   await page.locator('#panel #courses').waitFor({ state: 'visible' });
-  await page.locator('#panel [data-act="closeTool"]').click();
+  await page.locator('#panel [data-k="closeTool"]').click();
   await page.locator('#panel').waitFor({ state: 'hidden' });
   assert.equal(await hash(page), '');
   assert.match(page.url(), /[?]design=a$/, 'the query stays, the fragment is gone');

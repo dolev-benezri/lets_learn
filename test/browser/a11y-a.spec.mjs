@@ -353,3 +353,20 @@ for (const scheme of ['light', 'dark'])
     }
     done();
   });
+
+// phase 2, Task D: the record in the tool column's slot (with "חזרה") at 1280 and the sheet on a phone: axe, targets
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the record over the improve page (a column at 1280, a sheet at 375): axe, targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const seed = { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) };
+    for (const [w, size] of [['1280', WIDTHS['1280']], ['375', WIDTHS['375']]]) {
+      const page = await visit(t, size, seed, '#edit', scheme);
+      await page.locator('.dock [data-tool="me"]').waitFor({ timeout: 30000 });
+      await page.locator('.dock [data-tool="me"]').click();
+      await page.locator('#panel #me').waitFor({ state: 'visible' });
+      await page.waitForTimeout(400);
+      await check(page, `${w} record`);
+      if (w !== '1280') for (const b of await smallTargets(page)) note(`${w} record: ${b}`);
+    }
+    done();
+  });

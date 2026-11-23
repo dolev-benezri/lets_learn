@@ -149,7 +149,7 @@ for (const w of [1440, 1920])
     });
     const side = (m.cw - 1200) / 2;
     assert.ok(m.week.left >= side - 1, `the improve content starts at the frame's left edge or after: ${JSON.stringify(m)}`);
-    assert.ok(Math.abs(m.panel.right - (m.cw - side)) <= 1, `the record sits at the frame's right edge: ${JSON.stringify(m)}`);
+    assert.ok(Math.abs(m.panel.right - (m.cw - side - 20)) <= 1.5, `the record sits in the tool column's slot, the frame's right edge less the page's 20px: ${JSON.stringify(m)}`);
     assert.ok(m.panel.left >= m.week.right - 1, `the record covers no part of the week: ${JSON.stringify(m)}`);
   });
 
@@ -206,3 +206,32 @@ for (const w of [1920, 1280])
     await page.waitForFunction(() => document.getElementById('panel').hidden);
     assert.deepEqual(await pressed(), ['changes'], 'and the screen again when it closes');
   });
+
+// phase 2, Task D: with the record open over a short improve board the document is exactly the window (the sticky record is sized for it), and the improve
+// terms gate, which opens the same panel, sits in the slot too
+for (const [w, h] of [[1920, 1080], [1280, 800]])
+  test(`${w}px improve mode: with the record open the page is no taller than the board or the window`, async (t) => {
+    const page = await visit(t, { width: w, height: h }, EDIT, '#edit');
+    await page.locator('#edit .edit-board').waitFor({ state: 'visible' });
+    await page.locator('.dock [data-tool="me"]').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    await page.waitForTimeout(300);
+    const m = await page.evaluate(() => ({
+      doc: document.documentElement.scrollHeight, board: Math.round(document.getElementById('aBoard').getBoundingClientRect().bottom + scrollY), inner: innerHeight,
+      record: document.querySelector('.a-stage').classList.contains('record-open')
+    }));
+    assert.equal(m.record, true);
+    assert.ok(m.doc <= Math.max(m.board, m.inner), `the document is ${m.doc}px, the board ends at ${m.board}px, the window is ${m.inner}px`);
+  });
+
+test('1280px improve mode, a fresh visitor: the terms gate puts the record in the tool column slot, not under the board', async (t) => {
+  const page = await visit(t, { width: 1280, height: 800 }, {}, '#edit');
+  await page.locator('#panel #me').waitFor({ state: 'visible', timeout: 30000 });
+  const m = await page.evaluate(() => ({
+    record: document.querySelector('.a-stage').classList.contains('record-open'), panel: document.getElementById('panel').getBoundingClientRect(),
+    board: document.getElementById('aBoard').getBoundingClientRect(), doc: document.documentElement.scrollHeight, inner: innerHeight
+  }));
+  assert.equal(m.record, true);
+  assert.ok(m.panel.top < m.board.bottom, `the record overlaps the board's cell, it does not follow it: ${JSON.stringify({ panel: m.panel.top, board: m.board.bottom })}`);
+  assert.ok(m.doc <= Math.max(m.board.bottom, m.inner) + 1, `no growth: ${m.doc}`);
+});
