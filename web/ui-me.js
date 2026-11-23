@@ -262,6 +262,13 @@ export function renderMe() {
       : '';
   const pr = progress(data, state);
   const pct = Math.min(100, Math.round(pr.ratio * 100));
+  const goal = creditsGoal(pr.earned, pr.required, studyYear(data, state));
+  const goalAt = goal.indexOf(' הנדרשים');
+  const progressTop = designOn()
+    ? `<div class="progress-top"><div><b class="a-tool-key">${esc(goalAt < 0 ? goal : goal.slice(0, goalAt))}</b>${pr.required
+      ? `<p class="hint">${esc(goal.slice(goalAt + 1))} · ${pct}%</p>` : ''}</div></div>`
+    : `<div class="progress-top"><span><b>${esc(goal)}</b>${pr.required ? ` · ${pct}%` : ''}</span>${
+      pr.required ? '<span class="hint">יעד 70% (תקנון 11.4.4)</span>' : ''}</div>`;
   // Years already studied are open; later years and the other lists sit in a collapsed section.
   // A chosen year opens its own list too (and the earlier ones); without a choice only the earlier years are open.
   const open = state.profile.year ?? studyYear(data, state) - 1;
@@ -320,8 +327,7 @@ export function renderMe() {
   const prog = `<section class="me-card" aria-labelledby="meProg">${designOn() && pr.required
     ? `<div class="a-help-head"><h2 id="meProg">התקדמות</h2>${toolHelp('meProgressHelp', 'התקדמות', 'יעד 70% (תקנון 11.4.4)')}</div>`
     : '<h2 id="meProg">התקדמות</h2>'}
-          <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b>${
-            pr.required ? ` · ${pct}%` : ''}</span>${pr.required && !designOn() ? '<span class="hint">יעד 70% (תקנון 11.4.4)</span>' : ''}</div>
+          <div class="progress">${progressTop}
           ${pr.required // year א׳ has no target: no bar at a meaningless 100%
             ? `<div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i
             style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div>`
@@ -351,9 +357,10 @@ export function renderMe() {
       <div class="me-side">
         ${profile}
         ${prog}
-        <section class="me-card" aria-labelledby="meData"><h2 id="meData">הנתונים שלי</h2>
+        ${designOn() ? '<p class="hint">הכול נשמר רק בדפדפן הזה. <a href="legal.html#privacy" target="_blank" rel="noopener">פרטיות<span class="sr"> (נפתח בחלון חדש)</span></a></p>'
+          : `<section class="me-card" aria-labelledby="meData"><h2 id="meData">הנתונים שלי</h2>
           <p class="hint">הכול נשמר רק בדפדפן הזה. <a href="legal.html#privacy" target="_blank" rel="noopener">פרטיות<span class="sr"> (נפתח בחלון חדש)</span></a></p>
-          <button type="button" class="btn" data-act="eraseAll" data-k="eraseAll">${icon('trash')} מחק את כל הנתונים שלי</button></section>
+          <button type="button" class="btn" data-act="eraseAll" data-k="eraseAll">${icon('trash')} מחק את כל הנתונים שלי</button></section>`}
       </div>
       <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses" tabindex="-1">קורסים לפי שנה</h2>
         <div id="recordRegWarnings">${regWarnHtml()}</div>

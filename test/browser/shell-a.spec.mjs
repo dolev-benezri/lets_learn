@@ -26,6 +26,71 @@ const twoGroups = async () =>
     .flatMap((c) => c.groups.map((g) => g.id))
     .slice(0, 2);
 
+// Phase 4 B: the auto-saving tools do not grow a new submit action; the two action tools have exactly one primary.
+for (const size of ['phone', { width: 1920, height: 900 }])
+  test(`${typeof size === 'string' ? size : size.width}: tools use one surface, one key and at most one primary`, async (t) => {
+    const page = await visit(t, size, DONE);
+    await weekReady(page);
+    const primary = { me: 0, courses: 0, wishes: 0, friends: 1, out: 1 };
+    for (const [tool, id] of Object.entries(TOOL_PAGE)) {
+      await dock(page, tool).click();
+      await page.locator(`#panel #${id}`).waitFor({ state: 'visible' });
+      await page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') !== 'true');
+      const key = page.locator(`#${id} .a-tool-key`);
+      assert.equal(await key.count(), 1, `${tool}: one key`);
+      assert.equal(await key.isVisible(), true, `${tool}: the key is visible`);
+      assert.deepEqual(await key.evaluate((e) => [getComputedStyle(e).fontSize, getComputedStyle(e).fontWeight]), ['21px', '600']);
+      const counts = await page.locator(`#${id} .btn.primary`).evaluateAll((els) => els.filter((e) => e.checkVisibility()).length);
+      assert.equal(counts, primary[tool], `${tool}: no competing primary actions`);
+      const cards = await page.locator(`#${id} :is(.me-card, .me-main, .course, .crs)`).evaluateAll((els) =>
+        els.filter((e) => e.checkVisibility()).map((e) => {
+          const s = getComputedStyle(e);
+          return [s.backgroundColor, s.backgroundImage, s.boxShadow, s.borderRadius, s.borderTopWidth];
+        }));
+      assert.ok(cards.length > 0, `${tool}: sections were checked`);
+      for (const card of cards) assert.deepEqual(card, ['rgba(0, 0, 0, 0)', 'none', 'none', '0px', '1px'], tool);
+      if (tool === 'me') {
+        assert.match(await key.textContent(), /^\d+ מתוך \d+ נ״ז$/);
+        assert.match(await key.locator('..').locator('.hint').textContent(), /^הנדרשים עד סוף שנה א׳ · \d+%$/);
+        assert.equal(await page.locator('#me [data-act="eraseAll"]').count(), 0);
+        assert.equal(await page.locator('#me a[href="legal.html#privacy"]').isVisible(), true, 'privacy notice remains visible');
+      } else if (tool === 'courses') assert.match(await key.textContent(), /^\d+ קורסים · [\d.]+ נ״ז בתכנון$/);
+      else assert.equal(await key.textContent(), { wishes: 'מה חשוב לך?', friends: 'הוספת חבר', out: 'רשימה להרשמה' }[tool]);
+      if (tool === 'wishes') assert.equal(await page.locator('#prefs [data-act="backup"]').count(), 0);
+      if (tool === 'out') {
+        assert.equal(await page.locator('#out [data-k="outBackup"]').isVisible(), true);
+        assert.equal(await page.locator('#out [data-act="copyReg"]').getAttribute('class'), 'btn primary');
+        assert.equal(await page.locator('#out [data-act="ics"]').getAttribute('class'), 'btn');
+      }
+    }
+  });
+
+test('delete-all remains in the menu with its confirmation; cancelling preserves the record and returns focus', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#me');
+  await page.locator('#me [data-k="amirnet"]').waitFor();
+  const before = await page.evaluate(() => localStorage.getItem('afeka-sched-v1'));
+  await page.locator('.menu-btn').click();
+  const erase = page.locator('#drawer [data-act="eraseAll"]');
+  await erase.click();
+  const confirm = page.locator('dialog[open]').last();
+  assert.equal(await confirm.getByRole('button', { name: 'מחק הכול' }).isVisible(), true);
+  await confirm.getByRole('button', { name: 'ביטול' }).click();
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1')), before);
+  assert.equal(await erase.evaluate((e) => e === document.activeElement), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.menu-btn').evaluate((e) => e === document.activeElement), true);
+});
+
+test('classic keeps its record delete-all, preferences backup, course cards and English advice', async (t) => {
+  const page = await visitIn(browser, t, 'desktop', DONE, '#me', 'light', false, false, { design: 'classic' });
+  await page.locator('#me [data-act="eraseAll"]').waitFor();
+  assert.ok((await page.locator('#me .me-card').first().evaluate((e) => getComputedStyle(e).borderRadius)) !== '0px');
+  assert.equal(await page.locator('#me .a-help').count(), 0);
+  await page.evaluate(() => (location.hash = '#prefs'));
+  await page.locator('#prefs [data-k="backup"]').waitFor();
+  assert.equal(await page.locator('#prefs .a-tool-key').count(), 0);
+});
+
 for (const width of [320, 1280])
   test(`${width}: menu rows, information header back, legal sentence and new-tab links`, async (t) => {
     const page = await visit(t, { width, height: 900 }, DONE);

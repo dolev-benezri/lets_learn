@@ -828,3 +828,21 @@
 }
 :root[data-design="a"] .a-help:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
 :root[data-design="a"] .a-help-head > .a-help-text { flex:1 0 100%; margin:0 0 var(--sp-3); overflow-wrap:anywhere; }
+/* One panel surface: the sections and course rows use dividers, including every status and selected course (Task B). */
+:root[data-design="a"] #panel :is(.me-card, .me-main, .course, .crs) {
+  min-width:0; padding:var(--sp-4) 0; border:0; border-top:1px solid var(--border);
+  background:none; border-radius:0; box-shadow:none;
+}
+:root[data-design="a"] #panel :is(.me-grid, .me-side, .dr-body) { gap:0; }
+:root[data-design="a"] #panel .dr-sec + .dr-sec { margin-top:var(--sp-4); padding-top:var(--sp-4); border-top:1px solid var(--border); }
+:root[data-design="a"] #panel .step-page .me-head h2 { font-size:var(--fs-title); font-weight:600; }
+:root[data-design="a"] #panel .a-tool-key { display:block; font-size:var(--fs-key); font-weight:600; overflow-wrap:anywhere; }
+:root[data-design="a"] #panel .a-tool-summary { flex:1 0 100%; margin:var(--sp-2) 0 var(--sp-4); }
+:root[data-design="a"] #panel .a-tool-summary > .hint { display:block; font-size:var(--fs-sm); font-weight:400; }
+:root[data-design="a"] #panel .course h3 { font-size:var(--fs); font-weight:600; overflow-wrap:anywhere; }
+:root[data-design="a"] #panel .btn { min-height:44px; white-space:normal; overflow-wrap:anywhere; }
+:root[data-design="a"] #panel :is(.field, .seg label) { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+:root[data-design="a"] #panel .seg-opts { flex-wrap:wrap; }
+:root[data-design="a"] #panel .seg label { flex:1 1 44px; }
+:root[data-design="a"] #panel .seg span { min-height:38px; white-space:normal; text-align:center; overflow-wrap:anywhere; }
+:root[data-design="a"] #panel :is(input:not([type=radio], [type=checkbox]), select) { min-width:0; max-width:100%; }

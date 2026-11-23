@@ -212,9 +212,16 @@ export function renderSide(res) {
       pc.statuses[id].reasons.map(esc).join('<br>')}</p>${ask ? outsideBoxes(id, `side-${id}`) : ''}</div></li>`).join('')}</ul>`;
   // the search finished without a plan: say so, step 4 says why
   const noPlan = ui.last && !ui.last.results.some((r) => resCourses(r).length);
-  $('coursesTop').innerHTML = noPlan
+  const noPlanText = noPlan
     ? `${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}. הפרטים <a href="#">ב${toolName('plan')}</a>.`
-    : coursesSummary(res);
+    : '';
+  if (designOn()) {
+    const top = $('coursesTop'), credits = plan.reduce((n, id) => n + app.data.courses[id].credits, 0);
+    top.classList.remove('me-step');
+    top.classList.add('a-tool-summary');
+    top.innerHTML = `<span class="a-tool-key">${courseCount(plan.length)} · ${credits} נ״ז בתכנון</span>${
+      noPlanText ? `<span class="hint">${noPlanText}</span>` : ''}`;
+  } else $('coursesTop').innerHTML = noPlanText || coursesSummary(res);
   const HOW = 'חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.';
   // A: the section's common help control; classic keeps its sentence on the page.
   const how = designOn()
@@ -224,7 +231,7 @@ export function renderSide(res) {
     const head = $('coursesTitle').parentElement;
     head.classList.add('a-help-head');
     head.querySelectorAll('.a-help, .a-help-text').forEach((el) => el.remove());
-    head.insertAdjacentHTML('beforeend', toolHelp('coursesHelp', 'קורסים', HOW));
+    $('coursesTitle').insertAdjacentHTML('afterend', toolHelp('coursesHelp', 'קורסים', HOW));
   }
   $('side').innerHTML = `${how}
     ${details(

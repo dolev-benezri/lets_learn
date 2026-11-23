@@ -84,9 +84,11 @@ test('no key and no parameter leaves the attribute off and the classic palette',
 
 test('erase-all removes the key: the visit is back to the default', async (t) => {
   const page = await visit(t, DONE, '?design=a#me');
-  await page.locator('[data-act="eraseAll"]').waitFor(); // drawn after the data has loaded: the reload below aborts nothing
+  await page.locator('#me [data-k="amirnet"]').waitFor(); // data loaded before the menu and the eventual reload
+  assert.equal(await page.locator('#me [data-act="eraseAll"]').count(), 0);
+  await page.locator('.menu-btn').click();
   assert.equal(await stored(page), 'a', 'A is remembered before the erase');
-  await page.locator('[data-act="eraseAll"]').click();
+  await page.locator('#drawer [data-act="eraseAll"]').click();
   const dlg = page.locator('dialog[open]');
   await dlg.getByRole('button', { name: 'מחק הכול' }).click();
   await page.locator('.gate').first().waitFor(); // the reloaded page is a first visit again and has loaded

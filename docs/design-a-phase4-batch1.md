@@ -15,3 +15,9 @@ Help uses a native button, labelled “הסבר: <section>”, with `aria-expand
 CSS uses a worktree-local `tools.src.css` / `append-tools.cjs` equivalent of the UI worktree's private source/append workflow, with CRLF output and lines up to 160 characters. The original private files are outside this worktree's writable root.
 
 Browser tests are authored but are not run in this sandbox, as requested.
+
+Task B removes the card backgrounds, shadows and radii inside the tool panel, including selected course and passed/failed record rows. The tools expose their specified 21px/600 key element. The record keeps its privacy notice, while delete-all is available only in ☰ with the same confirmation. Preferences no longer duplicate the backup action; להוציא retains it. The advisor PDF and calendar actions are secondary to “העתק הכל”.
+
+Primary-action interpretation: “one primary per tool” means at most one for the three tools that save automatically (המצב שלי, קורסים, מה חשוב לי). Their Next footers stay hidden as approved in phase 1; no invented Save action or emphasized reset action is added. חברים has “הוסף”; להוציא has “העתק הכל”. This difference was raised as an optional clarification while independent work continued.
+
+The sandbox allows writes in this worktree, but its real Git metadata lives outside it (`E:/lets_learn/.git/worktrees/codex-phase4`). Git staging/committing there is denied. Task commits are preserved in a separate worktree-local repository and delivered as a bundle for the manager to apply; the actual branch remains at the starting commit in this session.

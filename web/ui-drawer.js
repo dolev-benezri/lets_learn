@@ -131,7 +131,7 @@ function prefsPanel() {
       ${scopeOf(state.scope) === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>`
         : ''
     }
-    <section class="dr-sec"><h3>מה חשוב לך?</h3>
+    <section class="dr-sec"><h3${designOn() ? ' class="a-tool-key"' : ''}>מה חשוב לך?</h3>
       ${WEIGHTS.filter(([k]) => k !== 'examSpread' || data.examsPublished)
         .map(([k, t]) =>
           seg(`w-${k}`, t, SCALE, nearestStep(state.weights[k], [0, 1, 3, 5]), `data-chg="w" data-w="${k}"`, true)
@@ -156,8 +156,8 @@ function prefsPanel() {
       ${designOn() ? '' : `<p
         class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות,
         תקרת הנ״ז, בחינות באותו יום, קבוצות מלאות והפרדת הרצאה ותרגול לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.</p>`}</section>
-    <footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
-      <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`;
+    ${designOn() ? '' : `<footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
+      <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`}`;
 }
 
 function friendsPanel() {
@@ -179,7 +179,7 @@ function friendsPanel() {
   };
   return `
     <section class="dr-sec fr-sec">${designOn()
-      ? `<div class="a-help-head"><h3>הוספת חבר</h3>${toolHelp('friendHow', 'הוספת חבר', 'בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.')}</div>`
+      ? `<div class="a-help-head"><h3 class="a-tool-key">הוספת חבר</h3>${toolHelp('friendHow', 'הוספת חבר', 'בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.')}</div>`
       : '<h3>הוספת חבר</h3><p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>'}
       <form id="addFriendForm" class="row"><label for="friendUrl" class="sr">קישור שחבר שלח</label>
         <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו קישור" value="${esc(ui.friendUrl)}"
@@ -368,7 +368,7 @@ function advisorPanel() {
 const outCard = (id, title, body, actions = '') =>
   `<section class="me-card dr-body out-sec" aria-labelledby="${id}">${id === 'outAdv' && !/\bGSA\//.test(navigator.userAgent)
     ? `<div class="a-help-head"><h2 id="${id}">${title}</h2>${toolHelp('outAdvisorHelp', title, 'לא נפתחת הדפסה? בדפדפן שבתוך אפליקציה היא לא תמיד עובדת. אפשר לשתף את ה-PDF.')}</div>`
-    : `<h2 id="${id}">${title}</h2>`}${actions ? `<div class="out-actions">${actions}</div>` : ''}${body}</section>`;
+    : `<h2 id="${id}"${id === 'outReg' ? ' class="a-tool-key"' : ''}>${title}</h2>`}${actions ? `<div class="out-actions">${actions}</div>` : ''}${body}</section>`;
 export function renderOut() {
   const box = $('out');
   if (!box || box.hidden || !app.data || !app.state || app.loadFailed) return;

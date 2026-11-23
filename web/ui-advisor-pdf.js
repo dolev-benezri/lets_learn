@@ -2,7 +2,7 @@
 // It stays in memory, is never stored, and is dropped when the panel closes; it leaves only if the person shares or downloads it.
 import { buildAdvisorPdf, loadPdfLibs } from './advisor-pdf.js';
 import { esc } from './app.js';
-import { toast } from './ui-common.js';
+import { toast, designOn } from './ui-common.js';
 import { icon } from './ui-grid.js';
 
 const NAME = 'advisor-summary.pdf'; // English: the Hebrew name came through a share as underscores
@@ -29,7 +29,7 @@ const noteText = () =>
 export const advisorPdfButton = () =>
   failed
     ? ''
-    : `<button type="button" class="btn primary" data-act="advisorPdf" data-k="advisorPdf"${file ? '' : ' aria-disabled="true"'}>${buttonLabel()}</button>`;
+    : `<button type="button" class="btn${designOn() ? '' : ' primary'}" data-act="advisorPdf" data-k="advisorPdf"${file ? '' : ' aria-disabled="true"'}>${buttonLabel()}</button>`;
 export const advisorPdfNote = () => `<p class="hint advisor-pdf-note" role="status"${noteText() ? '' : ' hidden'}>${esc(noteText())}</p>`;
 
 // Readiness changes this button and nothing else: re-rendering the drawer here would throw keyboard focus away.
