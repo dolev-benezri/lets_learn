@@ -117,3 +117,54 @@ test('1280px: the goal chips wrap in the column (declutter step 8): every chip i
   assert.equal(m.inside, true, 'no chip is cut by the column');
   assert.equal(m.noScroll, true, 'nothing to scroll sideways');
 });
+
+// phase 2, Task B: before a schedule is loaded, one centred card (max 640): the key-size title, one line, "טוענים קובץ" the primary over "בוחרים קורסים ידנית",
+// both min(320px, 100%) wide, the download instructions in place behind the last line; no week, no hint sentence, no footer bar
+for (const [name, size] of [['1920', { width: 1920, height: 900 }], ['1280', { width: 1280, height: 800 }], ['375', 'phone'], ['320', { width: 320, height: 640 }]])
+  test(`${name}: nothing loaded yet is one centred card with the copy, the primary file button over the manual one, and no stage, hint or footer`, async (t) => {
+    const page = await visit(t, size, DONE, '#edit');
+    const card = page.locator('#edit .edit-card');
+    await card.waitFor({ state: 'visible', timeout: 30000 });
+    const flat = (s) => s.replace(/\s+/g, ' ').trim();
+    assert.equal(flat(await card.locator('h2').innerText()), 'טוענים את המערכת שלכם');
+    assert.equal(flat(await card.locator('.edit-card-line').innerText()), 'מאפקה-נט, או בוחרים בעצמכם.');
+    const btns = await card.locator('.edit-card-btns .btn').allInnerTexts();
+    assert.deepEqual(btns.map(flat), ['טוענים קובץ', 'בוחרים קורסים ידנית'], 'the file button over the manual one');
+    assert.equal(await card.locator('[data-ed="loadFile"]').evaluate((b) => b.classList.contains('primary')), true);
+    assert.equal(await card.locator('[data-ed="loadHand"]').evaluate((b) => b.classList.contains('primary')), false);
+    const m = await page.evaluate(() => {
+      const r = (s) => document.querySelector(s).getBoundingClientRect(), cw = document.documentElement.clientWidth, c = r('#edit .edit-card');
+      return {
+        cw, card: c, inner: c.width - parseFloat(getComputedStyle(document.querySelector('#edit .edit-card')).paddingInlineStart) * 2 - 2, file: r('[data-ed="loadFile"]').width, hand: r('[data-ed="loadHand"]').width, fileH: r('[data-ed="loadFile"]').height, over: document.documentElement.scrollWidth - innerWidth,
+        key: getComputedStyle(document.querySelector('#edit .edit-card h2')).fontSize, stage: !!document.querySelector('#edit .edit-stage, #edit .edit-board, #edit .edit-empty, #edit .me-foot')
+      };
+    });
+    assert.ok(m.card.width <= 640.5, `max 640: ${m.card.width}`);
+    assert.ok(Math.abs((m.card.left + m.card.right) / 2 - m.cw / 2) <= 1.5, 'centred');
+    for (const [which, w] of [['file', m.file], ['manual', m.hand]]) assert.ok(Math.abs(w - Math.min(320, m.inner)) <= 1.5, `the ${which} button is min(320px, 100%) wide: ${w} of ${m.inner}`);
+    assert.ok(m.fileH >= 43.5, `a 44px target: ${m.fileH}`);
+    assert.equal(m.key, '21px', 'the key size');
+    assert.equal(m.stage, false, 'no stage, no week, no hint sentence, no footer bar');
+    assert.ok(m.over <= 0, `no sideways scroll (${m.over})`);
+  });
+
+test('"איך מורידים מאפקה-נט?" opens the instructions in place and keeps them open over a redraw', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#edit');
+  await page.locator('#edit .edit-card').waitFor({ state: 'visible', timeout: 30000 });
+  assert.equal(await page.locator('#edit .edit-yedion').isVisible(), false, 'closed by default');
+  await page.locator('#edit .edit-how > summary').click();
+  assert.equal(await page.locator('#edit .edit-yedion').isVisible(), true);
+  assert.match(await page.locator('#edit .edit-yedion').innerText(), /אפשר להוריד את מערכת השעות כקובץ אקסל/);
+  assert.equal(await page.locator('#edit .edit-yedion a').getAttribute('target'), '_blank');
+  await page.evaluate(async () => (await import('./ui-edit.js')).renderEdit()); // drawn again: the state is kept, not the DOM
+  assert.equal(await page.locator('#edit .edit-yedion').isVisible(), true, 'still open');
+});
+
+test('a phone: the dock\'s "המערכת שלי" over the empty card changes nothing, and what is loaded next opens its tool', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#edit');
+  await page.locator('#edit .edit-card').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('.dock [data-tool="mine"]').click();
+  assert.equal(await page.locator('#edit .edit-card').isVisible(), true, 'the card stays');
+  assert.equal(await page.locator('.dock [data-tool="mine"]').getAttribute('aria-pressed'), 'true', 'and its tab stays pressed');
+  assert.equal(await page.evaluate(async () => (await import('./ui-common.js')).ui.editSheet !== false), true, 'no sheet was folded');
+});

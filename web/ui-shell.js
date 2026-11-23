@@ -228,7 +228,7 @@ export function openImprove(name, opener) {
   }
   const here = routeA(location.hash).tool === 'changes' ? 'changes' : 'mine';
   if (name === here) {
-    if (wide()) routeFocus('open');
+    if (wide() || !document.querySelector('#edit .edit-stage')) routeFocus('open'); // no stage, no sheet to fold: the empty card is inline
     else toggleEditSheet();
     return;
   }

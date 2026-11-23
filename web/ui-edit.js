@@ -99,6 +99,21 @@ export function stepOneHtml(edit, data, review, { same = true, saving = true } =
       <button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">${designOn() ? 'לשינויים' : 'הבא: שינויים'}</button></div>`;
 }
 
+// Design A, before anything is loaded: one centred card (phase 2, Task B). The same ids and data-ed actions as step one's ways to load, so the loader
+// works as it does there; the instructions for downloading the file open in place behind the card's last line. open: that disclosure's state (the page
+// is redrawn).
+export const emptyCardHtml = (open = false) => `<section class="edit-card" aria-labelledby="editTitle">
+  <h2 id="editTitle" tabindex="-1">טוענים את המערכת שלכם</h2>
+  <p class="edit-card-line">מאפקה-נט, או בוחרים בעצמכם.</p>
+  <div id="editIdentity"></div>
+  <p class="err-text" id="edWaysMsg" role="alert"></p>
+  <div class="edit-card-btns">
+    <button type="button" class="btn primary" data-ed="loadFile">טוענים קובץ</button>
+    <button type="button" class="btn" data-ed="loadHand">בוחרים קורסים ידנית</button></div>
+  <details class="edit-how"${open ? ' open' : ''}><summary data-k="edHow">אקסל, PDF או צילום · <span>איך מורידים מאפקה-נט?</span></summary>
+    <p class="hint edit-yedion">${YEDION_HINT}</p></details>
+  <p class="err-text" id="edMsg" role="alert"></p></section>`;
+
 // ---------- step 2: pure parts ----------
 const OPEN = ['retake', 'available', 'afterA', 'conditional']; // classify statuses a course can be taken in this semester
 const nameIn = (edit, data, id) => data.courses[id]?.name ?? edit.baseline.find((l) => l.course === id)?.name ?? id;
@@ -280,7 +295,8 @@ export function searchNotesHtml(result, edit, data) {
 let fresh = false; // a schedule was read in this visit: its review shows even while the saved one belongs to other data
 // What step 2 shows and has under way (not saved): the shown day, the search in flight, its result.
 // stamp: what the result was worked out on (resultStamp); a result is shown and saved only while that still holds.
-const V = { day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null }; // fx: what animates next
+// fx: what animates next; how: the empty card's download instructions are open
+const V = { how: false, day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null };
 const editColors = new Map();
 const edit = getEdit; // the edit state, read once (edit-state.js)
 // Keeps the new state and saves it; false when nothing was written (storage blocked or full, or another tab holds a newer copy).
@@ -349,9 +365,12 @@ export function renderEdit() {
   V.step = step;
   const fx = V.fx === 'step' ? ' fx' : '';
   const one = () => stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh, saving: saving() });
-  const parts = designOn() ? (step === 2 ? stepTwoA(st) : { tool: one(), board: boardOne(st) }) : null;
+  // A, nothing loaded yet: the centred card alone (no stage, no week, no footer bar)
+  const empty = designOn() && step === 1 && !(st.draft?.rows?.length || st.baseline.length) && (same || fresh);
+  if (empty) ui.editSheet = true; // the card is not a sheet: what is loaded next opens its tool
+  const parts = designOn() && !empty ? (step === 2 ? stepTwoA(st) : { tool: one(), board: boardOne(st) }) : null;
   const covered = !matchMedia('(min-width: 1080px)').matches && ui.editSheet !== false; // a phone's sheet is over the week: nothing under it is reachable
-  const body = parts ? '' : step === 2 ? stepTwo(st) : one();
+  const body = parts || empty ? '' : step === 2 ? stepTwo(st) : one();
   V.fx = null;
   const gx = document.querySelector('#edit .goals')?.scrollLeft; // a phone's goal row scrolls sideways: a redraw keeps its place
   // A: the stage holds the tool (a column, on a phone a sheet) and the board; the step animation runs on the tool's inner part,
@@ -362,7 +381,9 @@ export function renderEdit() {
         <button type="button" class="btn icon-btn ghost edit-sheet-x" data-act="editSheet" data-k="editSheet" aria-label="סגירת הכלי">${icon('x')}</button>
         <div class="edit-tool-in${fx}">${parts.tool}</div></div>
       <div class="edit-board${parts.board.includes('id="editWeek"') ? ' has-week' : ''}"${covered ? ' inert' : ''}>${parts.board}</div></div>`
-    : `${label}<div class="edit-step${fx}">${body}</div>`;
+    : empty
+      ? `<div class="edit-step${fx}">${emptyCardHtml(V.how)}</div>`
+      : `${label}<div class="edit-step${fx}">${body}</div>`;
   if (gx) document.querySelector('#edit .goals')?.scrollTo({ left: gx });
   if (dropped && step === 2) say(STALE);
   if ($('editIdentity') && (!app.state.profile.year || needsProgram())) $('editIdentity').innerHTML = identityPick(app.state.profile.year, true);
@@ -888,6 +909,8 @@ function wire() {
     step(e.key === 'ArrowLeft' ? 1 : -1);
     document.querySelector(e.key === 'ArrowLeft' ? '[data-ed="propNext"]' : '[data-ed="propPrev"]')?.focus({ preventScroll: true });
   });
+  // the card's download instructions: open or shut, kept over a redraw
+  document.addEventListener('toggle', (e) => e.target.classList?.contains('edit-how') && (V.how = e.target.open), true);
   // Escape (a light dismiss) with the block gone: focus must not fall to <body>
   $('pop').addEventListener('toggle', (e) => e.newState === 'closed' && onChanges() && setTimeout(refocus, 0));
 }

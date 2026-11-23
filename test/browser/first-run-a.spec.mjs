@@ -392,7 +392,7 @@ test('"what\'s new": a tool opened on a phone while its module loads holds it ba
 
 test('"what\'s new" is not used up by the edit page: it waits for the build board', async (t) => {
   const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1-tour': 'intro,plans' }, '#edit', true);
-  await page.locator('#edit .edit-stage').waitFor({ timeout: 30000 });
+  await page.locator('#edit .edit-card').waitFor({ timeout: 30000 });
   await page.locator('.menu-btn').click();
   await page.locator('#drawer[open]').waitFor();
   await page.keyboard.press('Escape'); // a dialog closing in improve mode asks the tours again

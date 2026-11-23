@@ -58,7 +58,7 @@ test('the dock of improve mode: the two screens and the record, the build tools 
 
 test('the changes button with no schedule loaded says so, and stays on the first screen', async (t) => {
   const page = await visit(t, 'desktop', { ...DONE }, '#edit');
-  await page.locator('#edit .edit-stage').waitFor({ timeout: 30000 });
+  await page.locator('#edit .edit-card').waitFor({ timeout: 30000 });
   await dock(page, 'changes').click();
   await page.locator('#edMsg').filter({ hasText: 'טענו מערכת' }).waitFor();
   assert.equal(new URL(page.url()).hash, '#edit');
@@ -256,7 +256,7 @@ test('phone: "הראה את היום החדש" closes the sheet over the week an
 
 test('the changes button leaves the record open when the changes screen cannot open', async (t) => {
   const page = await visit(t, 'desktop', { ...DONE }, '#edit');
-  await page.locator('#edit .edit-stage').waitFor({ timeout: 30000 });
+  await page.locator('#edit .edit-card').waitFor({ timeout: 30000 });
   await dock(page, 'me').click();
   await page.locator('#panel #me').waitFor({ state: 'visible' });
   await dock(page, 'changes').click(); // no schedule loaded: it stays here and says so

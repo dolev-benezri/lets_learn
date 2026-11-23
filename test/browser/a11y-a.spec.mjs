@@ -56,7 +56,7 @@ const smallTargets = (page) =>
       return !!c && c.textContent.replace(a.textContent, '').trim().length > 0;
     };
     const bad = [];
-    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs', '#alts']) {
+    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs', '#alts', '.edit-card']) {
       for (const el of document.querySelector(root)?.querySelectorAll(sel) ?? []) {
         if (!el.checkVisibility() || el.closest('[hidden]') || prose(el)) continue;
         const box = el.matches('input[type=checkbox], input[type=radio]') ? (el.closest('label') ?? el) : el;
@@ -187,7 +187,7 @@ for (const scheme of ['light', 'dark'])
   });
 
 test('the edit page keeps its own feet: the panel rules do not hide "הבא: שינויים"', async (t) => {
-  const page = await visit(t, 'phone', DONE, '#edit', 'light');
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) }, '#edit', 'light');
   await page.locator('#edit').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#edit [data-ed="next"]').isVisible(), true);
   assert.equal(await page.locator('#edit .me-foot').first().isVisible(), true, 'the foot itself');
@@ -337,5 +337,19 @@ for (const scheme of ['light', 'dark'])
     await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
     await check(page, 'overlay');
     await railTargets(page, 'overlay', note);
+    done();
+  });
+
+// phase 2, Task B: the empty improve page is one centred card: axe, no sideways scroll, 44px targets, at the three widths in both colour schemes
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the empty improve page (one card) at 320, 375 and 1280: axe, no sideways scroll, targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    for (const [w, size] of Object.entries(WIDTHS)) {
+      const page = await visit(t, size, DONE, '#edit', scheme);
+      await page.locator('#edit .edit-card').waitFor({ state: 'visible', timeout: 30000 });
+      await check(page, `${w} empty card`);
+      if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))) note(`${w} empty card: scrolls sideways`);
+      if (w !== '1280') for (const b of await smallTargets(page)) note(`${w} empty card: ${b}`);
+    }
     done();
   });

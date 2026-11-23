@@ -574,3 +574,24 @@
   :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) { top:calc(var(--a-head) + 74px); } /* under the tabs: 12 + 50 + 12 */
   :root[data-design="a"] body[data-view="edit"] .wk-head > * { top:var(--a-head); } /* the tabs scroll away: the day headers stick right under the strip */
 }
+/* phase 2, Task B (improve mode, before a schedule is loaded): one centred card, max 640, the title the key size, "טוענים קובץ" the one primary button over the
+   manual way (both min(320px, 100%) wide), and the download instructions open in place behind the last line */
+:root[data-design="a"] .edit-card {
+  width:min(640px, 100%); margin:var(--sp-6) auto; padding:var(--sp-6) var(--sp-5); background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; text-align:center;
+}
+:root[data-design="a"] .edit-card h2 { margin:0 0 var(--sp-2); font-size:var(--fs-key); font-weight:600; }
+:root[data-design="a"] .edit-card-line { margin:0 0 var(--sp-5); color:var(--text-2); }
+:root[data-design="a"] .edit-card #editIdentity { text-align:start; margin-bottom:var(--sp-4); }
+:root[data-design="a"] .edit-card-btns { display:grid; justify-items:center; gap:var(--sp-3); }
+:root[data-design="a"] .edit-card-btns .btn { width:min(320px, 100%); min-height:44px; white-space:normal; }
+:root[data-design="a"] .edit-how { margin-top:var(--sp-4); font-size:var(--fs-sm); color:var(--text-2); }
+:root[data-design="a"] .edit-how > summary {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:0 var(--sp-1); min-height:44px; cursor:pointer; list-style:none;
+}
+:root[data-design="a"] .edit-how > summary::-webkit-details-marker { display:none; }
+:root[data-design="a"] .edit-how > summary span { color:var(--primary); font-weight:600; text-decoration:underline; }
+:root[data-design="a"] .edit-how .edit-yedion { margin:var(--sp-2) 0 0; text-align:start; }
+@media (max-width:599px) {
+  :root[data-design="a"] .edit-card { margin:var(--sp-3) auto; padding:var(--sp-5) var(--sp-4); }
+}
