@@ -41,7 +41,7 @@ const makeLink = async (t, kind) => {
 
 test('first visit shows the terms card over an empty board, then the track question, then the year question, one per screen', async (t) => {
   const page = await visit(t, 'phone', null);
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   assert.equal(await page.locator('[data-k="termsTick"]').count(), 1, 'the terms card');
   assert.equal(await page.locator('#week .blk').count(), 0, 'the board behind it is empty');
   assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), true, 'and cannot be used');
@@ -60,10 +60,12 @@ test('first visit shows the terms card over an empty board, then the track quest
 test('a friend link on a first visit shows no mode question and, after the terms, the friend banner above the board', async (t) => {
   const hash = await makeLink(t, 'friend');
   const page = await visit(t, 'phone', null, hash);
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   assert.equal(await page.locator('[data-act="pickMode"]').count(), 0, 'no mode question');
   await page.locator('[data-k="termsTick"]').check();
   await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('[data-act="pickTrack"][value="30"]').click();
+  await page.locator('[data-act="pickYear"][value="2"]').first().click(); // the pass ends here until its own steps are built
   const banner = page.locator('#banner');
   await banner.getByText('נועה').first().waitFor({ timeout: 30000 });
   const m = await page.evaluate(() => {
@@ -77,7 +79,7 @@ test('a friend link on a first visit shows no mode question and, after the terms
 test('a backup link runs after the terms and lands on the board', async (t) => {
   const hash = await makeLink(t, 'backup');
   const page = await visit(t, 'phone', null, hash);
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   await page.locator('[data-k="termsTick"]').check();
   await page.locator('[data-act="acceptTerms"]').click();
   const ask = page.locator('dialog[open]');
@@ -129,7 +131,7 @@ test('the intro tour has no stop on a hidden element, at every width', async (t)
 
 test('the first visit ends the gate with the intro tour, and no tour shows over the track or year question', async (t) => {
   const page = await visit(t, 'phone', null, '', true);
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   await page.locator('[data-k="termsTick"]').check();
   await page.locator('[data-act="acceptTerms"]').click();
   assert.equal(await popover(page).count(), 0, 'no tour over the track question');
@@ -242,6 +244,8 @@ test('the "what first" card shows while no course is planned, offers the tools, 
 test('no visible string under A says "שלב N", "צעד N" or "הבא:", on every screen of the build mode', async (t) => {
   const bad = [];
   const rule = /שלב\s*\d|צעד\s*(\d|ראשון)|הבא\s*:|ארבעה (שלבים|צעדים)|סרגל השלבים/;
+  // the first-run card is the one place that counts its steps ("שלב N מתוך M", the owner's design): it keeps every other rule
+  const cardRule = /צעד\s*(\d|ראשון)|הבא\s*:|ארבעה (שלבים|צעדים)|סרגל השלבים/;
   for (const size of ['phone', 'desktop']) {
     const page = await visit(t, size, DONE, '', false);
     await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
@@ -255,9 +259,9 @@ test('no visible string under A says "שלב N", "צעד N" or "הבא:", on eve
   }
   // the gate and the entry screen of a first visit
   const fresh = await visit(t, 'phone', null, '');
-  await fresh.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await fresh.locator('#firstRun .gate').waitFor({ state: 'visible' });
   const gate = await fresh.evaluate(() => document.body.innerText);
-  if (rule.test(gate)) bad.push(`gate: ${rule.exec(gate)[0]}`);
+  if (cardRule.test(gate)) bad.push(`gate: ${cardRule.exec(gate)[0]}`);
   await fresh.locator('[data-k="termsTick"]').check();
   await fresh.locator('[data-act="acceptTerms"]').click();
   await fresh.locator('[data-act="pickTrack"][value="30"]').click();
@@ -438,13 +442,13 @@ const workerStarted = (page) => page.evaluate(async () => !!(await import('./ui-
 
 test('a new visitor gets the first-run mark at the first load, nothing is computed behind the gate, and a reload is still the first step', async (t) => {
   const page = await visit(t, 'phone', null);
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   assert.equal(await markOf(page), '1', 'written before anything is saved');
   await page.waitForTimeout(1500); // longer than the search's own start delay
   assert.equal(await workerStarted(page), false, 'no search worker was started');
   assert.equal(await page.locator('#week .blk').count(), 0);
   await page.reload();
-  await page.locator('#panel #me .gate [data-k="termsTick"]').waitFor({ state: 'visible' });
+  await page.locator('#firstRun .gate [data-k="termsTick"]').waitFor({ state: 'visible' });
   assert.equal(await markOf(page), '1', 'a reload before "המשך" is still step 1');
   assert.equal(await workerStarted(page), false);
 });
@@ -462,7 +466,7 @@ test('the pass ends with the gate (until step 1 is its own card): the mark turns
 
 test('a mark in the middle of the pass keeps the board uncomputed even with a record and the terms on file; an old save opens on the board with no mark', async (t) => {
   const mid = await visit(t, 'phone', { 'afeka-sched-v1-terms': '2', [MARK]: '3', 'afeka-sched-v1': JSON.stringify(STUDENT) });
-  await mid.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await mid.locator('.a-fr-card').waitFor({ state: 'visible' });
   await mid.waitForTimeout(1500);
   assert.equal(await workerStarted(mid), false, 'no search before the pass is done');
   assert.equal(await mid.locator('#week .blk').count(), 0);
@@ -470,7 +474,7 @@ test('a mark in the middle of the pass keeps the board uncomputed even with a re
   const old = await visit(t, 'phone', DONE);
   await old.locator('#week .blk').first().waitFor({ timeout: 30000 });
   assert.equal(await markOf(old), null, 'an old save is not marked: it never saw the pass');
-  assert.equal(await old.locator('#panel #me .gate').count(), 0);
+  assert.equal(await old.locator('#firstRun .gate').count(), 0);
 });
 
 test('an old save that never chose a study year is asked the year at the gate and keeps what it passed (the pass is not for it)', async (t) => {
@@ -498,4 +502,165 @@ test('classic writes no first-run mark at all', async (t) => {
   const page = await visitIn(browser, t, 'phone', null, '', 'light', false, false, { design: 'classic' });
   await page.locator('#me .gate').waitFor({ state: 'visible' });
   assert.equal(await markOf(page), null);
+});
+
+// ---------- the card (phase 3, Task B) ----------
+// a student part-way through the pass: the terms accepted, a record on file (year 2, or the given year), the mark at `step`
+const mid = (step, year = 2) => ({
+  'afeka-sched-v1-terms': '2',
+  [MARK]: String(step),
+  'afeka-sched-v1': JSON.stringify({ ...STUDENT, profile: { ...STUDENT.profile, year } })
+});
+const cardRect = (page) =>
+  page.evaluate(() => {
+    const r = document.querySelector('.a-fr-card').getBoundingClientRect();
+    return { left: r.left, right: r.right, top: r.top, width: innerWidth, height: innerHeight, scrollW: document.documentElement.scrollWidth };
+  });
+
+for (const size of [{ width: 1920, height: 1080 }, { width: 1280, height: 800 }, { width: 375, height: 812 }, { width: 320, height: 640 }])
+  test(`${size.width}: the card is centred and inside the window (at most 640 wide, 16px gutters on a phone), and nothing scrolls sideways`, async (t) => {
+    const page = await visit(t, size, mid(3));
+    await page.locator('.a-fr-card').waitFor({ state: 'visible' });
+    const r = await cardRect(page);
+    assert.ok(r.left >= 0 && r.right <= r.width, `inside the window (${r.left}..${r.right} of ${r.width})`);
+    assert.ok(r.right - r.left <= 640 + 0.5, `at most 640 wide (${r.right - r.left})`);
+    assert.ok(Math.abs((r.left + r.right) / 2 - r.width / 2) <= 1, 'centred');
+    if (size.width < 600) assert.ok(r.left >= 15.5 && r.width - r.right >= 15.5, `a 16px gutter each side (${r.left}, ${r.width - r.right})`);
+    assert.ok(r.scrollW <= r.width, 'no sideways scroll');
+  });
+
+test('the card says the step: the line of names with the current one marked, "שלב N מתוך M", and a first-year student has four steps', async (t) => {
+  const page = await visit(t, 'phone', mid(3, 2));
+  await page.locator('.a-fr-card').waitFor({ state: 'visible' });
+  assert.equal((await page.locator('.a-fr-n').textContent()).trim(), 'שלב 3 מתוך 5');
+  assert.deepEqual(await page.locator('.a-fr-s').allTextContents(), ['תנאים', 'מה עברתי', 'קורסים', 'מה חשוב לי', 'חברים']);
+  assert.equal(await page.locator('.a-fr-s[aria-current="step"]').textContent(), 'קורסים');
+  assert.equal(await page.locator('.a-fr-s.done').count(), 2, 'the steps before it are marked done');
+  const first = await visit(t, 'phone', mid(3, 1));
+  await first.locator('.a-fr-card').waitFor({ state: 'visible' });
+  assert.equal((await first.locator('.a-fr-n').textContent()).trim(), 'שלב 2 מתוך 4');
+  assert.deepEqual(await first.locator('.a-fr-s').allTextContents(), ['תנאים', 'קורסים', 'מה חשוב לי', 'חברים']);
+});
+
+test('המשך and חזרה move one step, focus goes to the step heading, the foot says the legal line on steps 2-5, and a reload returns to the step reached', async (t) => {
+  const page = await visit(t, 'phone', mid(2));
+  await page.locator('#frTitle').waitFor({ state: 'visible' });
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'מה עברת עד עכשיו?');
+  assert.equal(await page.locator('.a-fr-legal').textContent(), 'לא רשמי · אינו הרשמה ואינו המלצה');
+  await page.locator('[data-k="frNext"]').click();
+  assert.equal(await markOf(page), '3');
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'קורסים');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'frTitle', 'the step heading takes focus');
+  await page.reload();
+  await page.locator('#frTitle').waitFor({ state: 'visible' });
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'קורסים', 'a reload returns to the step reached');
+  assert.equal(await page.evaluate(() => document.getElementById('week').querySelectorAll('.blk').length), 0, 'and still no schedule');
+  await page.locator('[data-k="frBack"]').click();
+  assert.equal(await markOf(page), '2');
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'מה עברת עד עכשיו?');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'frTitle');
+  for (const [n, title] of [[3, 'קורסים'], [4, 'מה חשוב לי'], [5, 'חברים']]) {
+    await page.evaluate((m) => localStorage.setItem('afeka-sched-v1-firstrun', m), String(n));
+    await page.reload();
+    await page.locator('#frTitle').waitFor({ state: 'visible' });
+    assert.equal((await page.locator('#frTitle').textContent()).trim(), title);
+    assert.equal(await page.locator('[data-k="frBack"]').count(), 1, `${title}: a way back`);
+    assert.equal(await page.locator('.a-fr-legal').count(), 1, `${title}: the legal line`);
+  }
+});
+
+test('step 1 has no way back and no legal line of its own; the terms alone (improve, or the terms asked again) show no step line', async (t) => {
+  const one = await visit(t, 'phone', null);
+  await one.locator('#firstRun .gate').waitFor({ state: 'visible' });
+  assert.equal(await one.locator('[data-k="frBack"]').count(), 0);
+  assert.equal(await one.locator('.a-fr-legal').count(), 0, 'the terms text is on the card itself');
+  assert.equal((await one.locator('.a-fr-n').textContent()).trim(), 'שלב 1 מתוך 5');
+  const edit = await visit(t, 'phone', null, '#edit');
+  await edit.locator('#firstRun [data-k="termsTick"]').waitFor({ state: 'visible' });
+  assert.equal(await edit.locator('.a-fr-steps, .a-fr-n').count(), 0, 'improve mode: the terms alone');
+  const again = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-terms': '1' }); // an old save, asked again after a new terms version
+  await again.locator('#firstRun [data-k="termsTick"]').waitFor({ state: 'visible' });
+  assert.equal(await again.locator('.a-fr-steps, .a-fr-n').count(), 0, 'no pass for an old save');
+  assert.equal(await markOf(again), null);
+  await again.locator('[data-k="termsTick"]').check();
+  await again.locator('[data-act="acceptTerms"]').click();
+  await again.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  assert.equal(await again.locator('#firstRun').isVisible(), false, 'the card is gone');
+});
+
+test('the card is a card: the board, the strip and the dock are not drawn behind it, and the board returns with the pass done', async (t) => {
+  const page = await visit(t, 'desktop', mid(5));
+  await page.locator('.a-fr-card').waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => document.body.classList.contains('first-run')), true);
+  for (const sel of ['.a-stage', '#aStrip', '.dock', '#week'])
+    assert.equal(await page.locator(sel).first().isVisible(), false, `${sel} is not drawn`);
+  await page.locator('[data-k="frNext"]').click(); // the last step: the pass ends (its own button and end are Task E)
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  assert.equal(await markOf(page), 'done');
+  assert.equal(await page.evaluate(() => document.body.classList.contains('first-run')), false);
+  assert.equal(await page.locator('#firstRun').isVisible(), false);
+});
+
+for (const size of ['phone', { width: 1920, height: 400 }])
+  test(`${size.width ?? 'phone'}: a card taller than the window keeps its foot (the step's button, "חזרה", the legal line) at the window's bottom, and every control can be reached`, async (t) => {
+    const page = await visit(t, size, mid(3));
+    await page.locator('.a-fr-foot').waitFor({ state: 'visible' });
+    await page.evaluate(() => {
+      const tall = document.createElement('div');
+      tall.style.height = '2400px';
+      tall.innerHTML = '<button type="button" id="lastCtl">בקרה אחרונה</button>';
+      document.querySelector('.a-fr-body').append(tall);
+    });
+    const at = () =>
+      page.evaluate(() => {
+        const f = document.querySelector('.a-fr-foot').getBoundingClientRect();
+        return { bottom: f.bottom, top: f.top, height: innerHeight };
+      });
+    const top = await at();
+    assert.ok(Math.abs(top.bottom - top.height) <= 1.5, `at the top of a tall card the foot is at the window's bottom (${top.bottom} of ${top.height})`);
+    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+    const end = await at();
+    assert.ok(end.bottom <= end.height + 1.5, 'at the very end the foot is still inside the window');
+    const reach = await page.evaluate(() => {
+      const c = document.getElementById('lastCtl').getBoundingClientRect(), f = document.querySelector('.a-fr-foot').getBoundingClientRect();
+      return { ctlBottom: c.bottom, footTop: f.top };
+    });
+    assert.ok(reach.ctlBottom <= reach.footTop + 1, `the last control (${reach.ctlBottom}) is not under the foot (${reach.footTop})`);
+    await page.evaluate(() => document.getElementById('lastCtl').focus());
+    const focused = await page.evaluate(() => {
+      const c = document.getElementById('lastCtl').getBoundingClientRect(), f = document.querySelector('.a-fr-foot').getBoundingClientRect();
+      return c.bottom <= f.top + 1;
+    });
+    assert.equal(focused, true, 'a focused control scrolls into view above the foot');
+  });
+
+test('a new terms version in the middle of the pass shows the terms first, and the step reached is kept for after them', async (t) => {
+  const page = await visit(t, 'phone', { [MARK]: '3', 'afeka-sched-v1': JSON.stringify({ ...STUDENT, profile: { ...STUDENT.profile, year: 2 } }) }); // no terms on file
+  await page.locator('#firstRun [data-k="termsTick"]').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.a-fr-card').getAttribute('data-step'), 'start', 'the terms, not step 3 with its empty body');
+  assert.equal(await markOf(page), '3', 'the mark is not touched');
+  await page.locator('[data-k="termsTick"]').check();
+  await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('.a-fr-card[data-step="courses"]').waitFor({ timeout: 15000 });
+});
+
+test('resizing across 1080px at a step keeps the card heading as the focus target (the skip link lands on it)', async (t) => {
+  const page = await visit(t, { width: 1280, height: 800 }, mid(3));
+  await page.locator('#frTitle').waitFor({ state: 'visible' });
+  await page.setViewportSize({ width: 800, height: 800 });
+  await page.waitForTimeout(300);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => document.querySelector('.skip').click());
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'frTitle');
+});
+
+test('another tab finished the pass: this tab\'s card, pressed, shows the board and does not reopen the pass', async (t) => {
+  const page = await visit(t, 'phone', mid(2));
+  await page.locator('[data-k="frNext"]').waitFor({ state: 'visible' });
+  await page.evaluate((k) => localStorage.setItem(k, 'done'), MARK); // the other tab's write
+  await page.locator('[data-k="frNext"]').click();
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  assert.equal(await markOf(page), 'done', 'not turned back into a step');
+  assert.equal(await page.locator('#firstRun').isVisible(), false);
 });

@@ -16,6 +16,7 @@ import {
   entered,
   markEntered,
   gated,
+  firstRunOn,
   needsProgram,
   status,
   seg,
@@ -191,7 +192,7 @@ function termsHtml() {
     <label class="check"><input type="checkbox" data-chg="termsTick" data-k="termsTick"> קראתי והבנתי</label>
     <button type="button" class="btn primary gate-go" data-act="acceptTerms" data-k="acceptTerms" disabled>המשך</button>`;
 }
-function gateHtml() {
+export function gateHtml() {
   if (!termsOk()) return termsHtml();
   const { programs } = app.catalog,
     many = programs.length > 1,
@@ -245,7 +246,8 @@ export function renderMe() {
     })
     .flatMap((l) => l.courses));
   if (gated()) {
-    el.innerHTML = `<div class="gate">${gateHtml()}</div>`;
+    // design A's first-run card draws the gate itself (ui-first-run.js): this container, hidden behind it, stays empty
+    el.innerHTML = firstRunOn() ? '' : `<div class="gate">${gateHtml()}</div>`;
     return;
   } // every step waits for the track and the study year: one question per screen, nothing else
   const approved = approvedOn(app.settings, data.program, data.startYear);

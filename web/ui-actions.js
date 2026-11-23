@@ -50,6 +50,7 @@ import { renderBanner, renderView, go } from './ui-view.js';
 import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
 import { advisorPdfAct } from './ui-advisor-pdf.js';
+import { frNext, frBack, renderFirstRun } from './ui-first-run.js';
 import { setMode } from './ui-mode.js';
 import { openLessonMenu } from './ui-edit.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel, advisorNow } from './ui-drawer.js';
@@ -125,6 +126,8 @@ const clearPrint = () => {
 };
 export const ACT = {
   shareOut,
+  frNext,
+  frBack,
   reloadPage: () => location.reload(),
   async acceptTerms() {
     acceptTerms();
@@ -150,6 +153,7 @@ export const ACT = {
   gateTrack() {
     ui.gateTrack = true;
     renderMe();
+    renderFirstRun(); // design A: the card draws the gate
     shownTitle()?.focus();
   }, // back to the track tiles from the year question
   pickTrack(el) {

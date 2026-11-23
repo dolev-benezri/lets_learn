@@ -169,6 +169,9 @@ export const needsProgram = () => !!app.state && !app.state.programSet && app.ca
 export const gatedRecord = () => !!app.state && (!termsOk() || !app.state.profile.year || needsProgram());
 // planning waits for the study year (credits goal and English depend on it), and in design A for the end of the first-run pass
 export const gated = () => gatedRecord() || (!!app.state && passOpen());
+// The first-run card covers the screen: the pass is open, or the terms are not accepted (improve mode's first visit, or a new TERMS_VERSION). A failed load
+// shows its own message on the board instead.
+export const firstRunOn = () => designOn() && !!app.state && !app.loadFailed && (!termsOk() || passOpen());
 export const current = () => ui.last?.results[ui.cur] ?? null; // a search result, or a pair in year scope
 export const shown = () => semResult(current(), ui.sem); // what the grid, pills and popover render
 export const shownData = () => (isPair(current()) ? app.sem[ui.sem] : app.data);

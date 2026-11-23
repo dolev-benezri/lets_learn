@@ -89,7 +89,7 @@ test('erase-all removes the key: the visit is back to the default', async (t) =>
   await page.locator('[data-act="eraseAll"]').click();
   const dlg = page.locator('dialog[open]');
   await dlg.getByRole('button', { name: 'מחק הכול' }).click();
-  await page.locator('#me .gate').waitFor(); // the reloaded page is a first visit again and has loaded
+  await page.locator('.gate').first().waitFor(); // the reloaded page is a first visit again and has loaded
   assert.equal(await stored(page), null);
   assert.equal(await attr(page), null);
 });
@@ -112,7 +112,7 @@ const blockedPage = async (t, url) => {
     assert.deepEqual(errors, [], 'a script error');
   });
   await page.goto(url);
-  await page.locator('#me .gate').waitFor({ timeout: 30000 }); // storage is blocked, so this is a first visit: the terms gate means the app has loaded
+  await page.locator('.gate').first().waitFor({ timeout: 30000 }); // storage is blocked, so this is a first visit: the terms gate means the app has loaded
   return page;
 };
 const twoGroups = async () =>

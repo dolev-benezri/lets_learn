@@ -187,7 +187,7 @@ for (const [w, size] of Object.entries(WIDTHS))
       const { check, done, note } = checker(scheme);
       const touch = w !== '1280';
       const page = await visit(t, size, null, '', scheme);
-      await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+      await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
       assert.equal(await page.evaluate(() => (document.getElementById('meTitle').focus(), document.activeElement.id)), 'meTitle', 'the gate heading takes focus');
       await check(page, 'gate');
       await layoutOk(page, 'gate', touch, note);
@@ -230,6 +230,28 @@ for (const [w, size] of Object.entries(WIDTHS))
       done();
     });
   }
+
+// the first-run card (phase 3): each step, axe and the targets; a step's controls come with its task
+const midPass = (step) => ({
+  'afeka-sched-v1-terms': '2',
+  'afeka-sched-v1-firstrun': String(step),
+  'afeka-sched-v1': JSON.stringify({ ...STUDENT, profile: { ...STUDENT.profile, year: 2 } })
+});
+for (const [w, size] of Object.entries(WIDTHS))
+  for (const scheme of ['light', 'dark'])
+    test(`${w}/${scheme}: the first-run card on each step: axe, no sideways scroll, targets, the step heading takes focus`, async (t) => {
+      const { check, done, note } = checker(scheme);
+      for (const step of [2, 3, 4, 5]) {
+        const page = await visit(t, size, midPass(step), '', scheme);
+        await page.locator('.a-fr-card').waitFor({ state: 'visible' });
+        await check(page, `step ${step}`);
+        await layoutOk(page, `step ${step}`, w !== '1280', note);
+        const heading = await page.evaluate(() => (document.getElementById('frTitle').focus(), document.activeElement.id));
+        if (heading !== 'frTitle') note(`step ${step}: the heading cannot take focus`);
+        if (!(await page.locator('.a-fr-foot').isVisible())) note(`step ${step}: no foot`);
+      }
+      done();
+    });
 
 for (const scheme of ['light', 'dark'])
   test(`${scheme}: the Tab walk through the frame and an open tool: every stop shows a focus ring`, async (t) => {

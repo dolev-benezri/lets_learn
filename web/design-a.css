@@ -699,3 +699,39 @@
   background:var(--primary-soft); border-color:var(--primary); color:var(--primary-hover);
 }
 :root[data-design="a"] .pmap .pm-btn[data-pm="focus"]:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+
+/* phase 3, Task B (the first run): while the terms or the pass are open, one card centred on the page background and nothing else: no board, no strip, no
+   mode tabs, no ☰ (the header keeps the site's name and dark mode). The card's foot (the step's button, "חזרה", the legal line) sticks to the window's
+   bottom when the card is taller than the window; --fr-foot-h (measured, ui-first-run.js) keeps a focused control from sitting under it. */
+:root[data-design="a"] .a-fr { display:none; }
+:root[data-design="a"] body.first-run .a-fr:not([hidden]) { display:block; padding:var(--sp-6) var(--sp-4) var(--sp-7); }
+:root[data-design="a"] body.first-run .a-stage, :root[data-design="a"] body.first-run .a-strip { display:none; }
+:root[data-design="a"] body.first-run .a-top .modes, :root[data-design="a"] body.first-run .a-top .menu-btn { display:none; }
+:root[data-design="a"] body.first-run:has(.a-shell) { padding-bottom:0; padding-inline-start:0; }
+:root[data-design="a"]:has(body.first-run) { scroll-padding-bottom:calc(var(--fr-foot-h, 96px) + var(--sp-4)); }
+:root[data-design="a"] body.first-run .site-foot { padding-bottom:var(--sp-4); }
+:root[data-design="a"] .a-fr-card {
+  width:min(640px, 100%); margin-inline:auto; padding:var(--sp-6) var(--sp-6) 0; background:var(--surface); border-radius:16px; box-shadow:var(--shadow-card);
+}
+:root[data-design="a"] .a-fr-steps {
+  display:flex; flex-wrap:wrap; gap:var(--sp-1) var(--sp-3); margin:0; padding:0; list-style:none; font-size:var(--fs-sm); color:var(--text-2);
+}
+:root[data-design="a"] .a-fr-s { display:inline-flex; align-items:center; gap:var(--sp-1); }
+:root[data-design="a"] .a-fr-s + .a-fr-s::before { content:"•"; margin-inline-end:var(--sp-3); color:var(--text-3); }
+:root[data-design="a"] .a-fr-s.now { color:var(--primary); font-weight:600; }
+:root[data-design="a"] .a-fr-s .icon { width:14px; height:14px; }
+:root[data-design="a"] .a-fr-n { margin:var(--sp-2) 0 var(--sp-5); font-size:var(--fs-sm); color:var(--text-2); }
+:root[data-design="a"] .a-fr-card h2 { margin:0 0 var(--sp-3); font-size:var(--fs-key); font-weight:600; }
+:root[data-design="a"] .a-fr-foot {
+  position:sticky; bottom:0; z-index:2; margin:var(--sp-5) calc(-1 * var(--sp-6)) 0;
+  padding:var(--sp-3) var(--sp-6) calc(var(--sp-4) + env(safe-area-inset-bottom)); background:var(--surface);
+  border-radius:0 0 16px 16px; box-shadow:0 -1px 0 var(--border);
+}
+:root[data-design="a"] .a-fr-btns { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:var(--sp-3); }
+:root[data-design="a"] .a-fr-btns .btn { min-height:44px; min-width:44px; }
+:root[data-design="a"] .a-fr-legal { margin:var(--sp-3) 0 0; font-size:var(--fs-xs); color:var(--text-2); }
+@media (max-width:599px) {
+  :root[data-design="a"] body.first-run .a-fr:not([hidden]) { padding:var(--sp-4) var(--sp-4) var(--sp-5); }
+  :root[data-design="a"] .a-fr-card { padding:var(--sp-5) var(--sp-4) 0; }
+  :root[data-design="a"] .a-fr-foot { margin-inline:calc(-1 * var(--sp-4)); padding-inline:var(--sp-4); }
+}

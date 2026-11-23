@@ -100,13 +100,15 @@ test('the old #prefs address opens the wishes, with a link to the friends it use
   await page.locator('#panel #friends').waitFor({ state: 'visible' });
 });
 
-test('phone: before the gate is passed only the record is open; every other tool is disabled and a tap does nothing', async (t) => {
+test('phone: while the pass is open nothing of the frame is drawn, and a tool cannot be opened from outside it', async (t) => {
   const page = await visit(t, 'phone', null);
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
+  for (const sel of ['.dock', '#panel', '#aBoard', '#aStrip', '.a-top .modes', '.menu-btn'])
+    assert.equal(await visible(page, sel), false, `${sel} is not drawn behind the card`);
   for (const tool of ['courses', 'wishes', 'friends', 'out']) {
     assert.equal(await dock(page, tool).getAttribute('aria-disabled'), 'true', tool);
-    await dock(page, tool).click({ force: true });
-    assert.equal(await visible(page, '#panel #me .gate'), true, `${tool}: still the gate`);
+    await page.evaluate((x) => document.querySelector(`.dock [data-tool="${x}"]`).click(), tool); // a script's click on the hidden button
+    assert.equal(await visible(page, '#firstRun .gate'), true, `${tool}: still the gate`);
     assert.notEqual(await hash(page), { courses: '#courses', wishes: '#prefs', friends: '#friends', out: '#out' }[tool], `${tool}: the address did not move`);
   }
 });
@@ -120,7 +122,7 @@ test('an edit visitor is gated on the terms only: no builder track or year quest
 
 test('behind the gate the board is inert, and the skip link goes to the gate', async (t) => {
   const page = await visit(t, 'phone', null);
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), true);
   await page.evaluate(() => document.querySelector('.skip').click());
   assert.equal(await activeId(page), 'meTitle');
@@ -352,38 +354,41 @@ test('a failed data load at 1280: every retry button on screen can be pressed (t
   assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), false);
 });
 
-for (const size of ['phone', { width: 320, height: 640 }])
-  test(`${size.width ?? 'phone'}: at the gate the title, the mode tabs and the unofficial line stay above the sheet, and a tab can be pressed`, async (t) => {
+// The first run (phase 3): the header keeps the site's name and dark mode only, until the pass ends; ☰, the mode tabs and the strip come back with the board.
+for (const size of ['phone', { width: 320, height: 640 }, { width: 1280, height: 800 }])
+  test(`${size.width ?? 'phone'}: the header at the first run is the site's name and dark mode; ☰, the mode tabs and the strip return with the board`, async (t) => {
     const page = await visitIn(browser, t, size, null, '', 'light', false, false, { design: 'a' });
-    await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
-    await page.waitForTimeout(300);
-    const m = await page.evaluate(() => {
-      const hit = (sel) => {
-        const e = document.querySelector(sel), r = e.getBoundingClientRect(), at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return { ok: at === e || e.contains(at), bottom: r.bottom };
-      };
-      return { edit: hit('.a-top .modes a[data-mode="edit"]'), build: hit('.a-top .modes a[data-mode="build"]'), unofficial: hit('.a-unofficial'), sheet: document.getElementById('panel').getBoundingClientRect().top };
-    });
-    assert.equal(m.edit.ok, true, 'the improve tab is not under the sheet');
-    assert.equal(m.build.ok, true);
-    assert.equal(m.unofficial.ok, true, 'the unofficial line is not under the sheet');
-    assert.ok(m.sheet >= m.unofficial.bottom - 1, `the sheet (${m.sheet}) starts below the notice (${m.unofficial.bottom})`);
+    await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
+    const shown = (sel) => page.locator(sel).evaluateAll((els) => els.filter((e) => e.checkVisibility() && e.getBoundingClientRect().width > 0).length);
+    assert.equal(await shown('#title'), 1, 'the site name');
+    assert.equal(await shown('.theme-btn'), 1, 'dark mode');
+    for (const sel of ['.menu-btn', '.a-top .modes', '.a-top .modes a', '#aStrip', '.a-unofficial', '.dock'])
+      assert.equal(await shown(sel), 0, `${sel} is not drawn`);
+    assert.equal(await page.locator('#aStrip').evaluate((e) => e.textContent.trim().length > 0), true, 'the strip keeps its text, only hidden');
+    await page.locator('[data-k="termsTick"]').check();
+    await page.locator('[data-act="acceptTerms"]').click();
+    await page.locator('[data-act="pickTrack"][value="30"]').click();
+    await page.locator('[data-act="pickYear"][value="2"]').first().click();
+    await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+    assert.equal(await shown('.menu-btn'), 1, '☰ is back');
+    assert.equal(await shown('.a-top .modes a'), 2, 'the mode tabs are back');
+    assert.equal(await shown('#aStrip'), 1, 'the strip is back');
+    assert.equal(await shown('#firstRun'), 0, 'the card is gone');
   });
 
-test('a first visitor can choose the improve tab at the terms: it stays selected, and after the terms the edit page opens, not the track question', async (t) => {
-  const page = await visit(t, 'phone', null, '');
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
-  await page.locator('.a-top .modes a[data-mode="edit"]').click();
-  await page.waitForFunction(() => location.hash === '#edit');
-  assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page');
-  await page.locator('[data-k="termsTick"]').waitFor({ state: 'visible' });
+test('a first visitor who arrives at the edit page sees the terms on the whole screen, and after them the edit page with the tabs back, not the track question', async (t) => {
+  const page = await visit(t, 'phone', null, '#edit');
+  await page.locator('#firstRun [data-k="termsTick"]').waitFor({ state: 'visible' });
+  assert.equal(await visible(page, '.a-top .modes a'), false, 'the mode tabs wait for the terms');
+  assert.equal(await visible(page, '#edit'), false, 'and the edit page is not behind the card');
   await page.locator('[data-k="termsTick"]').check();
   await page.locator('[data-act="acceptTerms"]').click();
   await page.locator('#edit').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page');
   assert.equal(await page.locator('[data-act="pickTrack"]:visible').count(), 0, 'not the build gate');
 });
 
-test('landscape phone at the gate: the sheet is beside the rail and below the tabs, which can be pressed', async (t) => {
+test('landscape phone at the first run: the card is on screen, centred, with no tabs and no rail', async (t) => {
   const context = await browser.newContext({ viewport: { width: 568, height: 320 }, isMobile: true, hasTouch: true, locale: 'he-IL', colorScheme: 'light' });
   const page = await context.newPage();
   await context.addInitScript((items) => {
@@ -391,15 +396,16 @@ test('landscape phone at the gate: the sheet is beside the rail and below the ta
   }, { ...TOUR_SEEN, ...MODE_BUILD, [DESIGN_KEY]: 'a' });
   t.after(() => context.close());
   await page.goto(SITE);
-  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
-  await page.waitForTimeout(300);
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   const m = await page.evaluate(() => {
-    const e = document.querySelector('.a-top .modes a[data-mode="edit"]'), r = e.getBoundingClientRect();
-    const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    return { ok: at === e || e.contains(at), coarse: matchMedia('(pointer: coarse)').matches };
+    const r = document.querySelector('.a-fr-card').getBoundingClientRect();
+    const rail = getComputedStyle(document.body).paddingInlineStart;
+    return { left: r.left, right: r.right, width: innerWidth, scrollW: document.documentElement.scrollWidth, tabs: !!document.querySelector('.a-top .modes')?.checkVisibility(), rail };
   });
-  assert.equal(m.coarse, true, 'the touch emulation is on');
-  assert.equal(m.ok, true, 'the improve tab is not under the sheet in landscape');
+  assert.ok(m.left >= 0 && m.right <= m.width, `the card (${m.left}..${m.right}) is inside the ${m.width}px window`);
+  assert.ok(m.scrollW <= m.width, 'no sideways scroll');
+  assert.equal(m.tabs, false, 'no tabs');
+  assert.equal(m.rail, '0px', 'no rail space beside the card');
 });
 
 // ---- Q14: the legal page's top bar and the way back ----

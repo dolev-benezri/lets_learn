@@ -36,7 +36,8 @@ for (const size of ['phone', 'desktop'])
     if (DESIGN === 'a') {
       // A has no mode cards: the two tabs are the choice, and the edit one needs only the terms
       assert.equal(await page.locator('[data-act="pickMode"]').count(), 0, 'no mode cards');
-      await page.locator('.a-top .modes a[data-mode="edit"]').click();
+      // the pass hides the mode tabs until it ends (phase 3): a visitor who wants the edit page reaches it by its address (step 1's own link comes with its card)
+      await page.evaluate(() => (location.hash = '#edit'));
       await page.waitForFunction(() => location.hash === '#edit');
       await page.locator('#edit').waitFor({ state: 'visible' });
       assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page', 'the improve tab is selected');
@@ -133,17 +134,21 @@ test('320 px wide: the mode choice and the edit page do not scroll sideways; the
   const page = await visit(t, { width: 320, height: 640 }, null, '', true);
   const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   await acceptTerms(page);
-  const A = DESIGN === 'a'; // A: the tracks come next, and the tab takes the place of the second card
+  const A = DESIGN === 'a'; // A: the tracks come next (the first-run card hides ☰ and the tabs: the edit page is reached by its address)
   await page.locator(A ? '[data-act="pickTrack"]' : '[data-act="pickMode"]').first().waitFor();
   assert.equal(await fits(), true, 'the mode choice');
   const menu = page.locator(A ? '.menu-btn' : 'header [data-act="menu"]');
-  const box = await menu.boundingBox();
-  assert.ok(box.width >= 44 && box.height >= 44, 'tap target');
-  if (A) await page.locator('.a-top .modes a[data-mode="edit"]').click();
+  const box = A ? null : await menu.boundingBox();
+  if (box) assert.ok(box.width >= 44 && box.height >= 44, 'tap target');
+  if (A) await page.evaluate(() => (location.hash = '#edit'));
   else await page.locator('[data-act="pickMode"]').nth(1).click();
   await page.locator('#edit').waitFor({ state: 'visible' });
   assert.equal(await fits(), true, 'the edit page');
-  assert.deepEqual(await menu.boundingBox(), box, 'the button does not move between pages');
+  if (box) assert.deepEqual(await menu.boundingBox(), box, 'the button does not move between pages');
+  else {
+    const after = await menu.boundingBox();
+    assert.ok(after.width >= 44 && after.height >= 44, 'tap target');
+  }
 });
 
 test('phone: a visit with no link opens the remembered mode; a link wins; Back to the build page remembers build', async (t) => {

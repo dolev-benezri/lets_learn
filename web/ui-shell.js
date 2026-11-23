@@ -9,7 +9,7 @@ import { renderOut } from './ui-drawer.js';
 import { goChanges } from './ui-edit.js';
 import { renderMe } from './ui-me.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
-import { $, ui, gated, termsOk, needsProgram, designOn } from './ui-common.js';
+import { $, ui, gated, termsOk, needsProgram, designOn, firstRunOn } from './ui-common.js';
 import { viewOf, routeA, stageOf, panelOf, TOOLS, hashOfTool } from './shell-routes.js';
 import { LEGAL_SHORT } from './ui-text.js';
 
@@ -73,6 +73,7 @@ export function shellInit() {
     </header>
     <div class="a-strip" id="aStrip"><p class="a-unofficial">${icon('info')}<span class="a-uno-t">${LEGAL_SHORT}<span id="aStale" hidden></span> · <button
       type="button" class="a-uno-more" data-act="panel" data-panel="info" data-k="aUnoMore" aria-haspopup="dialog">פרטים</button></span></p></div>
+    <div class="a-fr" id="firstRun" hidden></div>
     <div class="a-stage">
       <div class="a-board" id="aBoard">
         <div class="a-bar" id="aBar"><button type="button" class="btn a-share" data-act="share" data-k="aShare">${icon('share')}<span>שתף</span></button></div>
@@ -170,6 +171,7 @@ export function applyShell() {
   w ? box.removeAttribute('aria-modal') : box.setAttribute('aria-modal', 'false'); // aria-modal is only allowed on a dialog
   panel ? box.setAttribute('aria-labelledby', TITLE_ID[panel]) : box.removeAttribute('aria-labelledby');
   ui.titleId = panel ? TITLE_ID[panel] : stage === 'edit' ? 'editTitle' : 'weekTitle';
+  if (firstRunOn()) ui.titleId = ui.frTitleId ?? 'frTitle'; // the first-run card covers the screen: its heading is the one to focus
   const broken = !!app.loadFailed, // the data did not load: not even the record can open
     lock = improve ? !termsOk() || broken : locked(); // improve asks for the terms only, and the track and year inside its own page
   const shownTools = TOOLS[improve ? 'improve' : 'build'];

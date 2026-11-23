@@ -15,6 +15,7 @@ import { renderEdit, stopSearch, syncSavedHint } from './ui-edit.js';
 import { needsModeChoice, modeOpen, renderModeChoice, getMode, setMode } from './ui-mode.js';
 import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, showAlt, hasAlternatives, renderAltColumn } from './ui-view.js';
 import { renderMe } from './ui-me.js';
+import { renderFirstRun } from './ui-first-run.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { addFriend, ACT, CHG } from './ui-actions.js';
@@ -62,6 +63,7 @@ function renderRoute() {
     else renderMe();
     renderReport();
   }
+  if (A) renderFirstRun(); // the first-run card: the terms and the pass cover the screen (after applyShell: it sets the focus target)
 }
 // Building the plan after marking a failure: one note per failed course, ever (until it is passed and failed again).
 function retakeNote() {
