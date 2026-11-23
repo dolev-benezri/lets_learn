@@ -238,11 +238,12 @@
 @media (max-width:1079px) {
   :root[data-design="a"] .edit-tool {
     position:fixed; inset-inline:0; bottom:calc(var(--a-dock) + env(safe-area-inset-bottom)); z-index:20; max-height:min(78dvh, calc(100dvh - 120px));
-    overflow:auto; overscroll-behavior:contain;
-    padding:8px 16px 16px; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:var(--shadow-sheet);
+    display:flex; flex-direction:column; overflow:hidden;
+    padding:8px 16px 0; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:var(--shadow-sheet);
   }
   :root[data-design="a"] .edit-stage[data-sheet="closed"] .edit-tool { display:none; }
-  :root[data-design="a"] .edit-tool > .edit-sheet-x { display:flex; position:sticky; top:0; z-index:2; margin:0 0 -8px auto; }
+  :root[data-design="a"] .edit-tool > .edit-sheet-x { display:flex; position:static; flex:none; align-self:flex-end; margin:0; }
+  :root[data-design="a"] .edit-tool-in { flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; padding-bottom:16px; }
 }
 :root[data-design="a"] .a-grip { width:40px; height:5px; margin:8px auto 0; border-radius:3px; background:var(--border-strong); }
 :root[data-design="a"] .a-ph {
@@ -639,6 +640,15 @@
 :root[data-design="a"] .cs-opts { display:grid; gap:var(--sp-2); }
 :root[data-design="a"] .cs-opt { display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-1) var(--sp-2); }
 :root[data-design="a"] .cs-opt .btn { min-height:44px; }
+/* lessons at the same time (the edit page's week): side by side in lanes (--l of --n), marked as a clash */
+:root[data-design="a"] .blk.clash {
+  inset-inline-start:calc(3px + (100% - 6px) * var(--l) / var(--n)); inset-inline-end:auto; width:calc((100% - 6px) / var(--n) - 2px);
+  outline:2px solid var(--danger); outline-offset:-2px;
+}
+/* a lesson shows its whole range ("09:00–09:50"): the global rule hides the end hour of a block under 96px, which a column at some window widths is by one
+   pixel, so two 50-minute lessons of one week differed; blocks sharing time are narrower on purpose and keep the start only */
+:root[data-design="a"] .blk-end { display:inline; }
+:root[data-design="a"] .blk.clash .blk-end { display:none; }
 /* phase 2 follow-up (the design lead's read-through): the loaded tool is one surface, the parts divided by a line (no cards inside the card); the search
    lists its courses as rows with dividers, the field apart from the chips, and "חזרה" at the start edge */
 :root[data-design="a"] .edit-tool .me-card, :root[data-design="a"] .edit-tool .edit-reg, :root[data-design="a"] .edit-tool .edit-ways {
@@ -654,3 +664,7 @@
 :root[data-design="a"] .cs-list { display:block; }
 :root[data-design="a"] .cs-course { padding:var(--sp-3) 0; border:0; border-bottom:1px solid var(--border); border-radius:0; background:none; }
 :root[data-design="a"] .cs-course:last-child { border-bottom:0; }
+/* the proposal inside the tool: one surface, the courses as rows with dividers (no card holding cards) */
+:root[data-design="a"] .edit-tool .prop-panel { padding:0; margin:0 0 var(--sp-3); background:none; border:0; border-radius:0; box-shadow:none; }
+:root[data-design="a"] .edit-tool .pcards { display:block; }
+:root[data-design="a"] .edit-tool .pcard { padding:var(--sp-3) 0; background:none; border-radius:0; border-top:1px solid var(--border); }

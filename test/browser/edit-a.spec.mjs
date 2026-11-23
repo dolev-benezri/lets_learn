@@ -509,7 +509,8 @@ test('a fixed option that clashes with what stays is told by the page; one that 
   await fitting.first().locator('[data-ed="csAdd"]').click();
   await fixedGoal.locator('[data-ed="search"]').click();
   await fixedGoal.locator('#editNotes').waitFor({ timeout: 30000 });
-  assert.match(await fixedGoal.locator('#editNotes').innerText(), /לא נמצאה מערכת עם הקבוצה הזו/);
+  // the group fits and the goal is what no schedule can meet with it: the page names the goal (the group is blamed only when the goal is not the cause)
+  assert.match(await fixedGoal.locator('#editNotes').innerText(), /היעד "לסיים עד 13:00" לא מתאפשר עם הקבוצה הזו/);
 });
 
 test('Escape clears the field, a second Escape closes the search and focus returns to "חיפוש קורס": on a desktop and on a phone', async (t) => {

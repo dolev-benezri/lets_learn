@@ -372,3 +372,32 @@ test('loadedLineA: the courses and the days of what is loaded, in one line (desi
   assert.equal(loadedLineA([l('a', 2), l('b', 3), l('c', 4)]), '3 קורסים · ימים ב׳, ג׳ ו-ד׳');
   assert.equal(loadedLineA([]), '');
 });
+
+test('searchNotesHtml under design A: a fixed group with no schedule blames the goal when the goal is the cause, the group otherwise; classic says neither', () => {
+  const d = small(), e = { ...st([L('A', 'A1', 1, '08:00', '09:50', 'אלף')]), added: ['B'], swaps: { B: ['x'] } };
+  const none = { proposals: [], enabling: [], timedOut: false, diagnosis: [] };
+  const was = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  const onA = (fn) => {
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: { documentElement: { dataset: { design: 'a' } } } });
+    try {
+      return fn();
+    } finally {
+      if (was) Object.defineProperty(globalThis, 'document', was);
+      else delete globalThis.document;
+    }
+  };
+  const group = onA(() => parse(searchNotesHtml(none, e, d)).text);
+  assert.ok(group.includes('לא נמצאה מערכת עם הקבוצה הזו'), 'the group, when nothing says it is the goal');
+  const goal = onA(() => parse(searchNotesHtml({ ...none, goalBlocks: 'פחות חלונות, לסיים עד 15:00' }, e, d)).text);
+  assert.ok(goal.includes('היעד "פחות חלונות, לסיים עד 15:00" לא מתאפשר עם הקבוצה הזו. בלי היעד יש הצעה.'), 'the goal, named');
+  assert.ok(!goal.includes('לא נמצאה מערכת עם הקבוצה הזו'), 'and the group is not blamed then');
+  const classic = parse(searchNotesHtml({ ...none, goalBlocks: 'פחות חלונות' }, e, d)).text;
+  assert.ok(!classic.includes('הקבוצה הזו'), 'classic has neither sentence');
+});
+
+test('goalText: the goals that are on, in the chips\' words', async () => {
+  const { goalText } = await import('../web/ui-edit.js');
+  assert.equal(goalText({}), '');
+  assert.equal(goalText({ fewerGaps: true }), 'פחות חלונות');
+  assert.equal(goalText({ dayOff: 4, fewerGaps: true, notAfter: '15:00' }), 'לפנות יום ד׳, פחות חלונות, לסיים עד 15:00');
+});

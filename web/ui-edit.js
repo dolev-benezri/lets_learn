@@ -312,7 +312,13 @@ export function changesHtml(edit, data) {
     `<button type="button" class="chip tag-chip" data-ed="${act}" data-course="${esc(id)}"><span>${esc(text)}</span>${icon('x')}<span class="sr"> (בטל)</span></button>${extra}`;
   const rows = [
     ['יכולים לזוז', edit.movable.filter((c) => !edit.removed.includes(c)).map((c) => chip('unmove', c, nameIn(edit, data, c)))],
-    ['קבוצה חדשה', Object.keys(edit.swaps).filter((c) => edit.swaps[c].length && !gone(c)).map((c) => chip('unswap', c, nameIn(edit, data, c)))],
+    // design A: a course added from the search has its fixed group in the schedule it joins: it is one chip, under "נוספים"
+    [
+      'קבוצה חדשה',
+      Object.keys(edit.swaps)
+        .filter((c) => edit.swaps[c].length && !gone(c) && !(designOn() && edit.added.includes(c)))
+        .map((c) => chip('unswap', c, nameIn(edit, data, c)))
+    ],
     ['נוספים', edit.added.map((c) => chip('unadd', c, nameIn(edit, data, c)))],
     ['יורדים מהמערכת', edit.removed.filter((c) => !edit.added.includes(c)).map((c) => chip('unremove', c, nameIn(edit, data, c)))]
   ].filter(([, l]) => l.length);
@@ -381,8 +387,10 @@ export function searchNotesHtml(result, edit, data) {
     for (const c of result.enabling)
       out.push(`<p>אם ${esc(nameIn(edit, data, c))} יזוז, יש פתרון. <button type="button" class="btn" data-ed="letMove" data-course="${esc(c)}">תן לה לזוז</button></p>`);
   }
-  // A: a course added from the search with its group fixed that no schedule holds (the group clashes with what stays, or with another fixed one)
-  if (designOn() && !result.proposals.length && edit.added.some((c) => edit.swaps[c]?.length)) out.push('<p>לא נמצאה מערכת עם הקבוצה הזו.</p>');
+  // A: a course added from the search with its group fixed that no schedule holds: the group clashes with what stays, or with another fixed one,
+  // unless the same question without the goal has an answer (search() asked): then the goal is what blocks it, and it is named
+  if (designOn() && !result.proposals.length && edit.added.some((c) => edit.swaps[c]?.length))
+    out.push(result.goalBlocks ? `<p>היעד "${esc(result.goalBlocks)}" לא מתאפשר עם הקבוצה הזו. בלי היעד יש הצעה.</p>` : '<p>לא נמצאה מערכת עם הקבוצה הזו.</p>');
   if (result.timedOut) out.push('<p class="hint">לא הספקנו לבדוק הכל</p>');
   return out.join('');
 }
@@ -539,6 +547,7 @@ function weekOf(st, data, pr, zero, statuses) {
   const changed = pr ? newGroups(pr) : new Set(zero ? [] : swapped.flatMap((c) => st.swaps[c])), marked = changedDays(byId, changed, [...ghosts, ...gone]);
   const week = renderWeek({
     data: dd.data, res: { groups: dd.groups }, range, colors: editColors, dashed: new Set(), pins: [], friends: [], day: V.day, ghosts, changed,
+    lanes: designOn(),
     movable: new Set(st.movable.flatMap((c) => [c, FIXED + c])) // a fixed lesson is drawn as a group of "fixed:<course>"
   });
   const days = Array.from({ length: range.days }, (_, i) => i + 1)
@@ -696,6 +705,8 @@ function runWorker(msg) {
   });
 }
 const payload = (st, data) => ({ edit: { ...st, draft: null }, data, record: app.state });
+// the goals that are on, in the chips' words
+export const goalText = (g) => [g.dayOff && `לפנות יום ${DAYS[g.dayOff]}׳`, g.fewerGaps && 'פחות חלונות', g.notAfter && `לסיים עד ${g.notAfter}`].filter(Boolean).join(', ');
 
 async function search() {
   if (V.running) return;
@@ -712,12 +723,29 @@ async function search() {
   V.result = null;
   renderEdit();
   searchButton()?.focus({ preventScroll: true }); // drawn again in place as "מחפש…": it keeps the focus it had
+  // the answer stays here until the whole question is done (a second search may follow): the page, drawn meanwhile, never sees half of it
+  let found;
   try {
-    V.result = await runWorker({ kind: st.movable.length || !goal ? 'search' : 'tries', ...payload(st, data) });
+    found = await runWorker({ kind: st.movable.length || !goal ? 'search' : 'tries', ...payload(st, data) });
   } catch (e) {
     if (e.message === 'cancelled') return void (V.running = false);
-    V.result = { proposals: [], enabling: [], timedOut: true, diagnosis: [] };
+    found = { proposals: [], enabling: [], timedOut: true, diagnosis: [] };
   }
+  // A: nothing found with a group fixed under a goal. With nothing marked to move the first question tried no course at all, so it is asked again as a search;
+  // and when that finds nothing either, is it the group or the goal? The same search without the goal says (searchNotesHtml words it)
+  if (designOn() && goal && !found.proposals.length && !found.timedOut && st.added.some((c) => st.swaps[c]?.length)) {
+    try {
+      const withGoal = await runWorker({ kind: 'search', ...payload(st, data) });
+      if (withGoal.proposals.length) found = withGoal;
+      else if (!withGoal.timedOut) {
+        const free = await runWorker({ kind: 'search', ...payload({ ...st, goal: {} }, data) });
+        if (free.proposals.length) found = { ...found, goalBlocks: goalText(g) };
+      }
+    } catch (e) {
+      if (e.message === 'cancelled') return void (V.running = false);
+    }
+  }
+  V.result = found;
   V.running = false;
   V.stamp = at;
   if (stamp !== V.edits) V.result = null; // something changed while it ran: the answer is for an older question

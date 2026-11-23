@@ -283,12 +283,15 @@ const friendAvs = (fr) =>
 // Plain-Hebrew progress pill: rank 1 = the alternative that moves furthest in the degree (ties share it).
 export const rankText = (rank, n) => (rank === 1 ? 'מקדמת הכי הרבה בתואר' : `מקום ${rank} מתוך ${n} בהתקדמות בתואר`);
 
-function block({ cid, c, g }, m, from, cls, pinned, fr, sr = '') {
+function block({ cid, c, g }, m, from, cls, pinned, fr, sr = '', lane = null) {
   const d = toMin(m.end) - toMin(m.start);
   const k = `b-${g.id}-${m.day}-${m.start}`;
-  return `<button type="button" class="blk ${cls}${pinned ? ' pinned' : ''}${d < 80 ? ' short' : ''}" data-act="block" data-gid="${esc(g.id)}" data-k="${esc(k)}"
-    aria-haspopup="dialog" style="--s:${toMin(m.start) - from * 60};--d:${d}">
-    <span class="sr">יום ${DAYS[m.day]}׳, </span>${sr ? `<span class="sr">${sr}, </span>` : ''}<span class="blk-name">${nameHtml(c.name)}</span>
+  // a lesson at the same time as another (the edit page, design A): side by side in lanes, marked as a clash
+  const at = lane ? `;--l:${lane.l};--n:${lane.n}` : '';
+  const srs = (sr ? `<span class="sr">${sr}, </span>` : '') + (lane ? '<span class="sr">מתנגש עם שיעור אחר באותה שעה, </span>' : '');
+  return `<button type="button" class="blk ${cls}${pinned ? ' pinned' : ''}${d < 80 ? ' short' : ''}${lane ? ' clash' : ''}" data-act="block" data-gid="${esc(g.id)}" data-k="${esc(k)}"
+    aria-haspopup="dialog" style="--s:${toMin(m.start) - from * 60};--d:${d}${at}">
+    <span class="sr">יום ${DAYS[m.day]}׳, </span>${srs}<span class="blk-name">${nameHtml(c.name)}</span>
     <span class="blk-meta"><bdi dir="ltr">${esc(m.start)}<span class="blk-end">–${esc(m.end)}</span></bdi></span>
     <span class="blk-room">${esc(typeLabel(g.type))}${m.room ? ` · ${esc(m.room)}` : ''}</span>
     ${pinned ? `<span class="blk-pin">${icon('pin')}<span class="sr">, נעוץ</span></span>` : ''}
@@ -310,20 +313,58 @@ function ghostBlock(b, from) {
     <span class="sr">היה כאן: ${esc(b.start)}–${esc(b.end)}</span></div>`;
 }
 
+// Lessons that share time within one day: each gets a lane (l of n) among the ones it overlaps (directly or through a chain of overlaps); a lesson that
+// overlaps nothing gets none. items: [{ key, start, end }] in minutes. Pure.
+export function laneMap(items) {
+  const out = new Map();
+  const sorted = [...items].sort((a, b) => a.start - b.start || a.end - b.end);
+  let cluster = [],
+    reach = -1;
+  const flush = () => {
+    if (cluster.length > 1) {
+      const ends = []; // each lane's last end
+      const lane = cluster.map((it) => {
+        let l = ends.findIndex((e) => e <= it.start);
+        if (l < 0) l = ends.length;
+        ends[l] = it.end;
+        return l;
+      });
+      cluster.forEach((it, i) => out.set(it.key, { l: lane[i], n: ends.length }));
+    }
+    cluster = [];
+  };
+  for (const it of sorted) {
+    if (cluster.length && it.start >= reach) flush();
+    cluster.push(it);
+    reach = Math.max(cluster.length === 1 ? -1 : reach, it.end);
+  }
+  flush();
+  return out;
+}
+
 // ctx: { data, res (or null), range, colors: Map cid->index, dashed: Set of repeat-colour cids, pins, friends
 // (active), day (mobile), blocks (busy time, optional) }. The edit page adds ghosts [{ day, start, end }] ("היה כאן"), changed (Set of
 // group ids) and movable (Set of course ids: every block then says "יכול לזוז" or "נשאר במקום" to screen readers).
 export function renderWeek(ctx) {
-  const { data, res, range, colors, dashed, pins, friends, day, blocks = [], ghosts = [], changed, movable } = ctx;
+  const { data, res, range, colors, dashed, pins, friends, day, blocks = [], ghosts = [], changed, movable, lanes = false } = ctx;
   const byId = groupIndex(data);
   const cols = Array.from({ length: range.days + 1 }, () => []);
   for (const b of blocks) if (b.day >= 1 && b.day <= range.days) cols[b.day].push(busyBlock(b, range.from));
   for (const b of ghosts) if (b.day >= 1 && b.day <= range.days) cols[b.day].push(ghostBlock(b, range.from));
+  // lanes (opt-in): where lessons share time, side by side
+  const laned = new Map();
+  if (lanes) {
+    const perDay = new Map();
+    for (const gid of res?.groups ?? [])
+      for (const [i, m] of (byId.get(gid)?.g.meetings ?? []).entries())
+        if (m.day >= 1 && m.day <= range.days) perDay.set(m.day, [...(perDay.get(m.day) ?? []), { key: `${gid}|${i}`, start: toMin(m.start), end: toMin(m.end) }]);
+    for (const items of perDay.values()) for (const [k, v] of laneMap(items)) laned.set(k, v);
+  }
   for (const gid of res?.groups ?? []) {
     const x = byId.get(gid);
     if (!x) continue;
     const fr = friends.filter((f) => f.groups.includes(gid));
-    for (const m of x.g.meetings)
+    for (const [i, m] of x.g.meetings.entries())
       if (m.day >= 1 && m.day <= range.days)
         cols[m.day].push(
           block(
@@ -333,7 +374,8 @@ export function renderWeek(ctx) {
             `c${colors.get(x.cid) ?? 7}${dashed?.has(x.cid) ? ' rep' : ''}${changed?.has(gid) ? ' changed' : ''}${movable?.has(x.cid) ? ' movable' : ''}`,
             pins.includes(gid),
             fr,
-            movable ? (movable.has(x.cid) ? 'יכול לזוז' : 'נשאר במקום') : ''
+            movable ? (movable.has(x.cid) ? 'יכול לזוז' : 'נשאר במקום') : '',
+            laned.get(`${gid}|${i}`) ?? null
           )
         );
   }

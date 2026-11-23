@@ -266,6 +266,25 @@ for (const [w, h] of [[1920, 1080], [1280, 800]])
       assert.ok(m.doc <= m.inner, `the document is ${m.doc}px, the window is ${m.inner}px`);
     });
 
+// an open proposal (a course added from the search, then "חפש הצעות"): the week may be taller than the window (its range grew to the new lesson's hour), and
+// then the page is exactly as tall as the week (a phone: plus the room for the dock), never taller; the tool column and the sheet never add height of their own
+for (const [w, h] of [[1920, 1080], [1280, 800], [375, 812]])
+  test(`${w}px improve mode: with a proposal open the page is as tall as the week and no taller`, async (t) => {
+    const page = await visit(t, { width: w, height: h }, EDIT, '#edit/changes');
+    await page.locator('[data-k="csOpen"]').click();
+    await page.locator('#csText').fill('אנליזה');
+    await page.locator('.cs-opt', { has: page.locator('.tag', { hasText: 'נכנס' }) }).locator('[data-ed="csAdd"]').first().click();
+    await page.locator('[data-ed="search"]').click();
+    await page.locator('.prop-nav').waitFor({ timeout: 60000 });
+    await page.waitForTimeout(400);
+    const m = await page.evaluate(() => ({
+      doc: document.documentElement.scrollHeight, inner: innerHeight, board: Math.round(document.getElementById('aBoard').getBoundingClientRect().bottom + scrollY),
+      dock: Math.round(document.querySelector('.dock').getBoundingClientRect().height), phone: matchMedia('(max-width: 1079px)').matches
+    }));
+    const room = m.phone ? m.dock + 12 : 0;
+    assert.ok(m.doc <= Math.max(m.board + room, m.inner), `the document is ${m.doc}px, the week ends at ${m.board}px (+${room} for the dock), the window is ${m.inner}px`);
+  });
+
 test('1280px improve mode, a fresh visitor: the terms gate puts the record in the tool column slot, not under the board', async (t) => {
   const page = await visit(t, { width: 1280, height: 800 }, {}, '#edit');
   await page.locator('#panel #me').waitFor({ state: 'visible', timeout: 30000 });
