@@ -144,7 +144,11 @@ export function onHelpKey(e) {
   e.preventDefault();
   e.stopPropagation();
   ACT.help(button);
+  const id = button.getAttribute('aria-controls');
   button.focus({ preventScroll: true });
+  // leaving an edited field commits it, and the redraw may replace the button: focus the one now on the page
+  const live = document.querySelector(`.a-help[aria-controls="${CSS.escape(id)}"]`);
+  if (live && live !== document.activeElement) live.focus({ preventScroll: true });
 }
 export const ACT = {
   help(el) {

@@ -48,6 +48,13 @@ for (const scheme of ['light', 'dark'])
       assert.equal(await page.locator('#panel').isVisible(), true);
       assert.equal(new URL(page.url()).hash, '#me');
     }
+    // an edited field is committed when Escape moves the focus, and the redraw replaces the button: the live one gets the focus
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await page.locator('#me [data-k="amirnet"]').fill('120');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-controls')), 'meProfileHelp', 'focus is on the live help button');
+    assert.equal(await button.getAttribute('aria-expanded'), 'false');
     await page.keyboard.press('Escape');
     await page.locator('#panel').waitFor({ state: 'hidden' });
     assert.equal(await page.locator('.dock [data-tool="me"]').evaluate((e) => e === document.activeElement), true);
