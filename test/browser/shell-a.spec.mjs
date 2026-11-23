@@ -77,8 +77,10 @@ test('delete-all remains in the menu with its confirmation; cancelling preserves
   assert.equal(await confirm.getByRole('button', { name: 'מחק הכול' }).isVisible(), true);
   await confirm.getByRole('button', { name: 'ביטול' }).click();
   assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1')), before);
+  await page.waitForFunction(() => document.activeElement?.dataset?.k === 'menu-erase', null, { timeout: 5000 }); // a closed dialog gives the focus back in its close event, a task later
   assert.equal(await erase.evaluate((e) => e === document.activeElement), true);
   await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.activeElement?.dataset?.k === 'menu', null, { timeout: 5000 }); // a closed dialog gives the focus back in its close event, a task later
   assert.equal(await page.locator('.menu-btn').evaluate((e) => e === document.activeElement), true);
 });
 

@@ -69,6 +69,7 @@ test('friends: a link inside the open fold still offers the text dialog when cop
   await page.locator('#friends [data-k="copyMine"]').click();
   assert.match(await dialogText(page), /#f=/);
   await closeDialog(page);
+  await page.waitForFunction(() => document.activeElement?.dataset?.k === 'copyMine', null, { timeout: 5000 }); // a closed dialog gives the focus back in its close event, a task later
   assert.equal(await page.locator('#friends details[data-key="friends-mine"]').evaluate((e) => e.open), true);
   assert.equal(await page.locator('#friends [data-k="copyMine"]').evaluate((e) => e === document.activeElement), true);
 });
