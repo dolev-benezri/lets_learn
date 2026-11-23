@@ -10,6 +10,7 @@ import {
   refresh,
   keepFocus,
   switchTo,
+  ensurePassed,
   clearSaved,
   setUiReset,
   summerScope,
@@ -28,6 +29,8 @@ import {
   colors,
   markOnboarded,
   acceptTerms,
+  setFirstRun,
+  passOpen,
   gated,
   current,
   shown,
@@ -125,7 +128,8 @@ export const ACT = {
   reloadPage: () => location.reload(),
   async acceptTerms() {
     acceptTerms();
-    await applyPendingBackup();
+    // design A: a restored backup is a whole record, so it ends the first-run pass
+    if ((await applyPendingBackup()) && designOn()) setFirstRun('done');
     dueIntro();
     refresh();
     shownTitle()?.focus();
@@ -157,7 +161,14 @@ export const ACT = {
     save();
   },
   pickYear(el) {
+    const pass = passOpen(); // an old save without a study year also asks the year here, and keeps what it passed
     CHG.pyear(el);
+    if (pass) {
+      // until step 1 of the first-run pass is its own card: the year was the gate's last question, and the earlier years are assumed as they were
+      setFirstRun('done');
+      app.state.passed = app.state.assumed = null;
+      ensurePassed();
+    }
     refresh();
   },
   gradeImport() {

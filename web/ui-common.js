@@ -1,5 +1,5 @@
 // Shared by the ui-*.js modules: the mutable UI state (one object, since an imported `let` cannot be assigned), constants and small view helpers.
-import { app, esc, candidateMode, summerOn } from './app.js';
+import { app, esc, candidateMode, summerOn, savedExists, isEditHash } from './app.js';
 import { icon, groupIndex, summary, isPair, semResult, nameHtml } from './ui-grid.js';
 import { showText } from './ui-dialog.js';
 import { specCodes, reqContext, reqMet } from './rules.js';
@@ -131,10 +131,44 @@ export const acceptTerms = () => {
   }
 };
 
+// Design A's first run (spec "Phase 3"): the step a new visitor has reached (1..5, web/first-run.js STEPS) or 'done'. A missing mark reads as 'done' for
+// anyone who is not new (onboarded, or a record saved before this mark): old saves never see the pass. null: a new visitor with no mark yet; app.js init
+// writes 1 for them before anything is saved. The stored mark wins; one a blocked storage could not take lives in `runMark` for the visit.
+const FIRSTRUN = 'afeka-sched-v1-firstrun';
+let runMark = null;
+export const firstRun = () => {
+  if (runMark !== null) return runMark;
+  try {
+    const v = localStorage.getItem(FIRSTRUN);
+    if (v === 'done') return v;
+    if (/^[1-5]$/.test(v ?? '')) return Number(v);
+  } catch {
+    /* storage unavailable: no mark of its own */
+  }
+  return onboarded() || savedExists() ? 'done' : null;
+};
+export const setFirstRun = (v) => {
+  runMark = v;
+  try {
+    localStorage.setItem(FIRSTRUN, String(v));
+    runMark = null; // stored: the storage is the mark again (another tab may finish the pass)
+  } catch {
+    /* storage unavailable: kept for this visit only */
+  }
+};
+// The pass is open: design A, build mode, a student who has not finished it. The edit page (#edit) is never gated by it.
+export const passOpen = () => designOn() && !isEditHash(location.hash) && firstRun() !== 'done';
+app.passOpen = passOpen; // app.js asks before it fills in the earlier years (ensurePassed, switchTo)
+app.firstLoad = () => {
+  if (designOn() && firstRun() === null) setFirstRun(1);
+};
+
 // a first visit picks the track, none is assumed
 export const needsProgram = () => !!app.state && !app.state.programSet && app.catalog.programs.length > 1;
-// planning waits for the study year (credits goal and English depend on it)
-export const gated = () => !!app.state && (!termsOk() || !app.state.profile.year || needsProgram());
+// the record's own gate: the terms, the track and the study year (improve mode's record asks no more than this)
+export const gatedRecord = () => !!app.state && (!termsOk() || !app.state.profile.year || needsProgram());
+// planning waits for the study year (credits goal and English depend on it), and in design A for the end of the first-run pass
+export const gated = () => gatedRecord() || (!!app.state && passOpen());
 export const current = () => ui.last?.results[ui.cur] ?? null; // a search result, or a pair in year scope
 export const shown = () => semResult(current(), ui.sem); // what the grid, pills and popover render
 export const shownData = () => (isPair(current()) ? app.sem[ui.sem] : app.data);

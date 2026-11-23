@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { STUDENT, DONE, launch, visit as visitIn } from './helpers.mjs';
+import { STUDENT, PASSED, DONE, launch, visit as visitIn } from './helpers.mjs';
 import { TOUR_INTRO_A, TOUR_PLANS_A, TOUR_NEW_A } from '../../web/tour.js';
 
 let browser;
@@ -430,3 +430,72 @@ for (const [name, size] of [['a phone', 'phone'], ['1280', 'desktop']])
     const fresh = await visit(t, size, first);
     await fresh.waitForFunction(() => location.hash === '#me', null, { timeout: 30000 });
   });
+
+// ---------- the first-run mark and the gate (web/ui-common.js firstRun, passOpen, gated) ----------
+const MARK = 'afeka-sched-v1-firstrun';
+const markOf = (page) => page.evaluate((k) => localStorage.getItem(k), MARK);
+const workerStarted = (page) => page.evaluate(async () => !!(await import('./ui-common.js')).ui.worker);
+
+test('a new visitor gets the first-run mark at the first load, nothing is computed behind the gate, and a reload is still the first step', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  assert.equal(await markOf(page), '1', 'written before anything is saved');
+  await page.waitForTimeout(1500); // longer than the search's own start delay
+  assert.equal(await workerStarted(page), false, 'no search worker was started');
+  assert.equal(await page.locator('#week .blk').count(), 0);
+  await page.reload();
+  await page.locator('#panel #me .gate [data-k="termsTick"]').waitFor({ state: 'visible' });
+  assert.equal(await markOf(page), '1', 'a reload before "המשך" is still step 1');
+  assert.equal(await workerStarted(page), false);
+});
+
+test('the pass ends with the gate (until step 1 is its own card): the mark turns done and the first search starts', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.locator('[data-k="termsTick"]').check();
+  await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('[data-act="pickTrack"][value="30"]').click();
+  await page.locator('[data-act="pickYear"][value="2"]').first().click();
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  assert.equal(await markOf(page), 'done');
+  assert.equal(await workerStarted(page), true);
+});
+
+test('a mark in the middle of the pass keeps the board uncomputed even with a record and the terms on file; an old save opens on the board with no mark', async (t) => {
+  const mid = await visit(t, 'phone', { 'afeka-sched-v1-terms': '2', [MARK]: '3', 'afeka-sched-v1': JSON.stringify(STUDENT) });
+  await mid.locator('#panel #me .gate').waitFor({ state: 'visible' });
+  await mid.waitForTimeout(1500);
+  assert.equal(await workerStarted(mid), false, 'no search before the pass is done');
+  assert.equal(await mid.locator('#week .blk').count(), 0);
+  assert.equal(await markOf(mid), '3', 'the saved mark wins');
+  const old = await visit(t, 'phone', DONE);
+  await old.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  assert.equal(await markOf(old), null, 'an old save is not marked: it never saw the pass');
+  assert.equal(await old.locator('#panel #me .gate').count(), 0);
+});
+
+test('an old save that never chose a study year is asked the year at the gate and keeps what it passed (the pass is not for it)', async (t) => {
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, profile: { ...STUDENT.profile, year: null } }) });
+  await page.locator('[data-act="pickYear"]').first().waitFor({ state: 'visible' });
+  await page.locator('[data-act="pickYear"][value="2"]').click();
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  const passed = await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).passed);
+  assert.deepEqual(PASSED.filter((id) => !passed.includes(id)), [], 'every course it had passed is still passed');
+  assert.equal(await markOf(page), null, 'and it was never put into the pass');
+});
+
+test('the improve mode is not held by the pass: its terms, then its own loader, with the mark left where it was', async (t) => {
+  const page = await visit(t, 'desktop', null, '#edit');
+  await page.locator('[data-k="termsTick"]').waitFor({ state: 'visible' });
+  assert.equal(await markOf(page), '1');
+  await page.locator('[data-k="termsTick"]').check();
+  await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('#edit .edit-card, #edit .edit-stage').first().waitFor({ state: 'visible', timeout: 15000 });
+  assert.equal(await markOf(page), '1', 'improve mode leaves the pass where it was');
+  assert.equal(await page.evaluate(async () => (await import('./ui-common.js')).passOpen()), false, 'the pass is build mode only');
+});
+
+test('classic writes no first-run mark at all', async (t) => {
+  const page = await visitIn(browser, t, 'phone', null, '', 'light', false, false, { design: 'classic' });
+  await page.locator('#me .gate').waitFor({ state: 'visible' });
+  assert.equal(await markOf(page), null);
+});

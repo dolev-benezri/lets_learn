@@ -359,8 +359,10 @@ export const app = {
   otherTab: false,
   settings: SETTINGS_DEFAULT,
   termsOk: () => true,
+  passOpen: () => false, // design A's first-run pass is open (ui-common.js passOpen)
+  firstLoad: () => {}, // a new visitor's first load, before anything is saved (ui-common.js writes the first-run mark)
   pendingBackup: null
-}; // ui-common.js swaps in the real terms check; a backup link waits in pendingBackup until the terms are accepted
+}; // ui-common.js swaps in the real checks; a backup link waits in pendingBackup until the terms are accepted
 
 // Both semesters as one catalogue: a course is offered if either semester offers it; groups are merged (ids are disjoint).
 export function yearView(dataA, dataB) {
@@ -481,6 +483,11 @@ const earlierYears = () => {
 export function ensurePassed() {
   const s = app.state,
     earlier = earlierYears();
+  // design A's first run: the student ticks what they passed (step 2); nothing is filled in for them
+  if (!s.passed && app.passOpen()) {
+    s.passed = [];
+    s.assumed = [];
+  }
   if (!s.passed) {
     s.passed = earlier.filter((id) => !s.failed[id]);
     s.assumed = [...s.passed];
@@ -682,7 +689,11 @@ export async function switchTo(program, startYear) {
   }
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);
   setSemesters(sem);
-  if (sameProgram) {
+  if (sameProgram && app.passOpen()) {
+    // design A's first run: the earlier years are step 2's list, not added here
+    app.state.passed ??= [];
+    app.state.assumed ??= [];
+  } else if (sameProgram) {
     const had = prev.passed ?? [],
       added = earlierYears().filter((id) => !app.state.failed[id] && !had.includes(id));
     app.state.passed = [...new Set([...had, ...added])];
@@ -699,6 +710,7 @@ async function init() {
     .catch(() => null);
   app.catalog = goodCatalog(cat) ? cat : FALLBACK_CATALOG;
   app.state = load();
+  app.firstLoad();
   const status = fetch('data/afeka/status.json', { cache: 'no-cache' })
     .then((r) => (r.ok ? r.json() : null))
     .catch(() => null);
@@ -783,7 +795,7 @@ export async function restoreBackup(payload) {
 // Friend (#f=) and backup (#b=) links: read at load, and again when one is pasted into an open tab (hashchange in ui-plan.js).
 let linkError = null;
 // Ask before replacing saved state, then restore. Returns the hash to keep when the visitor cancelled (stay on the page the link was pasted into).
-const savedExists = () => {
+export const savedExists = () => {
   try {
     return localStorage.getItem(KEY) !== null;
   } catch {
@@ -792,26 +804,30 @@ const savedExists = () => {
 }; // storage unavailable: nothing to replace
 // whether state was saved before this visit's own first save (refresh() saves before the terms are accepted)
 let pendingSaved = false;
+let restoredOk = false; // the last backup run replaced the state (applyPendingBackup says so)
 async function runBackup(payload, hadSaved = savedExists()) {
   if (
     !hadSaved ||
     await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' }))
    {
     // its own message, cleared by the next good link like a bad link's
-    if (!await restoreBackup(payload)) linkError = app.hashError;
+    if (await restoreBackup(payload)) restoredOk = true;
+    else linkError = app.hashError;
     return '';
   }
   return hashOf(document.body.dataset.view);
 }
-// A backup link opened before the terms were accepted: run it now (called after "המשך").
+// A backup link opened before the terms were accepted: run it now (called after "המשך"). Returns true when it restored the state.
 export async function applyPendingBackup() {
   const p = app.pendingBackup;
   app.pendingBackup = null;
-  if (!p) return;
+  if (!p) return false;
+  restoredOk = false;
   const keep = await runBackup(p, pendingSaved);
   if (keep) history.replaceState(null, '', location.pathname + location.search + keep);
   ensurePassed();
   refresh();
+  return restoredOk;
 }
 export async function applyHash() {
   const h = await readHash(location.hash, app.state);
