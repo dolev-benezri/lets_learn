@@ -162,7 +162,8 @@ export function applyShell() {
     const tool = b.dataset.tool;
     b.hidden = !shownTools.includes(tool);
     const step = route.tool === 'changes' ? 'changes' : 'mine'; // improve: the screen shown (pressed only while its tool is open on a phone)
-    const pressed = improve && (tool === 'mine' || tool === 'changes') ? tool === step && (w || ui.editSheet !== false) : tool === panel;
+    // only the screen shown is pressed: with the record open it is the record's button, not the step's under it
+    const pressed = improve && (tool === 'mine' || tool === 'changes') ? tool === step && !ui.overlay && (w || ui.editSheet !== false) : tool === panel;
     b.setAttribute('aria-pressed', String(pressed));
     const off = broken || (lock && tool !== 'me') || (improve && tool === 'me' && (!app.state || locked()));
     off ? b.setAttribute('aria-disabled', 'true') : b.removeAttribute('aria-disabled');

@@ -176,3 +176,33 @@ for (const [w, h] of [[1920, 1080], [1280, 800], [375, 812]])
       assert.ok(m.doc <= Math.max(m.shell + m.room, m.inner), `${tool}: the document is ${m.doc}px, the board ends at ${m.shell}px (dock room ${m.room}px, window ${m.inner}px)`);
     }
   });
+
+// phase 2, Task A: improve mode's tabs are a segmented control centred over the content, 44px segments, only the screen shown pressed (the record included);
+// the tool column and the week are a surface each; everything inside the 1200px frame
+for (const w of [1920, 1280])
+  test(`${w}px improve mode: centred segmented tabs narrower than the frame, one pressed at a time, the tool and the week one surface each`, async (t) => {
+    const page = await visit(t, { width: w, height: 900 }, EDIT, '#edit/changes');
+    await page.locator('#edit .edit-board.has-week').waitFor({ state: 'visible' });
+    const pressed = () => page.evaluate(() => [...document.querySelectorAll('.dock .dk[aria-pressed="true"]')].map((b) => b.dataset.tool));
+    const m = await page.evaluate(() => {
+      const r = (s) => document.querySelector(s).getBoundingClientRect(), cw = document.documentElement.clientWidth, bg = (s) => getComputedStyle(document.querySelector(s));
+      return {
+        cw, tabs: r('.dock'), tool: r('.edit-tool'), board: r('.edit-board'), seg: [...document.querySelectorAll('.dock .dk:not([hidden])')].map((b) => b.getBoundingClientRect().height),
+        toolBg: bg('.edit-tool').backgroundColor, boardBg: bg('.edit-board').backgroundColor, toolR: bg('.edit-tool').borderTopLeftRadius, surface: bg('.a-top').backgroundColor
+      };
+    });
+    const left = Math.max(0, (m.cw - 1200) / 2), right = m.cw - left;
+    assert.ok(Math.abs((m.tabs.left + m.tabs.right) / 2 - m.cw / 2) <= 1.5, `the tabs are centred: ${JSON.stringify(m.tabs)}`);
+    assert.ok(m.tabs.width <= 481 && m.tabs.width < right - left, `the tabs are narrower than the frame: ${m.tabs.width}`);
+    assert.ok(m.tool.left >= left - 1 && m.board.right <= right + 1 && m.tool.right <= right + 1 && m.board.left >= left - 1, `content inside the frame: ${JSON.stringify({ left, right })}`);
+    assert.equal(m.seg.length, 3);
+    assert.ok(m.seg.every((h) => h >= 43.5), `44px segments: ${m.seg}`);
+    assert.ok(m.toolBg !== 'rgba(0, 0, 0, 0)' && m.boardBg !== 'rgba(0, 0, 0, 0)' && parseFloat(m.toolR) >= 12, `a surface each: ${m.toolBg} ${m.boardBg} ${m.toolR}`);
+    assert.deepEqual(await pressed(), ['changes'], 'one pressed: the screen shown');
+    await page.locator('.dock [data-tool="me"]').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    assert.deepEqual(await pressed(), ['me'], 'with the record open only its tab is pressed');
+    await page.locator('.dock [data-tool="me"]').click();
+    await page.waitForFunction(() => document.getElementById('panel').hidden);
+    assert.deepEqual(await pressed(), ['changes'], 'and the screen again when it closes');
+  });

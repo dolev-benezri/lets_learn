@@ -361,7 +361,7 @@ export function renderEdit() {
       <div class="edit-tool" role="region" aria-labelledby="editTitle">
         <button type="button" class="btn icon-btn ghost edit-sheet-x" data-act="editSheet" data-k="editSheet" aria-label="סגירת הכלי">${icon('x')}</button>
         <div class="edit-tool-in${fx}">${parts.tool}</div></div>
-      <div class="edit-board"${covered ? ' inert' : ''}>${parts.board}</div></div>`
+      <div class="edit-board${parts.board.includes('id="editWeek"') ? ' has-week' : ''}"${covered ? ' inert' : ''}>${parts.board}</div></div>`
     : `${label}<div class="edit-step${fx}">${body}</div>`;
   if (gx) document.querySelector('#edit .goals')?.scrollTo({ left: gx });
   if (dropped && step === 2) say(STALE);

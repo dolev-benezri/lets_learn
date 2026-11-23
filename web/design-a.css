@@ -551,3 +551,26 @@
 @media (min-width:1080px) and (max-width:1279px) {
   :root[data-design="a"] .a-alts.alts-over:not([hidden]) { width:240px; }
 }
+/* phase 2, Task A (improve mode): the tabs are a segmented control centred over the content (the top bar's pattern, 44px segments), the tool column and
+   the week one surface each. The record still covers the tool column from the frame's edge (Task D puts it in the column's slot): it starts under the tabs. */
+@media (min-width:1080px) {
+  :root[data-design="a"] body[data-view="edit"] .a-stage > .dock {
+    position:static; width:min(480px, 100%); margin:var(--sp-3) auto; padding:3px; gap:var(--sp-1); background:var(--surface-2); border:0; border-radius:12px;
+    box-shadow:none;
+  }
+  :root[data-design="a"] body[data-view="edit"] .dk {
+    flex-direction:row; gap:6px; min-height:44px; padding:0 var(--sp-2); border-radius:9px; font-size:var(--fs-sm);
+  }
+  :root[data-design="a"] body[data-view="edit"] .dk .icon { width:18px; height:18px; }
+  :root[data-design="a"] body[data-view="edit"] .dk[aria-pressed="true"] { background:var(--surface); box-shadow:var(--shadow-sm); }
+  :root[data-design="a"] body[data-view="edit"] .dk[aria-pressed="true"]::before { display:none; }
+  :root[data-design="a"] body[data-view="edit"] .edit-tool {
+    top:calc(var(--a-head) + var(--sp-2)); max-height:calc(100dvh - var(--a-head) - var(--sp-4));
+    padding:var(--sp-4) var(--sp-5); background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  }
+  :root[data-design="a"] body[data-view="edit"] .edit-board.has-week {
+    padding:var(--sp-3) var(--sp-4); background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  }
+  :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) { top:calc(var(--a-head) + 74px); } /* under the tabs: 12 + 50 + 12 */
+  :root[data-design="a"] body[data-view="edit"] .wk-head > * { top:var(--a-head); } /* the tabs scroll away: the day headers stick right under the strip */
+}
