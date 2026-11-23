@@ -44,6 +44,69 @@ const search = async (page) => {
 };
 const dock = (page, tool) => page.locator(`.dock [data-tool="${tool}"]`);
 
+for (const hash of ['#edit', '#edit/changes'])
+  test(`phone ${hash}: 60% sheet leaves a lesson visible, expands and shrinks by keyboard, keeps focus after redraw`, async (t) => {
+    const page = await visit(t, 'phone', seed(), hash);
+    await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+    const sheet = page.locator('#edit .edit-tool'), button = sheet.locator('.a-sheet-expand');
+    const firstRowVisible = () => page.waitForFunction(() => {
+      const rows = [...document.querySelectorAll('#editWeek .blk')].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+      const top = Math.min(...rows.map((r) => r.top));
+      return top >= Math.max(0, document.querySelector('.a-top').getBoundingClientRect().bottom) &&
+        top + 44 <= document.querySelector('.edit-tool').getBoundingClientRect().top;
+    }, null, { timeout: 5000 });
+    await firstRowVisible();
+    const height = () => sheet.evaluate((e) => e.getBoundingClientRect().height);
+    const collapsed = await height();
+    assert.ok(Math.abs(collapsed / 812 - 0.6) < 0.02, `60% height: ${collapsed}`);
+    assert.equal(await button.getAttribute('aria-label'), 'הגדלה');
+    await button.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await button.getAttribute('aria-expanded'), 'true');
+    assert.equal(await button.getAttribute('aria-label'), 'הקטנה');
+    assert.ok(await height() > collapsed + 50);
+    await page.evaluate(async () => (await import('./app.js')).refresh());
+    assert.equal(await button.getAttribute('aria-expanded'), 'true');
+    assert.equal(await button.evaluate((e) => e === document.activeElement), true, 'live button keeps focus');
+    await page.keyboard.press('Space');
+    assert.equal(await button.getAttribute('aria-expanded'), 'false');
+    assert.ok(Math.abs(await height() - collapsed) <= 1);
+    await firstRowVisible();
+    assert.equal(await button.evaluate((e) => {
+      const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+      return e === document.activeElement && r.width >= 44 && r.height >= 44 && s.outlineStyle !== 'none';
+    }), true);
+    await page.keyboard.press('Escape');
+    await sheet.waitFor({ state: 'hidden' });
+    const tool = hash === '#edit' ? 'mine' : 'changes';
+    assert.equal(await dock(page, tool).evaluate((e) => e === document.activeElement), true);
+    await dock(page, tool).click();
+    await sheet.waitFor({ state: 'visible' });
+    assert.equal(await button.getAttribute('aria-expanded'), 'false');
+    await sheet.locator('.edit-sheet-x').click();
+    await sheet.waitFor({ state: 'hidden' });
+    assert.equal(await dock(page, tool).evaluate((e) => e === document.activeElement), true);
+  });
+
+test('phone: the record overlay also expands and returns to the week with focus on its dock opener', async (t) => {
+  const page = await visit(t, 'phone', seed());
+  await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+  await dock(page, 'me').click();
+  await page.locator('#panel #me').waitFor({ state: 'visible' });
+  const button = page.locator('#panel .a-sheet-expand');
+  assert.equal(await button.getAttribute('aria-expanded'), 'false');
+  await button.focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await button.getAttribute('aria-expanded'), 'true');
+  await page.keyboard.press('Space');
+  assert.equal(await button.getAttribute('aria-expanded'), 'false');
+  assert.equal(await button.evaluate((e) => e === document.activeElement), true);
+  await page.locator('#panel .a-back').click();
+  await page.locator('#panel').waitFor({ state: 'hidden' });
+  assert.equal(await dock(page, 'me').evaluate((e) => e === document.activeElement), true);
+  assert.equal(await page.locator('.edit-tool .a-sheet-expand').getAttribute('aria-expanded'), 'false');
+});
+
 test('the dock of improve mode: the two screens and the record, the build tools are gone; the pressed one is the screen shown', async (t) => {
   const page = await visit(t, 'desktop', seed());
   await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });

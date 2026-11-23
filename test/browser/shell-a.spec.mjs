@@ -329,18 +329,65 @@ test('a tool opened by an address focuses its heading (and Back does too)', asyn
   assert.equal(await activeId(page), 'coursesTitle');
 });
 
-test('opening and closing a tool keeps the board where it was scrolled', async (t) => {
-  const page = await visit(t, 'phone', DONE);
+for (const width of [320, 375])
+  test(`${width}: opening a phone tool reveals the first lesson above its 60% sheet; expand, back, redraw and dismiss keep focus`, async (t) => {
+    const page = await visit(t, { width, height: 812 }, DONE);
+    await weekReady(page);
+    await page.evaluate(() => scrollTo(0, 180));
+    await dock(page, 'courses').click();
+    await page.locator('#panel #courses').waitFor({ state: 'visible' });
+    const firstRowVisible = () => page.waitForFunction(() => {
+      const top = Math.min(...[...document.querySelectorAll('#week .blk')].map((e) => e.getBoundingClientRect())
+        .filter((r) => r.width > 0 && r.height > 0).map((r) => r.top));
+      return top >= Math.max(0, document.querySelector('.a-top').getBoundingClientRect().bottom) &&
+        top + 44 <= document.getElementById('panel').getBoundingClientRect().top;
+    }, null, { timeout: 5000 });
+    await firstRowVisible();
+    const button = page.locator('#panel .a-sheet-expand');
+    const height = () => page.locator('#panel').evaluate((e) => e.getBoundingClientRect().height);
+    const collapsed = await height();
+    assert.ok(Math.abs(collapsed / 812 - 0.6) < 0.02, `60% height: ${collapsed}`);
+    assert.equal(await button.getAttribute('aria-label'), 'הגדלה');
+    assert.equal(await button.getAttribute('aria-expanded'), 'false');
+    await button.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await button.getAttribute('aria-expanded'), 'true');
+    assert.equal(await button.getAttribute('aria-label'), 'הקטנה');
+    assert.ok(await height() > collapsed + 50);
+    assert.equal(await button.evaluate((e) => e === document.activeElement), true);
+    await page.evaluate(async () => (await import('./app.js')).refresh());
+    assert.equal(await button.getAttribute('aria-expanded'), 'true');
+    assert.equal(await button.evaluate((e) => e === document.activeElement), true);
+    await page.keyboard.press('Space');
+    assert.equal(await button.getAttribute('aria-expanded'), 'false');
+    assert.ok(Math.abs(await height() - collapsed) <= 1);
+    await firstRowVisible();
+    assert.equal(await button.evaluate((e) => {
+      const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+      return e === document.activeElement && r.width >= 44 && r.height >= 44 && s.outlineStyle !== 'none';
+    }), true);
+    await page.keyboard.press('Escape');
+    await page.locator('#panel').waitFor({ state: 'hidden' });
+    assert.equal(await dock(page, 'courses').evaluate((e) => e === document.activeElement), true);
+    await dock(page, 'courses').click();
+    await page.locator('#panel').waitFor({ state: 'visible' });
+    assert.equal(await button.getAttribute('aria-expanded'), 'false', 'a new opening starts at 60%');
+    await page.locator('#panel [data-k="closeTool"]').click();
+    await page.locator('#panel').waitFor({ state: 'hidden' });
+    assert.equal(await dock(page, 'courses').evaluate((e) => e === document.activeElement), true);
+  });
+
+test('a direct phone tool link reveals the first lesson when the first search finishes', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#prefs');
+  await page.locator('#panel #prefsTitle').waitFor({ state: 'visible' });
+  await page.locator('#prefsTitle').focus();
   await weekReady(page);
-  await page.evaluate(() => scrollTo(0, 180));
-  const y0 = await page.evaluate(() => Math.round(scrollY));
-  assert.ok(y0 > 100, 'the page can scroll');
-  await dock(page, 'courses').click();
-  await page.locator('#panel #courses').waitFor({ state: 'visible' });
-  assert.equal(await page.evaluate(() => Math.round(scrollY)), y0, 'opening');
-  await page.keyboard.press('Escape');
-  await page.locator('#panel').waitFor({ state: 'hidden' });
-  assert.equal(await page.evaluate(() => Math.round(scrollY)), y0, 'closing');
+  await page.waitForFunction(() => {
+    const rows = [...document.querySelectorAll('#week .blk')].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+    const first = Math.min(...rows.map((r) => r.top));
+    return first >= 0 && first + 44 <= document.getElementById('panel').getBoundingClientRect().top;
+  }, null, { timeout: 5000 });
+  assert.equal(await activeId(page), 'prefsTitle', 'scrolling never takes the sheet heading focus');
 });
 
 test('deleting a friend by keyboard lands on the friends heading', async (t) => {

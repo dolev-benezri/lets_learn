@@ -185,6 +185,34 @@ for (const width of [320, 1920])
     }
   });
 
+for (const scheme of ['light', 'dark']) for (const mode of ['build', 'improve'])
+  test(`${scheme}/${mode}: collapsed and expanded phone sheets pass axe, targets and reflow`, async (t) => {
+    const lesson = { course: '30003', name: 'מבוא לכימיה', type: 'סופי-הרצאה+תרגול', group: '273000302', day: 4, start: '14:00', end: '15:50' };
+    const seed = mode === 'build' ? DONE : { ...DONE, 'afeka-sched-v1-edit': JSON.stringify({
+      v: 1, dataset: { year: 2027, sem: 'א', program: 30, startYear: 2026 }, registered: false, owned: [],
+      original: [lesson], baseline: [lesson], movable: [], goal: {}
+    }) };
+    const page = await visit(t, WIDTHS[320], seed, mode === 'build' ? '#prefs' : '#edit', scheme);
+    const button = page.locator(mode === 'build' ? '#panel .a-sheet-expand' : '.edit-tool .a-sheet-expand');
+    await button.waitFor();
+    const { check, done, note } = checker(scheme);
+    await check(page, '60% sheet');
+    await layoutOk(page, '60% sheet', true, note);
+    await button.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await button.getAttribute('aria-expanded'), 'true');
+    await check(page, 'expanded sheet');
+    await layoutOk(page, 'expanded sheet', true, note);
+    await page.keyboard.press('Space');
+    assert.equal(await button.getAttribute('aria-expanded'), 'false');
+    assert.equal(await button.evaluate((e) => e === document.activeElement), true);
+    await page.setViewportSize({ width: 600, height: 900 });
+    await page.waitForFunction(() => !document.activeElement?.matches('.a-sheet-expand'), null, { timeout: 5000 });
+    assert.equal(await button.isVisible(), false);
+    assert.equal(await page.evaluate(() => document.activeElement?.id), mode === 'build' ? 'prefsTitle' : 'editTitle');
+    done();
+  });
+
 // Phase 4 C: both kinds of row, including their hidden controls, retain their native keyboard and focus across a redraw.
 for (const width of [375, 1920]) for (const tool of ['courses', 'me'])
   test(`${width}/${tool}: course row names, Enter/Space/Escape, open state and focus after search/redraw, long names reflow`, async (t) => {

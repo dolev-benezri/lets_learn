@@ -242,7 +242,7 @@
     padding:8px 16px 0; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:var(--shadow-sheet);
   }
   :root[data-design="a"] .edit-stage[data-sheet="closed"] .edit-tool { display:none; }
-  :root[data-design="a"] .edit-tool > .edit-sheet-x { display:flex; position:static; flex:none; align-self:flex-end; margin:0; }
+  :root[data-design="a"] .edit-tool .edit-sheet-x { display:flex; position:static; flex:none; align-self:flex-end; margin:0; }
   :root[data-design="a"] .edit-tool-in { flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; padding-bottom:16px; }
 }
 :root[data-design="a"] .a-grip { width:40px; height:5px; margin:8px auto 0; border-radius:3px; background:var(--border-strong); }
@@ -885,3 +885,27 @@
   outline:2px solid var(--primary); outline-offset:-2px;
 }
 :root[data-design="a"] #prefs details[data-key="prefs-more"][open] > summary { margin-bottom:var(--sp-3); }
+/* ---- phase 4 phone sheets (Task G) ---- */
+:root[data-design="a"] .a-sheet-expand, :root[data-design="a"] .a-sheet-head { display:none; }
+@media (max-width:1079px) {
+  :root[data-design="a"] .a-sheet-head { display:flex; flex:none; align-items:center; justify-content:flex-end; }
+}
+@media (max-width:599px) {
+  :root[data-design="a"] .a-panel, :root[data-design="a"] .edit-tool {
+    --a-sheet-max:calc(100dvh - var(--a-top-h, 60px) - var(--a-dock) - env(safe-area-inset-bottom) - 8px);
+    height:min(60dvh, var(--a-sheet-max),
+      max(88px, calc(100dvh - var(--a-dock) - env(safe-area-inset-bottom) - var(--a-preview-top, 0px) - 60px)));
+    max-height:var(--a-sheet-max);
+  }
+  :root[data-design="a"] :is(.a-panel, .edit-tool)[data-expanded="true"] { height:var(--a-sheet-max); }
+  :root[data-design="a"] .a-sheet-expand:not([hidden]) {
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--sp-1);
+    min-width:44px; min-height:44px; margin-inline:auto; padding:var(--sp-1) var(--sp-3);
+    border:0; background:none; color:var(--primary); font:inherit; font-size:var(--fs-xs); cursor:pointer;
+  }
+  :root[data-design="a"] .a-sheet-handle { width:40px; height:4px; border-radius:4px; background:currentColor; }
+  :root[data-design="a"] .a-sheet-expand:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+  :root[data-design="a"] .a-ph, :root[data-design="a"] .a-sheet-head { flex:none; min-height:44px; }
+  :root[data-design="a"] body.a-panel-open .a-board,
+  :root[data-design="a"] .edit-stage[data-sheet="open"] .edit-board { padding-bottom:calc(60dvh + var(--a-dock)); }
+}

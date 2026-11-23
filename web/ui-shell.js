@@ -12,6 +12,7 @@ import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { $, ui, gated, termsOk, needsProgram, designOn, firstRunOn } from './ui-common.js';
 import { viewOf, routeA, stageOf, panelOf, TOOLS, hashOfTool } from './shell-routes.js';
 import { LEGAL_SHORT } from './ui-text.js';
+import { sheetExpandHtml, sheetScrollY } from './phone-sheet.js';
 
 export { designOn, viewOf, routeA, stageOf, panelOf, TOOLS };
 
@@ -82,8 +83,8 @@ export function shellInit() {
       <nav class="dock" aria-label="כלים">${dockHtml()}</nav>
       <button type="button" class="a-scrim" data-act="closeTool" tabindex="-1" aria-hidden="true"></button>
       <section class="a-panel" id="panel" hidden>
-        <div class="a-grip" aria-hidden="true"></div>
         <div class="a-ph"><button type="button" class="btn icon-btn ghost" data-act="closeTool" data-k="closeTool" aria-label="סגירה">${icon('x')}</button>
+          ${sheetExpandHtml('panel')}
           <button type="button" class="btn ghost a-back" data-act="closeTool" data-k="closeBack">${icon('chevron-right')}<span>חזרה</span></button></div>
         <div class="a-pb" id="aPb"></div>
       </section>
@@ -99,6 +100,8 @@ export function shellInit() {
   $('aTopAct').append(document.querySelector('.theme-btn'), document.querySelector('.menu-btn'));
   for (const id of Object.values(TOOL_PAGE)) $('aPb').append($(id));
   document.addEventListener('keydown', onKey);
+  // A direct link may open the sheet before the worker draws the first week. Retry only when that week changes.
+  new MutationObserver(() => { if (pendingPhoneScroll) queuePhoneScroll(); }).observe($('aBoard'), { childList: true, subtree: true });
   // a tap outside the alternatives column laid over the week closes it (the tap itself still does what it does)
   document.addEventListener('pointerdown', (e) => ui.altsOver && !e.target.closest?.('#alts') && dispatchEvent(new CustomEvent('a-alts-close')), true);
   addEventListener('a-edit-sheet', () => applyShell()); // ui-edit.js closed the sheet itself
@@ -127,6 +130,11 @@ export function shellInit() {
   watch.observe($('aStrip'));
   watch.observe(document.querySelector('.a-stage > .dock'));
   measureChrome();
+  matchMedia('(max-width: 599px)').addEventListener('change', () => {
+    const had = document.activeElement;
+    applyShell();
+    if (had?.matches('.a-sheet-expand') && !had.checkVisibility()) $(ui.titleId)?.focus({ preventScroll: true });
+  });
   matchMedia('(min-width: 1080px)').addEventListener('change', () => {
     // crossing 1080px shows or hides the panel: focus that was inside what is now hidden goes to the heading of what is shown
     const had = document.activeElement;
@@ -142,6 +150,69 @@ export function shellInit() {
         ?.focus({ preventScroll: true });
     }
   });
+}
+
+let phoneSheetKey = null, pendingPhoneScroll = false, phoneScrollFrame = null;
+function queuePhoneScroll() {
+  if (phoneScrollFrame !== null) return;
+  phoneScrollFrame = requestAnimationFrame(() => {
+    phoneScrollFrame = null;
+    if (!pendingPhoneScroll || !phoneSheetKey || !matchMedia('(max-width: 599px)').matches) return;
+    const improve = routeA(location.hash).mode === 'improve';
+    const sheet = phoneSheetKey.startsWith('panel:') ? $('panel') : document.querySelector('.edit-tool');
+    const rows = [...document.querySelectorAll(improve ? '#editWeek .blk' : '#week .blk')]
+      .map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+    if (!sheet || !rows.length) return;
+    const first = Math.min(...rows.map((r) => r.top));
+    let chrome = Math.max(0, document.querySelector('.a-top').getBoundingClientRect().bottom);
+    // Build's sticky semester/day rows can cover a lesson even after the top bar has scrolled away.
+    for (const el of document.querySelectorAll(improve ? '#editDays' : '#semtabs, #daysel')) {
+      const style = getComputedStyle(el);
+      if (style.position === 'sticky' && el.getClientRects().length)
+        chrome = Math.max(chrome, (parseFloat(style.top) || 0) + el.getBoundingClientRect().height);
+    }
+    sheet.style.setProperty('--a-preview-top', `${chrome}px`);
+    scrollTo({ top: sheetScrollY(scrollY, first, chrome, sheet.getBoundingClientRect().top), behavior: 'instant' });
+    pendingPhoneScroll = false;
+  });
+}
+
+function syncPhoneSheet(improve, panel, lock) {
+  const key = matchMedia('(max-width: 599px)').matches && !lock
+    ? panel ? `panel:${improve}:${panel}` : improve && ui.editSheet !== false && document.querySelector('.edit-stage')
+      ? `edit:${routeA(location.hash).tool}` : null
+    : null;
+  if (key !== phoneSheetKey) {
+    phoneSheetKey = key;
+    ui.sheetExpanded.panel = ui.sheetExpanded.edit = false;
+    pendingPhoneScroll = !!key;
+  }
+  for (const kind of ['panel', 'edit']) {
+    const sheet = kind === 'panel' ? $('panel') : document.querySelector('.edit-tool');
+    sheet?.setAttribute('data-expanded', String(ui.sheetExpanded[kind]));
+    const button = sheet?.querySelector('.a-sheet-expand');
+    if (button) {
+      const label = ui.sheetExpanded[kind] ? 'הקטנה' : 'הגדלה';
+      button.setAttribute('aria-expanded', String(ui.sheetExpanded[kind]));
+      button.setAttribute('aria-label', label);
+      button.lastElementChild.textContent = label;
+      button.hidden = !!lock;
+    }
+  }
+  if (pendingPhoneScroll) queuePhoneScroll();
+}
+
+export function expandPhoneSheet(button) {
+  if (!designOn() || !matchMedia('(max-width: 599px)').matches || !phoneSheetKey) return;
+  const kind = button.dataset.sheet === 'edit' ? 'edit' : 'panel';
+  ui.sheetExpanded[kind] = !ui.sheetExpanded[kind];
+  applyShell();
+  // WebKit does not focus a tapped button. Keep the live control focused for the way back.
+  button.focus({ preventScroll: true });
+  if (!ui.sheetExpanded[kind]) {
+    pendingPhoneScroll = true;
+    queuePhoneScroll();
+  }
 }
 
 // Locked: the data did not load, or (build mode) the gate (terms, track, year) is not passed; then only the record is open.
@@ -205,6 +276,7 @@ export function applyShell() {
   // every exit from the take-out tool: another tool, Back, closing the sheet, the other mode; and a failed load, which replaces the tool's content
   if ((before === 'out' && panel !== 'out') || broken) dropAdvisorPdf();
   if (panel === 'out' && before !== 'out' && !app.loadFailed) renderOut(); // later changes reach it through renderView
+  syncPhoneSheet(improve, panel, lock);
   return panel;
 }
 
@@ -228,7 +300,7 @@ export function routeFocus(reason) {
   }
   $(ui.titleId)?.focus({ preventScroll: true });
 }
-// Scroll after a route change: the board stays where it was while a tool opens or closes (the document is the board's scroller).
+// Scroll after a route change: phone sheets reveal the first lesson after layout (syncPhoneSheet).
 export function routeScroll(reason) {
   if (reason === 'link') scrollTo(0, 0);
 }

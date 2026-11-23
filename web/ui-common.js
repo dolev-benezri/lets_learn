@@ -373,6 +373,7 @@ export const shownTitle = () => $(designOn() && ui.titleId ? ui.titleId : Object
 
 // state shared by the modules (sem: the shown semester of a year result)
 export const ui = {
+  sheetExpanded: { panel: false, edit: false }, // design A phone sheets; a new tool opens at 60%
   worker: null,
   capProbe: null, // { gen, cap, ms, res }: the search one credit above the cap, while it holds for these settings
   probeWorker: null,

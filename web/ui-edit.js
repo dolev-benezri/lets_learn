@@ -9,6 +9,7 @@ import { kinds, overlaps, displayData, summaryLine, changeText, splitOnlySwaps, 
 import { reqContext, reqMet } from './rules.js';
 import { groupNumber, lecturerText, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine, courseCount } from './ui-text.js';
 import { identityPick } from './ui-me.js';
+import { sheetExpandHtml } from './phone-sheet.js';
 import { searchCourses } from './course-search.js';
 import { searchViewHtml, resultsHtml as csResultsHtml, countLine } from './ui-course-search.js';
 import { getEdit, setEdit, saveEdit, restoredCount, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
@@ -501,8 +502,9 @@ export function renderEdit() {
   // never on an ancestor of the sheet
   $('edit').innerHTML = parts
     ? `<div class="edit-stage" data-tool="${step === 2 ? 'changes' : 'mine'}" data-sheet="${ui.editSheet === false ? 'closed' : 'open'}">
-      <div class="edit-tool" role="region" aria-labelledby="editTitle">
-        <button type="button" class="btn icon-btn ghost edit-sheet-x" data-act="editSheet" data-k="editSheet" aria-label="סגירת הכלי">${icon('x')}</button>
+      <div class="edit-tool" role="region" aria-labelledby="editTitle" data-expanded="${!!ui.sheetExpanded.edit}">
+        <div class="a-sheet-head">${sheetExpandHtml('edit', ui.sheetExpanded.edit)}
+          <button type="button" class="btn icon-btn ghost edit-sheet-x" data-act="editSheet" data-k="editSheet" aria-label="סגירת הכלי">${icon('x')}</button></div>
         <div class="edit-tool-in${fx}">${parts.tool}</div></div>
       <div class="edit-board${parts.board.includes('id="editWeek"') ? ' has-week' : ''}"${covered ? ' inert' : ''}>${parts.board}</div></div>`
     : empty

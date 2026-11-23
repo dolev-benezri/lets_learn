@@ -21,7 +21,8 @@ import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
 import { addFriend, ACT, CHG, onHelpKey, onCourseFoldKey } from './ui-actions.js';
 import { tourCheck, tourOnce, introPending, shellPending, onTourEnd } from './tour.js';
-import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear, toggleEditSheet } from './ui-shell.js';
+import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear, toggleEditSheet,
+  expandPhoneSheet } from './ui-shell.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
 // A: someone who already made the entry choice ("מאיפה מתחילים") is not on a first visit, even if they never left step 1: they open on the week
@@ -320,6 +321,7 @@ addEventListener(
 ACT.tool = (el) => openTool(el.dataset.tool, el); // design A's dock (ui-shell.js)
 ACT.closeTool = () => closeTool();
 ACT.editSheet = () => toggleEditSheet(); // the phone's sheet over the improve week
+ACT.expandSheet = (el) => expandPhoneSheet(el);
 // a card of A's alternatives column (ui-view.js renderAltColumn). WebKit does not focus a clicked button: take focus so keepFocus finds the twin card
 ACT.altPick = (el) => {
   el.focus({ preventScroll: true });
