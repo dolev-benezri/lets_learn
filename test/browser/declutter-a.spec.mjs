@@ -2,7 +2,7 @@
 // unless a test says classic. No top-level await in a spec: node:test then hangs after the run.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { STUDENT, DONE, launch, visit as visitIn } from './helpers.mjs';
+import { STUDENT, DONE, passFirstRun, launch, visit as visitIn } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -171,13 +171,17 @@ test('a phone: the line follows the data state without a reload (fresh data leav
   assert.ok(flat(await body.innerText()).includes('בדקו מול היועץ לפני ההרשמה'));
 });
 
-test('a phone behind the first-visit gate: the strip still says the data is old (the board that would say it is covered)', async (t) => {
-  const page = await visit(t, 'phone', { 'afeka-sched-v1-terms': '2' });
-  await page.locator('.gate').first().waitFor({ timeout: 30000 });
-  await page.waitForFunction(() => document.getElementById('aStale')?.textContent.trim().length > 0);
-  assert.equal(await page.locator('#aStale').isVisible(), true);
-  assert.match(flat(await page.locator('.a-unofficial').innerText()), new RegExp(`^${LEGAL_SHORT} · ${STALE} · פרטים$`));
+test('a first visit: the strip is not drawn during the first-run pass (the terms are on the card), and is back with the board, which says the data is old', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.locator('.a-fr-card').waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('.a-unofficial').isVisible(), false, 'no strip behind or above the card');
+  assert.match(await page.locator('.a-fr-card').innerText(), /לא רושם אתכם לקורסים/, 'the terms are on the card');
+  await passFirstRun(page, { year: 1 }); // a first-year student: nothing earlier to pass, so the board has a plan
+  await page.locator('#boardNote .a-warn-p').waitFor({ timeout: 30000 });
+  assert.match(flat(await page.locator('#boardNote .a-warn-p').innerText()), new RegExp(`^${STALE}$`), 'the board says the data is old, one short line above the week');
+  assert.equal(flat(await page.locator('.a-unofficial').innerText()), `${LEGAL_SHORT} · פרטים`, 'and the strip is back with the legal line');
 });
+
 
 test('the improve page has no board note: a phone strip there keeps the old-data warning', async (t) => {
   const page = await visit(t, 'phone', DONE, '#edit');

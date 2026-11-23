@@ -705,7 +705,9 @@
    bottom when the card is taller than the window; --fr-foot-h (measured, ui-first-run.js) keeps a focused control from sitting under it. */
 :root[data-design="a"] .a-fr { display:none; }
 :root[data-design="a"] body.first-run .a-fr:not([hidden]) { display:block; padding:var(--sp-6) var(--sp-4) var(--sp-7); }
-:root[data-design="a"] body.first-run .a-stage, :root[data-design="a"] body.first-run .a-strip { display:none; }
+:root[data-design="a"] body.first-run .a-strip { display:none; }
+/* the stage's own display rules (improve mode's record-open grid among them) are more specific than one class: the repeats outweigh them */
+:root[data-design="a"] body.first-run .a-stage.a-stage.a-stage { display:none; }
 :root[data-design="a"] body.first-run .a-top .modes, :root[data-design="a"] body.first-run .a-top .menu-btn { display:none; }
 :root[data-design="a"] body.first-run:has(.a-shell) { padding-bottom:0; padding-inline-start:0; }
 :root[data-design="a"]:has(body.first-run) { scroll-padding-bottom:calc(var(--fr-foot-h, 96px) + var(--sp-4)); }

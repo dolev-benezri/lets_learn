@@ -285,14 +285,15 @@ for (const [w, h] of [[1920, 1080], [1280, 800], [375, 812]])
     assert.ok(m.doc <= Math.max(m.board + room, m.inner), `the document is ${m.doc}px, the week ends at ${m.board}px (+${room} for the dock), the window is ${m.inner}px`);
   });
 
-test('1280px improve mode, a fresh visitor: the terms gate puts the record in the tool column slot, not under the board', async (t) => {
+test('1280px improve mode, a fresh visitor: the terms are one card over the whole screen (no panel, no board behind it) and the page is no taller than the window', async (t) => {
   const page = await visit(t, { width: 1280, height: 800 }, {}, '#edit');
-  await page.locator('#panel #me').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('#firstRun [data-k="frTerms"]').waitFor({ state: 'visible', timeout: 30000 });
   const m = await page.evaluate(() => ({
-    record: document.querySelector('.a-stage').classList.contains('record-open'), panel: document.getElementById('panel').getBoundingClientRect(),
-    board: document.getElementById('aBoard').getBoundingClientRect(), doc: document.documentElement.scrollHeight, inner: innerHeight
+    card: document.querySelector('.a-fr-card').getBoundingClientRect().toJSON(), panel: document.getElementById('panel').checkVisibility(), stage: document.querySelector('.a-stage').checkVisibility(),
+    doc: document.documentElement.scrollHeight, inner: innerHeight
   }));
-  assert.equal(m.record, true);
-  assert.ok(m.panel.top < m.board.bottom, `the record overlaps the board's cell, it does not follow it: ${JSON.stringify({ panel: m.panel.top, board: m.board.bottom })}`);
-  assert.ok(m.doc <= Math.max(m.board.bottom, m.inner) + 1, `no growth: ${m.doc}`);
+  assert.equal(m.panel, false, 'the record panel is not drawn');
+  assert.equal(m.stage, false, 'nor is the board');
+  assert.ok(m.card.top >= 0 && m.card.bottom <= m.inner, `the card is inside the window (${m.card.top}..${m.card.bottom} of ${m.inner})`);
+  assert.ok(m.doc <= m.inner + 1, `no growth: ${m.doc} in a ${m.inner}px window`);
 });
