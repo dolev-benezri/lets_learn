@@ -527,13 +527,14 @@ setUiReset(() => {
 let unsettled = null;
 // The program of the switch still loading: a study year picked meanwhile belongs to it, not to the one in the state.
 let wantedProgram = null;
+let changing = null, yearPick = 0;
 const beforeChange = () => {
   unsettled ??= { year: app.state.profile.year, programSet: app.state.programSet };
 };
 async function changeIdentity(program, startYear, quiet = false) {
   const same = program === app.state.program && startYear === app.state.startYear;
   wantedProgram = program;
-  const done = await switchTo(program, startYear);
+  const done = await (changing = switchTo(program, startYear));
   if (done === null) {
     app.state.profile.year = unsettled.year;
     app.state.programSet = unsettled.programSet;
@@ -587,24 +588,45 @@ function applyYear(el) {
 // the record has); "המשך" changes the year, with nothing filled in on the way (app.holdFill), and then the ticked courses are passed. What the student
 // had confirmed stays.
 async function yearWithEarlier(el, groups, to) {
-  const yearName = ' אבגדה'[to];
+  const yearName = ' אבגדה'[to], program = app.state.program, pick = yearPick;
   const back = () => document.querySelector(`[data-k="p-year-${app.state.profile.year}"]`)?.focus({ preventScroll: true });
   const picked = await askEarlier(groups, yearName, new Set(app.state.passed ?? []), back);
-  if (!picked) {
+  if (!picked || program !== app.state.program || pick !== yearPick) {
     refresh(); // the selects go back to the year in the record
     back();
     return 'none';
   }
-  app.holdFill++;
-  try {
-    await applyYear(el);
-    if (app.state.profile.year === to) for (const id of picked) if (!app.state.passed.includes(id)) setStatus(app.state, id, 'passed');
-  } finally {
-    app.holdFill--;
-  }
+  // null: no cohort to switch to, the year itself landed at once
+  const switching = applyYear(el),
+    done = switching === null ? true : await switching;
+  // A cohort may omit a confirmed course; keep the picks only if the year change landed and still holds.
+  if (done && app.state.program === program && app.state.profile.year === to && pick === yearPick)
+    for (const id of picked) if (!app.state.passed.includes(id)) setStatus(app.state, id, 'passed');
   refresh();
   back();
   return 'none';
+}
+async function pickYearWithEarlier(el) {
+  const pick = ++yearPick, to = cleanProfile({ year: Number(el.value) }).year;
+  app.holdFill++;
+  try {
+    // A year picked during a program switch must ask about the program that actually lands.
+    while (wantedProgram !== null && wantedProgram !== app.state.program) {
+      const was = changing,
+        done = await was;
+      if (pick !== yearPick || done === null) return 'none';
+      // refused with no newer switch to wait for (switchTo's early false): stop waiting, the selects go back to the record
+      if (done === false && changing === was) return (refresh(), 'none');
+    }
+    const old = app.state.profile.year,
+      groups = old && to > old ? earlierYearLists(app.data, old, to) : [];
+    if (groups.length) return await yearWithEarlier(el, groups, to);
+    await applyYear(el);
+    refresh();
+    return 'none';
+  } finally {
+    app.holdFill--;
+  }
 }
 export const CHG = {
   // the first-run card's three choices only update the draft (kept with the mark); "המשך" (ACT.frStart) applies them
@@ -685,12 +707,7 @@ export const CHG = {
   }, // a pin still wins in the solver
   pyear: (el) => {
     // design A: a year that makes earlier years of the record asks what was passed in them (a card over the board) before anything changes
-    const old = app.state.profile.year,
-      to = cleanProfile({ year: Number(el.value) }).year;
-    if (designOn() && !passOpen() && old && to > old) {
-      const groups = earlierYearLists(app.data, old, to);
-      if (groups.length) return yearWithEarlier(el, groups, to);
-    }
+    if (designOn() && !passOpen()) return pickYearWithEarlier(el);
     applyYear(el);
   },
   // step 2 of the first-run pass: a tick is the record at once (unticked means not passed), "עברתי את כולם" ticks the list

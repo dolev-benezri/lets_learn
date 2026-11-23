@@ -645,12 +645,26 @@ test('two tabs: a change in one stops the other from saving over it, until it re
   assert.equal(await b.evaluate(async () => (await import('./app.js')).app.state.name), 'מהלשונית השנייה');
 });
 
+// A later year asks what was passed in the years it makes earlier (a card over the board, phase 3): in design A the pick is taken on with "המשך"
+const pickYear = async (page, n) => {
+  const was = Number(await page.locator('input[data-chg="pyear"]:checked').getAttribute('value'));
+  await page.locator(`input[data-chg="pyear"][value="${n}"]`).evaluate((e) => e.click());
+  if (!(await onA(page)) || n <= was) return;
+  const card = page.locator('dialog.a-fr-dlg[open]');
+  if (await card.waitFor({ timeout: 5000 }).then(() => true, () => false)) await card.getByRole('button', { name: 'המשך' }).click();
+};
+
 test('two study years picked fast and neither loads: the year before both comes back', async (t) => {
   const page = await visit(t, 'desktop', DONE, '#me');
   await page.locator('input[data-chg="pyear"]').first().waitFor({ state: 'attached', timeout: 30000 });
-  await page.context().route(/\/30-202[45]\.json$/, (r) => setTimeout(() => r.abort(), 400));
-  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
-  await page.locator('input[data-chg="pyear"][value="4"]').evaluate((e) => e.click());
+  // both loads are held until both year changes have started (the card of design A takes its own time), then both fail
+  const held = [];
+  await page.context().route(/\/2027-1\/30-202[45]\.json$/, (r) => void held.push(r));
+  await pickYear(page, 3);
+  await pickYear(page, 4);
+  for (let i = 0; held.length < 2 && i < 100; i++) await page.waitForTimeout(100);
+  assert.equal(held.length, 2, 'both years are loading at once');
+  await Promise.all(held.map((r) => r.abort()));
   await page.locator('#toast', { hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 10000 });
   const s = await savedState(page);
   assert.deepEqual([s.profile.year, s.startYear], [2, 2026]);
@@ -718,9 +732,9 @@ test('a study year picked and taken back while it loads: the last choice wins', 
   const old = /\/30-2025\.json$/,
     hold = await holdFiles(page, old),
     sent = page.waitForRequest(old, { timeout: 30000 });
-  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await pickYear(page, 3);
   await sent; // the switch to cohort 2025 is loading, and stays so
-  await page.locator('input[data-chg="pyear"][value="2"]').evaluate((e) => e.click());
+  await pickYear(page, 2);
   hold.release(); // its files arrive after the choice was taken back
   await fetchesDone(page);
   const s = await savedState(page);
@@ -737,12 +751,17 @@ test('a study year picked while a new program loads: it applies to the new progr
     sent = page.waitForRequest(first, { timeout: 30000 });
   await pick.selectOption('20');
   await sent; // the switch to program 20 is loading, and stays so
-  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  const a = await onA(page), year = pickYear(page, 3);
+  if (a) {
+    await page.locator('input[data-chg="pyear"][value="3"]:checked').waitFor({ state: 'attached' });
+    hold.release(); // design A opens the card only after the program arrives
+  }
+  await year;
   await page.waitForFunction(() => {
     const s = JSON.parse(localStorage.getItem('afeka-sched-v1'));
     return s.program === 20 && s.startYear === 2025;
   }, null, { timeout: 30000 }); // the second choice is applied...
-  hold.release(); // ...and only then do the first switch's files arrive
+  if (!a) hold.release(); // classic: only then do the first switch's files arrive
   await fetchesDone(page);
   const s = await savedState(page);
   assert.deepEqual([s.program, s.profile.year, s.startYear], [20, 3, 2025]);
@@ -795,7 +814,7 @@ test('a program file that does not load: the student is told, and the study year
   const year = page.locator('input[data-chg="pyear"]');
   await year.first().waitFor({ state: 'attached', timeout: 30000 });
   await page.context().route('**/data/afeka/*/30-2025.json', (r) => r.abort());
-  await page.locator('input[data-chg="pyear"][value="3"]').evaluate((e) => e.click());
+  await pickYear(page, 3);
   await page.locator('#toast', { hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 10000 });
   assert.equal((await savedState(page)).profile.year, 2);
   assert.equal(await page.locator('input[data-chg="pyear"]:checked').getAttribute('value'), '2');
