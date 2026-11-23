@@ -66,8 +66,9 @@ for (const size of ['phone', { width: 1920, height: 900 }])
   });
 
 test('delete-all remains in the menu with its confirmation; cancelling preserves the record and returns focus', async (t) => {
-  const page = await visit(t, 'phone', DONE, '#me');
-  await page.locator('#me [data-k="amirnet"]').waitFor();
+  // the plain board: on a phone an open tool's scrim covers the top bar (a tap there closes the tool first)
+  const page = await visit(t, 'phone', DONE);
+  await weekReady(page);
   const before = await page.evaluate(() => localStorage.getItem('afeka-sched-v1'));
   await page.locator('.menu-btn').click();
   const erase = page.locator('#drawer [data-act="eraseAll"]');
@@ -102,9 +103,19 @@ for (const size of ['phone', { width: 1920, height: 900 }])
     assert.equal(await fold.evaluate((e) => e.open), false);
     assert.equal(await control.textContent(), 'הקישור שלי');
     assert.equal(await page.locator('#friends [data-k="copyMine"]').isVisible(), false);
+    // the toggle event comes a task after the native toggle: let it reach the kept state before a redraw
+    const settled = (open) =>
+      page.evaluate(async (o) => {
+        const { openDetails } = await import('./ui-common.js'), end = Date.now() + 5000;
+        while (openDetails.has('friends-mine') !== o) {
+          if (Date.now() > end) throw new Error(`the kept fold state never became ${o}`);
+          await new Promise((r) => setTimeout(r, 20));
+        }
+      }, open);
     await control.focus();
     await page.keyboard.press('Enter');
     assert.equal(await fold.evaluate((e) => e.open), true);
+    await settled(true);
     assert.equal(await control.evaluate((e) => e === document.activeElement), true);
     await page.evaluate(async () => (await import('./app.js')).refresh());
     assert.equal(await fold.evaluate((e) => e.open), true, 'open after a redraw');
@@ -135,6 +146,7 @@ for (const size of ['phone', { width: 1920, height: 900 }])
     await control.focus();
     await page.keyboard.press('Space');
     assert.equal(await fold.evaluate((e) => e.open), false);
+    await settled(false);
     await page.evaluate(async () => (await import('./app.js')).refresh());
     assert.equal(await fold.evaluate((e) => e.open), false, 'closed after a redraw');
     assert.equal(await control.evaluate((e) => e === document.activeElement), true);
