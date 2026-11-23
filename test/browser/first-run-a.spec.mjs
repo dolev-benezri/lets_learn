@@ -897,7 +897,8 @@ test('the grade sheet fills the list: its passes are ticked for review, a pass o
   await dlg.waitFor({ timeout: 30000 });
   await dlg.getByRole('button', { name: 'החל' }).click();
   await dlg.waitFor({ state: 'detached' });
-  await page.locator('[data-k="pass-30003"]').waitFor();
+  // the row is on screen before the import's redraw ticks it: wait for the tick, not for the row
+  await page.waitForFunction(() => document.querySelector('[data-k="pass-30003"]')?.checked, null, { timeout: 10000 });
   assert.equal(await page.locator('[data-k="pass-30003"]').isChecked(), true, 'the sheet\'s pass is ticked in the list');
   assert.ok((await passedIds(page)).includes('90901'), 'a pass outside the list (the English course) is in the record');
   assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-entry')), null, 'the import did not make the record\'s entry choice');
