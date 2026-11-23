@@ -658,12 +658,16 @@ test('two study years picked fast and neither loads: the year before both comes 
   const page = await visit(t, 'desktop', DONE, '#me');
   await page.locator('input[data-chg="pyear"]').first().waitFor({ state: 'attached', timeout: 30000 });
   // both loads are held until both year changes have started (the card of design A takes its own time), then both fail
+  // every semester's file of both cohorts is held (none reaches the server: 2024's ב and summer are not in the frozen copy), then all fail
   const held = [];
-  await page.context().route(/\/2027-1\/30-202[45]\.json$/, (r) => void held.push(r));
+  let failAll = false;
+  await page.context().route(/\/30-202[45]\.json$/, (r) => (failAll ? r.abort() : void held.push(r)));
   await pickYear(page, 3);
   await pickYear(page, 4);
-  for (let i = 0; held.length < 2 && i < 100; i++) await page.waitForTimeout(100);
-  assert.equal(held.length, 2, 'both years are loading at once');
+  const firsts = () => held.filter((r) => r.request().url().includes('/2027-1/')).length;
+  for (let i = 0; firsts() < 2 && i < 100; i++) await page.waitForTimeout(100);
+  assert.equal(firsts(), 2, 'both years are loading at once');
+  failAll = true;
   await Promise.all(held.map((r) => r.abort()));
   await page.locator('#toast', { hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 10000 });
   const s = await savedState(page);
