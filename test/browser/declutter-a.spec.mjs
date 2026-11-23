@@ -458,10 +458,18 @@ test('the hours outside the wished ones: a short "פרטים" line with a "לה�
   assert.doesNotMatch(await line.innerText(), /אפשר להפוך את השעות לחובה/);
 });
 
+// The same kind of week with 20 "אולי" courses: the search ends well inside its time limit even on a slow runner, so the plan (and the sentences that
+// describe it) does not depend on how fast the machine is. With 60 courses the search hits its limit and the plan it had by then is not always the same.
+const FEW = {
+  ...DONE,
+  'afeka-sched-v1': JSON.stringify({ ...STUDENT, choices: Object.fromEntries(FIXTURE_IDS.slice(0, 20).map((i) => [i, 'optional'])), constraints: { notBefore: '12:00' } })
+};
 test('classic keeps its long left-out and outside-hours sentences', async (t) => {
-  const page = await visit(t, 'desktop', MANY, '', 'classic');
+  const page = await visit(t, 'desktop', FEW, '', 'classic');
   await page.locator('#week .notice', { hasText: 'לא נכנסו לחלופה הזו' }).first().waitFor({ timeout: 60000 });
   await idle(page);
+  // a finished search, not the one the time limit cut short
+  await page.waitForFunction(async () => !(await import('./ui-common.js')).ui.last?.partial, null, { timeout: 60000 });
   assert.match(await page.locator('#week').innerText(), /במערכת הזו (כ-\d+ שעות שבועיות|10 שעות שבועיות או יותר) מחוץ לשעות הרצויות\. אפשר להפוך את השעות לחובה בהעדפות\./);
   assert.match(flat(await page.locator('#week .notice', { hasText: 'לא נכנסו לחלופה הזו' }).first().innerText()), /^לא נכנסו לחלופה הזו \d+ קורסים, [\d.]+ נ״ז: .+\.$/, 'the whole sentence, as before');
   assert.equal(await page.locator('#week .a-leftout, #week .a-which, #aLeftOut').count(), 0, 'nothing of design A');
