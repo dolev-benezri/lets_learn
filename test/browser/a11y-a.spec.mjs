@@ -56,10 +56,13 @@ const smallTargets = (page) =>
       return !!c && c.textContent.replace(a.textContent, '').trim().length > 0;
     };
     const bad = [];
+    // An open modal makes the page behind it inert: those are not targets.
+    const modal = document.querySelector('dialog:modal');
     for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs', '#alts', '.edit-card', '.edit-tool', '.a-fr-card',
-      '#drawer', '#pmap']) {
+      '#drawer', '#friendEd', '#pmap']) {
       for (const el of document.querySelector(root)?.querySelectorAll(sel) ?? []) {
-        if (!el.checkVisibility() || el.closest('[hidden]') || el.matches('.nd') || prose(el)) continue;
+        if (!el.checkVisibility() || el.closest('[hidden]') || el.matches('.nd') || prose(el) || (modal && !modal.contains(el))) continue;
+        if (el.closest('details:not([open])') && !el.matches('details > summary')) continue;
         const box = el.matches('input[type=checkbox], input[type=radio]') ? (el.closest('label') ?? el) : el;
         const r = box.getBoundingClientRect();
         if (r.width === 0 || r.height === 0) continue;
@@ -71,6 +74,58 @@ const smallTargets = (page) =>
       }
     }
     return bad;
+  });
+
+// Phase 5 D: both uses of the schedule editor, with its native fold closed and open, including desktop targets.
+for (const [w, size] of Object.entries(WIDTHS)) for (const scheme of ['light', 'dark']) for (const mode of ['friend', 'edit'])
+  test(`${w}/${scheme}/${mode}: file first, more ways closed/open, nearby actions, targets and keyboard focus through redraws`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const page = await visit(t, size, DONE, mode === 'friend' ? '#friends' : '#edit', scheme);
+    await page.locator(mode === 'friend' ? '#openFriendEditor' : '[data-ed="loadHand"]').click();
+    await page.locator('#friendEd[open]').waitFor();
+    const fold = page.locator('#feMore'), summary = fold.locator('summary');
+    assert.equal(await fold.evaluate((e) => e.open), false);
+    assert.equal(await summary.textContent(), 'דרכים נוספות');
+    assert.equal(await page.locator('#feFile').isVisible(), true);
+    assert.equal(await page.locator('#feCourse').isVisible(), false);
+    assert.equal(await page.locator('#feText').isVisible(), false);
+    assert.deepEqual((await page.locator('.fe-actions button').allTextContents()).map((s) => s.trim()), ['שמור', 'ביטול']);
+    assert.equal(await page.locator('.fe-actions').evaluate((e) => {
+      const content = e.previousElementSibling.getBoundingClientRect(), actions = e.getBoundingClientRect();
+      return Math.abs(content.bottom - actions.top) <= 1 && actions.bottom <= innerHeight + 1;
+    }), true, 'actions sit directly below the content, on screen');
+    await check(page, 'editor closed fold');
+    await layoutOk(page, 'editor closed fold', true, note);
+    await summary.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await summary.evaluate((e) => e.parentElement.open && e === document.activeElement), true);
+    await check(page, 'editor open fold');
+    await layoutOk(page, 'editor open fold', true, note);
+    assert.deepEqual(await fold.locator('h3').allTextContents(), ['בחירה ידנית', 'הדבקה']);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'feCourse', 'manual selection is keyboard reachable');
+    await page.locator('#feCourse').fill('30003');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    const group = page.locator('#feGroups [data-gid="273000302"]');
+    await group.press('Enter');
+    assert.equal(await group.evaluate((e) => e === document.activeElement), true, 'the redrawn group keeps focus');
+    assert.equal(await fold.evaluate((e) => e.open), true, 'redrawing the week leaves the fold open');
+    await page.locator('#feText').focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'feFind', 'paste is keyboard reachable');
+    await summary.focus();
+    await page.keyboard.press('Space');
+    assert.equal(await summary.evaluate((e) => !e.parentElement.open && e === document.activeElement), true);
+    assert.equal(await summary.evaluate((e) => {
+      const s = getComputedStyle(e), r = e.getBoundingClientRect();
+      return s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2 && r.top >= 0 && r.bottom <= innerHeight;
+    }), true, 'the focused summary has a visible ring on screen');
+    await page.setViewportSize({ width: w === '1280' ? 375 : 1280, height: 812 });
+    assert.equal(await summary.evaluate((e) => e === document.activeElement), true, 'resize keeps focus');
+    await page.keyboard.press('Enter');
+    assert.match(await group.textContent(), /משובץ/, 'the draft survives folding and resize');
+    done();
   });
 const sideways = (page) =>
   page.evaluate(() => {

@@ -1,7 +1,7 @@
 // The edit page's way in (Tasks 9-10) in WebKit: the friend editor's edit variant, then step 1 (load and review my schedule).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, STUDENT, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, STUDENT, DESIGN, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -21,7 +21,13 @@ const openEdit = (page, extra = '') =>
     window.__saved = null;
     m.openFriendEditor({ mode: 'edit', onSave: (r) => ((window.__saved = r), null), returnFocusId: 'edit', ...JSON.parse(x) });
   }, JSON.stringify(extra || {}));
+// A keeps manual selection and paste inside the native fold; classic has no fold.
+const moreWays = async (page) => {
+  if (DESIGN === 'a' && !await page.locator('#feMore').evaluate((e) => e.open))
+    await page.getByText('דרכים נוספות', { exact: true }).click();
+};
 const pick = async (page, text, gid) => {
+  await moreWays(page);
   await page.locator('#feCourse').fill(text);
   await page.locator('#feSearch button[type="submit"]').click();
   await page.locator(`[data-fe="toggle"][data-gid="${gid}"]`).click();
@@ -57,6 +63,10 @@ test('phone: without a planned summer the edit editor offers only א and ב; an 
   assert.deepEqual(sems, ['א', 'ב']);
   await page.locator('[data-fe="save"]').click();
   assert.match(await page.locator('#fePickErr').textContent(), /שבץ קבוצה/);
+  if (DESIGN === 'a') {
+    assert.equal(await page.locator('#feMore').evaluate((e) => e.open), true, 'validation opens the fold');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'feCourse', 'the invalid field takes focus');
+  }
   assert.equal(await page.evaluate(() => window.__saved), null);
 });
 
@@ -64,6 +74,7 @@ test('desktop: pasted text without group ids is read as a planner table into row
   const page = await visit(t, 'desktop', DONE);
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   await openEdit(page);
+  await moreWays(page);
   await page.locator('#feText').fill(
     [
       '1 30003 מבוא לכימיה סופי-הרצאה+תרגול 2.50 רביעי, 14:00-15:50',
@@ -84,6 +95,7 @@ test('desktop: reopening with rows keeps the groups and their rows; a group pick
   const page = await visit(t, 'desktop', DONE);
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   await openEdit(page);
+  await moreWays(page);
   await page.locator('#feText').fill('1 10336 יישומי מחשב בהנדסה MATLAB סופי-מעבדה 0.50 חמישי, 12:00-15:50');
   await page.locator('[data-fe="find"]').click();
   await page.locator('[data-fe="save"]').click();
@@ -105,6 +117,7 @@ const TABLE = [
 const loadTable = async (page) => {
   await page.locator('[data-ed="loadHand"]').click();
   await page.locator('#friendEd[open]').waitFor();
+  await moreWays(page);
   await page.locator('#feText').fill(TABLE);
   await page.locator('[data-fe="find"]').click();
   await page.locator('[data-fe="save"]').click();

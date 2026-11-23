@@ -9,6 +9,7 @@ import { groupNumber, lecturerText, courseCount, YEDION_HINT, notFoundHint } fro
 import { imageCanvas, pageCanvas, bigPage, scanCanvases } from './friend-scan.js';
 import { withPdf, pdfStep } from './grade-import.js';
 import { rowsFromTable, matchRows } from './friend-schedule.js';
+import { designOn } from './ui-common.js';
 
 const MAX = 40;
 const LIMIT = `אפשר עד ${MAX} קבוצות לחבר`;
@@ -90,7 +91,8 @@ phone.addEventListener('change', () => {
   if (ed) setTab($('feRoot').dataset.tab);
 });
 
-const shell = () => `<div class="fe" id="feRoot">
+const shell = () => designOn() ? shellA() : shellClassic();
+const shellClassic = () => `<div class="fe" id="feRoot">
   <header class="fe-head">
     <h2 id="feTitle" tabindex="-1">${ed.mode === 'edit' ? 'המערכת שלי' : ed.friend ? 'עריכת חבר' : 'מערכת של חבר'}</h2>
     ${ed.mode === 'edit' ? '' : `<div class="fe-name"><label for="feName">שם החבר</label>
@@ -132,8 +134,62 @@ const shell = () => `<div class="fe" id="feRoot">
     </section>
   </div></div>`;
 
+// Keep classic's shell intact. A rearranges the same controls; only the changing regions below are redrawn.
+function shellA() {
+  return `<div class="fe" id="feRoot">
+  <header class="fe-head">
+    <h2 id="feTitle" tabindex="-1">${ed.mode === 'edit' ? 'המערכת שלי' : ed.friend ? 'עריכת חבר' : 'מערכת של חבר'}</h2>
+    ${ed.mode === 'edit' ? '' : `<div class="fe-name"><label for="feName">שם החבר</label>
+      <input id="feName" type="text" maxlength="60" autocomplete="off" aria-required="true" value="${esc(ed.friend?.name ?? '')}">
+      <p class="err-text" id="feNameErr" role="alert"></p></div>`}
+  </header>
+  <p class="err-text fe-err" id="feErr" role="alert"></p>
+  <div class="fe-tabs" role="tablist" aria-label="חלקי העורך">
+    <button type="button" role="tab" id="feTabPick" aria-controls="fePick" data-fe="tab" data-tab="pick">קבוצות</button>
+    <button type="button" role="tab" id="feTabGrid" aria-controls="feGrid" data-fe="tab" data-tab="grid">מערכת</button></div>
+  <div class="fe-body">
+    <section class="fe-pick" id="fePick" aria-label="בחירת קבוצות">
+      <div class="fe-pick-body" id="fePickBody">
+        <div id="fePickSem"></div>
+        <section class="fe-sec fe-imp" aria-labelledby="feImpH"><h3 id="feImpH">ייבוא</h3>
+          <label for="feFile">קובץ מערכת (אקסל מאפקה-נט, PDF או תמונה)</label>
+          <input type="file" id="feFile" accept="application/pdf,image/*,.xlsx,${XLSX}" aria-describedby="feYedion">
+          <p class="hint" id="feYedion">${YEDION_HINT}</p>
+          <div id="feImpStatus" class="hint" aria-live="polite" tabindex="-1"></div>
+          <div id="feImpPages" class="fe-pages-box" hidden></div></section>
+        <details class="fe-more" id="feMore"><summary>דרכים נוספות</summary>
+          <section class="fe-sec" aria-labelledby="feHandH"><h3 id="feHandH">בחירה ידנית</h3>
+            <form id="feSearch" class="fe-sec"><label for="feCourse">הוספת קורס</label>
+              <div class="row"><input id="feCourse" type="text" list="feCourses" autocomplete="off" placeholder="שם או מספר קורס">
+                <button type="submit" class="btn">הצג קבוצות</button></div>
+              <datalist id="feCourses"></datalist></form>
+            <p class="err-text" id="fePickErr" role="alert"></p>
+            <div id="feGroups" class="fe-sec"></div></section>
+          <section class="fe-sec" aria-labelledby="fePasteH"><h3 id="fePasteH">הדבקה</h3>
+            <label for="feText">הדביקו טקסט עם מספרי קבוצות</label>
+            <textarea id="feText" rows="3" dir="auto"></textarea>
+            <button type="button" class="btn" id="feFind" data-fe="find">מצא קבוצות</button></section>
+        </details>
+      </div>
+    </section>
+    <section class="fe-grid" id="feGrid" aria-label="מערכת השבוע של החבר">
+      <div class="fe-bar"><div id="feTabs"></div><p id="feCount" class="hint"></p><p id="feSel" class="hint" aria-live="polite"></p>
+        <button type="button" class="btn" id="feRemove" data-fe="removeSel">${icon('x')} הסר קבוצה</button></div>
+      <p class="hint warn-text" id="feUnk"></p>
+      <div id="feDays" class="daysel" role="group" aria-label="בחירת יום"></div>
+      <div id="feWeek" class="fe-wk" role="group" tabindex="-1"></div>
+    </section>
+  </div>
+  <div class="fe-actions">
+    <button type="button" class="btn primary" data-fe="save">${icon('check')} שמור</button>
+    <button type="button" class="btn" data-fe="cancel">ביטול</button></div>
+  </div>`;
+}
+
 // ---------- tabs (phone) ----------
 function setTab(tab) {
+  const hiddenFocus = designOn() && phone.matches &&
+    document.activeElement?.closest(tab === 'pick' ? '#feGrid' : '#fePick');
   $('feRoot').dataset.tab = tab;
   for (const b of dlg.querySelectorAll('[role="tab"]')) {
     b.setAttribute('aria-selected', String(b.dataset.tab === tab));
@@ -150,6 +206,7 @@ function setTab(tab) {
       p.removeAttribute('aria-labelledby');
     }
   }
+  if (hiddenFocus) $(tab === 'pick' ? 'feTabPick' : 'feTabGrid').focus();
 }
 
 // ---------- rendering (each region on its own: inputs, the textarea and the focus are never re-rendered) ----------
@@ -187,6 +244,7 @@ function row(g) {
       class="sr">${esc(typeLabel(g.type))} ${esc(groupNumber(g.id))}: </span>${on ? 'משובץ · הסר' : 'שבץ'}</button></li>`;
 }
 function renderGroups() {
+  const focused = designOn() && $('feGroups').contains(document.activeElement) ? document.activeElement.dataset.gid : null;
   const c = ed.cid && semData().courses[ed.cid];
   $('feGroups').innerHTML = !c
     ? '<p class="hint">חפשו קורס כדי לראות את הקבוצות שלו.</p>'
@@ -201,8 +259,12 @@ function renderGroups() {
               .join('')}</ul>`
         )
         .join('')}`;
+  if (focused) ($('feGroups').querySelector(`[data-gid="${CSS.escape(focused)}"]`) ?? $('feCourse')).focus({ preventScroll: true });
 }
 function renderGrid() {
+  const active = designOn() ? document.activeElement : null,
+    focused = active && $('feWeek').contains(active),
+    day = active?.closest('#feDays') ? active.dataset.day : null;
   const data = semData(),
     byId = groupIndex(data),
     ids = ed.draft.filter((g) => byId.has(g));
@@ -239,6 +301,13 @@ function renderGrid() {
     }
   }
   for (const col of week.querySelectorAll('.day')) lanes([...col.querySelectorAll('.blk')]);
+  if (focused)
+    (
+      week.querySelector(`[data-k="${CSS.escape(active.dataset.k ?? '')}"]`) ??
+      week.querySelector(`[data-gid="${CSS.escape(active.dataset.gid ?? '')}"]`) ??
+      week
+    ).focus({ preventScroll: true });
+  if (day) $('feDays').querySelector(`[data-day="${day}"]`)?.focus({ preventScroll: true });
 }
 // Overlapping blocks of one day sit side by side: --lane of --lanes (editor CSS), instead of hiding each other.
 function lanes(blocks) {
@@ -565,6 +634,7 @@ function saveEdit() {
   setErr('feErr', '');
   if (!out.groups.length && !out.rows.length) {
     setTab('pick');
+    if (designOn()) $('feMore').open = true;
     setPickErr('יש לשבץ קבוצה אחת לפחות', true);
     $('feCourse').focus();
     return;
@@ -586,6 +656,7 @@ async function save() {
   }
   if (!ed.draft.length) {
     setTab('pick');
+    if (designOn()) $('feMore').open = true;
     setPickErr('יש לשבץ קבוצה אחת לפחות', true);
     $('feCourse').focus();
     return;
@@ -669,6 +740,19 @@ dlg.addEventListener('submit', (e) => {
   e.stopPropagation();
   if (ed && e.target.id === 'feSearch') search();
 });
+
+// On a wide screen both panes show. Remember the one being used before a resize makes the phone tabs hide the other.
+dlg.addEventListener('focusin', (e) => {
+  if (!ed || !designOn() || phone.matches) return;
+  const pane = e.target.closest('#fePick, #feGrid');
+  if (pane) setTab(pane.id === 'fePick' ? 'pick' : 'grid');
+});
+
+// Native summary activation keeps focus itself; also cover a fold closed while one of its fields has focus.
+dlg.addEventListener('toggle', (e) => {
+  if (!designOn() || e.target.id !== 'feMore' || e.target.open) return;
+  if (e.target.contains(document.activeElement)) e.target.querySelector('summary').focus();
+}, true);
 dlg.addEventListener('keydown', (e) => {
   e.stopPropagation(); // the drawer's Escape and the board's arrow keys never see editor keys
   const tab = e.target.closest?.('[role="tab"]');

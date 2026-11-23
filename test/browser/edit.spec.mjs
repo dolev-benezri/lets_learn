@@ -58,9 +58,15 @@ const search = async (page) => {
   await page.locator('[data-ed="search"]').click();
   await page.locator('.prop-nav').waitFor({ timeout: 30000 });
 };
+// A keeps manual selection and paste inside the native fold; classic has no fold.
+const moreWays = async (page) => {
+  if (DESIGN === 'a' && !await page.locator('#feMore').evaluate((e) => e.open))
+    await page.getByText('דרכים נוספות', { exact: true }).click();
+};
 const loadByHand = async (page) => {
   await page.locator('[data-ed="loadHand"]').click();
   await page.locator('#friendEd[open]').waitFor();
+  await moreWays(page);
   await page.locator('#feText').fill(TABLE);
   await page.locator('[data-fe="find"]').click();
   await page.locator('[data-fe="save"]').click();
@@ -191,6 +197,7 @@ for (const [name, size] of SIZES) {
     await page.locator('[data-ed="loadHand"]').click();
     await page.locator('#friendEd[open]').waitFor();
     if (await page.locator('#feTabPick').isVisible()) await page.locator('#feTabPick').click();
+    await moreWays(page);
     await page.locator('#feCourse').fill('30003');
     await page.locator('#feSearch button[type="submit"]').click();
     await page.locator('[data-fe="toggle"][data-gid="273000302"]').click();

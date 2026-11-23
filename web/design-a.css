@@ -671,3 +671,21 @@
 :root[data-design="a"] .edit-tool .prop-panel { padding:0; margin:0 0 var(--sp-3); background:none; border:0; border-radius:0; box-shadow:none; }
 :root[data-design="a"] .edit-tool .pcards { display:block; }
 :root[data-design="a"] .edit-tool .pcard { padding:var(--sp-3) 0; background:none; border-radius:0; border-top:1px solid var(--border); }
+/* Phase 5, Task D: file first, other entry methods folded, actions immediately after the content. */
+:root[data-design="a"] #friendEd .fe { flex:0 1 auto; max-height:100%; width:100%; max-width:var(--frame-edit); margin-inline:auto; }
+:root[data-design="a"] #friendEd .fe-head { display:flex; align-items:center; padding:var(--sp-3) var(--sp-4); }
+:root[data-design="a"] #friendEd .fe-head h2 { font-size:var(--fs-title); text-align:start; }
+:root[data-design="a"] #friendEd .fe-name { padding:0; }
+:root[data-design="a"] #friendEd .fe-head, :root[data-design="a"] #friendEd .fe-tabs { flex-shrink:0; }
+:root[data-design="a"] #friendEd .fe-body { flex:0 1 auto; height:min(64dvh, 640px); }
+:root[data-design="a"] #friendEd .fe-actions {
+  display:flex; flex:none; flex-wrap:wrap; gap:var(--sp-2); margin:0;
+  padding:var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom)); background:var(--surface);
+}
+:root[data-design="a"] #friendEd .fe-actions .btn { padding-inline:var(--sp-4); }
+:root[data-design="a"] #friendEd :is(.btn, [role="tab"], .daysel button, input[type="text"], input[type="file"]) { min-height:44px; min-width:44px; }
+:root[data-design="a"] #friendEd input[type="file"]::file-selector-button { min-height:44px; }
+:root[data-design="a"] #friendEd .seg-opts span { min-height:44px; }
+:root[data-design="a"] #friendEd .fe-more > summary { min-height:44px; padding-block:var(--sp-3); cursor:pointer; }
+:root[data-design="a"] #friendEd .fe-more > .fe-sec { margin-block:var(--sp-3); }
+:root[data-design="a"] #friendEd .fe-more > summary:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
