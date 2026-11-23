@@ -30,3 +30,12 @@ export function stepLine(step, year) {
   const n = steps.indexOf(step) + 1;
   return { n, of: steps.length, steps: steps.map((s, i) => ({ step: s, name: STEP_NAME[s], state: i + 1 < n ? 'done' : i + 1 === n ? 'now' : 'next' })) };
 }
+
+// ---- step 1: the choices a first visit makes on one card (a draft until "המשך") ----
+// The years a track offers while its own data is not loaded: the loaded track knows (`loaded`, yearsOf), another one is told by its name: an evening
+// track runs five years, the others four. A year a loaded track turns out not to have is cut when it loads (app.js refresh).
+export const yearsFor = (programName, loaded = null) => loaded ?? (/\(ערב\)$/.test(programName ?? '') ? 5 : 4);
+
+// What "המשך" needs: the terms read, and, in the pass, a track (when there is more than one) and a study year. The terms alone (improve's first visit, or the
+// terms asked again) need only the box.
+export const startReady = (draft, ask) => !!draft.t && (!ask.track || draft.p != null) && (!ask.year || draft.y != null);

@@ -183,12 +183,14 @@ export function identityPick(year, visible) {
 // The gate: the track first (tiles), then the year; "שינוי" (ui.gateTrack) shows the track tiles again. The tiles are buttons, not radios:
 // an arrow key on a radio would commit at once, and a button also re-picks the loaded track. They run the profile
 // card's handlers (ACT.pickTrack, ACT.pickYear).
-function termsHtml() {
-  return `<div class="me-head"><h2 id="meTitle" tabindex="-1">לפני שמתחילים</h2></div>
-    <div class="gate-terms"><p>זה כלי עזר לתכנון בלבד. הוא לא רושם אתכם לקורסים: ההרשמה נעשית רק באפקה-נט.</p>
+// The terms' text and its two links: the gate below and design A's first-run card (ui-first-run.js) show the same words.
+export const TERMS_BLOCK = `<div class="gate-terms"><p>זה כלי עזר לתכנון בלבד. הוא לא רושם אתכם לקורסים: ההרשמה נעשית רק באפקה-נט.</p>
     <p>החלופות שהכלי מציג הן אפשרויות, לא המלצה.</p>
     <p>לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים, במיוחד בכל חריגה מהמערכת המומלצת של המחלקה.</p></div>
-    <p class="gate-links"><a href="legal.html#terms">תנאי השימוש</a> · <a href="legal.html#scope">מה הכלי בודק ומה לא</a></p>
+    <p class="gate-links"><a href="legal.html#terms">תנאי השימוש</a> · <a href="legal.html#scope">מה הכלי בודק ומה לא</a></p>`;
+function termsHtml() {
+  return `<div class="me-head"><h2 id="meTitle" tabindex="-1">לפני שמתחילים</h2></div>
+    ${TERMS_BLOCK}
     <label class="check"><input type="checkbox" data-chg="termsTick" data-k="termsTick"> קראתי והבנתי</label>
     <button type="button" class="btn primary gate-go" data-act="acceptTerms" data-k="acceptTerms" disabled>המשך</button>`;
 }

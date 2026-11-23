@@ -165,8 +165,8 @@ test('a cancelled backup restore keeps ?design=a', async (t) => {
 test('a backup link that waited for the terms, then declined, keeps ?design=a', async (t) => {
   const backup = await link(t, 'backup');
   const page = await visit(t, { 'afeka-sched-v1': JSON.stringify(STUDENT) }, '?design=a' + backup.slice(backup.indexOf('#')));
-  await page.locator('[data-chg="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('[data-k="frTerms"]').check(); // an old save asked again: the terms alone, on the first-run card
+  await page.locator('[data-act="frStart"]').click();
   const dlg = page.locator('dialog[open]');
   await dlg.getByText('לשחזר גיבוי? המצב הנוכחי יוחלף.').waitFor();
   await dlg.getByRole('button', { name: 'השאר את המצב הנוכחי' }).click();

@@ -183,30 +183,30 @@ for (const [w, size] of Object.entries(WIDTHS)) for (const scheme of ['light', '
 
 for (const [w, size] of Object.entries(WIDTHS))
   for (const scheme of ['light', 'dark']) {
-    test(`${w}/${scheme}: the way in (terms gate, track, year, the record's entry screen): axe, no sideways scroll, targets`, async (t) => {
+    test(`${w}/${scheme}: the way in (the first-run card: step 1 empty and filled, step 2, then the record): axe, no sideways scroll, targets`, async (t) => {
       const { check, done, note } = checker(scheme);
       const touch = w !== '1280';
       const page = await visit(t, size, null, '', scheme);
-      await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
-      assert.equal(await page.evaluate(() => (document.getElementById('meTitle').focus(), document.activeElement.id)), 'meTitle', 'the gate heading takes focus');
-      await check(page, 'gate');
-      await layoutOk(page, 'gate', touch, note);
-      await page.locator('[data-k="termsTick"]').check();
-      await page.locator('[data-act="acceptTerms"]').click();
-      await page.locator('[data-act="pickTrack"]').first().waitFor();
-      await check(page, 'track');
-      await layoutOk(page, 'track', touch, note);
-      await page.locator('[data-act="pickTrack"][value="30"]').click();
-      await page.locator('[data-act="pickYear"]').first().waitFor();
-      await check(page, 'year');
-      await layoutOk(page, 'year', touch, note);
-      await page.locator('[data-act="pickYear"][value="2"]').click();
-      const manual = page.getByRole('button', { name: 'הזנה ידנית' });
-      await manual.waitFor();
-      await check(page, 'entry');
-      await layoutOk(page, 'entry', touch, note);
-      await manual.click();
-      await page.locator('#panel .crs').first().waitFor();
+      await page.locator('.a-fr-card .gate').waitFor({ state: 'visible' });
+      assert.equal(await page.evaluate(() => (document.getElementById('frTitle').focus(), document.activeElement.id)), 'frTitle', 'the card heading takes focus');
+      await check(page, 'step 1');
+      await layoutOk(page, 'step 1', touch, note);
+      await page.locator('[data-k="frTerms"]').check();
+      await page.locator('[data-k="frTrack"]').selectOption('30');
+      await page.locator('[data-k="fr-year-2"]').check();
+      await check(page, 'step 1 filled');
+      await layoutOk(page, 'step 1 filled', touch, note);
+      await page.locator('[data-k="frStart"]').click();
+      await page.locator('.a-fr-card[data-step="passed"]').waitFor({ timeout: 30000 });
+      await check(page, 'step 2');
+      await layoutOk(page, 'step 2', touch, note);
+      for (let i = 0; i < 6 && !(await page.locator('#firstRun').isHidden()); i++) {
+        await page.locator('[data-k="frNext"]').click();
+        await page.waitForTimeout(150);
+      }
+      // a first visit ends on #me (the route's own end is Task E): the record may be open already, and the dock button would close it on a phone
+      if (!(await page.locator('#panel #me').isVisible())) await page.locator('.dock [data-tool="me"]').click();
+      await page.locator('#panel .crs').first().waitFor({ timeout: 30000 });
       await check(page, 'record');
       await layoutOk(page, 'record', touch, note);
       done();

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { app } from '../web/app.js';
-import { passSteps, stepOf, markOf, nextStep, prevStep, stepLine, STEPS } from '../web/first-run.js';
+import { passSteps, stepOf, markOf, nextStep, prevStep, stepLine, yearsFor, startReady, STEPS } from '../web/first-run.js';
 
 
 test('passSteps: a first-year student has four steps, everyone else five, and none is skippable', () => {
@@ -44,7 +44,7 @@ test('stepLine: the position and the line of step names', () => {
 const KEY = 'afeka-sched-v1-firstrun';
 const store = (init = {}) => {
   const m = { ...init };
-  return { getItem: (k) => (k in m ? m[k] : null), setItem: (k, v) => void (m[k] = String(v)), m };
+  return { getItem: (k) => (k in m ? m[k] : null), setItem: (k, v) => void (m[k] = String(v)), removeItem: (k) => void delete m[k], m };
 };
 const withStorage = async (storage, tag, fn) => {
   const was = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
@@ -133,5 +133,46 @@ test('a storage that throws: the mark lives in memory for the visit, and nothing
     assert.equal(c.firstRun(), 1);
     c.setFirstRun(2);
     assert.equal(c.firstRun(), 2);
+  });
+});
+
+test('yearsFor: the loaded track knows its years, another one is told by its name (an evening track runs five)', () => {
+  assert.equal(yearsFor('הנדסה מכנית', 4), 4);
+  assert.equal(yearsFor('מדעי המחשב', 3), 3, 'the loaded track wins over the guess');
+  assert.equal(yearsFor('הנדסה מכנית (ערב)'), 5);
+  assert.equal(yearsFor('הנדסה מכנית'), 4);
+  assert.equal(yearsFor(undefined), 4);
+});
+
+test('startReady: the box, and in the pass the track (when asked) and the year', () => {
+  const all = { t: true, p: 30, y: 2 };
+  assert.equal(startReady(all, { track: true, year: true }), true);
+  assert.equal(startReady({ ...all, t: false }, { track: true, year: true }), false);
+  assert.equal(startReady({ ...all, p: null }, { track: true, year: true }), false);
+  assert.equal(startReady({ ...all, p: null }, { track: false, year: true }), true, 'a catalog with one track asks none');
+  assert.equal(startReady({ ...all, y: null }, { track: true, year: true }), false);
+  assert.equal(startReady({ t: true, p: null, y: null }, { track: false, year: false }), true, 'the terms alone need only the box');
+});
+
+test('the draft of step 1: kept in storage, read back, cleared; a storage that throws keeps it in memory', async () => {
+  const s1 = store();
+  await withStorage(ok(s1), 'draft', (c) => {
+    assert.deepEqual(c.firstDraft(), { t: false, p: null, y: null });
+    c.setFirstDraft({ t: true });
+    c.setFirstDraft({ p: 30 });
+    assert.deepEqual(c.firstDraft(), { t: true, p: 30, y: null }, 'each patch keeps the rest');
+    assert.equal(s1.m['afeka-sched-v1-firstrun-draft'], '{"t":true,"p":30,"y":null}');
+    c.clearFirstDraft();
+    assert.deepEqual(c.firstDraft(), { t: false, p: null, y: null });
+  });
+  await withStorage(ok(store({ 'afeka-sched-v1-firstrun-draft': '{"t":"yes","p":"x","y":2.5}' })), 'draft-junk', (c) => {
+    assert.deepEqual(c.firstDraft(), { t: false, p: null, y: null }, 'a draft that is not what was written is none');
+  });
+  const boom = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); }, removeItem: () => { throw new Error('blocked'); } };
+  await withStorage(ok(boom), 'draft-throws', (c) => {
+    c.setFirstDraft({ t: true, y: 3 });
+    assert.deepEqual(c.firstDraft(), { t: true, p: null, y: 3 }, 'in memory for the visit');
+    c.clearFirstDraft();
+    assert.deepEqual(c.firstDraft(), { t: false, p: null, y: null });
   });
 });

@@ -156,6 +156,37 @@ export const setFirstRun = (v) => {
     /* storage unavailable: kept for this visit only */
   }
 };
+// Step 1's choices are a draft until "המשך" applies them: { t: the terms box, p: the track, y: the study year }. Kept beside the mark, so a reload (or a visit
+// to improve mode and back) finds them; gone with the pass. A blocked storage keeps it in memory for the visit.
+const DRAFT = 'afeka-sched-v1-firstrun-draft';
+let draft = null;
+export const firstDraft = () => {
+  if (draft) return draft;
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT));
+    if (d && typeof d === 'object') return { t: d.t === true, p: Number.isInteger(d.p) ? d.p : null, y: Number.isInteger(d.y) ? d.y : null };
+  } catch {
+    /* storage unavailable, or not JSON: no draft */
+  }
+  return { t: false, p: null, y: null };
+};
+export const setFirstDraft = (patch) => {
+  draft = { ...firstDraft(), ...patch };
+  try {
+    localStorage.setItem(DRAFT, JSON.stringify(draft));
+    draft = null; // stored: the storage is the draft again
+  } catch {
+    /* storage unavailable: kept for this visit only */
+  }
+};
+export const clearFirstDraft = () => {
+  draft = null;
+  try {
+    localStorage.removeItem(DRAFT);
+  } catch {
+    /* storage unavailable */
+  }
+};
 // The pass is open: design A, build mode, a student who has not finished it. The edit page (#edit) is never gated by it.
 export const passOpen = () => designOn() && !isEditHash(location.hash) && firstRun() !== 'done';
 app.passOpen = passOpen; // app.js asks before it fills in the earlier years (ensurePassed, switchTo)

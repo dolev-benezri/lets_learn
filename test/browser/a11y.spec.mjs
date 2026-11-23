@@ -63,6 +63,7 @@ for (const [size, scheme] of COMBOS) {
     const { check, done } = checker(scheme);
     const page = await visit(t);
     await page.locator('.gate').waitFor();
+    if (DESIGN === 'a') return t.skip('A: the first-run card has its own scans (a11y-a.spec.mjs)');
     await check(page, 'gate');
     await page.locator('[data-k="termsTick"]').check();
     await page.locator('[data-act="acceptTerms"]').click();

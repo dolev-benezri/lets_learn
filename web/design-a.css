@@ -735,3 +735,20 @@
   :root[data-design="a"] .a-fr-card { padding:var(--sp-5) var(--sp-4) 0; }
   :root[data-design="a"] .a-fr-foot { margin-inline:calc(-1 * var(--sp-4)); padding-inline:var(--sp-4); }
 }
+/* phase 3, Task C (step 1): the terms, the track and the year on one card; the button and the way to the edit page in the sticky foot */
+:root[data-design="a"] .a-fr-card .gate { max-width:none; margin:0; padding:0; }
+:root[data-design="a"] .a-fr-card .gate-terms p { margin:0 0 var(--sp-2); }
+:root[data-design="a"] .a-fr-card .gate-links { margin:var(--sp-3) 0 var(--sp-5); }
+:root[data-design="a"] .a-fr-field { display:grid; align-items:stretch; gap:var(--sp-2); margin:var(--sp-4) 0 0; }
+:root[data-design="a"] .a-fr-field select {
+  width:100%; min-height:44px; padding:0 var(--sp-3); border:1px solid var(--border-input); border-radius:var(--radius-sm); background:var(--surface);
+  color:var(--text); font:inherit;
+}
+:root[data-design="a"] .a-fr-card .seg { margin:var(--sp-4) 0 0; }
+:root[data-design="a"] .a-fr-card .seg legend { margin-bottom:var(--sp-2); font-size:var(--fs); }
+:root[data-design="a"] .a-fr-card .seg label { min-width:44px; }
+:root[data-design="a"] .a-fr-card .seg span { min-height:44px; font-size:var(--fs); }
+:root[data-design="a"] .a-fr-check { margin-top:var(--sp-4); min-height:44px; }
+:root[data-design="a"] .a-fr-card .msg { margin:var(--sp-3) 0 0; }
+:root[data-design="a"] .a-fr-alt { margin:var(--sp-2) 0 0; font-size:var(--fs-sm); }
+:root[data-design="a"] .a-fr-alt a { display:inline-flex; align-items:center; min-height:44px; }

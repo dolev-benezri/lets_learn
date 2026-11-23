@@ -24,6 +24,8 @@ const visit = (t, size, seed, hash = '', withModeChoice = false) =>
   visitIn(browser, t, size, seed, hash, 'light', false, withModeChoice);
 const searches = (page) => page.evaluate(() => window.__searches);
 const acceptTerms = async (page) => {
+  // A: one card holds the terms, the track and the year, and "המשך" waits for all three: only the box is ticked here
+  if (DESIGN === 'a') return page.locator('[data-k="frTerms"]').check();
   await page.locator('[data-chg="termsTick"]').check();
   await page.locator('[data-act="acceptTerms"]').click();
 };
@@ -36,9 +38,12 @@ for (const size of ['phone', 'desktop'])
     if (DESIGN === 'a') {
       // A has no mode cards: the two tabs are the choice, and the edit one needs only the terms
       assert.equal(await page.locator('[data-act="pickMode"]').count(), 0, 'no mode cards');
-      // the pass hides the mode tabs until it ends (phase 3): a visitor who wants the edit page reaches it by its address (step 1's own link comes with its card)
-      await page.evaluate(() => (location.hash = '#edit'));
+      // the pass hides the mode tabs until it ends (phase 3): step 1's own link leads to the edit page, whose first visit is the terms alone
+      await page.locator('[data-k="frEdit"]').click();
       await page.waitForFunction(() => location.hash === '#edit');
+      await page.locator('[data-k="frStart"]').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('.a-fr-steps').count(), 0, 'the terms alone: no step line');
+      await page.locator('[data-k="frStart"]').click();
       await page.locator('#edit').waitFor({ state: 'visible' });
       assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page', 'the improve tab is selected');
       assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.dock .dk')].filter((b) => !b.hidden).map((b) => b.dataset.tool).sort()), ['changes', 'me', 'mine'], 'the dock of improve mode');
@@ -62,8 +67,8 @@ for (const size of ['phone', 'desktop'])
 test('phone: choosing build goes on to the track question', async (t) => {
   const page = await visit(t, 'phone', null, '', true);
   await acceptTerms(page);
-  if (DESIGN !== 'a') await page.locator('[data-act="pickMode"]').first().click(); // A: no mode question, the track comes next
-  await page.locator('[data-act="pickTrack"]').first().waitFor();
+  if (DESIGN !== 'a') await page.locator('[data-act="pickMode"]').first().click(); // A: no mode question, the track is on the card with the terms
+  await page.locator(DESIGN === 'a' ? '[data-k="frTrack"]' : '[data-act="pickTrack"]').first().waitFor();
 });
 
 for (const size of ['phone', 'desktop'])
@@ -134,14 +139,16 @@ test('320 px wide: the mode choice and the edit page do not scroll sideways; the
   const page = await visit(t, { width: 320, height: 640 }, null, '', true);
   const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   await acceptTerms(page);
-  const A = DESIGN === 'a'; // A: the tracks come next (the first-run card hides ☰ and the tabs: the edit page is reached by its address)
-  await page.locator(A ? '[data-act="pickTrack"]' : '[data-act="pickMode"]').first().waitFor();
+  const A = DESIGN === 'a'; // A: the track is on the card (it hides ☰ and the tabs: the edit page is reached by step 1's link and its terms)
+  await page.locator(A ? '[data-k="frTrack"]' : '[data-act="pickMode"]').first().waitFor();
   assert.equal(await fits(), true, 'the mode choice');
   const menu = page.locator(A ? '.menu-btn' : 'header [data-act="menu"]');
   const box = A ? null : await menu.boundingBox();
   if (box) assert.ok(box.width >= 44 && box.height >= 44, 'tap target');
-  if (A) await page.evaluate(() => (location.hash = '#edit'));
-  else await page.locator('[data-act="pickMode"]').nth(1).click();
+  if (A) {
+    await page.locator('[data-k="frEdit"]').click();
+    await page.locator('[data-k="frStart"]').click(); // the terms alone, ticked above
+  } else await page.locator('[data-act="pickMode"]').nth(1).click();
   await page.locator('#edit').waitFor({ state: 'visible' });
   assert.equal(await fits(), true, 'the edit page');
   if (box) assert.deepEqual(await menu.boundingBox(), box, 'the button does not move between pages');

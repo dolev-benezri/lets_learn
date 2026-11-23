@@ -120,6 +120,22 @@ export async function visit(browser, t, size, seed = null, hash = '', scheme = '
 }
 
 export const onA = (page) => page.evaluate(() => document.documentElement.dataset.design === 'a');
+// Design A's first-run card (phase 3), as a visitor goes through it: the terms, the track (when there is a choice) and the year on step 1, then "המשך" on every
+// step until the card is gone. { program, year } are the choices; stopAfterStart leaves the pass at the step that follows step 1.
+export async function passFirstRun(page, { program = 30, year = 2, stopAfterStart = false } = {}) {
+  await page.locator('[data-k="frTerms"]').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('[data-k="frTerms"]').check();
+  const track = page.locator('[data-k="frTrack"]');
+  if (await track.count()) await track.selectOption(String(program));
+  await page.locator(`[data-k="fr-year-${year}"]`).check();
+  await page.locator('[data-k="frStart"]').click();
+  if (stopAfterStart) return;
+  for (;;) {
+    await page.waitForFunction(() => document.getElementById('firstRun').hidden || document.querySelector('[data-k="frNext"]'), null, { timeout: 30000 });
+    if (await page.locator('#firstRun').isHidden()) return;
+    await page.locator('[data-k="frNext"]').click();
+  }
+}
 // the dock buttons of the A frame (ui-shell.js): the wishes tool is the old "prefs" step
 const DOCK = { me: 'me', courses: 'courses', prefs: 'wishes', friends: 'friends' };
 // Goes to a step the way a student does. view: 'me' | 'courses' | 'prefs' | 'friends' | 'plan'.

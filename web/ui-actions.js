@@ -10,7 +10,6 @@ import {
   refresh,
   keepFocus,
   switchTo,
-  ensurePassed,
   clearSaved,
   setUiReset,
   summerScope,
@@ -30,6 +29,9 @@ import {
   markOnboarded,
   acceptTerms,
   setFirstRun,
+  firstRun,
+  setFirstDraft,
+  clearFirstDraft,
   passOpen,
   gated,
   current,
@@ -50,7 +52,8 @@ import { renderBanner, renderView, go } from './ui-view.js';
 import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
 import { advisorPdfAct } from './ui-advisor-pdf.js';
-import { frNext, frBack, renderFirstRun } from './ui-first-run.js';
+import { frNext, frBack, renderFirstRun, toStep, draftOf, askOf } from './ui-first-run.js';
+import { startReady, markOf, nextStep } from './first-run.js';
 import { setMode } from './ui-mode.js';
 import { openLessonMenu } from './ui-edit.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel, advisorNow } from './ui-drawer.js';
@@ -137,6 +140,60 @@ export const ACT = {
     refresh();
     shownTitle()?.focus();
   }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
+  // Step 1 of the first-run card: the terms alone (improve's first visit, or asked again) are accepted as before. In the pass the terms, the
+  // track and the year are applied together, the button busy and the choices locked until the program's files arrive. A backup link waiting
+  // for the terms is restored first: a restored record is a whole one and ends the pass. A failed load says so on the card and stays on
+  // step 1 (ui.frHold keeps it there although the terms are accepted by now). Another tab may finish the pass meanwhile: what comes back
+  // from an await never writes over its mark.
+  async frStart() {
+    const d = draftOf();
+    if (ui.frBusy || !startReady(d, askOf())) return;
+    const pass = passOpen(),
+      reached = firstRun();
+    ui.frBusy = true;
+    ui.frError = '';
+    if (pass) ui.frHold = true;
+    keepFocus(renderFirstRun);
+    const stale = () => !passOpen() && pass; // the pass was finished elsewhere while this waited
+    const release = () => {
+      ui.frBusy = false;
+      ui.frHold = false;
+    };
+    if (!pass) {
+      await ACT.acceptTerms();
+      release();
+      if (firstRun() === 'done') clearFirstDraft(); // the terms asked again of someone who finished the pass: nothing of step 1 stays
+      renderFirstRun();
+      return;
+    }
+    acceptTerms();
+    if (await applyPendingBackup()) {
+      release();
+      if (stale()) return refresh();
+      setFirstRun('done');
+      clearFirstDraft();
+      dueIntro();
+      refresh();
+      shownTitle()?.focus();
+      return;
+    }
+    const ok = stale() ? true : await applyIdentity(d.p, d.y);
+    ui.frBusy = false;
+    if (stale()) {
+      release();
+      return refresh();
+    }
+    if (!ok) {
+      ui.frError = 'לא הצלחנו לטעון את נתוני המסלול. בדקו את החיבור ונסו שוב.';
+      renderFirstRun();
+      // the button was replaced while it was busy: focus goes to its successor
+      $('firstRun')?.querySelector('[data-k="frStart"]')?.focus({ preventScroll: true });
+      return;
+    }
+    ui.frHold = false;
+    // a pass already past step 1 (the terms asked again in the middle of it) goes back to the step reached; otherwise on to the step after step 1
+    toStep(typeof reached === 'number' && reached > 1 ? reached : markOf(nextStep('start', app.state.profile.year)));
+  },
   tour() {
     if (designOn()) {
       // A: the replay is in ☰; the menu closes first, and the tour returns to the ☰ button (the step bar is not on screen)
@@ -165,14 +222,7 @@ export const ACT = {
     save();
   },
   pickYear(el) {
-    const pass = passOpen(); // an old save without a study year also asks the year here, and keeps what it passed
     CHG.pyear(el);
-    if (pass) {
-      // until step 1 of the first-run pass is its own card: the year was the gate's last question, and the earlier years are assumed as they were
-      setFirstRun('done');
-      app.state.passed = app.state.assumed = null;
-      ensurePassed();
-    }
     refresh();
   },
   gradeImport() {
@@ -472,7 +522,7 @@ let wantedProgram = null;
 const beforeChange = () => {
   unsettled ??= { year: app.state.profile.year, programSet: app.state.programSet };
 };
-async function changeIdentity(program, startYear) {
+async function changeIdentity(program, startYear, quiet = false) {
   const same = program === app.state.program && startYear === app.state.startYear;
   wantedProgram = program;
   const done = await switchTo(program, startYear);
@@ -480,7 +530,7 @@ async function changeIdentity(program, startYear) {
     app.state.profile.year = unsettled.year;
     app.state.programSet = unsettled.programSet;
     save();
-    toast('לא הצלחנו לטעון את התוכנית שבחרתם, ולכן לא שינינו כלום. בדקו את החיבור ונסו שוב.');
+    if (!quiet) toast('לא הצלחנו לטעון את התוכנית שבחרתם, ולכן לא שינינו כלום. בדקו את החיבור ונסו שוב.');
   }
   // false and not the same identity: a newer choice took over, and it settles
   if (done !== false || same) {
@@ -489,15 +539,45 @@ async function changeIdentity(program, startYear) {
   }
   if (!done) {
     refresh();
-    return;
+    return same && done === false;
   } // refused or failed: the selects go back to the real state
   refresh();
-  toast(`עברנו ל${app.catalog.programs.find((p) => p.id === program)?.name ?? ''} ${startYear}`);
+  if (!quiet) toast(`עברנו ל${app.catalog.programs.find((p) => p.id === program)?.name ?? ''} ${startYear}`);
+  return true;
 }
 const cohortOf = (y) => y && app.data.year - y + 1; // the cohort that is in study year y
 // same cohort if offered, else the closest
 const nearest = (list, want) => list.reduce((b, y) => (Math.abs(y - want) < Math.abs(b - want) ? y : b), list[0]);
+// Step 1 of the first-run pass applies the track and the year in one go: the record takes them, the files load, and the answer says whether it landed.
+async function applyIdentity(programId, y) {
+  const p = app.catalog.programs.find((x) => x.id === programId),
+    year = cleanProfile({ year: y }).year;
+  if (!p || !year || !p.startYears.length) return false;
+  beforeChange();
+  app.state.programSet = true;
+  app.state.profile.year = year;
+  return changeIdentity(p.id, nearest(p.startYears, cohortOf(year)), true);
+}
 export const CHG = {
+  // the first-run card's three choices only update the draft (kept with the mark); "המשך" (ACT.frStart) applies them
+  frTerms: (el) => {
+    if (ui.frBusy) return 'none';
+    setFirstDraft({ t: el.checked });
+    keepFocus(renderFirstRun);
+    return 'none';
+  },
+  frTrack: (el) => {
+    if (ui.frBusy) return 'none';
+    setFirstDraft({ p: Number(el.value) });
+    keepFocus(renderFirstRun);
+    return 'none';
+  },
+  frYear: (el) => {
+    if (ui.frBusy) return 'none';
+    setFirstDraft({ y: Number(el.value) });
+    keepFocus(renderFirstRun);
+    return 'none';
+  },
   termsTick: (el) => {
     el.closest('.gate').querySelector('[data-act="acceptTerms"]').disabled = !el.checked;
     return 'none';

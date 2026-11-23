@@ -74,6 +74,7 @@ for (const size of Object.keys(SIZES)) {
   test(`${size}: terms gate by keyboard, track, year, manual entry, tick a course, an alternative shows`, async (t) => {
     const page = await visit(t, size);
     await page.locator('.gate').waitFor();
+    if (await onA(page)) return t.skip('A: the terms, the track and the year are the first-run card (first-run-a.spec.mjs)');
     // Tab from the top reaches the checkbox, and once it is ticked (Space) the button; Enter on the button leaves the gate.
     // Playwright's WebKit never puts links in the Tab order (Safari's default), so the two links are only checked to be real links that take focus.
     const seen = new Set();

@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { STUDENT, PASSED, DONE, launch, visit as visitIn } from './helpers.mjs';
+import { STUDENT, PASSED, DONE, passFirstRun, launch, visit as visitIn } from './helpers.mjs';
 import { TOUR_INTRO_A, TOUR_PLANS_A, TOUR_NEW_A } from '../../web/tour.js';
 
 let browser;
@@ -39,22 +39,26 @@ const makeLink = async (t, kind) => {
   return url.slice(url.indexOf('#'));
 };
 
-test('first visit shows the terms card over an empty board, then the track question, then the year question, one per screen', async (t) => {
+test('first visit shows one card: the terms, the track and the year together, over an empty board, and "המשך" waits for all three', async (t) => {
   const page = await visit(t, 'phone', null);
   await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('[data-k="termsTick"]').count(), 1, 'the terms card');
+  assert.equal(await page.locator('[data-k="frTerms"]').count(), 1, 'the terms');
+  assert.equal(await page.locator('[data-k="frTrack"]').count(), 1, 'the track, when the catalog has more than one');
+  assert.equal(await page.locator('input[name="fr-year"]').count() >= 4, true, 'the years');
   assert.equal(await page.locator('#week .blk').count(), 0, 'the board behind it is empty');
   assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), true, 'and cannot be used');
-  assert.equal(await page.locator('[data-act="pickTrack"]:visible, [data-act="pickYear"]:visible').count(), 0, 'no later question yet');
-  await page.locator('[data-k="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
-  await page.locator('[data-act="pickTrack"]').first().waitFor();
-  assert.equal(await page.locator('[data-act="pickYear"]:visible').count(), 0, 'the track alone');
-  assert.equal(await page.locator('[data-k="termsTick"]').count(), 0, 'the terms are done');
-  assert.equal(await page.locator('[data-act="pickMode"]').count(), 0, 'no mode question: the tabs are the choice');
-  await page.locator('[data-act="pickTrack"][value="30"]').click();
-  await page.locator('[data-act="pickYear"]').first().waitFor();
-  assert.equal(await page.locator('[data-act="pickTrack"]:visible').count(), 0, 'the year alone');
+  assert.equal(await page.locator('[data-act="pickTrack"], [data-act="pickYear"], [data-act="pickMode"]').count(), 0, 'no tiles, no mode question');
+  const go = page.locator('[data-k="frStart"]');
+  assert.equal(await go.isDisabled(), true, 'nothing set');
+  await page.locator('[data-k="frTerms"]').check();
+  assert.equal(await go.isDisabled(), true, 'the box alone');
+  await page.locator('[data-k="frTrack"]').selectOption('30');
+  assert.equal(await go.isDisabled(), true, 'the box and the track');
+  await page.locator('[data-k="fr-year-2"]').check();
+  assert.equal(await go.isDisabled(), false, 'all three');
+  await page.locator('[data-k="frTerms"]').uncheck();
+  assert.equal(await go.isDisabled(), true, 'the box taken back');
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-terms')), null, 'nothing is accepted before "המשך"');
 });
 
 test('a friend link on a first visit shows no mode question and, after the terms, the friend banner above the board', async (t) => {
@@ -62,10 +66,7 @@ test('a friend link on a first visit shows no mode question and, after the terms
   const page = await visit(t, 'phone', null, hash);
   await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   assert.equal(await page.locator('[data-act="pickMode"]').count(), 0, 'no mode question');
-  await page.locator('[data-k="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
-  await page.locator('[data-act="pickTrack"][value="30"]').click();
-  await page.locator('[data-act="pickYear"][value="2"]').first().click(); // the pass ends here until its own steps are built
+  await passFirstRun(page); // the friend's link waits behind the pass (step 5 offers it, Task E)
   const banner = page.locator('#banner');
   await banner.getByText('נועה').first().waitFor({ timeout: 30000 });
   const m = await page.evaluate(() => {
@@ -80,8 +81,7 @@ test('a backup link runs after the terms and lands on the board', async (t) => {
   const hash = await makeLink(t, 'backup');
   const page = await visit(t, 'phone', null, hash);
   await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
-  await page.locator('[data-k="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
+  await passFirstRun(page, { stopAfterStart: true }); // the track and the year are asked too; the restored record then ends the pass
   const ask = page.locator('dialog[open]');
   if (await ask.count().then((n) => n || ask.waitFor({ timeout: 3000 }).then(() => 1, () => 0))) await ask.getByRole('button').first().click();
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
@@ -129,16 +129,20 @@ test('the intro tour has no stop on a hidden element, at every width', async (t)
   }
 });
 
-test('the first visit ends the gate with the intro tour, and no tour shows over the track or year question', async (t) => {
+test('the first visit ends the pass with the intro tour, and no tour shows over the card', async (t) => {
   const page = await visit(t, 'phone', null, '', true);
   await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
-  await page.locator('[data-k="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
-  assert.equal(await popover(page).count(), 0, 'no tour over the track question');
-  await page.locator('[data-act="pickTrack"][value="30"]').click();
-  await page.locator('[data-act="pickYear"]').first().waitFor();
-  assert.equal(await popover(page).count(), 0, 'nor over the year question');
-  await page.locator('[data-act="pickYear"][value="2"]').click();
+  await page.waitForTimeout(800);
+  assert.equal(await popover(page).count(), 0, 'no tour over step 1');
+  await passFirstRun(page, { stopAfterStart: true });
+  await page.locator('.a-fr-card[data-step="passed"]').waitFor();
+  assert.equal(await popover(page).count(), 0, 'nor over the later steps');
+  while (await page.locator('[data-k="frNext"]').count()) {
+    await page.locator('[data-k="frNext"]').click();
+    await page.waitForTimeout(200);
+    if (await page.locator('#firstRun').isHidden()) break;
+    assert.equal(await popover(page).count(), 0, 'nor over any step');
+  }
   await popover(page).waitFor({ timeout: 15000 });
   assert.match((await page.locator('.driver-popover-description').textContent()) ?? '', /מצבים|לבנות|לשפר/, 'the intro of design A comes first');
   while ((await page.locator('.driver-popover-next-btn').textContent()) !== 'סיום') await page.locator('.driver-popover-next-btn').click();
@@ -262,13 +266,17 @@ test('no visible string under A says "שלב N", "צעד N" or "הבא:", on eve
   await fresh.locator('#firstRun .gate').waitFor({ state: 'visible' });
   const gate = await fresh.evaluate(() => document.body.innerText);
   if (cardRule.test(gate)) bad.push(`gate: ${cardRule.exec(gate)[0]}`);
-  await fresh.locator('[data-k="termsTick"]').check();
-  await fresh.locator('[data-act="acceptTerms"]').click();
-  await fresh.locator('[data-act="pickTrack"][value="30"]').click();
-  await fresh.locator('[data-act="pickYear"][value="2"]').click();
-  await fresh.getByRole('button', { name: 'הזנה ידנית' }).waitFor();
-  const entry = await fresh.evaluate(() => document.body.innerText);
-  if (rule.test(entry)) bad.push(`entry: ${rule.exec(entry)[0]}`);
+  await passFirstRun(fresh, { stopAfterStart: true });
+  for (let i = 0; i < 6 && !(await fresh.locator('#firstRun').isHidden()); i++) {
+    await fresh.locator('.a-fr-card').waitFor();
+    const text = await fresh.evaluate(() => document.body.innerText);
+    if (cardRule.test(text)) bad.push(`step ${i + 2}: ${cardRule.exec(text)[0]}`);
+    await fresh.locator('[data-k="frNext"]').click();
+    await fresh.waitForTimeout(150);
+  }
+  await fresh.locator('#firstRun').waitFor({ state: 'hidden', timeout: 30000 });
+  const board = await fresh.evaluate(() => document.body.innerText);
+  if (rule.test(board)) bad.push(`the board: ${rule.exec(board)[0]}`);
   assert.deepEqual(bad, []);
 });
 
@@ -448,19 +456,28 @@ test('a new visitor gets the first-run mark at the first load, nothing is comput
   assert.equal(await workerStarted(page), false, 'no search worker was started');
   assert.equal(await page.locator('#week .blk').count(), 0);
   await page.reload();
-  await page.locator('#firstRun .gate [data-k="termsTick"]').waitFor({ state: 'visible' });
+  await page.locator('#firstRun [data-k="frTerms"]').waitFor({ state: 'visible' });
   assert.equal(await markOf(page), '1', 'a reload before "המשך" is still step 1');
   assert.equal(await workerStarted(page), false);
 });
 
-test('the pass ends with the gate (until step 1 is its own card): the mark turns done and the first search starts', async (t) => {
+test('the pass ends with its last step: the mark turns done and only then the first search starts', async (t) => {
+  // a first-year student: nothing earlier to pass (a later year's earlier courses are step 2's list, Task D), so the first search has a plan to show
   const page = await visit(t, 'phone', null);
-  await page.locator('[data-k="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
-  await page.locator('[data-act="pickTrack"][value="30"]').click();
-  await page.locator('[data-act="pickYear"][value="2"]').first().click();
-  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  await passFirstRun(page, { year: 1, stopAfterStart: true });
+  await page.locator('.a-fr-card[data-step="courses"]').waitFor();
+  assert.equal(await markOf(page), '3');
+  await page.waitForTimeout(1500);
+  assert.equal(await workerStarted(page), false, 'no search between the steps');
+  await page.locator('#week .blk').count();
+  while (await page.locator('[data-k="frNext"]').count()) {
+    await page.locator('[data-k="frNext"]').click();
+    await page.waitForTimeout(150);
+    if (await page.locator('#firstRun').isHidden()) break;
+  }
+  await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // a phone shows one day: the first block may be on another
   assert.equal(await markOf(page), 'done');
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-firstrun-draft')), null, "step 1's draft goes with the pass");
   assert.equal(await workerStarted(page), true);
 });
 
@@ -489,10 +506,10 @@ test('an old save that never chose a study year is asked the year at the gate an
 
 test('the improve mode is not held by the pass: its terms, then its own loader, with the mark left where it was', async (t) => {
   const page = await visit(t, 'desktop', null, '#edit');
-  await page.locator('[data-k="termsTick"]').waitFor({ state: 'visible' });
+  await page.locator('[data-k="frTerms"]').waitFor({ state: 'visible' });
   assert.equal(await markOf(page), '1');
-  await page.locator('[data-k="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('[data-k="frTerms"]').check();
+  await page.locator('[data-act="frStart"]').click();
   await page.locator('#edit .edit-card, #edit .edit-stage').first().waitFor({ state: 'visible', timeout: 15000 });
   assert.equal(await markOf(page), '1', 'improve mode leaves the pass where it was');
   assert.equal(await page.evaluate(async () => (await import('./ui-common.js')).passOpen()), false, 'the pass is build mode only');
@@ -576,14 +593,14 @@ test('step 1 has no way back and no legal line of its own; the terms alone (impr
   assert.equal(await one.locator('.a-fr-legal').count(), 0, 'the terms text is on the card itself');
   assert.equal((await one.locator('.a-fr-n').textContent()).trim(), 'שלב 1 מתוך 5');
   const edit = await visit(t, 'phone', null, '#edit');
-  await edit.locator('#firstRun [data-k="termsTick"]').waitFor({ state: 'visible' });
+  await edit.locator('#firstRun [data-k="frTerms"]').waitFor({ state: 'visible' });
   assert.equal(await edit.locator('.a-fr-steps, .a-fr-n').count(), 0, 'improve mode: the terms alone');
   const again = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-terms': '1' }); // an old save, asked again after a new terms version
-  await again.locator('#firstRun [data-k="termsTick"]').waitFor({ state: 'visible' });
+  await again.locator('#firstRun [data-k="frTerms"]').waitFor({ state: 'visible' });
   assert.equal(await again.locator('.a-fr-steps, .a-fr-n').count(), 0, 'no pass for an old save');
   assert.equal(await markOf(again), null);
-  await again.locator('[data-k="termsTick"]').check();
-  await again.locator('[data-act="acceptTerms"]').click();
+  await again.locator('[data-k="frTerms"]').check();
+  await again.locator('[data-act="frStart"]').click();
   await again.locator('#week .blk').first().waitFor({ timeout: 30000 });
   assert.equal(await again.locator('#firstRun').isVisible(), false, 'the card is gone');
 });
@@ -636,11 +653,11 @@ for (const size of ['phone', { width: 1920, height: 400 }])
 
 test('a new terms version in the middle of the pass shows the terms first, and the step reached is kept for after them', async (t) => {
   const page = await visit(t, 'phone', { [MARK]: '3', 'afeka-sched-v1': JSON.stringify({ ...STUDENT, profile: { ...STUDENT.profile, year: 2 } }) }); // no terms on file
-  await page.locator('#firstRun [data-k="termsTick"]').waitFor({ state: 'visible' });
+  await page.locator('#firstRun [data-k="frTerms"]').waitFor({ state: 'visible' });
   assert.equal(await page.locator('.a-fr-card').getAttribute('data-step'), 'start', 'the terms, not step 3 with its empty body');
   assert.equal(await markOf(page), '3', 'the mark is not touched');
-  await page.locator('[data-k="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('[data-k="frTerms"]').check();
+  await page.locator('[data-act="frStart"]').click();
   await page.locator('.a-fr-card[data-step="courses"]').waitFor({ timeout: 15000 });
 });
 
@@ -663,4 +680,169 @@ test('another tab finished the pass: this tab\'s card, pressed, shows the board 
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   assert.equal(await markOf(page), 'done', 'not turned back into a step');
   assert.equal(await page.locator('#firstRun').isVisible(), false);
+});
+
+// ---------- step 1 (phase 3, Task C) ----------
+const fillStart = async (page, { program = '30', year = 2 } = {}) => {
+  await page.locator('[data-k="frTerms"]').check();
+  if (program) await page.locator('[data-k="frTrack"]').selectOption(program);
+  await page.locator(`[data-k="fr-year-${year}"]`).check();
+};
+const savedRecord = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
+
+test('the three choices survive a reload before "המשך", with the button ready', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.locator('.a-fr-card').waitFor({ state: 'visible' });
+  await fillStart(page);
+  await page.reload();
+  await page.locator('[data-k="frStart"]').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('[data-k="frTerms"]').isChecked(), true, 'the box');
+  assert.equal(await page.locator('[data-k="frTrack"]').inputValue(), '30', 'the track');
+  assert.equal(await page.locator('[data-k="fr-year-2"]').isChecked(), true, 'the year');
+  assert.equal(await page.locator('[data-k="frStart"]').isDisabled(), false);
+  assert.equal(await markOf(page), '1');
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-terms')), null, 'and still nothing accepted');
+});
+
+test('a five-year program offers year ה, a four-year one does not, and a year the other track lacks is dropped', async (t) => {
+  const page = await visit(t, 'desktop', null);
+  await page.locator('[data-k="frTrack"]').waitFor({ state: 'visible' });
+  const years = () => page.locator('input[name="fr-year"]').count();
+  await page.locator('[data-k="frTrack"]').selectOption('32'); // הנדסה מכנית (ערב)
+  assert.equal(await years(), 5, 'an evening track: five years');
+  await page.locator('[data-k="fr-year-5"]').check();
+  await page.locator('[data-k="frTrack"]').selectOption('30');
+  assert.equal(await years(), 4, 'a day track: four');
+  assert.equal(await page.locator('input[name="fr-year"]:checked').count(), 0, 'year ה is dropped, not kept for a track without it');
+  await page.locator('[data-k="frTerms"]').check();
+  assert.equal(await page.locator('[data-k="frStart"]').isDisabled(), true, 'and the year is asked again');
+});
+
+for (const [year, step, mark] of [[2, 'passed', '2'], [1, 'courses', '3']])
+  test(`"המשך" applies the terms, the track and the year at once: year ${year} goes on to ${step}, nothing is computed`, async (t) => {
+    const page = await visit(t, 'phone', null);
+    await page.locator('.a-fr-card').waitFor({ state: 'visible' });
+    await fillStart(page, { program: '30', year });
+    await page.locator('[data-k="frStart"]').click();
+    await page.locator(`.a-fr-card[data-step="${step}"]`).waitFor({ timeout: 30000 });
+    const rec = await savedRecord(page);
+    assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-terms')), '2', 'the terms are accepted');
+    assert.deepEqual([rec.program, rec.profile.year, rec.programSet], [30, year, true], 'the track and the year are the record');
+    assert.equal(await markOf(page), mark);
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'frTitle', 'the step heading has focus');
+    assert.equal(await workerStarted(page), false);
+  });
+
+test('another track: the button is busy while its files arrive, then step 2 shows its courses', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.route('**/data/afeka/2027-1/20-2026.json', async (r) => {
+    await new Promise((ok) => setTimeout(ok, 1500));
+    await r.continue();
+  });
+  await fillStart(page, { program: '20', year: 2 });
+  await page.locator('[data-k="frStart"]').click();
+  const busy = page.locator('[data-k="frStart"]');
+  assert.equal((await busy.textContent()).trim(), 'טוען…');
+  assert.equal(await busy.isDisabled(), true, 'no second press while it loads');
+  assert.equal(await busy.getAttribute('aria-busy'), 'true');
+  await page.locator('.a-fr-card[data-step="passed"]').waitFor({ timeout: 30000 });
+  assert.equal((await savedRecord(page)).program, 20);
+});
+
+test('a track whose files do not load: the card says so, stays on step 1 with the choices, and the record is unchanged', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.route('**/data/afeka/2027-1/20-2026.json', (r) => r.abort());
+  await fillStart(page, { program: '20', year: 2 });
+  await page.locator('[data-k="frStart"]').click();
+  await page.locator('.a-fr-card [role="alert"]').filter({ hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('.a-fr-card').getAttribute('data-step'), 'start');
+  assert.equal(await markOf(page), '1');
+  const rec = await savedRecord(page);
+  assert.ok(!rec?.programSet && rec?.profile?.year == null, 'the track and the year were not applied');
+  assert.equal(await page.locator('[data-k="frTrack"]').inputValue(), '20', 'the choices are still there');
+  assert.equal(await page.locator('[data-k="frStart"]').isDisabled(), false, 'and it can be tried again');
+  await page.unroute('**/data/afeka/2027-1/20-2026.json');
+  await page.locator('[data-k="frStart"]').click();
+  await page.locator('.a-fr-card[data-step="passed"]').waitFor({ timeout: 30000 });
+});
+
+test('"יש לך כבר מערכת?" leads to the edit page by its terms; back in build mode step 1 has its draft, the mark is still 1', async (t) => {
+  const page = await visit(t, 'desktop', null);
+  await page.locator('[data-k="frEdit"]').waitFor({ state: 'visible' });
+  assert.equal((await page.locator('[data-k="frEdit"]').textContent()).trim(), 'יש לך כבר מערכת? שיפור מערכת קיימת');
+  await page.locator('[data-k="frTrack"]').selectOption('30');
+  await page.locator('[data-k="fr-year-2"]').check();
+  await page.locator('[data-k="frEdit"]').click();
+  await page.waitForFunction(() => location.hash === '#edit');
+  await page.locator('[data-k="frStart"]').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.a-fr-steps, .a-fr-n, [data-k="frEdit"], [data-k="frTrack"]').count(), 0, 'the terms alone: no steps, no track and year, no link');
+  await page.locator('[data-k="frTerms"]').check();
+  await page.locator('[data-k="frStart"]').click();
+  await page.locator('#edit').waitFor({ state: 'visible' });
+  await page.locator('.a-top .modes a[data-mode="build"]').click();
+  await page.locator('.a-fr-card[data-step="start"]').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('[data-k="frTrack"]').inputValue(), '30', 'the track is where it was left');
+  assert.equal(await page.locator('[data-k="fr-year-2"]').isChecked(), true, 'and the year');
+  assert.equal(await page.locator('[data-k="frTerms"]').isChecked(), true, 'the terms were accepted on the way');
+  assert.equal(await markOf(page), '1');
+  assert.equal(await page.locator('.a-top .modes').isVisible(), false, 'the mode tabs are still hidden by the pass');
+});
+
+test('a backup link that cannot be restored (a track the site lacks) lets the pass go on to step 2; a good one ends it', async (t) => {
+  const page0 = await visit(t, 'phone', DONE);
+  await page0.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  const bad = await page0.evaluate(async (st) => {
+    const s = await import('./share.js');
+    return s.backupLink(location.origin + location.pathname, st);
+  }, { ...STUDENT, program: 9999 });
+  const page = await visit(t, 'phone', null, bad.slice(bad.indexOf('#')));
+  await passFirstRun(page, { stopAfterStart: true });
+  await page.locator('.a-fr-card[data-step="passed"]').waitFor({ timeout: 30000 });
+  assert.equal(await markOf(page), '2', 'the pass goes on');
+  const good = await makeLink(t, 'backup');
+  const page2 = await visit(t, 'phone', null, good);
+  await passFirstRun(page2, { stopAfterStart: true });
+  await page2.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  assert.equal(await markOf(page2), 'done', 'a restored record ends the pass');
+  assert.equal(await page2.locator('#firstRun').isVisible(), false);
+});
+
+test('while the files load the choices are locked and the button is busy; a pass finished in another tab is not written over', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.route('**/data/afeka/2027-1/20-2026.json', async (r) => {
+    await new Promise((ok) => setTimeout(ok, 2000));
+    await r.continue();
+  });
+  await fillStart(page, { program: '20', year: 2 });
+  await page.locator('[data-k="frStart"]').click();
+  assert.equal(await page.locator('[data-k="frStart"]').isDisabled(), true);
+  for (const sel of ['[data-k="frTrack"]', '[data-k="frTerms"]', 'input[name="fr-year"]'])
+    assert.equal(await page.locator(sel).first().isDisabled(), true, `${sel} is locked while it loads`);
+  await page.evaluate((k) => localStorage.setItem(k, 'done'), MARK); // the other tab's write
+  await page.locator('#firstRun').waitFor({ state: 'hidden', timeout: 30000 });
+  assert.equal(await markOf(page), 'done', 'the late answer did not turn the mark back into a step');
+});
+
+test('the terms asked again in the middle of the pass: a track that does not load leaves step 1 on screen with its error', async (t) => {
+  const page = await visit(t, 'phone', { [MARK]: '3', 'afeka-sched-v1': JSON.stringify({ ...STUDENT, profile: { ...STUDENT.profile, year: 2 } }) });
+  await page.route('**/data/afeka/2027-1/20-2026.json', (r) => r.abort());
+  await page.locator('[data-k="frTerms"]').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('[data-k="frTerms"]').check();
+  await page.locator('[data-k="frTrack"]').selectOption('20');
+  await page.locator('[data-k="frStart"]').click();
+  await page.locator('.a-fr-card [role="alert"]').filter({ hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('.a-fr-card').getAttribute('data-step'), 'start', 'step 1 stays although the terms are accepted by now');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset?.k), 'frStart', 'focus is on the button that can try again');
+  await page.unroute('**/data/afeka/2027-1/20-2026.json');
+  await page.locator('[data-k="frStart"]').click();
+  await page.locator('.a-fr-card[data-step="courses"]').waitFor({ timeout: 30000 });
+});
+
+test('the terms asked again of someone who finished the pass: nothing of step 1 stays in the draft afterwards', async (t) => {
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-terms': '1' });
+  await page.locator('[data-k="frTerms"]').waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('[data-k="frTerms"]').check();
+  await page.locator('[data-k="frStart"]').click();
+  await page.locator('#firstRun').waitFor({ state: 'hidden', timeout: 30000 });
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-firstrun-draft')), null);
 });

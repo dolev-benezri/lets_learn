@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { SITE, SIZES, STUDENT, DONE, DESIGN_KEY, TOUR_SEEN, MODE_BUILD, launch, visit as visitIn } from './helpers.mjs';
+import { SITE, SIZES, STUDENT, DONE, DESIGN_KEY, TOUR_SEEN, MODE_BUILD, passFirstRun, launch, visit as visitIn } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -125,7 +125,7 @@ test('behind the gate the board is inert, and the skip link goes to the gate', a
   await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
   assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), true);
   await page.evaluate(() => document.querySelector('.skip').click());
-  assert.equal(await activeId(page), 'meTitle');
+  assert.equal(await activeId(page), 'frTitle');
 });
 
 test('opening a tool from the plain board closes a drawer that was open (#friends is the plans to the classic router)', async (t) => {
@@ -365,11 +365,8 @@ for (const size of ['phone', { width: 320, height: 640 }, { width: 1280, height:
     for (const sel of ['.menu-btn', '.a-top .modes', '.a-top .modes a', '#aStrip', '.a-unofficial', '.dock'])
       assert.equal(await shown(sel), 0, `${sel} is not drawn`);
     assert.equal(await page.locator('#aStrip').evaluate((e) => e.textContent.trim().length > 0), true, 'the strip keeps its text, only hidden');
-    await page.locator('[data-k="termsTick"]').check();
-    await page.locator('[data-act="acceptTerms"]').click();
-    await page.locator('[data-act="pickTrack"][value="30"]').click();
-    await page.locator('[data-act="pickYear"][value="2"]').first().click();
-    await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+    await passFirstRun(page, { year: 1 }); // nothing earlier to pass: the board has a plan to show (a later year's earlier courses are step 2's list)
+    await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // a phone shows one day at a time
     assert.equal(await shown('.menu-btn'), 1, '☰ is back');
     assert.equal(await shown('.a-top .modes a'), 2, 'the mode tabs are back');
     assert.equal(await shown('#aStrip'), 1, 'the strip is back');
@@ -378,11 +375,11 @@ for (const size of ['phone', { width: 320, height: 640 }, { width: 1280, height:
 
 test('a first visitor who arrives at the edit page sees the terms on the whole screen, and after them the edit page with the tabs back, not the track question', async (t) => {
   const page = await visit(t, 'phone', null, '#edit');
-  await page.locator('#firstRun [data-k="termsTick"]').waitFor({ state: 'visible' });
+  await page.locator('#firstRun [data-k="frTerms"]').waitFor({ state: 'visible' });
   assert.equal(await visible(page, '.a-top .modes a'), false, 'the mode tabs wait for the terms');
   assert.equal(await visible(page, '#edit'), false, 'and the edit page is not behind the card');
-  await page.locator('[data-k="termsTick"]').check();
-  await page.locator('[data-act="acceptTerms"]').click();
+  await page.locator('[data-k="frTerms"]').check();
+  await page.locator('[data-act="frStart"]').click();
   await page.locator('#edit').waitFor({ state: 'visible' });
   assert.equal(await page.locator('.a-top .modes a[data-mode="edit"]').getAttribute('aria-current'), 'page');
   assert.equal(await page.locator('[data-act="pickTrack"]:visible').count(), 0, 'not the build gate');
