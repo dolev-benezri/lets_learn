@@ -163,7 +163,11 @@ for (const [w, size] of Object.entries(WIDTHS)) for (const scheme of ['light', '
     assert.equal(await more.evaluate((el) => el.parentElement.open && el === document.activeElement), true);
     await check(page, 'map legend open');
     const sw = page.getByRole('switch', { name: 'הדגשת המערכת' });
+    // reach it by keyboard: Firefox shows no :focus-visible ring after a script focus() that follows a mouse click
     await sw.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    assert.equal(await sw.evaluate((el) => el === document.activeElement), true, 'Tab returns to the switch');
     await page.keyboard.press('Space');
     assert.equal(await sw.getAttribute('aria-checked'), 'false');
     const ring = await sw.evaluate((el) => ({

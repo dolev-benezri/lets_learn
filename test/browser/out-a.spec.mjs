@@ -183,9 +183,23 @@ test('printing in print media shows only the summary and has no fixed-height anc
   const page = await visit(t, 'desktop', DONE, '#out');
   await outReady(page);
   await page.evaluate(() => {
-    window.print = () => {};
+    // what happened between the click and the check (CI fails here now and then)
+    window.__log = [];
+    window.print = () => __log.push('print');
+    addEventListener('afterprint', () => __log.push('afterprint'));
+    matchMedia('print').addEventListener('change', (e) => __log.push(`print media ${e.matches}`));
   });
-  await page.locator('#out [data-act="advisor"]').click();
+  const btn = page.locator('#out [data-act="advisor"]');
+  await btn.click();
+  // the click reached the action: summary mode is on before the print media is (else: what was under the pointer)
+  const on = await page.waitForFunction(() => document.documentElement.classList.contains('print-summary'), null, { timeout: 5000 }).then(() => true, () => false);
+  if (!on) {
+    const at = await btn.evaluate((b) => {
+      const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { under: e && (e.id || e.className || e.tagName), log: window.__log };
+    });
+    assert.fail(`summary mode was not observed within 5 s of the click (now under the button, and events so far): ${JSON.stringify(at)}`);
+  }
   await page.emulateMedia({ media: 'print' });
   const m = await page.evaluate(() => {
     const show = (e) => getComputedStyle(e).display !== 'none';
@@ -196,7 +210,7 @@ test('printing in print media shows only the summary and has no fixed-height anc
       chain.push({ el: e.id || e.tagName.toLowerCase(), pos: s.position, oy: s.overflowY, maxH: s.maxHeight, clipped: e.scrollHeight > e.clientHeight + 1 && s.overflowY !== 'visible' });
     }
     // the state behind a failure: is the summary class on, is the print media on, is the summary filled
-    const why = { cls: document.documentElement.className, media: matchMedia('print').matches, hidden: document.getElementById('print').hidden };
+    const why = { cls: document.documentElement.className, media: matchMedia('print').matches, hidden: document.getElementById('print').hidden, log: window.__log };
     return { shown, chain, why };
   });
   assert.deepEqual(m.shown.filter((s) => !['print', 'SCRIPT', 'script'].includes(s)), [], `only the summary shows ${JSON.stringify(m.why)}`);
