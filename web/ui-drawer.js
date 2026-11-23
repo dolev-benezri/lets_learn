@@ -124,20 +124,7 @@ function prefsPanel() {
     const x = groupIndex(data).get(p);
     return x ? `${esc(x.c.name)} · ${esc(groupLabel(x.g))}` : esc(p);
   };
-  return `
-    ${
-      app.sem['ב']
-        ? `<section class="dr-sec">${designOn() ? '' : '<h3>תכנון</h3>'}
-      ${seg('scope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"', true)}
-      ${scopeOf(state.scope) === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>`
-        : ''
-    }
-    <section class="dr-sec"><h3${designOn() ? ' class="a-tool-key"' : ''}>מה חשוב לך?</h3>
-      ${WEIGHTS.filter(([k]) => k !== 'examSpread' || data.examsPublished)
-        .map(([k, t]) =>
-          seg(`w-${k}`, t, SCALE, nearestStep(state.weights[k], [0, 1, 3, 5]), `data-chg="w" data-w="${k}"`, true)
-        )
-        .join('')}</section>
+  const more = `
     ${daysSec(c, notes)}
     ${hoursSec(c, notes)}
     ${busySec(c)}
@@ -159,6 +146,21 @@ function prefsPanel() {
         תקרת הנ״ז, בחינות באותו יום, קבוצות מלאות והפרדת הרצאה ותרגול לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.</p>`}</section>
     ${designOn() ? '' : `<footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
       <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`}`;
+  return `
+    ${
+      app.sem['ב']
+        ? `<section class="dr-sec">${designOn() ? '' : '<h3>תכנון</h3>'}
+      ${seg('scope', 'לתכנן', SCOPE, scopeOf(state.scope), 'data-chg="scope"', true)}
+      ${scopeOf(state.scope) === 'year' ? seg('load', 'איפה להעמיס', LOAD, state.load, 'data-chg="load"', true) : ''}</section>`
+        : ''
+    }
+    <section class="dr-sec"><h3${designOn() ? ' class="a-tool-key"' : ''}>מה חשוב לך?</h3>
+      ${WEIGHTS.filter(([k]) => k !== 'examSpread' || data.examsPublished)
+        .map(([k, t]) =>
+          seg(`w-${k}`, t, SCALE, nearestStep(state.weights[k], [0, 1, 3, 5]), `data-chg="w" data-w="${k}"`, true)
+        )
+        .join('')}</section>
+    ${designOn() ? details('prefs-more', 'עוד הגדרות', more, 1) : more}`;
 }
 
 function friendsPanel() {

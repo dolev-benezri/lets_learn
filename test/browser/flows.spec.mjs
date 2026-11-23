@@ -126,6 +126,7 @@ for (const size of Object.keys(SIZES)) {
 for (const size of Object.keys(SIZES)) {
   test(`${size}: split option dialog, cancel and confirm, Escape cancels`, async (t) => {
     const page = await visit(t, size, DONE, '#prefs');
+    if (await onA(page)) await page.locator('#prefs details[data-key="prefs-more"] > summary').click();
     const split = page.locator('input[data-chg="split"]');
     await split.waitFor({ state: 'attached' });
     const dialog = page.locator('dialog[open]');
@@ -433,6 +434,7 @@ for (const size of Object.keys(SIZES)) {
 for (const size of Object.keys(SIZES)) {
   test(`${size}: an inverted hour is refused`, async (t) => {
     const page = await visit(t, size, DONE, '#prefs');
+    if (await onA(page)) await page.locator('#prefs details[data-key="prefs-more"] > summary').click();
     const nb = page.locator('input[data-chg="notBefore"]'),
       na = page.locator('input[data-chg="notAfter"]');
     await na.fill('10:00');
@@ -450,6 +452,7 @@ for (const size of Object.keys(SIZES)) {
 for (const size of Object.keys(SIZES)) {
   test(`${size}: the credit cap is labelled per semester`, async (t) => {
     const page = await visit(t, size, DONE, '#prefs');
+    if (await onA(page)) await page.locator('#prefs details[data-key="prefs-more"] > summary').click();
     await page.locator('label', { hasText: 'תקרת נ״ז לסמסטר' }).locator('input[data-chg="maxCredits"]').waitFor();
   });
 }
@@ -492,6 +495,7 @@ for (const size of Object.keys(SIZES)) {
 for (const size of Object.keys(SIZES)) {
   test(`${size}: the year view shows the exam weight when only ב׳ has exams`, async (t) => {
     const page = await visit(t, size, DONE, '#prefs');
+    if (await onA(page)) await page.locator('#prefs details[data-key="prefs-more"] > summary').click();
     await page.waitForLoadState('networkidle'); // a reload over the first fetches makes WebKit report them as errors
     await page.context().route('**/data/afeka/*-2/*.json', async (route) => {
       const res = await route.fetch();

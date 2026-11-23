@@ -118,6 +118,73 @@ for (const scheme of ['light', 'dark'])
     }), true);
   });
 
+for (const width of [320, 1920])
+  test(`${width}: preferences keep planning and importance visible; more settings retain keyboard, focus and search`, async (t) => {
+    const page = await visit(t, { width, height: 900 }, DONE);
+    await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+    await page.locator('.dock [data-tool="wishes"]').click();
+    await page.locator('#panel #prefs').waitFor({ state: 'visible' });
+    await frame(page);
+    const fold = page.locator('#prefs details[data-key="prefs-more"]'), control = fold.locator('summary');
+    assert.equal((await control.textContent()).trim(), 'עוד הגדרות');
+    assert.equal(await fold.evaluate((e) => e.open), false);
+    for (const name of ['scope', 'load', 'w-freeDays', 'w-compact'])
+      assert.equal(await page.locator(`#prefs input[name="${name}"]`).first().isVisible(), true, name);
+    for (const name of ['notBefore', 'notAfter', 'maxCredits', 'maxDays', 'examsForbid', 'includeFull', 'split']) {
+      assert.equal(await fold.locator(`[data-chg="${name}"]`).count(), 1, name);
+      assert.equal(await fold.locator(`[data-chg="${name}"]`).isVisible(), false, name);
+    }
+    assert.equal(await fold.locator('[data-act="blkAdd"]').isVisible(), false);
+    const settled = (open) => page.evaluate(async (open) => {
+      const { openDetails } = await import('./ui-common.js'), end = Date.now() + 5000;
+      while (openDetails.has('prefs-more') !== open) {
+        if (Date.now() > end) throw new Error('preferences toggle did not settle');
+        await new Promise((r) => setTimeout(r, 20));
+      }
+    }, open);
+    await control.focus();
+    await page.keyboard.press('Enter');
+    await settled(true);
+    await page.evaluate(async () => (await import('./app.js')).refresh());
+    assert.equal(await fold.evaluate((e) => e.open), true);
+    assert.equal(await control.evaluate((e) => e === document.activeElement), true);
+    await page.keyboard.press('Tab');
+    assert.equal(await fold.evaluate((e) => e.contains(document.activeElement)), true);
+    await page.evaluate(async () => {
+      const { ui } = await import('./ui-common.js');
+      window.__prefsRun = ui.last;
+    });
+    const cap = fold.locator('[data-k="maxCredits"]');
+    await cap.fill('20');
+    await cap.dispatchEvent('change');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).constraints.maxCredits === 20);
+    await page.evaluate(async () => {
+      const { ui } = await import('./ui-common.js'), end = Date.now() + 60000;
+      while (ui.last === window.__prefsRun) {
+        if (Date.now() > end) throw new Error('preference did not rerun the search');
+        await new Promise((r) => setTimeout(r, 20));
+      }
+    });
+    await frame(page);
+    assert.equal(await fold.evaluate((e) => e.open), true);
+    assert.equal(await cap.evaluate((e) => e === document.activeElement), true);
+    await control.focus();
+    await page.keyboard.press('Space');
+    await settled(false);
+    await page.evaluate(async () => (await import('./app.js')).refresh());
+    assert.equal(await fold.evaluate((e) => e.open), false);
+    assert.equal(await control.evaluate((e) => e === document.activeElement), true);
+    assert.equal(await control.evaluate((e) => {
+      const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+      return r.width >= 44 && r.height >= 44 && s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2;
+    }), true);
+    if (width < 600) {
+      await page.keyboard.press('Escape');
+      await page.locator('#panel').waitFor({ state: 'hidden' });
+      assert.equal(await page.locator('.dock [data-tool="wishes"]').evaluate((e) => e === document.activeElement), true);
+    }
+  });
+
 // Phase 4 C: both kinds of row, including their hidden controls, retain their native keyboard and focus across a redraw.
 for (const width of [375, 1920]) for (const tool of ['courses', 'me'])
   test(`${width}/${tool}: course row names, Enter/Space/Escape, open state and focus after search/redraw, long names reflow`, async (t) => {

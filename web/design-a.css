@@ -877,3 +877,11 @@
 }
 :root[data-design="a"] .a-course-search .hint { margin:0; }
 :root[data-design="a"] #side [hidden] { display:none; }
+/* ---- phase 4 preferences fold (Task D) ---- */
+:root[data-design="a"] #prefs details[data-key="prefs-more"] > summary {
+  display:flex; align-items:center; min-width:44px; min-height:44px; color:var(--primary); font-weight:600; cursor:pointer;
+}
+:root[data-design="a"] #prefs details[data-key="prefs-more"] > summary:focus-visible {
+  outline:2px solid var(--primary); outline-offset:-2px;
+}
+:root[data-design="a"] #prefs details[data-key="prefs-more"][open] > summary { margin-bottom:var(--sp-3); }

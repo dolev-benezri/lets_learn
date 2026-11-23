@@ -273,6 +273,7 @@ test('opening a tool from the plain board closes a drawer that was open (#friend
 test('a tool opened after another one starts at its top', async (t) => {
   const page = await visit(t, 'phone', DONE, '#prefs');
   await page.locator('#panel #prefs').waitFor({ state: 'visible' });
+  await page.locator('#prefs details[data-key="prefs-more"] > summary').click();
   await page.evaluate(() => (document.getElementById('aPb').scrollTop = 400));
   assert.ok((await page.evaluate(() => document.getElementById('aPb').scrollTop)) > 100, 'the wishes scroll');
   await page.evaluate(() => (location.hash = '#courses'));
