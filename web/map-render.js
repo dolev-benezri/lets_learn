@@ -190,7 +190,10 @@ export function mapSvg(c) {
 
 export const legendSw = (
   s
-) => `<svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-${s}"><circle class="ring"
+) => s === 'plan'
+  ? `<svg class="lg-sw" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><g class="sw plan"><circle class="plan-ring"
+    cx="17" cy="17" r="14"/><circle class="ring" cx="17" cy="17" r="10"/></g></svg>`
+  : `<svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-${s}"><circle class="ring"
   cx="13" cy="13" r="10"/>${glyph(s, 13, 13, 10)}</g></svg>`;
 export const legendEdge = (cls) =>
   `<svg width="34" height="10" aria-hidden="true"><path class="lg-e ${cls}" d="M2 5H32"/></svg>`;

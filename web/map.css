@@ -659,3 +659,31 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 @media (prefers-reduced-motion: reduce) {
   .pmap *, .pmap *::before, .pmap *::after { transition:none !important; scroll-behavior:auto !important; }
 }
+
+/* Design A: the shown plan stands out; focus quiets status fills while keeping opaque discs over the edges. */
+:root[data-design="a"] .pmap .st-blocked { --c:var(--text-2); }
+:root[data-design="a"] .pmap :is(.nd, .sw).plan .ring { fill:var(--primary); stroke:var(--primary); }
+:root[data-design="a"] .pmap .nd.plan .gl { stroke:var(--on-primary); }
+:root[data-design="a"] .pmap :is(.nd, .sw).plan .plan-ring { opacity:1; stroke:var(--primary); stroke-width:3px; }
+:root[data-design="a"] .pmap .nd.plan .nm { fill:var(--text); font-weight:700; }
+:root[data-design="a"] .pmap .e.plan { stroke:var(--primary); stroke-opacity:1; opacity:1; }
+:root[data-design="a"] .pmap .ar.plan { fill:var(--primary); fill-opacity:1; }
+:root[data-design="a"] .pmap .lg-e.plan { stroke:var(--primary); }
+:root[data-design="a"] .pmap.focus :is(.nd, .sw):not(.plan) .ring { fill:var(--surface); stroke-width:1.5px; }
+:root[data-design="a"] .pmap.focus .nd:not(.plan) .nm { fill:var(--text-2); font-weight:400; }
+:root[data-design="a"] .pmap.focus .nd:not(.plan) .opens { display:none; }
+:root[data-design="a"] .pmap.focus .e:not(.plan):not(.lit) { opacity:.3; }
+:root[data-design="a"] .pmap .e.lit { opacity:1; stroke:var(--primary); stroke-opacity:1; }
+/* Hover, focus, selection and the alternative's flash take precedence over the focus setting. */
+:root[data-design="a"] .pmap .pm-svg.dim .e:not(.lit),
+:root[data-design="a"] .pmap.focus .pm-svg.dim .e:not(.lit),
+:root[data-design="a"] .pmap .pm-svg.spot .e:not(.plan),
+:root[data-design="a"] .pmap.focus .pm-svg.spot .e:not(.plan) { opacity:.14; }
+:root[data-design="a"] .pmap.focus .nd:is(:hover, .sel) .ring { stroke-width:3.5px; }
+:root[data-design="a"] .pmap .pm-legend { max-height:35dvh; overflow:auto; }
+:root[data-design="a"] .pmap .pm-legend-main { gap:4px 16px; }
+:root[data-design="a"] .pmap .pm-legend-more summary { min-height:44px; min-width:44px; }
+:root[data-design="a"] .pmap [data-pm="focus"] { min-height:44px; margin-inline-start:auto; }
+:root[data-design="a"] .pmap [data-pm="focus"][aria-checked="true"] {
+  background:var(--primary); border-color:var(--primary); color:var(--on-primary);
+}

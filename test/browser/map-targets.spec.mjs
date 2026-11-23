@@ -3,7 +3,7 @@
 // Run through `npm run test:browser -- map-targets`. Student and seeding: helpers.mjs.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, openMap, visit, launch } from './helpers.mjs';
+import { DONE, DESIGN, onA, openMap, visit, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -111,7 +111,8 @@ for (const size of PHONES) {
 
     await look('map, mini pane closed');
     // The legend, the electives box and the mini pane, one open at a time (an open box covers the others' summary); the open mini pane shows its own toggle.
-    for (const sel of ['#pmap .pm-legend summary', '#pmap .pm-aside summary', '#pmap .pm-mini summary']) {
+    const legend = await onA(page) ? '#pmap .pm-legend-more summary' : '#pmap .pm-legend summary';
+    for (const sel of [legend, '#pmap .pm-aside summary', '#pmap .pm-mini summary']) {
       const s = page.locator(sel);
       if (!(await s.count())) continue;
       await s.first().click();
@@ -133,3 +134,89 @@ for (const size of PHONES) {
     assert.deepEqual([...new Set(small.map((s) => s.replace(/^[^:]*: /, '')))], [], `controls under ${MIN}px`);
   });
 }
+
+if (DESIGN === 'a') for (const scheme of ['light', 'dark']) for (const width of [320, 1280])
+  test(`A ${width}/${scheme}: plan colours, matching legend, focus switch persistence and lit chains`, async (t) => {
+    const page = await visit(browser, t, { width, height: 900 }, DONE, '', scheme);
+    const ready = async () => {
+      await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+      await openMap(page);
+      await page.locator('#pmap .pm-svg.ready').waitFor({ timeout: 30000 });
+    };
+    await ready();
+    const more = page.locator('#pmap .pm-legend-more');
+    assert.equal(await more.getAttribute('open'), null);
+    assert.equal(await page.locator('#pmap .pm-legend-main > .lg-i').count(), 4);
+    for (const sample of await page.locator('#pmap .pm-legend-main > .lg-i').all()) assert.ok(await sample.isVisible());
+    assert.equal(await more.locator('.st-exempt').count(), 1, 'the other states are inside the fold');
+    assert.equal(await more.locator('.lg-e.plan').count(), 1, 'the edge samples are inside the fold');
+    assert.equal(await more.locator('.ext.pre').count(), 1, 'the shape samples are inside the fold');
+    const sw = page.getByRole('switch', { name: 'הדגשת המערכת' });
+    const check = async (on) => {
+      assert.equal(await sw.getAttribute('aria-checked'), String(on));
+      assert.equal(await page.locator('#pmap').evaluate((el) => el.classList.contains('focus')), on);
+      const actual = await page.evaluate(() => {
+        const d = document.querySelector('#pmap');
+        const colour = (token) => {
+          const el = document.createElement('span');
+          el.style.color = `var(--${token})`;
+          d.append(el);
+          const c = getComputedStyle(el).color;
+          el.remove();
+          return c;
+        };
+        const style = (s) => {
+          const el = d.querySelector(s);
+          return el && getComputedStyle(el);
+        };
+        const plan = style('.nd.plan .ring'), node = style('.nd.st-done:not(.plan) .ring'), sample = style('.sw.st-done .ring');
+        return { plan: plan.fill, primary: colour('primary'), name: style('.nd.plan .nm').fontWeight,
+          glyph: style('.nd.plan .gl')?.stroke, onPrimary: colour('on-primary'), halo: style('.nd.plan .plan-ring').stroke,
+          haloWidth: style('.nd.plan .plan-ring').strokeWidth, edge: style('.e.plan').stroke,
+          edgeOpacity: style('.e.plan').strokeOpacity, arrow: style('.ar.plan').fill,
+          ring: node.fill, sample: sample.fill, stroke: node.stroke, sampleStroke: sample.stroke,
+          width: node.strokeWidth, surface: colour('surface'), tint: colour('success-soft'),
+          nameColour: style('.nd.st-done:not(.plan) .nm').fill, text2: colour('text-2'),
+          nameWeight: style('.nd.st-done:not(.plan) .nm').fontWeight, blocked: style('.nd.st-blocked .ring').stroke };
+      });
+      assert.equal(actual.plan, actual.primary);
+      assert.equal(actual.name, '700');
+      if (actual.glyph) assert.equal(actual.glyph, actual.onPrimary); // available courses have no glyph
+      assert.equal(actual.halo, actual.primary);
+      assert.equal(actual.haloWidth, '3px');
+      assert.equal(actual.edge, actual.primary);
+      assert.equal(actual.edgeOpacity, '1');
+      assert.equal(actual.arrow, actual.primary);
+      assert.equal(actual.ring, on ? actual.surface : actual.tint);
+      assert.equal(actual.sample, actual.ring);
+      assert.equal(actual.sampleStroke, actual.stroke);
+      assert.equal(actual.blocked, actual.text2);
+      if (on) {
+        assert.equal(actual.width, '1.5px');
+        assert.equal(actual.nameColour, actual.text2);
+        assert.equal(actual.nameWeight, '400');
+      }
+    };
+    await check(true);
+    await sw.focus();
+    await page.keyboard.press('Space');
+    await check(false);
+    assert.equal(await sw.evaluate((el) => el === document.activeElement), true, 'toggle keeps focus');
+    await page.reload();
+    await ready();
+    await check(false);
+    await sw.click();
+    await check(true);
+    const nodes = page.locator('#pmap .nd:not(.plan)');
+    let lit = false;
+    for (let i = 0; i < await nodes.count(); i++) {
+      await nodes.nth(i).dispatchEvent('pointerover', { pointerType: 'mouse' });
+      if (await page.locator('#pmap .e.lit').count()) { lit = true; break; }
+    }
+    assert.ok(lit, 'hovering a non-plan course lights its chain');
+    assert.deepEqual(await page.locator('#pmap .e.lit').evaluateAll((es) => [...new Set(es.map((el) => getComputedStyle(el).opacity))]), ['1']);
+    assert.equal(await page.locator('#pmap .pm-svg').evaluate((el) => el.classList.contains('dim')), true);
+    await page.reload();
+    await ready();
+    await check(true);
+  });

@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
-import { SITE, DONE, DESIGN_KEY, TOUR_SEEN, MODE_BUILD, gradeSheetPdf, launch, visit as visitIn } from './helpers.mjs';
+import { SITE, DONE, STUDENT, DESIGN_KEY, TOUR_SEEN, MODE_BUILD, gradeSheetPdf, openMap, launch, visit as visitIn } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -56,13 +56,17 @@ const smallTargets = (page) =>
       return !!c && c.textContent.replace(a.textContent, '').trim().length > 0;
     };
     const bad = [];
-    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs', '#alts', '.edit-card', '.edit-tool']) {
+    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs', '#alts', '.edit-card', '.edit-tool', '.a-fr-card',
+      '#drawer', '#pmap']) {
       for (const el of document.querySelector(root)?.querySelectorAll(sel) ?? []) {
-        if (!el.checkVisibility() || el.closest('[hidden]') || prose(el)) continue;
+        if (!el.checkVisibility() || el.closest('[hidden]') || el.matches('.nd') || prose(el)) continue;
         const box = el.matches('input[type=checkbox], input[type=radio]') ? (el.closest('label') ?? el) : el;
         const r = box.getBoundingClientRect();
         if (r.width === 0 || r.height === 0) continue;
-        if (r.width < 43.5 || r.height < 43.5)
+        // Map arrows paint at 36px on phones; their pseudo-element extends the clickable surface into the gaps.
+        const wide = r.width >= 43.5 || (el.matches('#pmap .pm-alt .pm-ibtn') &&
+          [r.left - 3, r.right + 3].every((x) => document.elementFromPoint(x, r.top + r.height / 2) === el));
+        if (!wide || r.height < 43.5)
           bad.push(`${root} <${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${el.className ? '.' + String(el.className).split(' ').slice(0, 2).join('.') : ''}> "${(el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 18)}" ${Math.round(r.width)}x${Math.round(r.height)}`);
       }
     }
@@ -78,6 +82,42 @@ const layoutOk = async (page, label, touch, note) => {
   if (!s.page || !s.panel) note(`${label}: scrolls sideways (page ${s.page}, panel ${s.panel})`);
   if (touch) for (const b of await smallTargets(page)) note(`${label}: ${b}`);
 };
+
+// Phase 5 A-C: the menu/info sheet and the map legend, including the fold and the remembered switch.
+for (const [w, size] of Object.entries(WIDTHS)) for (const scheme of ['light', 'dark'])
+  test(`${w}/${scheme}: menu, info, map legend closed/open and focus switch: axe, targets, keyboard focus`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const page = await visit(t, size, DONE, '', scheme);
+    await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+    await page.locator('.menu-btn').click();
+    await check(page, 'menu');
+    if (w !== '1280') for (const b of await smallTargets(page)) note(`menu: ${b}`);
+    await page.locator('#drawer [data-k="menu-info"]').click();
+    await check(page, 'info');
+    if (w !== '1280') for (const b of await smallTargets(page)) note(`info: ${b}`);
+    await page.locator('#drawer [data-k="infoBack"]').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'menu-info');
+    await page.keyboard.press('Escape');
+    await openMap(page);
+    await page.locator('#pmap .pm-svg.ready').waitFor({ timeout: 30000 });
+    await check(page, 'map legend closed');
+    const more = page.locator('#pmap .pm-legend-more > summary');
+    await more.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await more.evaluate((el) => el.parentElement.open && el === document.activeElement), true);
+    await check(page, 'map legend open');
+    const sw = page.getByRole('switch', { name: 'הדגשת המערכת' });
+    await sw.focus();
+    await page.keyboard.press('Space');
+    assert.equal(await sw.getAttribute('aria-checked'), 'false');
+    assert.equal(await sw.evaluate((el) => el === document.activeElement && getComputedStyle(el).outlineStyle !== 'none'), true);
+    await check(page, 'map focus off');
+    const r = await sw.boundingBox();
+    assert.ok(r && r.height >= 44 && r.width >= 44);
+    if (w !== '1280') for (const b of await smallTargets(page)) note(`map: ${b}`);
+    done();
+  });
 
 for (const [w, size] of Object.entries(WIDTHS))
   for (const scheme of ['light', 'dark']) {

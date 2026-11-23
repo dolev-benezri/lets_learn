@@ -26,6 +26,45 @@ const twoGroups = async () =>
     .flatMap((c) => c.groups.map((g) => g.id))
     .slice(0, 2);
 
+for (const width of [320, 1280])
+  test(`${width}: menu rows, information header back, legal sentence and new-tab links`, async (t) => {
+    const page = await visit(t, { width, height: 900 }, DONE);
+    await weekReady(page);
+    assert.ok(await page.locator('.a-top .theme-btn').isVisible());
+    await page.locator('.menu-btn').click();
+    const rows = page.locator('#drawer .a-menu > li button');
+    assert.deepEqual(await rows.allTextContents().then((xs) => xs.map((s) => s.trim())),
+      ['סיור באתר', 'מפת התקדמות', 'מידע ותנאים', 'מחק את כל הנתונים שלי']);
+    for (const row of await rows.all()) {
+      const r = await row.boundingBox();
+      assert.ok(r && r.height >= 48 && r.width >= 44);
+    }
+    assert.equal(await page.locator('#drawer .theme-btn').count(), 0);
+    await page.locator('#drawer [data-k="menu-info"]').click();
+    const back = page.locator('#drawer .dr-head').getByRole('button', { name: 'חזרה לתפריט' });
+    assert.ok(await back.isVisible());
+    assert.equal(await page.locator('#drawer .dr-actions').count(), 0);
+    const legal = await page.evaluate(async () => (await import('./ui-text.js')).LEGAL_LINE);
+    assert.equal((await page.locator('#drawer').innerText()).split(legal).length - 1, 1);
+    assert.equal((await page.locator('#drawer .info-sec').first().innerText()).split('אינו הרשמה').length - 1, 1);
+    for (const link of await page.locator('#drawer .info-links a').all()) {
+      assert.equal(await link.getAttribute('target'), '_blank');
+      assert.equal(await link.getAttribute('rel'), 'noopener');
+      assert.equal(await link.locator('.sr').textContent(), ' (נפתח בלשונית חדשה)');
+    }
+    const opened = page.waitForEvent('popup');
+    await page.locator('#drawer .info-links a').first().click();
+    const tab = await opened;
+    await tab.waitForLoadState();
+    assert.ok(tab.url().includes('legal.html#terms'));
+    await tab.close();
+    await back.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'menu-info');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.activeElement?.classList.contains('menu-btn'));
+  });
+
 for (const size of ['phone', 'desktop']) {
   test(`${size}: the board stays on screen with a tool open, and each tool opens its own page in the panel`, async (t) => {
     const page = await visit(t, size, DONE, '#me');

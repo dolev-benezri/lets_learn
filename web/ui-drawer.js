@@ -35,6 +35,7 @@ import {
   freshness,
   freshnessA,
   approvedText,
+  DISCLAIMER,
   disclaimerHtml,
   LEGAL_LINE,
   RULES_UNAPPROVED
@@ -376,19 +377,26 @@ function infoPanel() {
   const f = data && (designOn() ? freshnessA : freshness)(boardStatus(), data.fetchedAt),
     approved = data && state && approvedOn(settings, data.program, data.startYear),
     conflicts = state ? conflictsFor(settings, state.program, state.startYear) : [];
-  const links = LEGAL.map(([id, text]) => `<li><a href="legal.html#${id}">${text}</a></li>`)
+  const linkA = (href, text) => `<li><a href="${esc(href)}" target="_blank" rel="noopener"><span>${text}</span>
+    ${icon('external-link')}<span class="sr"> (נפתח בלשונית חדשה)</span></a></li>`;
+  const links = designOn()
+    ? LEGAL.map(([id, text]) => linkA(`legal.html#${id}`, text))
+      .concat(report ? [linkA(report, 'דיווח על טעות')] : [])
+      .concat(counsel ? [linkA(counsel, 'הכוון אקדמי')] : [])
+    : LEGAL.map(([id, text]) => `<li><a href="legal.html#${id}">${text}</a></li>`)
     .concat(report ? [`<li><a href="${esc(report)}">דיווח על טעות</a></li>`] : [])
     .concat(counsel ? [`<li><a href="${esc(counsel)}" target="_blank" rel="noopener">הכוון אקדמי<span class="sr"> (נפתח בחלון חדש)</span></a></li>`] : []);
   return [
     'מידע',
-    `<section class="dr-sec info-sec"><h3>על הכלי</h3>${designOn() ? `<p>${esc(LEGAL_LINE)}</p>` : ''}<p>${esc(UNOFFICIAL)}</p>${
-      designOn() ? `<p class="hint">${disclaimerHtml(counsel)}</p>` : ''
-    }</section>
-    ${f ? `<section class="dr-sec info-sec"><h3>הנתונים</h3><p class="hint">${esc(f.text)}${approved ? ` · ${esc(approvedText(approved))}` : ''}</p>
+    `<section class="dr-sec info-sec"><h3>על הכלי</h3>${designOn()
+      ? `<p>${esc(LEGAL_LINE)}</p><p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים.</p>`
+      : `<p>${esc(UNOFFICIAL)}</p>`}</section>
+    ${f ? `<section class="dr-sec info-sec"><h3>הנתונים</h3><p class="hint">${esc(f.text)}${approved ? ` · ${esc(approvedText(approved))}` : ''}</p>${designOn() ? `
+      <p class="hint">${esc(DISCLAIMER)}</p>` : ''}
       ${approved ? '' : `<p class="hint">${esc(RULES_UNAPPROVED)} בדקו מול היועץ לפני ההרשמה.</p>`}
       ${conflicts.map((c) => `<p class="hint warn-text">${icon('alert')} ${esc(conflictLine(c))}</p>`).join('')}</section>` : ''}
     <section class="dr-sec info-sec"><h3>קישורים</h3><ul class="plain info-links">${links.join('')}</ul></section>`,
-    '<button type="button" class="btn" data-act="menu" data-k="infoBack">חזרה לתפריט</button>'
+    designOn() ? '' : '<button type="button" class="btn" data-act="menu" data-k="infoBack">חזרה לתפריט</button>'
   ];
 }
 
@@ -400,7 +408,10 @@ export function renderDrawer() {
   const onTitle = designOn() && document.activeElement?.id === 'drawerTitle'; // the heading that took focus when the panel changed (A)
   // actions: a row that stays under the header while the body scrolls
   const [title, body, actions = ''] = PANELS[ui.panel]();
-  $('drawer').innerHTML = `<div class="dr-top"><div class="dr-head"><h2 id="drawerTitle">${title}</h2>
+  const back = designOn() && ui.panel === 'info'
+    ? '<button type="button" class="btn icon-btn ghost info-back" data-act="menu" data-k="infoBack" aria-label="חזרה לתפריט">→</button>'
+    : '';
+  $('drawer').innerHTML = `<div class="dr-top"><div class="dr-head">${back}<h2 id="drawerTitle">${title}</h2>
     <button type="button" class="btn icon-btn ghost" data-act="closeDrawer" data-k="closeDrawer" aria-label="סגור">${icon('x')}</button></div>${
       actions
         ? `<div
@@ -424,13 +435,14 @@ export function openPanel(name, from) {
     return;
   }
   const switching = d.open;
+  const infoBack = designOn() && switching && ui.panel === 'info' && name === 'menu';
   ui.panel = name;
   if (!(switching && designOn())) ui.opener = from; // A: ☰ -> information -> back is one sheet; closing returns to the ☰ button, not to a gone one
   renderDrawer();
   if (switching && designOn()) {
-    // the button that was pressed is gone: the new panel's heading takes the focus (a fresh dialog keeps its first button)
-    const h = $('drawerTitle');
-    h.tabIndex = -1;
+    // The pressed button is gone: info takes the heading; Back returns to its menu row (a fresh dialog keeps its first button).
+    const h = infoBack ? d.querySelector('[data-k="menu-info"]') : $('drawerTitle');
+    if (!infoBack) h.tabIndex = -1;
     h.focus({ preventScroll: true });
   }
   if (!d.open) {

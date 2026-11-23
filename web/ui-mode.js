@@ -37,18 +37,19 @@ export const renderModeChoice = () => {
   </div></div>`;
 };
 
-// Design A: the tabs of the top bar are the mode switch, so the menu holds what has no place on the board: the theme, the tour, the map, the
+// Design A: the tabs of the top bar are the mode switch, so the menu holds what has no place on the board: the tour, the map, the
 // information (terms, privacy, how fresh the data is) and erasing everything.
 const menuA = () => [
   'תפריט',
-  `<nav class="a-menu" aria-label="תפריט">
-    <button type="button" class="btn theme-btn a-menu-item" data-k="menu-theme">
-      <span class="to-dark">${icon('moon')}<span class="lbl">מצב כהה</span></span>
-      <span class="to-light">${icon('sun')}<span class="lbl">מצב בהיר</span></span></button>
-    <button type="button" class="btn a-menu-item" data-act="tour" data-k="menu-tour">${icon('info')} סיור באתר</button>
-    <button type="button" class="btn a-menu-item" data-act="openMap" data-k="menu-map" aria-haspopup="dialog">${icon('map')} מפת התקדמות</button>
-    <button type="button" class="btn a-menu-item" data-act="panel" data-panel="info" data-k="menu-info">${icon('file')} מידע ותנאים</button>
-    <button type="button" class="btn a-menu-item danger" data-act="eraseAll" data-k="menu-erase">${icon('trash')} מחק את כל הנתונים שלי</button></nav>`
+  `<nav aria-label="תפריט"><ul class="a-menu">
+    <li><button type="button" class="btn a-menu-item" data-act="tour" data-k="menu-tour">${icon('info')}<span>סיור באתר</span>
+      <span class="a-menu-chevron" aria-hidden="true">${icon('chevron-left')}</span></button></li>
+    <li><button type="button" class="btn a-menu-item" data-act="openMap" data-k="menu-map" aria-haspopup="dialog">${icon('map')}<span>מפת התקדמות</span>
+      <span class="a-menu-chevron" aria-hidden="true">${icon('chevron-left')}</span></button></li>
+    <li><button type="button" class="btn a-menu-item" data-act="panel" data-panel="info" data-k="menu-info">${icon('file')}<span>מידע ותנאים</span>
+      <span class="a-menu-chevron" aria-hidden="true">${icon('chevron-left')}</span></button></li>
+    <li class="a-menu-erase"><button type="button" class="btn a-menu-item danger" data-act="eraseAll" data-k="menu-erase">
+      ${icon('trash')}<span>מחק את כל הנתונים שלי</span></button></li></ul></nav>`
 ];
 
 // The side menu's panel (ui-drawer.js PANELS): [title, body]

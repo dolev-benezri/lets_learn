@@ -3,7 +3,7 @@
 // (app.cls.statuses, from rules.js). Layout and geometry are pure functions so they can be unit-tested.
 import { app, esc, keepFocus, summerScope } from './app.js';
 import { icon, resCourses } from './ui-grid.js';
-import { ui, current, colors } from './ui-common.js';
+import { ui, current, colors, designOn } from './ui-common.js';
 import { showAlt } from './ui-view.js';
 import { courseCount } from './ui-text.js';
 import { unlockCounts } from './solver-core.js';
@@ -63,6 +63,43 @@ const M = {
   switched: false
 };
 let dlg = null;
+export const MAP_FOCUS_KEY = 'afeka-sched-v1-mapfocus';
+let mapFocus = true; // blocked storage: the choice still holds for this visit
+export function getMapFocus() {
+  try {
+    const saved = localStorage.getItem(MAP_FOCUS_KEY);
+    return saved === null ? mapFocus : saved !== 'off';
+  } catch {
+    return mapFocus;
+  }
+}
+export function setMapFocus(on) {
+  mapFocus = on;
+  try {
+    localStorage.setItem(MAP_FOCUS_KEY, on ? 'on' : 'off');
+  } catch {
+    /* storage unavailable: kept for this visit only */
+  }
+}
+// A: the four main samples stay visible; the less common states and shapes wait in a native fold.
+export function legendA(focused) {
+  const main = [['plan', 'במערכת שלי'], ...LEGEND.filter(([k]) => ['done', 'available', 'blocked'].includes(k))];
+  const samples = (rows) => rows.map(([k, t]) => `<span class="lg-i">${legendSw(k)}${t}</span>`).join('');
+  return `<div class="pm-legend"><div class="lg pm-legend-main">${samples(main)}
+    <button type="button" class="pm-btn" role="switch" aria-checked="${focused}" data-pm="focus" data-k="pm-focus">הדגשת המערכת</button></div>
+    <details class="pm-legend-more"><summary>עוד במקרא</summary><div class="lg">${samples(LEGEND.filter(([k]) => !main.some(([s]) => s === k)))}
+    <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-available"><circle class="mine-halo"
+      cx="13" cy="13" r="12"/><circle class="ring" cx="13" cy="13" r="8"/></g></svg>השנה שלך</span>
+    <span class="lg-i">${legendEdge('k')}קדם</span><span class="lg-i">${legendEdge('p')}מקביל (יחד עם)</span>
+    <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="or"><circle cx="13" cy="13" r="10"/>
+      <text x="13" y="13" text-anchor="middle" dominant-baseline="central">או</text></g></svg>אחד מהם מספיק</span>
+    <span class="lg-i">${legendEdge('plan')}קורס שהמערכת פותחת</span>
+    <span class="lg-i"><svg width="44" height="22" viewBox="0 0 44 22" aria-hidden="true"><g class="ext"><rect x="1" y="2" width="42" height="18"
+      rx="9"/></g></svg>לא בתוכנית שלך</span><span class="lg-i"><svg width="44" height="22" viewBox="0 0 44 22" aria-hidden="true"><g class="ext pre"><rect
+      x="1" y="2" width="42" height="18" rx="9"/></g></svg>לפני התואר (מכינה), רק למי שנדרש/ה</span>
+    <span class="lg-i"><svg width="52" height="20" viewBox="0 0 52 20" aria-hidden="true"><g class="opens"><rect x="2" y="2" width="48" height="16"
+      rx="8"/><text x="26" y="10" text-anchor="middle" dominant-baseline="central">פותח 3</text></g></svg>כמה קורסים הוא פותח</span></div></details></div>`;
+}
 // The search's alternatives, none when every one is empty (renderView's rule); the shown one is ui.cur.
 const alts = () => {
   const r = ui.last?.results ?? [];
@@ -142,6 +179,7 @@ function select(key) {
 }
 
 function render(ctx = ctxOf(M.mode)) {
+  if (designOn()) dlg.classList.toggle('focus', getMapFocus());
   const c = M.c = ctx,
     map = M.view === 'map',
     empty = !c.L.nodes.length;
@@ -185,7 +223,8 @@ function render(ctx = ctxOf(M.mode)) {
       }</div></div>
     ${
       map
-        ? `<details class="pm-legend"${matchMedia('(max-width: 700px), (max-height: 1000px)').matches ? '' : ' open'}><summary>מקרא</summary><div
+        ? designOn() ? legendA(getMapFocus())
+        : `<details class="pm-legend"${matchMedia('(max-width: 700px), (max-height: 1000px)').matches ? '' : ' open'}><summary>מקרא</summary><div
       class="lg">${LEGEND.map(([k, t]) => `<span class="lg-i">${legendSw(k)}${t}</span>`).join('')}
       <span class="lg-i"><svg class="lg-sw" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g class="sw st-available"><circle class="mine-halo"
         cx="13" cy="13" r="12"/><circle class="ring" cx="13" cy="13" r="8"/></g></svg>השנה שלך</span><span class="lg-i">${legendEdge('k')}קדם</span><span
@@ -478,7 +517,12 @@ function onClick(e) {
     const r = q('.pm-svg').getBoundingClientRect();
     M.pz?.zoomToPoint(M.pz.getScale() * f, { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 });
   };
-  if (act === 'close') dlg.close();
+  if (act === 'focus' && designOn()) {
+    const on = !getMapFocus();
+    setMapFocus(on);
+    dlg.classList.toggle('focus', on);
+    b.setAttribute('aria-checked', String(on));
+  } else if (act === 'close') dlg.close();
   else if (act === 'spec') {
     e.preventDefault();
     M.opener = document.querySelector('.spec-sec input:checked');

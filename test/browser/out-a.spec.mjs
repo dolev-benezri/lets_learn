@@ -275,23 +275,22 @@ test('the unofficial line is visible on every screen at 320', async (t) => {
   assert.deepEqual(bad, []);
 });
 
-test('☰ has no mode links under A and has theme, tour, map, info, erase', async (t) => {
+test('☰ has ordered tour, map, info and erase rows, no mode or theme row, and erase confirms', async (t) => {
   const page = await visit(t, 'phone', DONE, '');
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   await page.locator('.menu-btn').click();
   await page.locator('#drawer[open]').waitFor();
   assert.equal(await page.locator('#drawer .mode-link').count(), 0, 'the tabs are the mode switch');
-  for (const sel of ['.theme-btn', '[data-act="tour"]', '[data-act="openMap"]', '[data-act="panel"][data-panel="info"]', '[data-act="eraseAll"]'])
+  assert.equal(await page.locator('#drawer .theme-btn').count(), 0);
+  assert.deepEqual(await page.locator('#drawer .a-menu > li button').allTextContents().then((xs) => xs.map((s) => s.trim())),
+    ['סיור באתר', 'מפת התקדמות', 'מידע ותנאים', 'מחק את כל הנתונים שלי']);
+  for (const sel of ['[data-act="tour"]', '[data-act="openMap"]', '[data-act="panel"][data-panel="info"]', '[data-act="eraseAll"]'])
     assert.equal(await page.locator(`#drawer ${sel}`).count(), 1, sel);
   // erase asks first, and ביטול leaves everything
   await page.locator('#drawer [data-act="eraseAll"]').click();
   const ask = page.locator('dialog[open]').last();
   await ask.getByRole('button', { name: 'ביטול' }).click();
   assert.equal(await page.evaluate(() => Boolean(localStorage.getItem('afeka-sched-v1'))), true, 'nothing erased');
-  // the theme button flips the theme
-  const before = await page.evaluate(() => document.documentElement.dataset.theme);
-  await page.locator('#drawer .theme-btn').click();
-  assert.notEqual(await page.evaluate(() => document.documentElement.dataset.theme), before);
   // the map opens over the menu
   await page.locator('#drawer [data-act="openMap"]').click();
   await page.locator('#pmap[open]').waitFor();
@@ -358,7 +357,7 @@ test('focus on the take-out heading or a button survives the tool being drawn ag
   assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'copyReg', 'a button');
 });
 
-test('☰ -> information -> back is one sheet: its heading takes focus, and closing returns to the ☰ button', async (t) => {
+test('☰ -> information -> back is one sheet: back focuses its info row, and closing returns to ☰', async (t) => {
   const page = await visit(t, 'phone', DONE, '');
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   await page.locator('.menu-btn').click();
@@ -368,17 +367,21 @@ test('☰ -> information -> back is one sheet: its heading takes focus, and clos
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'drawerTitle', 'the information heading');
   await page.locator('#drawer [data-act="menu"]').click();
   await page.locator('#drawer .a-menu').waitFor();
-  assert.equal(await page.evaluate(() => document.activeElement?.id), 'drawerTitle', 'the menu heading');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'menu-info', 'the information row');
   assert.equal(await page.locator('#drawer h2').first().textContent(), 'תפריט');
   await page.keyboard.press('Escape');
   await page.locator('#drawer[open]').waitFor({ state: 'detached' });
   await page.waitForFunction(() => document.activeElement?.classList.contains('menu-btn'));
 });
 
-test('the theme button in ☰ keeps its label on a phone', async (t) => {
-  const page = await visit(t, 'phone', DONE, '');
+test('the header keeps an accessible 44px theme button at 320px and it flips the theme', async (t) => {
+  const page = await visit(t, { width: 320, height: 640 }, DONE, '');
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
-  await page.locator('.menu-btn').click();
-  const box = await page.locator('#drawer .theme-btn .lbl:visible').first().boundingBox();
-  assert.ok(box && box.width > 20 && box.height > 8, `the label is drawn: ${JSON.stringify(box)}`);
+  const theme = page.locator('.a-top .theme-btn');
+  const box = await theme.boundingBox();
+  assert.ok(box && box.width >= 44 && box.height >= 44 && box.x >= 0 && box.x + box.width <= 320);
+  assert.match(await theme.innerText(), /מצב כהה|מצב בהיר/);
+  const before = await page.evaluate(() => document.documentElement.dataset.theme);
+  await theme.click();
+  assert.notEqual(await page.evaluate(() => document.documentElement.dataset.theme), before);
 });

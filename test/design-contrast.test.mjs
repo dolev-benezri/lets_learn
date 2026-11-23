@@ -67,3 +67,14 @@ test('the shared block holds no colour and does not redefine the tap size (style
   const COLOUR = new RegExp(['#[0-9a-f]{3,8}', 'rgba?[(]'].join('|'), 'i');
   assert.deepEqual(Object.entries(SHARED).filter(([, v]) => COLOUR.test(v)), []);
 });
+
+// Phase 5: status rings, the plan halo/edges and quiet names must work on the map's year bands too.
+for (const [theme, tokens] of [['light', LIGHT], ['dark', DARK]])
+  test(`design A map, ${theme}: glyph, status rings, plan halo/edges and names meet contrast`, () => {
+    assert.ok(ratio(colour(tokens, 'on-primary'), colour(tokens, 'primary')) >= 4.5, 'the plan glyph');
+    for (const bg of ['surface', 'surface-2']) {
+      for (const fg of ['success', 'primary', 'warning', 'danger', 'text-2'])
+        assert.ok(ratio(colour(tokens, fg), colour(tokens, bg)) >= 3, `${fg} ring / halo / edge on ${bg}`);
+      assert.ok(ratio(colour(tokens, 'text-2'), colour(tokens, bg)) >= 4.5, `quiet course names on ${bg}`);
+    }
+  });
