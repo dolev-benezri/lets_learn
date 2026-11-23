@@ -118,6 +118,8 @@ test('all Phase 5 map overrides are scoped to A', () => {
   assert.ok(added.length > 100);
   const selectors = added.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{/g);
   for (const [, selector] of selectors) {
+    // A media query wraps rules; the rules inside it are checked on their own.
+    if (selector.trim().startsWith('@media')) continue;
     // Commas inside :is() belong to one selector.
     for (const s of selector.replace(/:is\([^)]*\)/g, ':is(*)').split(','))
       assert.ok(s.trim().startsWith(':root[data-design="a"]'), s);
