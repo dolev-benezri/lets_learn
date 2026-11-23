@@ -111,7 +111,10 @@ for (const [w, size] of Object.entries(WIDTHS)) for (const scheme of ['light', '
     await sw.focus();
     await page.keyboard.press('Space');
     assert.equal(await sw.getAttribute('aria-checked'), 'false');
-    assert.equal(await sw.evaluate((el) => el === document.activeElement && getComputedStyle(el).outlineStyle !== 'none'), true);
+    const ring = await sw.evaluate((el) => ({
+      focused: el === document.activeElement, outline: getComputedStyle(el).outlineStyle, fv: el.matches(':focus-visible'), active: document.activeElement?.dataset.k
+    }));
+    assert.ok(ring.focused && ring.outline !== 'none', `the switch keeps a visible focus ring ${JSON.stringify(ring)}`);
     await check(page, 'map focus off');
     const r = await sw.boundingBox();
     assert.ok(r && r.height >= 44 && r.width >= 44);

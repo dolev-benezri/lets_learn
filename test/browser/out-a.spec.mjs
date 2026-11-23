@@ -195,9 +195,11 @@ test('printing in print media shows only the summary and has no fixed-height anc
       const s = getComputedStyle(e);
       chain.push({ el: e.id || e.tagName.toLowerCase(), pos: s.position, oy: s.overflowY, maxH: s.maxHeight, clipped: e.scrollHeight > e.clientHeight + 1 && s.overflowY !== 'visible' });
     }
-    return { shown, chain };
+    // the state behind a failure: is the summary class on, is the print media on, is the summary filled
+    const why = { cls: document.documentElement.className, media: matchMedia('print').matches, hidden: document.getElementById('print').hidden };
+    return { shown, chain, why };
   });
-  assert.deepEqual(m.shown.filter((s) => !['print', 'SCRIPT', 'script'].includes(s)), [], 'only the summary shows');
+  assert.deepEqual(m.shown.filter((s) => !['print', 'SCRIPT', 'script'].includes(s)), [], `only the summary shows ${JSON.stringify(m.why)}`);
   for (const c of m.chain) {
     assert.ok(['static', 'relative'].includes(c.pos), `${c.el}: position ${c.pos}`);
     assert.equal(c.clipped, false, `${c.el} clips its content`);
