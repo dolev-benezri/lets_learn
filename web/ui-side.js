@@ -13,6 +13,7 @@ import {
   doneIds,
   planned,
   seg,
+  courseRowA,
   details,
   heb,
   nameHtml,
@@ -106,8 +107,7 @@ function card(id, res, unlocks, musts) {
   </article>`;
 }
 
-// Design A's card (declutter step 6): the importance row, ONE status line (the semester select, "✓ במערכת, ב׳", what it opens, the summer pin and why it is
-// out), the warning tags alone below it, and short reasons whose regulation citation is behind "למה?".
+// Design A shares the first-run row: extra controls and reasons in "עוד", warnings visible below it.
 function cardA({ id, c, s, mode, where, inAlt, out, dropped, dropWhy, why, inSummer, offered, yearPick, required, unlocks }) {
   const sem = yearPick
     ? `<label class="a-sem"><span>סמסטר</span><select data-chg="semOf" data-id="${esc(id)}" data-k="sem-${esc(id)}"
@@ -142,15 +142,14 @@ function cardA({ id, c, s, mode, where, inAlt, out, dropped, dropWhy, why, inSum
       }</p>`;
     })
     .join('');
-  return `<article class="course c${colors.get(id) ?? 7}${ui.dashed.has(id) ? ' rep' : ''}${inAlt ? ' in' : ''}${out ? ' out' : ''}">
-    <div class="course-top"><span class="dot" aria-hidden="true"></span><h3>${nameHtml(c.name)}</h3><span class="cr">${c.credits} נ״ז</span></div>
-    ${seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`)}
-    ${status ? `<div class="a-status">${status}</div>` : ''}
-    ${warn ? `<div class="tags">${warn}</div>` : ''}
-    ${reasons}
+  const warnings = `${warn ? `<div class="tags">${warn}</div>` : ''}
     ${required && app.state.choices[id] === 'no' ? '<p class="reason warn-text">תצטרך/י ללמוד אותו בהמשך</p>' : ''}
-    ${dropped ? `<p class="reason warn-text">לא נכנס למערכת${dropWhy ? ` כי ${esc(dropWhy)}` : ''}</p>` : ''}
-  </article>`;
+    ${dropped ? `<p class="reason warn-text">לא נכנס למערכת${dropWhy ? ` כי ${esc(dropWhy)}` : ''}</p>` : ''}`;
+  return `<article class="course a-crs c${colors.get(id) ?? 7}">${courseRowA(
+    `course-more-${id}`, id, c,
+    seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`),
+    `${status ? `<div class="a-status">${status}</div>` : ''}${reasons}`, warnings
+  )}</article>`;
 }
 
 // The shown alternative in one line (the board's pills, shortened): courses, credits, free days, courses with friends. Empty without a plan.
@@ -192,7 +191,7 @@ export function renderSide(res) {
     sp = specLists(app.data, app.state.profile.specs);
   const take = (l) => l.courses.filter((id) => rest.includes(id) && !taken.has(id) && taken.add(id));
   const lists = app.data.lists.map((l, i) => ({ l, i })),
-    cards = (ids) => `<div class="cards">${ids.map((id) => card(id, res, unlocks, musts)).join('')}</div>`;
+    cards = (ids) => `<div class="cards${designOn() ? ' a-crs-list' : ''}">${ids.map((id) => card(id, res, unlocks, musts)).join('')}</div>`;
   const listsHtml = lists
     .filter(({ l }) => !sp.all.has(l.code) || sp.chosen.has(l.code))
     .map(({ l, i }) => {
@@ -237,7 +236,7 @@ export function renderSide(res) {
     ${details(
       'plan',
       `בתכנון (${plan.length})`,
-      `<div class="cards">${
+      `<div class="cards${designOn() ? ' a-crs-list' : ''}">${
         plan.map((id) => card(id, res, unlocks, musts)).join('') ||
         '<p class="hint">עוד לא נבחרו קורסים. פתחו אחת מהקבוצות למטה.</p>'
       }</div>`,

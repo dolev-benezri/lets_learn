@@ -49,6 +49,11 @@ export function helpHtml(id, topic, text, open = false) {
   return `<button type="button" class="a-help" data-act="help" data-k="help-${esc(id)}" aria-expanded="${open}"
     aria-controls="${esc(id)}" aria-label="הסבר: ${esc(topic)}"><span aria-hidden="true">ⓘ</span></button><p class="hint a-help-text" id="${esc(id)}"${open ? '' : ' hidden'}>${esc(text)}</p>`;
 }
+// Native row disclosure: name/id/key are text; body is trusted renderer markup.
+export function courseMoreHtml(id, name, key, body, open = false) {
+  return `<details class="a-course-more" data-course="${esc(id)}"${open ? ' open' : ''}><summary data-k="${esc(key)}"
+    aria-label="עוד על ${esc(name)}">עוד</summary><div class="a-course-body">${body}</div></details>`;
+}
 export const disclaimerHtml = (url) =>
   (url
     ? DISCLAIMER.replace('יועץ לימודים', () => `<a href="${esc(url)}" target="_blank" rel="noopener">יועץ לימודים</a>`)

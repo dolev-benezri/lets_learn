@@ -3,7 +3,7 @@ import { app, esc, candidateMode, summerOn, savedExists, isEditHash } from './ap
 import { icon, groupIndex, summary, isPair, semResult, nameHtml } from './ui-grid.js';
 import { showText } from './ui-dialog.js';
 import { specCodes, reqContext, reqMet } from './rules.js';
-import { helpHtml } from './ui-text.js';
+import { helpHtml, courseMoreHtml } from './ui-text.js';
 
 // Keep help open while a search or a field change redraws a tool. The renderer calls this only in design A.
 export const toolHelp = (id, topic, text) => helpHtml(id, topic, text, ui.helpOpen.has(id));
@@ -273,6 +273,15 @@ export const details = (key, summaryHtml, body, n) =>
   data-k="sum-${key}">${summaryHtml}</summary>${body}</details>`
     : '';
 
+// Shared first-run/tool row. The caller supplies the existing segmented control, extra controls and visible warnings.
+export function courseRowA(key, id, c, choice, body, warnings = '', tool = 'courses') {
+  const fold = tool === 'firstRun'
+    ? details(key, `עוד<span class="sr"> על ${esc(c.name)}</span>`, body, body)
+    : courseMoreHtml(id, heb(c.name), key, body, ui.courseOpen[tool].has(id));
+  return `<div class="a-crs-main"><span class="dot" aria-hidden="true"></span><span class="a-crs-name">${nameHtml(c.name)}</span>
+    <span class="a-crs-cr">${c.credits} נ״ז</span>${fold}</div>${choice}${warnings}`;
+}
+
 let toastTimer, toastHide;
 export function toast(text) {
   const t = $('toast');
@@ -390,6 +399,7 @@ export const ui = {
   altsOver: false, // A, 1080-1439px: the alternatives column is open over the week (not remembered)
   detailsOpen: false, // A: the board's "פרטים" disclosure, kept over the re-renders (ui-view.js factsHtml)
   tipOpen: false, // A: the courses tool's "מה ההבדל?" toggletip
+  courseOpen: { courses: new Set(), me: new Set() }, // A: native row folds, by tool and course id
   helpOpen: new Set(), // A: section explanations, keyed by their controlled paragraph id
   whyOpen: new Set(), // A: the course cards' "למה?" that are open (ui-side.js), by course id and reason index
   titleId: null, // A: the id of the heading of what is shown (ui-shell.js applyShell)

@@ -150,6 +150,17 @@ export function onHelpKey(e) {
   const live = document.querySelector(`.a-help[aria-controls="${CSS.escape(id)}"]`);
   if (live && live !== document.activeElement) live.focus({ preventScroll: true });
 }
+// Escape closes the innermost row fold before the phone sheet; native summaries supply Enter/Space.
+export function onCourseFoldKey(e) {
+  if (!designOn() || e.key !== 'Escape' || e.defaultPrevented || document.querySelector('dialog:modal')) return;
+  const fold = e.target.closest?.('#panel .a-course-more[open]');
+  if (!fold) return;
+  e.preventDefault();
+  e.stopPropagation();
+  fold.open = false;
+  ui.courseOpen[fold.closest('#me') ? 'me' : 'courses'].delete(fold.dataset.course);
+  fold.querySelector('summary').focus({ preventScroll: true });
+}
 export const ACT = {
   help(el) {
     if (!designOn()) return;

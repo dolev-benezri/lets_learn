@@ -1013,9 +1013,9 @@ const planned = async (page) => Number(/\d+/.exec(await page.locator('.a-fr-sub'
 test('step 3: the rows are the site\'s suggestion, each its name, credits and the three-way choice; "המשך" without a touch stores nothing', async (t) => {
   const page = await atStep(t, 'courses');
   assert.equal((await page.locator('#frTitle').textContent()).trim(), 'אילו קורסים בסמסטר?');
-  const rows = page.locator('.a-crs');
+  const rows = page.locator('#firstRun .a-crs');
   assert.ok((await rows.count()) >= 5, 'the suggested courses');
-  assert.equal(await page.locator('.a-crs details[open]').count(), 0, 'the extras are folded');
+  assert.equal(await page.locator('#firstRun .a-crs details[open]').count(), 0, 'the extras are folded');
   const first = await rows.first().evaluate((li) => ({
     name: li.querySelector('.a-crs-name').textContent.trim(),
     credits: li.querySelector('.a-crs-cr').textContent.trim(),
@@ -1031,7 +1031,7 @@ test('step 3: the rows are the site\'s suggestion, each its name, credits and th
 
 test('step 3: a choice is the record at once, a course set to "לא" keeps its row, and the focus stays on the control', async (t) => {
   const page = await atStep(t, 'courses');
-  const rows = page.locator('.a-crs');
+  const rows = page.locator('#firstRun .a-crs');
   const n = await rows.count(),
     id = await idOf(rows.first()),
     before = await planned(page);
@@ -1049,17 +1049,17 @@ test('step 3: a choice is the record at once, a course set to "לא" keeps its r
 
 test('step 3: a row\'s "עוד" names its course for a screen reader, stays open across a redraw, and holds what the course tool adds', async (t) => {
   const page = await atStep(t, 'courses');
-  const one = page.locator('.a-crs details').first();
+  const one = page.locator('#firstRun .a-crs details').first();
   const sum = one.locator('summary');
   const course = await one.evaluate((d) => d.closest('.a-crs').querySelector('.a-crs-name').textContent.trim());
   assert.match((await sum.textContent()).trim(), /^עוד/);
   assert.ok((await sum.locator('.sr').textContent()).includes(course), 'the summary says whose it is');
   await sum.click();
   assert.equal(await one.evaluate((d) => d.open), true);
-  const other = page.locator('.a-crs').last();
+  const other = page.locator('#firstRun .a-crs').last();
   const id = await idOf(other);
   await pick(page, `fr-mode-${id}-must`);
-  assert.equal(await page.locator('.a-crs details[open]').count(), 1, 'still open after the redraw');
+  assert.equal(await page.locator('#firstRun .a-crs details[open]').count(), 1, 'still open after the redraw');
   assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), `fr-mode-${id}-must`, 'and the focus is where the student was');
   assert.ok((await one.innerText()).length > (await sum.innerText()).length, 'the extras are inside it');
 });
@@ -1067,8 +1067,8 @@ test('step 3: a row\'s "עוד" names its course for a screen reader, stays open
 test('1920: step 3 gives every name one line, the three-way choice one width, the foot stays in the window, and nothing scrolls sideways', async (t) => {
   const page = await atStep(t, 'courses', { size: WIDE });
   const m = await page.evaluate(() => {
-    const widths = [...document.querySelectorAll('.a-crs .seg')].map((e) => Math.round(e.getBoundingClientRect().width));
-    const tall = [...document.querySelectorAll('.a-crs-name')].filter((e) => e.getBoundingClientRect().height > 30).length;
+    const widths = [...document.querySelectorAll('#firstRun .a-crs .seg')].map((e) => Math.round(e.getBoundingClientRect().width));
+    const tall = [...document.querySelectorAll('#firstRun .a-crs-name')].filter((e) => e.getBoundingClientRect().height > 30).length;
     const foot = document.querySelector('.a-fr-foot').getBoundingClientRect();
     return { widths: [...new Set(widths)], tall, footBottom: Math.round(foot.bottom), h: innerHeight, sw: document.documentElement.scrollWidth <= innerWidth };
   });
@@ -1083,8 +1083,8 @@ test('375: step 3 stacks the choice under the name with 44px targets and no side
   const page = await atStep(t, 'courses', { size: 'phone' });
   const m = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth <= innerWidth,
-    small: [...document.querySelectorAll('.a-crs .seg label, .a-crs summary')].filter((e) => e.getBoundingClientRect().height < 43.5).length,
-    narrow: [...document.querySelectorAll('.a-crs')].filter((r) => r.querySelector('.seg').getBoundingClientRect().width < r.getBoundingClientRect().width - 2).length
+    small: [...document.querySelectorAll('#firstRun .a-crs .seg label, #firstRun .a-crs summary')].filter((e) => e.getBoundingClientRect().height < 43.5).length,
+    narrow: [...document.querySelectorAll('#firstRun .a-crs')].filter((r) => r.querySelector('.seg').getBoundingClientRect().width < r.getBoundingClientRect().width - 2).length
   }));
   assert.equal(m.sw, true);
   assert.equal(m.small, 0, 'every control is 44px');
@@ -1225,12 +1225,12 @@ test('step 3 follows what step 2 passed: the later courses are suggested once th
   const page = await atStep(t, 'passed', { year: 2 });
   await page.locator('[data-k="frNext"]').click();
   await page.locator('.a-fr-card[data-step="courses"]').waitFor();
-  const without = await page.locator('.a-crs').count();
+  const without = await page.locator('#firstRun .a-crs').count();
   await page.locator('[data-k="frBack"]').click();
   await page.locator('[data-k="frPassAll"]').click();
   await page.locator('[data-k="frNext"]').click();
   await page.locator('.a-fr-card[data-step="courses"]').waitFor();
-  const all = await page.locator('.a-crs').count();
+  const all = await page.locator('#firstRun .a-crs').count();
   assert.ok(all >= 5 && all > without, `rows after ticking the earlier years (${all}) against none ticked (${without})`);
 });
 

@@ -18,7 +18,7 @@ import { renderMe } from './ui-me.js';
 import { renderFirstRun } from './ui-first-run.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
-import { addFriend, ACT, CHG, onHelpKey } from './ui-actions.js';
+import { addFriend, ACT, CHG, onHelpKey, onCourseFoldKey } from './ui-actions.js';
 import { tourCheck, tourOnce, introPending, shellPending, onTourEnd } from './tour.js';
 import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear, toggleEditSheet } from './ui-shell.js';
 
@@ -184,6 +184,7 @@ onTourEnd(askToursAgain);
 
 // ---------- wiring (static shell from index.html) ----------
 document.addEventListener('keydown', onHelpKey, true);
+document.addEventListener('keydown', onCourseFoldKey, true);
 watchOtherTabs();
 app.onSaveChange = () => {
   if (!app.data) return;
@@ -241,6 +242,13 @@ document.addEventListener('submit', async (e) => {
 document.addEventListener(
   'toggle',
   (e) => {
+    if (designOn() && e.target.matches?.('.a-course-more') && e.target.isConnected) {
+      const fold = e.target, tool = fold.closest('#me') ? 'me' : 'courses';
+      ui.courseOpen[tool][fold.open ? 'add' : 'delete'](fold.dataset.course);
+      // A record can list a course twice. Both rows keep the same course state.
+      for (const twin of fold.closest(tool === 'me' ? '#me' : '#courses').querySelectorAll('.a-course-more'))
+        if (twin.dataset.course === fold.dataset.course && twin.open !== fold.open) twin.open = fold.open;
+    }
     const k = e.target.dataset?.key;
     if (k) e.target.open ? openDetails.add(k) : openDetails.delete(k);
   },

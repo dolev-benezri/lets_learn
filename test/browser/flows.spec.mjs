@@ -398,7 +398,7 @@ for (const size of Object.keys(SIZES)) {
       'afeka-sched-v1': JSON.stringify({ ...seed, profile: { ...seed.profile, summer: false }, scope: 'ב' })
     });
     await idle(page);
-    await page.locator('article.course h3', { hasText: 'סטטיקה של גוף קשיח' }).first().waitFor({ state: 'attached', timeout: 30000 });
+    await page.locator('article.course :is(h3, .a-crs-name)', { hasText: 'סטטיקה של גוף קשיח' }).first().waitFor({ state: 'attached', timeout: 30000 });
   });
 }
 
@@ -930,6 +930,7 @@ for (const size of Object.keys(SIZES)) {
     const page = await visit(t, size, { ...DONE, 'afeka-sched-v1': JSON.stringify(student) }, '#me');
     const field = page.locator('input[data-chg="grade"][data-cid="90901"]');
     await field.waitFor({ state: 'attached', timeout: 30000 });
+    if (await onA(page)) await field.locator('xpath=ancestor::details[1]').locator('summary').click();
     await field.fill('40');
     await field.dispatchEvent('change');
     await page.locator('#gradeAvg', { hasText: 'ממוצע' }).waitFor({ state: 'attached' });

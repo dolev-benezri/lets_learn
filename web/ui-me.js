@@ -21,6 +21,8 @@ import {
   needsProgram,
   status,
   seg,
+  colors,
+  courseRowA,
   details,
   toast,
   heb,
@@ -53,9 +55,10 @@ function chip(id, li) {
     n = s.failed[id] ?? 0,
     k = `${li}-${id}`,
     nm = heb(app.data.courses[id].name);
-  if (status(id) === 'exempt')
+  if (status(id) === 'exempt' && !designOn())
     return `<div class="crs" data-st="exempt" aria-disabled="true"><b>${nameHtml(app.data.courses[id].name)}</b> <span class="tag ok">פטור</span></div>`;
   const st = s.passed.includes(id) ? 'passed' : n ? 'failed' : 'none';
+  if (designOn()) return chipA(id, k, nm, st, n);
   return `<div class="crs" data-st="${st}">${seg(
     `st-${k}`,
     nm,
@@ -77,6 +80,24 @@ function chip(id, li) {
         : ''
   }${n ? seg(`fc-${k}`, st === 'passed' ? 'כמה פעמים?' : 'כמה פעמים נכשלתי?', FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`, true) : ''}${
     st === 'none' && askOutside.has(id) ? outsideBoxes(id, k) : ''}${(recWarn[id] ?? []).map((t) => `<p class="hint warn-text">${esc(t)}</p>`).join('')}</div>`;
+}
+
+function chipA(id, k, nm, st, n) {
+  const s = app.state, c = app.data.courses[id], exempt = status(id) === 'exempt';
+  const body = exempt || (st === 'passed' && s.exempt?.includes(id))
+    ? '<span class="tag ok">פטור</span>'
+    : `${st === 'passed' || st === 'failed'
+      ? `<div class="crs-row"><label class="field grade-f">ציון <input class="grade" type="number" min="0" max="100" inputmode="numeric"
+          aria-label="${esc(`ציון ב${nm}`)}" data-chg="grade" data-cid="${esc(id)}" data-k="grade-${esc(k)}" value="${esc(s.grades[id] ?? '')}"></label>${st === 'passed'
+          ? `<label class="check"><input type="checkbox" data-chg="failedBefore" data-id="${esc(id)}" data-k="fb-${esc(k)}"
+              aria-label="${esc(`נכשלתי בעבר ב${nm}`)}"${n ? ' checked' : ''}> נכשלתי בעבר בקורס זה</label>` : ''}</div>` : ''}
+      ${n ? seg(`fc-${k}`, st === 'passed' ? 'כמה פעמים?' : 'כמה פעמים נכשלתי?', FAILS, n, `data-chg="failCount" data-id="${esc(id)}"`, true) : ''}
+      ${st === 'none' && askOutside.has(id) ? outsideBoxes(id, k) : ''}`;
+  return `<div class="crs a-crs c${colors.get(id) ?? 7}" data-st="${exempt ? 'exempt' : st}">${courseRowA(
+    `record-more-${k}`, id, c,
+    exempt ? '' : seg(`st-${k}`, nm, STATUS, st, `data-chg="status" data-id="${esc(id)}"`), body,
+    (recWarn[id] ?? []).map((t) => `<p class="hint warn-text">${esc(t)}</p>`).join(''), 'me'
+  )}</div>`;
 }
 
 // The regulation warnings (rules.js classify): their container is always rendered so a grade change can refresh just them.
@@ -282,7 +303,7 @@ export function renderMe() {
         ? `<button type="button" class="btn" data-act="yearPassed" data-li="${l.i}"
     data-k="year-${l.i}">סמן את כל שנה ${esc(l.year)}׳ כ״עברתי״</button>`
         : ''
-    }</div><div class="chips">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
+    }</div><div class="chips${designOn() ? ' a-crs-list' : ''}">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
   const sp = specLists(data, state.profile.specs),
     isSpec = (l) => sp.all.has(l.code);
   const others = lists.filter((l) => !past(l) && !isSpec(l)),

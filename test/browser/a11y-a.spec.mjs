@@ -77,6 +77,9 @@ for (const scheme of ['light', 'dark'])
       }
       await check(page, `${tool} open help/folds`);
       await layoutOk(page, `${tool} open help/folds`, true, note);
+      await page.locator(`${id} .a-crs-name`).first().evaluateAll((els) => els.forEach((e) => {
+        e.textContent = 'יישומי מחשב בהנדסת MATLAB ושיטות מתקדמות לחישוב ולתכנון מערכות ארוכות מאוד';
+      }));
       await page.locator(id).evaluate((root) => {
         const els = [root, ...root.querySelectorAll('*')];
         const sizes = els.map((el) => getComputedStyle(el).fontSize);
@@ -114,6 +117,77 @@ for (const scheme of ['light', 'dark'])
         r.top >= 0 && r.bottom <= innerHeight && s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2;
     }), true);
   });
+
+// Phase 4 C: both kinds of row, including their hidden controls, retain their native keyboard and focus across a redraw.
+for (const width of [375, 1920]) for (const tool of ['courses', 'me'])
+  test(`${width}/${tool}: course row names, Enter/Space/Escape, open state and focus after search/redraw, long names reflow`, async (t) => {
+    const page = await visit(t, { width, height: 900 }, DONE, `#${tool}`);
+    await page.locator(`#panel #${tool}`).waitFor({ state: 'visible' });
+    await frame(page);
+    const fold = page.locator(`#${tool} .a-course-more:visible`).first(), sum = fold.locator('summary');
+    const name = await fold.locator('..').locator('.a-crs-name').innerText();
+    assert.equal(await sum.getAttribute('aria-label'), `עוד על ${name}`);
+    assert.equal((await sum.innerText()).trim(), 'עוד');
+    assert.equal(await fold.evaluate((e) => e.open), false);
+    const layout = await fold.evaluate((e) => {
+      const row = e.closest('.a-crs'), seg = row.querySelector(':scope > .seg');
+      const s = getComputedStyle(row), dot = row.querySelector('.dot').getBoundingClientRect();
+      return { cols: s.gridTemplateColumns.split(' ').length, dot: [dot.width, dot.height],
+        background: s.backgroundImage, shadow: s.boxShadow, radius: s.borderRadius,
+        seg: !seg || seg.getBoundingClientRect().height >= 44 };
+    });
+    assert.deepEqual(layout, { cols: width < 600 ? 1 : 2, dot: [10, 10], background: 'none', shadow: 'none', radius: '0px', seg: true });
+    await sum.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await fold.evaluate((e) => e.open), true);
+    assert.deepEqual(await fold.evaluate((e) => [...e.querySelectorAll('input, select, button')].flatMap((control) => {
+      const target = control.matches('input[type=radio], input[type=checkbox]') ? control.closest('label') : control;
+      const r = target.getBoundingClientRect();
+      return r.width >= 43.5 && r.height >= 43.5 ? [] : [`${control.dataset.k}: ${r.width}x${r.height}`];
+    })), [], 'every extra control is a 44px target, including with a mouse');
+    const key = await sum.getAttribute('data-k');
+    await fold.evaluate((e) => { e.dataset.oldRow = '1'; });
+    await page.evaluate(async (which) => {
+      if (which === 'courses') (await import('./ui-search.js')).scheduleRun();
+      else (await import('./app.js')).refresh();
+    }, tool);
+    await page.waitForFunction(() => !document.querySelector('.a-course-more[data-old-row]'), null, { timeout: 60000 });
+    await frame(page);
+    const restored = page.locator(`[data-k="${key}"]`), rowFold = restored.locator('..');
+    assert.equal(await rowFold.evaluate((e) => e.open), true);
+    assert.equal(await restored.evaluate((e) => e === document.activeElement), true);
+    if (await rowFold.locator('input, select, button').count()) {
+      await page.keyboard.press('Tab');
+      assert.equal(await rowFold.evaluate((e) => e.contains(document.activeElement)), true, 'fold content reachable');
+    }
+    await page.keyboard.press('Escape');
+    assert.equal(await rowFold.evaluate((e) => e.open), false);
+    assert.equal(await restored.evaluate((e) => e === document.activeElement), true);
+    assert.equal(await page.locator('#panel').isVisible(), true, 'row Escape leaves the phone sheet open');
+    await page.keyboard.press('Space');
+    assert.equal(await rowFold.evaluate((e) => e.open), true);
+    await restored.evaluate((e) => {
+      e.closest('.a-crs').querySelector('.a-crs-name').textContent =
+        'יישומי מחשב בהנדסת MATLAB ושיטות מתקדמות לחישוב ולתכנון מערכות ארוכות מאוד';
+    });
+    assert.deepEqual(await sideways(page), { page: true, panel: true });
+    assert.equal(await restored.evaluate((e) => {
+      const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+      return r.width >= 44 && r.height >= 44 && s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2;
+    }), true, '44px summary with visible focus');
+  });
+
+test('course warnings stay outside a closed row fold, including a dropped must course and its qualifier', async (t) => {
+  const seed = { ...DONE, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, constraints: { maxCredits: 1 }, choices: { 20816: 'must' } }) };
+  const page = await visit(t, 'phone', seed, '#courses');
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  await frame(page);
+  const row = page.locator('#side article.course').filter({ has: page.locator('[data-id="20816"]') }).first();
+  assert.equal(await row.locator('.a-course-more').evaluate((e) => e.open), false);
+  const warning = row.locator(':scope > .warn-text');
+  await warning.filter({ hasText: 'לא נכנס למערכת' }).waitFor();
+  assert.match(await warning.allTextContents().then((a) => a.join(' ')), /לא נכנס למערכת כי /);
+});
 
 // One checker per test: check(page, 'screen') runs axe and remembers the violations; done() fails with the whole list.
 function checker(scheme) {

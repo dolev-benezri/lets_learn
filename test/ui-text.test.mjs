@@ -32,6 +32,7 @@ import {
   disclaimerHtml,
   esc,
   helpHtml,
+  courseMoreHtml,
   groupFresh,
   groupFreshParts,
   sharedFreshAt,
@@ -44,6 +45,15 @@ import {
 } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
+
+test('courseMoreHtml: native fold, row name, escaped text, stable focus key and restored open state', () => {
+  const html = courseMoreHtml('1"', 'שם <ארוך>', 'row"1', '<input name="grade">');
+  assert.match(html, /<details class="a-course-more" data-course="1&quot;">/);
+  assert.match(html, /<summary data-k="row&quot;1"\s+aria-label="עוד על שם &lt;ארוך&gt;">עוד<\/summary>/);
+  assert.match(html, /<div class="a-course-body"><input name="grade"><\/div><\/details>/);
+  assert.doesNotMatch(html, / open|role="button"|aria-expanded|tabindex|\son\w+=/);
+  assert.match(courseMoreHtml('1', 'קורס', 'row1', '', true), /data-course="1" open>/);
+});
 
 test('helpHtml: labelled native button controls a hidden explanation; no keyboard shim is needed', () => {
   const html = helpHtml('profileHelp', 'פרופיל', 'הקיץ מתוכנן אחרי שנת הלימודים');

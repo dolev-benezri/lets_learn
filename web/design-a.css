@@ -749,7 +749,7 @@
 :root[data-design="a"] .a-fr-card .seg { margin:var(--sp-4) 0 0; }
 :root[data-design="a"] .a-fr-card .seg legend { margin-bottom:var(--sp-2); font-size:var(--fs); }
 :root[data-design="a"] .a-fr-card .seg label { min-width:44px; }
-:root[data-design="a"] .a-fr-card .seg span { min-height:44px; font-size:var(--fs); }
+:root[data-design="a"] :is(.a-fr-card, #panel .a-crs) .seg span { min-height:44px; font-size:var(--fs); }
 :root[data-design="a"] .a-fr-check { margin-top:var(--sp-4); min-height:44px; }
 :root[data-design="a"] .a-fr-card .msg { margin:var(--sp-3) 0 0; }
 :root[data-design="a"] .a-fr-alt { margin:var(--sp-2) 0 0; font-size:var(--fs-sm); }
@@ -781,20 +781,24 @@
 :root[data-design="a"] .a-fr-card details { margin-top:var(--sp-4); }
 :root[data-design="a"] .a-fr-card details > summary { display:inline-flex; align-items:center; min-height:44px; color:var(--primary); cursor:pointer; }
 :root[data-design="a"] .a-fr-card details[open] > summary { margin-bottom:var(--sp-2); }
-:root[data-design="a"] .a-crs-list { margin:0; border-top:1px solid var(--border); }
+:root[data-design="a"] .a-crs-list { display:block; gap:0; margin:0; border-top:1px solid var(--border); }
 :root[data-design="a"] .a-crs {
   display:grid; grid-template-columns:minmax(0, 1fr) 200px; align-items:center; gap:var(--sp-1) var(--sp-3);
-  padding:var(--sp-2) 0; border-bottom:1px solid var(--border);
+  padding:var(--sp-2) 0; border:0; border-bottom:1px solid var(--border); background:none; box-shadow:none; border-radius:0;
 }
 :root[data-design="a"] .a-crs-main { display:flex; flex-wrap:wrap; align-items:center; gap:0 var(--sp-3); min-width:0; }
 :root[data-design="a"] .a-crs .dot { flex:none; width:10px; height:10px; border-radius:50%; background:var(--cfg, var(--primary)); }
 :root[data-design="a"] .a-crs-name { flex:1 1 8em; min-width:0; overflow-wrap:anywhere; }
 :root[data-design="a"] .a-crs-cr { flex:none; font-size:var(--fs-sm); color:var(--text-2); }
-:root[data-design="a"] .a-crs details { flex:none; margin:0; }
-:root[data-design="a"] .a-crs details[open] { flex:1 0 100%; }
-:root[data-design="a"] .a-crs details > summary { font-size:var(--fs-sm); }
+:root[data-design="a"] :is(.a-fr-card, #panel) .a-crs details { flex:none; margin:0; padding:0; border:0; }
+:root[data-design="a"] :is(.a-fr-card, #panel) .a-crs details[open] { flex:1 0 100%; }
+:root[data-design="a"] .a-crs details > summary {
+  display:inline-flex; align-items:center; min-width:44px; min-height:44px; font-size:var(--fs-sm); color:var(--primary); cursor:pointer;
+}
+:root[data-design="a"] .a-crs details > summary:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
 :root[data-design="a"] .a-crs details .a-status { margin:0 0 var(--sp-2); }
 :root[data-design="a"] .a-crs .seg { margin:0; }
+:root[data-design="a"] .a-crs :is(select, input:not([type=radio], [type=checkbox]), .check) { min-height:44px; }
 :root[data-design="a"] .a-fr-asks .seg { margin-top:var(--sp-5); }
 :root[data-design="a"] .a-fr-asks .seg:first-child { margin-top:var(--sp-2); }
 :root[data-design="a"] .a-fr-card .dr-sec { margin:var(--sp-5) 0 0; padding:0; border:0; }
@@ -829,7 +833,7 @@
 :root[data-design="a"] .a-help:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
 :root[data-design="a"] .a-help-head > .a-help-text { flex:1 0 100%; margin:0 0 var(--sp-3); overflow-wrap:anywhere; }
 /* One panel surface: the sections and course rows use dividers, including every status and selected course (Task B). */
-:root[data-design="a"] #panel :is(.me-card, .me-main, .course, .crs) {
+:root[data-design="a"] #panel :is(.me-card, .me-main, .course:not(.a-crs), .crs:not(.a-crs)) {
   min-width:0; padding:var(--sp-4) 0; border:0; border-top:1px solid var(--border);
   background:none; border-radius:0; box-shadow:none;
 }
@@ -861,3 +865,6 @@
   background:none;
   box-shadow:none;
 }
+/* ---- phase 4 rows (Task C) ---- */
+:root[data-design="a"] .a-crs > :is(.tags, .warn-text) { grid-column:1 / -1; }
+:root[data-design="a"] .a-course-body { padding-block:var(--sp-2); min-width:0; overflow-wrap:anywhere; }

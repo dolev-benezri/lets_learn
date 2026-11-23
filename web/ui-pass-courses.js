@@ -6,7 +6,7 @@ import { modeFor } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { splitReason } from './ui-text.js';
 import { yearPickOf } from './ui-side.js';
-import { CAND, SEM_PICK, colors, listIds, status, doneIds, planned, seg, details, nameHtml, ui } from './ui-common.js';
+import { CAND, SEM_PICK, colors, listIds, status, doneIds, planned, seg, courseRowA, ui } from './ui-common.js';
 
 const MODES = [
   ['must', 'חובה'],
@@ -60,17 +60,13 @@ function extrasOf(id, pc, unlocks) {
 function row(id, pc, unlocks) {
   const c = app.data.courses[id],
     more = extrasOf(id, pc, unlocks);
-  const name = `<span class="a-crs-name">${nameHtml(c.name)}</span>`;
-  const sum = `עוד<span class="sr"> על ${esc(c.name)}</span>`;
-  return `<li class="a-crs c${colors.get(id) ?? 7}"><div class="a-crs-main"><span class="dot" aria-hidden="true"></span>${name}<span class="a-crs-cr">${
-    c.credits
-  } נ״ז</span>${details(`fr-more-${id}`, sum, more, more)}</div>${seg(
+  return `<li class="a-crs c${colors.get(id) ?? 7}">${courseRowA(`fr-more-${id}`, id, c, seg(
     `fr-mode-${id}`,
     `מה לעשות עם ${c.name}`,
     MODES,
     candidateMode(id),
     `data-chg="mode" data-id="${esc(id)}"`
-  )}</li>`;
+  ), more, '', 'firstRun')}</li>`;
 }
 
 export function stepThreeHtml() {

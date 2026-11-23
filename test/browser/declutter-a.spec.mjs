@@ -481,19 +481,19 @@ test('classic keeps its long left-out and outside-hours sentences', async (t) =>
 });
 
 // ---- step 6: the course card's status line, the toggletip and the citation behind "למה?" ----
-const card = (page, name) => page.locator('#side article.course', { has: page.locator('h3', { hasText: name }) }).first();
+const card = (page, name) => page.locator('#side article.course', { has: page.locator('h3, .a-crs-name', { hasText: name }) }).first();
 const COURSE = 'מבוא להנדסת חשמל';
 // the plan is computed (the status line says "in the plan" only once it is) and the tool is on screen
 const coursesReady = async (page) => {
   await page.locator('#side article.course').first().waitFor({ timeout: 30000 });
   await idle(page);
-  await card(page, COURSE).locator('.a-ok').waitFor({ timeout: 30000 });
+  await card(page, COURSE).locator('.a-ok').waitFor({ state: 'attached', timeout: 30000 });
 };
 // A real change of the card's course ("must": it was "maybe"), which redraws the whole tool: the card's node is replaced, then the search ends
 async function redraw(page) {
   await card(page, COURSE).evaluate((e) => (e.dataset.old = '1'));
   await card(page, COURSE).locator('input[name^="mode-"][value="must"]').first().evaluate((e) => e.click());
-  await page.waitForFunction((n) => !document.querySelector(`#side article.course[data-old]`) && document.querySelector('#side article.course h3'), null, { timeout: 30000 });
+  await page.waitForFunction(() => !document.querySelector('#side article.course[data-old]') && document.querySelector('#side .a-crs-name'), null, { timeout: 30000 });
   await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).choices['20816'] === 'must');
   await idle(page);
 }
@@ -522,6 +522,7 @@ test('a course card: the importance row, one status line, the warning tag alone,
   await coursesReady(page);
   const c = card(page, COURSE);
   assert.equal(await c.locator('.sem-row, .sem-lbl').count(), 0, 'no row of three semester buttons');
+  await c.locator('.a-course-more > summary').click();
   const status = c.locator('.a-status');
   const select = status.locator('select');
   assert.match((await select.getAttribute('aria-label')) ?? '', /^באיזה סמסטר ללמוד את /, 'labelled as before');
@@ -539,6 +540,7 @@ test('"למה?" opens the regulation citation in place, stays open over a redraw
   const page = await visit(t, 'desktop', DONE, '#courses');
   await coursesReady(page);
   const reason = () => card(page, COURSE).locator('p.reason', { hasText: 'רק יחד עם' });
+  await card(page, COURSE).locator('.a-course-more > summary').click();
   assert.equal(flat(await reason().innerText()), 'רק יחד עם פיזיקה חשמל ומגנטיות למה?', 'the short reason');
   const why = () => reason().locator('.a-which');
   assert.match((await why().getAttribute('aria-label')) ?? '', /^למה\? .+: רק יחד עם/, 'the name says which course and reason, and keeps the visible words');
@@ -560,6 +562,7 @@ test('the semester select on the card sets the course\'s semester and comes back
   await page.locator('#panel #side article.course').first().waitFor({ timeout: 30000 });
   await idle(page);
   const select = () => card(page, COURSE).locator('.a-status select');
+  await card(page, COURSE).locator('.a-course-more > summary').click();
   assert.ok((await select().boundingBox()).height >= 43.5);
   const id = await select().getAttribute('data-id');
   const stored = (i) => page.evaluate((x) => JSON.parse(localStorage.getItem('afeka-sched-v1')).semesterOf?.[x], i);

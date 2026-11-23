@@ -45,7 +45,7 @@ for (const size of ['phone', { width: 1920, height: 900 }])
       const cards = await page.locator(`#${id} :is(.me-card, .me-main, .course, .crs, .frow, .fr-empty)`).evaluateAll((els) =>
         els.filter((e) => e.checkVisibility()).map((e) => {
           const s = getComputedStyle(e);
-          return [s.backgroundColor, s.backgroundImage, s.boxShadow, s.borderRadius, s.borderTopWidth];
+          return [s.backgroundColor, s.backgroundImage, s.boxShadow, s.borderRadius, e.classList.contains('a-crs') ? s.borderBottomWidth : s.borderTopWidth];
         }));
       assert.ok(cards.length > 0, `${tool}: sections were checked`);
       for (const card of cards) assert.deepEqual(card, ['rgba(0, 0, 0, 0)', 'none', 'none', '0px', '1px'], tool);
