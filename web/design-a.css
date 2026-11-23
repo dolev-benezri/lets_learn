@@ -7,6 +7,8 @@
   --design:a; /* a sentinel the final proof (Task 13) reads */
   --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
   --a-top:60px; /* the wide top bar, where the dock and the panel stick */
+  /* from 1080px the bar and the strip stay on screen: where the dock, the tool and the column stick (--a-strip-h is measured, ui-shell.js) */
+  --a-head:calc(var(--a-top) + var(--a-strip-h, 31px));
   --a-dock-h:52px; /* the wide dock's own height (from 1080px): --tap is 36px with a mouse, and the tabs are a column */
   /* the system design (docs/superpowers/specs/2026-11-22-design-a-system-design.md): one spacing scale, one type scale, the frame widths */
   --sp-1:4px;
@@ -404,14 +406,14 @@
   :root[data-design="a"] .a-board { grid-column:2; grid-row:1 / 3; }
   :root[data-design="a"] .a-stage.has-alts { grid-template-columns:400px minmax(0, 1fr) 280px; }
   :root[data-design="a"] .a-alts:not([hidden]) {
-    display:block; grid-column:3; grid-row:1 / 3; position:sticky; top:var(--a-top); max-height:calc(100dvh - var(--a-top));
+    display:block; grid-column:3; grid-row:1 / 3; position:sticky; top:var(--a-head); max-height:calc(100dvh - var(--a-head));
     overflow:auto; padding:12px; background:var(--surface); border-inline-start:1px solid var(--border);
   }
   :root[data-design="a"] body[data-view="edit"] .a-alts, :root[data-design="a"] body.gated .a-alts {
     display:none;
   } /* build alternatives belong to the board, not the edit page or the gate */
   :root[data-design="a"] .dock {
-    position:sticky; top:var(--a-top); inset-inline:auto; bottom:auto; z-index:6; grid-column:1; grid-row:1;
+    position:sticky; top:var(--a-head); inset-inline:auto; bottom:auto; z-index:6; grid-column:1; grid-row:1;
     padding:0; border-top:0; border-bottom:0; box-shadow:inset 0 -1px 0 var(--border); /* the line is a shadow: the dock is exactly --a-dock-h */
     border-inline-end:1px solid var(--border);
   }
@@ -421,8 +423,8 @@
   :root[data-design="a"] .dk[aria-pressed="true"]::before { top:auto; bottom:0; border-radius:3px 3px 0 0; }
   :root[data-design="a"] .a-scrim { display:none !important; }
   :root[data-design="a"] .a-panel {
-    position:sticky; top:calc(var(--a-top) + var(--a-dock-h)); inset-inline:auto; bottom:auto; z-index:5; grid-column:1; grid-row:2;
-    height:calc(100dvh - var(--a-top) - var(--a-dock-h));
+    position:sticky; top:calc(var(--a-head) + var(--a-dock-h)); inset-inline:auto; bottom:auto; z-index:5; grid-column:1; grid-row:2;
+    height:calc(100dvh - var(--a-head) - var(--a-dock-h));
     border-radius:0; box-shadow:none; border-inline-end:1px solid var(--border);
   }
   :root[data-design="a"] .a-grip, :root[data-design="a"] .a-ph { display:none; }
@@ -440,8 +442,8 @@
   /* improve mode, wide: the tool is a sticky column (its own scroller), the week is the board beside it */
   :root[data-design="a"] .edit-stage { display:grid; grid-template-columns:minmax(340px, 440px) minmax(0, 1fr); gap:0 24px; align-items:start; }
   :root[data-design="a"] .edit-tool {
-    grid-column:1; position:sticky; top:calc(var(--a-top) + var(--a-dock-h) + 8px);
-    max-height:calc(100dvh - var(--a-top) - var(--a-dock-h) - 16px);
+    grid-column:1; position:sticky; top:calc(var(--a-head) + var(--a-dock-h) + 8px);
+    max-height:calc(100dvh - var(--a-head) - var(--a-dock-h) - 16px);
     overflow:auto; overscroll-behavior:contain;
   }
   :root[data-design="a"] .edit-board { grid-column:2; min-width:0; }
@@ -450,7 +452,7 @@
   :root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; }
   :root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; white-space:nowrap; }
   :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
-    position:fixed; top:calc(var(--a-top) + var(--a-dock-h)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
+    position:fixed; top:calc(var(--a-head) + var(--a-dock-h)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
     border-radius:0; border-inline-end:1px solid var(--border);
   }
 }
@@ -464,6 +466,11 @@
   :root[data-design="a"] .a-top { padding-inline:max(16px, calc((100% - var(--frame)) / 2)); }
   :root[data-design="a"] .a-strip { padding-inline:max(12px, calc((100% - var(--frame)) / 2)); }
   :root[data-design="a"] .a-stage { padding-inline:max(0px, calc((100% - var(--frame)) / 2)); }
+  /* the strip stays under the bar, so the sticky tool column is exactly the window's height below them and the page never scrolls past the board */
+  :root[data-design="a"] .a-strip { position:sticky; top:var(--a-top); z-index:24; background:var(--bg); }
+  /* the week's day headers stick under them too (style.css: --bar-h, 48px, was meant for the classic bar), and under the improve page's dock */
+  :root[data-design="a"] .wk-head > * { top:var(--a-head); }
+  :root[data-design="a"] body[data-view="edit"] .wk-head > * { top:calc(var(--a-head) + var(--a-dock-h)); }
   :root[data-design="a"] body[data-view="edit"] .a-top { padding-inline:max(16px, calc((100% - var(--frame-edit)) / 2)); }
   :root[data-design="a"] body[data-view="edit"] .a-strip { padding-inline:max(12px, calc((100% - var(--frame-edit)) / 2)); }
   :root[data-design="a"] body[data-view="edit"] .a-stage { padding-inline:max(0px, calc((100% - var(--frame-edit)) / 2)); }
@@ -532,4 +539,15 @@
     width:min(420px, calc(100% - 76px));
   }
   :root[data-design="a"] body[data-view="edit"] { padding-inline-start:76px; }
+}
+/* below 1440px the open alternatives column is laid over the week, not beside it (at 1280 it left the week 585px and cut the lesson names): the stage keeps the
+   rail's 64px track, the column is fixed at the end edge under the bar and the strip; Escape and a tap outside close it (ui-plan.js a-alts-close) */
+@media (min-width:1080px) and (max-width:1439px) {
+  :root[data-design="a"] .a-alts.alts-over:not([hidden]) {
+    position:fixed; top:var(--a-head); bottom:0; max-height:none; inset-inline-end:0; width:280px; z-index:12; padding:12px;
+    box-shadow:var(--shadow-sheet); border:1px solid var(--border);
+  }
+}
+@media (min-width:1080px) and (max-width:1279px) {
+  :root[data-design="a"] .a-alts.alts-over:not([hidden]) { width:240px; }
 }

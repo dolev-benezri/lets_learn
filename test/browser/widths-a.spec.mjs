@@ -154,9 +154,11 @@ for (const w of [1440, 1920])
   });
 
 // owner-12: the page is no taller than the board and the dock. A tool's visually hidden inputs (position:absolute) once escaped its scroll and stretched the
-// document far below the board, into empty grey, under the sticky column from 1080px. Each tool in turn, at the three sizes the owner and the phones use.
+// document far below the board, into empty grey, under the sticky column from 1080px; the strip's own height then left the page 31px longer than the window.
+// Each tool in turn, at the three sizes the owner and the phones use: from 1080px the document is exactly the board or the window, whichever is taller (no
+// slack); a phone adds the room its fixed dock takes.
 for (const [w, h] of [[1920, 1080], [1280, 800], [375, 812]])
-  test(`${w}px: the page is no taller than the board and the dock, whichever tool is open`, async (t) => {
+  test(`${w}px: the page is no taller than the board (or the window) and the dock room, whichever tool is open`, async (t) => {
     const page = await visit(t, { width: w, height: h }, DONE, '#courses');
     await page.locator('#panel #courses').waitFor({ state: 'visible' });
     await settle(page);
@@ -166,10 +168,11 @@ for (const [w, h] of [[1920, 1080], [1280, 800], [375, 812]])
       await page.waitForTimeout(300);
       const m = await page.evaluate(() => ({
         doc: document.documentElement.scrollHeight,
-        shell: Math.round(document.getElementById('ashell').getBoundingClientRect().bottom + scrollY),
-        dock: Math.round(document.querySelector('.dock').getBoundingClientRect().height),
+        // from 1080px the content is the board (the sticky column is sized to the window); on a phone the shell, whose sheet is fixed
+        shell: Math.round(document.getElementById(innerWidth >= 1080 ? 'aBoard' : 'ashell').getBoundingClientRect().bottom + scrollY),
+        room: Math.round(parseFloat(getComputedStyle(document.body).paddingBottom)), // what the page keeps for a fixed dock (a phone's), none beside the board
         inner: innerHeight
       }));
-      assert.ok(m.doc <= Math.max(m.shell + m.dock, m.inner), `${tool}: the document is ${m.doc}px, the board ends at ${m.shell}px (dock ${m.dock}px, window ${m.inner}px)`);
+      assert.ok(m.doc <= Math.max(m.shell + m.room, m.inner), `${tool}: the document is ${m.doc}px, the board ends at ${m.shell}px (dock room ${m.room}px, window ${m.inner}px)`);
     }
   });

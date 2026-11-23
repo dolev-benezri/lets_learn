@@ -238,6 +238,10 @@ try {
   /* storage blocked: folded */
 }
 export const altsOpen = () => altsIsOpen;
+// From 1080 to 1439px the open column would take the week's width (585px at 1280: lesson names cut), so there it opens OVER the week, for a visit only:
+// the remembered choice above applies from 1440px, where the column has the room.
+export const altsOverlay = () => !!globalThis.matchMedia?.('(min-width: 1080px) and (max-width: 1439px)').matches;
+export const altsShown = () => (altsOverlay() ? !!ui.altsOver : altsIsOpen);
 export function setAltsOpen(open) {
   altsIsOpen = !!open;
   try {
@@ -274,6 +278,7 @@ export const ui = {
   specPick: null,
   onShown: null,
   onResult: null,
+  altsOver: false, // A, 1080-1439px: the alternatives column is open over the week (not remembered)
   detailsOpen: false, // A: the board's "פרטים" disclosure, kept over the re-renders (ui-view.js factsHtml)
   tipOpen: false, // A: the courses tool's "מה ההבדל?" toggletip
   whyOpen: new Set(), // A: the course cards' "למה?" that are open (ui-side.js), by course id and reason index

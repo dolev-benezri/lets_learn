@@ -326,3 +326,16 @@ for (const scheme of ['light', 'dark'])
     await railTargets(page, 'open column', note);
     done();
   });
+
+// below 1440px the open column is an overlay over the week (fixed, above the board): axe, and its 44px targets
+for (const scheme of ['light', 'dark'])
+  test(`1280/${scheme}: the alternatives column open over the week: axe, targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const page = await visit(t, { width: 1280, height: 800 }, DONE, '', scheme);
+    await page.locator('#alts .rail-n').first().waitFor({ state: 'visible', timeout: 30000 });
+    await page.locator('#alts [data-k="alts-fold"]').click();
+    await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+    await check(page, 'overlay');
+    await railTargets(page, 'overlay', note);
+    done();
+  });

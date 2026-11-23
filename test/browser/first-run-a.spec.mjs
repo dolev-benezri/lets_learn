@@ -270,8 +270,8 @@ test('no visible string under A says "שלב N", "צעד N" or "הבא:", on eve
 
 test('a sentence that pointed at a numbered step names the tool under A, and classic keeps its number', async (t) => {
   const seed = { ...DONE, 'afeka-sched-v1-alts': 'open', 'afeka-sched-v1': JSON.stringify({ ...STUDENT, sortBy: 'friends' }) }; // sorting by friends with none: the hint under the sort
-  const a = await visit(t, 'desktop', seed, '');
-  const link = a.locator('#alts .a-sort .hint a'); // 1280px: the sort is in the alternatives column
+  const a = await visit(t, { width: 1440, height: 900 }, seed, '');
+  const link = a.locator('#alts .a-sort .hint a'); // 1440px (the remembered open column): the sort is in the alternatives column
   await link.waitFor({ timeout: 30000 });
   assert.equal(await link.getAttribute('href'), '#friends', 'A: the friends tool');
   assert.equal(await link.textContent(), 'ב״חברים״');
@@ -415,3 +415,18 @@ test('the map opened from "המצב שלי" returns focus to the button even whe
   await page.waitForFunction(() => document.activeElement?.dataset.k === 'meMap', null, { timeout: 3000 }); // the close event is queued: it returns the focus
   assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'meMap');
 });
+
+// a student who made the entry choice but never left step 1 (no "onboarded" flag) opens on the week, not on the record, at every load; one who made no choice
+// is on a first visit and is sent to the record once
+for (const [name, size] of [['a phone', 'phone'], ['1280', 'desktop']])
+  test(`${name}: a student who already entered opens on the week, not on #me; one who did not is on a first visit`, async (t) => {
+    const { 'afeka-sched-v1-onboarded': _o, ...enteredOnly } = DONE; // terms, the entry choice and a saved record; no onboarded flag
+    const page = await visit(t, size, enteredOnly);
+    await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+    assert.equal(await page.evaluate(() => location.hash), '', 'no redirect to #me');
+    assert.equal(await page.evaluate(() => document.body.dataset.view), 'plan');
+    if (size === 'phone') assert.equal(await page.locator('#panel').isVisible(), false, 'no sheet over the week');
+    const { 'afeka-sched-v1-entry': _e, ...first } = enteredOnly; // no entry choice either: a first visit
+    const fresh = await visit(t, size, first);
+    await fresh.waitForFunction(() => location.hash === '#me', null, { timeout: 30000 });
+  });

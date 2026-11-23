@@ -305,8 +305,8 @@ test('the plan scope is not on the board; it lives in "מה חשוב לי"', asy
   assert.ok((await page.locator('#prefs input[name="scope"]').count()) >= 2, 'the one home of the scope');
 });
 
-test('1280: the semester tabs are in the bar before the switcher and the share button; the sort is in the column under "חלופות לשנה"', async (t) => {
-  const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1-alts': 'open' });
+test('1440: the semester tabs are in the bar before the switcher and the share button; the sort is in the column under "חלופות לשנה"', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, 'afeka-sched-v1-alts': 'open' });
   await weekReady(page);
   assert.equal(await page.locator('.a-bar #semtabs').count(), 1);
   assert.ok(await order(page, ['#semtabs', '#switcher', '.a-share']), 'tab order: semester tabs, alternatives, share');
@@ -324,7 +324,7 @@ test('1280: the semester tabs are in the bar before the switcher and the share b
 });
 
 test('a single-semester plan titles the column "חלופות" and has no semester tabs', async (t) => {
-  const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1-alts': 'open', 'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope: 'א' }) });
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, 'afeka-sched-v1-alts': 'open', 'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope: 'א' }) });
   await weekReady(page);
   await idle(page);
   assert.equal(flat(await page.locator('#alts .col-t').innerText()), 'חלופות');

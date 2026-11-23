@@ -85,7 +85,8 @@ import {
   $,
   ui,
   designOn,
-  altsOpen
+  altsShown,
+  altsOverlay
 } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -697,10 +698,12 @@ export function renderAltColumn() {
       <span class="rank" aria-hidden="true">${i + 1}</span><span class="ac-b"><b><span class="sr">חלופה ${i + 1}: </span>${esc(head)}</b>
       <small>${esc(sub)}</small>${miniWeekHtml(res, data, span)}</span></button></li>`;
   });
-  const open = altsOpen();
+  const over = altsOverlay(),
+    open = altsShown();
   box.hidden = false;
   box.closest('.a-stage')?.classList.add('has-alts'); // the wide grid's third track (a class: no :has() needed)
-  box.closest('.a-stage')?.classList.toggle('alts-rail', !open); // folded: a 64px rail, the default
+  box.closest('.a-stage')?.classList.toggle('alts-rail', !open || over); // folded: a 64px rail, the default; below 1440px the track stays the rail's
+  box.classList.toggle('alts-over', over && open); // below 1440px the open column is laid over the week
   if (open)
     // a year plan's cards are the year's alternatives; the sort select sits under the title (it shows only here)
     box.innerHTML = `<div class="col-h"><h2 class="col-t">${results.some(isPair) ? 'חלופות לשנה' : 'חלופות'}</h2>

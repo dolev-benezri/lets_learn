@@ -18,7 +18,7 @@ const weekReady = (page) => page.locator('#week .blk').first().waitFor({ timeout
 const label = (page) => page.locator('#altLabel').textContent();
 
 test('desktop: the column lists every alternative, marks the shown one, and a card shows that alternative', async (t) => {
-  const page = await visit(t, 'desktop', { ...DONE, ...OPEN });
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN });
   await weekReady(page);
   const cards = page.locator('#alts .alt-card');
   await cards.first().waitFor();
@@ -38,7 +38,7 @@ test('desktop: the column lists every alternative, marks the shown one, and a ca
 });
 
 test('a miniature week is not interactive: no id, key or action, hidden from assistive technology, and a tap on it does nothing else', async (t) => {
-  const page = await visit(t, 'desktop', { ...DONE, ...OPEN });
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN });
   await weekReady(page);
   await page.locator('#alts .alt-card .mini').first().waitFor();
   const bad = await page.evaluate(() =>
@@ -55,7 +55,7 @@ test('a miniature week is not interactive: no id, key or action, hidden from ass
 });
 
 test('desktop: a year plan puts the year totals on the cards, and a semester switch redraws them without an error', async (t) => {
-  const page = await visit(t, 'desktop', { ...DONE, ...OPEN, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope: 'year' }) });
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope: 'year' }) });
   await weekReady(page);
   await page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') === 'false', null, { timeout: 30000 });
   const cards = page.locator('#alts .alt-card');
@@ -167,7 +167,7 @@ test('phone: two fingers, a tool opened mid-gesture, an open details popover and
 });
 
 test('desktop: the alternatives column is gone over the edit page, and comes back with the board', async (t) => {
-  const page = await visit(t, 'desktop', { ...DONE, ...OPEN });
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN });
   await weekReady(page);
   await page.locator('#alts .alt-card').first().waitFor();
   assert.equal(await page.locator('#alts').isVisible(), true);
@@ -178,18 +178,18 @@ test('desktop: the alternatives column is gone over the edit page, and comes bac
   await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
 });
 
-test('desktop: the column sticks below the top bar, never under it', async (t) => {
-  const page = await visit(t, { width: 1280, height: 600 }, { ...DONE, ...OPEN });
+test('desktop: the column sticks below the top bar and the strip, never under them', async (t) => {
+  const page = await visit(t, { width: 1440, height: 600 }, { ...DONE, ...OPEN });
   await weekReady(page);
   await page.locator('#alts .alt-card').first().waitFor();
   const m = await page.evaluate(async () => {
     window.scrollTo(0, 400);
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    const bar = document.querySelector('.a-top').getBoundingClientRect(), alts = document.getElementById('alts').getBoundingClientRect();
+    const bar = document.querySelector('.a-strip').getBoundingClientRect(), alts = document.getElementById('alts').getBoundingClientRect();
     return { scrolled: scrollY, barBottom: bar.bottom, altsTop: alts.top };
   });
   assert.ok(m.scrolled > 100, 'the page scrolls');
-  assert.ok(m.altsTop >= m.barBottom - 0.5, `the column starts at ${m.altsTop}, the top bar ends at ${m.barBottom}`);
+  assert.ok(m.altsTop >= m.barBottom - 0.5, `the column starts at ${m.altsTop}, the top bar and the strip end at ${m.barBottom}`);
 });
 
 // ---- phase 1 task 4: the switcher says it is computing ----
@@ -406,3 +406,60 @@ for (const [name, size] of [['375', 'phone'], ['320', { width: 320, height: 640 
     assert.ok(right, 'inside the screen');
   });
 }
+
+// below 1440px the open alternatives column is laid over the week (at 1280 it left the week 585px and cut the lesson names): the remembered "open" applies from
+// 1440px; below it the column starts as the rail, opens as an overlay for the visit, and Escape or a tap outside closes it, focus back on the rail's button
+const weekWidth = (page) => page.locator('#week').evaluate((e) => Math.round(e.getBoundingClientRect().width));
+for (const w of [1280, 1100])
+  test(`${w}px: the open column is laid over the week, not beside it; the remembered "open" does not open it at load`, async (t) => {
+    const page = await visit(t, { width: w, height: 900 }, { ...DONE, ...OPEN });
+    await weekReady(page);
+    await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#alts .alt-card').count(), 0, 'a rail at load, whatever was remembered');
+    const wide = await weekWidth(page);
+    await page.locator('#alts [data-k="alts-fold"]').click();
+    await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+    const m = await page.evaluate(() => {
+      const a = document.getElementById('alts'), r = a.getBoundingClientRect(), wk = document.getElementById('week').getBoundingClientRect();
+      return { pos: getComputedStyle(a).position, over: a.classList.contains('alts-over'), alt: { l: r.left, r: r.right, w: r.width }, wk: { l: wk.left, r: wk.right, w: wk.width }, stored: localStorage.getItem('afeka-sched-v1-alts') };
+    });
+    assert.equal(m.pos, 'fixed');
+    assert.equal(m.over, true);
+    assert.equal(Math.round(m.wk.w), wide, 'the week keeps its width');
+    assert.ok(m.alt.l < m.wk.r && m.alt.r > m.wk.l, `the column is over the week: ${JSON.stringify(m)}`);
+    assert.equal(m.stored, 'open', 'not remembered: opening it here changed nothing in storage');
+  });
+
+test('1280: Escape closes the overlay and returns focus to the rail\'s button; a tap outside closes it too', async (t) => {
+  const page = await visit(t, { width: 1280, height: 900 }, DONE);
+  await weekReady(page);
+  const open = async () => {
+    await page.locator('#alts [data-k="alts-fold"]').click();
+    await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  };
+  await open();
+  await page.locator('#alts .alt-card').first().focus();
+  await page.keyboard.press('Escape');
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'alts-fold', 'focus is on the rail\'s button');
+  assert.equal(await page.evaluate(() => document.getElementById('alts').classList.contains('alts-over')), false);
+  await open();
+  const box = await page.locator('#week').boundingBox(); // the column is at the end edge (the left, right to left): tap the week's other end
+  await page.mouse.click(box.x + box.width - 30, box.y + 40);
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#alts .alt-card').count(), 0, 'closed by the tap');
+});
+
+test('1440 stays as it was (a column beside the week, the choice remembered); crossing below it drops the overlay', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN });
+  await weekReady(page);
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('alts')).position), 'sticky', 'beside the week, not over it');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' }); // below 1440: the rail again, the overlay is not open
+  await page.locator('#alts [data-k="alts-fold"]').click();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' }); // back at 1440: the remembered "open"
+  assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('alts')).position), 'sticky');
+});

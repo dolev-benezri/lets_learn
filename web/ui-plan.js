@@ -7,7 +7,9 @@ import { trapTab, askConfirm } from './ui-dialog.js';
 import { retakeNotice } from './rules.js';
 import './ui-map.js';
 import { popStale, PAGE_NAME } from './ui-text.js';
-import { PHONE, PAGE, shownTitle, openDetails, onboarded, markOnboarded, gated, termsOk, heb, $, ui, designOn, altsOpen, setAltsOpen } from './ui-common.js';
+import {
+  PHONE, PAGE, shownTitle, openDetails, onboarded, entered, markOnboarded, gated, termsOk, heb, $, ui, designOn, altsOpen, altsOverlay, setAltsOpen
+} from './ui-common.js';
 import { scheduleRun, cancelRun } from './ui-search.js';
 import { renderEdit, stopSearch, syncSavedHint } from './ui-edit.js';
 import { needsModeChoice, modeOpen, renderModeChoice, getMode, setMode } from './ui-mode.js';
@@ -20,7 +22,8 @@ import { tourCheck, tourOnce, introPending, shellPending, onTourEnd } from './to
 import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear, toggleEditSheet } from './ui-shell.js';
 
 // Read at module load, before init() (awaiting the data) strips a friend or backup hash: a visit with a link is not a first visit.
-let firstVisit = !onboarded() && !location.hash;
+// A: someone who already made the entry choice ("מאיפה מתחילים") is not on a first visit, even if they never left step 1: they open on the week
+let firstVisit = !onboarded() && !(designOn() && entered()) && !location.hash;
 // The remembered mode: a visit with no link opens the edit page (spec "The mode choice"); any link (#me, #edit, #f=, #b=) wins.
 if (!location.hash && getMode() === 'edit') history.replaceState(null, '', '#edit');
 // design A (web/design.js): the frame is built around the live containers before anything is drawn into them
@@ -306,9 +309,24 @@ ACT.altPick = (el) => {
 // the alternatives column folds to a rail and opens again (the choice is kept); the button keeps the focus (WebKit does not focus a clicked button)
 ACT.altsFold = (el) => {
   el.focus({ preventScroll: true });
-  setAltsOpen(!altsOpen());
+  if (altsOverlay()) ui.altsOver = !ui.altsOver; // over the week: for this visit only
+  else setAltsOpen(!altsOpen());
   keepFocus(renderAltColumn);
 };
+// Escape or a tap outside closes the overlay; focus goes back to the rail's button (a tap outside only when the focus was inside the column)
+addEventListener('a-alts-close', (e) => {
+  if (!ui.altsOver) return;
+  const was = $('alts')?.contains(document.activeElement);
+  ui.altsOver = false;
+  keepFocus(renderAltColumn);
+  if (was || e.detail?.focus) $('alts')?.querySelector('[data-k="alts-fold"]')?.focus({ preventScroll: true });
+});
+// crossing 1080px or 1440px changes what "open" means: the overlay does not carry over
+for (const q of ['(min-width: 1080px)', '(min-width: 1440px)'])
+  globalThis.matchMedia?.(q).addEventListener('change', () => {
+    ui.altsOver = false;
+    if (designOn()) keepFocus(renderAltColumn);
+  });
 addEventListener('hashchange', onHash);
 // static container, so the friend-landing banner inserted later is announced
 $('banner').setAttribute('aria-live', 'polite');

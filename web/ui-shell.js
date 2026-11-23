@@ -83,6 +83,8 @@ export function shellInit() {
   $('aTopAct').append(document.querySelector('.theme-btn'), document.querySelector('.menu-btn'));
   for (const id of Object.values(TOOL_PAGE)) $('aPb').append($(id));
   document.addEventListener('keydown', onKey);
+  // a tap outside the alternatives column laid over the week closes it (the tap itself still does what it does)
+  document.addEventListener('pointerdown', (e) => ui.altsOver && !e.target.closest?.('#alts') && dispatchEvent(new CustomEvent('a-alts-close')), true);
   addEventListener('a-edit-sheet', () => applyShell()); // ui-edit.js closed the sheet itself
   // a swipe on the week moves between alternatives, as the arrows do (a touch or a pen; the same direction as the arrow keys in a right-to-left page)
   // One finger only (a second one is a pinch), dropped when the address changes (a tool opened mid-gesture), and never over the details popover or a
@@ -104,7 +106,10 @@ export function shellInit() {
     if (Math.abs(dx) > 70 && Math.abs(dy) < 50 && !$('layout').hidden && !overlayOpen()) go(dx < 0 ? 1 : -1);
   });
   // a locked sheet (the gate) must leave the title, the mode tabs and the unofficial line above it: its top follows the bottom of the notice strip
-  const chrome = () => document.documentElement.style.setProperty('--a-chrome', `${Math.ceil($('aStrip').getBoundingClientRect().bottom + scrollY) + 6}px`);
+  const chrome = () => {
+    document.documentElement.style.setProperty('--a-chrome', `${Math.ceil($('aStrip').getBoundingClientRect().bottom + scrollY) + 6}px`);
+    document.documentElement.style.setProperty('--a-strip-h', `${$('aStrip').offsetHeight}px`); // what sticks under the bar from 1080px (--a-head)
+  };
   const watch = new ResizeObserver(chrome);
   watch.observe(document.querySelector('.a-top'));
   watch.observe($('aStrip'));
@@ -136,6 +141,7 @@ export function applyShell() {
   const w = wide();
   const improve = route.mode === 'improve';
   if (!improve) ui.overlay = null; // the record over the edit page does not outlive it
+  if (improve) ui.altsOver = false; // the alternatives column over the week belongs to the board: not left open behind the edit page
   if (improve && ui.lastStep !== route.tool) ui.editSheet = true; // a step shows its tool
   ui.lastStep = improve ? route.tool : null;
   const panel = panelOf(route, { wide: w, program: !needsProgram(), gated: !!app.state && gated(), termsOk: termsOk(), overlay: ui.overlay });
@@ -276,6 +282,11 @@ const overlayOpen = () => !!document.querySelector('dialog[open]') || !!$('pop')
 
 function onKey(e) {
   if (e.key !== 'Escape' || e.defaultPrevented || overlayOpen()) return;
+  if (ui.altsOver && !$('alts').hidden) {
+    e.preventDefault(); // the alternatives column over the week (below 1440px) closes first
+    dispatchEvent(new CustomEvent('a-alts-close', { detail: { focus: true } }));
+    return;
+  }
   const improve = routeA(location.hash).mode === 'improve';
   if (improve && ui.overlay && panelOpen()) {
     e.preventDefault(); // the record over the edit page closes by Escape at every width
