@@ -1,6 +1,7 @@
 ﻿// Phase 4 F: build-tool filtering shares the improve text matcher; no solver changes or result cap.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { courseCount } from '../../web/ui-text.js';
 import { DONE, launch, visit as visitIn } from './helpers.mjs';
 
 let browser;
@@ -10,6 +11,12 @@ const visit = (t, size) => visitIn(browser, t, size, DONE, '#courses', 'light', 
 const idle = (page) => page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') !== 'true', null, { timeout: 60000 });
 const groups = (page) => page.locator('#side details[data-key]').evaluateAll((els) => els.map((e) => [e.dataset.key, e.open]));
 const ids = (page) => page.locator('#side [data-course-id]:visible').evaluateAll((els) => els.map((e) => e.dataset.courseId));
+// the rows the query itself finds (planned rows stay on screen without being counted)
+const hits = (page, q) =>
+  page.evaluate(async (q) => {
+    const { app } = await import('./app.js'), { matches } = await import('./course-search.js');
+    return [...document.querySelectorAll('#side [data-course-id]')].filter((e) => matches({ ...app.data.courses[e.dataset.courseId], code: e.dataset.courseId }, q)).length;
+  }, q);
 const ready = async (page) => {
   await page.locator('#courseQuery').waitFor();
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
@@ -32,18 +39,20 @@ for (const size of ['phone', 'desktop'])
     const page = await visit(t, size), pick = await ready(page);
     const input = page.getByRole('searchbox', { name: 'חיפוש קורס: קוד, שם או מרצה', exact: true });
     const before = await groups(page);
+    const planIds = await page.locator('#side details[data-key="plan"] [data-course-id]').evaluateAll((els) => els.map((e) => e.dataset.courseId));
     for (const q of [pick.id, pick.name.slice(0, 4), pick.lecturer]) {
       await input.fill(q);
       assert.ok((await ids(page)).includes(pick.id), q);
       assert.equal(await page.locator(`#side details[data-key="${pick.group}"]`).evaluate((e) => e.open), true);
       assert.equal(await page.evaluate(() => window.__courseRow === document.querySelector(`[data-course-id="${window.__courseRow.dataset.courseId}"]`)), true,
         'typing keeps the same row node');
-      assert.equal(await page.locator('#courseQueryStatus').textContent(), `${(await ids(page)).length} קורסים`);
+      assert.equal(await page.locator('#courseQueryStatus').textContent(), courseCount(await hits(page, q)));
       assert.equal(await page.locator('#courseQueryStatus').getAttribute('aria-live'), 'polite');
     }
     await input.fill('קורס_שאינו_קיים_12345');
-    assert.deepEqual(await ids(page), []);
-    assert.equal(await page.locator('#courseQueryStatus').textContent(), 'אין קורס כזה');
+    assert.deepEqual(await ids(page), planIds, 'an unmatched query keeps every planned course, including optional courses');
+    assert.equal(await page.locator('#side details[data-key="plan"]').isVisible(), true);
+    assert.equal(await page.locator('#courseQueryStatus').textContent(), 'אין קורס כזה', 'the planned rows on screen are not matches');
     await input.fill('');
     assert.deepEqual(await groups(page), before, 'clearing restores the initial group choices');
     assert.equal(await input.evaluate((e) => e === document.activeElement), true);
@@ -52,6 +61,40 @@ for (const size of ['phone', 'desktop'])
     assert.deepEqual(await groups(page), before, 'temporary search expansion never becomes the saved group choice');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   });
+
+test('a course marked חובה stays visible when searching another course code', async (t) => {
+  const page = await visit(t, 'desktop'), pick = await ready(page);
+  const input = page.locator('#courseQuery');
+  await input.fill(pick.id);
+  await page.locator(`[data-chg="mode"][data-id="${pick.id}"][value="must"]`).check({ force: true });
+  const planned = page.locator(`#side details[data-key="plan"] [data-course-id="${pick.id}"]`);
+  await planned.waitFor();
+  await idle(page);
+  const otherId = await page.locator('#side details:not([data-key="plan"]) [data-course-id]').first().getAttribute('data-course-id');
+  assert.ok(otherId && otherId !== pick.id);
+  await input.fill(otherId);
+  assert.equal(await planned.isVisible(), true);
+  assert.equal(await planned.locator('[value="must"]').isChecked(), true);
+  assert.ok((await ids(page)).includes(otherId));
+  assert.equal(await page.locator('#side details[data-key="plan"] [data-course-id][hidden]').count(), 0);
+});
+
+test('a single visible course is announced as קורס אחד', async (t) => {
+  const page = await visit(t, 'desktop'), pick = await ready(page);
+  await page.evaluate(async () => {
+    const { app, refresh } = await import('./app.js');
+    for (const id of Object.keys(app.data.courses)) app.state.choices[id] = 'no';
+    refresh();
+  });
+  await idle(page);
+  await page.locator('#courseQuery').fill(pick.id);
+  assert.deepEqual(await ids(page), [pick.id]);
+  assert.equal(await page.locator('#side details[data-key="plan"]').isVisible(), true, 'even an empty plan group stays shown');
+  assert.equal(await page.locator('#courseQueryStatus').textContent(), 'קורס אחד');
+  await page.locator('#courseQuery').fill('קורס_שאינו_קיים_12345');
+  assert.deepEqual(await ids(page), []);
+  assert.equal(await page.locator('#courseQueryStatus').textContent(), 'אין קורס כזה');
+});
 
 test('phone: query, caret and matching groups survive a completed search; Escape clears before the shell', async (t) => {
   const page = await visit(t, 'phone'), pick = await ready(page);

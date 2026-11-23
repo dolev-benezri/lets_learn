@@ -1,6 +1,7 @@
 // Design A's build-tool filter: reuse the improve predicate, keep the field and row nodes while typing.
 import { app, esc } from './app.js';
 import { matches } from './course-search.js';
+import { courseCount } from './ui-text.js';
 import { $, ui, openDetails, designOn } from './ui-common.js';
 
 export function renderCourseFilter() {
@@ -20,13 +21,15 @@ export function filterCourseRows() {
   let n = 0;
   for (const row of side.querySelectorAll('[data-course-id]')) {
     const id = row.dataset.courseId;
-    row.hidden = active && !matches({ ...app.data.courses[id], code: id }, ui.courseQuery);
-    if (!row.hidden) n++;
+    const hit = !active || matches({ ...app.data.courses[id], code: id }, ui.courseQuery);
+    // a course in the plan stays on screen, but the count says what the query found
+    row.hidden = !hit && !row.closest('details[data-key="plan"]');
+    if (hit) n++;
   }
   for (const group of groups) {
     const key = group.dataset.key;
     if (active && !ui.courseGroups.has(key)) ui.courseGroups.set(key, openDetails.has(key));
-    group.hidden = active && !group.querySelector('[data-course-id]:not([hidden])');
+    group.hidden = active && key !== 'plan' && !group.querySelector('[data-course-id]:not([hidden])');
     if (active) group.open = !group.hidden;
     else if (ui.courseGroups?.has(key)) {
       group.open = ui.courseGroups.get(key);
@@ -37,7 +40,7 @@ export function filterCourseRows() {
   for (const heading of side.querySelectorAll('h4'))
     heading.hidden = active && !heading.nextElementSibling?.querySelector('[data-course-id]:not([hidden])');
   if (!active) ui.courseGroups = null;
-  const message = n ? `${n} קורסים` : 'אין קורס כזה';
+  const message = n ? courseCount(n) : 'אין קורס כזה';
   if ($('courseQueryStatus').textContent !== message) $('courseQueryStatus').textContent = message;
 }
 
