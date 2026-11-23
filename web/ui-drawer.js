@@ -55,6 +55,7 @@ import {
   current,
   allGroupIds,
   seg,
+  details,
   $,
   ui,
   toolHelp,
@@ -163,6 +164,10 @@ function prefsPanel() {
 function friendsPanel() {
   const { state } = app,
     known = allGroupIds();
+  const mine = `<label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
+      <button type="button" class="btn fr-wide" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
+      <button type="button" class="btn fr-wide" data-act="shareOut" data-k="shareOut">${icon('share')} שתף (וואטסאפ ועוד)</button>
+      <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p>`;
   const row = (f, i) => {
     const miss = f.groups.filter((g) => !known.has(g)).length;
     return `<div class="frow"><span class="av lg" aria-hidden="true">${esc(initials(f.name))}</span>
@@ -195,11 +200,9 @@ function friendsPanel() {
       class="fr-empty">${icon('user-plus')}<p><b>עוד אין חברים</b></p>${designOn() ? '' : `<p
       class="hint">הדביקו למעלה קישור שחבר שלח, או הזינו את המערכת שלו ידנית.</p>`}</div>`
     }</section>
-    <section class="dr-sec fr-sec"><h3>הקישור שלי</h3>
-      <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
-      <button type="button" class="btn fr-wide" data-act="share" data-k="copyMine">${icon('copy')} העתק את הקישור שלי</button>
-      <button type="button" class="btn fr-wide" data-act="shareOut" data-k="shareOut">${icon('share')} שתף (וואטסאפ ועוד)</button>
-      <p class="hint">הקישור כולל רק את השם ואת הקבוצות של החלופה המוצגת, בלי ציונים.</p></section>`;
+    ${designOn() ? details('friends-mine', 'הקישור שלי', mine, 1)
+      : `<section class="dr-sec fr-sec"><h3>הקישור שלי</h3>
+      ${mine}</section>`}`;
 }
 
 // A pair lists each semester under its own heading, each against its own data file; a single result has one untitled part.

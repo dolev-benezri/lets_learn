@@ -30,6 +30,49 @@ const closeDialog = async (page) => {
   await page.locator('dialog[open]').waitFor({ state: 'detached' });
 };
 
+for (const size of ['phone', { width: 1920, height: 900 }])
+  test(`${typeof size === 'string' ? size : size.width}: copy all is the sole primary while the PDF prepares and after it is ready`, async (t) => {
+    const page = await visit(t, size, DONE, '#out');
+    await outReady(page);
+    const primary = page.locator('#out .btn.primary');
+    const check = async () => {
+      assert.equal(await primary.count(), 1);
+      assert.equal((await primary.textContent()).trim(), 'העתק הכל');
+      assert.equal(await primary.getAttribute('data-act'), 'copyReg');
+      assert.equal(await page.locator('#out [data-act="ics"]').getAttribute('class'), 'btn');
+      assert.equal(await page.locator('#out [data-act="advisorPdf"]').getAttribute('class'), 'btn');
+    };
+    await check();
+    await pdfReady(page);
+    await check();
+    await page.evaluate(() => {
+      window.__registrationCopies = [];
+      navigator.clipboard.writeText = async (text) => { window.__registrationCopies.push(text); };
+    });
+    await primary.focus();
+    await page.keyboard.press('Space');
+    await page.waitForFunction(() => window.__registrationCopies.length === 1);
+    assert.equal(await page.evaluate(async () => window.__registrationCopies[0] ===
+      (await import('./ui-drawer.js')).registrationText((await import('./ui-common.js')).current())), true);
+    const was = await label(page);
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForFunction((l) => document.getElementById('altLabel').textContent !== l, was);
+    await outReady(page);
+    await pdfReady(page);
+    await check();
+  });
+
+test('friends: a link inside the open fold still offers the text dialog when copying is refused', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#friends');
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  await page.locator('#friends details[data-key="friends-mine"] > summary').click();
+  await page.locator('#friends [data-k="copyMine"]').click();
+  assert.match(await dialogText(page), /#f=/);
+  await closeDialog(page);
+  assert.equal(await page.locator('#friends details[data-key="friends-mine"]').evaluate((e) => e.open), true);
+  assert.equal(await page.locator('#friends [data-k="copyMine"]').evaluate((e) => e === document.activeElement), true);
+});
+
 test('out tool shows the registration list, backup groups, ics, advisor summary, share and the backup link', async (t) => {
   const page = await visit(t, 'desktop', DONE, '#out');
   await outReady(page);

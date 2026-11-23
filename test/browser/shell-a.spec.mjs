@@ -42,7 +42,7 @@ for (const size of ['phone', { width: 1920, height: 900 }])
       assert.deepEqual(await key.evaluate((e) => [getComputedStyle(e).fontSize, getComputedStyle(e).fontWeight]), ['21px', '600']);
       const counts = await page.locator(`#${id} .btn.primary`).evaluateAll((els) => els.filter((e) => e.checkVisibility()).length);
       assert.equal(counts, primary[tool], `${tool}: no competing primary actions`);
-      const cards = await page.locator(`#${id} :is(.me-card, .me-main, .course, .crs)`).evaluateAll((els) =>
+      const cards = await page.locator(`#${id} :is(.me-card, .me-main, .course, .crs, .frow, .fr-empty)`).evaluateAll((els) =>
         els.filter((e) => e.checkVisibility()).map((e) => {
           const s = getComputedStyle(e);
           return [s.backgroundColor, s.backgroundImage, s.boxShadow, s.borderRadius, s.borderTopWidth];
@@ -89,7 +89,57 @@ test('classic keeps its record delete-all, preferences backup, course cards and 
   await page.evaluate(() => (location.hash = '#prefs'));
   await page.locator('#prefs [data-k="backup"]').waitFor();
   assert.equal(await page.locator('#prefs .a-tool-key').count(), 0);
+  assert.equal(await page.locator('#prefs [data-k="copyMine"]').isVisible(), true, 'classic sharing stays unfolded');
 });
+
+for (const size of ['phone', { width: 1920, height: 900 }])
+  test(`${typeof size === 'string' ? size : size.width}: friends link fold keeps state, focus and copy of the shown schedule`, async (t) => {
+    const page = await visit(t, size, DONE, '#friends');
+    await weekReady(page);
+    const fold = page.locator('#friends details[data-key="friends-mine"]');
+    // The native summary has the same label as first-run step 5.
+    const control = fold.locator('summary');
+    assert.equal(await fold.evaluate((e) => e.open), false);
+    assert.equal(await control.textContent(), 'הקישור שלי');
+    assert.equal(await page.locator('#friends [data-k="copyMine"]').isVisible(), false);
+    await control.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await fold.evaluate((e) => e.open), true);
+    assert.equal(await control.evaluate((e) => e === document.activeElement), true);
+    await page.evaluate(async () => (await import('./app.js')).refresh());
+    assert.equal(await fold.evaluate((e) => e.open), true, 'open after a redraw');
+    assert.equal(await control.evaluate((e) => e === document.activeElement), true, 'summary focus survives a redraw');
+    await page.locator('#friends [data-k="myName"]').fill('חבר בדיקה');
+    await page.keyboard.press('Tab');
+    await page.evaluate(() => {
+      window.__friendCopies = [];
+      navigator.clipboard.writeText = async (text) => { window.__friendCopies.push(text); };
+    });
+    const copy = page.locator('#friends [data-k="copyMine"]');
+    await copy.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => window.__friendCopies.length === 1);
+    const shared = await page.evaluate(async () => {
+      const { app } = await import('./app.js'), { readHash } = await import('./share.js');
+      const { current } = await import('./ui-common.js'), { resGroups } = await import('./ui-grid.js');
+      const parsed = await readHash(new URL(window.__friendCopies[0]).hash, app.state);
+      return { parsed, groups: resGroups(current()) };
+    });
+    assert.equal(shared.parsed.type, 'friend');
+    assert.equal(shared.parsed.payload.name, 'חבר בדיקה');
+    assert.deepEqual(shared.parsed.payload.groups, shared.groups);
+    assert.equal('grades' in shared.parsed.payload, false);
+    await page.evaluate(async () => (await import('./app.js')).refresh());
+    assert.equal(await copy.evaluate((e) => e === document.activeElement), true, 'copy focus survives a redraw');
+    assert.equal(await fold.evaluate((e) => e.open), true);
+    await control.focus();
+    await page.keyboard.press('Space');
+    assert.equal(await fold.evaluate((e) => e.open), false);
+    await page.evaluate(async () => (await import('./app.js')).refresh());
+    assert.equal(await fold.evaluate((e) => e.open), false, 'closed after a redraw');
+    assert.equal(await control.evaluate((e) => e === document.activeElement), true);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  });
 
 for (const width of [320, 1280])
   test(`${width}: menu rows, information header back, legal sentence and new-tab links`, async (t) => {

@@ -846,3 +846,18 @@
 :root[data-design="a"] #panel .seg label { flex:1 1 44px; }
 :root[data-design="a"] #panel .seg span { min-height:38px; white-space:normal; text-align:center; overflow-wrap:anywhere; }
 :root[data-design="a"] #panel :is(input:not([type=radio], [type=checkbox]), select) { min-width:0; max-width:100%; }
+/* Friends' own link is the same native fold as first-run step 5 (Task E). */
+:root[data-design="a"] #friends details[data-key="friends-mine"] { margin-top:var(--sp-4); padding-top:var(--sp-4); border-top:1px solid var(--border); }
+:root[data-design="a"] #friends details[data-key="friends-mine"] > summary {
+  display:flex; align-items:center; min-width:44px; min-height:44px; color:var(--primary); font-weight:600; cursor:pointer;
+}
+:root[data-design="a"] #friends details[data-key="friends-mine"] > summary:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+:root[data-design="a"] #friends details[data-key="friends-mine"][open] > summary { margin-bottom:var(--sp-3); }
+:root[data-design="a"] #friends :is(.frow, .fr-empty) {
+  padding:var(--sp-3) 0;
+  border:0;
+  border-top:1px solid var(--border);
+  border-radius:0;
+  background:none;
+  box-shadow:none;
+}

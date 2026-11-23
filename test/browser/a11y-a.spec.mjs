@@ -53,7 +53,7 @@ for (const scheme of ['light', 'dark'])
     assert.equal(await page.locator('.dock [data-tool="me"]').evaluate((e) => e === document.activeElement), true);
   });
 
-// Closed details are skipped by the older target scan: explicitly open every tool fold, then every help paragraph.
+// Closed details are skipped by the older target scan: explicitly open every tool fold (including phase 4 E's friends link), then every help paragraph.
 for (const scheme of ['light', 'dark'])
   test(`${scheme}: each tool at 320px, with help and folds open, also at 200% text: axe, reflow and 44px targets`, async (t) => {
     const page = await visit(t, WIDTHS[320], DONE, '', scheme);
@@ -85,6 +85,27 @@ for (const scheme of ['light', 'dark'])
       });
     }
     done();
+  });
+
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: friends link fold has a labelled 44px summary, native keyboard and a visible focus ring`, async (t) => {
+    const page = await visit(t, WIDTHS[320], DONE, '#friends', scheme);
+    const fold = page.locator('#friends details[data-key="friends-mine"]'), control = fold.locator('summary');
+    await control.waitFor();
+    assert.equal((await control.textContent()).trim(), 'הקישור שלי');
+    await control.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await fold.evaluate((e) => e.open), true);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#friends [data-k="myName"]').evaluate((e) => e === document.activeElement), true);
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Space');
+    assert.equal(await fold.evaluate((e) => e.open), false);
+    assert.equal(await control.evaluate((e) => {
+      const r = e.getBoundingClientRect(), s = getComputedStyle(e);
+      return e === document.activeElement && r.width >= 43.5 && r.height >= 43.5 &&
+        r.top >= 0 && r.bottom <= innerHeight && s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2;
+    }), true);
   });
 
 // One checker per test: check(page, 'screen') runs axe and remembers the violations; done() fails with the whole list.
