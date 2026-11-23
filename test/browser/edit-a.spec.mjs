@@ -570,6 +570,8 @@ test('another program: its courses are read only with their reason; the last cho
   await page.locator('.cs-course [data-ed="csAdd"], .cs-course [data-ed="csSwap"]').first().waitFor({ timeout: 30000 });
   // a failed load (a program not loaded yet: the loaded ones are kept for the visit)
   await page.route('**/data/afeka/2027-1/19-2026.json', (r) => r.abort());
+  // the summer file of that program does not exist (the frozen copy has none): the "no such semester" answer, not a request the guard would flag
+  await page.route('**/data/afeka/2027-3/19-2026.json', (r) => r.fulfill({ status: 404 }));
   await page.locator('select[data-ed-s="program"]').selectOption('19');
   await page.locator('#csCount').filter({ hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 30000 });
 });
