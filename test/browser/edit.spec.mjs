@@ -314,10 +314,17 @@ test('phone 320: a goal chosen at the far end of the goal row stays in view afte
 test('phone: adding a course and searching; "העתק שינויים" falls back to the text dialog with "להוסיף:" and the disclaimer', async (t) => {
   const page = await visit(t, 'phone', LOADED, '#edit/changes');
   await page.locator('#editWeek .blk').first().waitFor();
-  const opts = await page.locator('[data-ed-goal="addCourse"] option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
-  assert.ok(opts.length > 0, 'courses that can be added');
-  await page.locator('[data-ed-goal="addCourse"]').selectOption(opts[0]);
-  assert.equal((await saved(page)).added.length, 1);
+  if (DESIGN === 'a') {
+    // design A: the course search (phase 2, Task F) replaces the "+ קורס" select
+    await page.locator('[data-ed="openSearch"]').click();
+    await page.locator('#csText').fill('מבוא');
+    await page.locator('[data-ed="csAdd"]').first().click();
+  } else {
+    const opts = await page.locator('[data-ed-goal="addCourse"] option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
+    assert.ok(opts.length > 0, 'courses that can be added');
+    await page.locator('[data-ed-goal="addCourse"]').selectOption(opts[0]);
+  }
+  assert.equal((await saved(page)).added.length >= 1, true, 'the course, and its parallel course when it needs one');
   await search(page);
   await page.locator('[data-ed="copyChanges"]').click();
   const dlg = page.locator('dialog[open]');

@@ -3,7 +3,11 @@
 // are the ones of edit-focus.spec.mjs. No top-level await in a spec: node:test then hangs after the run.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, launch, visit as visitIn } from './helpers.mjs';
+import { readFileSync } from 'node:fs';
+import { buildOptions } from '../../web/solver-core.js';
+import { classify } from '../../web/rules.js';
+import { groupNumber } from '../../web/ui-text.js';
+import { DONE, STUDENT, launch, visit as visitIn } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -372,4 +376,264 @@ test('1280 x 420: with the page scrolled the record sticks under the strip with 
   });
   assert.ok(m.scrolled > 50, 'the page scrolls');
   assert.ok(m.backTop >= m.stripBottom - 0.5 && m.backBottom <= m.h, `"חזרה" is in view, under the strip: ${JSON.stringify(m)}`);
+});
+
+// ---- phase 2, Task F: the course search ----
+const FIX = JSON.parse(readFileSync(new URL('../fixtures/real/2027-1/30-2026.json', import.meta.url), 'utf8'));
+const savedEdit = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1-edit')));
+const openSearch = async (page) => {
+  await page.locator('[data-ed="openSearch"]').click();
+  await page.locator('#csText').waitFor({ state: 'visible' });
+};
+const typed = async (page, text) => {
+  await page.locator('#csText').fill(text);
+  await page.locator('#csCount').filter({ hasNotText: 'מקלידים' }).waitFor();
+};
+const flat = (x) => x.replace(/\s+/g, ' ').trim();
+// a course that is not in the schedule, with one option that clashes with it and one that fits
+const meetingsOf = (c, g) => c.groups.find((x) => x.id === g).meetings;
+const baselineHours = BASE.map((l) => ({ day: l.day, start: l.start, end: l.end }));
+const clashesBase = (m) => baselineHours.some((b) => b.day === m.day && b.start < m.end && m.start < b.end);
+const notInBase = (id) => !BASE.some((l) => l.course === id);
+// a course the student can take (open for their record), the site can register (it has options), not in the schedule, whose options satisfy `pred`
+const OPEN_NOW = classify(FIX, STUDENT).statuses;
+const candidate = (pred) =>
+  Object.entries(FIX.courses).find(([id, c]) => {
+    if (!c.offered || !c.credits || !notInBase(id) || !c.groups.some((g) => g.primary) || !['retake', 'available', 'afterA', 'conditional'].includes(OPEN_NOW[id]?.status)) return false;
+    const opts = buildOptions(c, { includeFull: true });
+    return opts.length > 0 && pred(opts, c);
+  });
+const fits = (o) => !o.meetings.some(clashesBase);
+
+test('the course search: "חיפוש קורס" opens it in the tool in place of the goals, with the field focused and "חזרה"', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await page.locator('[data-ed="openSearch"]').waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('[data-ed-goal="addCourse"]').count(), 0, 'the "+ קורס" select is gone');
+  await openSearch(page);
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'csText');
+  assert.equal(await page.locator('.edit-tool .goals [data-ed-goal]').count(), 0, 'the goals are not under it');
+  assert.equal(flat(await page.locator('#csCount').innerText()), 'מקלידים קוד, שם או מרצה, או בוחרים יום ושעה.');
+  assert.equal(await page.locator('.cs-course').count(), 0, 'no list before a question');
+  assert.equal(await page.locator('#csCount').getAttribute('aria-live'), 'polite');
+  assert.equal(flat(await page.locator('.edit-tool [data-ed="closeSearch"]').innerText()), 'חזרה');
+});
+
+test('by code, by a part of the name, and by a lecturer (titles aside): each finds its course, with a count', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await openSearch(page);
+  await typed(page, '3000');
+  assert.ok((await page.locator('.cs-course h3').allInnerTexts()).includes('מבוא לכימיה'), 'a code prefix');
+  const within = page.locator('.cs-course', { has: page.locator('h3', { hasText: 'מבוא לכימיה' }) });
+  assert.match(await within.locator('.cs-meta').innerText(), /במערכת שלך/, 'it is in the schedule');
+  assert.ok((await within.locator('[data-ed="csSwap"]').count()) >= 1 || (await within.locator('.cs-opt').count()) >= 1);
+  await typed(page, 'תרמוד');
+  assert.ok((await page.locator('.cs-course h3').allInnerTexts()).some((n) => n.includes('תרמודינמיקה')), 'a part of the name');
+  assert.match(await page.locator('#csCount').innerText(), /^(קורס אחד|\d+ קורסים|יש עוד, מצמצמים\?)$/);
+  const g = FIX.courses['30003'].groups.find((x) => x.lecturer);
+  const surname = g.lecturer.replace(/^(ד"ר|גב'|מר|פרופ'?)\s+/, '').split(' ')[0];
+  await typed(page, surname);
+  assert.ok((await page.locator('.cs-course').count()) >= 1, 'a lecturer, without the title');
+  await typed(page, 'zzzzzz');
+  assert.equal(flat(await page.locator('#csCount').innerText()), 'אין קורס כזה');
+});
+
+test('a day and an hour narrow the courses to groups that meet then', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await openSearch(page);
+  const [id, c] = candidate((opts) => opts.some((o) => o.meetings.length));
+  const m = buildOptions(c, { includeFull: true }).find((o) => o.meetings.length).meetings[0];
+  await page.locator('select[data-ed-s="day"]').selectOption(String(m.day));
+  await page.locator('select[data-ed-s="hour"]').selectOption(m.start.slice(0, 2) + ':00');
+  await page.locator('#csCount').filter({ hasNotText: 'מקלידים' }).waitFor();
+  assert.ok((await page.locator('.cs-course h3').allInnerTexts()).includes(c.name), `${c.name} meets then`);
+});
+
+test('each option says "נכנס" or "מתנגש עם <course>"; a course not in the week offers "הוספה", one in it "מעבר לקבוצה"', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await openSearch(page);
+  const [cid, cc] = candidate((opts) => opts.some((o) => o.meetings.some(clashesBase)));
+  await typed(page, cid);
+  const card = page.locator('.cs-course', { has: page.locator('h3', { hasText: cc.name }) }).first();
+  assert.ok((await card.locator('.tag.warn').count()) >= 1, 'an option that meets in the schedule\'s hours clashes');
+  assert.match(await card.locator('.tag.warn').first().innerText(), /^מתנגש עם /);
+  assert.ok((await card.locator('[data-ed="csAdd"]').count()) >= 1, 'a course not in the schedule: "הוספה"');
+  assert.equal(flat(await card.locator('[data-ed="csAdd"]').first().innerText()), 'הוספה');
+  await typed(page, '30003');
+  const mine = page.locator('.cs-course', { has: page.locator('h3', { hasText: 'מבוא לכימיה' }) }).first();
+  assert.ok((await mine.locator('[data-ed="csSwap"]').count()) >= 1, 'a course in it: "מעבר לקבוצה"');
+  assert.equal(await mine.locator('[data-ed="csAdd"]').count(), 0);
+  assert.equal((await mine.locator('.tag.warn').count()), 0, 'the course itself is left out of its own clashes');
+});
+
+test('"הוספה" adds the course with that option fixed, and the next search puts it in the week in that option', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await openSearch(page);
+  const [cid, cc] = candidate((opts) => opts.some((o) => o.meetings.length && fits(o) && o.groups.every((g) => !FIX.courses[Object.keys(FIX.courses).find((k) => FIX.courses[k].groups.some((x) => x.id === g))].groups.find((x) => x.id === g).full)));
+  await typed(page, cid);
+  const card = page.locator('.cs-course', { has: page.locator('h3', { hasText: cc.name }) }).first();
+  const add = card.locator('[data-ed="csAdd"]').first();
+  const ids = (await add.getAttribute('data-ids')).split(',');
+  await add.click();
+  assert.equal(await page.locator('#csText').count(), 0, 'the search closed');
+  const st = await savedEdit(page);
+  assert.ok(st.added.includes(cid), 'the course is added');
+  assert.deepEqual(st.swaps[cid], ids, 'with that option fixed');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.ed), 'openSearch', 'focus returns to "חיפוש קורס"');
+  await search(page);
+  const text = await page.locator('.prop-panel').innerText();
+  assert.ok(text.includes(cc.name), 'the proposal has it');
+  const pcard = page.locator('.prop-panel .pcard', { has: page.locator('h4', { hasText: cc.name }) });
+  const now = flat(await pcard.locator('.now').innerText());
+  for (const id of ids.filter((g) => !g.includes('/'))) assert.ok(now.includes(groupNumber(id)), `in the option's group ${groupNumber(id)}: ${now}`);
+});
+
+test('a fixed option that clashes with what stays is told by the page; one that fits but leaves no schedule is told "no schedule with that group"', async (t) => {
+  // (a) every option of the course meets in the schedule's hours: the search says which lessons overlap, before it runs
+  const clashing = await visit(t, 'desktop', seed({ movable: [] }));
+  await openSearch(clashing);
+  const [cid, cc] = candidate((opts) => opts.every((o) => o.meetings.some(clashesBase)));
+  await typed(clashing, cid);
+  await clashing.locator('.cs-course', { has: clashing.locator('h3', { hasText: cc.name }) }).first().locator('[data-ed="csAdd"]').first().click();
+  await clashing.locator('[data-ed="search"]').click();
+  await clashing.locator('#edMsg').filter({ hasText: /\S/ }).waitFor({ timeout: 30000 });
+  assert.equal(await clashing.locator('.prop-nav').count(), 0, 'no proposal');
+  // (b) an option that fits the lessons but a goal (finish by 13:00) that cannot be met with them staying: no schedule with that group
+  const fixedGoal = await visit(t, 'desktop', seed({ movable: [], goal: { notAfter: '13:00' } }));
+  await openSearch(fixedGoal);
+  const [id2, c2] = candidate((opts) => opts.some((o) => o.meetings.length && fits(o)));
+  await typed(fixedGoal, id2);
+  const fitting = fixedGoal.locator('.cs-course', { has: fixedGoal.locator('h3', { hasText: c2.name }) }).first().locator('.cs-opt', { has: fixedGoal.locator('.tag', { hasText: 'נכנס' }) });
+  await fitting.first().locator('[data-ed="csAdd"]').click();
+  await fixedGoal.locator('[data-ed="search"]').click();
+  await fixedGoal.locator('#editNotes').waitFor({ timeout: 30000 });
+  assert.match(await fixedGoal.locator('#editNotes').innerText(), /לא נמצאה מערכת עם הקבוצה הזו/);
+});
+
+test('Escape clears the field, a second Escape closes the search and focus returns to "חיפוש קורס": on a desktop and on a phone', async (t) => {
+  for (const size of ['desktop', 'phone']) {
+    const page = await visit(t, size, seed());
+    await page.locator('[data-ed="openSearch"]').waitFor({ timeout: 30000 });
+    await openSearch(page);
+    await typed(page, 'כימי');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#csText').inputValue(), '', `${size}: cleared`);
+    assert.equal(await page.locator('#csText').count(), 1, `${size}: still open`);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#csText').count(), 0, `${size}: closed`);
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.ed), 'openSearch', `${size}: focus on "חיפוש קורס"`);
+    assert.equal(await page.locator('.edit-tool').isVisible(), true, `${size}: the sheet is still open (Escape did not take it)`);
+  }
+});
+
+test('the proposal\'s arrow keys do nothing while the search is open; the proposal is where it was after', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await search(page);
+  const label = () => page.locator('.prop-nav').innerText().then(flat);
+  const nav = await label();
+  await openSearch(page);
+  await typed(page, '3000');
+  await page.locator('.cs-course button').first().focus();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowRight');
+  await page.locator('[data-ed="closeSearch"]').click();
+  assert.equal(await label(), nav, 'the same proposal');
+});
+
+test('typing while a search finishes keeps the text, the caret and the focus', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  const held = holdWorker(page);
+  await page.locator('[data-ed="search"]').click();
+  await held.reached;
+  await openSearch(page);
+  await page.locator('#csText').fill('כימיה');
+  await page.evaluate(() => document.getElementById('csText').setSelectionRange(2, 2));
+  held.release();
+  await page.waitForTimeout(1500); // the answer redraws the page under the open search
+  const r = await page.evaluate(() => ({ id: document.activeElement?.id, v: document.getElementById('csText')?.value, s: document.getElementById('csText')?.selectionStart }));
+  assert.deepEqual(r, { id: 'csText', v: 'כימיה', s: 2 });
+  await page.locator('[data-ed="closeSearch"]').click();
+  await page.locator('.prop-nav').waitFor({ timeout: 10000 }); // the search had finished: its answer is there under the search
+});
+
+test('another program: its courses are read only with their reason; the last choice wins, a failed load says so', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await openSearch(page);
+  await typed(page, 'מבוא');
+  await page.locator('select[data-ed-s="program"]').selectOption('20');
+  await page.locator('.cs-course .cs-meta', { hasText: 'לא בתוכנית שלך' }).first().waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('.cs-course [data-ed="csAdd"], .cs-course [data-ed="csSwap"]').count(), 0, 'no button on another program\'s course');
+  // back to mine: its own courses return with their buttons
+  await page.locator('select[data-ed-s="program"]').selectOption('30');
+  await page.locator('.cs-course [data-ed="csAdd"], .cs-course [data-ed="csSwap"]').first().waitFor({ timeout: 30000 });
+  // a failed load (a program not loaded yet: the loaded ones are kept for the visit)
+  await page.route('**/data/afeka/2027-1/19-2026.json', (r) => r.abort());
+  await page.locator('select[data-ed-s="program"]').selectOption('19');
+  await page.locator('#csCount').filter({ hasText: 'לא הצלחנו לטעון' }).waitFor({ timeout: 30000 });
+});
+
+test('the last program chosen wins over an earlier answer that arrives late', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  let release;
+  const gate = new Promise((r) => (release = r));
+  await page.route('**/data/afeka/2027-1/20-2026.json', async (r) => {
+    await gate; // the first choice answers last
+    await r.continue();
+  });
+  await openSearch(page);
+  await typed(page, 'מבוא');
+  await page.locator('select[data-ed-s="program"]').selectOption('20');
+  await page.locator('select[data-ed-s="program"]').selectOption('30'); // the second, quick choice: mine
+  await page.locator('.cs-course [data-ed="csAdd"], .cs-course [data-ed="csSwap"]').first().waitFor({ timeout: 30000 });
+  release();
+  await page.waitForTimeout(800);
+  assert.equal(await page.locator('.cs-course .cs-meta', { hasText: 'לא בתוכנית שלך' }).count(), 0, 'the late answer did not replace the later choice');
+});
+
+test('320px: the search, its chips and a list of results never scroll the page sideways, and every button is 44px', async (t) => {
+  const page = await visit(t, { width: 320, height: 640 }, seed());
+  await page.locator('[data-ed="openSearch"]').waitFor({ timeout: 30000 });
+  await openSearch(page);
+  await typed(page, 'מבוא');
+  const m = await page.evaluate(() => ({
+    over: document.documentElement.scrollWidth - innerWidth,
+    small: [...document.querySelectorAll('.edit-tool button, .edit-tool select, .edit-tool input')].filter((e) => e.checkVisibility()).map((e) => [e.tagName + '.' + e.className + ':' + (e.dataset.ed ?? e.dataset.edS ?? e.id), Math.round(e.getBoundingClientRect().width), Math.round(e.getBoundingClientRect().height)]).filter(([, w, h]) => w < 43.5 || h < 43.5)
+  }));
+  assert.ok(m.over <= 0, `no sideways scroll (${m.over})`);
+  assert.deepEqual(m.small, [], 'every target is 44px');
+});
+
+test('an older program\'s load that fails after a newer choice says nothing', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  let release;
+  const gate = new Promise((r) => (release = r));
+  await page.route('**/data/afeka/2027-1/20-2026.json', async (r) => {
+    await gate;
+    await r.abort(); // the first choice fails, late
+  });
+  await openSearch(page);
+  await typed(page, 'מבוא');
+  await page.locator('select[data-ed-s="program"]').selectOption('20');
+  await page.locator('select[data-ed-s="program"]').selectOption('30');
+  await page.locator('.cs-course [data-ed="csAdd"], .cs-course [data-ed="csSwap"]').first().waitFor({ timeout: 30000 });
+  release();
+  await page.waitForTimeout(800);
+  assert.doesNotMatch(await page.locator('#csCount').innerText(), /לא הצלחנו/, 'the stale failure did not reach the later choice');
+});
+
+test('a count that changes is the same live region (updated, not replaced); a focused result button keeps focus when the list is redrawn', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await openSearch(page);
+  await typed(page, '3000');
+  await page.locator('#csCount').evaluate((e) => (window.__count = e));
+  await typed(page, 'כימי');
+  assert.equal(await page.evaluate(() => document.getElementById('csCount') === window.__count), true, 'the same element');
+  const btn = page.locator('.cs-course button').first();
+  await btn.focus();
+  const k = await btn.getAttribute('data-k');
+  assert.ok(k && k.startsWith('cs-'), 'a stable key');
+  await page.evaluate(async () => {
+    const e = new Event('input', { bubbles: true });
+    document.getElementById('csText').dispatchEvent(e); // the list is drawn again with the same results
+  });
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), k, 'focus stayed on that button');
 });
