@@ -35,7 +35,6 @@ import {
   freshness,
   freshnessA,
   approvedText,
-  DISCLAIMER,
   disclaimerHtml,
   LEGAL_LINE,
   RULES_UNAPPROVED
@@ -392,7 +391,7 @@ function infoPanel() {
       ? `<p>${esc(LEGAL_LINE)}</p><p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים.</p>`
       : `<p>${esc(UNOFFICIAL)}</p>`}</section>
     ${f ? `<section class="dr-sec info-sec"><h3>הנתונים</h3><p class="hint">${esc(f.text)}${approved ? ` · ${esc(approvedText(approved))}` : ''}</p>${designOn() ? `
-      <p class="hint">${esc(DISCLAIMER)}</p>` : ''}
+      <p class="hint">לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.</p>` : ''}
       ${approved ? '' : `<p class="hint">${esc(RULES_UNAPPROVED)} בדקו מול היועץ לפני ההרשמה.</p>`}
       ${conflicts.map((c) => `<p class="hint warn-text">${icon('alert')} ${esc(conflictLine(c))}</p>`).join('')}</section>` : ''}
     <section class="dr-sec info-sec"><h3>קישורים</h3><ul class="plain info-links">${links.join('')}</ul></section>`,

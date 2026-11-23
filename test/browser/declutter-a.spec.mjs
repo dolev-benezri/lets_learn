@@ -135,7 +135,8 @@ test('the "פרטים" link of the strip opens ☰ "מידע" with the full sent
   const drawer = page.locator('#drawer[open]');
   await drawer.waitFor();
   const text = flat(await drawer.innerText());
-  assert.ok(text.includes(DISCLAIMER), 'the full sentence is in "מידע"');
+  assert.ok(text.includes('לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.'), 'the advisor sentence is in "מידע"');
+  assert.equal(text.split('אינו הרשמה ואינו המלצה').length - 1, 1, 'the legal phrase appears once in the panel');
   assert.ok(text.includes(LEGAL_FULL), 'and the legal line in full, with the registration pointer');
   assert.ok(text.includes('בדקו מול היועץ לפני ההרשמה'), 'and the advisor line for unapproved rules');
   assert.match(text, /הנתונים נבדקו לפני \d+ ימים, ייתכן שהשתנו/, 'and the freshness sentence in full');

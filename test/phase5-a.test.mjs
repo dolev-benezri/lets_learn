@@ -48,13 +48,15 @@ test('A info: header back arrow, one legal sentence, source sentence and accessi
   const old = { panel: ui.panel, data: app.data, state: app.state, settings: app.settings };
   t.after(() => { ui.panel = old.panel; Object.assign(app, { data: old.data, state: old.state, settings: old.settings }); });
   ui.panel = 'info';
-  Object.assign(app, { data: null, state: null, settings: { counselingUrl: 'https://example.org/counsel' } });
+  Object.assign(app, { data: { fetchedAt: '2026-11-01T12:00:00Z' }, state: null, settings: { counselingUrl: 'https://example.org/counsel' } });
   renderDrawer();
   const root = parse(drawer.innerHTML);
   assert.equal(root.querySelector('.dr-head [aria-label="חזרה לתפריט"]').text, '→');
   assert.equal(root.querySelector('.dr-actions'), null);
   assert.equal(root.text.split(LEGAL_LINE).length - 1, 1);
-  assert.equal(root.querySelector('.info-sec').text.split('אינו הרשמה').length - 1, 1);
+  assert.equal(root.text.split('אינו הרשמה ואינו המלצה').length - 1, 1);
+  assert.equal(root.querySelectorAll('.info-sec')[1].querySelectorAll('p.hint')[1].text,
+    'לפני ההרשמה מומלץ להתייעץ עם יועץ לימודים.');
   assert.match(root.querySelector('.info-sec').text, /הנתונים נלקחים מהידיעון הציבורי/);
   const links = root.querySelectorAll('.info-links a');
   assert.equal(links.length, 5);

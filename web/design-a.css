@@ -689,3 +689,13 @@
 :root[data-design="a"] #friendEd .fe-more > summary { min-height:44px; padding-block:var(--sp-3); cursor:pointer; }
 :root[data-design="a"] #friendEd .fe-more > .fe-sec { margin-block:var(--sp-3); }
 :root[data-design="a"] #friendEd .fe-more > summary:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+
+/* The map focus switch follows the edit page's outlined/tinted chip. */
+:root[data-design="a"] .pmap .pm-btn[data-pm="focus"] {
+  min-height:44px; min-width:44px; padding:0 14px; border-radius:999px;
+  background:var(--surface); border-color:var(--border-input); color:var(--text); font-weight:400;
+}
+:root[data-design="a"] .pmap .pm-btn[data-pm="focus"][aria-checked="true"] {
+  background:var(--primary-soft); border-color:var(--primary); color:var(--primary-hover); font-weight:600;
+}
+:root[data-design="a"] .pmap .pm-btn[data-pm="focus"]:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }

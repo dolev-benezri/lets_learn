@@ -135,6 +135,48 @@ for (const size of PHONES) {
   });
 }
 
+for (const scheme of ['light', 'dark']) test(`A 375/${scheme}: opening centres the plan and the focus switch uses chip backgrounds`, async (t) => {
+  const page = await visit(browser, t, { width: 375, height: 812 },
+    { ...DONE, 'afeka-sched-v1-mapfocus': 'off' }, '', scheme, false, false, { design: 'a' });
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  await openMap(page);
+  await page.locator('#pmap .pm-svg.ready').waitFor({ timeout: 30000 });
+  await frame(page); // the fit and then the plan-centering pan apply on successive frames
+  const plan = await page.evaluate(() => {
+    const view = document.querySelector('#pmap .pm-svg').getBoundingClientRect(),
+      rects = [...document.querySelectorAll('#pmap .nd.plan')].map((el) => el.getBoundingClientRect());
+    return { count: rects.length, width: view.width,
+      offset: Math.abs((Math.min(...rects.map((r) => r.left)) + Math.max(...rects.map((r) => r.right))) / 2 - (view.left + view.width / 2)) };
+  });
+  assert.ok(plan.count > 0, 'the seeded plan has courses');
+  assert.ok(plan.offset <= plan.width * 0.15, `plan centre is ${plan.offset.toFixed(1)}px from the view centre`);
+  const sw = page.getByRole('switch', { name: 'הדגשת המערכת' });
+  const check = async (on) => {
+    assert.equal(await sw.getAttribute('aria-checked'), String(on));
+    const style = await sw.evaluate((el) => {
+      const probe = document.createElement('span');
+      el.append(probe);
+      const colour = (token) => {
+        probe.style.backgroundColor = `var(--${token})`;
+        return getComputedStyle(probe).backgroundColor;
+      };
+      const result = { background: getComputedStyle(el).backgroundColor, surface: colour('surface'), soft: colour('primary-soft') };
+      probe.remove();
+      return result;
+    });
+    if (on) assert.equal(style.background, style.soft);
+    else assert.ok([style.surface, 'rgba(0, 0, 0, 0)'].includes(style.background), `off background: ${style.background}`);
+    const box = await sw.boundingBox();
+    assert.ok(box.height >= 44 && box.width >= 44, 'the switch keeps a 44px tap target');
+  };
+  await check(false);
+  await sw.focus();
+  await page.keyboard.press('Space');
+  await frame(page);
+  await check(true);
+  assert.equal(await sw.evaluate((el) => getComputedStyle(el).outlineStyle), 'solid', 'keyboard focus stays visible');
+});
+
 if (DESIGN === 'a') for (const scheme of ['light', 'dark']) for (const width of [320, 1280])
   test(`A ${width}/${scheme}: plan colours, matching legend, focus switch persistence and lit chains`, async (t) => {
     const page = await visit(browser, t, { width, height: 900 }, DONE, '', scheme);

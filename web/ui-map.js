@@ -334,6 +334,15 @@ async function mount(keep = null) {
     } else M.fit();
     // after Panzoom applied the fit; a card left open across a filter change must not cover its node
     if (M.sel) requestAnimationFrame(() => tok === M.tok && ensureVisible(M.els.nodes.get(M.sel)));
+    else if (designOn() && !keep) requestAnimationFrame(() => {
+      if (tok !== M.tok || M.sel) return;
+      const r = root.getBoundingClientRect(), s = pz.getScale(),
+        nodes = [...root.querySelectorAll('.nd.plan')].map((el) => el.getBoundingClientRect());
+      if (W * s <= r.width || !nodes.length) return;
+      const dx = r.left + r.width / 2 - (Math.min(...nodes.map((n) => n.left)) + Math.max(...nodes.map((n) => n.right))) / 2,
+        pan = pz.getPan();
+      pz.pan(Math.max(r.width / s - W, Math.min(0, pan.x + dx / s)), pan.y, { animate: false, force: true });
+    }); // A: centre the plan once after the fit's delayed pan, keeping both map edges outside the view
     root.classList.add('ready');
   }); // after Panzoom's own start-position timeout
 }
