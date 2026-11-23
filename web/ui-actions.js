@@ -53,7 +53,8 @@ import { startTour, dueIntro } from './tour.js';
 import { avgLine, specSave, specView, importGrades, renderMe, enterList, renderRecordRegWarnings } from './ui-me.js';
 import { advisorPdfAct } from './ui-advisor-pdf.js';
 import { frNext, frBack, renderFirstRun, toStep, draftOf, askOf } from './ui-first-run.js';
-import { startReady, markOf, nextStep } from './first-run.js';
+import { startReady, markOf, nextStep, earlierYearLists } from './first-run.js';
+import { stepTwoIds, askEarlier } from './ui-passed.js';
 import { setMode } from './ui-mode.js';
 import { openLessonMenu } from './ui-edit.js';
 import { MAX_BLOCKS, registrationText, icsParts, renderPrefs, openPanel, advisorNow } from './ui-drawer.js';
@@ -140,6 +141,11 @@ export const ACT = {
     refresh();
     shownTitle()?.focus();
   }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
+  frPassAll() {
+    for (const id of stepTwoIds()) if (!app.state.passed.includes(id)) setStatus(app.state, id, 'passed');
+    save();
+    keepFocus(renderFirstRun);
+  },
   // Step 1 of the first-run card: the terms alone (improve's first visit, or asked again) are accepted as before. In the pass the terms, the
   // track and the year are applied together, the button busy and the choices locked until the program's files arrive. A backup link waiting
   // for the terms is restored first: a restored record is a whole one and ends the pass. A failed load says so on the card and stays on
@@ -558,6 +564,46 @@ async function applyIdentity(programId, y) {
   app.state.profile.year = year;
   return changeIdentity(p.id, nearest(p.startYears, cohortOf(year)), true);
 }
+// The year change itself: the record's year, and the cohort that is in it (the files load first). Returns the switch still loading, or null.
+function applyYear(el) {
+  const was = gated(),
+    y = cleanProfile({ year: Number(el.value) }).year,
+    program = wantedProgram ?? app.state.program,
+    p = app.catalog.programs.find((x) => x.id === program),
+    start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
+  if (start) beforeChange();
+  app.state.profile.year = y;
+  // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024). The current cohort too: going back cancels a switch still loading
+  const switching = start ? changeIdentity(program, start) : null;
+  // after the refresh: the question is gone, the step's own page shows; keep focus out of <body>
+  if (was) queueMicrotask(() => shownTitle()?.focus());
+  // a new cohort redraws #me again when its data arrives
+  if (was && switching) switching.then(() => shownTitle()?.focus());
+  return switching;
+}
+// Design A: the years this change makes earlier are asked about, in a card over the board. "ביטול" changes nothing (the control goes back to the year
+// the record has); "המשך" changes the year, with nothing filled in on the way (app.holdFill), and then the ticked courses are passed. What the student
+// had confirmed stays.
+async function yearWithEarlier(el, groups, to) {
+  const yearName = ' אבגדה'[to];
+  const back = () => document.querySelector(`[data-k="p-year-${app.state.profile.year}"]`)?.focus({ preventScroll: true });
+  const picked = await askEarlier(groups, yearName, new Set(app.state.passed ?? []), back);
+  if (!picked) {
+    refresh(); // the selects go back to the year in the record
+    back();
+    return 'none';
+  }
+  app.holdFill++;
+  try {
+    await applyYear(el);
+    if (app.state.profile.year === to) for (const id of picked) if (!app.state.passed.includes(id)) setStatus(app.state, id, 'passed');
+  } finally {
+    app.holdFill--;
+  }
+  refresh();
+  back();
+  return 'none';
+}
 export const CHG = {
   // the first-run card's three choices only update the draft (kept with the mark); "המשך" (ACT.frStart) applies them
   frTerms: (el) => {
@@ -636,19 +682,21 @@ export const CHG = {
     else delete app.state.semesterOf[el.dataset.id];
   }, // a pin still wins in the solver
   pyear: (el) => {
-    const was = gated(),
-      y = cleanProfile({ year: Number(el.value) }).year,
-      program = wantedProgram ?? app.state.program,
-      p = app.catalog.programs.find((x) => x.id === program),
-      start = y && p?.startYears.length ? nearest(p.startYears, cohortOf(y)) : null;
-    if (start) beforeChange();
-    app.state.profile.year = y;
-    // the year picks the cohort in it, else the nearest (year ה׳ of an evening track: 2024). The current cohort too: going back cancels a switch still loading
-    const switching = start ? changeIdentity(program, start) : null;
-    // after the refresh: the question is gone, the step's own page shows; keep focus out of <body>
-    if (was) queueMicrotask(() => shownTitle()?.focus());
-    // a new cohort redraws #me again when its data arrives
-    if (was && switching) switching.then(() => shownTitle()?.focus());
+    // design A: a year that makes earlier years of the record asks what was passed in them (a card over the board) before anything changes
+    const old = app.state.profile.year,
+      to = cleanProfile({ year: Number(el.value) }).year;
+    if (designOn() && !passOpen() && old && to > old) {
+      const groups = earlierYearLists(app.data, old, to);
+      if (groups.length) return yearWithEarlier(el, groups, to);
+    }
+    applyYear(el);
+  },
+  // step 2 of the first-run pass: a tick is the record at once (unticked means not passed), "עברתי את כולם" ticks the list
+  frPassed: (el) => {
+    setStatus(app.state, el.dataset.id, el.checked ? 'passed' : 'none');
+    save();
+    keepFocus(renderFirstRun);
+    return 'none';
   },
   amirnet: (el) => {
     const err = rangeError(el.validity?.badInput ? 'x' : el.value, 50, 150);

@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { STUDENT, PASSED, DONE, passFirstRun, launch, visit as visitIn } from './helpers.mjs';
+import { STUDENT, PASSED, DONE, passFirstRun, gradeSheetPdf, launch, visit as visitIn } from './helpers.mjs';
 import { TOUR_INTRO_A, TOUR_PLANS_A, TOUR_NEW_A } from '../../web/tour.js';
 
 let browser;
@@ -845,4 +845,137 @@ test('the terms asked again of someone who finished the pass: nothing of step 1 
   await page.locator('[data-k="frStart"]').click();
   await page.locator('#firstRun').waitFor({ state: 'hidden', timeout: 30000 });
   assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-firstrun-draft')), null);
+});
+
+// ---------- step 2 and the year change (phase 3, Task D) ----------
+const stepTwo = async (t, size = 'phone', year = 3) => {
+  const page = await visit(t, size, null);
+  await passFirstRun(page, { year, stopAfterStart: true });
+  await page.locator('.a-fr-card[data-step="passed"]').waitFor({ timeout: 30000 });
+  return page;
+};
+const passedIds = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).passed);
+
+test('step 2 for a year-3 student: the courses of years א and ב by year, none ticked, with the grade sheet first', async (t) => {
+  const page = await stepTwo(t);
+  assert.deepEqual(await page.locator('.a-pass-year legend').allTextContents(), ['שנה א׳', 'שנה ב׳'], 'the earlier years, grouped');
+  const boxes = await page.locator('.a-pass-row input').count();
+  assert.ok(boxes >= 10, `their courses (${boxes})`);
+  assert.equal(await page.locator('.a-pass-row input:checked').count(), 0, 'none is ticked: a ticked list is the assumption the owner refused');
+  assert.equal((await page.locator('[data-k="gradeImport"]').textContent()).trim(), 'מעלים גליון ציונים (PDF)');
+  assert.match(await page.locator('.a-fr-body').innerText(), /אין גליון\? מסמנים את מה שעברת:/);
+  assert.deepEqual(await passedIds(page), [], 'and nothing was filled in for the student');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');
+});
+
+test('"עברתי את כולם" ticks the whole list; an untick is not passed, the ticks survive a reload and a step back', async (t) => {
+  const page = await stepTwo(t);
+  const total = await page.locator('.a-pass-row input').count();
+  await page.locator('[data-k="frPassAll"]').click();
+  assert.equal(await page.locator('.a-pass-row input:checked').count(), total);
+  const ids = await page.locator('.a-pass-row input').evaluateAll((els) => els.map((e) => e.dataset.id));
+  assert.deepEqual([...(await passedIds(page))].sort(), [...ids].sort(), 'the record says the same');
+  const [a, b] = ids;
+  await page.locator(`[data-k="pass-${a}"]`).uncheck();
+  await page.locator(`[data-k="pass-${b}"]`).uncheck();
+  const rest = await passedIds(page);
+  assert.ok(!rest.includes(a) && !rest.includes(b) && rest.length === total - 2, 'two courses are not passed');
+  await page.reload();
+  await page.locator('.a-fr-card[data-step="passed"]').waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('.a-pass-row input:checked').count(), total - 2, 'a reload returns to the step with its ticks');
+  await page.locator('[data-k="frNext"]').click();
+  await page.locator('.a-fr-card[data-step="courses"]').waitFor();
+  await page.locator('[data-k="frBack"]').click();
+  await page.locator('.a-fr-card[data-step="passed"]').waitFor();
+  assert.equal(await page.locator('.a-pass-row input:checked').count(), total - 2, 'and Back finds them as they were');
+});
+
+test('the grade sheet fills the list: its passes are ticked for review, a pass outside the list survives "המשך", and the entry choice is not made by it', async (t) => {
+  const page = await stepTwo(t);
+  await page.locator('#gradeFile').setInputFiles({ name: 'sheet.pdf', mimeType: 'application/pdf', buffer: gradeSheetPdf(['30003 Physics 3.5 90', '90901 English 2.0 85']) });
+  const dlg = page.locator('dialog.dlg-rows[open]');
+  await dlg.waitFor({ timeout: 30000 });
+  await dlg.getByRole('button', { name: 'החל' }).click();
+  await dlg.waitFor({ state: 'detached' });
+  await page.locator('[data-k="pass-30003"]').waitFor();
+  assert.equal(await page.locator('[data-k="pass-30003"]').isChecked(), true, 'the sheet\'s pass is ticked in the list');
+  assert.ok((await passedIds(page)).includes('90901'), 'a pass outside the list (the English course) is in the record');
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-entry')), null, 'the import did not make the record\'s entry choice');
+  assert.equal(await page.evaluate(() => document.getElementById('firstRun').contains(document.activeElement)), true, 'focus is back on the step');
+  await page.locator('[data-k="frNext"]').click();
+  assert.ok((await passedIds(page)).includes('90901'), 'and "המשך" leaves it');
+});
+
+// a student in year 2 who changes the year: the card for what the change makes earlier
+const yearTwo = (extra = {}) => ({
+  ...DONE,
+  'afeka-sched-v1': JSON.stringify({ ...STUDENT, profile: { ...STUDENT.profile, year: 2 }, failed: { 30112: 1 }, retakeSeen: ['30112'], passed: STUDENT.passed.filter((x) => x !== '30112'), ...extra })
+});
+const changeYear = async (page, year) => {
+  await page.evaluate(() => (location.hash = '#me'));
+  await page.locator(`[data-k="p-year-${year}"]`).waitFor({ state: 'attached', timeout: 30000 });
+  await page.locator(`[data-k="p-year-${year}"]`).check({ force: true });
+};
+
+test('a year change that makes year ב earlier asks about year ב only; "ביטול" and Escape change nothing and the focus goes back to the year control', async (t) => {
+  const page = await visit(t, 'desktop', yearTwo());
+  await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+  const before = await page.evaluate(() => localStorage.getItem('afeka-sched-v1'));
+  await changeYear(page, 3);
+  const dlg = page.locator('dialog.a-fr-dlg[open]');
+  await dlg.waitFor({ timeout: 15000 });
+  assert.deepEqual(await dlg.locator('.a-pass-year legend').allTextContents(), ['שנה ב׳'], 'year ב alone (א was passed before)');
+  assert.equal(await page.evaluate(() => document.querySelector('dialog.a-fr-dlg').contains(document.activeElement)), true, 'focus is inside the card');
+  await dlg.getByRole('button', { name: 'ביטול' }).click();
+  await dlg.waitFor({ state: 'detached' });
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1')), before, 'nothing changed');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'p-year-2', 'focus is on the year control, which shows the year the record has');
+  assert.equal(await page.locator('[data-k="p-year-2"]').isChecked(), true);
+  await changeYear(page, 3);
+  await dlg.waitFor();
+  await page.keyboard.press('Escape');
+  await dlg.waitFor({ state: 'detached' });
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1')), before, 'Escape is "ביטול"');
+});
+
+test('"המשך" on that card changes the year and passes the ticked courses; what was confirmed before stays, and a failure left unticked stays a failure', async (t) => {
+  const page = await visit(t, 'desktop', yearTwo());
+  await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+  const was = await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).passed);
+  await changeYear(page, 3);
+  const dlg = page.locator('dialog.a-fr-dlg[open]');
+  await dlg.waitFor({ timeout: 15000 });
+  assert.equal(await dlg.locator('[data-id="30112"]').isChecked(), false, 'a course failed before is not ticked');
+  await dlg.getByRole('button', { name: 'עברתי את כולם' }).click();
+  await dlg.locator('[data-id="30112"]').uncheck(); // still a failure
+  await dlg.getByRole('button', { name: 'המשך' }).click();
+  await dlg.waitFor({ state: 'detached' });
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).profile.year === 3, null, { timeout: 30000 });
+  const rec = await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
+  assert.ok(was.every((id) => rec.passed.includes(id)), 'every course passed before still is');
+  assert.ok(rec.passed.length > was.length, 'and the ticked ones of year ב are added');
+  assert.ok(!rec.passed.includes('30112') && rec.failed['30112'] === 1, 'the failure on file is kept, not passed');
+});
+
+test('a year change that makes no year earlier (a move back) asks nothing', async (t) => {
+  const page = await visit(t, 'desktop', yearTwo());
+  await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+  await changeYear(page, 1);
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).profile.year === 1, null, { timeout: 30000 });
+  assert.equal(await page.locator('dialog.a-fr-dlg').count(), 0);
+});
+
+test('375: the year-change card fits the window, its list is one column, and the buttons are 44px', async (t) => {
+  const page = await visit(t, 'phone', yearTwo());
+  await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+  await changeYear(page, 3);
+  const dlg = page.locator('dialog.a-fr-dlg[open]');
+  await dlg.waitFor({ timeout: 15000 });
+  const m = await page.evaluate(() => {
+    const d = document.querySelector('dialog.a-fr-dlg'), r = d.getBoundingClientRect();
+    return { left: r.left, right: r.right, w: innerWidth, small: [...d.querySelectorAll('button, label.check')].filter((e) => e.getBoundingClientRect().height < 43.5).length, cols: getComputedStyle(d.querySelector('.a-pass-list')).gridTemplateColumns.split(' ').length };
+  });
+  assert.ok(m.left >= 0 && m.right <= m.w, 'inside the window');
+  assert.equal(m.small, 0, 'every control is 44px');
+  assert.equal(m.cols, 1, 'one column on a phone');
 });

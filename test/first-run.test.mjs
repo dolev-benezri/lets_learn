@@ -3,7 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { app } from '../web/app.js';
-import { passSteps, stepOf, markOf, nextStep, prevStep, stepLine, yearsFor, startReady, STEPS } from '../web/first-run.js';
+import { passSteps, stepOf, markOf, nextStep, prevStep, stepLine, yearsFor, startReady, earlierYearLists, STEPS } from '../web/first-run.js';
+import { real } from './fixtures/real.mjs';
 
 
 test('passSteps: a first-year student has four steps, everyone else five, and none is skippable', () => {
@@ -175,4 +176,20 @@ test('the draft of step 1: kept in storage, read back, cleared; a storage that t
     c.clearFirstDraft();
     assert.deepEqual(c.firstDraft(), { t: false, p: null, y: null });
   });
+});
+
+test('earlierYearLists: the lists of the years before the given one, by year, a course once, in order', () => {
+  const data = real('2027-1/30-2026.json');
+  assert.deepEqual(earlierYearLists(data, 1, 1), [], 'a first-year student has none');
+  const two = earlierYearLists(data, 1, 2);
+  assert.deepEqual(two.map((g) => [g.year, g.name]), [[1, 'א']]);
+  assert.ok(two[0].ids.length >= 10 && two[0].ids.every((id) => data.courses[id]), 'year א: real courses');
+  const three = earlierYearLists(data, 1, 3);
+  assert.deepEqual(three.map((g) => g.name), ['א', 'ב']);
+  assert.deepEqual(three[0].ids, two[0].ids, 'the same year-א list');
+  assert.equal(new Set(three.flatMap((g) => g.ids)).size, three.flatMap((g) => g.ids).length, 'no course twice');
+  assert.deepEqual(earlierYearLists(data, 2, 3).map((g) => g.name), ['ב'], 'from the year the record had: only the years the change makes earlier');
+  assert.deepEqual(earlierYearLists(data, 3, 3), [], 'no move, nothing new');
+  assert.deepEqual(earlierYearLists(data, 3, 2), [], 'a move back, nothing');
+  assert.deepEqual(earlierYearLists({ lists: [] }, 1, 4), [], 'a program with no year lists');
 });

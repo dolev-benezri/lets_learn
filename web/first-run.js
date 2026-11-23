@@ -39,3 +39,19 @@ export const yearsFor = (programName, loaded = null) => loaded ?? (/\(ערב\)$/
 // What "המשך" needs: the terms read, and, in the pass, a track (when there is more than one) and a study year. The terms alone (improve's first visit, or the
 // terms asked again) need only the box.
 export const startReady = (draft, ask) => !!draft.t && (!ask.track || draft.p != null) && (!ask.year || draft.y != null);
+
+// ---- step 2 and the year change: the earlier years' mandatory courses, by year ----
+// The lists named "... שנה X'" for the years from `from` up to, not including, `to` (year numbers, 1 = א׳): [{ year, name, ids }], a course once, years with none left out.
+// The student ticks what they passed in them (no silent filling in: spec "Phase 3").
+export function earlierYearLists(data, from, to) {
+  const out = [],
+    seen = new Set();
+  for (let y = Math.max(1, from); y < to; y++) {
+    const name = ' אבגדה'[y];
+    if (!name) break;
+    const ids = [...new Set((data.lists ?? []).filter((l) => l.name.includes(`שנה ${name}'`)).flatMap((l) => l.courses))].filter((id) => !seen.has(id));
+    ids.forEach((id) => seen.add(id));
+    if (ids.length) out.push({ year: y, name, ids });
+  }
+  return out;
+}

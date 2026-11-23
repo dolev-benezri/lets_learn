@@ -17,6 +17,7 @@ import {
   markEntered,
   gated,
   firstRunOn,
+  passOpen,
   needsProgram,
   status,
   seg,
@@ -370,6 +371,13 @@ const setGradeMsg = (m) => {
   if (el) el.textContent = m;
 };
 const GRADE_STALE = 'המסלול או נתוני הלימודים השתנו בזמן הייבוא, ולכן לא עודכן כלום. ייבאו את הגליון שוב.';
+// The import ends on the course list (a first visit's entry choice); inside the first-run pass it ends on step 2, drawn again with the sheet's ticks,
+// and the focus goes back to the button the student started from.
+const afterImport = () => {
+  if (!passOpen()) return enterList();
+  refresh();
+  document.querySelector('#firstRun [data-k="gradeImport"]')?.focus({ preventScroll: true });
+};
 export async function importGrades(file) {
   const { data, state, sem } = app;
   // A track or cohort switch replaces the state and the data files. The sheet was read for the old ones: applying it would change an object nobody
@@ -402,7 +410,7 @@ export async function importGrades(file) {
   if (!todo.length) {
     sheetConfirms(state, found);
     setGradeMsg(`זוהו ${courseCount(rows.length)} והכול כבר מעודכן.${skipNote}`);
-    return enterList();
+    return afterImport();
   }
   const label = (r) =>
     `${r.result === 'exempt' ? 'פטור, נחשב עברתי' : WORD[r.to]}${r.was === r.to ? '' : ` (היה: ${WORD[r.was]})`}${
@@ -421,6 +429,6 @@ export async function importGrades(file) {
   if (!current) return setGradeMsg(GRADE_STALE);
   applyGradeChanges(state, pick.map((i) => todo[i]));
   setGradeMsg('');
-  enterList();
+  afterImport();
   toast(pick.length === 1 ? 'עודכן קורס אחד' : `עודכנו ${pick.length} קורסים`);
 }

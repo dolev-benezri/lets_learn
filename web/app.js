@@ -360,6 +360,8 @@ export const app = {
   settings: SETTINGS_DEFAULT,
   termsOk: () => true,
   passOpen: () => false, // design A's first-run pass is open (ui-common.js passOpen)
+  // design A: year changes in flight that ask what was passed in the years they make earlier (ui-passed.js); nothing is filled in meanwhile
+  holdFill: 0,
   firstLoad: () => {}, // a new visitor's first load, before anything is saved (ui-common.js writes the first-run mark)
   pendingBackup: null
 }; // ui-common.js swaps in the real checks; a backup link waits in pendingBackup until the terms are accepted
@@ -484,7 +486,7 @@ export function ensurePassed() {
   const s = app.state,
     earlier = earlierYears();
   // design A's first run: the student ticks what they passed (step 2); nothing is filled in for them
-  if (!s.passed && app.passOpen()) {
+  if (!s.passed && (app.passOpen() || app.holdFill > 0)) {
     s.passed = [];
     s.assumed = [];
   }
@@ -689,10 +691,10 @@ export async function switchTo(program, startYear) {
   }
   followTrackHours(app.state.constraints, app.catalog, prev.program, program);
   setSemesters(sem);
-  if (sameProgram && app.passOpen()) {
-    // design A's first run: the earlier years are step 2's list, not added here
-    app.state.passed ??= [];
-    app.state.assumed ??= [];
+  if (sameProgram && (app.passOpen() || app.holdFill > 0)) {
+    // design A's first run (and a year change that asks): the earlier years are the student's list to tick, not added here
+    app.state.passed = [...(prev.passed ?? [])];
+    app.state.assumed = [...(prev.assumed ?? [])];
   } else if (sameProgram) {
     const had = prev.passed ?? [],
       added = earlierYears().filter((id) => !app.state.failed[id] && !had.includes(id));

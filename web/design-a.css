@@ -754,3 +754,25 @@
 :root[data-design="a"] .a-fr-card .msg { margin:var(--sp-3) 0 0; }
 :root[data-design="a"] .a-fr-alt { margin:var(--sp-2) 0 0; font-size:var(--fs-sm); }
 :root[data-design="a"] .a-fr-alt a { display:inline-flex; align-items:center; min-height:44px; }
+/* phase 3, Task D (step 2 and the year change): the earlier years' courses by year, none ticked; the same card as a modal over the board */
+:root[data-design="a"] .a-fr-line { margin:0 0 var(--sp-4); color:var(--text-2); }
+:root[data-design="a"] .a-fr-wide { width:100%; min-height:44px; }
+:root[data-design="a"] .a-fr-msg { margin:var(--sp-2) 0 0; }
+:root[data-design="a"] .a-fr-msg:empty { display:none; }
+:root[data-design="a"] .a-pass-all {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:var(--sp-2) var(--sp-3); margin:var(--sp-5) 0 var(--sp-2);
+}
+:root[data-design="a"] .a-pass-all .btn { min-height:44px; }
+:root[data-design="a"] .a-pass-year { min-width:0; margin:var(--sp-4) 0 0; padding:0; border:0; }
+:root[data-design="a"] .a-pass-year legend { padding:0; margin-bottom:var(--sp-1); font-size:var(--fs-sm); color:var(--text-2); }
+:root[data-design="a"] .a-pass-list {
+  display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); column-gap:var(--sp-5); margin:0; border-top:1px solid var(--border);
+}
+:root[data-design="a"] .a-pass-row { min-height:44px; border-bottom:1px solid var(--border); }
+:root[data-design="a"] .a-pass-row span { min-width:0; overflow-wrap:anywhere; }
+:root[data-design="a"] dialog.a-fr-dlg {
+  width:min(640px, 100%); max-width:100%; max-height:100dvh; margin:auto; padding:0; border:0; background:transparent; overflow:auto;
+}
+:root[data-design="a"] dialog.a-fr-dlg::backdrop { background:var(--scrim); }
+:root[data-design="a"] dialog.a-fr-dlg .a-fr-card { margin:var(--sp-4) auto; }
+@media (max-width:599px) { :root[data-design="a"] .a-pass-list { grid-template-columns:minmax(0, 1fr); } }

@@ -9,11 +9,12 @@ import {
 } from './ui-common.js';
 import { stepOf, markOf, nextStep, prevStep, stepLine, yearsFor, startReady } from './first-run.js';
 import { LEGAL_SHORT } from './ui-text.js';
+import { stepTwoHtml } from './ui-passed.js';
 import { TERMS_BLOCK } from './ui-me.js';
 
 const HEAD = { start: 'לפני שמתחילים', passed: 'מה עברת עד עכשיו?', courses: 'קורסים', prefs: 'מה חשוב לי', friends: 'חברים' };
 // the steps after the first have their bodies in their own tasks: until then an empty one
-const BODY = { passed: () => '', courses: () => '', prefs: () => '', friends: () => '' };
+const BODY = { passed: stepTwoHtml, courses: () => '', prefs: () => '', friends: () => '' };
 
 export const currentStep = () => stepOf(firstRun(), app.state?.profile.year ?? null);
 const yearNow = () => app.state?.profile.year ?? null;
