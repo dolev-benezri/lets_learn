@@ -251,6 +251,7 @@ for (const [name, size] of [SIZES[0], SIZES[2]])
     assert.ok((await page.locator('.prop-sum').innerText()).trim().length > 0, 'summary');
     assert.ok((await page.locator('.pcard').count()) >= 1, 'change card');
     const before = await saved(page);
+    if (DESIGN === 'a') await page.locator('[data-ed="more"]').click(); // design A: "עוד" holds the new day
     await page.locator('[data-ed="newDay"]').first().click();
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle');
     if (name === 'phone') // the button sits under the week there: the new day is brought into view
@@ -270,7 +271,7 @@ for (const [name, size] of SIZES)
     await page.locator('#editWeek .blk').first().waitFor();
     const [goals, chip] = [await page.locator('.goals').boundingBox(), await page.locator('.goals .chip').first().boundingBox()];
     // A, wide: the column wraps the chips (declutter step 8), so none is cut; everywhere else the goals are one row
-    if (DESIGN === 'a' && name === 'desktop') assert.ok(goals.width > 0 && chip.width > 0, 'the goals are drawn');
+    if (DESIGN === 'a') assert.ok(goals.width > 0 && chip.width > 0, 'the goals are drawn (A wraps the chips at every width: edit-a.spec.mjs)');
     else assert.ok(goals.height < chip.height * 2, `one row of goals: ${goals.height} / ${chip.height}`);
     assert.equal(await noSideways(page), true, 'step 2');
     await editWeekView(page); // A, a phone: the tool is a sheet over the week
@@ -291,7 +292,7 @@ for (const [name, size] of SIZES)
     assert.equal(await noSideways(page), true, 'a proposal');
   });
 
-test('phone 320: a goal chosen at the far end of the goal row stays in view after the page redraws', async (t) => {
+test('phone 320: a goal chosen at the far end of the goal row stays in view after the page redraws', { skip: DESIGN === 'a' && 'design A wraps the chips (edit-a.spec.mjs)' }, async (t) => {
   const page = await visit(t, SIZES[1][1], LOADED, '#edit/changes');
   await page.locator('#editWeek .blk').first().waitFor();
   const goals = page.locator('.goals');

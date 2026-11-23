@@ -26,7 +26,7 @@ const RULE = /שלב\s*\d|צעד\s*\d|הבא\s*:|חזרה לצעד|סרגל הש
 for (const size of ['phone', 'desktop'])
   test(`${size}: the edit page names no numbered step, in either of its two screens`, async (t) => {
     const page = await visit(t, size, SEED, '#edit');
-    await page.locator('#edit .me-foot [data-ed="next"]').waitFor({ timeout: 30000 });
+    await page.locator('#edit [data-ed="next"]').waitFor({ timeout: 30000 });
     const one = await page.evaluate(() => document.body.innerText);
     assert.doesNotMatch(one, RULE, `the first screen: ${RULE.exec(one)?.[0]}`);
     assert.match(await page.locator('[data-ed="next"]').innerText(), /לשינויים/, 'the way on says where it goes');
@@ -35,12 +35,13 @@ for (const size of ['phone', 'desktop'])
     await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
     const two = await page.evaluate(() => document.body.innerText);
     assert.doesNotMatch(two, RULE, `the second screen: ${RULE.exec(two)?.[0]}`);
-    assert.match(await page.locator('#edit .me-foot a[href="#edit"]').innerText(), /חזרה למערכת שלי/, 'the way back says where it goes');
+    assert.equal(await page.locator('#edit .me-foot').count(), 0, 'no footer bar: the tab is the way back');
+    assert.match(await page.locator('.dock [data-tool="mine"]').innerText(), /המערכת שלי/, 'and it says where it goes');
   });
 
 test('the edit page has no mode label: the tabs are the mode switch, the dock and the tool panel are not there, the improve tab is selected', async (t) => {
   const page = await visit(t, 'phone', SEED, '#edit');
-  await page.locator('#edit .me-foot').waitFor({ timeout: 30000 });
+  await page.locator('#edit [data-ed="next"]').waitFor({ timeout: 30000 });
   assert.equal(await page.locator('.mode-label').count(), 0, 'no "עורכים מערכת קיימת · החלפה" button');
   assert.equal(await page.locator('.a-top .modes a[data-mode="edit"][aria-current="page"]').count(), 1);
   assert.equal(await page.locator('.a-top .modes a[data-mode="build"][aria-current]').count(), 0);
@@ -51,12 +52,12 @@ test('the edit page has no mode label: the tabs are the mode switch, the dock an
 
 // Stage 2: from 1080px the tool is a column (sticky, its own scroller) and the week is the board beside it; below, the tool is a sheet over the week.
 for (const [w, h] of [[1280, 800], [1440, 900], [1080, 800]])
-  test(`${w}px: the tool is a column on the right, the week the board beside it, and the foot stays in view`, async (t) => {
+  test(`${w}px: the tool is a column on the right, the week the board beside it, and its search button stays in view`, async (t) => {
     const page = await visit(t, { width: w, height: h }, SEED, '#edit/changes');
     await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
     const m = await page.evaluate(() => {
       const r = (s) => document.querySelector(s).getBoundingClientRect();
-      const tool = r('.edit-tool'), board = r('.edit-board'), foot = r('.edit-tool .me-foot');
+      const tool = r('.edit-tool'), board = r('.edit-board'), foot = r('.edit-tool [data-ed="search"]');
       return { toolLeft: tool.left, toolTop: tool.top, boardRight: board.right, boardTop: board.top, boardW: board.width, footBottom: foot.bottom, h: innerHeight,
         pos: getComputedStyle(document.querySelector('.edit-tool')).position, dir: getComputedStyle(document.getElementById('edit')).direction,
         fits: document.documentElement.scrollWidth <= innerWidth };
@@ -67,19 +68,18 @@ for (const [w, h] of [[1280, 800], [1440, 900], [1080, 800]])
     assert.ok(Math.abs(m.boardTop - m.toolTop) < 150, 'they start at the same height');
     assert.ok(m.boardW > 400, `the week has room: ${Math.round(m.boardW)}px`);
     assert.equal(m.pos, 'sticky', 'the tool column stays in view');
-    assert.ok(m.footBottom <= m.h + 1, `the foot (search, back) is in view (${m.footBottom} of ${m.h})`);
+    assert.ok(m.footBottom <= m.h + 1, `the search button is in view (${m.footBottom} of ${m.h})`);
   });
 
-test('1280px, a short window: the tool column is pinned below the top bar and its foot comes into view', async (t) => {
+test('1280px, a short window: the tool column is pinned below the top bar, scrolls inside, and its search button is reachable', async (t) => {
   const page = await visit(t, { width: 1280, height: 420 }, SEED, '#edit/changes');
   await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
   const m = await page.evaluate(async () => {
     window.scrollTo(0, 400); // the column sticks below the top bar: once the page is scrolled, the whole tool and its foot are in view
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    const tool = document.querySelector('.edit-tool'), foot = tool.querySelector('.me-foot').getBoundingClientRect(), box = tool.getBoundingClientRect();
+    const tool = document.querySelector('.edit-tool'), foot = tool.querySelector('[data-ed="search"]').getBoundingClientRect(), box = tool.getBoundingClientRect();
     return { footBottom: foot.bottom, h: innerHeight, top: box.top, bottom: box.bottom, overflowY: getComputedStyle(tool).overflowY };
   });
-  assert.ok(m.footBottom <= m.h + 1, `the foot is in view (${m.footBottom} of ${m.h})`);
   assert.ok(m.bottom <= m.h + 1 && m.top >= 0, `the column is pinned inside the window (${m.top}..${m.bottom})`);
   assert.equal(m.overflowY, 'auto');
   await page.locator('[data-ed="search"]').scrollIntoViewIfNeeded();
@@ -167,4 +167,93 @@ test('a phone: the dock\'s "המערכת שלי" over the empty card changes not
   assert.equal(await page.locator('#edit .edit-card').isVisible(), true, 'the card stays');
   assert.equal(await page.locator('.dock [data-tool="mine"]').getAttribute('aria-pressed'), 'true', 'and its tab stays pressed');
   assert.equal(await page.evaluate(async () => (await import('./ui-common.js')).ui.editSheet !== false), true, 'no sheet was folded');
+});
+
+// phase 2, Task E: the first screen says what is loaded in one line and ends with "לשינויים" inside its section; the changes screen has one primary at a time,
+// its search button in the section, no footer bar, no disclaimer card, and "עוד" holding the rest of the proposal's actions
+const flatText = (x) => x.replace(/\s+/g, ' ').trim();
+test('the first screen: one line of what is loaded, "לשינויים" primary inside the section, no footer bar and no "saved at once" line', async (t) => {
+  const page = await visit(t, 'desktop', SEED, '#edit');
+  await page.locator('#edit [data-ed="next"]').waitFor({ timeout: 30000 });
+  assert.equal(flatText(await page.locator('#edit .edit-tool .me-step').innerText()), '2 קורסים · ימים ג׳ ו-ד׳');
+  assert.equal(await page.locator('#edit .me-foot').count(), 0);
+  assert.equal(await page.locator('#edit .edit-tool [data-ed="next"]').evaluate((b) => b.classList.contains('primary') && !!b.closest('.edit-col')), true, 'inside the section, primary');
+  assert.doesNotMatch(await page.locator('#edit .edit-tool').innerText(), /כל שינוי נשמר מיד/);
+});
+
+test('the changes screen: the step line, one primary at a time, the search in the section, no footer, no disclaimer card, "עוד" holds the rest', async (t) => {
+  const page = await visit(t, 'desktop', SEED, '#edit/changes');
+  const tool = page.locator('#edit .edit-tool');
+  await tool.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
+  assert.equal(flatText(await tool.locator('.me-step').innerText()), 'לחצו על שיעור כדי לסמן שיכול לזוז.');
+  assert.equal(await page.locator('#edit .me-foot').count(), 0, 'no footer bar');
+  assert.equal(await tool.locator('a[href="#edit"]').count(), 0, 'no way back in the tool: the tab is it');
+  assert.equal(flatText(await tool.locator('[data-ed="search"]').innerText()), 'חפש הצעות');
+  assert.equal(await tool.locator('.btn.primary').count(), 1, 'one primary before a proposal: the search');
+  assert.equal(await tool.locator('[data-ed="search"]').evaluate((b) => b.classList.contains('primary')), true);
+  await tool.locator('[data-ed="search"]').click();
+  await page.locator('.prop-nav').waitFor({ timeout: 30000 });
+  assert.equal(flatText(await tool.locator('[data-ed="search"]').innerText()), 'חפש שוב', 'and "search again" once there is a result');
+  assert.equal(await tool.locator('[data-ed="search"]').evaluate((b) => b.classList.contains('primary')), false);
+  assert.equal(await tool.locator('.btn.primary').count(), 1, 'one primary with a proposal: "שמור הצעה"');
+  assert.equal(await tool.locator('[data-ed="saveProposal"]').evaluate((b) => b.classList.contains('primary')), true);
+  assert.equal(flatText(await tool.locator('[data-ed="copyChanges"]').innerText()), 'העתק שינויים');
+  assert.doesNotMatch(await tool.innerText(), /הצעה בלבד/, 'the strip says "אינו הרשמה": the card does not say it again');
+  const more = tool.locator('[data-ed="more"]');
+  assert.equal(await more.getAttribute('aria-expanded'), 'false');
+  assert.equal(await more.getAttribute('aria-controls'), 'editMoreList');
+  assert.equal(await page.locator('#editMoreList').isVisible(), false, 'closed');
+  assert.equal(await tool.locator('[data-ed="restoreOriginal"]').isVisible(), false, 'the reset is not on the screen until "עוד" opens');
+});
+
+test('"עוד": a disclosure of plain buttons, Escape closes it and returns focus to it, the proposal arrows ignore keys inside it, and any action closes it', async (t) => {
+  const page = await visit(t, 'desktop', SEED, '#edit/changes');
+  await page.locator('[data-ed="search"]').click();
+  await page.locator('.prop-nav').waitFor({ timeout: 30000 });
+  const more = page.locator('#edit [data-ed="more"]');
+  const label = () => page.locator('.prop-nav').innerText().then(flatText);
+  const nav = await label();
+  await more.focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await more.getAttribute('aria-expanded'), 'true');
+  const items = page.locator('#editMoreList button');
+  assert.ok((await items.count()) >= 1, 'plain buttons');
+  assert.match(await page.locator('#editMoreList').innerText(), /לבטל את כל השינויים/);
+  await page.keyboard.press('Tab'); // the list is next in Tab order
+  assert.equal(await page.evaluate(() => !!document.activeElement?.closest('#editMoreList')), true, 'Tab goes into the list');
+  await page.keyboard.press('ArrowLeft'); // the proposals' key: not inside the list
+  assert.equal(await label(), nav, 'the proposal did not change');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#editMoreList').isVisible(), false, 'Escape closes it');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'editMore', 'and focus returns to "עוד"');
+  assert.equal(await page.locator('dialog[open]').count(), 0, 'Escape did nothing else');
+  await more.click();
+  await page.locator('#editMoreList [data-ed="restoreOriginal"]').click(); // an action: it runs and the list is closed
+  await page.locator('#toast.show').waitFor();
+  assert.equal(await page.locator('#editMoreList').count(), 0, 'the proposals went with the reset');
+});
+
+test('a phone: Escape inside "עוד" closes it, and only it: the sheet stays open and focus is on "עוד"', async (t) => {
+  const page = await visit(t, 'phone', SEED, '#edit/changes');
+  await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
+  await page.locator('[data-ed="search"]').click();
+  await page.locator('.prop-nav').waitFor({ timeout: 30000 });
+  await page.locator('#edit [data-ed="more"]').click();
+  await page.locator('#editMoreList button').first().focus();
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#editMoreList').isVisible(), false, 'the list closed');
+  assert.equal(await page.locator('.edit-tool').isVisible(), true, 'the sheet is still open');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'editMore', 'focus is on "עוד"');
+});
+
+test('"עוד" closes with any other action, in the page and in the markup (copying redraws nothing)', async (t) => {
+  const page = await visit(t, 'desktop', SEED, '#edit/changes');
+  await page.locator('[data-ed="search"]').click();
+  await page.locator('.prop-nav').waitFor({ timeout: 30000 });
+  await page.locator('#edit [data-ed="more"]').click();
+  assert.equal(await page.locator('#editMoreList').isVisible(), true);
+  await page.locator('[data-ed="copyChanges"]').click(); // the test page has no clipboard: the text dialog shows
+  await page.locator('dialog[open]').waitFor();
+  assert.equal(await page.locator('#edit [data-ed="more"]').getAttribute('aria-expanded'), 'false', 'aria-expanded says so');
+  assert.equal(await page.locator('#editMoreList').isVisible(), false, 'and the list is shut');
 });

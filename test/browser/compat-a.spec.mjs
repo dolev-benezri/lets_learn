@@ -42,7 +42,7 @@ async function oldVisit() {
   };
 }
 const ready = async (page, hash) => {
-  if (hash.startsWith('#edit')) await page.locator('#edit .me-foot').waitFor({ timeout: 30000 });
+  if (hash.startsWith('#edit')) await page.locator(hash === '#edit/changes' ? '#edit [data-ed="search"]' : '#edit [data-ed="next"], #edit .edit-card').first().waitFor({ timeout: 30000 });
   else {
     await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
     await page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') !== 'true', null, { timeout: 30000 });

@@ -7,7 +7,7 @@ import { askConfirm } from './ui-dialog.js';
 import { classify } from './rules.js';
 import { kinds, overlaps, displayData, summaryLine, changeText, splitOnlySwaps, PROPOSAL_ONLY, FIXED } from './edit-search.js';
 import { reqContext, reqMet } from './rules.js';
-import { groupNumber, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine } from './ui-text.js';
+import { groupNumber, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine, courseCount } from './ui-text.js';
 import { identityPick } from './ui-me.js';
 import { getEdit, setEdit, saveEdit, restoredCount, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
 
@@ -70,10 +70,18 @@ const coursesLine = (rows, data) => {
   return n ? ` · ${n === 1 ? 'קורס אחד' : `${n} קורסים`}` : '';
 };
 
+// Design A (phase 2, Task E): what is loaded, in one line ("2 קורסים · ימים ג׳ ו-ד׳"), for the המערכת שלי screen's heading.
+export function loadedLineA(lessons) {
+  const courses = new Set(lessons.map((l) => l.course)).size;
+  const days = [...new Set(lessons.map((l) => l.day))].sort((a, b) => a - b).map((d) => `${DAYS[d]}׳`);
+  if (!courses) return '';
+  const when = days.length === 1 ? `יום ${days[0]}` : `ימים ${days.slice(0, -1).join(', ')} ו-${days.at(-1)}`;
+  return `${courseCount(courses)} · ${when}`;
+}
 export function stepOneHtml(edit, data, review, { same = true, saving = true } = {}) {
   const d = edit.draft, choices = d?.choices ?? {}, rows = d ? review : [];
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
-    <p class="me-step">${designOn() ? '' : '<b>צעד 1 מתוך 2.</b> '}טוענים את המערכת שיש לכם.</p></div><div id="editIdentity"></div>`;
+    <p class="me-step">${designOn() ? esc(loadedLineA(edit.baseline) || 'טוענים את המערכת שיש לכם.') : '<b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.'}</p></div><div id="editIdentity"></div>`;
   // edWaysMsg: why a load button did nothing (track or year missing), said beside the button that was pressed
   const waysBody = (primary) => `<p class="err-text" id="edWaysMsg" role="alert"></p><div class="me-choice-btns">
     <button type="button" class="btn${primary ? ' primary' : ''}" data-ed="loadFile">קובץ מערכת (אקסל מאפקה-נט, PDF או צילום)</button>
@@ -94,9 +102,10 @@ export function stepOneHtml(edit, data, review, { same = true, saving = true } =
     ${loaded ? `<section class="me-card"><label class="check"><input type="checkbox" data-ed-reg${d?.registered ?? edit.registered ? ' checked' : ''}>
       המערכת כבר רשומה במכללה</label>
       ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}${coursesLine(rows, data)}</p>` : ''}</section>${reload}` : ''}
-    <p class="err-text" id="edMsg" role="alert"></p></div>
-    <div class="me-foot"><span class="hint" data-saved${saving ? '' : ' hidden'}>כל שינוי נשמר מיד.</span>
-      <button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">${designOn() ? 'לשינויים' : 'הבא: שינויים'}</button></div>`;
+    <p class="err-text" id="edMsg" role="alert"></p>
+    ${designOn() && loaded ? '<div class="edit-next"><button type="button" class="btn primary" data-ed="next">לשינויים</button></div>' : ''}</div>
+    ${designOn() ? '' : `<div class="me-foot"><span class="hint" data-saved${saving ? '' : ' hidden'}>כל שינוי נשמר מיד.</span>
+      <button type="button" class="btn${loaded ? ' primary' : ''}" data-ed="next">הבא: שינויים</button></div>`}`;
 }
 
 // Design A, before anything is loaded: one centred card (phase 2, Task B). The same ids and data-ed actions as step one's ways to load, so the loader
@@ -263,7 +272,7 @@ export function proposalHtml(edit, p, data, { zero = false } = {}) {
   const split = !zero && p.split?.length
     ? `<p class="warn-text">${icon('alert')} <span>${esc(SPLIT_NOTE)}</span></p><p class="split-line">${esc(splitLine(p.split.map(name)))}</p>`
     : '';
-  return `${head}${split}${cards.length ? `<ul class="pcards">${cards.join('')}</ul>` : ''}${warn}<p class="disclaimer">${PROPOSAL_ONLY}</p>`;
+  return `${head}${split}${cards.length ? `<ul class="pcards">${cards.join('')}</ul>` : ''}${warn}${designOn() ? '' : `<p class="disclaimer">${PROPOSAL_ONLY}</p>`}`;
 }
 
 // The days a phone's day tabs mark: where a changed group meets and where a moved course used to be ("היה כאן").
@@ -295,8 +304,8 @@ export function searchNotesHtml(result, edit, data) {
 let fresh = false; // a schedule was read in this visit: its review shows even while the saved one belongs to other data
 // What step 2 shows and has under way (not saved): the shown day, the search in flight, its result.
 // stamp: what the result was worked out on (resultStamp); a result is shown and saved only while that still holds.
-// fx: what animates next; how: the empty card's download instructions are open
-const V = { how: false, day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null };
+// fx: what animates next; how: the empty card's download instructions are open; more: the proposal's "עוד" is open
+const V = { more: false, how: false, day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null };
 const editColors = new Map();
 const edit = getEdit; // the edit state, read once (edit-state.js)
 // Keeps the new state and saves it; false when nothing was written (storage blocked or full, or another tab holds a newer copy).
@@ -366,6 +375,8 @@ export function renderEdit() {
   const fx = V.fx === 'step' ? ' fx' : '';
   const one = () => stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh, saving: saving() });
   // A, nothing loaded yet: the centred card alone (no stage, no week, no footer bar)
+  const how = document.querySelector('#edit .edit-how'); // read now: its toggle event may still be queued when this replaces it
+  if (how) V.how = how.open;
   const empty = designOn() && step === 1 && !(st.draft?.rows?.length || st.baseline.length) && (same || fresh);
   if (empty) ui.editSheet = true; // the card is not a sheet: what is loaded next opens its tool
   const parts = designOn() && !empty ? (step === 2 ? stepTwoA(st) : { tool: one(), board: boardOne(st) }) : null;
@@ -460,12 +471,13 @@ function stepTwoA(st) {
   const { week, days, warn } = weekOf(st, data, pr, zero, statuses);
   const [top, panel] = resultsHtml(st, data, pr, props.length);
   const tool = `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
-    <p class="me-step">לחצו על שיעור כדי לסמן שיכול לזוז, ובחרו מה חשוב לכם.</p></div>
+    <p class="me-step">לחצו על שיעור כדי לסמן שיכול לזוז.</p></div>
     ${goalsHtml(st, addableCourses(data, statuses, st))}${changesHtml(st, data)}${splitOptionHtml(!!app.state.constraints.split)}
+    <div class="edit-search"><button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${
+      V.running ? 'מחפש…' : V.result ? 'חפש שוב' : 'חפש הצעות'
+    }</button></div>
     <div id="editResults">${top}${panel}</div>
-    <p class="err-text" id="edMsg" role="alert"></p>
-    <div class="me-foot"><a class="btn" href="#edit">חזרה למערכת שלי</a>
-      <button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${V.running ? 'מחפש…' : 'חפש הצעות'}</button></div>`;
+    <p class="err-text" id="edMsg" role="alert"></p>`;
   const board = `<h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
     <div class="daysel" id="editDays" role="group" aria-label="בחירת יום">${days}</div>
     <div id="editWeek" class="edit-week${V.fx ? ' fx' : ''}">${week}</div>${warn ? `<div class="edit-warn">${warn}</div>` : ''}`;
@@ -514,7 +526,8 @@ function newDayButton(st, p) {
 function resultsHtml(st, data, pr, n) {
   const pending = st.movable.length || st.added.length || st.removed.length || Object.values(st.swaps).some((x) => x.length);
   const reset = designOn() ? 'לבטל את כל השינויים' : 'חזרה למערכת המקורית'; // A: it does not read like "חזרה למערכת שלי"
-  const back = same(st.baseline, st.original) && !pending ? '' : `<p><button type="button" class="btn" data-ed="restoreOriginal">${reset}</button></p>`;
+  const resetNeeded = !(same(st.baseline, st.original) && !pending);
+  const back = resetNeeded ? `<p><button type="button" class="btn" data-ed="restoreOriginal">${reset}</button></p>` : '';
   const r = V.result;
   if (!r) return ['', back];
   const notes = searchNotesHtml(r, st, data);
@@ -524,11 +537,23 @@ function resultsHtml(st, data, pr, n) {
       <div id="editNotesText">${notes}</div>${back}</div>`];
   }
   const zero = { lessons: st.baseline, score: 0, changed: [], added: [], removed: [] };
+  const A = designOn();
+  // A: the primary "שמור הצעה", "העתק שינויים", and "עוד" holding the rest (the new day, cancelling every change); the way back is the tab
+  const moreItems = [A && pr ? newDayButton(st, pr) : '', A && resetNeeded ? `<button type="button" class="btn" data-ed="restoreOriginal">${reset}</button>` : ''].filter(Boolean);
+  const more = moreItems.length
+    ? `<div class="edit-more"><button type="button" class="btn" data-ed="more" data-k="editMore" aria-expanded="${V.more}" aria-controls="editMoreList">עוד</button>
+      <div class="edit-more-list" id="editMoreList" role="group" aria-label="עוד פעולות"${V.more ? '' : ' hidden'}>${moreItems.join('')}</div></div>`
+    : '';
   const actions = pr
-    ? `<div class="prop-actions">${newDayButton(st, pr)}<button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
+    ? A
+      ? `<div class="prop-actions"><button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
+        <button type="button" class="btn" data-ed="copyChanges">העתק שינויים</button>${more}</div>${st.registered ? seatsNote(pr, data) : ''}`
+      : `<div class="prop-actions">${newDayButton(st, pr)}<button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
       <button type="button" class="btn" data-ed="copyChanges">העתק שינויים</button></div>${st.registered ? seatsNote(pr, data) : ''}`
     : '';
-  return [navHtml(V.i, n), `<div class="prop-panel${V.fx === 'prop' ? ' fx' : ''}">${proposalHtml(st, pr ?? zero, data, { zero: !pr })}${actions}${notes}${back}</div>`];
+  // under A the reset lives in "עוד" while a proposal is shown; before one (or with none found) it stays a button of its own
+  const resetHere = A && pr ? '' : back;
+  return [navHtml(V.i, n), `<div class="prop-panel${V.fx === 'prop' ? ' fx' : ''}">${proposalHtml(st, pr ?? zero, data, { zero: !pr })}${actions}${notes}${resetHere}</div>`];
 }
 
 // The worker that searches. A newer run (or leaving) drops the older answer.
@@ -614,7 +639,9 @@ function placeOf(el) {
 // to it (the switcher or the message), else null: the control kept, or the button or the title, which the stale-result message is for.
 function focusAnswer(place) {
   if (document.querySelector('dialog:modal') || $('pop').matches(':popover-open')) return null;
-  const kept = place && inEdit(place), answer = V.result?.proposals.length ? inEdit('.prop-nav') : $('editNotes');
+  // a control kept across the redraw that is hidden now (the reset inside a closed "עוד") cannot hold focus
+  const found = place && inEdit(place), kept = found?.checkVisibility?.() === false ? null : found;
+  const answer = V.result?.proposals.length ? inEdit('.prop-nav') : $('editNotes');
   (kept || answer || searchButton() || $('editTitle'))?.focus({ preventScroll: true });
   // the redraw can move the control kept (on a phone the proposals take the way back below the week): "nearest" does nothing when it is on screen
   kept?.scrollIntoView?.({ block: 'nearest' });
@@ -816,6 +843,11 @@ function step(by) {
   renderEdit();
 }
 const ACT_ED = {
+  more() {
+    V.more = !V.more;
+    renderEdit();
+    document.querySelector('[data-ed="more"]')?.focus({ preventScroll: true });
+  },
   propPrev: () => (step(-1), document.querySelector('[data-ed="propPrev"]')?.focus({ preventScroll: true })),
   propNext: () => (step(1), document.querySelector('[data-ed="propNext"]')?.focus({ preventScroll: true })),
   newDay(b) {
@@ -902,6 +934,11 @@ function wire() {
   wired = true;
   document.addEventListener('click', (e) => {
     const b = e.target.closest?.('[data-ed]');
+    if (b && b.dataset.ed !== 'more' && V.more) {
+      V.more = false; // "עוד" closes with whatever is pressed, redrawn or not (copying does not redraw)
+      document.getElementById('editMoreList')?.setAttribute('hidden', '');
+      document.querySelector('[data-ed="more"]')?.setAttribute('aria-expanded', 'false');
+    }
     if (b && !b.disabled) ACT_ED[b.dataset.ed]?.(b, e);
   });
   document.addEventListener('change', (e) => {
@@ -928,11 +965,24 @@ function wire() {
     if (!onChanges() || !V.result?.proposals.length || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     if (designOn() && (ui.overlay || !document.querySelector('#edit .edit-tool')?.checkVisibility?.())) return; // the record over the page, or a closed sheet
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || $('pop').matches(':popover-open') || document.querySelector('dialog:modal')) return;
-    if (e.target.closest?.('input, textarea, select, [contenteditable], [tabindex="0"]')) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable], [tabindex="0"], .edit-more')) return; // keys inside "עוד" are its own
     e.preventDefault();
     step(e.key === 'ArrowLeft' ? 1 : -1);
     document.querySelector(e.key === 'ArrowLeft' ? '[data-ed="propNext"]' : '[data-ed="propPrev"]')?.focus({ preventScroll: true });
   });
+  // Escape inside the open "עוד" closes it and returns focus to it (before anything else takes the key: the phone's sheet, the record)
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key !== 'Escape' || !V.more || !e.target.closest?.('.edit-more')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      V.more = false;
+      renderEdit();
+      document.querySelector('[data-ed="more"]')?.focus({ preventScroll: true });
+    },
+    true
+  );
   // the card's download instructions: open or shut, kept over a redraw
   document.addEventListener('toggle', (e) => e.target.classList?.contains('edit-how') && (V.how = e.target.open), true);
   // Escape (a light dismiss) with the block gone: focus must not fall to <body>

@@ -604,3 +604,22 @@
 @media (max-width:599px) {
   :root[data-design="a"] .edit-card { margin:var(--sp-3) auto; padding:var(--sp-5) var(--sp-4); }
 }
+/* phase 2, Task E (improve mode, the changes screen): the goal chips wrap at every width with every label whole, the search is the section's own button
+   (primary until there is a proposal), "לשינויים" ends the first screen's section, "עוד" is a disclosure of plain buttons; no footer bar and no way back
+   (the tab is it) */
+:root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; }
+:root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; }
+:root[data-design="a"] .edit-tool .chip { min-height:44px; }
+:root[data-design="a"] .edit-tool .chip select { min-height:44px; margin-block:-1px; } /* the select is the target: it fills the chip, 44px (it was 40px) */
+:root[data-design="a"] .edit-search, :root[data-design="a"] .edit-next { margin-top:var(--sp-3); }
+:root[data-design="a"] .edit-search .btn, :root[data-design="a"] .edit-next .btn { width:100%; min-height:44px; }
+:root[data-design="a"] .edit-tool #editResults > p { margin:var(--sp-3) 0 0; } /* the stand-alone "cancel all changes" under the search button */
+:root[data-design="a"] .prop-actions { display:flex; flex-wrap:wrap; align-items:flex-start; gap:var(--sp-2); }
+:root[data-design="a"] .prop-actions .btn { min-height:44px; }
+:root[data-design="a"] .edit-more { display:flex; flex-direction:column; align-items:flex-start; }
+:root[data-design="a"] .edit-more-list {
+  display:grid; gap:var(--sp-1); margin-top:var(--sp-2); padding:var(--sp-2); border:1px solid var(--border); border-radius:12px; background:var(--surface);
+  min-width:12rem;
+}
+:root[data-design="a"] .edit-more-list .btn { justify-content:flex-start; min-height:44px; }
+:root[data-design="a"] .edit-more-list[hidden] { display:none; }

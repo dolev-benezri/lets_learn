@@ -73,20 +73,33 @@ test('a moved lesson shows "היה כאן" on the board while the proposal tool 
   assert.match(await page.locator('#editWeek').innerText(), /היה כאן/);
 });
 
-test('phone 320: the goal row keeps its horizontal scroll after a redraw', async (t) => {
-  const page = await visit(t, { width: 320, height: 640 }, seed());
-  await page.locator('.edit-tool .goals').waitFor({ timeout: 30000 });
-  const before = await page.evaluate(() => {
-    const g = document.querySelector('#edit .goals');
-    g.scrollLeft = -60; // right to left: negative is further along
-    return g.scrollLeft;
+// phase 2, Task E: the goal chips wrap (the row is no scroller), every label whole, at 320 and 1280, and a redraw does not change that
+for (const [name, size] of [['320', { width: 320, height: 640 }], ['1280', { width: 1280, height: 800 }]])
+  test(`${name}: the goal chips wrap with every label whole and nothing scrolls sideways, also after a redraw`, async (t) => {
+    const page = await visit(t, size, seed());
+    await page.locator('.edit-tool .goals').waitFor({ timeout: 30000 });
+    const measure = () =>
+      page.evaluate(() => {
+        const g = document.querySelector('#edit .goals'), box = g.getBoundingClientRect();
+        const chips = [...g.children].filter((c) => c.getClientRects().length);
+        return {
+          n: chips.length, wrap: getComputedStyle(g).flexWrap, overflowX: getComputedStyle(g).overflowX, rowScroll: g.scrollWidth - g.clientWidth,
+          whole: chips.every((c) => c.scrollWidth <= c.clientWidth + 1 && c.getBoundingClientRect().left >= box.left - 0.5 && c.getBoundingClientRect().right <= box.right + 0.5),
+          page: document.documentElement.scrollWidth - innerWidth
+        };
+      });
+    for (const when of ['first draw', 'after a change']) {
+      const m = await measure();
+      assert.ok(m.n >= 3, `${when}: the chips are there`);
+      assert.equal(m.wrap, 'wrap', `${when}: the row wraps`);
+      assert.equal(m.overflowX, 'visible', `${when}: the row is not a scroller`);
+      assert.ok(m.rowScroll <= 1, `${when}: nothing to scroll in the row (${m.rowScroll})`);
+      assert.equal(m.whole, true, `${when}: every chip is whole inside the row`);
+      assert.ok(m.page <= 0, `${when}: the page does not scroll sideways (${m.page})`);
+      await page.locator('[data-ed-goal="dayOff"]').selectOption('3'); // a change redraws the page
+      await page.waitForFunction(() => document.querySelector('[data-ed-goal="dayOff"]')?.value === '3');
+    }
   });
-  assert.notEqual(before, 0, 'the row scrolls at 320');
-  await page.locator('[data-ed-goal="dayOff"]').selectOption('3'); // a change redraws the page
-  await page.waitForFunction(() => document.querySelector('[data-ed-goal="dayOff"]')?.value === '3');
-  const after = await page.evaluate(() => document.querySelector('#edit .goals').scrollLeft);
-  assert.ok(Math.abs(after - before) < 3, `the row stayed where it was (${before} -> ${after})`);
-});
 
 test('saving a proposal updates the board and closes nothing', async (t) => {
   const page = await visit(t, 'desktop', seed());
@@ -248,6 +261,7 @@ test('phone: Escape closes the sheet, the week is reachable only then, and the d
 test('phone: "הראה את היום החדש" closes the sheet over the week and puts focus on the week', async (t) => {
   const page = await visit(t, 'phone', seed());
   await search(page);
+  await page.locator('[data-ed="more"]').click();
   await page.locator('[data-ed="newDay"]').click();
   await page.locator('.edit-tool').waitFor({ state: 'hidden' });
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle', 'focus is on the week, which can be seen');
