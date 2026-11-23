@@ -43,7 +43,10 @@ import {
   toolName,
   freshness,
   freshnessA,
-  RULES_SHORT,
+  staleShortA,
+  altLabelText,
+  LEGAL_LINE,
+  examLineShort,
   turnWarning,
   stalePins,
   partialNote,
@@ -81,7 +84,9 @@ import {
   yearSearch,
   $,
   ui,
-  designOn
+  designOn,
+  altsShown,
+  altsOverlay
 } from './ui-common.js';
 import { MAX_MS, setBusy } from './ui-search.js';
 import { renderSide } from './ui-side.js';
@@ -110,10 +115,12 @@ export function renderTop() {
   if (app.settings.counselingUrl) $('counselLink').href = app.settings.counselingUrl;
   renderReport();
   if (designOn()) {
-    // A: the freshness line alone (a warning when stale); the rules clause is the legal line's, in the shell's strip
-    const fa = freshnessA(boardStatus(), app.data.fetchedAt);
-    $('meta').innerHTML = fa.stale ? `<span class="warn-text">${icon('alert')} ${esc(fa.text)}</span>` : esc(fa.text);
-    if ($('aRules')) $('aRules').textContent = ` · ${approved ? approvedText(approved) : RULES_SHORT}`;
+    // A: the strip says only that the data is old, when it is (icon, words and colour); the whole sentence and the rules are in "פרטים" and in מידע
+    const stale = staleShortA(boardStatus(), app.data.fetchedAt);
+    if ($('aStale')) {
+      $('aStale').hidden = !stale;
+      $('aStale').innerHTML = stale ? ` · <span class="warn-text">${icon('alert')} ${esc(stale)}</span>` : '';
+    }
   } else $('meta').innerHTML = esc(f.text) + (approved ? ` · ${esc(approvedText(approved))}` : '');
 }
 
@@ -122,14 +129,16 @@ function renderBoardNote() {
   const f = freshness(boardStatus(), app.data.fetchedAt),
     approved = approvedOn(app.settings, app.data.program, app.data.startYear),
     warned = passedWarnings(app.data, app.state).length;
-  // A: from 600px the strip says the freshness and the rules (they are on screen with the board); on a phone this line, right above the week, says them
-  // as one line (each part only when it applies), and the longer "check with the advisor" sentence is in "פרטים" and in ☰ "מידע"
-  const fa = designOn() ? freshnessA(boardStatus(), app.data.fetchedAt) : null;
-  const phoneLine = fa && [fa.stale && `<span class="warn-text">${icon('alert')} ${esc(fa.text)}</span>`, !approved && RULES_SHORT].filter(Boolean).join(' · ');
+  // A: from 600px the strip says the data is old; on a phone this line, right above the week, says it (the rest of what qualifies the plan is in "פרטים"
+  // and in ☰ "מידע")
+  const A = designOn(),
+    stale = A ? staleShortA(boardStatus(), app.data.fetchedAt) : '';
   const html = [
-    fa ? phoneLine && `<span class="a-warn-line">${phoneLine}</span>` : f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
+    A
+      ? stale && `<span class="a-warn-line"><span class="warn-text">${icon('alert')} ${esc(stale)}</span></span>`
+      : f.stale && `<span class="warn-text">${icon('alert')} ${esc(f.text)}</span>`,
     !approved && app.data.verified === false && '<span class="warn-text">הנתונים של התוכנית הזו עוד לא נבדקו מול תוכנית הלימודים הרשמית.</span>',
-    !fa && !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
+    !A && !approved && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`,
     warned && `קורסים שסומנו כעברתי בלי דרישת הקדם שלהם: ${warned}. <a href="#me">פרטים ב${toolName('me')}</a>`
   ]
     .filter(Boolean)
@@ -243,12 +252,17 @@ function colorOrder() {
 export const hasAlternatives = () => (ui.last?.results ?? []).some((r) => resCourses(r).length);
 
 // #11: the cap stays hard; on request, what one credit more would change. Beside the left-out line: it wraps on a phone, which the swipe row does not.
-function capLine(best, nameOf) {
+// Design A puts the same content in a line of "פרטים" (capInner is what the <p> holds, so the one markup serves both).
+const capLine = (best, nameOf) => {
+  const inner = capInner(best, nameOf);
+  return inner ? `<p class="notice cap-preview">${inner}</p>` : '';
+};
+function capInner(best, nameOf) {
   const p = ui.capProbe;
   if (app.state.constraints.maxCredits == null || !best || ui.running) return '';
   if (!p?.res) {
     const busy = p ? ' aria-disabled="true"' : '';
-    return `<p class="notice cap-preview">${icon('cap')}<button type="button" class="btn" data-act="capProbe" data-k="capProbe"${busy}>${p ? 'בודקים…' : 'מה אם נקודה אחת יותר?'}</button></p>`;
+    return `${icon('cap')}<button type="button" class="btn" data-act="capProbe" data-k="capProbe"${busy}>${p ? 'בודקים…' : 'מה אם נקודה אחת יותר?'}</button>`;
   }
   const facts = (r) => r && planFacts(r, app.data),
     { changed, text } = capPreviewText({
@@ -259,9 +273,9 @@ function capLine(best, nameOf) {
       year: isPair(best),
       partial: p.res.partial
     });
-  return `<p class="notice cap-preview">${icon('cap')}<span tabindex="-1">${esc(text)}</span>${
+  return `${icon('cap')}<span tabindex="-1">${esc(text)}</span>${
     changed ? `<button type="button" class="btn" data-act="capApply" data-k="capApply">החל תקרה של ${p.cap} נ״ז</button>` : ''
-  }</p>`;
+  }`;
 }
 // Design A: the facts as one plain line (each fact whole: it wraps between facts, never inside one) and, behind a native disclosure, the lines
 // that matter less. The summary says how many lines it holds. Its open state is kept in ui.detailsOpen (this function rewrites the markup on every
@@ -322,7 +336,8 @@ export function renderView() {
   const missing = pair ? raw.missing.map((id) => app.data.courses[id]?.name ?? id) : [];
   const warnings = pair ? raw.warnings : afterANotes(app.cls, ids);
   const afterA = designOn() ? (pair ? raw.afterA ?? [] : afterAGroups(app.cls, ids)) : [], // the groups ב׳ counts on from א׳ (A only)
-    afterAFull = afterA.length ? afterAText(afterA) : null;
+    afterAFull = afterA.length ? afterAText(afterA) : null,
+    shownSem = pair ? ui.sem : app.data.semester; // the semester on the board: the tab of a year plan, else the data file's
   $('semtabs').innerHTML = ctl ? `<div class="board-ctl">${ctl}</div>` : ''; // sticky on phones (index.html)
   const summerNote = summerScope()
     ? (state.yearIds.length
@@ -338,12 +353,13 @@ export function renderView() {
         <button type="button" class="btn" data-act="prefsOk" data-k="prefsOk">הבנתי</button>
         <button type="button" class="btn" data-act="prefsUndo" data-k="prefsUndo">להחזיר את הקודם</button></p>`
       : '') +
-    // A: what ב׳ counts on from א׳ is one short line (the count of prerequisites, "אילו?" opening the full sentence in "פרטים"); the other warnings stay
-    (afterA.length
+    // A: what ב׳ counts on from א׳ is one short line on ב׳ only (it speaks about ב׳): the count of prerequisites, "אילו?" opening the full sentence in
+    // "פרטים", which holds it on both semesters; the other warnings are "פרטים" lines too (phase 1: only what matters now stays on the board)
+    (afterA.length && shownSem === 'ב'
       ? `<p class="notice a-after">${icon('info')}<span>${esc(afterAShort(afterA.length))} <button type="button" class="a-which" data-act="detailsGo"
           data-to="aAfterA" data-k="aWhich">אילו?</button></span></p>`
       : '') +
-    warnings.filter((w) => w !== afterAFull).map((w) => note('info', w)).join('') + // "רק ב׳": from the statuses
+    (designOn() ? '' : warnings.filter((w) => w !== afterAFull).map((w) => note('info', w)).join('')) + // "רק ב׳": from the statuses
     (missing.length ? note('alert', `לא נכנס לאף סמסטר: ${missing.join(', ')}`) : '');
 
   // A: in the alternatives column and in "פרטים"; with no alternatives to hold them (a search that found nothing) here, so the setting stays reachable
@@ -351,17 +367,20 @@ export function renderView() {
 
   // course ids built from a lecture and a tutorial the college does not link
   const split = raw && !none ? raw.split ?? [] : [];
-  $('altLabel').textContent = nAlt
-    ? `חלופה ${ui.cur + 1} מתוך ${nAlt}${split.length ? ' · מופרדת' : ''}`
-    : 'אין חלופות';
+  $('altLabel').textContent = designOn()
+    ? altLabelText({ nAlt, cur: ui.cur, split: split.length > 0, running: ui.running })
+    : nAlt
+      ? `חלופה ${ui.cur + 1} מתוך ${nAlt}${split.length ? ' · מופרדת' : ''}`
+      : 'אין חלופות';
   const stranded = [$('prev'), $('next')].includes(document.activeElement) && nAlt < 2;
   $('prev').disabled = $('next').disabled = nAlt < 2;
   if (stranded) $('switcher').focus();
 
   const pn = ui.last?.partial ? partialNote(ui.last.ms, MAX_MS) : null;
   const more = pn?.more ? '<button type="button" class="btn" data-act="more" data-k="searchMore">חפש עוד</button>' : '';
+  // A: no banner for a search that ran out of time: a small "חפש עוד" beside the switcher (below, once msg is known) and the sentence in "פרטים"
   let msg =
-      pn && !noRes
+      pn && !noRes && !designOn()
         ? `<p class="notice partial" aria-live="polite">${icon('info')}<span>${pn.text}</span>${more}</p>`
         : '',
     live = '';
@@ -444,6 +463,14 @@ export function renderView() {
     const outsideH = (designOn() ? outsideHoursShort : outsideHoursText)((1 - (res.breakdown.timeWindow ?? 1)) * 10);
     // A: several left-out courses are one short line (count and credits), "אילו?" opening their names in "פרטים"
     const leftOutMany = designOn() && leftOut.length > 1;
+    const examSentences = closeExamLines(res.closeExams ?? [], nameOf),
+      examShort = designOn() ? examLineShort(res.closeExams ?? []) : '',
+      capA = designOn() ? capInner(results[0], nameOf) : '',
+      outside = outsideH && !state.constraints.windowHard
+        ? `${icon('clock')}<span>${outsideH} ${
+            designOn() ? '<a href="#prefs">להפוך לחובה</a>' : 'אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.'
+          }</span>`
+        : '';
     msg +=
       (leftOutMany
         ? `<p class="notice a-leftout">${icon('info')}<span>${esc(leftOutShort(leftOut))} <button type="button" class="a-which" data-act="detailsGo"
@@ -451,13 +478,15 @@ export function renderView() {
         : leftOut.length
           ? note('info', leftOutText(leftOut))
           : '') +
-      capLine(results[0], nameOf) +
-      closeExamLines(res.closeExams ?? [], nameOf).map((t) => note('alert', t)).join('') +
-      (outsideH && !state.constraints.windowHard
-        ? `<p class="notice">${icon('clock')}<span>${outsideH} ${
-            designOn() ? '<a href="#prefs">להפוך לחובה</a>' : 'אפשר להפוך את השעות לחובה ב<a href="#prefs">העדפות</a>.'
-          }</span></p>`
-        : '');
+      (designOn()
+        ? // A: one warning line for the clashing exams ("פרטים" opens the sentences); the cap probe and the hours are lines of "פרטים" (below)
+          (examShort
+            ? `<p class="notice warn a-exam">${icon('alert')}<span><span class="warn-text">${esc(examShort)}</span> · <button type="button" class="a-which"
+              data-act="detailsGo" data-to="aExams" data-k="aExamsBtn">פרטים</button></span></p>`
+            : '')
+        : capLine(results[0], nameOf) +
+          examSentences.map((t) => note('alert', t)).join('') +
+          (outside ? `<p class="notice">${outside}</p>` : ''));
     // what this alternative changes against the first one (§14ז)
     const best = ui.cur > 0 ? semResult(results[0], ui.sem) : null;
     const vs = best
@@ -475,8 +504,7 @@ export function renderView() {
         : s.examGap
           ? `לפחות ${count(s.examGap, 'יום אחד', 'ימים')} בין בחינות`
           : 'פער בין בחינות לא ידוע';
-    const examWarnings = closeExamLines(res.closeExams ?? [], nameOf),
-      approvedNow = approvedOn(app.settings, app.data.program, app.data.startYear);
+    const approvedNow = approvedOn(app.settings, app.data.program, app.data.startYear);
     // the disclosure's state is read now: its toggle event may still be queued when this replaces it
     const shownDet = $('pills').querySelector('.a-details');
     if (shownDet) ui.detailsOpen = shownDet.open;
@@ -491,14 +519,22 @@ export function renderView() {
           examFact
         ],
         [
+          // what the lines above the week point at, in the order they appear there (the exam warning, the search, ב׳'s assumption, the left-out courses)
+          examSentences.length && `<span id="aExams" tabindex="-1" data-k="aExams">${examSentences.map(esc).join('<br>')}</span>`,
+          pn && esc(pn.text),
+          afterAFull && `<span id="aAfterA" tabindex="-1" data-k="aAfterA">${esc(afterAFull)}</span>`,
+          leftOutMany && `<span id="aLeftOut" tabindex="-1" data-k="aLeftOut">${esc(leftOutText(leftOut))}</span>`,
           pair && `בכל השנה: ${courseCount(yt.courses)}, ${yt.credits} נ״ז`,
           myRank && regular.length > 1 && rankText(myRank, regular.length),
           infoLine,
           pair && 'אלה החלופות הטובות ביותר שנמצאו, לא בהכרח כל האפשרויות.',
           vs && `לעומת חלופה 1: ${vs}`,
-          afterAFull && `<span id="aAfterA" tabindex="-1" data-k="aAfterA">${esc(afterAFull)}</span>`,
-          leftOutMany && `<span id="aLeftOut" tabindex="-1" data-k="aLeftOut">${esc(leftOutText(leftOut))}</span>`,
+          ...warnings.filter((w) => w !== afterAFull).map(esc), // "רק ב׳" and the like, from the statuses
           ...fr.slice(1).map(esc),
+          capA && `<span class="cap-preview">${capA}</span>`,
+          outside,
+          esc(freshnessA(boardStatus(), app.data.fetchedAt).text), // the full sentence (the strip says only that the data is old), then the legal ones
+          esc(LEGAL_LINE),
           disclaimerHtml(app.settings.counselingUrl),
           !approvedNow && `${RULES_UNAPPROVED} בדקו מול היועץ לפני ההרשמה.`
         ],
@@ -529,8 +565,8 @@ export function renderView() {
       fd,
       gap,
       ...fr,
-      // A: what left the screen's chips (the exam fact) and the exam warnings, so nothing visible is unannounced
-      ...(designOn() ? [examFact, ...examWarnings] : []),
+      // A: what left the screen's chips (the exam fact) and the exam warning line, so nothing visible is unannounced
+      ...(designOn() ? [examFact, examShort] : []),
       split.length && SPLIT_NOTE,
       pn?.text
     ]
@@ -554,6 +590,10 @@ export function renderView() {
       blocks: state.constraints.blocks
     });
   $('daysel').innerHTML = renderDaySelector(range, res, data, ui.mobileDay);
+  // A: the search ran out of time and left alternatives: a small button beside the switcher (the sentence is in "פרטים"); it never outlives the condition
+  document.querySelector('.a-more-link')?.remove();
+  if (designOn() && pn?.more && res && !noRes && !ui.runError)
+    $('switcher').insertAdjacentHTML('afterend', `<button type="button" class="a-more-link" data-act="more" data-k="searchMore" title="${esc(pn.text)}">חפש עוד</button>`);
   if (live && live !== ui.liveText) $('live').textContent = ui.liveText = live;
   renderSide(raw);
   renderDrawer(); // an open panel follows the shown alternative
@@ -629,7 +669,12 @@ export function renderAltColumn() {
   const box = $('alts');
   if (!box) return;
   const results = ui.last?.results ?? [];
+  // the focus of a control this redraw removes goes to the switcher (a visible arrow, else the group itself), never to the page
+  const strand = () => ([$('next'), $('prev')].find((b) => b && !b.disabled && b.checkVisibility?.()) ?? $('switcher'))?.focus({ preventScroll: true });
+  const wasIn = box.contains(document.activeElement),
+    wasK = wasIn ? document.activeElement.dataset?.k : null;
   if (!results.length || results.every((r) => !resCourses(r).length)) {
+    if (wasIn) strand();
     box.hidden = true;
     box.innerHTML = '';
     box.closest('.a-stage')?.classList.remove('has-alts');
@@ -653,9 +698,29 @@ export function renderAltColumn() {
       <span class="rank" aria-hidden="true">${i + 1}</span><span class="ac-b"><b><span class="sr">חלופה ${i + 1}: </span>${esc(head)}</b>
       <small>${esc(sub)}</small>${miniWeekHtml(res, data, span)}</span></button></li>`;
   });
+  const over = altsOverlay(),
+    open = altsShown();
   box.hidden = false;
   box.closest('.a-stage')?.classList.add('has-alts'); // the wide grid's third track (a class: no :has() needed)
-  // a year plan's cards are the year's alternatives; the sort select sits under the title
-  box.innerHTML = `<h2 class="col-t">${results.some(isPair) ? 'חלופות לשנה' : 'חלופות'}</h2><div class="showby a-sort">${sortHtml('sortBy', 'לפי')}</div><ol class="alt-list">${cards.join('')}</ol>`;
+  box.closest('.a-stage')?.classList.toggle('alts-rail', !open || over); // folded: a 64px rail, the default; below 1440px the track stays the rail's
+  box.classList.toggle('alts-over', over && open); // below 1440px the open column is laid over the week
+  if (open)
+    // a year plan's cards are the year's alternatives; the sort select sits under the title (it shows only here)
+    box.innerHTML = `<div class="col-h"><h2 class="col-t">${results.some(isPair) ? 'חלופות לשנה' : 'חלופות'}</h2>
+      <button type="button" class="rail-btn" data-act="altsFold" data-k="alts-fold" aria-expanded="true" aria-controls="alts">${icon('chevron-left')}<span>הקטנה</span></button></div>
+      <div class="showby a-sort">${sortHtml('sortBy', 'לפי')}</div><ol class="alt-list">${cards.join('')}</ol>`;
+  else {
+    const rail = results.map((raw, i) => {
+      const res = semResult(raw, ui.sem),
+        days = new Set(res.groups.flatMap((g) => byId.get(g)?.g.meetings.map((m) => m.day) ?? [])),
+        head = isPair(raw) ? `בשנה: ${yearTotals(raw).credits} נ״ז` : `${summary(res, data, friends, constraints).credits} נ״ז`;
+      const dots = Array.from({ length: span.days }, (_, d) => `<i${days.has(d + 1) ? ' class="on"' : ''}></i>`).join('');
+      return `<li><button type="button" class="rail-n" data-act="altPick" data-i="${i}" data-k="altcard-${i}" aria-current="${i === ui.cur}"
+        aria-label="חלופה ${i + 1}: ${esc(head)} · ${days.size} ימים"><span>${i + 1}</span><span class="rail-d" aria-hidden="true">${dots}</span></button></li>`;
+    });
+    box.innerHTML = `<div class="alt-rail"><button type="button" class="rail-btn" data-act="altsFold" data-k="alts-fold" aria-expanded="false" aria-controls="alts"
+      aria-label="הצגת ${results.length} החלופות">${icon('chevron-right')}<b>${results.length}</b></button><ol class="rail-list">${rail.join('')}</ol></div>`;
+  }
+  if (wasIn && (!wasK || !box.querySelector(`[data-k="${CSS.escape(wasK)}"]`))) strand(); // a control with no key (the sort hint's link) cannot be found again either
 }
 

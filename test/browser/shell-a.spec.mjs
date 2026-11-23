@@ -244,10 +244,10 @@ test('the mode tabs: improve opens #edit with the board out of the way, build br
   assert.equal(await visible(page, '#layout'), true);
 });
 
-test('improve mode fills the header too: the title and the data line are there on a direct #edit visit', async (t) => {
+test('improve mode fills the header too: the title and the old-data warning are there on a direct #edit visit', async (t) => {
   const page = await visit(t, 'phone', DONE, '#edit');
   await page.locator('#edit').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => document.getElementById('meta').textContent.trim().length > 0);
+  await page.waitForFunction(() => document.getElementById('aStale').textContent.trim().length > 0);
   assert.ok((await page.locator('#title').textContent()).includes('המערכת שלי'));
 });
 
@@ -421,4 +421,41 @@ test('legal.html with blocked storage: the way back keeps ?design=a', async (t) 
   await page.locator('.a-legal-top a[data-keep-design]').click();
   await page.locator('.a-shell').waitFor({ timeout: 30000 });
   await page.waitForLoadState('networkidle');
+});
+
+// ---- phase 1 task 3: the dock, one-line tabs on a wide screen, centred on a tablet ----
+const LABELS = ['המצב שלי', 'קורסים', 'מה חשוב לי', 'חברים', 'להוציא'];
+for (const w of [1080, 1280, 1920])
+  test(`${w}px: every tool tab shows its whole label on one line, under its icon, inside its tab`, async (t) => {
+    const page = await visit(t, { width: w, height: 800 }, DONE, '#courses');
+    await page.locator('#panel #courses').waitFor({ state: 'visible' });
+    const tabs = await page.evaluate(() =>
+      [...document.querySelectorAll('.dock .dk:not([hidden])')].map((b) => {
+        const r = b.getBoundingClientRect(), s = b.querySelector('span'), sr = s.getBoundingClientRect(), ir = b.querySelector('svg').getBoundingClientRect();
+        return {
+          text: s.textContent,
+          seen: s.checkVisibility({ visibilityProperty: true, opacityProperty: true }) && sr.width > 0,
+          oneLine: sr.height <= parseFloat(getComputedStyle(s).fontSize) * 1.6,
+          inside: sr.left >= r.left - 1 && sr.right <= r.right + 1 && s.scrollWidth <= s.clientWidth + 1, // the text itself fits, not only its box
+          under: ir.width > 0 && ir.height > 0 && ir.bottom <= sr.top + 1,
+          h: r.height
+        };
+      })
+    );
+    assert.deepEqual(tabs.map((x) => x.text), LABELS);
+    for (const x of tabs) assert.ok(x.seen && x.oneLine && x.inside && x.under && x.h >= 44, JSON.stringify(x));
+    const total = await page.evaluate(() => [document.querySelector('.dock').getBoundingClientRect().height, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a-dock-h'))]);
+    assert.equal(Math.round(total[0]), total[1], `the dock is exactly --a-dock-h tall, so the offsets under it are right: ${total}`);
+  });
+test('768px, a tool open: the sheet sits above the centred dock and does not overlap it', async (t) => {
+  const page = await visit(t, { width: 768, height: 1024 }, DONE, '#courses');
+  await page.locator('#panel #courses').waitFor({ state: 'visible' });
+  const m = await page.evaluate(() => ({ dock: document.querySelector('.dock').getBoundingClientRect(), panel: document.getElementById('panel').getBoundingClientRect() }));
+  assert.ok(m.panel.bottom <= m.dock.top + 1, JSON.stringify(m));
+});
+test('768px: the dock is centred and at most 560px wide', async (t) => {
+  const page = await visit(t, { width: 768, height: 1024 }, DONE);
+  await page.locator('.dock').waitFor({ state: 'visible' });
+  const d = await page.evaluate(() => document.querySelector('.dock').getBoundingClientRect());
+  assert.ok(d.width <= 560 + 1 && Math.abs(d.left - (768 - d.right)) <= 1, JSON.stringify(d));
 });

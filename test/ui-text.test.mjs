@@ -17,7 +17,11 @@ import {
   popStale,
   freshness,
   freshnessA,
+  staleShortA,
+  examLineShort,
+  altLabelText,
   LEGAL_LINE,
+  LEGAL_SHORT,
   RULES_SHORT,
   stalePins,
   creditsGoal,
@@ -153,6 +157,24 @@ test('freshnessA: four states, each says why the data may be stale (design A)', 
   assert.deepEqual(freshnessA(null, '2026-09-28T09:00:00Z', now), { text: 'לא ידוע מתי הנתונים נבדקו. הם השתנו לאחרונה ב-28.9', stale: true });
   assert.equal(freshnessA({ ...ok, checkedAt: '2026-09-29T23:00:00Z' }, ok.checkedAt, now).stale, true, 'over 36h old');
   assert.equal(freshnessA({ ...ok, checkedAt: '2026-09-30T00:00:00Z', ok: false }, ok.checkedAt, now).text.startsWith('הבדיקה האחרונה'), true, 'a failed check wins over an old one');
+});
+
+test('the short exam line: one pair, several, adjacent, none', () => {
+  const p = (days, date) => ({ days, a: { course: 'x', date, time: '13:00' }, b: { course: 'y', date, time: '17:00' } });
+  assert.equal(examLineShort([p(0, '2027-01-28')]), '2 בחינות באותו יום, 28.01.2027');
+  assert.equal(examLineShort([p(0, '2027-01-28'), p(0, '2027-02-03'), p(0, '2027-02-07')]), '3 זוגות בחינות באותו יום');
+  assert.equal(examLineShort([p(0, '2027-01-28'), p(1, '2027-02-03')]), '2 בחינות באותו יום, 28.01.2027 · 2 בחינות בימים צמודים, 03.02.2027 13:00');
+  assert.equal(examLineShort([p(1, '2027-02-03'), p(1, '2027-02-07')]), '2 זוגות בחינות בימים צמודים');
+  assert.equal(examLineShort([]), '');
+});
+
+test('the short stale line of the strip: nothing when fresh, else the shortest true words', () => {
+  const now = new Date('2026-11-22T12:00:00Z');
+  assert.equal(staleShortA({ checkedAt: '2026-11-22T06:00:00Z', ok: true }, '2026-10-21', now), '');
+  assert.match(staleShortA({ checkedAt: '2026-10-21T06:00:00Z', ok: true }, '2026-10-21', now), /^נבדק לפני \d+ ימים$/);
+  assert.equal(staleShortA({ checkedAt: '2026-11-22T06:00:00Z', ok: false }, '2026-10-21', now), 'הבדיקה האחרונה נכשלה');
+  assert.equal(staleShortA(null, '2026-10-21', now), 'לא ידוע מתי נבדק');
+  assert.equal(LEGAL_SHORT, 'לא רשמי · אינו הרשמה ואינו המלצה');
 });
 
 test('the legal line of design A says what it must, in the owner-approved words (D2)', () => {
@@ -585,4 +607,11 @@ test('sharedFreshAt compares the instants, not their labels: the hour the clocks
   const [last, prev] = [p('2026-10-25T05:08:00Z'), p('2025-10-25T05:08:00Z')];
   assert.equal(sharedFreshAt([last, prev]), '', 'a year apart');
   assert.equal(sharedFreshAt([p('2026-10-25T05:08:00Z'), p('2026-10-25T05:08:30Z')]), '25.10, 07:08', 'the same minute is one time');
+});
+
+test('the switcher label: computing, an alternative, or none', () => {
+  assert.equal(altLabelText({ nAlt: 0, cur: 0, split: false, running: true }), 'מחשב חלופות…');
+  assert.equal(altLabelText({ nAlt: 10, cur: 2, split: false, running: true }), 'חלופה 3 מתוך 10');
+  assert.equal(altLabelText({ nAlt: 10, cur: 0, split: true, running: false }), 'חלופה 1 מתוך 10 · מופרדת');
+  assert.equal(altLabelText({ nAlt: 0, cur: 0, split: false, running: false }), 'אין חלופות');
 });

@@ -7,6 +7,21 @@
   --design:a; /* a sentinel the final proof (Task 13) reads */
   --a-dock:64px; /* the phone dock, and what the sheet and the page leave room for */
   --a-top:60px; /* the wide top bar, where the dock and the panel stick */
+  /* from 1080px the bar and the strip stay on screen: where the dock, the tool and the column stick (--a-strip-h is measured, ui-shell.js) */
+  --a-head:calc(var(--a-top) + var(--a-strip-h, 31px));
+  --a-dock-h:52px; /* the wide dock's own height (from 1080px): --tap is 36px with a mouse, and the tabs are a column */
+  /* the system design (docs/superpowers/specs/2026-11-22-design-a-system-design.md): one spacing scale, one type scale, the frame widths */
+  --sp-1:4px;
+  --sp-2:8px;
+  --sp-3:12px;
+  --sp-4:16px;
+  --sp-5:24px;
+  --sp-6:32px;
+  --sp-7:48px;
+  --fs-key:21px; /* the one key element of a screen */
+  --fs-title:18px;
+  --frame:1680px; /* build mode: the content never gets wider than this, centred */
+  --frame-edit:1200px; /* improve mode */
 }
 :root[data-design="a"]:not([data-theme="dark"]) {
   --bg:#E9EDF1;
@@ -150,7 +165,6 @@
 :root[data-design="a"] .modes a[aria-current="page"] { background:var(--surface); color:var(--text); box-shadow:var(--shadow-sm); }
 :root[data-design="a"] .modes a .icon { width:18px; height:18px; flex:none; }
 :root[data-design="a"] .a-strip { display:flex; flex-direction:column; gap:2px; padding:4px 12px; font-size:var(--fs-sm); color:var(--text-2); }
-:root[data-design="a"] .a-strip .meta { margin:0; font-size:var(--fs-xs); }
 /* the one legal line (declutter step 2): one flowing sentence, its "פרטים" an inline button whose 44px box is pulled back into the line */
 :root[data-design="a"] .a-unofficial { margin:0; color:var(--text-2); }
 :root[data-design="a"] .a-unofficial .icon { width:14px; height:14px; margin-inline-end:6px; vertical-align:-2px; }
@@ -160,8 +174,8 @@
 }
 :root[data-design="a"] .a-warn-p { display:none; } /* the phone's line of warnings, shown below 600px */
 @media (max-width:599px) {
-  /* a phone's strip keeps the legal line: the board says the rest (the improve page has no board note, and the gate covers the board: the strip says all) */
-  :root[data-design="a"] body:not([data-view="edit"], .gated) :is(.a-rules, .a-strip .meta) { display:none; }
+  /* a phone's strip keeps the legal line: the board says the old data (the improve page has no board note, and the gate covers the board: the strip says it) */
+  :root[data-design="a"] body:not([data-view="edit"], .gated) #aStale { display:none; }
   :root[data-design="a"] .a-warn-p { display:block; }
 }
 :root[data-design="a"] .a-strip .notice-top:empty { display:none; }
@@ -240,7 +254,9 @@
   align-items:center;
 }
 :root[data-design="a"] .a-ph [hidden] { display:none; }
-:root[data-design="a"] .a-pb { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 16px 24px; }
+/* position:relative: the tool's visually hidden inputs and .sr text are position:absolute; without a positioned scroller their containing block is the
+   panel (sticky from 1080px), so they escape the scroll and stretch the page far below the board (owner-12) */
+:root[data-design="a"] .a-pb { position:relative; flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 16px 24px; }
 :root[data-design="a"] .a-pb .step-page { max-width:none; margin:0; padding:0; scroll-margin-top:0; }
 :root[data-design="a"] .a-pb .me-grid, :root[data-design="a"] .a-pb .halves, :root[data-design="a"] .a-pb .me-entry-cards {
   display:grid;
@@ -348,11 +364,22 @@
   width:max-content; min-height:44px; margin-inline-start:auto; padding:0 8px; color:var(--primary); font-weight:600;
 }
 :root[data-design="a"] .a-det-body {
-  display:grid; gap:6px; margin-bottom:8px; padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface);
+  display:grid; grid-template-columns:minmax(0, 1fr); gap:6px; margin-bottom:8px; padding:8px 12px; border:1px solid var(--border); border-radius:10px;
+  background:var(--surface);
   font-size:var(--fs-sm); color:var(--text-2); overflow-wrap:anywhere;
 }
 :root[data-design="a"] .a-det-body p { margin:0; }
 :root[data-design="a"] .a-det-body a { color:inherit; text-decoration:underline; }
+/* the cap probe moved in here (phase 1, the block above the week): its sentence and buttons wrap as a row */
+:root[data-design="a"] .a-det-body .cap-preview { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; }
+:root[data-design="a"] .a-det-body .cap-preview > span { flex:1 1 12rem; min-width:0; }
+/* the search ran out of time and left alternatives: a text button beside the switcher; the exam clash is one warning line (its "פרטים" is .a-which) */
+:root[data-design="a"] .a-more-link {
+  min-height:44px; padding:0 8px; border:0; background:none; color:var(--primary); font:inherit; font-size:var(--fs-sm); font-weight:600;
+  text-decoration:underline; cursor:pointer;
+}
+:root[data-design="a"] .a-exam { font-size:var(--fs-sm); }
+:root[data-design="a"] .a-exam .warn-text { font-weight:600; }
 @media (min-width:600px) {
   :root[data-design="a"] .a-facts { padding-inline-end:7.5rem; }
   :root[data-design="a"] .a-details > summary { margin-top:-44px; }
@@ -379,23 +406,25 @@
   :root[data-design="a"] .a-board { grid-column:2; grid-row:1 / 3; }
   :root[data-design="a"] .a-stage.has-alts { grid-template-columns:400px minmax(0, 1fr) 280px; }
   :root[data-design="a"] .a-alts:not([hidden]) {
-    display:block; grid-column:3; grid-row:1 / 3; position:sticky; top:var(--a-top); max-height:calc(100dvh - var(--a-top));
+    display:block; grid-column:3; grid-row:1 / 3; position:sticky; top:var(--a-head); max-height:calc(100dvh - var(--a-head));
     overflow:auto; padding:12px; background:var(--surface); border-inline-start:1px solid var(--border);
   }
   :root[data-design="a"] body[data-view="edit"] .a-alts, :root[data-design="a"] body.gated .a-alts {
     display:none;
   } /* build alternatives belong to the board, not the edit page or the gate */
   :root[data-design="a"] .dock {
-    position:sticky; top:var(--a-top); inset-inline:auto; bottom:auto; z-index:6; grid-column:1; grid-row:1;
-    padding:0; border-top:0; border-bottom:1px solid var(--border); border-inline-end:1px solid var(--border);
+    position:sticky; top:var(--a-head); inset-inline:auto; bottom:auto; z-index:6; grid-column:1; grid-row:1;
+    padding:0; border-top:0; border-bottom:0; box-shadow:inset 0 -1px 0 var(--border); /* the line is a shadow: the dock is exactly --a-dock-h */
+    border-inline-end:1px solid var(--border);
   }
-  :root[data-design="a"] .dk { flex-direction:row; gap:6px; min-height:var(--tap); font-size:12px; }
+  :root[data-design="a"] .dk { flex-direction:column; gap:2px; min-height:var(--a-dock-h); font-size:var(--fs-xs); }
+  :root[data-design="a"] .dk span { white-space:nowrap; }
   :root[data-design="a"] .dk .icon { width:18px; height:18px; }
   :root[data-design="a"] .dk[aria-pressed="true"]::before { top:auto; bottom:0; border-radius:3px 3px 0 0; }
   :root[data-design="a"] .a-scrim { display:none !important; }
   :root[data-design="a"] .a-panel {
-    position:sticky; top:calc(var(--a-top) + var(--tap)); inset-inline:auto; bottom:auto; z-index:5; grid-column:1; grid-row:2;
-    height:calc(100dvh - var(--a-top) - var(--tap));
+    position:sticky; top:calc(var(--a-head) + var(--a-dock-h)); inset-inline:auto; bottom:auto; z-index:5; grid-column:1; grid-row:2;
+    height:calc(100dvh - var(--a-head) - var(--a-dock-h));
     border-radius:0; box-shadow:none; border-inline-end:1px solid var(--border);
   }
   :root[data-design="a"] .a-grip, :root[data-design="a"] .a-ph { display:none; }
@@ -413,7 +442,8 @@
   /* improve mode, wide: the tool is a sticky column (its own scroller), the week is the board beside it */
   :root[data-design="a"] .edit-stage { display:grid; grid-template-columns:minmax(340px, 440px) minmax(0, 1fr); gap:0 24px; align-items:start; }
   :root[data-design="a"] .edit-tool {
-    grid-column:1; position:sticky; top:calc(var(--a-top) + var(--tap) + 8px); max-height:calc(100dvh - var(--a-top) - var(--tap) - 16px);
+    grid-column:1; position:sticky; top:calc(var(--a-head) + var(--a-dock-h) + 8px);
+    max-height:calc(100dvh - var(--a-head) - var(--a-dock-h) - 16px);
     overflow:auto; overscroll-behavior:contain;
   }
   :root[data-design="a"] .edit-board { grid-column:2; min-width:0; }
@@ -422,13 +452,62 @@
   :root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; }
   :root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; white-space:nowrap; }
   :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
-    position:fixed; top:calc(var(--a-top) + var(--tap)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
+    position:fixed; top:calc(var(--a-head) + var(--a-dock-h)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
     border-radius:0; border-inline-end:1px solid var(--border);
   }
 }
+/* a tablet (600 to 1079px): the dock at the bottom is centred and at most 560px wide, not stretched across the page */
+@media (min-width:600px) and (max-width:1079px) {
+  :root[data-design="a"] .dock { inset-inline:max(0px, calc((100% - 560px) / 2)); }
+}
+/* the frame (system design §1): from 1080px the content never gets wider than --frame (build) or --frame-edit (improve) and is centred; the header and
+   the strip keep a full-width background and pad their content to the frame, the stage pads itself. Below the cap nothing moves. */
+@media (min-width:1080px) {
+  :root[data-design="a"] .a-top { padding-inline:max(16px, calc((100% - var(--frame)) / 2)); }
+  :root[data-design="a"] .a-strip { padding-inline:max(12px, calc((100% - var(--frame)) / 2)); }
+  :root[data-design="a"] .a-stage { padding-inline:max(0px, calc((100% - var(--frame)) / 2)); }
+  /* the strip stays under the bar, so the sticky tool column is exactly the window's height below them and the page never scrolls past the board */
+  :root[data-design="a"] .a-strip { position:sticky; top:var(--a-top); z-index:24; background:var(--bg); }
+  /* the week's day headers stick under them too (style.css: --bar-h, 48px, was meant for the classic bar), and under the improve page's dock */
+  :root[data-design="a"] .wk-head > * { top:var(--a-head); }
+  :root[data-design="a"] body[data-view="edit"] .wk-head > * { top:calc(var(--a-head) + var(--a-dock-h)); }
+  :root[data-design="a"] body[data-view="edit"] .a-top { padding-inline:max(16px, calc((100% - var(--frame-edit)) / 2)); }
+  :root[data-design="a"] body[data-view="edit"] .a-strip { padding-inline:max(12px, calc((100% - var(--frame-edit)) / 2)); }
+  :root[data-design="a"] body[data-view="edit"] .a-stage { padding-inline:max(0px, calc((100% - var(--frame-edit)) / 2)); }
+  /* the record over the improve page sits at the frame's edge and covers the tool column only, never the week */
+  :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
+    inset-inline-start:max(0px, calc((100% - var(--frame-edit)) / 2));
+  }
+  :root[data-design="a"] :is(.a-alts, .a-pb, .edit-tool) { scrollbar-width:thin; }
+  :root[data-design="a"] .ac-b b { font-size:var(--fs); font-weight:600; }
+  :root[data-design="a"] .ac-b small { font-size:var(--fs-sm); }
+  /* the alternatives column folds to a 64px rail (system design, owner-7); the switcher's arrows stay the main way between alternatives */
+  :root[data-design="a"] .a-stage.has-alts.alts-rail { grid-template-columns:400px minmax(0, 1fr) 64px; }
+  :root[data-design="a"] .alts-rail .a-alts:not([hidden]) { padding:8px; }
+}
+:root[data-design="a"] .col-h { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-2); margin-bottom:var(--sp-2); }
+:root[data-design="a"] .col-h .col-t { margin:0; }
+:root[data-design="a"] .alt-rail { display:flex; flex-direction:column; align-items:center; gap:var(--sp-2); }
+:root[data-design="a"] .rail-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:48px; min-height:56px; padding:0; border:0;
+  border-radius:12px; background:var(--surface-2); color:var(--text); font:inherit; font-size:var(--fs-xs); cursor:pointer;
+}
+:root[data-design="a"] .rail-btn b { font-size:var(--fs); font-weight:700; }
+:root[data-design="a"] .rail-btn .icon { width:18px; height:18px; }
+:root[data-design="a"] .col-h .rail-btn { flex-direction:row; width:auto; min-height:44px; padding:0 var(--sp-3); }
+:root[data-design="a"] .rail-list { display:grid; gap:6px; margin:0; padding:0; list-style:none; }
+:root[data-design="a"] .rail-n {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; width:48px; height:48px; padding:0; border:1px solid var(--border);
+  border-radius:12px; background:var(--surface); color:var(--text); font:inherit; font-size:var(--fs); font-weight:700; cursor:pointer;
+}
+:root[data-design="a"] .rail-d { display:flex; gap:2px; }
+:root[data-design="a"] .rail-d i { width:4px; height:4px; background:currentColor; opacity:.25; }
+:root[data-design="a"] .rail-d i.on { opacity:1; }
+:root[data-design="a"] .rail-n[aria-current="true"] { border-color:var(--primary); background:var(--primary); color:var(--on-primary); }
 @media (min-width:1080px) and (max-width:1279px) {
   :root[data-design="a"] .a-stage { grid-template-columns:360px minmax(0, 1fr); }
   :root[data-design="a"] .a-stage.has-alts { grid-template-columns:360px minmax(0, 1fr) 240px; }
+  :root[data-design="a"] .a-stage.has-alts.alts-rail { grid-template-columns:360px minmax(0, 1fr) 64px; }
 }
 @media (max-width:359px) { :root[data-design="a"] .dk { font-size:10px; } :root[data-design="a"] .a-top { padding-inline:8px; } }
 /* a landscape phone is 375px tall: the dock becomes a rail on the inline-start edge and the tool a full-height panel beside it */
@@ -460,4 +539,15 @@
     width:min(420px, calc(100% - 76px));
   }
   :root[data-design="a"] body[data-view="edit"] { padding-inline-start:76px; }
+}
+/* below 1440px the open alternatives column is laid over the week, not beside it (at 1280 it left the week 585px and cut the lesson names): the stage keeps the
+   rail's 64px track, the column is fixed at the end edge under the bar and the strip; Escape and a tap outside close it (ui-plan.js a-alts-close) */
+@media (min-width:1080px) and (max-width:1439px) {
+  :root[data-design="a"] .a-alts.alts-over:not([hidden]) {
+    position:fixed; top:var(--a-head); bottom:0; max-height:none; inset-inline-end:0; width:280px; z-index:12; padding:12px;
+    box-shadow:var(--shadow-sheet); border:1px solid var(--border);
+  }
+}
+@media (min-width:1080px) and (max-width:1279px) {
+  :root[data-design="a"] .a-alts.alts-over:not([hidden]) { width:240px; }
 }

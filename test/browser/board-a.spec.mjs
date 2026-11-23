@@ -13,11 +13,12 @@ after(async () => {
 });
 
 const visit = (t, size, seed, hash = '') => visitIn(browser, t, size, seed, hash, 'light', false, false, { design: 'a' });
+const OPEN = { 'afeka-sched-v1-alts': 'open' }; // the alternatives column starts folded to a rail: the tests that read its cards ask for it open
 const weekReady = (page) => page.locator('#week .blk').first().waitFor({ timeout: 30000 });
 const label = (page) => page.locator('#altLabel').textContent();
 
 test('desktop: the column lists every alternative, marks the shown one, and a card shows that alternative', async (t) => {
-  const page = await visit(t, 'desktop', DONE);
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN });
   await weekReady(page);
   const cards = page.locator('#alts .alt-card');
   await cards.first().waitFor();
@@ -37,7 +38,7 @@ test('desktop: the column lists every alternative, marks the shown one, and a ca
 });
 
 test('a miniature week is not interactive: no id, key or action, hidden from assistive technology, and a tap on it does nothing else', async (t) => {
-  const page = await visit(t, 'desktop', DONE);
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN });
   await weekReady(page);
   await page.locator('#alts .alt-card .mini').first().waitFor();
   const bad = await page.evaluate(() =>
@@ -54,7 +55,7 @@ test('a miniature week is not interactive: no id, key or action, hidden from ass
 });
 
 test('desktop: a year plan puts the year totals on the cards, and a semester switch redraws them without an error', async (t) => {
-  const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope: 'year' }) });
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN, 'afeka-sched-v1': JSON.stringify({ ...STUDENT, scope: 'year' }) });
   await weekReady(page);
   await page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') === 'false', null, { timeout: 30000 });
   const cards = page.locator('#alts .alt-card');
@@ -166,7 +167,7 @@ test('phone: two fingers, a tool opened mid-gesture, an open details popover and
 });
 
 test('desktop: the alternatives column is gone over the edit page, and comes back with the board', async (t) => {
-  const page = await visit(t, 'desktop', DONE);
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN });
   await weekReady(page);
   await page.locator('#alts .alt-card').first().waitFor();
   assert.equal(await page.locator('#alts').isVisible(), true);
@@ -177,16 +178,288 @@ test('desktop: the alternatives column is gone over the edit page, and comes bac
   await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
 });
 
-test('desktop: the column sticks below the top bar, never under it', async (t) => {
-  const page = await visit(t, { width: 1280, height: 600 }, DONE);
+test('desktop: the column sticks below the top bar and the strip, never under them', async (t) => {
+  const page = await visit(t, { width: 1440, height: 600 }, { ...DONE, ...OPEN });
   await weekReady(page);
   await page.locator('#alts .alt-card').first().waitFor();
   const m = await page.evaluate(async () => {
     window.scrollTo(0, 400);
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    const bar = document.querySelector('.a-top').getBoundingClientRect(), alts = document.getElementById('alts').getBoundingClientRect();
+    const bar = document.querySelector('.a-strip').getBoundingClientRect(), alts = document.getElementById('alts').getBoundingClientRect();
     return { scrolled: scrollY, barBottom: bar.bottom, altsTop: alts.top };
   });
   assert.ok(m.scrolled > 100, 'the page scrolls');
-  assert.ok(m.altsTop >= m.barBottom - 0.5, `the column starts at ${m.altsTop}, the top bar ends at ${m.barBottom}`);
+  assert.ok(m.altsTop >= m.barBottom - 0.5, `the column starts at ${m.altsTop}, the top bar and the strip end at ${m.barBottom}`);
+});
+
+// ---- phase 1 task 4: the switcher says it is computing ----
+// holds the first request for the solver worker until released (edit-a.spec.mjs does the same for the edit worker)
+const holdWorker = (page, pattern) => {
+  let release, reached, first = true;
+  const gate = new Promise((r) => (release = r)), arrived = new Promise((r) => (reached = r));
+  page.route(pattern, async (route) => {
+    if (first) {
+      first = false;
+      reached();
+      await gate;
+    }
+    await route.continue();
+  });
+  return { release, reached: arrived };
+};
+test('while the first search runs the switcher says it is computing, then shows the first alternative', async (t) => {
+  const page = await visit(t, { width: 1280, height: 800 }, DONE);
+  await weekReady(page); // the first load settles, then the held run is a new page
+  const held = holdWorker(page, '**/solver-worker.js');
+  await page.reload(); // the route survives the reload, so the first search of the new page waits at the gate
+  await held.reached;
+  assert.equal(await page.locator('#altLabel').textContent(), 'מחשב חלופות…');
+  held.release();
+  await page.waitForFunction(() => /^חלופה 1 מתוך/.test(document.getElementById('altLabel').textContent));
+});
+
+test('behind the gate no search runs: the switcher does not stay on "מחשב חלופות…"', async (t) => {
+  const page = await visit(t, { width: 1280, height: 800 }, { 'afeka-sched-v1-terms': '2' }); // a first visit: the terms gate is up, nothing is searched
+  await page.locator('.gate').first().waitFor({ timeout: 30000 });
+  await page.waitForTimeout(500);
+  assert.notEqual(await page.locator('#altLabel').textContent(), 'מחשב חלופות…');
+});
+
+// ---- phase 1 task 5: the alternatives column folds to a rail, remembered ----
+test('1440px: the alternatives start as a 64px rail, open on one tap, and the choice is remembered', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, DONE);
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+  const total = Number(/מתוך (\d+)/.exec(await page.locator('#altLabel').textContent())[1]);
+  assert.ok(total >= 3, 'the test data gives at least three alternatives');
+  assert.equal(await page.locator('#alts .rail-n').count(), total, 'one rail button per alternative');
+  assert.equal(Math.round((await page.locator('#alts').boundingBox()).width), 64);
+  assert.equal((await page.locator('#alts .rail-n[aria-current="true"]').textContent()).trim().replace(/\D+$/, '').slice(0, 1), '1');
+  const fold = page.locator('#alts [data-k="alts-fold"]');
+  assert.equal(await fold.getAttribute('aria-expanded'), 'false');
+  await page.locator('#alts .rail-n').nth(2).click();
+  await page.waitForFunction(() => /^חלופה 3 מתוך/.test(document.getElementById('altLabel').textContent));
+  assert.equal(await page.locator('#alts .rail-n[aria-current="true"]').count(), 1);
+  assert.equal(await page.locator('#alts .rail-n').nth(2).getAttribute('aria-current'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'altcard-2', 'focus stays on the picked rail button');
+  await fold.click();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  assert.equal(Math.round((await page.locator('#alts').boundingBox()).width), 280);
+  assert.equal(await fold.getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'alts-fold', 'focus stays on the fold button');
+  await page.reload();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' }); // remembered open
+  await page.locator('#alts [data-k="alts-fold"]').press('Enter');
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' }); // folds again by keyboard
+});
+test('375px: no alternatives column, the switcher stays', async (t) => {
+  const page = await visit(t, { width: 375, height: 812 }, DONE);
+  await page.locator('#altLabel').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#alts').isVisible(), false);
+});
+test('1440px: a page whose storage refuses writes still folds and opens (reads and the object itself: test/alts-state.test.mjs)', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, DONE);
+  await weekReady(page);
+  await page.waitForLoadState('networkidle'); // a reload while the first fetches run would abort them
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new Error('blocked');
+    };
+  });
+  await page.reload();
+  await page.locator('#alts [data-k="alts-fold"]').click();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+});
+test('1440px: a new search that leaves fewer alternatives moves the focus to the switcher, not to the page', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, 'afeka-sched-v1-alts': 'open' });
+  const cards = page.locator('#alts .alt-card');
+  await cards.first().waitFor({ state: 'visible' });
+  const total = await cards.count();
+  assert.ok(total >= 3);
+  await cards.nth(total - 1).focus();
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), `altcard-${total - 1}`);
+  // the search leaves one alternative: the arrows are disabled, so the focus goes to the switcher group itself
+  await page.evaluate(async () => {
+    const { ui } = await import('./ui-common.js');
+    const { renderView } = await import('./ui-view.js');
+    const { keepFocus } = await import('./app.js');
+    ui.last = { ...ui.last, results: ui.last.results.slice(0, 1) };
+    ui.cur = 0;
+    keepFocus(renderView);
+  });
+  const where = await page.evaluate(() => ({ id: document.activeElement?.id, inSwitcher: !!document.activeElement?.closest('#switcher') }));
+  assert.ok(where.inSwitcher || where.id === 'switcher', `the focus is on the switcher: ${JSON.stringify(where)}`);
+});
+test('1440px: a focused rail button that a resize below 1080px hides hands the focus to the switcher', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, DONE);
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+  await page.locator('#alts .rail-n').nth(1).focus();
+  await page.setViewportSize({ width: 900, height: 900 });
+  await page.waitForFunction(() => !!document.activeElement?.closest('#switcher') || document.activeElement?.id === 'switcher');
+});
+
+// ---- phase 1 Task 6: the block above the week. A clash is one warning line, a search that ran out of time is a small button beside the switcher, and
+// the cap probe and the hours outside the wished ones are lines of "פרטים" (docs/superpowers/plans/2026-11-22-design-a-system.md) ----
+const idleBoard = (page) => page.waitForFunction(() => document.getElementById('board')?.getAttribute('aria-busy') === 'false', null, { timeout: 30000 });
+// a plan with a clash, a cut search, a credit cap and hours outside the wished ones, set on the shown result and drawn again
+const withTroubles = async (page, { ms = 3000, partial = true } = {}) => {
+  await page.waitForFunction(() => /^חלופה 1 מתוך/.test(document.getElementById('altLabel')?.textContent), null, { timeout: 30000 });
+  await idleBoard(page);
+  await page.evaluate(
+    async ({ ms: limit, partial: cut }) => {
+      const { ui, current } = await import('./ui-common.js');
+      const { app } = await import('./app.js');
+      const { renderView } = await import('./ui-view.js');
+      const raw = current(),
+        res = raw.a ? raw[ui.sem === 'א' ? 'a' : 'b'] : raw, // the semester's own result: shown() hands out a copy
+        [a, b] = res.courses;
+      res.closeExams = [{ days: 0, a: { course: a, date: '2027-01-28', time: '13:00' }, b: { course: b, date: '2027-01-28', time: '17:00' } }];
+      res.breakdown.timeWindow = 0.5;
+      app.state.constraints.maxCredits = 99;
+      ui.last.partial = cut;
+      ui.last.ms = limit;
+      renderView();
+    },
+    { ms, partial }
+  );
+};
+
+test('1280: a clash is one warning line with "פרטים", which opens the full sentences first in the board\'s "פרטים"', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page);
+  const line = page.locator('#week .a-exam');
+  assert.equal(await line.count(), 1, 'one line');
+  assert.match(await line.innerText().then((s) => s.replace(/\s+/g, ' ').trim()), /^2 בחינות באותו יום, \d\d\.\d\d\.\d{4} · פרטים$/);
+  assert.equal(await line.locator('svg').count(), 1, 'the alert icon');
+  assert.equal(await page.locator('#week .notice', { hasText: 'משך הבחינות לא ידוע' }).count(), 0, 'the sentence is not above the week');
+  assert.equal(await page.locator('#pills .a-details').evaluate((d) => d.open), false);
+  assert.match(await page.locator('#live').textContent(), /2 בחינות באותו יום, \d\d\.\d\d\.\d{4}/, 'announced, short');
+  await line.locator('.a-which').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#pills .a-details').evaluate((d) => d.open), true);
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'aExams', 'the focus follows the answer');
+  assert.match(await page.locator('#aExams').innerText(), /משך הבחינות לא ידוע/);
+  assert.equal(await page.evaluate(() => document.querySelector('#pills .a-det-body p')?.contains(document.getElementById('aExams'))), true, 'first in the list');
+});
+
+test('1280: a search that ran out of time has no banner: a small "חפש עוד" beside the switcher, its sentence in "פרטים"', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page);
+  assert.equal(await page.locator('.notice.partial').count(), 0, 'no banner');
+  const more = page.locator('[data-k="searchMore"]');
+  assert.equal(await more.count(), 1);
+  assert.ok(await more.isVisible());
+  assert.equal(await more.evaluate((b) => b.classList.contains('a-more-link') && b.previousElementSibling?.id === 'switcher'), true, 'right after the switcher');
+  assert.ok((await more.boundingBox()).height >= 43.5, 'a 44px target');
+  assert.ok((await page.locator('#pills .a-det-body').textContent()).includes('החיפוש לא הספיק לבדוק את כל האפשרויות'), 'the sentence is in "פרטים"');
+  assert.match(await page.locator('#live').textContent(), /החיפוש לא הספיק/, 'announced');
+  await more.focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(async () => (await import('./ui-common.js')).ui.moreMul), 2, 'the same action as the banner\'s button');
+  await page.waitForFunction(() => !document.querySelector('[data-k="searchMore"]'), null, { timeout: 60000 }); // the real search was not cut: the button goes
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'week', 'and the focus goes to the week, not to the page');
+});
+
+test('1280: at the time cap there is no button, only the sentence in "פרטים"', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page, { ms: 12000 });
+  assert.equal(await page.locator('[data-k="searchMore"]').count(), 0);
+  assert.ok((await page.locator('#pills .a-det-body').textContent()).includes('גם אחרי 12 שניות'), 'the sentence says so');
+});
+
+test('the button is gone again when the search was not cut', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page);
+  assert.equal(await page.locator('.a-more-link').count(), 1);
+  await withTroubles(page, { partial: false });
+  assert.equal(await page.locator('.a-more-link').count(), 0, 'removed with the condition, not left behind');
+});
+
+test('1280: the cap probe and the hours outside the wished ones are lines of "פרטים", with their buttons, not above the week', async (t) => {
+  const page = await visit(t, 'desktop', DONE);
+  await weekReady(page);
+  await withTroubles(page);
+  assert.equal(await page.locator('#week .cap-preview, #week .notice:has(a[href="#prefs"])').count(), 0, 'nothing above the week');
+  await page.locator('#pills .a-details > summary').click();
+  const cap = page.locator('#pills .a-det-body .cap-preview');
+  assert.equal(await cap.count(), 1);
+  assert.ok(await cap.locator('[data-act="capProbe"]').isVisible());
+  const hours = page.locator('#pills .a-det-body p', { hasText: 'מחוץ לשעות שביקשת' });
+  assert.match((await hours.innerText()).replace(/\s+/g, ' ').trim(), /^כ-5 שעות מחוץ לשעות שביקשת\. להפוך לחובה$/);
+  assert.equal(await hours.locator('a').getAttribute('href'), '#prefs');
+});
+
+for (const [name, size] of [['375', 'phone'], ['320', { width: 320, height: 640 }]]) {
+  test(`${name}: the clash line and "חפש עוד" fit, with 44px targets, and the page does not scroll sideways`, async (t) => {
+    const page = await visit(t, size, DONE);
+    await weekReady(page);
+    await withTroubles(page);
+    for (const sel of ['#week .a-exam .a-which', '.a-more-link']) {
+      const box = await page.locator(sel).boundingBox();
+      assert.ok(box.height >= 43.5 && box.width >= 43.5, `${sel}: ${box.width}x${box.height}`);
+    }
+    assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0);
+    const right = await page.evaluate(() => [...document.querySelectorAll('#week .a-exam, .a-bar')].every((e) => e.getBoundingClientRect().right <= innerWidth + 0.5));
+    assert.ok(right, 'inside the screen');
+  });
+}
+
+// below 1440px the open alternatives column is laid over the week (at 1280 it left the week 585px and cut the lesson names): the remembered "open" applies from
+// 1440px; below it the column starts as the rail, opens as an overlay for the visit, and Escape or a tap outside closes it, focus back on the rail's button
+const weekWidth = (page) => page.locator('#week').evaluate((e) => Math.round(e.getBoundingClientRect().width));
+for (const w of [1280, 1100])
+  test(`${w}px: the open column is laid over the week, not beside it; the remembered "open" does not open it at load`, async (t) => {
+    const page = await visit(t, { width: w, height: 900 }, { ...DONE, ...OPEN });
+    await weekReady(page);
+    await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#alts .alt-card').count(), 0, 'a rail at load, whatever was remembered');
+    const wide = await weekWidth(page);
+    await page.locator('#alts [data-k="alts-fold"]').click();
+    await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+    const m = await page.evaluate(() => {
+      const a = document.getElementById('alts'), r = a.getBoundingClientRect(), wk = document.getElementById('week').getBoundingClientRect();
+      return { pos: getComputedStyle(a).position, over: a.classList.contains('alts-over'), alt: { l: r.left, r: r.right, w: r.width }, wk: { l: wk.left, r: wk.right, w: wk.width }, stored: localStorage.getItem('afeka-sched-v1-alts') };
+    });
+    assert.equal(m.pos, 'fixed');
+    assert.equal(m.over, true);
+    assert.equal(Math.round(m.wk.w), wide, 'the week keeps its width');
+    assert.ok(m.alt.l < m.wk.r && m.alt.r > m.wk.l, `the column is over the week: ${JSON.stringify(m)}`);
+    assert.equal(m.stored, 'open', 'not remembered: opening it here changed nothing in storage');
+  });
+
+test('1280: Escape closes the overlay and returns focus to the rail\'s button; a tap outside closes it too', async (t) => {
+  const page = await visit(t, { width: 1280, height: 900 }, DONE);
+  await weekReady(page);
+  const open = async () => {
+    await page.locator('#alts [data-k="alts-fold"]').click();
+    await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  };
+  await open();
+  await page.locator('#alts .alt-card').first().focus();
+  await page.keyboard.press('Escape');
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'alts-fold', 'focus is on the rail\'s button');
+  assert.equal(await page.evaluate(() => document.getElementById('alts').classList.contains('alts-over')), false);
+  await open();
+  const box = await page.locator('#week').boundingBox(); // the column is at the end edge (the left, right to left): tap the week's other end
+  await page.mouse.click(box.x + box.width - 30, box.y + 40);
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#alts .alt-card').count(), 0, 'closed by the tap');
+});
+
+test('1440 stays as it was (a column beside the week, the choice remembered); crossing below it drops the overlay', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, { ...DONE, ...OPEN });
+  await weekReady(page);
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('alts')).position), 'sticky', 'beside the week, not over it');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' }); // below 1440: the rail again, the overlay is not open
+  await page.locator('#alts [data-k="alts-fold"]').click();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' }); // back at 1440: the remembered "open"
+  assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('alts')).position), 'sticky');
 });

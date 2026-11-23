@@ -1,0 +1,546 @@
+# Design A system: implementation plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Put design A on one set of rules (a centred frame, a spacing and type scale, one emphasized thing and one primary button per screen, fewer words) and carry every screen through them in five phases.
+
+**Architecture:** CSS-first. The frame and the scales live in `web/design-a.css`, scoped under `:root[data-design="a"]`. Copy and label logic goes in pure helpers in `web/ui-text.js`, with unit tests. Renderers change only where behaviour changes. Each phase starts with a mockup the owner approves; this plan has full tasks for phase 1b and outlines for phases 2-5, which get task-level plans after their mockups.
+
+**Tech Stack:** plain ES modules, no build step; node:test unit tests (`npx -y -p node@24 node --test "test/*.test.mjs"`); Playwright browser specs (`npm run test:browser -- <name>`, WebKit by default).
+
+**Spec:** `docs/superpowers/specs/2026-11-22-design-a-system-design.md` (approved by the owner, 50fd733). It builds on `docs/superpowers/specs/2026-11-22-design-a-declutter.md` (approved; its 8 steps are phase 1a).
+
+## Global Constraints
+
+- Design A only: every CSS rule under `:root[data-design="a"]` (test/design-a-css.test.mjs enforces it); JS changes behind `designOn()`. Classic renders exactly as before.
+- Hebrew RTL, Rubik; no new colours; no new dependencies; no build step.
+- WCAG 2.1 AA: 4.5:1 text contrast (test/design-contrast.test.mjs), 44px targets, keyboard, visible focus, screen readers reach everything hidden.
+- Widths 320 to 1920, light and dark.
+- Words are targets with judgment, never a test: no word-count assertion anywhere (owner: "לא להיות רובוטי").
+- Legal and safety notices stay visible (declutter spec rules hold); where both specs speak, the declutter spec's wording wins.
+- Frame: build mode max 1680px, improve mode max 1200px, centred; below the cap nothing moves.
+- Spacing scale 4, 8, 12, 16, 24, 32, 48 px; type: key 21px/600, title 18px/600, section and body 15px (`--fs`), small 13px (`--fs-sm`), tiny 12px (`--fs-xs`).
+- Owner's rules: Codex reviews each change before its commit (never opening `web/vendor/**`); no push or merge without the manager; no personal data; never read the owner's real xlsx.
+- `web/design-a.css` is edited the way the ui session already edits it (its private frame.src.css + append-frame.cjs in the ui worktree,
+  E:/lets_learn/.claude/worktrees/ui-map-targets-fef683/.superpowers/sessions/dbg/), lines ≤ 160 characters. `web/` files are CRLF.
+- `npm run test:browser -- <name>` runs the specs whose file name contains `<name>`: one name per command (test/browser/run.mjs:19).
+
+## Review Focus
+
+1. Around the cap: 1679, 1680 and 1700px keep the same column widths; only the outer margins grow (no jump of a column or the dock).
+2. RTL order at 1920: the tool column on the right edge of the frame, the alternatives (rail or open) on its left edge; the margins outside the frame equal on both sides.
+3. The sticky header and strip: their background still spans the full window width while their content lines up with the frame.
+4. Improve mode at ≥ 1080 before phase 2: the record panel is still `position: fixed`; Task 2 moves it to the frame's edge so it covers
+   the tool column only, never the week. Phase 2 replaces it.
+5. 1080-1279px keeps today's 360 | board columns (the open alternatives column 240, the rail 64), and the frame padding there is 0.
+6. The folded column after a redraw: a new search, a semester switch or a resize redraws `#alts`; it stays in the state the student chose,
+   and focus stays on the rail button or the open/fold button that had it.
+
+Each line has its test in the task that owns it (Tasks 2, 3 and 5 below). Also watched: the dock's real height with a mouse (`--tap` is
+36px there), which Task 3 fixes and Task 2's scrolled check guards.
+
+---
+
+## Order of work
+
+1. **Phase 1a: the declutter spec, steps 1-8.** The ui session is building these now; they are not repeated here. Where this plan overlaps:
+   declutter step 4 puts the semester tabs in the switcher row and the sort select in the alternatives column header. Task 2 below sizes
+   those rows and must start after step 4 has merged. Declutter step 1 (the facts line and "פרטים") is the board's key element and must
+   not be restyled by Task 1's tokens beyond the type scale.
+2. **Phase 1b: Tasks 1-7 below.** Task 6 needs declutter step 8 merged on claude/design-a (it rewrites what steps 2-5 drew).
+3. **Phase 1 review:** design-lead browses the build (local copy, test data) at 1920, 1680, 1440, 1280, 1080, 768, 375, light and dark,
+   and reports to the manager before the owner sees it.
+4. **Phases 2-5:** for each, design-lead makes the mockup → the owner approves → design-lead writes that phase's task plan → ui session
+   builds → design-lead browses the build → manager merges.
+
+---
+
+### Task 1: Spacing and type tokens
+
+**Files:**
+- Modify: `web/design-a.css` (the `:root[data-design="a"]` block at the top)
+- Test: `test/design-a-css.test.mjs`
+
+**Interfaces:**
+- Produces: `--sp-1` … `--sp-7` (4, 8, 12, 16, 24, 32, 48px), `--fs-key: 21px`, `--fs-title: 18px`, `--frame: 1680px`,
+  `--frame-edit: 1200px`. Body, small and tiny stay `--fs`, `--fs-sm`, `--fs-xs` (style.css).
+
+- [ ] **Step 1: Write the failing test** in `test/design-a-css.test.mjs`:
+
+```js
+test('design A defines the spacing and type scale and the frame widths of the system design', () => {
+  const css = noComments(readFileSync(new URL('../web/design-a.css', import.meta.url), 'utf8'));
+  const root = /:root\[data-design="a"\]\s*\{([^}]*)\}/.exec(css)[1];
+  const want = { '--sp-1': '4px', '--sp-2': '8px', '--sp-3': '12px', '--sp-4': '16px', '--sp-5': '24px', '--sp-6': '32px', '--sp-7': '48px',
+    '--fs-key': '21px', '--fs-title': '18px', '--frame': '1680px', '--frame-edit': '1200px' };
+  for (const [k, v] of Object.entries(want)) assert.match(root, new RegExp(`${k}\\s*:\\s*${v}\\s*;`), `${k} is ${v}`);
+});
+```
+
+- [ ] **Step 2: Run it:** `npx -y -p node@24 node --test test/design-a-css.test.mjs`. Expected: FAIL on `--sp-1`.
+- [ ] **Step 3: Add the eleven custom properties** to the first `:root[data-design="a"]` block of `web/design-a.css`.
+- [ ] **Step 4: Run it again.** Expected: PASS, and the other tests in the file still pass.
+- [ ] **Step 5: Codex review, then commit:** `feat(design): A spacing and type scale and the frame widths (system design §2-3)`.
+
+### Task 2: The frame (centred, max-width) and calmer columns
+
+**Files:**
+- Modify: `web/design-a.css` (the `@media (min-width:1080px)` block: `.a-top`, `.a-strip`, `.a-stage`, `.a-alts`, `.a-pb`, `.edit-tool`,
+  the improve `.a-panel` rule at design-a.css:355)
+- Test: `test/browser/widths-a.spec.mjs`
+
+**Interfaces:**
+- Consumes: `--frame`, `--frame-edit`, `--fs`, `--fs-sm` (Task 1).
+- Produces: from 1080px, `.a-top`, `.a-strip` and `.a-stage` keep a full-width background and pad their content to the frame:
+  `.a-top { padding-inline: max(16px, calc((100% - var(--frame)) / 2)) }`, `.a-strip { … max(12px, …) }`,
+  `.a-stage { … max(0px, …) }`; in improve mode (`body[data-view="edit"]`) the same with `var(--frame-edit)`, and the record panel
+  (design-a.css:355) at `inset-inline-start: max(0px, calc((100% - var(--frame-edit)) / 2))` so it sits at the frame's edge.
+  `scrollbar-width: thin` on `.a-alts`, `.a-pb` and `.edit-tool` (the elements that scroll). Alternative cards: head `var(--fs)`/600,
+  sub `var(--fs-sm)`.
+
+- [ ] **Step 1: Write the failing tests** in `test/browser/widths-a.spec.mjs` (it already has `visit`, `settle`, `DONE`):
+
+```js
+const frame = (page) => page.evaluate(() => {
+  const r = (s) => document.querySelector(s)?.getBoundingClientRect();
+  const panel = r('#panel'), alts = r('#alts'), brand = r('.a-brand'), top = r('.a-top'), strip = r('.a-strip');
+  return { panelRight: panel.right, panelW: panel.width, altsLeft: alts.left, altsW: alts.width, brandRight: brand.right,
+    topW: top.width, stripW: strip.width, fits: document.documentElement.scrollWidth <= innerWidth };
+});
+for (const w of [1440, 1679, 1680, 1700, 1920])
+  test(`${w}px: the build frame is at most 1680px and centred, the columns keep their widths`, async (t) => {
+    const page = await visit(t, { width: w, height: 900 }, DONE, '#courses');
+    await page.locator('#panel #courses').waitFor({ state: 'visible' });
+    await settle(page);
+    const m = await frame(page);
+    const side = Math.max(0, (w - 1680) / 2);
+    assert.ok(m.fits, 'no sideways scroll');
+    assert.ok(Math.abs(m.altsLeft - side) <= 1, `alternatives on the frame's left edge: ${JSON.stringify(m)}`);
+    assert.ok(Math.abs(w - m.panelRight - side) <= 1, `tool column on the frame's right edge: ${JSON.stringify(m)}`);
+    assert.equal(Math.round(m.panelW), 400, 'tool column 400px');
+    assert.equal(Math.round(m.altsW), 280, 'alternatives column 280px (Task 5 changes it to the 64px rail)');
+    assert.ok(Math.abs(m.topW - w) <= 1 && Math.abs(m.stripW - w) <= 1, 'header and strip backgrounds span the window');
+    const stripPad = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.a-strip')).paddingInlineStart));
+    assert.ok(Math.abs(stripPad - Math.max(12, side)) <= 1, `the strip's content lines up with the frame: ${stripPad}`);
+    assert.ok(m.brandRight <= m.panelRight + 1 && m.brandRight >= m.panelRight - 48, 'the title lines up with the tool column');
+    await page.evaluate(() => scrollTo(0, 600));
+    const after = await page.evaluate(() => [document.querySelector('.a-top').getBoundingClientRect().top,
+      document.querySelector('#panel').getBoundingClientRect().top, document.querySelector('.dock').getBoundingClientRect().bottom]);
+    assert.equal(Math.round(after[0]), 0, 'the header stays at the top');
+    assert.ok(after[1] >= after[2] - 1, `the tool column never slides under the dock: ${after}`);
+  });
+```
+
+  In the existing `for (const w of [320, … 1280])` loop's `else` branch add the width check for 1080-1279 (Review Focus 5):
+
+```js
+      if (w < 1280) {
+        const cols = await page.evaluate(() => [document.getElementById('panel').getBoundingClientRect().width,
+          document.getElementById('alts').getBoundingClientRect().width]);
+        assert.deepEqual(cols.map(Math.round), [360, 240], 'the 1080-1279 columns are unchanged (Task 5: [360, 64])');
+      }
+```
+
+  And the improve case (Review Focus 4); `EDIT` is the record of test/browser/edit-a.spec.mjs:16-22, copied (its `BASE` lessons and
+  `state()`), as `{ ...DONE, 'afeka-sched-v1-edit': JSON.stringify(state()) }`:
+
+```js
+for (const w of [1440, 1920])
+test(`${w}px improve mode: the content and the record sit in the 1200px frame, the record not over the week`, async (t) => {
+  const page = await visit(t, { width: w, height: 900 }, EDIT, '#edit');
+  const side = (w - 1200) / 2;
+  await page.locator('#edit .edit-board').waitFor({ state: 'visible' });
+  await page.locator('.dock [data-tool="me"]').click();
+  await page.locator('#panel #me').waitFor({ state: 'visible' });
+  const m = await page.evaluate(() => {
+    const r = (s) => document.querySelector(s).getBoundingClientRect();
+    return { week: r('#edit .edit-board'), panel: r('#panel') };
+  });
+  assert.ok(m.week.left >= side - 1, `the improve content starts at the frame's left edge or after: ${JSON.stringify(m)}`);
+  assert.ok(Math.abs(m.panel.right - (w - side)) <= 1, `the record sits at the frame's right edge: ${JSON.stringify(m)}`);
+  assert.ok(m.panel.left >= m.week.right - 1, `the record covers no part of the week: ${JSON.stringify(m)}`);
+});
+```
+
+- [ ] **Step 2: Run** `npm run test:browser -- widths-a` (the runner takes one name: `test/browser/run.mjs:19`). Expected: 1700 and 1920 FAIL
+  on `altsLeft`; the improve case FAILS on the record's right edge (it is at 1920 today).
+- [ ] **Step 3: Write the frame rules** (Interfaces), the thin scrollbars and the card sizes in `web/design-a.css`, the way the ui session
+  edits it (its private `frame.src.css` + `append-frame.cjs` in the ui worktree), lines ≤ 160 characters.
+- [ ] **Step 4: Run, one suite per command:** `npm run test:browser -- widths-a`, then `-- shell-a`, `-- board-a`, `-- a11y-a`,
+  `-- edit-a`, `-- improve-a`. Expected: all PASS.
+- [ ] **Step 5: Look at it:** in the ui worktree, `node .superpowers/sessions/serve.mjs 8150` and compare 1920 and 1440 with the approved
+  phase-1 picture, light and dark.
+- [ ] **Step 6: Codex review, then commit:** `feat(design): A frame, max 1680 build and 1200 improve, centred (system design §1)`.
+
+### Task 3: The dock: one-line tool tabs on a wide screen, centred on a tablet
+
+**Files:**
+- Modify: `web/design-a.css` (`.dock` / `.dk` at design-a.css:166 and :327-333; the sticky tops that use `var(--tap)` for the dock at
+  :336 and :348)
+- Test: `test/browser/shell-a.spec.mjs`
+
+**Interfaces:**
+- Produces: `--a-dock-h: 52px` from 1080px. `.dk` is a column (icon above label, gap 2px, `min-height: var(--a-dock-h)`), label
+  `white-space: nowrap; font-size: var(--fs-xs)`. Every sticky offset that adds the dock (`.a-panel` top and height, `.edit-tool` top and
+  max-height, the improve `.a-panel` top) uses `var(--a-dock-h)` instead of `var(--tap)` (which is 36px with a mouse, style.css:149).
+  From 600 to 1079px the dock is centred and at most 560px wide: `inset-inline: max(0px, calc((100% - 560px) / 2))`.
+
+- [ ] **Step 1: Write the failing tests** in `test/browser/shell-a.spec.mjs` (with that file's `visit` helper):
+
+```js
+const LABELS = ['המצב שלי', 'קורסים', 'מה חשוב לי', 'חברים', 'להוציא'];
+for (const w of [1080, 1280, 1920])
+  test(`${w}px: every tool tab shows its whole label on one line, under its icon, inside its tab`, async (t) => {
+    const page = await visit(t, { width: w, height: 800 }, DONE, '#courses');
+    await page.locator('#panel #courses').waitFor({ state: 'visible' });
+    const tabs = await page.evaluate(() => [...document.querySelectorAll('.dock .dk:not([hidden])')].map((b) => {
+      const r = b.getBoundingClientRect(), s = b.querySelector('span'), sr = s.getBoundingClientRect(), ir = b.querySelector('svg').getBoundingClientRect();
+      return { text: s.textContent, seen: s.checkVisibility({ visibilityProperty: true, opacityProperty: true }) && sr.width > 0, oneLine: sr.height <= parseFloat(getComputedStyle(s).fontSize) * 1.6, inside: sr.left >= r.left - 1 && sr.right <= r.right + 1,
+        under: ir.bottom <= sr.top + 1, h: r.height };
+    }));
+    assert.deepEqual(tabs.map((x) => x.text), LABELS);
+    for (const x of tabs) assert.ok(x.seen && x.oneLine && x.inside && x.under && x.h >= 44, JSON.stringify(x));
+  });
+test('768px: the dock is centred and at most 560px wide', async (t) => {
+  const page = await visit(t, { width: 768, height: 1024 }, DONE);
+  await page.locator('.dock').waitFor({ state: 'visible' });
+  const d = await page.evaluate(() => document.querySelector('.dock').getBoundingClientRect());
+  assert.ok(d.width <= 560 + 1 && Math.abs(d.left - (768 - d.right)) <= 1, JSON.stringify(d));
+});
+```
+
+- [ ] **Step 2: Run** `npm run test:browser -- shell-a`. Expected: FAIL (`oneLine` false for "מה חשוב לי" at 1080 and 1280; the dock 768 wide).
+- [ ] **Step 3: Restyle the dock** as in Interfaces.
+- [ ] **Step 4: Run** `-- shell-a`, then `-- widths-a` (its scrolled check now guards the sticky offsets), then `-- a11y-a`. Expected: PASS.
+- [ ] **Step 5: Codex review, then commit:** `fix(design): A dock, one-line tabs (owner-3, W2) and centred on a tablet (P3)`.
+
+### Task 4: The switcher says it is computing (design A)
+
+**Files:**
+- Modify: `web/ui-text.js` (new export), `web/ui-view.js` (import; :305-307), `web/ui-search.js` (`setBusy`, :158)
+- Test: `test/ui-text.test.mjs`, `test/browser/board-a.spec.mjs`
+
+**Interfaces:**
+- Produces: `altLabelText({ nAlt: number, cur: number, split: boolean, running: boolean }) -> string` in `web/ui-text.js`.
+
+- [ ] **Step 1: Write the failing unit test** in `test/ui-text.test.mjs` (add `altLabelText` to the file's import from `../web/ui-text.js`):
+
+```js
+test('the switcher label: computing, an alternative, or none', () => {
+  assert.equal(altLabelText({ nAlt: 0, cur: 0, split: false, running: true }), 'מחשב חלופות…');
+  assert.equal(altLabelText({ nAlt: 10, cur: 2, split: false, running: true }), 'חלופה 3 מתוך 10');
+  assert.equal(altLabelText({ nAlt: 10, cur: 0, split: true, running: false }), 'חלופה 1 מתוך 10 · מופרדת');
+  assert.equal(altLabelText({ nAlt: 0, cur: 0, split: false, running: false }), 'אין חלופות');
+});
+```
+
+- [ ] **Step 2: Write the failing browser test** in `test/browser/board-a.spec.mjs`, holding the build worker the way
+  edit-a.spec.mjs:24-36 holds `edit-worker.js` (here `**/solver-worker.js`):
+
+```js
+test('while the first search runs the switcher says it is computing, then shows the first alternative', async (t) => {
+  const page = await visit(t, { width: 1280, height: 800 }, DONE); // board-a's own visit helper
+  const held = holdWorker(page, '**/solver-worker.js'); // edit-a.spec.mjs:24-36, with the worker URL as a parameter
+  await page.reload(); // the route survives the reload, so the first search of the new page waits at the gate
+  await held.reached;
+  assert.equal(await page.locator('#altLabel').textContent(), 'מחשב חלופות…');
+  held.release();
+  await page.waitForFunction(() => /^חלופה 1 מתוך/.test(document.getElementById('altLabel').textContent));
+});
+```
+
+- [ ] **Step 3: Run** `npx -y -p node@24 node --test test/ui-text.test.mjs` and `npm run test:browser -- board-a`. Expected: both FAIL.
+- [ ] **Step 4: Implement.** Export `altLabelText` from `web/ui-text.js`. In `renderView` (ui-view.js:305-307) use it only under
+  `designOn()`, keeping classic's ternary as it is. In `setBusy()` (ui-search.js:158), under `designOn()`, when `ui.running` and
+  `!hasAlternatives()` (exported by ui-view.js; the two modules already import each other), set `#altLabel` to `altLabelText({ nAlt: 0,
+  cur: 0, split: false, running: true })`. `scheduleRun()` calls `setBusy()` when a search starts (ui-search.js:24), so the label changes
+  then, not when the results come back.
+- [ ] **Step 5: Run** the unit tests, then `npm run test:browser -- board-a`, then, in PowerShell, `$env:DESIGN='classic'; npm run test:browser -- flows; Remove-Item Env:DESIGN` (classic
+  unchanged). Expected: PASS.
+- [ ] **Step 6: Codex review, then commit:** `fix(design): A switcher says "מחשב חלופות…" while the search runs (W4)`.
+
+The second "מחשב…" (`#coursesBusy` in the tool column) stays: the board's `#busy` is not sticky and scrolls away, so the column's indicator
+is the one still on screen after a scroll. The spec asked for one spinner; this is the one-line exception the spec allows (§6).
+
+### Task 5: The alternatives column folds to a rail (owner-7)
+
+Owner, 2026-11-22, on the declutter picture: "זה מעמיס על הדף זה צריך להיות מתקפל". From 1080px the column starts folded and the week gets
+the space. The switcher arrows stay the main way between alternatives. Phone and tablet (below 1080): no change, there is no column.
+
+**Files:**
+- Modify: `web/ui-common.js` (two storage helpers), `web/ui-view.js` (`renderAltColumn`, :528), `web/ui-plan.js` (one action, next to
+  `ACT.altPick` at :302), `web/design-a.css` (the `@media (min-width:1080px)` block, :319-323, and :361-362)
+- Test: `test/browser/board-a.spec.mjs` (new tests, and the existing card tests at :22, :42, :60, :169, :175, :181 open the column
+  first: they wait for `.alt-card` on a fresh visit, which is folded now); `test/browser/widths-a.spec.mjs` (Task 2's widths, both
+  states); `test/browser/a11y-a.spec.mjs` (a dedicated 1440 check, see Step 1: the 1280 case skips the target scan, a11y-a.spec.mjs:113,
+  and the other widths hide the column)
+
+**Interfaces:**
+- Consumes: `.alt-card` markup and `ACT.altPick` (today's), `keepFocus` by `data-k`, `--fs`, `--fs-xs`, `--primary`, `--on-primary`,
+  `--surface-2`.
+- Produces: in `web/ui-common.js`, `altsOpen() -> boolean` and `setAltsOpen(open: boolean)`. The state lives in a module variable,
+  read once from the key `'afeka-sched-v1-alts'` (value `'open'`; anything else, or storage that throws, means folded); `setAltsOpen`
+  sets the variable first and then writes storage best-effort in try/catch, so folding works in a window without storage.
+  `ACT.altsFold = (el) => { el.focus({ preventScroll: true }); setAltsOpen(!altsOpen()); keepFocus(renderAltColumn); }` (WebKit does
+  not focus a clicked button; ui-plan.js:301 says the same for `altPick`).
+- Markup (from the approved phase-1 picture, `rail()` in design-lead's mock.mjs):
+  - Folded: `.a-stage` gets the class `alts-rail`. `#alts` holds `<div class="alt-rail">`: first `<button type="button" class="rail-btn"
+    data-act="altsFold" data-k="alts-fold" aria-expanded="false" aria-controls="alts" aria-label="הצגת N החלופות">` (a chevron pointing
+    into the board, then `<b>N</b>`), then `<ol class="rail-list">` with, per alternative, `<button type="button" class="rail-n"
+    data-act="altPick" data-i="i" data-k="altcard-i" aria-current="…" aria-label="חלופה i+1: <the card's head>">` holding the number
+    and `<span class="rail-d" aria-hidden="true">`: one `<i>` per day column of the card's mini week, class `on` when that day has a
+    lesson (the data `miniWeekHtml` already uses).
+  - Open: today's column; its heading becomes a row `.col-h` with the `h2` and `<button type="button" class="rail-btn" data-act="altsFold"
+    data-k="alts-fold" aria-expanded="true" aria-controls="alts">` (a chevron pointing away from the board, then "הקטנה"). The sort
+    control ("לפי", declutter step 4) shows only in this state.
+  - The fold button keeps `data-k="alts-fold"` in both states and a rail button shares its card's `altcard-i`, so `keepFocus` keeps focus
+    on the control that was used. When a redraw removes the focused control (a new search with fewer alternatives, or none), focus goes
+    to `#altLabel`'s switcher button that is visible (the next arrow, else the previous one), never to `body`. Below 1080 the column is
+    `display:none`; a focused rail button there loses focus to the same switcher button on the resize redraw.
+- CSS (as in the picture): `.a-stage.has-alts.alts-rail` third track `64px` from 1080 (both the 1080-1279 and the ≥1280 grids); the rail
+  padding 8px; `.rail-btn` 48px wide and at least 56px high in the rail, 44px high in the open header; `.rail-n` 48×48 with the number at
+  `--fs`/700 and the dots 4px square, 2px apart, unlit at opacity .25; `.rail-n[aria-current="true"]` filled `--primary`, text
+  `--on-primary`. Below 1080 `.a-alts` stays `display:none` (design-a.css:249).
+
+- [ ] **Step 1: Write the failing tests** in `test/browser/board-a.spec.mjs` (its own `visit` helper and `DONE`):
+
+```js
+test('1440px: the alternatives start as a 64px rail, open on one tap, and the choice is remembered', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, DONE);
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' });
+  const total = Number(/מתוך (\d+)/.exec(await page.locator('#altLabel').textContent())[1]);
+  assert.ok(total >= 3, 'the test data gives at least three alternatives');
+  assert.equal(await page.locator('#alts .rail-n').count(), total, 'one rail button per alternative');
+  assert.equal(Math.round((await page.locator('#alts').boundingBox()).width), 64);
+  assert.equal((await page.locator('#alts .rail-n[aria-current="true"]').textContent()).trim(), '1');
+  const fold = page.locator('#alts [data-k="alts-fold"]');
+  assert.equal(await fold.getAttribute('aria-expanded'), 'false');
+  await page.locator('#alts .rail-n').nth(2).click();
+  await page.waitForFunction(() => /^חלופה 3 מתוך/.test(document.getElementById('altLabel').textContent));
+  assert.equal(await page.locator('#alts .rail-n[aria-current="true"]').count(), 1);
+  assert.equal(await page.locator('#alts .rail-n').nth(2).getAttribute('aria-current'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'altcard-2', 'focus stays on the picked rail button');
+  await fold.click();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+  assert.equal(Math.round((await page.locator('#alts').boundingBox()).width), 280);
+  assert.equal(await fold.getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'alts-fold', 'focus stays on the fold button');
+  await page.reload();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' }); // remembered open
+  await page.locator('#alts [data-k="alts-fold"]').press('Enter');
+  await page.locator('#alts .rail-n').first().waitFor({ state: 'visible' }); // folds again by keyboard
+});
+test('375px: no alternatives column, the switcher stays', async (t) => {
+  const page = await visit(t, { width: 375, height: 812 }, DONE);
+  await page.locator('#altLabel').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#alts').isVisible(), false);
+});
+test('1440px: storage that throws still folds and opens', async (t) => {
+  const page = await visit(t, { width: 1440, height: 900 }, DONE);
+  await page.addInitScript(() => { Storage.prototype.setItem = () => { throw new Error('blocked'); }; });
+  await page.reload();
+  await page.locator('#alts [data-k="alts-fold"]').click();
+  await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
+});
+test('1440px: a new search that leaves fewer alternatives moves focus to the switcher, not to the page', async (t) => {
+  // open the rail, focus the last rail button, then change a constraint that cuts the alternatives (the way board-a's existing
+  // "search again" test changes one) and wait for the new label
+  // assert: document.activeElement is a visible button of the switcher row (`#altLabel`'s arrows), not body
+});
+```
+
+  The last test's body is left to the builder: the change that cuts the alternatives depends on the test data; any change that
+  leaves fewer alternatives than the focused index works.
+
+  In Task 2's widths tests check both states: folded (the default) 64 at the ≥1440 loop and `[360, 64]` at 1080-1279; then click
+  `[data-k="alts-fold"]` and check 280 and `[360, 240]`, with the frame edges (`altsLeft`, `panelRight`) unchanged in both.
+
+  In `test/browser/a11y-a.spec.mjs` add one 1440 test, light and dark (that file's `checker`, `check`, `layoutOk` with targets on):
+  the board with the column folded, then open, each passing axe and the 44px target scan with `#alts` among the roots.
+  In the existing board-a tests that use `.alt-card` (:22, :42, :60, :169, :175, :181) add `await page.locator('#alts
+  [data-k="alts-fold"]').click()` before the first card wait; their assertions stay.
+- [ ] **Step 2: Run** `npm run test:browser -- board-a`. Expected: FAIL (no `.rail-n`).
+- [ ] **Step 3: Implement** the helpers, `ACT.altsFold`, the two states in `renderAltColumn` (the column exists only in design A) and
+  the CSS.
+- [ ] **Step 4: Run, one suite per command:** `-- board-a`, `-- widths-a`, `-- a11y-a`, `-- shell-a`. Expected: PASS. Then look at 1920
+  and 1280, light and dark, against the approved phase-1 picture.
+- [ ] **Step 5: Codex review, then commit:** `feat(design): A alternatives column folds to a rail, remembered (owner-7)`.
+
+### Task 6: The block above the week: only what matters now visible, the rest in "פרטים" (owner-8)
+
+Owner, 2026-11-22, approving phase 1: "כל המלל המוגזם שיש פה שהקפתי בעיגול שחור תצמצם ותקפל ותשאיר רק את הרלוונטי". The rules and the
+exact copy are in the spec's Phase details ("Phase 1, the block above the week"); the approved picture is design-lead's
+`mockups/fold-collage.png`. Built on claude/design-a after declutter step 8; line numbers below are of 5a1da4f (declutter step 7) and
+may have moved.
+
+**Files:**
+- Modify: `web/ui-text.js` (three new exports, next to `closeExamLines` :64 and `freshnessA` :224), `web/ui-view.js` (`renderTop`'s
+  `#meta` :110-114, `renderBoardNote` :119-135, the `#semnote` area :330-345, the partial notice :359-364, the notices added to `msg`
+  :444-460, the `factsHtml` lines :482-505), `web/ui-shell.js` (the strip :60, the `#meta` move :78), `web/ui-drawer.js` (`infoPanel` :372, A only), `web/design-a.css`
+  (`.a-more-link`, `.a-exam`)
+- Test: `test/ui-text.test.mjs`, `test/browser/declutter-a.spec.mjs` (the tests that assert today's wording or placement, all replaced in
+  Step 1: the legal-line and freshness tests :97-200 and onward to the last freshness case, the A-semester tests from :225 including the
+  phone target test at :245, the outside-hours test at :419; the classic regression test at :258 stays as it is), `test/browser/board-a.spec.mjs`
+
+**Interfaces:**
+- Produces in `web/ui-text.js`:
+  - `LEGAL_SHORT = 'לא רשמי · אינו הרשמה ואינו המלצה'` (the strip's words; `LEGAL_LINE` and `RULES_SHORT` stay for "פרטים" and מידע).
+  - `staleShortA(status, changedAt, now = new Date()) -> string` : `''` when fresh (the same 36-hour rule as `freshnessA`), else
+    `'נבדק ' + ago(age)` ("נבדק לפני 32 ימים"), `'הבדיקה האחרונה נכשלה'`, or `'לא ידוע מתי נבדק'`.
+  - `examLineShort(pairs) -> string` (`pairs` as `closeExamLines` takes them): same-day pairs S and adjacent-day pairs C; S = 1:
+    `'2 בחינות באותו יום, ' + examWhen({ date })`; S > 1: `` `${S} זוגות בחינות באותו יום` ``; C likewise with `'בימים צמודים'`
+    (C = 1: `'2 בחינות בימים צמודים, ' + examWhen(a)`); both: the two joined with `' · '`; no pairs: `''`.
+- Design A only (`designOn()`); classic renders as before.
+- The strip (ui-shell.js:60): `LEGAL_SHORT`, then a `<span id="aStale" class="warn-text">` (icon + `staleShortA`, empty and hidden when
+  fresh), then "פרטים" (`aUnoMore`, unchanged). `#meta` is no longer moved into the strip in A (ui-shell.js:78); `#aRules` goes.
+- `renderBoardNote` in A: its `phoneLine` (:125) becomes only the stale span (the rules clause is in "פרטים"). The other two lines it
+  draws stay as they are: the unverified-program warning (:129) and the passed-without-prerequisites warning (:131).
+- `#semnote` in A: `missing` ("לא נכנס לאף סמסטר") and the app notices (`semNotice`, summer, `prefsNote`) as today; the A-semester short
+  line only when the shown semester is ב׳ (`ui.sem` as the semester tabs set it, or a one-semester plan of ב׳); on א׳ it is not drawn.
+  The full sentence (`#aAfterA`) stays in "פרטים" on both semesters whenever `afterA` has groups, so the ב׳ line's "אילו?"
+  (`detailsGo` to `aAfterA`) keeps its target. The other info `warnings` go to "פרטים".
+- The partial notice in A: no `<p class="notice partial">`. When `pn.more` and the search left at least one alternative (`!noRes`;
+  with no result the empty-result message keeps its own "חפש עוד", unchanged, and there is no second one), and only then: `<button type="button" class="a-more-link" data-act="more"
+  data-k="searchMore" title="${pn.text}">חפש עוד</button>` right after `#switcher`; `pn.text` is a "פרטים" line (with or without
+  `more`). Each `renderView` removes the button before deciding (it lives outside `#week`, after `#switcher`), so it never outlives the
+  condition. `ui-search.js:61-64` keeps working: same `data-k`.
+- Exam warnings in A: one `<p class="notice a-exam">` with the alert icon, `examLineShort(res.closeExams)` in a `warn-text` span and
+  `<button type="button" class="a-which" data-act="detailsGo" data-to="aExams" data-k="aExamsBtn">פרטים</button>`; the full
+  `closeExamLines` go first in "פרטים", wrapped in `<span id="aExams" tabindex="-1" data-k="aExams">`. In `#live`, the short line.
+- The cap probe and the outside-hours line move to the end of "פרטים", buttons and link included. `factsHtml` wraps each entry in a
+  `<p>` (ui-view.js:273), so they go in as inner content, not whole paragraphs: `capLine` gets a sibling `capInner(best, nameOf)` that
+  returns its `<p>`'s content (icon, span, buttons) with the same `data-k` values (`capProbe`, `capApply`) and the entry is wrapped in
+  `<span class="cap-preview">`; the outside-hours entry is its icon, text and link without the `<p>`. Each counts as one "פרטים" line in
+  declutter-a.spec.mjs:33's count. The left-out line stays visible.
+- "פרטים" order: exam sentences, the search sentence, the A-semester sentence (on א׳), the left-out names, the rest as today, the legal
+  sentences last (`LEGAL_LINE` in full, with "(ההרשמה באפקה-נט)", and `RULES_UNAPPROVED` when not approved).
+- The מידע panel (`infoPanel`, ui-drawer.js:372) in A: its freshness line uses `freshnessA(...).text` (the failed-check and never-checked
+  sentences included) instead of `freshness()`, and its unofficial line is `LEGAL_LINE` in full; classic keeps `freshness()` and
+  `UNOFFICIAL`. So the full freshness sentence, "(ההרשמה באפקה-נט)" and the rules clause are each in "פרטים" and in מידע.
+- CSS: `.a-more-link` a text button (no border or background, `--primary`, underlined, `--fs-sm`, `min-height: 44px`); `.a-exam`
+  `--fs-sm`, its `warn-text` 600.
+
+- [ ] **Step 1: Write the failing tests.** In `test/ui-text.test.mjs`:
+
+```js
+test('the short exam line: one pair, several, adjacent, none', () => {
+  const p = (days, date) => ({ days, a: { course: 'x', date, time: '13:00' }, b: { course: 'y', date, time: '17:00' } });
+  assert.equal(examLineShort([p(0, '2027-01-28')]), '2 בחינות באותו יום, 28.01.2027');
+  assert.equal(examLineShort([p(0, '2027-01-28'), p(0, '2027-02-03'), p(0, '2027-02-07')]), '3 זוגות בחינות באותו יום');
+  assert.equal(examLineShort([p(0, '2027-01-28'), p(1, '2027-02-03')]), '2 בחינות באותו יום, 28.01.2027 · 2 בחינות בימים צמודים, 03.02.2027 13:00');
+  assert.equal(examLineShort([]), '');
+});
+test('the short stale line of the strip', () => {
+  const now = new Date('2026-11-22T12:00:00Z');
+  assert.equal(staleShortA({ checkedAt: '2026-11-22T06:00:00Z', ok: true }, '2026-10-21', now), '');
+  assert.match(staleShortA({ checkedAt: '2026-10-21T06:00:00Z', ok: true }, '2026-10-21', now), /^נבדק לפני \d+ ימים$/);
+  assert.equal(staleShortA({ checkedAt: '2026-11-22T06:00:00Z', ok: false }, '2026-10-21', now), 'הבדיקה האחרונה נכשלה');
+  assert.equal(staleShortA(null, '2026-10-21', now), 'לא ידוע מתי נבדק');
+});
+```
+
+  In `test/browser/declutter-a.spec.mjs` replace the legal-line constants and their tests (:97-187) with: the strip's text is
+  `LEGAL_SHORT + ' · פרטים'` when fresh and `LEGAL_SHORT + ' · נבדק לפני N ימים · פרטים'` when stale, at 1280 and 375; "פרטים" on the
+  board holds "(ההרשמה באפקה-נט)" and, when the rules are not approved, `RULES_UNAPPROVED`; the מידע panel still holds both. Replace the
+  A-semester tests from :225 (keep :258, the classic test): on א׳ `#semnote .a-after` is absent and `#aAfterA` is in "פרטים"; on ב׳
+  the short line is there and its "אילו?" opens "פרטים" at `#aAfterA`. The phone target test at :245 switches to the ב׳ tab first. The
+  outside-hours test at :419 looks for the line and its "להפוך לחובה" link inside the open "פרטים", not under `#week`. The מידע panel test
+  checks `LEGAL_LINE` and the `freshnessA` sentence there.
+
+  In `test/browser/board-a.spec.mjs` (board-a has no clash or partial fixture): wait for the first search to finish (`#altLabel`
+  matches `/^חלופה 1 מתוך/`), then in the page set the shown result's `closeExams` to one same-day pair of two of its courses with a date
+  and times, set `ui.last.partial = true` and `ui.last.ms` to 3000, and call `renderView()` (ui-view.js exports it; import it in
+  `page.evaluate` with `await import('./ui-view.js')` and `ui` from `./ui-common.js`, as declutter-a.spec.mjs:148-150 does). Then:
+  - one `.a-exam` line whose text matches `/^2 בחינות באותו יום, \d\d\.\d\d\.\d{4} · פרטים$/`; its button opens "פרטים" and focuses
+    `#aExams`, which holds "משך הבחינות לא ידוע";
+  - no `.notice.partial`; `[data-k="searchMore"]` is a visible `.a-more-link` next to `#switcher`, at least 44px high, and clicking it
+    starts a search (`#altLabel` becomes "מחשב חלופות…", Task 4);
+  - no `.cap-preview` and no outside-hours notice above `#week`'s grid; both inside "פרטים".
+- [ ] **Step 2: Run** `npx -y -p node@24 node --test test/ui-text.test.mjs`, `npm run test:browser -- declutter-a`, `-- board-a`.
+  Expected: FAIL.
+- [ ] **Step 3: Implement** as in Interfaces.
+- [ ] **Step 4: Run, one suite per command:** the unit tests, `-- declutter-a`, `-- board-a`, `-- a11y-a`, `-- shell-a`, then in
+  PowerShell `$env:DESIGN='classic'; npm run test:browser -- flows; Remove-Item Env:DESIGN`. Expected: PASS. Then look at 1920, 1280 and
+  375, light and dark, with a clash and a cut search, against the approved picture.
+- [ ] **Step 5: Codex review, then commit:** `feat(design): A above the week, one legal line, one exam line, the rest in "פרטים" (owner-8)`.
+
+### Task 7: Phase 1 read-through (no code unless it finds something)
+
+- [ ] **Step 1:** After Tasks 1-6 and declutter steps 1-8 are on claude/design-a, design-lead serves that branch locally and reads the
+  board at 1920, 1440, 1280, 768 and 375, light and dark, against the phase-1 picture: the words above the week (target about 25 inside
+  the board, warnings and the legal strip aside), the one emphasized thing, the frame edges, the rail folded and open, and the block above the week with a clash and a cut search (Task 6).
+- [ ] **Step 2:** design-lead writes the result, with the count made by hand and any exception with its one-line reason, to the manager.
+  A gap becomes a small task for the ui session; otherwise phase 1 goes to the owner.
+
+---
+
+## Phases 2-5 (outline; each gets its own task plan after its mockup is approved; order changed 2026-11-22: improve, first run, tools, ☰)
+
+### Phase 2: improve mode (moved up, manager 2026-11-22; mockup `mockups/edit-collage.png`, approved by the owner the same day, with the course search added)
+- The spec's "Phase 2, the improve-mode mockup" is the target, copy included.
+- Task A, the frame and the tabs: `#edit` inside `--frame-edit` with the chrome on it (Task 2's rule); the improve dock as a segmented
+  control centred over the content (44px segments, `aria-pressed` only on the shown screen, the record included); the tool column and
+  the week each one surface. Tests: a 1920 and a 1280 rect test (content and tabs inside the frame, tabs narrower than the frame).
+- Task B, the empty state: one centred card, max 640, the spec's copy; "טוענים קובץ" primary over "בוחרים קורסים ידנית"; buttons
+  `min(320px, 100%)` wide (a 320px test: no sideways scroll); no `.edit-empty` hint and no `.me-foot` before a schedule is loaded; "איך מורידים מאפקה-נט?" reveals today's `.edit-yedion` text in place.
+- Task C, the file button: the spec's "Phase 2, the file button" (track/year check first, a hidden `input[type=file]`, then the editor
+  at its file step with the file read). Tests: chooser, then a file, then the editor at its file step with the file read; cancel changes nothing; a missing track/year
+  opens no chooser; an unreadable file shows today's error. Update the A runs of edit.spec.mjs:138, :159 and edit-shell.spec.mjs:183,
+  which expect the editor before a file is chosen.
+- Task D, the record in the tool column's slot: the spec's "Phase 2, the record" (state-driven class on the stage, "→ חזרה", Escape,
+  focus back to the dock's "המצב שלי"); `#panel` is not moved into `#edit` (ui-edit.js:358 replaces that subtree): CSS places it in
+  the tool column's slot. Keep the edit-a.spec.mjs:141 guarantees; a rect test that the record never overlaps the week; a test that a
+  search finishing while the record is open keeps the record open and focus where it was.
+- Task E, the changes screen: the goal chips wrap (replace improve-a.spec.mjs:104 and edit-a.spec.mjs:76: every chip label whole, the
+  row wraps, no horizontal scroll at 320 and 1280); one primary at a time ("חפש הצעות", then "שמור הצעה"); "חפש שוב", "העתק שינויים"
+  secondary; "עוד" a disclosure button (`aria-expanded`, `aria-controls`; the list is plain buttons in Tab order, Escape closes, focus returns to
+  "עוד"; the proposal arrow keys at ui-edit.js:871 ignore keys inside it) holding "הראה את היום החדש" and "לבטל את כל השינויים" (D4);
+  the footer bar and the card's disclaimer go; "לשינויים" moves into the המערכת שלי section. Phone: one sticky bar at most. The tests
+  that read `.me-foot` (improve-a.spec.mjs:29, :38, :43, :59, :79; a11y-a.spec.mjs:188, :206) move to the new places ("לשינויים" in
+  the section, the way back is the tab), keeping the short-window check that every action is reachable. a11y-a's target scan covers
+  `.edit-tool` and the open "עוד"; keyboard tests for "עוד".
+- Task F, the course search (owner-13): the spec's "Phase 2, the course search". A pure `web/course-search.js`:
+  `searchCourses(ctx, query, { day, hour, sem, program }) -> { list: [{ id, name, code, credits, open, why, needs, readOnly,
+  options: [{ ids, line, lecturer, fit: 'fits' | 'clash' | 'full', clash: [names] }] }], more }`, where `ctx` = { data (the shown
+  program, all its semesters), foreign (another program's data or null), sem, week, statuses, registered, split }; options come from the
+  swap list's `buildOptions()` so linked tutorials and labs count. `test/course-search.test.mjs`: a code prefix, a group-id prefix, a name
+  part, a lecturer part with a title, day, an hour inside a meeting, fit and the clash names (the course itself left out), a clash or a
+  full part in a linked tutorial, a course with no buildable option (e.g. 90902 in 2027-1/30-2026.json), a `conditional` course's
+  `needs`, a closed course's reason, read-only rows, the order and the 30 cap. In `web/ui-edit.js` the
+  "חיפוש קורס" button replaces `chipSelect("addCourse", …)` (:190); the search view lives in the tool column and keeps the query, the
+  chips, the focus and the caret across `renderEdit()` redraws (state, not the DOM); "הוספה" adds the course with its option fixed
+  (today's addCourse path, :855, plus the option; the worker keeps it or reports no solution), and for a `conditional` course its
+  parallel course too; "מעבר לקבוצה" is `pickSwap`. Another program's file is fetched on demand into its own cache (the last choice
+  wins over an earlier answer); its rows are read only, with no "הוספה" and no "מעבר לקבוצה" (manager's ruling; a test checks it); semesters are already loaded (app.js:598). The proposal's arrow keys are off while the search is open;
+  Escape reaches the search before the phone sheet (ui-shell.js:266). Browser tests in edit-a: a code, a name part, a lecturer part; day + hour; the
+  "נכנס" and "מתנגש עם" tags; "הוספה" puts the course in the week in that option after the search; a fixed option that cannot fit says
+  so; a `conditional` course added with its parallel course; Escape twice returns focus to "חיפוש קורס", also on a phone; arrow keys on a
+  result do not change the proposal; typing while a search finishes keeps the caret; a failed and an out-of-order program fetch; the
+  live count; 320px without sideways scroll; a11y-a scans the open search.
+- Each task: its tests, then `-- edit-a`, `-- improve-a`, `-- a11y-a`, the classic `flows`, Codex, one commit.
+
+### Phase 3: first run (owner-9, owner-10; moved up, manager 2026-11-22)
+- The spec's "Phase 3, first run": the terms on the whole screen on the first visit; then the guided pass, one centred card per step,
+  the first schedule only after the last step; מה עברתי grade sheet first, else the earlier years listed ticked to untick; a year change
+  reruns only מה עברתי. New students no longer get app.js:471's silent assumption; saves from before keep their `assumed`.
+- The gate: `gated()` (ui-common.js) also waits for a saved first-run flag; tests: no solver run before the last step, a reload or Back
+  returns to the step reached, a first-year student sees 4 steps, an old save with `assumed` skips the pass, a year change keeps an
+  unticked course and a failure on file.
+- Its task plan follows the open questions (the step contents, the phone, the track and year's place) and the owner's answers.
+
+### Phase 4: the tools (המצב שלי, קורסים, מה חשוב לי, חברים, להוציא)
+- Sections, not cards inside the panel (one surface level); key element per tool as in the spec's phase table, at `--fs-key`.
+- ⓘ inline disclosure component (spec §6): a pure `helpHtml(id, topic, text)` in `web/ui-text.js` with unit tests; one click handler in
+  `web/ui-actions.js`; keyboard and Escape tests in a11y-a.
+- Course card status line (declutter C1-C9, if not already built in 1a).
+- Delete-all only in ☰ (remove from `web/ui-me.js:335`).
+- Phone sheets at about 60% with the expansion button on `#panel` and `.edit-tool`; the open-scroll rule; replace shell-a.spec.mjs:158.
+- (The tablet dock is done in phase 1b, Task 3.)
+- The course search field in קורסים (code, name, lecturer), reusing `web/course-search.js` (Phase 2, Task F).
+
+### Phase 5: ☰, מידע, dialogs, the progress map
+- List rows (48px, icon, label, chevron or external-link icon, dividers) for ☰ and מידע; a back arrow in the sheet header in place of
+  "חזרה לתפריט"; "מצב כהה" leaves ☰.
+- The schedule editor: one input method visible, the other two under "דרכים נוספות"; "שמור / ביטול" beside the content.
+- a11y-a roots extended to `#drawer` and `#friendEd`.
+- The progress map colours (owner-11): each status reads at a glance; a quick mockup first (one or two plain screenshots).

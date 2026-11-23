@@ -228,6 +228,28 @@ export const PAGE = {
 };
 // Design A (web/design.js sets the attribute): the frame of ui-shell.js. Asked here, in a leaf module, so any renderer can ask without importing the shell.
 export const designOn = () => globalThis.document?.documentElement?.dataset?.design === 'a';
+// Design A's alternatives column starts folded to a rail (a wide screen). The choice is kept: read once, then held in this variable, so folding works in a
+// window whose storage throws; the write is best effort.
+const ALTS_KEY = 'afeka-sched-v1-alts';
+let altsIsOpen = false;
+try {
+  altsIsOpen = globalThis.localStorage?.getItem(ALTS_KEY) === 'open';
+} catch {
+  /* storage blocked: folded */
+}
+export const altsOpen = () => altsIsOpen;
+// From 1080 to 1439px the open column would take the week's width (585px at 1280: lesson names cut), so there it opens OVER the week, for a visit only:
+// the remembered choice above applies from 1440px, where the column has the room.
+export const altsOverlay = () => !!globalThis.matchMedia?.('(min-width: 1080px) and (max-width: 1439px)').matches;
+export const altsShown = () => (altsOverlay() ? !!ui.altsOver : altsIsOpen);
+export function setAltsOpen(open) {
+  altsIsOpen = !!open;
+  try {
+    globalThis.localStorage?.setItem(ALTS_KEY, altsIsOpen ? 'open' : 'closed');
+  } catch {
+    /* not kept; the page still folds and opens */
+  }
+}
 // the heading to focus: the first shown page's in classic; under A the shell says (ui.titleId: the open tool's, the edit page's or the board's)
 export const shownTitle = () => $(designOn() && ui.titleId ? ui.titleId : Object.values(PAGE).find(([p]) => !$(p).hidden)?.[1]);
 
@@ -256,6 +278,7 @@ export const ui = {
   specPick: null,
   onShown: null,
   onResult: null,
+  altsOver: false, // A, 1080-1439px: the alternatives column is open over the week (not remembered)
   detailsOpen: false, // A: the board's "פרטים" disclosure, kept over the re-renders (ui-view.js factsHtml)
   tipOpen: false, // A: the courses tool's "מה ההבדל?" toggletip
   whyOpen: new Set(), // A: the course cards' "למה?" that are open (ui-side.js), by course id and reason index
