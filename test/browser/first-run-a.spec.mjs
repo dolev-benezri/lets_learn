@@ -566,17 +566,17 @@ test('המשך and חזרה move one step, focus goes to the step heading, the f
   assert.equal(await page.locator('.a-fr-legal').textContent(), 'לא רשמי · אינו הרשמה ואינו המלצה');
   await page.locator('[data-k="frNext"]').click();
   assert.equal(await markOf(page), '3');
-  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'קורסים');
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'אילו קורסים בסמסטר?');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'frTitle', 'the step heading takes focus');
   await page.reload();
   await page.locator('#frTitle').waitFor({ state: 'visible' });
-  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'קורסים', 'a reload returns to the step reached');
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'אילו קורסים בסמסטר?', 'a reload returns to the step reached');
   assert.equal(await page.evaluate(() => document.getElementById('week').querySelectorAll('.blk').length), 0, 'and still no schedule');
   await page.locator('[data-k="frBack"]').click();
   assert.equal(await markOf(page), '2');
   assert.equal((await page.locator('#frTitle').textContent()).trim(), 'מה עברת עד עכשיו?');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'frTitle');
-  for (const [n, title] of [[3, 'קורסים'], [4, 'מה חשוב לי'], [5, 'חברים']]) {
+  for (const [n, title] of [[3, 'אילו קורסים בסמסטר?'], [4, 'מה חשוב לך?'], [5, 'רוצה ללמוד עם חברים?']]) {
     await page.evaluate((m) => localStorage.setItem('afeka-sched-v1-firstrun', m), String(n));
     await page.reload();
     await page.locator('#frTitle').waitFor({ state: 'visible' });
@@ -978,4 +978,284 @@ test('375: the year-change card fits the window, its list is one column, and the
   assert.ok(m.left >= 0 && m.right <= m.w, 'inside the window');
   assert.equal(m.small, 0, 'every control is 44px');
   assert.equal(m.cols, 1, 'one column on a phone');
+});
+
+// ---------- steps 3 to 5 and the end of the pass (phase 3, Task E) ----------
+const WIDE = { width: 1920, height: 1080 };
+// a first-year student (nothing earlier to pass, so the first search has a plan) through the pass up to `step`
+const atStep = async (t, step, { size = 'desktop', year = 1, hash = '' } = {}) => {
+  const page = await visit(t, size, null, hash);
+  await passFirstRun(page, { year, stopAfterStart: true });
+  for (;;) {
+    const card = page.locator('.a-fr-card');
+    await card.waitFor({ timeout: 30000 });
+    const now = await card.getAttribute('data-step');
+    if (now === step) return page;
+    if (now === 'start') {
+      await page.waitForFunction(() => document.querySelector('.a-fr-card')?.dataset.step !== 'start', null, { timeout: 30000 });
+      continue;
+    }
+    await page.locator('[data-k="frNext"]').click();
+    await page.waitForFunction((s) => document.querySelector('.a-fr-card')?.dataset.step !== s, now, { timeout: 30000 });
+  }
+};
+const rec = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
+const inCard = (page) => page.evaluate(() => document.getElementById('firstRun').contains(document.activeElement));
+const idOf = (row) => row.locator('input').first().getAttribute('data-id');
+// a radio is chosen as a keyboard user does it: WebKit does not focus a radio on a click
+const pick = async (page, k) => {
+  const r = page.locator(`#firstRun [data-k="${k}"]`);
+  await r.focus();
+  await r.press('Space');
+};
+const planned = async (page) => Number(/\d+/.exec(await page.locator('.a-fr-sub').textContent())[0]);
+
+test('step 3: the rows are the site\'s suggestion, each its name, credits and the three-way choice; "המשך" without a touch stores nothing', async (t) => {
+  const page = await atStep(t, 'courses');
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'אילו קורסים בסמסטר?');
+  const rows = page.locator('.a-crs');
+  assert.ok((await rows.count()) >= 5, 'the suggested courses');
+  assert.equal(await page.locator('.a-crs details[open]').count(), 0, 'the extras are folded');
+  const first = await rows.first().evaluate((li) => ({
+    name: li.querySelector('.a-crs-name').textContent.trim(),
+    credits: li.querySelector('.a-crs-cr').textContent.trim(),
+    options: [...li.querySelectorAll('.seg label')].map((l) => l.textContent.trim())
+  }));
+  assert.match(first.credits, /^[\d.]+ נ״ז$/);
+  assert.deepEqual(first.options, ['חובה', 'אולי', 'לא']);
+  assert.deepEqual((await rec(page)).choices, {}, 'nothing is chosen: the suggestion is the default');
+  await page.locator('[data-k="frNext"]').click();
+  await page.locator('.a-fr-card[data-step="prefs"]').waitFor();
+  assert.deepEqual((await rec(page)).choices, {}, '"המשך" keeps the suggestion');
+});
+
+test('step 3: a choice is the record at once, a course set to "לא" keeps its row, and the focus stays on the control', async (t) => {
+  const page = await atStep(t, 'courses');
+  const rows = page.locator('.a-crs');
+  const n = await rows.count(),
+    id = await idOf(rows.first()),
+    before = await planned(page);
+  await pick(page, `fr-mode-${id}-must`);
+  assert.equal((await rec(page)).choices[id], 'must');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), `fr-mode-${id}-must`, 'focus stays');
+  assert.equal(await inCard(page), true);
+  await pick(page, `fr-mode-${id}-no`);
+  assert.equal((await rec(page)).choices[id], 'no');
+  assert.equal(await rows.count(), n, 'the row stays, so the choice can be changed back');
+  assert.equal(await planned(page), before - 1, 'the count follows');
+  await pick(page, `fr-mode-${id}-optional`);
+  assert.equal(await planned(page), before);
+});
+
+test('step 3: a row\'s "עוד" names its course for a screen reader, stays open across a redraw, and holds what the course tool adds', async (t) => {
+  const page = await atStep(t, 'courses');
+  const one = page.locator('.a-crs details').first();
+  const sum = one.locator('summary');
+  const course = await one.evaluate((d) => d.closest('.a-crs').querySelector('.a-crs-name').textContent.trim());
+  assert.match((await sum.textContent()).trim(), /^עוד/);
+  assert.ok((await sum.locator('.sr').textContent()).includes(course), 'the summary says whose it is');
+  await sum.click();
+  assert.equal(await one.evaluate((d) => d.open), true);
+  const other = page.locator('.a-crs').last();
+  const id = await idOf(other);
+  await pick(page, `fr-mode-${id}-must`);
+  assert.equal(await page.locator('.a-crs details[open]').count(), 1, 'still open after the redraw');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), `fr-mode-${id}-must`, 'and the focus is where the student was');
+  assert.ok((await one.innerText()).length > (await sum.innerText()).length, 'the extras are inside it');
+});
+
+test('1920: step 3 gives every name one line, the three-way choice one width, the foot stays in the window, and nothing scrolls sideways', async (t) => {
+  const page = await atStep(t, 'courses', { size: WIDE });
+  const m = await page.evaluate(() => {
+    const widths = [...document.querySelectorAll('.a-crs .seg')].map((e) => Math.round(e.getBoundingClientRect().width));
+    const tall = [...document.querySelectorAll('.a-crs-name')].filter((e) => e.getBoundingClientRect().height > 30).length;
+    const foot = document.querySelector('.a-fr-foot').getBoundingClientRect();
+    return { widths: [...new Set(widths)], tall, footBottom: Math.round(foot.bottom), h: innerHeight, sw: document.documentElement.scrollWidth <= innerWidth };
+  });
+  assert.equal(m.widths.length, 1, `one width (${m.widths})`);
+  assert.ok(m.widths[0] >= 180 && m.widths[0] <= 220, `about 200px (${m.widths[0]})`);
+  assert.equal(m.tall, 0, 'no name wraps');
+  assert.ok(m.footBottom <= m.h + 1, `the foot is in the window (${m.footBottom} of ${m.h})`);
+  assert.equal(m.sw, true);
+});
+
+test('375: step 3 stacks the choice under the name with 44px targets and no sideways scroll', async (t) => {
+  const page = await atStep(t, 'courses', { size: 'phone' });
+  const m = await page.evaluate(() => ({
+    sw: document.documentElement.scrollWidth <= innerWidth,
+    small: [...document.querySelectorAll('.a-crs .seg label, .a-crs summary')].filter((e) => e.getBoundingClientRect().height < 43.5).length,
+    narrow: [...document.querySelectorAll('.a-crs')].filter((r) => r.querySelector('.seg').getBoundingClientRect().width < r.getBoundingClientRect().width - 2).length
+  }));
+  assert.equal(m.sw, true);
+  assert.equal(m.small, 0, 'every control is 44px');
+  assert.equal(m.narrow, 0, 'the choice takes the row\'s width');
+});
+
+test('step 4: three questions are visible, the rest is under "עוד הגדרות", and "המשך" keeps the defaults', async (t) => {
+  const page = await atStep(t, 'prefs', { size: WIDE });
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'מה חשוב לך?');
+  assert.deepEqual(await page.locator('.a-fr-asks legend').allTextContents(), ['לתכנן', 'איפה להעמיס', 'ימים פנויים']);
+  assert.equal(await page.locator('.a-fr-card details').evaluate((d) => d.open), false, 'the rest is folded');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight), true, 'the card does not scroll at 1920');
+  const before = await rec(page);
+  await page.locator('.a-fr-card details > summary').click();
+  const text = await page.locator('.a-fr-card details').innerText();
+  for (const s of ['להיות עם החברים', 'להתקדם בתואר', 'שעות נוחות', 'ימים שאני רוצה פנויים', 'לא לפני', 'זמן תפוס', 'תקרת נ״ז', 'קבוצות מלאות', 'הרצאה ותרגול'])
+    assert.ok(text.includes(s), `under "עוד": ${s}`);
+  const again = await page.locator('.a-fr-card details legend').allTextContents();
+  for (const q of ['לתכנן', 'איפה להעמיס', 'ימים פנויים']) assert.ok(!again.includes(q), `a question shown above is not asked twice (${q})`);
+  await page.locator('[data-k="frNext"]').click();
+  await page.locator('.a-fr-card[data-step="friends"]').waitFor();
+  const after = await rec(page);
+  for (const k of ['weights', 'constraints', 'scope', 'load']) assert.deepEqual(after[k], before[k], `${k} is as it was`);
+});
+
+test('step 4: a question that does not apply gives way to "בלי חלונות", a choice is the record at once, and an open "עוד" stays open with the focus on its control', async (t) => {
+  const page = await atStep(t, 'prefs');
+  await pick(page, 'fr-scope-א');
+  assert.deepEqual(await page.locator('.a-fr-asks legend').allTextContents(), ['לתכנן', 'ימים פנויים', 'בלי חלונות'], 'no "איפה להעמיס" for one semester');
+  assert.equal((await rec(page)).scope, 'א');
+  await pick(page, 'fr-w-freeDays-3');
+  assert.equal((await rec(page)).weights.freeDays, 3);
+  await page.locator('.a-fr-card details > summary').click();
+  const chip = page.locator('#firstRun [data-k="doff-2"]');
+  await chip.focus(); // WebKit does not focus a button on a click
+  await chip.press('Enter');
+  assert.deepEqual((await rec(page)).constraints.dayOff, [6, 2], 'Saturday is free by default, and now Monday too');
+  assert.equal(await page.locator('.a-fr-card details').evaluate((d) => d.open), true, 'still open after the redraw');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'doff-2', 'the focus is on the day chip');
+  assert.equal(await inCard(page), true, 'in the card, not on the hidden page that has the same key');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+});
+
+test('step 4 at 375: the card has no sideways scroll and every control is 44px', async (t) => {
+  const page = await atStep(t, 'prefs', { size: 'phone' });
+  await page.locator('.a-fr-card details > summary').click();
+  const m = await page.evaluate(() => ({
+    sw: document.documentElement.scrollWidth <= innerWidth,
+    small: [...document.querySelectorAll('.a-fr-card .seg label, .a-fr-card summary, .a-fr-card .daypill')].filter((e) => e.getBoundingClientRect().height < 43.5).length
+  }));
+  assert.equal(m.sw, true);
+  assert.equal(m.small, 0);
+});
+
+test('step 5: add a friend by a link or the editor, "הקישור שלי" is under "עוד", there is no "אין לי חברים", and the button builds the schedule', async (t) => {
+  const link = await makeLink(t, 'friend');
+  const page = await atStep(t, 'friends');
+  assert.equal((await page.locator('#frTitle').textContent()).trim(), 'רוצה ללמוד עם חברים?');
+  assert.equal((await page.locator('[data-k="frNext"]').textContent()).trim(), 'לבנות מערכת');
+  assert.doesNotMatch(await page.locator('.a-fr-card').innerText(), /אין לי חברים/);
+  assert.equal(await page.locator('.a-fr-card details').evaluate((d) => d.open), false);
+  assert.ok(!(await page.locator('.a-fr-card').getByText('העתק את הקישור שלי').isVisible()), 'my link is folded');
+  await page.locator('.a-fr-card details > summary').click();
+  await page.locator('.a-fr-card').getByText('העתק את הקישור שלי').waitFor({ state: 'visible' });
+  await page.locator('[data-k="frMyName"]').fill('דנה');
+  await page.locator('[data-k="frMyName"]').blur();
+  assert.equal((await rec(page)).name, 'דנה');
+  // not a link: said in the card, nothing added
+  await page.locator('#frFriendUrl').fill('abc');
+  await page.locator('#frFriendUrl').press('Enter');
+  await page.locator('#frFriendErr').waitFor();
+  assert.equal(await page.locator('#frFriendUrl').getAttribute('aria-invalid'), 'true');
+  assert.equal((await rec(page)).friends.length, 0);
+  await page.locator('#frFriendUrl').fill(link);
+  await page.locator('[data-k="frAddFriend"]').click();
+  await page.locator('.a-fr-friend').waitFor();
+  assert.match(await page.locator('.a-fr-friend').innerText(), /נועה/);
+  assert.equal(await page.locator('#frFriendErr').count(), 0);
+  assert.equal((await rec(page)).friends.length, 1);
+  // the editor opens over the card and gives the focus back to its button
+  await page.locator('#frOpenEditor').click();
+  await page.locator('#friendEd[open]').waitFor();
+  await page.keyboard.press('Escape');
+  await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'frOpenEditor');
+  await page.locator('.a-fr-friend [data-act="removeFriend"]').click();
+  assert.equal(await page.locator('.a-fr-friend').count(), 0);
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'frFriendsH', 'focus goes to the friends\' heading');
+});
+
+test('a friend\'s link on a first visit waits in step 5 as "<name> שיתף/ה מערכת · הוספה", survives a reload, and "הוספה" adds the friend', async (t) => {
+  const hash = await makeLink(t, 'friend');
+  const page = await atStep(t, 'friends', { size: 'phone', hash });
+  const landing = page.locator('.a-fr-landing');
+  assert.match(await landing.innerText(), /נועה שיתף\/ה מערכת/);
+  assert.equal((await landing.getByRole('button').textContent()).trim(), 'הוספה');
+  assert.notEqual(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-firstrun-friend')), null, 'kept with the mark');
+  await page.reload();
+  await page.locator('.a-fr-card[data-step="friends"]').waitFor({ timeout: 30000 });
+  await page.locator('.a-fr-landing').waitFor();
+  assert.equal(await page.evaluate(() => location.hash.includes('f=')), false, 'the link is not in the address');
+  await page.locator('.a-fr-landing').getByRole('button', { name: 'הוספה' }).click();
+  await page.locator('.a-fr-friend').waitFor();
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'frFriendsH', "the pressed button is gone: the friends' heading has the focus");
+  assert.equal(await page.locator('.a-fr-landing').count(), 0);
+  assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-firstrun-friend')), null, 'nothing is kept once it is added');
+  await page.locator('[data-k="frNext"]').click();
+  await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+  assert.equal((await rec(page)).friends.length, 1);
+  assert.equal(await page.locator('#banner .banner').count(), 0, 'no banner offers the friend again');
+});
+
+for (const [name, size] of [['1920', WIDE], ['375', 'phone']])
+  test(`${name}: "לבנות מערכת" ends the pass: done, the board's own address with the record not open, the first search, the focus on the week heading`, async (t) => {
+  const page = await atStep(t, 'friends', { size });
+  assert.equal(await page.evaluate(() => location.hash), '#me', 'a first visit sits on #me during the pass');
+  await page.locator('[data-k="frNext"]').click();
+  await page.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+  assert.equal(await markOf(page), 'done');
+  const s = await page.evaluate(() => ({
+    hash: location.hash,
+    me: document.getElementById('me').hidden,
+    panel: document.getElementById('panel').hidden,
+    focus: document.activeElement?.id,
+    card: document.getElementById('firstRun').hidden,
+    onboarded: localStorage.getItem('afeka-sched-v1-onboarded'),
+    entry: localStorage.getItem('afeka-sched-v1-entry')
+  }));
+  assert.equal(s.hash, '', 'the board\'s address');
+  assert.equal(s.me, true, 'the record is not the tool shown');
+  if (size === 'phone') assert.equal(s.panel, true, 'no tool covers the week');
+  assert.equal(s.card, true);
+  assert.equal(s.focus, 'weekTitle', 'the week heading has the focus');
+  assert.ok(s.onboarded && s.entry, 'the pass counts as the onboarding and the entry choice');
+});
+
+test('step 3 follows what step 2 passed: the later courses are suggested once their prerequisites are ticked', async (t) => {
+  const page = await atStep(t, 'passed', { year: 2 });
+  await page.locator('[data-k="frNext"]').click();
+  await page.locator('.a-fr-card[data-step="courses"]').waitFor();
+  const without = await page.locator('.a-crs').count();
+  await page.locator('[data-k="frBack"]').click();
+  await page.locator('[data-k="frPassAll"]').click();
+  await page.locator('[data-k="frNext"]').click();
+  await page.locator('.a-fr-card[data-step="courses"]').waitFor();
+  const all = await page.locator('.a-crs').count();
+  assert.ok(all >= 5 && all > without, `rows after ticking the earlier years (${all}) against none ticked (${without})`);
+});
+
+test('step 4: a busy time added in the card keeps the focus in the card, and removing it lands on the add button', async (t) => {
+  const page = await atStep(t, 'prefs');
+  await page.locator('.a-fr-card details > summary').click();
+  await page.locator('#firstRun [data-k="blkAdd"]').click();
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'blk-0-day');
+  assert.equal(await inCard(page), true);
+  await page.locator('#firstRun [data-k="blk-rm-0"]').click();
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'blkAdd');
+  assert.equal(await inCard(page), true);
+});
+
+const KEPT = 'afeka-sched-v1-firstrun-friend';
+test('a kept friend link is read back only as readHash would accept it, and is dropped once the pass is done', async (t) => {
+  const link = (year) => JSON.stringify({ v: 1, year, semester: 'א', name: 'רוני', groups: ['x'] });
+  const bad = await visit(t, 'phone', { ...mid(5, 1), [KEPT]: link(1999) });
+  await bad.locator('.a-fr-card[data-step="friends"]').waitFor({ timeout: 30000 });
+  assert.equal(await bad.locator('.a-fr-landing').count(), 0, 'another year\'s link is not offered');
+  assert.equal(await bad.evaluate((k) => localStorage.getItem(k), KEPT), null, 'and it is dropped');
+  const good = await visit(t, 'phone', { ...mid(5, 1), [KEPT]: link(2027) });
+  await good.locator('.a-fr-landing').waitFor({ timeout: 30000 });
+  assert.match(await good.locator('.a-fr-landing').innerText(), /רוני שיתף\/ה מערכת/);
+  const done = await visit(t, 'phone', { ...DONE, [KEPT]: link(2027) });
+  await done.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
+  assert.equal(await done.evaluate((k) => localStorage.getItem(k), KEPT), null, 'no link is kept after the pass');
 });

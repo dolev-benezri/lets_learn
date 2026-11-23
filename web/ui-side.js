@@ -41,6 +41,10 @@ function outWhy(id) {
   return k >= 0 ? `הוא נכנס רק בחלופה ${k + 1}` : 'אין לו מקום ליד שאר הקורסים שבחרת';
 }
 
+// A course offered in both semesters of a year plan can be given one (afterA only fits ב׳; a course set to no has nothing to place).
+export const yearPickOf = (offered, s, mode, inSummer) =>
+  app.state.scope === 'year' && offered?.length === 2 && s.status !== 'afterA' && ['must', 'optional'].includes(mode) && !inSummer;
+
 function card(id, res, unlocks, musts) {
   const { data } = app,
     cls = planningCls();
@@ -59,9 +63,7 @@ function card(id, res, unlocks, musts) {
   const dropped = mode === 'must' && (out || noRes); // wanted for sure, but the found plan (or the search) left it out
   const dropWhy = dropped ? (noRes ? notFitReason(c.name, ui.last.diagnosis ?? [], musts) : outWhy(id)) : '';
   const offered = c.semesters; // only the year view lists them
-  const yearPick =
-    // afterA only fits ב׳; a course set to no has nothing to place
-    app.state.scope === 'year' && offered?.length === 2 && s.status !== 'afterA' && ['must', 'optional'].includes(mode) && !inSummer;
+  const yearPick = yearPickOf(offered, s, mode, inSummer);
   if (designOn()) return cardA({ id, c, s, mode, where, inAlt, out, dropped, dropWhy, why, inSummer, offered, yearPick, required, unlocks });
   const tags = [
     app.state.scope === 'year' && offered?.length === 1 ? `<span class="tag">רק בסמסטר ${esc(offered[0])}׳</span>` : '',

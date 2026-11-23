@@ -74,6 +74,39 @@ const blockRow = (b, i) => {
     <button type="button" class="btn" data-act="blkRemove" data-i="${i}" data-k="blk-rm-${i}" aria-label="הסר זמן תפוס: ${when}">הסר</button></div>`;
 };
 
+// The sections of the preferences page that design A's first-run step 4 shows again under "עוד הגדרות" (ui-pass-prefs.js). p prefixes the radio names and
+// the ids, so the card and the hidden page never share them; p = '' is the page itself.
+export const daysSec = (c, notes, p = '') => `<section class="dr-sec"><h3>ימים שאני רוצה פנויים</h3>
+      <div class="daypills" role="group" aria-label="ימים פנויים">${[1, 2, 3, 4, 5, 6]
+        .map(
+          (d) => `<button type="button" class="daypill" data-act="dayOff"
+        data-day="${d}" data-k="doff-${d}" aria-pressed="${c.dayOff.includes(d)}">${DAYS[d]}׳<span class="sr"> ${DAY_FULL[d]}</span></button>`
+        )
+        .join('')}</div>
+      <p class="hint">${esc(notes.days)}</p>
+      ${seg(`${p}dayHard`, 'עד כמה זה מחייב?', HARD, c.dayOffHard ? 'hard' : 'soft', 'data-chg="dayHard"', true)}
+      <p class="hint">${strictnessHint(c.dayOffHard)}</p></section>`;
+export const hoursSec = (c, notes, p = '') => `<section class="dr-sec"><h3>שעות</h3>
+      <div class="times"><label class="field">לא לפני <input type="time" data-chg="notBefore" data-k="notBefore" value="${esc(c.notBefore)}"></label>
+      <label class="field">לא אחרי <input type="time" data-chg="notAfter" data-k="notAfter" value="${esc(c.notAfter)}"></label></div>
+      <p class="hint">${esc(notes.hours)}</p>
+      ${seg(`${p}winHard`, 'עד כמה זה מחייב?', HARD, c.windowHard ? 'hard' : 'soft', 'data-chg="winHard"', true)}
+      <p class="hint">${strictnessHint(c.windowHard)}</p></section>`;
+export const busySec = (c, p = '') => `<section class="dr-sec"><h3 id="${p}busyH">זמן תפוס</h3>
+      <p class="hint">עבודה, אימון: החיפוש לא ישבץ שיעורים בזמנים האלה.</p>
+      <div role="group" aria-labelledby="${p}busyH">${c.blocks.map(blockRow).join('')}</div>
+      ${c.blocks.length < MAX_BLOCKS ? `<button type="button" class="btn" data-act="blkAdd" data-k="blkAdd">+ הוסף זמן תפוס</button>` : ''}</section>`;
+export const moreSec = (c) => `<section class="dr-sec"><h3>עוד אפשרויות</h3>
+      <label class="field">תקרת נ״ז לסמסטר <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="ללא"
+        data-chg="maxCredits" data-k="maxCredits" value="${c.maxCredits ?? ''}"></label>
+      <label class="field">לכל היותר ימים בקמפוס <select data-chg="maxDays" data-k="maxDays">${['', 1, 2, 3, 4, 5, 6]
+        .map((n) => `<option value="${n}"${(c.maxDays ?? '') === n ? ' selected' : ''}>${n || 'ללא'}</option>`)
+        .join('')}</select></label>
+      <label class="check"><input type="checkbox" data-chg="examsForbid" data-k="examsForbid"${c.examsSameDay === 'forbid' ? ' checked' : ''}> לאסור 2 בחינות באותו יום</label>
+      <p class="hint">שתי בחינות באותו תאריך ובאותה שעה לא נכנסות בכל מקרה, כי אי אפשר לגשת לשתיהן.</p>
+      <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label>
+      <label class="check"><input type="checkbox" data-chg="split" data-k="split"${c.split ? ' checked' : ''}> להציג גם הרצאה ותרגול מופרדים</label></section>`;
+
 function prefsPanel() {
   const { state, data } = app,
     c = state.constraints,
@@ -96,37 +129,11 @@ function prefsPanel() {
           seg(`w-${k}`, t, SCALE, nearestStep(state.weights[k], [0, 1, 3, 5]), `data-chg="w" data-w="${k}"`, true)
         )
         .join('')}</section>
-    <section class="dr-sec"><h3>ימים שאני רוצה פנויים</h3>
-      <div class="daypills" role="group" aria-label="ימים פנויים">${[1, 2, 3, 4, 5, 6]
-        .map(
-          (d) => `<button type="button" class="daypill" data-act="dayOff"
-        data-day="${d}" data-k="doff-${d}" aria-pressed="${c.dayOff.includes(d)}">${DAYS[d]}׳<span class="sr"> ${DAY_FULL[d]}</span></button>`
-        )
-        .join('')}</div>
-      <p class="hint">${esc(notes.days)}</p>
-      ${seg('dayHard', 'עד כמה זה מחייב?', HARD, c.dayOffHard ? 'hard' : 'soft', 'data-chg="dayHard"', true)}
-      <p class="hint">${strictnessHint(c.dayOffHard)}</p></section>
-    <section class="dr-sec"><h3>שעות</h3>
-      <div class="times"><label class="field">לא לפני <input type="time" data-chg="notBefore" data-k="notBefore" value="${esc(c.notBefore)}"></label>
-      <label class="field">לא אחרי <input type="time" data-chg="notAfter" data-k="notAfter" value="${esc(c.notAfter)}"></label></div>
-      <p class="hint">${esc(notes.hours)}</p>
-      ${seg('winHard', 'עד כמה זה מחייב?', HARD, c.windowHard ? 'hard' : 'soft', 'data-chg="winHard"', true)}
-      <p class="hint">${strictnessHint(c.windowHard)}</p></section>
-    <section class="dr-sec"><h3 id="busyH">זמן תפוס</h3>
-      <p class="hint">עבודה, אימון: החיפוש לא ישבץ שיעורים בזמנים האלה.</p>
-      <div role="group" aria-labelledby="busyH">${c.blocks.map(blockRow).join('')}</div>
-      ${c.blocks.length < MAX_BLOCKS ? `<button type="button" class="btn" data-act="blkAdd" data-k="blkAdd">+ הוסף זמן תפוס</button>` : ''}</section>
+    ${daysSec(c, notes)}
+    ${hoursSec(c, notes)}
+    ${busySec(c)}
     ${lecturerSec(c.lecturers)}
-    <section class="dr-sec"><h3>עוד אפשרויות</h3>
-      <label class="field">תקרת נ״ז לסמסטר <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="ללא"
-        data-chg="maxCredits" data-k="maxCredits" value="${c.maxCredits ?? ''}"></label>
-      <label class="field">לכל היותר ימים בקמפוס <select data-chg="maxDays" data-k="maxDays">${['', 1, 2, 3, 4, 5, 6]
-        .map((n) => `<option value="${n}"${(c.maxDays ?? '') === n ? ' selected' : ''}>${n || 'ללא'}</option>`)
-        .join('')}</select></label>
-      <label class="check"><input type="checkbox" data-chg="examsForbid" data-k="examsForbid"${c.examsSameDay === 'forbid' ? ' checked' : ''}> לאסור 2 בחינות באותו יום</label>
-      <p class="hint">שתי בחינות באותו תאריך ובאותה שעה לא נכנסות בכל מקרה, כי אי אפשר לגשת לשתיהן.</p>
-      <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label>
-      <label class="check"><input type="checkbox" data-chg="split" data-k="split"${c.split ? ' checked' : ''}> להציג גם הרצאה ותרגול מופרדים</label></section>
+    ${moreSec(c)}
     ${
       state.pins.length
         ? `<section class="dr-sec"><h3>נעיצות</h3><p class="hint">${state.pins.length === 1 ? 'קבוצה אחת נעוצה' : `${state.pins.length} קבוצות נעוצות`}:</p><ul

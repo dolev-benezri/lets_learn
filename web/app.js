@@ -538,10 +538,12 @@ export function setUiReset(fn) {
   uiReset = fn;
 }
 export function keepFocus(fn) {
-  const k = document.activeElement?.dataset?.k;
+  const k = document.activeElement?.dataset?.k,
+    card = !!document.activeElement?.closest?.('#firstRun'); // the first-run card shares keys with the hidden pages: its own control comes first
   fn();
   if (k && document.activeElement?.dataset?.k !== k) {
-    const el = document.querySelector(`[data-k="${CSS.escape(k)}"]`);
+    const sel = `[data-k="${CSS.escape(k)}"]`;
+    const el = (card && document.querySelector(`#firstRun ${sel}`)) || document.querySelector(sel);
     // design A: a control inside the board's closed "פרטים" (a re-render kept it shut) opens it first, or the focus would have nowhere to go
     // (a summary is not inside its own disclosure's hidden part: a closed one stays closed)
     if (document.documentElement.dataset.design === 'a') {

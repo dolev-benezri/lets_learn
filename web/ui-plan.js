@@ -219,16 +219,19 @@ document.addEventListener('change', async (e) => {
   }
 });
 document.addEventListener('input', (e) => {
-  if (e.target.id === 'friendUrl') ui.friendUrl = e.target.value;
+  if (e.target.id === 'friendUrl' || e.target.id === 'frFriendUrl') ui.friendUrl = e.target.value;
 }); // a page redraw keeps the typed link
 document.addEventListener('submit', async (e) => {
-  if (e.target.id !== 'addFriendForm') return;
+  if (e.target.id !== 'addFriendForm' && e.target.id !== 'frFriendForm') return; // the friends page's form, or first-run step 5's
   e.preventDefault();
-  ui.friendUrl = $('friendUrl').value.trim();
+  ui.friendUrl = e.target.querySelector('input[type="text"]').value.trim();
   const r = await readHash(ui.friendUrl.includes('#') ? ui.friendUrl.slice(ui.friendUrl.indexOf('#')) : '', app.state);
   if (!r || r.error || r.type !== 'friend') {
     ui.friendMsg = r?.error ?? 'זה לא קישור חבר';
-    keepFocus(renderPrefs);
+    keepFocus(() => {
+      renderPrefs();
+      renderFirstRun();
+    });
     return;
   }
   ui.friendMsg = ui.friendUrl = '';

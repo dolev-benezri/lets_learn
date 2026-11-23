@@ -73,12 +73,16 @@ export async function addFriend(p) {
   if (r.error) {
     ui.friendMsg = r.error;
     toast(ui.friendMsg);
-    keepFocus(renderPrefs);
+    keepFocus(() => {
+      renderPrefs();
+      renderFirstRun(); // step 5's form shows it too
+    });
     return;
   }
   app.state.friends = r.friends;
   app.friendLanding = null;
   refresh();
+  if (passOpen() && document.activeElement === document.body) $('frFriendsH')?.focus(); // step 5: the button that was pressed is gone
   toast(friendToast(name, r.replaced));
 }
 // The editor's onSave: returns an error string (the editor stays open) or null.
@@ -143,8 +147,7 @@ export const ACT = {
   }, // a friend link waits in app.friendLanding, a backup in app.pendingBackup
   frPassAll() {
     for (const id of stepTwoIds()) if (!app.state.passed.includes(id)) setStatus(app.state, id, 'passed');
-    save();
-    keepFocus(renderFirstRun);
+    refresh();
   },
   // Step 1 of the first-run card: the terms alone (improve's first visit, or asked again) are accepted as before. In the pass the terms, the
   // track and the year are applied together, the button busy and the choices locked until the program's files arrive. A backup link waiting
@@ -418,14 +421,15 @@ export const ACT = {
   removeFriend(el) {
     app.state.friends.splice(Number(el.dataset.i), 1);
     refresh();
-    $(designOn() ? 'friendsPageTitle' : 'prefsTitle')?.focus();
+    if (passOpen()) $('frFriendsH')?.focus(); // step 5: the friends' heading (a field would raise a phone's keyboard)
+    else $(designOn() ? 'friendsPageTitle' : 'prefsTitle')?.focus();
   },
-  openFriendEditor: () => openFriendEditor({ onSave: saveManualFriend, returnFocusId: 'openFriendEditor' }),
+  openFriendEditor: (el) => openFriendEditor({ onSave: saveManualFriend, returnFocusId: el.id }), // the button's own id: step 5 has one of its own
   editFriend: (el) =>
     openFriendEditor({
       friend: app.state.friends[Number(el.dataset.i)],
       onSave: saveManualFriend,
-      returnFocusId: `editFriend-${el.dataset.i}`
+      returnFocusId: el.id
     }),
   dayOff(el) {
     const c = app.state.constraints,
@@ -438,7 +442,7 @@ export const ACT = {
     if (bl.length >= MAX_BLOCKS) return;
     bl.push({ day: 1, start: '18:00', end: '20:00', label: '' });
     refresh();
-    $('prefs')
+    (passOpen() ? $('firstRun') : $('prefs')) // step 4 has its own
       .querySelector(`[data-k="blk-${bl.length - 1}-day"]`)
       ?.focus();
   },
@@ -447,10 +451,8 @@ export const ACT = {
       i = Number(el.dataset.i);
     bl.splice(i, 1);
     refresh();
-    (
-      $('prefs').querySelector(`[data-k="blk-rm-${Math.min(i, bl.length - 1)}"]`) ??
-      $('prefs').querySelector('[data-k="blkAdd"]')
-    )?.focus();
+    const page = passOpen() ? $('firstRun') : $('prefs');
+    (page.querySelector(`[data-k="blk-rm-${Math.min(i, bl.length - 1)}"]`) ?? page.querySelector('[data-k="blkAdd"]'))?.focus();
   },
   clearPins() {
     app.state.pins = [];
@@ -693,10 +695,7 @@ export const CHG = {
   },
   // step 2 of the first-run pass: a tick is the record at once (unticked means not passed), "עברתי את כולם" ticks the list
   frPassed: (el) => {
-    setStatus(app.state, el.dataset.id, el.checked ? 'passed' : 'none');
-    save();
-    keepFocus(renderFirstRun);
-    return 'none';
+    setStatus(app.state, el.dataset.id, el.checked ? 'passed' : 'none'); // the redraw classifies again: step 3's courses follow what is passed
   },
   amirnet: (el) => {
     const err = rangeError(el.validity?.badInput ? 'x' : el.value, 50, 150);

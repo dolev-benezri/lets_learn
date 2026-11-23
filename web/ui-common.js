@@ -149,6 +149,7 @@ export const firstRun = () => {
 };
 export const setFirstRun = (v) => {
   runMark = v;
+  if (v === 'done') keepLanding(null); // the kept friend link goes with the pass, whichever way it ended
   try {
     localStorage.setItem(FIRSTRUN, String(v));
     runMark = null; // stored: the storage is the mark again (another tab may finish the pass)
@@ -187,11 +188,47 @@ export const clearFirstDraft = () => {
     /* storage unavailable */
   }
 };
+// A friend's link that arrives on a first visit waits for step 5 (app.friendLanding lives in memory, and the link is stripped from the address once read):
+// kept beside the mark while the pass is open, so a reload does not lose it. Gone with the pass, or once the friend is added.
+const KEPT = 'afeka-sched-v1-firstrun-friend';
+let keptText = '';
+export function keepLanding(p) {
+  const text = p ? JSON.stringify(p) : '';
+  if (text && text === keptText) return;
+  keptText = text;
+  try {
+    if (text) localStorage.setItem(KEPT, text);
+    else localStorage.removeItem(KEPT);
+  } catch {
+    /* storage unavailable: the link waits in memory for this visit */
+  }
+}
+export function keptLanding() {
+  try {
+    const p = JSON.parse(localStorage.getItem(KEPT)),
+      one = (v) => (typeof v === 'string' || typeof v === 'number' ? v : undefined);
+    // what share.js readHash accepts of a friend's link: this record's year and semester, a short name, a few short group ids
+    if (
+      p && typeof p === 'object' && p.v === 1 && p.year === app.state?.year && p.semester === app.state?.semester &&
+      typeof p.name === 'string' && p.name.length <= 60 &&
+      Array.isArray(p.groups) && p.groups.length <= 40 && p.groups.every((g) => typeof g === 'string' && g.length <= 20)
+    ) {
+      keptText = JSON.stringify(p);
+      return { v: 1, year: p.year, semester: p.semester, program: one(p.program), startYear: one(p.startYear), name: p.name, groups: p.groups };
+    }
+  } catch {
+    /* storage unavailable, or not JSON: nothing kept */
+  }
+  return null;
+}
 // The pass is open: design A, build mode, a student who has not finished it. The edit page (#edit) is never gated by it.
 export const passOpen = () => designOn() && !isEditHash(location.hash) && firstRun() !== 'done';
 app.passOpen = passOpen; // app.js asks before it fills in the earlier years (ensurePassed, switchTo)
 app.firstLoad = () => {
-  if (designOn() && firstRun() === null) setFirstRun(1);
+  if (!designOn()) return;
+  if (firstRun() === null) setFirstRun(1);
+  if (firstRun() === 'done') keepLanding(null); // none after the pass (another tab may have ended it)
+  else app.friendLanding ??= keptLanding(); // a friend's link kept for step 5 (a reload finds it)
 };
 
 // a first visit picks the track, none is assumed

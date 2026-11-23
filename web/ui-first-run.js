@@ -5,16 +5,19 @@ import { app, esc, refresh } from './app.js';
 import { yearsOf } from './rules.js';
 import { icon } from './ui-grid.js';
 import {
-  $, ui, seg, YEARS, designOn, firstRun, setFirstRun, firstRunOn, passOpen, termsOk, firstDraft, clearFirstDraft, markOnboarded, markEntered, shownTitle
+  $, ui, seg, YEARS, designOn, firstRun, setFirstRun, firstRunOn, passOpen, termsOk, firstDraft, clearFirstDraft, keepLanding, markOnboarded, markEntered,
+  shownTitle
 } from './ui-common.js';
 import { stepOf, markOf, nextStep, prevStep, stepLine, yearsFor, startReady } from './first-run.js';
 import { LEGAL_SHORT } from './ui-text.js';
 import { stepTwoHtml } from './ui-passed.js';
+import { stepThreeHtml } from './ui-pass-courses.js';
+import { stepFourHtml } from './ui-pass-prefs.js';
+import { stepFiveHtml } from './ui-pass-friends.js';
 import { TERMS_BLOCK } from './ui-me.js';
 
-const HEAD = { start: 'לפני שמתחילים', passed: 'מה עברת עד עכשיו?', courses: 'קורסים', prefs: 'מה חשוב לי', friends: 'חברים' };
-// the steps after the first have their bodies in their own tasks: until then an empty one
-const BODY = { passed: stepTwoHtml, courses: () => '', prefs: () => '', friends: () => '' };
+const HEAD = { start: 'לפני שמתחילים', passed: 'מה עברת עד עכשיו?', courses: 'אילו קורסים בסמסטר?', prefs: 'מה חשוב לך?', friends: 'רוצה ללמוד עם חברים?' };
+const BODY = { passed: stepTwoHtml, courses: stepThreeHtml, prefs: stepFourHtml, friends: stepFiveHtml };
 
 export const currentStep = () => stepOf(firstRun(), app.state?.profile.year ?? null);
 const yearNow = () => app.state?.profile.year ?? null;
@@ -68,7 +71,7 @@ function footHtml(step) {
   const busy = first && ui.frBusy;
   const go = `<button type="button" class="btn primary" data-act="${first ? 'frStart' : 'frNext'}" data-k="${first ? 'frStart' : 'frNext'}"${
     ready && !busy ? '' : ' disabled'
-  }${busy ? ' aria-busy="true"' : ''}>${busy ? 'טוען…' : 'המשך'}</button>`;
+  }${busy ? ' aria-busy="true"' : ''}>${busy ? 'טוען…' : step === 'friends' ? 'לבנות מערכת' : 'המשך'}</button>`;
   const back = first
     ? ''
     : `<button type="button" class="btn ghost" data-act="frBack" data-k="frBack">${icon('chevron-right')}<span>חזרה</span></button>`;
@@ -98,6 +101,7 @@ export function renderFirstRun() {
   const host = $('firstRun');
   if (!host || !designOn()) return;
   const on = firstRunOn();
+  if (passOpen()) keepLanding(app.friendLanding); // a friend's link waits in step 5, and survives a reload with the mark
   document.body.classList.toggle('first-run', on);
   host.hidden = !on;
   if (!on) {
@@ -130,13 +134,15 @@ export function frNext() {
   if (!passOpen()) return refresh(); // another tab finished the pass: the card is stale, the board takes over
   const next = nextStep(currentStep(), yearNow());
   if (next !== 'done') return toStep(markOf(next));
-  // the last step: the pass ends and the board takes over with its first search
+  // the last step: the pass ends and the board takes over with its first search. The address goes back to the board's (a first visit sits on #me), and a
+  // friend's link not added stays on the board's banner (app.friendLanding), no longer kept for a reload.
   setFirstRun('done');
   clearFirstDraft(); // step 1's draft goes with the pass
   markOnboarded();
   markEntered();
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   refresh();
-  shownTitle()?.focus();
+  ($('weekTitle') ?? shownTitle())?.focus(); // the week's heading (a wide screen's tool beside it has a heading too, which is not the one)
 }
 export function frBack() {
   if (!passOpen()) return refresh();
