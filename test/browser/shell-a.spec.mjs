@@ -451,7 +451,8 @@ test('768px, a tool open: the sheet sits above the centred dock and does not ove
   const page = await visit(t, { width: 768, height: 1024 }, DONE, '#courses');
   await page.locator('#panel #courses').waitFor({ state: 'visible' });
   const m = await page.evaluate(() => ({ dock: document.querySelector('.dock').getBoundingClientRect(), panel: document.getElementById('panel').getBoundingClientRect() }));
-  assert.ok(m.panel.bottom <= m.dock.top + 1, JSON.stringify(m));
+  assert.ok(m.panel.bottom <= m.dock.top + 0.5, JSON.stringify(m)); // no overlap, whichever engine rounds how
+  assert.ok(Math.abs(m.dock.height - 64) <= 0.5, `the dock is exactly --a-dock tall: ${m.dock.height}`);
 });
 test('768px: the dock is centred and at most 560px wide', async (t) => {
   const page = await visit(t, { width: 768, height: 1024 }, DONE);
