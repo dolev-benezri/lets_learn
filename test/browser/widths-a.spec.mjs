@@ -224,6 +224,48 @@ for (const [w, h] of [[1920, 1080], [1280, 800]])
     assert.ok(m.doc <= Math.max(m.board, m.inner), `the document is ${m.doc}px, the board ends at ${m.board}px, the window is ${m.inner}px`);
   });
 
+// The page is never taller than the window when its content is: the tool column's room is what is left of the window where it rests (below the tabs
+// and the board's padding), whatever the tool holds (the course search with a long list), and the heights the layout stands on are measured, so a font that
+// makes the top bar, the strip or the tabs taller than their CSS minimums (CI's) does not make the page grow either.
+for (const [w, h] of [[1920, 1080], [1280, 800]])
+  test(`${w}px improve mode: with the course search open and a long list the page is no taller than the window`, async (t) => {
+    const page = await visit(t, { width: w, height: h }, EDIT, '#edit/changes');
+    await page.locator('[data-k="csOpen"]').click();
+    await page.locator('#csText').fill('חשבון');
+    await page.locator('#csResults .cs-course').nth(1).waitFor({ timeout: 30000 });
+    await page.waitForTimeout(300);
+    const m = await page.evaluate(() => ({
+      doc: document.documentElement.scrollHeight, board: Math.round(document.getElementById('aBoard').getBoundingClientRect().bottom + scrollY), inner: innerHeight,
+      list: document.querySelector('.edit-tool-in').scrollHeight, tool: document.querySelector('.edit-tool').clientHeight
+    }));
+    assert.ok(m.list > m.tool, `the list (${m.list}px) is longer than the column (${m.tool}px), so the column scrolls inside`);
+    // the week is short, and the tool is inside the board: the document must be the window, not the board that grew with the tool
+    assert.ok(m.doc <= m.inner, `the document is ${m.doc}px, the window is ${m.inner}px`);
+  });
+
+for (const [w, h] of [[1920, 1080], [1280, 800]])
+  for (const [what, hash, open] of [['the record', '#edit', true], ['the course search', '#edit/changes', false]])
+    test(`${w}px improve mode, bars taller than their CSS minimums: ${what} open, the page still is no taller than the window`, async (t) => {
+      const page = await visit(t, { width: w, height: h }, EDIT, hash);
+      await page.locator('#edit .edit-board').waitFor({ state: 'visible' });
+      await page.addStyleTag({ content: '.a-top{min-height:63px !important} .a-stage > .dock{padding-block:4px !important} #aStrip{padding-block:2px !important}' });
+      if (open) {
+        await page.locator('.dock [data-tool="me"]').click();
+        await page.locator('#panel #me').waitFor({ state: 'visible' });
+      } else {
+        await page.locator('[data-k="csOpen"]').click();
+        await page.locator('#csText').fill('חשבון');
+        await page.locator('#csResults .cs-course').nth(1).waitFor({ timeout: 30000 });
+      }
+      await page.waitForTimeout(400);
+      const m = await page.evaluate(() => ({
+        doc: document.documentElement.scrollHeight, board: Math.round(document.getElementById('aBoard').getBoundingClientRect().bottom + scrollY), inner: innerHeight,
+        bar: Math.round(document.querySelector('.a-top').getBoundingClientRect().height)
+      }));
+      assert.equal(m.bar, 63, 'the taller bar is in effect');
+      assert.ok(m.doc <= m.inner, `the document is ${m.doc}px, the window is ${m.inner}px`);
+    });
+
 test('1280px improve mode, a fresh visitor: the terms gate puts the record in the tool column slot, not under the board', async (t) => {
   const page = await visit(t, { width: 1280, height: 800 }, {}, '#edit');
   await page.locator('#panel #me').waitFor({ state: 'visible', timeout: 30000 });

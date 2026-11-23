@@ -42,6 +42,20 @@ function placeSemtabs() {
   if (had && tabs.contains(had) && document.activeElement !== had) had.focus({ preventScroll: true });
 }
 
+// The heights the sticky layout is made of, as they are on this machine (fractions kept): a font with other metrics makes the bar, the strip or the tabs
+// taller than the CSS minimums, and a calc() built on constants then misses by those pixels (the page grew two pixels past the window on CI).
+//   --a-chrome: the bottom of the strip (a locked sheet starts under it), --a-top-h and --a-strip-h: what sticks under the bar from 1080px (--a-head),
+//   --a-rec-off: where the board's cell starts in the stage, which is where improve mode's record panel starts (design-a.css .record-open)
+function measureChrome() {
+  const bar = document.querySelector('.a-top'), strip = $('aStrip'), stage = document.querySelector('.a-stage'), board = $('aBoard');
+  if (!bar || !strip || !stage || !board) return;
+  const root = document.documentElement.style;
+  root.setProperty('--a-chrome', `${Math.ceil(strip.getBoundingClientRect().bottom + scrollY) + 6}px`);
+  root.setProperty('--a-top-h', `${bar.getBoundingClientRect().height}px`);
+  root.setProperty('--a-strip-h', `${strip.getBoundingClientRect().height}px`);
+  root.setProperty('--a-rec-off', `${board.getBoundingClientRect().top - stage.getBoundingClientRect().top}px`);
+}
+
 let built = false;
 export function shellInit() {
   if (built || !designOn()) return;
@@ -107,14 +121,11 @@ export function shellInit() {
     if (Math.abs(dx) > 70 && Math.abs(dy) < 50 && !$('layout').hidden && !overlayOpen()) go(dx < 0 ? 1 : -1);
   });
   // a locked sheet (the gate) must leave the title, the mode tabs and the unofficial line above it: its top follows the bottom of the notice strip
-  const chrome = () => {
-    document.documentElement.style.setProperty('--a-chrome', `${Math.ceil($('aStrip').getBoundingClientRect().bottom + scrollY) + 6}px`);
-    document.documentElement.style.setProperty('--a-strip-h', `${$('aStrip').offsetHeight}px`); // what sticks under the bar from 1080px (--a-head)
-  };
-  const watch = new ResizeObserver(chrome);
+  const watch = new ResizeObserver(measureChrome);
   watch.observe(document.querySelector('.a-top'));
   watch.observe($('aStrip'));
-  chrome();
+  watch.observe(document.querySelector('.a-stage > .dock'));
+  measureChrome();
   matchMedia('(min-width: 1080px)').addEventListener('change', () => {
     // crossing 1080px shows or hides the panel: focus that was inside what is now hidden goes to the heading of what is shown
     const had = document.activeElement;
@@ -181,6 +192,7 @@ export function applyShell() {
   document.body.classList.toggle('a-panel-open', !!panel);
   // improve mode: the record takes the tool column's place (state, not DOM removal: a redraw of the tool does not bring the tool back over it)
   document.querySelector('.a-stage')?.classList.toggle('record-open', improve && panel === 'me'); // the record, opened or the improve page's own terms gate
+  measureChrome(); // the board's cell moved down (or up) in the stage
   // while the gate (terms, track, year) is open nothing behind it can be used: the board is inert (and the skip link goes to the gate).
   // A failed load is not a gate: the board holds a retry button of its own, which has to stay pressable.
   $('aBoard').inert = !!panel && (improve ? !termsOk() : lock && !broken);

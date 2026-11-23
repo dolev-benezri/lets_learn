@@ -404,6 +404,9 @@ const candidate = (pred) =>
     return opts.length > 0 && pred(opts, c);
   });
 const fits = (o) => !o.meetings.some(clashesBase);
+// a full group has no "הוספה" (manager's ruling): the tests that add a fixed option need one that is not full
+const groupFull = (gid) => Object.values(FIX.courses).some((c) => c.groups.some((g) => g.id === gid && g.full));
+const free = (o) => !o.groups.some(groupFull);
 
 test('the course search: "חיפוש קורס" opens it in the tool in place of the goals, with the field focused and "חזרה"', async (t) => {
   const page = await visit(t, 'desktop', seed());
@@ -491,7 +494,7 @@ test('a fixed option that clashes with what stays is told by the page; one that 
   // (a) every option of the course meets in the schedule's hours: the search says which lessons overlap, before it runs
   const clashing = await visit(t, 'desktop', seed({ movable: [] }));
   await openSearch(clashing);
-  const [cid, cc] = candidate((opts) => opts.every((o) => o.meetings.some(clashesBase)));
+  const [cid, cc] = candidate((opts) => opts.every((o) => o.meetings.some(clashesBase)) && opts.some(free));
   await typed(clashing, cid);
   await clashing.locator('.cs-course', { has: clashing.locator('h3', { hasText: cc.name }) }).first().locator('[data-ed="csAdd"]').first().click();
   await clashing.locator('[data-ed="search"]').click();

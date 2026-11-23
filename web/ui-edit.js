@@ -81,10 +81,12 @@ export function loadedLineA(lessons) {
   const when = days.length === 1 ? `יום ${days[0]}` : `ימים ${days.slice(0, -1).join(', ')} ו-${days.at(-1)}`;
   return `${courseCount(courses)} · ${when}`;
 }
-export function stepOneHtml(edit, data, review, { same = true, saving = true } = {}) {
+export function stepOneHtml(edit, data, review, { same = true, saving = true, lessons = null } = {}) {
   const d = edit.draft, choices = d?.choices ?? {}, rows = d ? review : [];
   const head = `<div class="me-head"><h2 id="editTitle" tabindex="-1">המערכת שלי</h2>
-    <p class="me-step">${designOn() ? esc(loadedLineA(edit.baseline) || 'טוענים את המערכת שיש לכם.') : '<b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.'}</p></div><div id="editIdentity"></div>`;
+    <p class="me-step">${
+      designOn() ? esc(loadedLineA(lessons ?? edit.baseline) || 'טוענים את המערכת שיש לכם.') : '<b>צעד 1 מתוך 2.</b> טוענים את המערכת שיש לכם.'
+    }</p></div><div id="editIdentity"></div>`;
   // edWaysMsg: why a load button did nothing (track or year missing), said beside the button that was pressed
   const waysBody = (primary) => `<p class="err-text" id="edWaysMsg" role="alert"></p><div class="me-choice-btns">
     <button type="button" class="btn${primary ? ' primary' : ''}" data-ed="loadFile">קובץ מערכת (אקסל מאפקה-נט, PDF או צילום)</button>
@@ -92,7 +94,7 @@ export function stepOneHtml(edit, data, review, { same = true, saving = true } =
     <p class="hint edit-yedion">${YEDION_HINT}</p>`;
   const ways = (primary) => `<section class="me-card edit-ways" aria-label="טעינת המערכת">${waysBody(primary)}</section>`;
   // once a schedule is loaded, what was read comes first and the load buttons fold under one line (a phone sees the review at once)
-  const reload = `<details class="me-card edit-ways"><summary>טעינה מחדש או שינוי ידני</summary>${waysBody(false)}</details>`;
+  const reload = `<details class="${designOn() ? '' : 'me-card '}edit-ways"><summary>טעינה מחדש או שינוי ידני</summary>${waysBody(false)}</details>`;
   if (!same)
     return `${head}<div class="edit-col"><p class="msg bad" role="status"><span>המערכת נשמרה מול נתונים אחרים. טענו אותה שוב כדי לערוך.</span></p>
       <section class="me-card"><h3>המערכת שנשמרה</h3>${snapshotHtml(edit.original)}
@@ -102,9 +104,9 @@ export function stepOneHtml(edit, data, review, { same = true, saving = true } =
   return `${head}<div class="edit-col">${loaded ? '' : ways(true)}
     ${review_.length ? `<section class="me-card" aria-labelledby="rvH"><h3 id="rvH">לבדיקה</h3>
       <p class="hint">לא בטוחים בשורות האלה. בחרו קבוצה בכל שורה.</p>${review_.join('')}</section>` : ''}
-    ${loaded ? `<section class="me-card"><label class="check"><input type="checkbox" data-ed-reg${d?.registered ?? edit.registered ? ' checked' : ''}>
+    ${loaded ? `<section class="${designOn() ? 'edit-reg' : 'me-card'}"><label class="check"><input type="checkbox" data-ed-reg${d?.registered ?? edit.registered ? ' checked' : ''}>
       המערכת כבר רשומה במכללה</label>
-      ${d?.sem ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}${coursesLine(rows, data)}</p>` : ''}</section>${reload}` : ''}
+      ${d?.sem && !designOn() ? `<p class="hint">נטענה מערכת של סמסטר ${esc(d.sem)}${d.sem.length === 1 ? '׳' : ''}${coursesLine(rows, data)}</p>` : ''}</section>${reload}` : ''}
     <p class="err-text" id="edMsg" role="alert"></p>
     ${designOn() && loaded ? '<div class="edit-next"><button type="button" class="btn primary" data-ed="next">לשינויים</button></div>' : ''}</div>
     ${designOn() ? '' : `<div class="me-foot"><span class="hint" data-saved${saving ? '' : ' hidden'}>כל שינוי נשמר מיד.</span>
@@ -471,7 +473,10 @@ export function renderEdit() {
   if (step !== V.step) V.fx = 'step';
   V.step = step;
   const fx = V.fx === 'step' ? ' fx' : '';
-  const one = () => stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh, saving: saving() });
+  const one = () =>
+    stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], {
+      same: same || fresh, saving: saving(), lessons: designOn() ? loadedNow(st)?.lessons : null
+    });
   // A, nothing loaded yet: the centred card alone (no stage, no week, no footer bar)
   const field = document.activeElement?.id === 'csText' ? document.activeElement : null; // the search field's caret survives the redraw
   const keep = field ? [field.selectionStart, field.selectionEnd] : null;
@@ -589,10 +594,28 @@ function stepTwoA(st) {
 }
 
 // Design A, step 1: the loaded schedule as a week on the board, to look at (its lessons are marked in step 2); before there is one, a line saying so.
-function boardOne(st) {
+// What is loaded now: the saved schedule (with its pending changes), or, before "לשינויים" saves it, the lessons the rows just read stand for.
+function loadedNow(st) {
   const data = dataOf(st.dataset?.sem);
-  if (!data || !st.baseline.length || !sameNow(st)) return '<p class="hint edit-empty">המערכת שתטענו תופיע כאן, שבוע אחד על הלוח.</p>';
-  const { week, days } = weekOf(st, data, null, false, classify(data, app.state).statuses);
+  if (data && st.baseline.length && sameNow(st)) return { data, st, zero: false, lessons: st.baseline };
+  const d = st.draft, from = d?.rows?.length ? dataOf(d.sem) : null;
+  const lessons = from ? lessonsFromRows(d.rows, d.choices, from) : [];
+  return lessons.length ? { data: from, st: { ...st, baseline: lessons, original: lessons, removed: [], added: [], swaps: {} }, zero: true, lessons } : null;
+}
+// A row's choice in the review list changes the lessons read: the week and the heading line follow at once (the rest of the page, and the focus on the
+// radio, stay as they are)
+function refreshOneA() {
+  if (!designOn() || V.step !== 1) return;
+  const st = edit(), now = loadedNow(st), board = document.querySelector('#edit .edit-board'), line = document.querySelector('#edit .me-step');
+  if (line) line.textContent = loadedLineA(now?.lessons ?? st.baseline) || 'טוענים את המערכת שיש לכם.';
+  if (!board) return;
+  board.innerHTML = boardOne(st);
+  board.classList.toggle('has-week', board.innerHTML.includes('id="editWeek"'));
+}
+function boardOne(st) {
+  const now = loadedNow(st);
+  if (!now) return '<p class="hint edit-empty">המערכת שתטענו תופיע כאן, שבוע אחד על הלוח.</p>';
+  const { week, days } = weekOf(now.st, now.data, null, now.zero, classify(now.data, app.state).statuses);
   return `<h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
     <div class="daysel" id="editDays" role="group" aria-label="בחירת יום">${days}</div>
     <div id="editWeek" class="edit-week" inert>${week}</div>`;
@@ -1097,6 +1120,7 @@ function wire() {
     else return;
     commit(st);
     say('');
+    if (t.dataset?.edPick !== undefined) refreshOneA();
   });
   // the build switcher's keys: ArrowLeft is next, ArrowRight previous (right to left); not while typing or while something is open
   document.addEventListener('keydown', (e) => {

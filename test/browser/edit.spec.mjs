@@ -3,8 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
-import { DONE, DESIGN, editWeekView, editToolView, visit as visitIn, launch } from './helpers.mjs';
-import { zipSync, strToU8 } from '../../web/vendor/fflate/fflate.js';
+import { DONE, DESIGN, XLSX, yedionXlsx, editWeekView, editToolView, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -49,17 +48,6 @@ const hebrewPdf = (lines) => {
   pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${at.map((n) => `${String(n).padStart(10, '0')} 00000 n \n`).join('')}`;
   return Buffer.from(`${pdf}trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`, 'latin1');
 };
-// A made-up yedion export (the real one carries the student's ID number and is never committed): day headers in row 2, a lesson per cell.
-const yedionXlsx = (cells) => {
-  const all = { B2: 'יום ראשון', C2: 'יום שני', D2: 'יום שלישי', E2: 'יום רביעי', F2: 'יום חמישי', G2: 'יום שישי', ...cells };
-  const c = (ref, t) => `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</t></is></c>`;
-  return Buffer.from(zipSync({
-    'xl/workbook.xml': strToU8('<workbook><sheets><sheet name="FileFromYedion" sheetId="1" r:id="rId1"/></sheets></workbook>'),
-    'xl/_rels/workbook.xml.rels': strToU8('<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>'),
-    'xl/worksheets/sheet1.xml': strToU8(`<worksheet><sheetData><row>${Object.entries(all).map(([r, t]) => c(r, t)).join('')}</row></sheetData></worksheet>`)
-  }));
-};
-const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 // a lesson of the course on its day (the phone shows one day at a time)
 const lesson = async (page, name, day) => {
   const d = page.locator(`#editDays [data-day="${day}"]`);
@@ -123,6 +111,7 @@ const skipped = (page, root) =>
       .filter((e) => !e.disabled && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden')
       // inside a closed <details> only its summary shows (the engines keep boxes for the rest, hidden by content-visibility)
       .filter((e) => !e.closest('details:not([open])') || e.matches('details > summary'))
+      .filter((e) => !e.closest('[inert]')) // the week of step 1 is there to look at: it is inert, and not reachable by design
       .filter((e) => !reached(e))
       .map((e) => e.outerHTML.slice(0, 90));
   }, [root, (process.env.BROWSER || 'webkit') !== 'webkit']);
@@ -156,6 +145,12 @@ for (const [name, size] of SIZES) {
     assert.equal(await noSideways(page), true, 'step 1');
     await page.locator('[data-ed="next"]').click();
     assert.match(await page.locator('#edMsg').textContent(), /שורה|שורות/, 'unconfirmed rows hold the way on');
+    if (DESIGN === 'a') {
+      // design A: a row's choice puts its lessons on the board at once (the week is drawn from the rows read, before "לשינויים" saves them)
+      const before = await page.locator('#editWeek .blk').count();
+      await page.locator('[data-ed-row]').first().locator('input').first().check();
+      await page.waitForFunction((n) => document.querySelectorAll('#editWeek .blk').length > n, before, { timeout: 10000 });
+    }
     await confirmRows(page);
     assert.ok((await saved(page)).baseline.length >= 1);
     assert.equal(await noSideways(page), true, 'step 2');
@@ -180,7 +175,9 @@ for (const [name, size] of SIZES) {
     await page.locator('#feImpStatus').filter({ hasText: /נמצא|לא זוהה/ }).waitFor({ timeout: 30000 });
     await page.locator('[data-fe="save"]').click();
     await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
-    assert.match(await page.getByText(/נטענה מערכת של סמסטר/).textContent(), /· 2 קורסים/);
+    // classic says it in a sentence, design A in the heading's one line (the week is drawn beside it)
+    if (DESIGN === 'a') assert.equal((await page.locator('#edit .me-step').textContent()).trim(), '2 קורסים · ימים ג׳ ו-ד׳');
+    else assert.match(await page.getByText(/נטענה מערכת של סמסטר/).textContent(), /· 2 קורסים/);
     assert.equal(await page.locator('[data-ed-row]').count(), 0, 'every lesson was read exactly: nothing to confirm');
     assert.ok((await saved(page)).draft.rows.every((r) => r.via === 'xlsx' && r.confidence === 'sure'));
     assert.equal(await noSideways(page), true, 'step 1');
@@ -318,7 +315,8 @@ test('phone: adding a course and searching; "העתק שינויים" falls back
     // design A: the course search (phase 2, Task F) replaces the "+ קורס" select
     await page.locator('[data-ed="openSearch"]').click();
     await page.locator('#csText').fill('מבוא');
-    await page.locator('[data-ed="csAdd"]').first().click();
+    // an option that fits (a full group has no "הוספה", and one that clashes leaves no schedule)
+    await page.locator('.cs-opt', { has: page.locator('.tag', { hasText: 'נכנס' }) }).locator('[data-ed="csAdd"]').first().click();
   } else {
     const opts = await page.locator('[data-ed-goal="addCourse"] option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
     assert.ok(opts.length > 0, 'courses that can be added');

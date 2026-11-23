@@ -1,6 +1,7 @@
 // Shared by the browser specs: the fictional student, the seeded storage, the synthetic grade-sheet PDF and visit().
 import assert from 'node:assert/strict';
 import * as playwright from 'playwright';
+import { zipSync, strToU8 } from '../../web/vendor/fflate/fflate.js';
 
 export const SITE = process.env.SITE_URL;
 // BROWSER=chromium or firefox; WebKit, the engine of iPhone Safari, when not set.
@@ -170,3 +171,15 @@ export async function editToolView(page) {
   const stage = page.locator('.edit-stage[data-sheet="closed"]');
   if (await stage.count()) await page.locator('.dock [data-tool="changes"]').click();
 }
+
+// A made-up yedion export (the real one carries the student's ID number and is never committed): day headers in row 2, a lesson per cell.
+export const yedionXlsx = (cells) => {
+  const all = { B2: 'יום ראשון', C2: 'יום שני', D2: 'יום שלישי', E2: 'יום רביעי', F2: 'יום חמישי', G2: 'יום שישי', ...cells };
+  const c = (ref, t) => `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</t></is></c>`;
+  return Buffer.from(zipSync({
+    'xl/workbook.xml': strToU8('<workbook><sheets><sheet name="FileFromYedion" sheetId="1" r:id="rId1"/></sheets></workbook>'),
+    'xl/_rels/workbook.xml.rels': strToU8('<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>'),
+    'xl/worksheets/sheet1.xml': strToU8(`<worksheet><sheetData><row>${Object.entries(all).map(([r, t]) => c(r, t)).join('')}</row></sheetData></worksheet>`)
+  }));
+};
+export const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

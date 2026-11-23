@@ -25,7 +25,8 @@ const TAG = { fits: ['נכנס', 'ok'], full: ['מלא', 'bad'] };
 function optionHtml(row, o) {
   const with_ = row.withIds?.length ? ` data-with="${esc(row.withIds.join(','))}"` : '';
   const tag = o.fit === 'clash' ? ['מתנגש עם ' + o.clash.join(', '), 'warn'] : TAG[o.fit];
-  const act = row.readOnly
+  // a full group (the tag says it) cannot be taken: no button, whatever the course's state
+  const act = row.readOnly || o.fit === 'full'
     ? ''
     : row.inSchedule
       ? `<button type="button" class="btn" data-ed="csSwap" data-k="cs-${esc(row.id)}-${esc(o.ids.join('+'))}" data-course="${esc(row.id)}" data-ids="${esc(o.ids.join(','))}">מעבר לקבוצה</button>`
