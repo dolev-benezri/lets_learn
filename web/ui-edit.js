@@ -9,6 +9,8 @@ import { kinds, overlaps, displayData, summaryLine, changeText, splitOnlySwaps, 
 import { reqContext, reqMet } from './rules.js';
 import { groupNumber, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine, courseCount } from './ui-text.js';
 import { identityPick } from './ui-me.js';
+import { searchCourses } from './course-search.js';
+import { searchViewHtml, resultsHtml as csResultsHtml, countLine } from './ui-course-search.js';
 import { getEdit, setEdit, saveEdit, restoredCount, lessonsOf, loadSchedule, restoreOriginal, saveProposal, datasetOf, sameDataset } from './edit-state.js';
 
 // ---------- step 1: rows -> lessons ----------
@@ -123,6 +125,83 @@ export const emptyCardHtml = (open = false) => `<section class="edit-card" aria-
     <p class="hint edit-yedion">${YEDION_HINT}</p></details>
   <p class="err-text" id="edMsg" role="alert"></p></section>`;
 
+// ---------- the course search (phase 2, Task F): the state is V.s, the HTML ui-course-search.js, the matching course-search.js ----------
+const SEM_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
+function searchCtx(st) {
+  const sem = st.dataset.sem, data = dataOf(sem), { pr, zero } = stepTwoBase(st);
+  const inSchedule = new Set([...uniq(st.baseline.map((l) => l.course)), ...st.added].filter((c) => !st.removed.includes(c)));
+  return {
+    // the week the board shows (a proposal, the original, or the schedule with its pending changes): the tags must agree with what is on screen
+    data: app.sem, foreign: V.s.foreign, sem, week: pr ? pr.lessons : zero ? st.baseline : effectiveLessons(st, data), inSchedule,
+    statuses: classify(data, app.state).statuses,
+    registered: st.registered, owned: st.owned, split: !!app.state.constraints.split
+  };
+}
+// the line the count says when the chosen program's files are loading or one of the semesters asked for failed to load
+const searchFailed = () => (V.s.loading ? 'loading' : V.s.failedSems.has(V.s.sem || edit().dataset.sem));
+const searchQuery = () => ({ text: V.s.text, day: Number(V.s.day) || null, hour: V.s.hour || null, sem: V.s.sem || undefined, program: V.s.program });
+const searchAsked = () => !!(V.s.text.trim() || V.s.day || V.s.hour);
+const programsOf = (st) => {
+  const own = st.dataset.program, all = app.catalog?.programs ?? [];
+  return [...all.filter((p) => p.id === own), ...all.filter((p) => p.id !== own)].map((p) => ({ id: p.id, name: p.name }));
+};
+function searchToolHtml(st) {
+  const r = searchCourses(searchCtx(st), searchQuery());
+  return searchViewHtml(V.s, programsOf(st), r, searchAsked(), searchFailed());
+}
+// typing and the chips redraw the results alone: the field keeps its focus and its caret
+function updateResults() {
+  const box = $('csResults');
+  if (!box || !V.s.open) return;
+  const r = searchCourses(searchCtx(edit()), searchQuery());
+  // a result button that survives the redraw keeps focus
+  const keep = document.activeElement?.closest?.('#csResults') ? document.activeElement.dataset.k : null;
+  $('csCount').textContent = countLine(r, searchAsked(), searchFailed());
+  box.innerHTML = csResultsHtml(r, searchAsked());
+  if (keep) box.querySelector(`[data-k="${CSS.escape(keep)}"]`)?.focus({ preventScroll: true });
+}
+// Another program's courses: its files are fetched on demand; the last choice wins over an earlier answer (V.s.fetch)
+async function chooseProgram(id) {
+  const st = edit(), mine = String(id) === String(st.dataset.program) || !id;
+  const my = ++V.s.fetch;
+  V.s.program = mine ? 'mine' : Number(id);
+  V.s.foreign = null;
+  V.s.failedSems = new Set();
+  V.s.loading = !mine;
+  updateResults();
+  if (mine) return;
+  const prog = (app.catalog?.programs ?? []).find((p) => p.id === Number(id));
+  const startYear = prog?.startYears?.includes(st.dataset.startYear) ? st.dataset.startYear : Math.max(...(prog?.startYears ?? [st.dataset.startYear]));
+  // each semester on its own: a successful load is kept for the visit (the cache), a 404 means the program has no such semester, anything else is a failure of
+  // that semester only (the count says so when it is the one asked for)
+  const get = async (sem) => {
+    const key = `${st.dataset.year}-${SEM_CODE[sem]}/${id}-${startYear}`;
+    if (V.s.cache.has(key)) return V.s.cache.get(key);
+    const res = await fetch(`data/afeka/${key}.json`, { cache: 'no-cache' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(res.status);
+    const d = await res.json();
+    if (!d?.courses || typeof d.courses !== 'object') throw new Error('a data file with no courses');
+    V.s.cache.set(key, d);
+    return d;
+  };
+  const sems = ['א', 'ב', 'קיץ'], answers = await Promise.allSettled(sems.map(get));
+  if (my !== V.s.fetch) return; // an older answer arriving after a newer choice, success or failure
+  V.s.foreign = Object.fromEntries(sems.map((sem, i) => [sem, answers[i].status === 'fulfilled' ? answers[i].value : null]));
+  V.s.failedSems = new Set(sems.filter((_, i) => answers[i].status === 'rejected'));
+  V.s.loading = false;
+  updateResults();
+}
+const addCourseFixed = (b) => {
+  const st = edit(), course = b.dataset.course, ids = b.dataset.ids.split(','), withIds = (b.dataset.with ?? '').split(',').filter(Boolean);
+  const have = new Set([...st.baseline.map((l) => l.course), ...st.added]);
+  const all = [course, ...withIds];
+  const added = [...st.added, ...all.filter((c, i, a) => !have.has(c) && a.indexOf(c) === i)];
+  V.s.open = false;
+  touch({ ...st, added, removed: st.removed.filter((c) => !all.includes(c)), swaps: { ...st.swaps, [course]: ids } }, '[data-ed="openSearch"]');
+  toast(withIds.length ? 'הקורס וקורס המקביל שלו נוספו לשינויים' : 'הקורס נוסף לשינויים');
+};
+
 // ---------- step 2: pure parts ----------
 const OPEN = ['retake', 'available', 'afterA', 'conditional']; // classify statuses a course can be taken in this semester
 const nameIn = (edit, data, id) => data.courses[id]?.name ?? edit.baseline.find((l) => l.course === id)?.name ?? id;
@@ -205,13 +284,16 @@ const chipSelect = (goal, value, sr, shown, options) =>
 const swapButton = (course, ids, text) =>
   `<button type="button" class="btn" data-ed="pickSwap" data-course="${esc(course)}" data-groups="${esc(ids.join(','))}">${text}</button>`;
 // Goal chips: two are drop-downs (the phone's own picker), one a toggle, then "+ קורס".
-export function goalsHtml(edit, addable) {
+// search (design A, phase 2 Task F): "חיפוש קורס" opens the course search in place of the "+ קורס" select
+export function goalsHtml(edit, addable, search = false) {
   const g = edit.goal;
   return `<div class="goals" role="group" aria-label="מטרה">
     ${chipSelect('dayOff', g.dayOff, "לפנות יום", "לפנות יום ▾", DAY_OPTS.map((d) => [d, `לפנות יום ${DAYS[d]}׳`]))}
     <button type="button" class="chip${g.fewerGaps ? ' on' : ''}" data-ed="fewerGaps" aria-pressed="${g.fewerGaps}">פחות חלונות</button>
     ${chipSelect('notAfter', g.notAfter, "לסיים עד", "לסיים עד ▾", END_OPTS.map((t) => [t, `לסיים עד ${t}`]))}
-    ${addable.length ? chipSelect("addCourse", null, "הוספת קורס", "+ קורס", addable.map((c) => [c.id, c.name])) : ""}
+    ${search
+      ? '<button type="button" class="chip" data-ed="openSearch" data-k="csOpen">חיפוש קורס</button>'
+      : addable.length ? chipSelect("addCourse", null, "הוספת קורס", "+ קורס", addable.map((c) => [c.id, c.name])) : ""}
   </div>`;
 }
 
@@ -296,6 +378,8 @@ export function searchNotesHtml(result, edit, data) {
     for (const c of result.enabling)
       out.push(`<p>אם ${esc(nameIn(edit, data, c))} יזוז, יש פתרון. <button type="button" class="btn" data-ed="letMove" data-course="${esc(c)}">תן לה לזוז</button></p>`);
   }
+  // A: a course added from the search with its group fixed that no schedule holds (the group clashes with what stays, or with another fixed one)
+  if (designOn() && !result.proposals.length && edit.added.some((c) => edit.swaps[c]?.length)) out.push('<p>לא נמצאה מערכת עם הקבוצה הזו.</p>');
   if (result.timedOut) out.push('<p class="hint">לא הספקנו לבדוק הכל</p>');
   return out.join('');
 }
@@ -304,8 +388,14 @@ export function searchNotesHtml(result, edit, data) {
 let fresh = false; // a schedule was read in this visit: its review shows even while the saved one belongs to other data
 // What step 2 shows and has under way (not saved): the shown day, the search in flight, its result.
 // stamp: what the result was worked out on (resultStamp); a result is shown and saved only while that still holds.
-// fx: what animates next; how: the empty card's download instructions are open; more: the proposal's "עוד" is open
-const V = { more: false, how: false, day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null };
+// s: the course search (open, the query, the chips, another program's files); fx: what animates next; how: the empty card's download instructions are
+// open; more: the proposal's "עוד" is open
+const SEARCH = {
+  open: false, text: '', day: '', hour: '', sem: '', program: 'mine', foreign: null, loading: false, failedSems: new Set(), fetch: 0, cache: new Map()
+};
+const V = {
+  s: SEARCH, more: false, how: false, day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null
+};
 const editColors = new Map();
 const edit = getEdit; // the edit state, read once (edit-state.js)
 // Keeps the new state and saves it; false when nothing was written (storage blocked or full, or another tab holds a newer copy).
@@ -370,11 +460,20 @@ export function renderEdit() {
   // A: the tabs of the top bar are the mode switch, there is no label to open the menu
   const label = designOn() ? '' : `<button type="button" class="mode-label" data-act="menu" data-k="editMode">עורכים מערכת קיימת · החלפה</button>`;
   const step = onChanges() ? 2 : 1;
+  if (step !== 2) V.s.open = false; // the search belongs to the changes screen
+  const dk = [st.dataset?.year, st.dataset?.program, st.dataset?.startYear, st.dataset?.sem].join();
+  if (V.s.dk !== dk) {
+    // another dataset (the schedule was loaded again for another program or semester): the search starts over, the loaded files stay in the cache
+    Object.assign(V.s, { open: false, program: 'mine', sem: '', foreign: null, loading: false, failedSems: new Set(), dk });
+    V.s.fetch++;
+  }
   if (step !== V.step) V.fx = 'step';
   V.step = step;
   const fx = V.fx === 'step' ? ' fx' : '';
   const one = () => stepOneHtml(st, dataOf(st.draft?.sem ?? 'א'), st.draft?.rows ?? [], { same: same || fresh, saving: saving() });
   // A, nothing loaded yet: the centred card alone (no stage, no week, no footer bar)
+  const field = document.activeElement?.id === 'csText' ? document.activeElement : null; // the search field's caret survives the redraw
+  const keep = field ? [field.selectionStart, field.selectionEnd] : null;
   const how = document.querySelector('#edit .edit-how'); // read now: its toggle event may still be queued when this replaces it
   if (how) V.how = how.open;
   const empty = designOn() && step === 1 && !(st.draft?.rows?.length || st.baseline.length) && (same || fresh);
@@ -396,6 +495,10 @@ export function renderEdit() {
       ? `<div class="edit-step${fx}">${emptyCardHtml(V.how)}</div>`
       : `${label}<div class="edit-step${fx}">${body}</div>`;
   if (gx) document.querySelector('#edit .goals')?.scrollTo({ left: gx });
+  if (keep && $('csText')) {
+    $('csText').focus({ preventScroll: true });
+    $('csText').setSelectionRange(keep[0], keep[1]);
+  }
   if (dropped && step === 2) say(STALE);
   if ($('editIdentity') && (!app.state.profile.year || needsProgram())) $('editIdentity').innerHTML = identityPick(app.state.profile.year, true);
 }
@@ -470,9 +573,9 @@ function stepTwoA(st) {
   const { data, props, pr, zero, statuses } = stepTwoBase(st);
   const { week, days, warn } = weekOf(st, data, pr, zero, statuses);
   const [top, panel] = resultsHtml(st, data, pr, props.length);
-  const tool = `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
+  const tool = V.s.open ? searchToolHtml(st) : `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
     <p class="me-step">לחצו על שיעור כדי לסמן שיכול לזוז.</p></div>
-    ${goalsHtml(st, addableCourses(data, statuses, st))}${changesHtml(st, data)}${splitOptionHtml(!!app.state.constraints.split)}
+    ${goalsHtml(st, addableCourses(data, statuses, st), true)}${changesHtml(st, data)}${splitOptionHtml(!!app.state.constraints.split)}
     <div class="edit-search"><button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${
       V.running ? 'מחפש…' : V.result ? 'חפש שוב' : 'חפש הצעות'
     }</button></div>
@@ -843,6 +946,22 @@ function step(by) {
   renderEdit();
 }
 const ACT_ED = {
+  openSearch() {
+    V.s.open = true;
+    renderEdit();
+    $('csText')?.focus({ preventScroll: true });
+  },
+  closeSearch() {
+    V.s.open = false;
+    renderEdit();
+    document.querySelector('[data-ed="openSearch"]')?.focus({ preventScroll: true });
+  },
+  csAdd: addCourseFixed,
+  csSwap(b) {
+    const st = edit();
+    V.s.open = false;
+    touch({ ...st, swaps: { ...st.swaps, [b.dataset.course]: b.dataset.ids.split(',') } }, '[data-ed="openSearch"]');
+  },
   more() {
     V.more = !V.more;
     renderEdit();
@@ -920,7 +1039,11 @@ const ACT_ED = {
   },
   drop: (b) => drop(b.dataset.course),
   unmove: (b) => touch({ ...edit(), movable: without(edit().movable, b.dataset.course) }, '#editTitle'),
-  unadd: (b) => touch({ ...edit(), added: without(edit().added, b.dataset.course) }, '#editTitle'),
+  unadd(b) {
+    const st = edit(), swaps = { ...st.swaps }; // cancelling an addition also drops the group fixed for it (the week would still draw it)
+    delete swaps[b.dataset.course];
+    touch({ ...st, added: without(st.added, b.dataset.course), swaps }, '#editTitle');
+  },
   unremove: (b) => touch({ ...edit(), removed: without(edit().removed, b.dataset.course) }, '#editTitle'),
   unswap({ dataset: { course } }) {
     const swaps = { ...edit().swaps };
@@ -941,7 +1064,21 @@ function wire() {
     }
     if (b && !b.disabled) ACT_ED[b.dataset.ed]?.(b, e);
   });
+  document.addEventListener('input', (e) => {
+    if (e.target.id !== 'csText') return;
+    V.s.text = e.target.value;
+    updateResults();
+  });
   document.addEventListener('change', (e) => {
+    const key = e.target.dataset?.edS;
+    if (key && key !== 'text') {
+      if (key === 'program') chooseProgram(e.target.value);
+      else {
+        V.s[key] = e.target.value;
+        updateResults();
+      }
+      return;
+    }
     const t = e.target, st = edit(), d = st.draft, goal = t.dataset?.edGoal;
     if (goal === 'dayOff') touch({ ...st, goal: { ...st.goal, dayOff: Number(t.value) || null } }, '[data-ed-goal="dayOff"]');
     else if (goal === 'notAfter') touch({ ...st, goal: { ...st.goal, notAfter: t.value || null } }, '[data-ed-goal="notAfter"]');
@@ -962,7 +1099,7 @@ function wire() {
   });
   // the build switcher's keys: ArrowLeft is next, ArrowRight previous (right to left); not while typing or while something is open
   document.addEventListener('keydown', (e) => {
-    if (!onChanges() || !V.result?.proposals.length || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    if (!onChanges() || V.s.open || !V.result?.proposals.length || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     if (designOn() && (ui.overlay || !document.querySelector('#edit .edit-tool')?.checkVisibility?.())) return; // the record over the page, or a closed sheet
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || $('pop').matches(':popover-open') || document.querySelector('dialog:modal')) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable], [tabindex="0"], .edit-more')) return; // keys inside "עוד" are its own
@@ -970,6 +1107,23 @@ function wire() {
     step(e.key === 'ArrowLeft' ? 1 : -1);
     document.querySelector(e.key === 'ArrowLeft' ? '[data-ed="propNext"]' : '[data-ed="propPrev"]')?.focus({ preventScroll: true });
   });
+  // Escape in the course search: in the field it clears the text first, then (or anywhere in the search) it closes the search and focus returns to "חיפוש קורס"
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key !== 'Escape' || !V.s.open || !e.target.closest?.('.edit-tool') || e.defaultPrevented) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.target.id === 'csText' && V.s.text) {
+        V.s.text = '';
+        e.target.value = '';
+        updateResults();
+        return;
+      }
+      ACT_ED.closeSearch();
+    },
+    true
+  );
   // Escape inside the open "עוד" closes it and returns focus to it (before anything else takes the key: the phone's sheet, the record)
   document.addEventListener(
     'keydown',

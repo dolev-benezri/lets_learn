@@ -610,7 +610,8 @@
 :root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; }
 :root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; }
 :root[data-design="a"] .edit-tool .chip { min-height:44px; }
-:root[data-design="a"] .edit-tool .chip select { min-height:44px; margin-block:-1px; } /* the select is the target: it fills the chip, 44px (it was 40px) */
+:root[data-design="a"] .edit-tool .chip select { min-height:44px; min-width:44px; margin-block:-1px; }
+/* the select is the target: it fills the chip, 44px (it was 40px) */
 :root[data-design="a"] .edit-search, :root[data-design="a"] .edit-next { margin-top:var(--sp-3); }
 :root[data-design="a"] .edit-search .btn, :root[data-design="a"] .edit-next .btn { width:100%; min-height:44px; }
 :root[data-design="a"] .edit-tool #editResults > p { margin:var(--sp-3) 0 0; } /* the stand-alone "cancel all changes" under the search button */
@@ -623,3 +624,18 @@
 }
 :root[data-design="a"] .edit-more-list .btn { justify-content:flex-start; min-height:44px; }
 :root[data-design="a"] .edit-more-list[hidden] { display:none; }
+/* phase 2, Task F (improve mode, the course search): one field and a few chips, then the courses; each course a card, each option a line with its tag
+   and its button */
+:root[data-design="a"] .cs-head { display:grid; gap:var(--sp-1); }
+:root[data-design="a"] .cs-field input {
+  width:100%; min-height:44px; padding:0 var(--sp-3); border:1px solid var(--border-strong); border-radius:12px; background:var(--surface); color:var(--text);
+  font:inherit;
+}
+:root[data-design="a"] .cs-count { margin:var(--sp-2) 0; }
+:root[data-design="a"] .cs-list { display:grid; gap:var(--sp-3); }
+:root[data-design="a"] .cs-course { padding:var(--sp-3); border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+:root[data-design="a"] .cs-course h3 { margin:0 0 2px; font-size:var(--fs); font-weight:600; }
+:root[data-design="a"] .cs-meta { margin:0 0 var(--sp-2); }
+:root[data-design="a"] .cs-opts { display:grid; gap:var(--sp-2); }
+:root[data-design="a"] .cs-opt { display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-1) var(--sp-2); }
+:root[data-design="a"] .cs-opt .btn { min-height:44px; }

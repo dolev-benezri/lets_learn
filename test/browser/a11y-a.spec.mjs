@@ -389,3 +389,25 @@ for (const scheme of ['light', 'dark'])
     }
     done();
   });
+
+// phase 2, Task F: the open course search with results (and another program's, read only) at 320, 375 and 1280, both colour schemes: axe, targets
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the course search with results at 320, 375 and 1280: axe, no sideways scroll, targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const seed = { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) };
+    for (const [w, size] of Object.entries(WIDTHS)) {
+      const page = await visit(t, size, seed, '#edit/changes', scheme);
+      await page.locator('[data-ed="openSearch"]').waitFor({ timeout: 30000 });
+      await page.locator('[data-ed="openSearch"]').click();
+      await check(page, `${w} search, nothing asked`);
+      await page.locator('#csText').fill('מבוא');
+      await page.locator('.cs-course').first().waitFor({ timeout: 30000 });
+      await check(page, `${w} search results`);
+      if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))) note(`${w} search: scrolls sideways`);
+      if (w !== '1280') for (const b of await smallTargets(page)) note(`${w} search: ${b}`);
+      await page.locator('select[data-ed-s="program"]').selectOption('20');
+      await page.locator('.cs-course .cs-meta', { hasText: 'לא בתוכנית שלך' }).first().waitFor({ timeout: 30000 });
+      await check(page, `${w} search, another program`);
+    }
+    done();
+  });
