@@ -68,7 +68,8 @@ export function shellInit() {
       <button type="button" class="a-scrim" data-act="closeTool" tabindex="-1" aria-hidden="true"></button>
       <section class="a-panel" id="panel" hidden>
         <div class="a-grip" aria-hidden="true"></div>
-        <div class="a-ph"><button type="button" class="btn icon-btn ghost" data-act="closeTool" data-k="closeTool" aria-label="סגירה">${icon('x')}</button></div>
+        <div class="a-ph"><button type="button" class="btn icon-btn ghost" data-act="closeTool" data-k="closeTool" aria-label="סגירה">${icon('x')}</button>
+          <button type="button" class="btn ghost a-back" data-act="closeTool" data-k="closeBack">${icon('chevron-right')}<span>חזרה</span></button></div>
         <div class="a-pb" id="aPb"></div>
       </section>
     </div>`;
@@ -141,7 +142,10 @@ export function applyShell() {
   const w = wide();
   const improve = route.mode === 'improve';
   if (!improve) ui.overlay = null; // the record over the edit page does not outlive it
-  if (improve) ui.altsOver = false; // the alternatives column over the week belongs to the board: not left open behind the edit page
+  if (improve) {
+    ui.altsOver = false; // the alternatives column over the week belongs to the board: not left open behind the edit page
+    $('alts')?.classList.remove('alts-over');
+  }
   if (improve && ui.lastStep !== route.tool) ui.editSheet = true; // a step shows its tool
   ui.lastStep = improve ? route.tool : null;
   const panel = panelOf(route, { wide: w, program: !needsProgram(), gated: !!app.state && gated(), termsOk: termsOk(), overlay: ui.overlay });
@@ -162,7 +166,8 @@ export function applyShell() {
     const tool = b.dataset.tool;
     b.hidden = !shownTools.includes(tool);
     const step = route.tool === 'changes' ? 'changes' : 'mine'; // improve: the screen shown (pressed only while its tool is open on a phone)
-    const pressed = improve && (tool === 'mine' || tool === 'changes') ? tool === step && (w || ui.editSheet !== false) : tool === panel;
+    // only the screen shown is pressed: with the record open it is the record's button, not the step's under it
+    const pressed = improve && (tool === 'mine' || tool === 'changes') ? tool === step && !ui.overlay && (w || ui.editSheet !== false) : tool === panel;
     b.setAttribute('aria-pressed', String(pressed));
     const off = broken || (lock && tool !== 'me') || (improve && tool === 'me' && (!app.state || locked()));
     off ? b.setAttribute('aria-disabled', 'true') : b.removeAttribute('aria-disabled');
@@ -174,6 +179,8 @@ export function applyShell() {
     (a.dataset.mode === 'edit') === (route.mode === 'improve') ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current');
   for (const b of document.querySelectorAll('#panel [data-act="closeTool"], .a-scrim')) b.hidden = lock && !!panel;
   document.body.classList.toggle('a-panel-open', !!panel);
+  // improve mode: the record takes the tool column's place (state, not DOM removal: a redraw of the tool does not bring the tool back over it)
+  document.querySelector('.a-stage')?.classList.toggle('record-open', improve && panel === 'me'); // the record, opened or the improve page's own terms gate
   // while the gate (terms, track, year) is open nothing behind it can be used: the board is inert (and the skip link goes to the gate).
   // A failed load is not a gate: the board holds a retry button of its own, which has to stay pressable.
   $('aBoard').inert = !!panel && (improve ? !termsOk() : lock && !broken);
@@ -227,7 +234,7 @@ export function openImprove(name, opener) {
   }
   const here = routeA(location.hash).tool === 'changes' ? 'changes' : 'mine';
   if (name === here) {
-    if (wide()) routeFocus('open');
+    if (wide() || !document.querySelector('#edit .edit-stage')) routeFocus('open'); // no stage, no sheet to fold: the empty card is inline
     else toggleEditSheet();
     return;
   }

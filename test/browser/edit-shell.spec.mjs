@@ -180,6 +180,13 @@ test('short phone: a load button pressed before the year is chosen says why besi
   }
   // the year answered: the same button opens the loader, and the message is gone
   await page.locator('#editIdentity .seg-opts label').nth(1).click(); // the page is drawn again: a click, not check()
-  await page.locator('[data-ed="loadFile"]').click();
-  await page.locator('#friendEd[open]').waitFor();
+  if (DESIGN === 'a') {
+    // design A: the chooser opens first, the editor once a file is chosen
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 10000 }), page.locator('[data-ed="loadFile"]').click()]);
+    assert.equal(await page.locator('#friendEd[open]').count(), 0, 'no editor before a file is chosen');
+    assert.ok(chooser);
+  } else {
+    await page.locator('[data-ed="loadFile"]').click();
+    await page.locator('#friendEd[open]').waitFor();
+  }
 });

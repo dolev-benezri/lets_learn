@@ -1,7 +1,7 @@
 // The edit page's proposals (Task 12) in WebKit: a real search over the frozen data, the before/after, save, copy, restore.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, editWeekView, editToolView, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, editWeekView, editToolView, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -27,6 +27,11 @@ const search = async (page) => {
   await page.locator('.prop-nav').waitFor({ timeout: 30000 });
 };
 
+// design A keeps the proposal's rest (the new day, cancelling every change) in "עוד"
+const openMore = async (page) => {
+  const more = page.locator('[data-ed="more"]');
+  if (DESIGN === 'a' && (await more.getAttribute('aria-expanded')) === 'false') await more.click();
+};
 for (const size of ['phone', 'desktop'])
   test(`${size}: a search shows "הצעה 1 מתוך N" with its summary, the old hours struck, the new ones, and the disclaimer`, async (t) => {
     const page = await visit(t, size, seed());
@@ -35,7 +40,8 @@ for (const size of ['phone', 'desktop'])
     assert.match(await page.locator('.prop-sum').textContent(), /יום ד׳ התפנה/);
     assert.equal(await page.locator('.pcard s').count(), 1);
     assert.match(await page.locator('.pcard .now').textContent(), /קבוצה/);
-    assert.ok((await page.locator('.prop-panel').innerText()).includes('הצעה בלבד. ההרשמה נעשית במכללה.'), 'disclaimer');
+    // classic keeps the card's disclaimer; design A drops it (the strip's "אינו הרשמה" is on the same screen: each notice once)
+    assert.equal((await page.locator('.prop-panel').innerText()).includes('הצעה בלבד. ההרשמה נעשית במכללה.'), DESIGN !== 'a', 'the disclaimer: classic only');
     const buttons = await page.locator('#edit .edit-step button, #edit .edit-stage button').allInnerTexts(); // A: the stage
     assert.ok(buttons.length > 3, 'there are buttons to check');
     for (const b of buttons) assert.ok(!/החל|הרשמ/.test(b), b);
@@ -49,6 +55,7 @@ test('phone: "הראה את היום החדש" appears where the old lesson was 
   await page.locator('#editDays [data-day="4"]').click();
   assert.ok((await page.locator('#editWeek .off.ghost').first().textContent()).includes('היה כאן'));
   await editToolView(page);
+  await openMore(page);
   await page.locator('[data-ed="newDay"]').click();
   assert.notEqual(await page.locator('#editDays [aria-pressed="true"]').getAttribute('data-day'), '4');
   assert.equal((await page.locator('#editWeek .day.on .blk.changed').count()) > 0, true, 'the new lesson is highlighted');
@@ -57,6 +64,7 @@ test('phone: "הראה את היום החדש" appears where the old lesson was 
   await editWeekView(page);
   await page.locator('#editDays [data-day="3"]').click(); // a day the change does not touch: the button is still offered
   await editToolView(page);
+  await openMore(page);
   await page.locator('[data-ed="newDay"]').click();
   assert.equal(await page.locator('#editDays [aria-pressed="true"]').getAttribute('data-day'), to);
   assert.equal(await page.locator('[data-ed="newDay"]').count(), 0, 'on the new day there is nothing to show');
@@ -146,7 +154,8 @@ test('desktop: registering again in step 1 drops the proposals; proposal 0 is th
   await page.locator('[data-ed="propPrev"]').click();
   assert.equal(await page.locator('#editWeek .off.ghost').count(), 0, 'proposal 0 draws no ghosts');
   assert.equal(await page.locator('[data-ed="restoreOriginal"]').count(), 1, 'a movable course is a pending edit: restore shows');
-  await page.locator('#edit a[href="#edit"]').click(); // the foot's way back (A also has the improve tab with this address)
+  if (DESIGN === 'a') await page.locator('.dock [data-tool="mine"]').click(); // A: the tab is the way back
+  else await page.locator('#edit a[href="#edit"]').click(); // the foot's way back
   await page.locator('[data-ed-reg]').check();
   await page.locator('[data-ed="next"]').click();
   await page.waitForFunction(() => location.hash === '#edit/changes');

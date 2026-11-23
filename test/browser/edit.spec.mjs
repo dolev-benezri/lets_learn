@@ -132,14 +132,24 @@ const axe = async (page, screen) => {
   assert.deepEqual(violations.map((v) => `${screen}: ${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`), []);
 };
 
+// Loading a file: design A's button asks for the chooser first and the editor opens once a file is chosen; classic opens the editor on its file field
+const loadFileFlow = async (page, file) => {
+  if (DESIGN === 'a') {
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 10000 }), page.locator('[data-ed="loadFile"]').click()]);
+    await chooser.setFiles(file);
+  } else {
+    await page.locator('[data-ed="loadFile"]').click();
+    await page.locator('#feFile').setInputFiles(file);
+  }
+  await page.locator('#friendEd[open]').waitFor();
+};
 for (const [name, size] of SIZES) {
   test(`${name}: a planner PDF, the uncertain row confirmed, then step 2 (one flow)`, async (t) => {
     const page = await visit(t, size, DONE);
-    await page.locator('[data-ed="loadFile"]').click();
-    await page.locator('#friendEd[open]').waitFor();
     // the planner's table: the MATLAB row fits two groups, so it waits for the student
-    await page.locator('#feFile').setInputFiles({ name: 'planner.pdf', mimeType: 'application/pdf', buffer: hebrewPdf(TABLE.split('\n')) });
+    await loadFileFlow(page, { name: 'planner.pdf', mimeType: 'application/pdf', buffer: hebrewPdf(TABLE.split('\n')) });
     await page.locator('#feImpStatus').filter({ hasText: /נמצא|לא זוהה/ }).waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('#feYedion a').getAttribute('target'), '_blank');
     await page.locator('[data-fe="save"]').click();
     await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
     assert.ok((await page.locator('[data-ed-row]').count()) >= 1, 'an uncertain row is listed');
@@ -156,10 +166,7 @@ for (const [name, size] of SIZES) {
     const link = page.locator('.edit-yedion a');
     assert.equal(await link.getAttribute('href'), 'https://yedionp.afeka.ac.il/yedion/fireflyweb.aspx');
     assert.equal(await link.getAttribute('target'), '_blank');
-    await page.locator('[data-ed="loadFile"]').click();
-    await page.locator('#friendEd[open]').waitFor();
-    assert.equal(await page.locator('#feYedion a').getAttribute('target'), '_blank');
-    await page.locator('#feFile').setInputFiles({
+    await loadFileFlow(page, {
       name: 'schedule.xlsx',
       mimeType: XLSX,
       buffer: yedionXlsx({
@@ -212,9 +219,7 @@ for (const [name, size] of SIZES) {
 // A student who chose the wrong track sees their own courses "not found": the message says to check the track.
 test('phone 320: a course of another track in the Excel file is not found, and the message points at the chosen track', async (t) => {
   const page = await visit(t, SIZES[1][1], DONE);
-  await page.locator('[data-ed="loadFile"]').click();
-  await page.locator('#friendEd[open]').waitFor();
-  await page.locator('#feFile').setInputFiles({
+  await loadFileFlow(page, {
     name: 'schedule.xlsx',
     mimeType: XLSX,
     buffer: yedionXlsx({
@@ -246,6 +251,7 @@ for (const [name, size] of [SIZES[0], SIZES[2]])
     assert.ok((await page.locator('.prop-sum').innerText()).trim().length > 0, 'summary');
     assert.ok((await page.locator('.pcard').count()) >= 1, 'change card');
     const before = await saved(page);
+    if (DESIGN === 'a') await page.locator('[data-ed="more"]').click(); // design A: "עוד" holds the new day
     await page.locator('[data-ed="newDay"]').first().click();
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle');
     if (name === 'phone') // the button sits under the week there: the new day is brought into view
@@ -265,7 +271,7 @@ for (const [name, size] of SIZES)
     await page.locator('#editWeek .blk').first().waitFor();
     const [goals, chip] = [await page.locator('.goals').boundingBox(), await page.locator('.goals .chip').first().boundingBox()];
     // A, wide: the column wraps the chips (declutter step 8), so none is cut; everywhere else the goals are one row
-    if (DESIGN === 'a' && name === 'desktop') assert.ok(goals.width > 0 && chip.width > 0, 'the goals are drawn');
+    if (DESIGN === 'a') assert.ok(goals.width > 0 && chip.width > 0, 'the goals are drawn (A wraps the chips at every width: edit-a.spec.mjs)');
     else assert.ok(goals.height < chip.height * 2, `one row of goals: ${goals.height} / ${chip.height}`);
     assert.equal(await noSideways(page), true, 'step 2');
     await editWeekView(page); // A, a phone: the tool is a sheet over the week
@@ -286,7 +292,7 @@ for (const [name, size] of SIZES)
     assert.equal(await noSideways(page), true, 'a proposal');
   });
 
-test('phone 320: a goal chosen at the far end of the goal row stays in view after the page redraws', async (t) => {
+test('phone 320: a goal chosen at the far end of the goal row stays in view after the page redraws', { skip: DESIGN === 'a' && 'design A wraps the chips (edit-a.spec.mjs)' }, async (t) => {
   const page = await visit(t, SIZES[1][1], LOADED, '#edit/changes');
   await page.locator('#editWeek .blk').first().waitFor();
   const goals = page.locator('.goals');

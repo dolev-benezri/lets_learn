@@ -2,7 +2,7 @@
 // the backup link, and a proposal that stops being valid. Synthetic data only (the frozen test data, a made-up schedule).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { DONE, visit as visitIn, launch } from './helpers.mjs';
+import { DONE, DESIGN, visit as visitIn, launch } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -27,6 +27,16 @@ const state = (over = {}) => ({ v: 1, dataset: DS, registered: false, owned: [],
 const seed = (over) => ({ ...DONE, 'afeka-sched-v1-edit': JSON.stringify(state(over)) });
 const visit = (t, size, s, hash = '#edit/changes') => visitIn(browser, t, size, s, hash);
 const saved = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1-edit')));
+// the first screen's "saved at once" line: classic shows it only while saving works; design A has no such line at all (it went with the footer bar)
+const savedLine = async (page, shown) => {
+  if (DESIGN === 'a') {
+    await page.locator('#edit [data-ed="next"]').waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('[data-saved]').count(), 0, 'design A: no "כל שינוי נשמר מיד"');
+  } else {
+    await page.locator('[data-saved]').waitFor({ state: 'attached' });
+    assert.equal(await page.locator('[data-saved]').isVisible(), shown, shown ? 'the promise is there' : 'and the page does not promise');
+  }
+};
 const search = async (page) => {
   await page.locator('[data-ed="search"]').click();
   await page.locator('.prop-nav').waitFor({ timeout: 30000 });
@@ -60,12 +70,11 @@ test('desktop: another tab saved the edit state: this tab says so at once, saves
   assert.deepEqual([s.goal.fewerGaps, s.goal.dayOff], [true, 4], 'the other tab\'s state is what is stored');
   // and the page does not promise
   await b.evaluate(() => (location.hash = '#edit'));
-  await b.locator('[data-saved]').waitFor({ state: 'attached' });
-  assert.equal(await b.locator('[data-saved]').isVisible(), false);
+  await savedLine(b, false);
   await Promise.all([b.waitForEvent('load'), note.locator('[data-act="reloadPage"]').click()]);
   await b.locator('[data-ed="next"]').waitFor({ timeout: 30000 });
   assert.equal(await note.count(), 0);
-  assert.equal(await b.locator('[data-saved]').isVisible(), true);
+  await savedLine(b, true);
   await b.evaluate(() => (location.hash = '#edit/changes'));
   assert.equal(await b.locator('[data-ed="fewerGaps"]').getAttribute('aria-pressed'), 'true');
 });
@@ -113,8 +122,7 @@ test('desktop: a failed edit save is told on the edit page and stays told after 
   await page.evaluate(async () => (await import('./app.js')).save()); // the main key saves fine
   assert.equal(await note.count(), 1, 'a good save of the other key does not hide it');
   await page.evaluate(() => (location.hash = '#edit'));
-  await page.locator('[data-saved]').waitFor({ state: 'attached' });
-  assert.equal(await page.locator('[data-saved]').isVisible(), false, 'no "כל שינוי נשמר מיד"');
+  await savedLine(page, false);
   // the way out: the backup link carries the schedule as the page has it now, without the import draft
   await note.locator('[data-act="backup"]').click();
   const dlg = page.locator('dialog[open]');
@@ -133,8 +141,7 @@ test('desktop: a failed edit save is told on the edit page and stays told after 
   await note.waitFor({ state: 'detached', timeout: 5000 });
   assert.equal((await saved(page)).goal.fewerGaps, true);
   await page.evaluate(() => (location.hash = '#edit'));
-  await page.locator('[data-saved]').waitFor({ state: 'attached' });
-  assert.equal(await page.locator('[data-saved]').isVisible(), true);
+  await savedLine(page, true);
 });
 
 test('desktop: restoring a backup link brings back the edit state, and an older link leaves the saved one', async (t) => {

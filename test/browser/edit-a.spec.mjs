@@ -58,7 +58,7 @@ test('the dock of improve mode: the two screens and the record, the build tools 
 
 test('the changes button with no schedule loaded says so, and stays on the first screen', async (t) => {
   const page = await visit(t, 'desktop', { ...DONE }, '#edit');
-  await page.locator('#edit .edit-stage').waitFor({ timeout: 30000 });
+  await page.locator('#edit .edit-card').waitFor({ timeout: 30000 });
   await dock(page, 'changes').click();
   await page.locator('#edMsg').filter({ hasText: 'טענו מערכת' }).waitFor();
   assert.equal(new URL(page.url()).hash, '#edit');
@@ -73,20 +73,33 @@ test('a moved lesson shows "היה כאן" on the board while the proposal tool 
   assert.match(await page.locator('#editWeek').innerText(), /היה כאן/);
 });
 
-test('phone 320: the goal row keeps its horizontal scroll after a redraw', async (t) => {
-  const page = await visit(t, { width: 320, height: 640 }, seed());
-  await page.locator('.edit-tool .goals').waitFor({ timeout: 30000 });
-  const before = await page.evaluate(() => {
-    const g = document.querySelector('#edit .goals');
-    g.scrollLeft = -60; // right to left: negative is further along
-    return g.scrollLeft;
+// phase 2, Task E: the goal chips wrap (the row is no scroller), every label whole, at 320 and 1280, and a redraw does not change that
+for (const [name, size] of [['320', { width: 320, height: 640 }], ['1280', { width: 1280, height: 800 }]])
+  test(`${name}: the goal chips wrap with every label whole and nothing scrolls sideways, also after a redraw`, async (t) => {
+    const page = await visit(t, size, seed());
+    await page.locator('.edit-tool .goals').waitFor({ timeout: 30000 });
+    const measure = () =>
+      page.evaluate(() => {
+        const g = document.querySelector('#edit .goals'), box = g.getBoundingClientRect();
+        const chips = [...g.children].filter((c) => c.getClientRects().length);
+        return {
+          n: chips.length, wrap: getComputedStyle(g).flexWrap, overflowX: getComputedStyle(g).overflowX, rowScroll: g.scrollWidth - g.clientWidth,
+          whole: chips.every((c) => c.scrollWidth <= c.clientWidth + 1 && c.getBoundingClientRect().left >= box.left - 0.5 && c.getBoundingClientRect().right <= box.right + 0.5),
+          page: document.documentElement.scrollWidth - innerWidth
+        };
+      });
+    for (const when of ['first draw', 'after a change']) {
+      const m = await measure();
+      assert.ok(m.n >= 3, `${when}: the chips are there`);
+      assert.equal(m.wrap, 'wrap', `${when}: the row wraps`);
+      assert.equal(m.overflowX, 'visible', `${when}: the row is not a scroller`);
+      assert.ok(m.rowScroll <= 1, `${when}: nothing to scroll in the row (${m.rowScroll})`);
+      assert.equal(m.whole, true, `${when}: every chip is whole inside the row`);
+      assert.ok(m.page <= 0, `${when}: the page does not scroll sideways (${m.page})`);
+      await page.locator('[data-ed-goal="dayOff"]').selectOption('3'); // a change redraws the page
+      await page.waitForFunction(() => document.querySelector('[data-ed-goal="dayOff"]')?.value === '3');
+    }
   });
-  assert.notEqual(before, 0, 'the row scrolls at 320');
-  await page.locator('[data-ed-goal="dayOff"]').selectOption('3'); // a change redraws the page
-  await page.waitForFunction(() => document.querySelector('[data-ed-goal="dayOff"]')?.value === '3');
-  const after = await page.evaluate(() => document.querySelector('#edit .goals').scrollLeft);
-  assert.ok(Math.abs(after - before) < 3, `the row stayed where it was (${before} -> ${after})`);
-});
 
 test('saving a proposal updates the board and closes nothing', async (t) => {
   const page = await visit(t, 'desktop', seed());
@@ -248,6 +261,7 @@ test('phone: Escape closes the sheet, the week is reachable only then, and the d
 test('phone: "הראה את היום החדש" closes the sheet over the week and puts focus on the week', async (t) => {
   const page = await visit(t, 'phone', seed());
   await search(page);
+  await page.locator('[data-ed="more"]').click();
   await page.locator('[data-ed="newDay"]').click();
   await page.locator('.edit-tool').waitFor({ state: 'hidden' });
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'editWeekTitle', 'focus is on the week, which can be seen');
@@ -256,7 +270,7 @@ test('phone: "הראה את היום החדש" closes the sheet over the week an
 
 test('the changes button leaves the record open when the changes screen cannot open', async (t) => {
   const page = await visit(t, 'desktop', { ...DONE }, '#edit');
-  await page.locator('#edit .edit-stage').waitFor({ timeout: 30000 });
+  await page.locator('#edit .edit-card').waitFor({ timeout: 30000 });
   await dock(page, 'me').click();
   await page.locator('#panel #me').waitFor({ state: 'visible' });
   await dock(page, 'changes').click(); // no schedule loaded: it stays here and says so
@@ -265,4 +279,97 @@ test('the changes button leaves the record open when the changes screen cannot o
   assert.equal(await page.locator('#panel').isVisible(), false, 'the record closed with the press, as the shell and its state agree');
   await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(() => location.hash), '#edit', 'Escape does not navigate');
+});
+
+// phase 2, Task D: the record takes the tool column's slot (state, not DOM removal), with a back control; the week never moves; a redraw of the tool does not
+// bring the tool back over it; Escape and "חזרה" close it and focus returns to the dock's "המצב שלי"
+for (const w of [1920, 1280, 1100])
+  test(`${w}px: the record sits in the hidden tool column's slot, never over the week, and the week does not move`, async (t) => {
+    const page = await visit(t, { width: w, height: 900 }, seed());
+    await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+    await page.waitForLoadState('networkidle');
+    const rect = (sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width }; }, sel);
+    const tool = await rect('.edit-tool'), week = await rect('.edit-board');
+    await dock(page, 'me').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    const panel = await rect('#panel'), weekAfter = await rect('.edit-board');
+    assert.equal(await page.locator('.edit-tool').isVisible(), false, 'the tool is hidden while the record is open');
+    assert.equal(await page.evaluate(() => document.querySelector('.a-stage').classList.contains('record-open')), true, 'by a class on the stage');
+    assert.deepEqual(weekAfter, week, 'the week stays where it was');
+    assert.ok(panel.l >= week.r - 1 || panel.r <= week.l + 1, `the record is beside the week, not over it: ${JSON.stringify({ panel, week })}`);
+    assert.ok(Math.abs(panel.l - tool.l) <= 1.5 && Math.abs(panel.r - tool.r) <= 1.5, `in the tool column's slot: ${JSON.stringify({ panel, tool })}`);
+    assert.ok(panel.t >= tool.t - 1.5, `under the tabs: ${panel.t} vs ${tool.t}`);
+    assert.ok(panel.b <= 900 + 0.5, `inside the window: ${panel.b}`);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.dock .dk[aria-pressed="true"]')].map((b) => b.dataset.tool)), ['me'], 'only the record is pressed');
+  });
+
+test('the record has a back control: "חזרה" closes it, so does Escape, and focus returns to the dock\'s "המצב שלי"', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+  for (const close of ['back', 'escape']) {
+    await dock(page, 'me').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'meTitle', `${close}: opening moves focus into the record, to its heading`);
+    const back = page.locator('#panel .a-back');
+    assert.equal(await back.isVisible(), true, 'the way back is in the header');
+    assert.match(await back.innerText(), /חזרה/);
+    assert.ok((await back.boundingBox()).height >= 43.5, 'a 44px target');
+    if (close === 'back') await back.click();
+    else await page.keyboard.press('Escape');
+    await page.locator('#panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('.edit-tool').isVisible(), true, `${close}: the tool is back`);
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'dock-me', `${close}: focus returns to "המצב שלי"`);
+  }
+});
+
+test('a search finishing while the record is open keeps it open, the tool hidden and focus where it was', async (t) => {
+  const page = await visit(t, 'desktop', seed());
+  const held = holdWorker(page);
+  await page.locator('[data-ed="search"]').click();
+  await held.reached;
+  await dock(page, 'me').click();
+  await page.locator('#panel #me').waitFor({ state: 'visible' });
+  await page.locator('#panel [data-chg="amirnet"]').focus();
+  held.release();
+  await page.locator('.prop-nav').waitFor({ state: 'attached', timeout: 30000 }); // the answer redraws the tool underneath
+  assert.equal(await page.locator('#panel #me').isVisible(), true, 'the record is still open');
+  assert.equal(await page.locator('.edit-tool').isVisible(), false, 'and the redraw did not bring the tool back over it');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.chg), 'amirnet', 'focus stays on the field it was on');
+});
+
+test('a phone: the record is a sheet with "חזרה", the tool sheet is hidden under it, and closing brings the tool back', async (t) => {
+  const page = await visit(t, 'phone', seed());
+  await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
+  for (const close of ['back', 'escape']) {
+    await dock(page, 'me').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('.edit-tool').isVisible(), false, `${close}: no second sheet under the record`);
+    const m = await page.evaluate(() => {
+      const p = document.getElementById('panel'), r = p.getBoundingClientRect(), d = document.querySelector('.dock').getBoundingClientRect();
+      return { role: p.getAttribute('role'), name: p.getAttribute('aria-labelledby'), bottom: r.bottom, dockTop: d.top, top: r.top };
+    });
+    assert.equal(m.role, 'dialog', `${close}: a sheet is a dialog`);
+    assert.equal(m.name, 'meTitle', `${close}: named by its heading`);
+    assert.ok(m.bottom <= m.dockTop + 1 && m.top >= 0, `${close}: the sheet sits above the dock: ${JSON.stringify(m)}`);
+    if (close === 'back') await page.locator('#panel .a-back').click();
+    else await page.keyboard.press('Escape');
+    await page.locator('#panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('.edit-tool').isVisible(), true, `${close}: the tool is back`);
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'dock-me', `${close}: focus returns to the dock's "המצב שלי"`);
+  }
+});
+
+test('1280 x 420: with the page scrolled the record sticks under the strip with its "חזרה" in view, as the tool column did', async (t) => {
+  const page = await visit(t, { width: 1280, height: 420 }, seed());
+  await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+  await dock(page, 'me').click();
+  await page.locator('#panel #me').waitFor({ state: 'visible' });
+  const m = await page.evaluate(async () => {
+    window.scrollTo(0, 300);
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const strip = document.querySelector('.a-strip').getBoundingClientRect(), back = document.querySelector('#panel .a-back').getBoundingClientRect(), p = document.getElementById('panel').getBoundingClientRect();
+    return { scrolled: scrollY, stripBottom: strip.bottom, backTop: back.top, backBottom: back.bottom, panelTop: p.top, h: innerHeight };
+  });
+  assert.ok(m.scrolled > 50, 'the page scrolls');
+  assert.ok(m.backTop >= m.stripBottom - 0.5 && m.backBottom <= m.h, `"חזרה" is in view, under the strip: ${JSON.stringify(m)}`);
 });

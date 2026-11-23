@@ -180,7 +180,7 @@ test('a phone behind the first-visit gate: the strip still says the data is old 
 
 test('the improve page has no board note: a phone strip there keeps the old-data warning', async (t) => {
   const page = await visit(t, 'phone', DONE, '#edit');
-  await page.locator('#edit .edit-stage').waitFor({ timeout: 30000 });
+  await page.locator('#edit .edit-card').waitFor({ timeout: 30000 });
   assert.match(flat(await page.locator('.a-unofficial').innerText()), new RegExp(`^${LEGAL_SHORT} · ${STALE} · פרטים$`));
 });
 

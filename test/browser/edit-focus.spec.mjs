@@ -175,9 +175,11 @@ test('phone: a control that moves in the redraw (the way back to the original go
   await page.waitForTimeout(150);
   const r = await page.evaluate(() => {
     const e = document.activeElement.getBoundingClientRect();
-    return { focus: document.activeElement.dataset.ed, top: e.top, bottom: e.bottom, height: innerHeight };
+    return { focus: document.activeElement.dataset.ed, inEdit: !!document.activeElement.closest('#edit'), top: e.top, bottom: e.bottom, height: innerHeight };
   });
-  assert.equal(r.focus, 'restoreOriginal');
+  // classic keeps the way back where it was; design A moved the reset into "עוד" (closed): focus goes to the answer, in the page and on screen
+  if (DESIGN === 'a') assert.ok(r.inEdit, `focus stays in the edit page: ${JSON.stringify(r)}`);
+  else assert.equal(r.focus, 'restoreOriginal');
   assert.ok(r.top >= 0 && r.bottom <= r.height, `on screen: ${JSON.stringify(r)}`);
 });
 

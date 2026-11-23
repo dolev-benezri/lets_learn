@@ -5,7 +5,7 @@
 //   tap is the call itself: HTMLInputElement.prototype.click is wrapped, and the wrapper records the event being dispatched when it runs.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { SITE, DONE, launch, visit as visitIn } from './helpers.mjs';
+import { SITE, DONE, DESIGN, launch, visit as visitIn } from './helpers.mjs';
 
 let browser;
 before(async () => {
@@ -40,8 +40,41 @@ const choosers = (page) => {
   return seen;
 };
 
+const JUNK = { name: 'schedule.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from('not a spreadsheet') };
+const stackLine = async (page) => {
+  const source = await (await page.request.get(SITE + 'ui-edit.js')).text();
+  return source.split('\n').findIndex((l) => l.includes('ACT_ED[b.dataset.ed]')) + 1;
+};
+// design A (phase 2, Task C): the load button asks for the chooser inside the tap; no editor before a file is chosen; cancelling changes nothing; a file opens the
+// editor at its file step and is read at once (an unreadable one says so at the editor's file control)
+if (DESIGN === 'a')
+  for (const [name, size] of Object.entries(SIZES))
+    test(`${name}: A's load button opens the chooser inside the tap and no editor; cancel changes nothing; a file opens the editor with the file read`, async (t) => {
+      const page = await visit(t, size);
+      await ready(page, '[data-ed="loadFile"]');
+      await spy(page);
+      const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 10000 }), page.locator('[data-ed="loadFile"]').click()]);
+      const clicks = (await page.evaluate(() => window.__clicks)).filter((c) => c.id === 'edFilePick');
+      assert.equal(clicks.length, 1, 'one call');
+      const { stack, ...call } = clicks[0];
+      assert.deepEqual(call, { id: 'edFilePick', event: 'click', trusted: true, shown: true }, 'in the dispatch of the trusted tap, on a rendered field');
+      const line = await stackLine(page);
+      assert.ok(line > 0 && new RegExp(`ui-edit\\.js:${line}:`).test(stack), `the call came down the tap handler (line ${line}): ${stack}`);
+      assert.equal(await page.locator('#friendEd[open]').count(), 0, 'no editor before a file is chosen');
+      await chooser.setFiles([]); // cancelled
+      await page.waitForTimeout(800);
+      assert.equal(await page.locator('#friendEd[open]').count(), 0, 'cancel: still nothing');
+      assert.equal(await page.locator('#edWaysMsg').innerText(), '', 'and no message');
+      const [again] = await Promise.all([page.waitForEvent('filechooser', { timeout: 10000 }), page.locator('[data-ed="loadFile"]').click()]);
+      await again.setFiles(JUNK);
+      await page.locator('#friendEd[open]').waitFor();
+      assert.equal(await page.locator('#feRoot').getAttribute('data-tab'), 'pick', 'the editor starts at its file step');
+      await page.locator('#feImpStatus').filter({ hasText: 'זה לא קובץ מערכת שעות מאפקה-נט' }).waitFor({ timeout: 30000 }); // today's error, at the file control
+      assert.equal(await page.locator('#feFile').isDisabled(), false, 'and the field is usable again');
+    });
+
 for (const [name, size] of Object.entries(SIZES)) {
-  test(`${name}: the green button asks for the file chooser inside the tap, with the field on screen, and the editor is there on it`, async (t) => {
+  test(`${name}: the green button asks for the file chooser inside the tap, with the field on screen, and the editor is there on it`, { skip: DESIGN === 'a' && 'design A: its own test above' }, async (t) => {
     const page = await visit(t, size);
     await ready(page, '[data-ed="loadFile"]');
     await spy(page);
@@ -74,7 +107,7 @@ for (const [name, size] of Object.entries(SIZES)) {
   });
 }
 
-test('a phone with a schedule already read: the green button still starts on the pane that holds the file field', async (t) => {
+test(`a phone with a schedule already read: the ${DESIGN === 'a' ? 'file button then opens the editor on the pane that holds' : 'green button still starts on the pane that holds'} the file field`, async (t) => {
   // the editor starts on its grid when a draft exists; asked for a file it must start where the field is, or the focus and the chooser land on a hidden pane
   const L = (course, name, type, group, day, start, end) => ({ course, name, type, group, day, start, end });
   const base = [L('30003', 'מבוא לכימיה', 'סופי-הרצאה+תרגול', '273000302', 4, '14:00', '15:50')];
@@ -86,14 +119,20 @@ test('a phone with a schedule already read: the green button still starts on the
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(500);
   await page.locator('.edit-ways > summary').click();
-  await page.locator('[data-ed="loadFile"]').click();
-  await page.locator('#friendEd[open]').waitFor();
-  assert.equal(await page.evaluate(() => document.activeElement?.id), 'feFile', 'the field took the focus');
+  if (DESIGN === 'a') {
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 10000 }), page.locator('[data-ed="loadFile"]').click()]);
+    await chooser.setFiles(JUNK);
+    await page.locator('#friendEd[open]').waitFor();
+  } else {
+    await page.locator('[data-ed="loadFile"]').click();
+    await page.locator('#friendEd[open]').waitFor();
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'feFile', 'the field took the focus');
+  }
   assert.equal(await page.locator('#feRoot').getAttribute('data-tab'), 'pick');
   assert.equal(await page.locator('#feFile').isVisible(), true);
 });
 
-test('a student with no year yet is told so by the green button and gets neither a chooser nor an editor', async (t) => {
+test('a student with no year yet is told so by the load button and gets neither a chooser nor an editor', async (t) => {
   const page = await visit(t, 'desktop', { ...DONE, 'afeka-sched-v1': JSON.stringify({ v: 1, program: 30, startYear: 2026, programSet: true }) });
   await ready(page, '[data-ed="loadFile"]');
   const seen = choosers(page);

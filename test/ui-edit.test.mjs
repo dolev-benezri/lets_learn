@@ -5,7 +5,7 @@ import { parse } from 'node-html-parser';
 
 const store = new Map();
 globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
-const { stepOneHtml, lessonsFromRows, pendingRows, lostRow, movedDay, changedDays } = await import('../web/ui-edit.js');
+const { stepOneHtml, loadedLineA, lessonsFromRows, pendingRows, lostRow, movedDay, changedDays } = await import('../web/ui-edit.js');
 const { groupIndex } = await import('../web/ui-grid.js');
 const { emptyEdit } = await import('../web/edit-state.js');
 const { real } = await import('./fixtures/real.mjs');
@@ -363,4 +363,12 @@ test('stepOneHtml: a group line never shows ",,"', () => {
   const root = parse(stepOneHtml(withDraft([r], {}), copy, [r], {}));
   assert.ok(root.text.includes('מר X, מר Y'), root.text.slice(0, 300));
   assert.ok(!root.text.includes(',,'));
+});
+
+test('loadedLineA: the courses and the days of what is loaded, in one line (design A)', () => {
+  const l = (course, day) => ({ course, day });
+  assert.equal(loadedLineA([l('a', 4)]), 'קורס אחד · יום ד׳');
+  assert.equal(loadedLineA([l('a', 4), l('a', 4), l('b', 3)]), '2 קורסים · ימים ג׳ ו-ד׳', 'a course counted once, the days in order');
+  assert.equal(loadedLineA([l('a', 2), l('b', 3), l('c', 4)]), '3 קורסים · ימים ב׳, ג׳ ו-ד׳');
+  assert.equal(loadedLineA([]), '');
 });

@@ -56,7 +56,7 @@ const smallTargets = (page) =>
       return !!c && c.textContent.replace(a.textContent, '').trim().length > 0;
     };
     const bad = [];
-    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs', '#alts']) {
+    for (const root of ['.a-top', '.a-bar', '.dock', '#panel', '#pills', '.a-strip', '#semtabs', '#alts', '.edit-card', '.edit-tool']) {
       for (const el of document.querySelector(root)?.querySelectorAll(sel) ?? []) {
         if (!el.checkVisibility() || el.closest('[hidden]') || prose(el)) continue;
         const box = el.matches('input[type=checkbox], input[type=radio]') ? (el.closest('label') ?? el) : el;
@@ -187,10 +187,10 @@ for (const scheme of ['light', 'dark'])
   });
 
 test('the edit page keeps its own feet: the panel rules do not hide "הבא: שינויים"', async (t) => {
-  const page = await visit(t, 'phone', DONE, '#edit', 'light');
+  const page = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) }, '#edit', 'light');
   await page.locator('#edit').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('#edit [data-ed="next"]').isVisible(), true);
-  assert.equal(await page.locator('#edit .me-foot').first().isVisible(), true, 'the foot itself');
+  assert.equal(await page.locator('#edit [data-ed="next"]').isVisible(), true, 'the way on is in the section');
+  assert.equal(await page.locator('#edit .me-foot').count(), 0, 'no footer bar under A');
 });
 
 // Improve mode (stage 1): the edit page in the frame, both screens, at the three widths, in both colour schemes.
@@ -208,7 +208,7 @@ for (const scheme of ['light', 'dark'])
     const seed = { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) };
     for (const [w, size] of Object.entries(WIDTHS)) {
       const page = await visit(t, size, seed, '#edit', scheme);
-      await page.locator('#edit .me-foot [data-ed="next"]').waitFor({ timeout: 30000 });
+      await page.locator('#edit [data-ed="next"]').waitFor({ timeout: 30000 });
       await check(page, `${w} edit step 1`);
       if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))) note(`${w} edit step 1: scrolls sideways`);
       if (w !== '1280') for (const b of await smallTargets(page)) note(`${w} edit step 1: ${b}`);
@@ -337,5 +337,55 @@ for (const scheme of ['light', 'dark'])
     await page.locator('#alts .alt-card').first().waitFor({ state: 'visible' });
     await check(page, 'overlay');
     await railTargets(page, 'overlay', note);
+    done();
+  });
+
+// phase 2, Task B: the empty improve page is one centred card: axe, no sideways scroll, 44px targets, at the three widths in both colour schemes
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the empty improve page (one card) at 320, 375 and 1280: axe, no sideways scroll, targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    for (const [w, size] of Object.entries(WIDTHS)) {
+      const page = await visit(t, size, DONE, '#edit', scheme);
+      await page.locator('#edit .edit-card').waitFor({ state: 'visible', timeout: 30000 });
+      await check(page, `${w} empty card`);
+      if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))) note(`${w} empty card: scrolls sideways`);
+      if (w !== '1280') for (const b of await smallTargets(page)) note(`${w} empty card: ${b}`);
+    }
+    done();
+  });
+
+// phase 2, Task D: the record in the tool column's slot (with "חזרה") at 1280 and the sheet on a phone: axe, targets
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the record over the improve page (a column at 1280, a sheet at 375): axe, targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const seed = { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) };
+    for (const [w, size] of [['1280', WIDTHS['1280']], ['375', WIDTHS['375']]]) {
+      const page = await visit(t, size, seed, '#edit', scheme);
+      await page.locator('.dock [data-tool="me"]').waitFor({ timeout: 30000 });
+      await page.locator('.dock [data-tool="me"]').click();
+      await page.locator('#panel #me').waitFor({ state: 'visible' });
+      await page.waitForTimeout(400);
+      await check(page, `${w} record`);
+      if (w !== '1280') for (const b of await smallTargets(page)) note(`${w} record: ${b}`);
+    }
+    done();
+  });
+
+// phase 2, Task E: a proposal with "עוד" open: axe and 44px targets in the tool, at 320, 375 and 1280, both colour schemes
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: the proposal and its open "עוד" (improve mode) at 320, 375 and 1280: axe, no sideways scroll, targets`, async (t) => {
+    const { check, done, note } = checker(scheme);
+    const seed = { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) };
+    for (const [w, size] of Object.entries(WIDTHS)) {
+      const page = await visit(t, size, seed, '#edit/changes', scheme);
+      await page.locator('[data-ed="search"]').waitFor({ timeout: 30000 });
+      await page.locator('[data-ed="search"]').click();
+      await page.locator('.prop-nav').waitFor({ timeout: 30000 });
+      await check(page, `${w} proposal`);
+      await page.locator('[data-ed="more"]').click();
+      await check(page, `${w} "עוד" open`);
+      if (!(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))) note(`${w} proposal: scrolls sideways`);
+      if (w !== '1280') for (const b of await smallTargets(page)) note(`${w} proposal: ${b}`);
+    }
     done();
   });

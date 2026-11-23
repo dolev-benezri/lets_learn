@@ -254,6 +254,12 @@
   align-items:center;
 }
 :root[data-design="a"] .a-ph [hidden] { display:none; }
+:root[data-design="a"] .a-back { display:none; min-height:44px; gap:6px; padding:0 var(--sp-3); color:var(--primary); font-weight:600; }
+:root[data-design="a"] .a-back .icon { width:18px; height:18px; }
+:root[data-design="a"] body[data-view="edit"] .a-back:not([hidden]) { display:inline-flex; align-items:center; }
+:root[data-design="a"] body[data-view="edit"] .a-ph { justify-content:flex-start; }
+:root[data-design="a"] body[data-view="edit"] .a-ph .icon-btn { display:none; }
+:root[data-design="a"] .a-stage.record-open .edit-tool { display:none; }
 /* position:relative: the tool's visually hidden inputs and .sr text are position:absolute; without a positioned scroller their containing block is the
    panel (sticky from 1080px), so they escape the scroll and stretch the page far below the board (owner-12) */
 :root[data-design="a"] .a-pb { position:relative; flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:8px 16px 24px; }
@@ -451,10 +457,6 @@
   /* the column is wide enough to wrap: no clipped chip */
   :root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; }
   :root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; white-space:nowrap; }
-  :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
-    position:fixed; top:calc(var(--a-head) + var(--a-dock-h)); bottom:0; inset-inline:0 auto; width:440px; height:auto; z-index:22;
-    border-radius:0; border-inline-end:1px solid var(--border);
-  }
 }
 /* a tablet (600 to 1079px): the dock at the bottom is centred and at most 560px wide, not stretched across the page */
 @media (min-width:600px) and (max-width:1079px) {
@@ -474,10 +476,6 @@
   :root[data-design="a"] body[data-view="edit"] .a-top { padding-inline:max(16px, calc((100% - var(--frame-edit)) / 2)); }
   :root[data-design="a"] body[data-view="edit"] .a-strip { padding-inline:max(12px, calc((100% - var(--frame-edit)) / 2)); }
   :root[data-design="a"] body[data-view="edit"] .a-stage { padding-inline:max(0px, calc((100% - var(--frame-edit)) / 2)); }
-  /* the record over the improve page sits at the frame's edge and covers the tool column only, never the week */
-  :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
-    inset-inline-start:max(0px, calc((100% - var(--frame-edit)) / 2));
-  }
   :root[data-design="a"] :is(.a-alts, .a-pb, .edit-tool) { scrollbar-width:thin; }
   :root[data-design="a"] .ac-b b { font-size:var(--fs); font-weight:600; }
   :root[data-design="a"] .ac-b small { font-size:var(--fs-sm); }
@@ -551,3 +549,77 @@
 @media (min-width:1080px) and (max-width:1279px) {
   :root[data-design="a"] .a-alts.alts-over:not([hidden]) { width:240px; }
 }
+/* phase 2, Task A (improve mode): the tabs are a segmented control centred over the content (the top bar's pattern, 44px segments), the tool column and
+   the week one surface each. The record still covers the tool column from the frame's edge (Task D puts it in the column's slot): it starts under the tabs. */
+@media (min-width:1080px) {
+  :root[data-design="a"] body[data-view="edit"] .a-stage > .dock {
+    position:static; width:min(480px, 100%); margin:var(--sp-3) auto; padding:3px; gap:var(--sp-1); background:var(--surface-2); border:0; border-radius:12px;
+    box-shadow:none;
+  }
+  :root[data-design="a"] body[data-view="edit"] .dk {
+    flex-direction:row; gap:6px; min-height:44px; padding:0 var(--sp-2); border-radius:9px; font-size:var(--fs-sm);
+  }
+  :root[data-design="a"] body[data-view="edit"] .dk .icon { width:18px; height:18px; }
+  :root[data-design="a"] body[data-view="edit"] .dk[aria-pressed="true"] { background:var(--surface); box-shadow:var(--shadow-sm); }
+  :root[data-design="a"] body[data-view="edit"] .dk[aria-pressed="true"]::before { display:none; }
+  :root[data-design="a"] body[data-view="edit"] .edit-tool {
+    top:calc(var(--a-head) + var(--sp-2)); max-height:calc(100dvh - var(--a-head) - var(--sp-4));
+    padding:var(--sp-4) var(--sp-5); background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  }
+  :root[data-design="a"] body[data-view="edit"] .edit-board.has-week {
+    padding:var(--sp-3) var(--sp-4); background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  }
+  /* the record (phase 2, Task D) takes the hidden tool column's slot as a surface of its own: while it is open the stage is a one-column grid and the panel is
+     a sticky item over the start of the board's cell (the board's own 20px padding, 440 wide as the column is), so it sticks under the strip as the column did.
+     Its height makes the stage exactly one window tall at rest (the tabs block is 74px, the board's padding 20): the page never grows because of it. */
+  :root[data-design="a"] body[data-view="edit"] .a-stage.record-open { display:grid; grid-template-columns:minmax(0, 1fr); align-items:start; }
+  :root[data-design="a"] body[data-view="edit"] .a-stage.record-open > .dock { grid-row:1; }
+  :root[data-design="a"] body[data-view="edit"] .a-stage.record-open > .a-board { grid-row:2; grid-column:1; }
+  :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
+    grid-row:2; grid-column:1; justify-self:start; position:sticky; top:calc(var(--a-head) + var(--sp-2)); inset-inline:auto; bottom:auto; z-index:8;
+    width:440px; margin:20px 0 0; margin-inline-start:20px; height:calc(100dvh - var(--a-head) - 94px); border-radius:12px; border:1px solid var(--border);
+  }
+  /* its header holds the way back (the 1080px rule above hides the header: the record's shows it) */
+  :root[data-design="a"] body[data-view="edit"] .a-ph { display:flex; }
+  :root[data-design="a"] body[data-view="edit"] .wk-head > * { top:var(--a-head); } /* the tabs scroll away: the day headers stick right under the strip */
+}
+/* phase 2, Task B (improve mode, before a schedule is loaded): one centred card, max 640, the title the key size, "טוענים קובץ" the one primary button over the
+   manual way (both min(320px, 100%) wide), and the download instructions open in place behind the last line */
+:root[data-design="a"] .edit-card {
+  width:min(640px, 100%); margin:var(--sp-6) auto; padding:var(--sp-6) var(--sp-5); background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; text-align:center;
+}
+:root[data-design="a"] .edit-card h2 { margin:0 0 var(--sp-2); font-size:var(--fs-key); font-weight:600; }
+:root[data-design="a"] .edit-card-line { margin:0 0 var(--sp-5); color:var(--text-2); }
+:root[data-design="a"] .edit-card #editIdentity { text-align:start; margin-bottom:var(--sp-4); }
+:root[data-design="a"] .edit-card-btns { display:grid; justify-items:center; gap:var(--sp-3); }
+:root[data-design="a"] .edit-card-btns .btn { width:min(320px, 100%); min-height:44px; white-space:normal; }
+:root[data-design="a"] .edit-how { margin-top:var(--sp-4); font-size:var(--fs-sm); color:var(--text-2); }
+:root[data-design="a"] .edit-how > summary {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:0 var(--sp-1); min-height:44px; cursor:pointer; list-style:none;
+}
+:root[data-design="a"] .edit-how > summary::-webkit-details-marker { display:none; }
+:root[data-design="a"] .edit-how > summary span { color:var(--primary); font-weight:600; text-decoration:underline; }
+:root[data-design="a"] .edit-how .edit-yedion { margin:var(--sp-2) 0 0; text-align:start; }
+@media (max-width:599px) {
+  :root[data-design="a"] .edit-card { margin:var(--sp-3) auto; padding:var(--sp-5) var(--sp-4); }
+}
+/* phase 2, Task E (improve mode, the changes screen): the goal chips wrap at every width with every label whole, the search is the section's own button
+   (primary until there is a proposal), "לשינויים" ends the first screen's section, "עוד" is a disclosure of plain buttons; no footer bar and no way back
+   (the tab is it) */
+:root[data-design="a"] .edit-tool .goals { flex-wrap:wrap; overflow:visible; padding:0; margin:0 0 6px; }
+:root[data-design="a"] .edit-tool .goals > .chip { flex:none; max-width:100%; }
+:root[data-design="a"] .edit-tool .chip { min-height:44px; }
+:root[data-design="a"] .edit-tool .chip select { min-height:44px; margin-block:-1px; } /* the select is the target: it fills the chip, 44px (it was 40px) */
+:root[data-design="a"] .edit-search, :root[data-design="a"] .edit-next { margin-top:var(--sp-3); }
+:root[data-design="a"] .edit-search .btn, :root[data-design="a"] .edit-next .btn { width:100%; min-height:44px; }
+:root[data-design="a"] .edit-tool #editResults > p { margin:var(--sp-3) 0 0; } /* the stand-alone "cancel all changes" under the search button */
+:root[data-design="a"] .prop-actions { display:flex; flex-wrap:wrap; align-items:flex-start; gap:var(--sp-2); }
+:root[data-design="a"] .prop-actions .btn { min-height:44px; }
+:root[data-design="a"] .edit-more { display:flex; flex-direction:column; align-items:flex-start; }
+:root[data-design="a"] .edit-more-list {
+  display:grid; gap:var(--sp-1); margin-top:var(--sp-2); padding:var(--sp-2); border:1px solid var(--border); border-radius:12px; background:var(--surface);
+  min-width:12rem;
+}
+:root[data-design="a"] .edit-more-list .btn { justify-content:flex-start; min-height:44px; }
+:root[data-design="a"] .edit-more-list[hidden] { display:none; }
