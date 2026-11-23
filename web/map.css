@@ -687,3 +687,14 @@ body:has(dialog.pmap[open]) { overflow:hidden; }
 :root[data-design="a"] .pmap [data-pm="focus"][aria-checked="true"] {
   background:var(--primary); border-color:var(--primary); color:var(--on-primary);
 }
+/* Small phones: pair the samples, then share a row between the switch and the closed fold.
+   The recovered height also separates the floating electives summary from the mini/card buttons. */
+@media (max-width:359px) {
+  :root[data-design="a"] .pmap .pm-legend { display:grid; grid-template-columns:1fr 1fr; gap:4px 16px; }
+  :root[data-design="a"] .pmap .pm-legend-main { display:contents; }
+  :root[data-design="a"] .pmap .pm-legend-more[open] { grid-column:1 / -1; }
+}
+/* Phones: the open mini pane is a full-width sheet over the electives chip; the covered chip goes (no hidden tab stop, no touch under the sheet). */
+@media (max-width:599px) {
+  :root[data-design="a"] .pmap .pm-view:has(> .pm-mini[open]) > .pm-aside:not([open]) { visibility:hidden; }
+}
