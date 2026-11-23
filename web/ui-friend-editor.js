@@ -45,8 +45,9 @@ const firstDay = () => {
 // start it; onSave({ groups, rows, sem }) gets the chosen semester's groups and a review row for each, and for every unknown row.
 // focusFile: start in the file field; pickFile (with it): and open the file chooser at once. That is only allowed inside the tap that asked, so the caller
 // must call this in the tap's own turn (ui-edit.js loads this module ahead). A browser that refuses leaves the dialog open on the file field.
+// file: a File the caller already has (design A): it is read as soon as the dialog is open.
 export function openFriendEditor({
-  friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null, focusFile = false, pickFile = false
+  friend = null, onSave, returnFocusId, mode = 'friend', groups = [], rows = [], sem = null, focusFile = false, pickFile = false, file = null
 }) {
   if (dlg.open) return;
   const draft = friend ? friend.groups.slice() : mode === 'edit' ? groups.slice() : [];
@@ -83,6 +84,7 @@ export function openFriendEditor({
       $('feFile').click();
     } catch {} // no recent tap, or no chooser here: the dialog is there with the file field focused
   }
+  if (mode === 'edit' && file) importFile(file); // a file already chosen (design A's load button): read at once, the same flow as one chosen in the field
 }
 phone.addEventListener('change', () => {
   if (ed) setTab($('feRoot').dataset.tab);

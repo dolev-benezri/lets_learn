@@ -132,14 +132,24 @@ const axe = async (page, screen) => {
   assert.deepEqual(violations.map((v) => `${screen}: ${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`), []);
 };
 
+// Loading a file: design A's button asks for the chooser first and the editor opens once a file is chosen; classic opens the editor on its file field
+const loadFileFlow = async (page, file) => {
+  if (DESIGN === 'a') {
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 10000 }), page.locator('[data-ed="loadFile"]').click()]);
+    await chooser.setFiles(file);
+  } else {
+    await page.locator('[data-ed="loadFile"]').click();
+    await page.locator('#feFile').setInputFiles(file);
+  }
+  await page.locator('#friendEd[open]').waitFor();
+};
 for (const [name, size] of SIZES) {
   test(`${name}: a planner PDF, the uncertain row confirmed, then step 2 (one flow)`, async (t) => {
     const page = await visit(t, size, DONE);
-    await page.locator('[data-ed="loadFile"]').click();
-    await page.locator('#friendEd[open]').waitFor();
     // the planner's table: the MATLAB row fits two groups, so it waits for the student
-    await page.locator('#feFile').setInputFiles({ name: 'planner.pdf', mimeType: 'application/pdf', buffer: hebrewPdf(TABLE.split('\n')) });
+    await loadFileFlow(page, { name: 'planner.pdf', mimeType: 'application/pdf', buffer: hebrewPdf(TABLE.split('\n')) });
     await page.locator('#feImpStatus').filter({ hasText: /נמצא|לא זוהה/ }).waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('#feYedion a').getAttribute('target'), '_blank');
     await page.locator('[data-fe="save"]').click();
     await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
     assert.ok((await page.locator('[data-ed-row]').count()) >= 1, 'an uncertain row is listed');
@@ -156,10 +166,7 @@ for (const [name, size] of SIZES) {
     const link = page.locator('.edit-yedion a');
     assert.equal(await link.getAttribute('href'), 'https://yedionp.afeka.ac.il/yedion/fireflyweb.aspx');
     assert.equal(await link.getAttribute('target'), '_blank');
-    await page.locator('[data-ed="loadFile"]').click();
-    await page.locator('#friendEd[open]').waitFor();
-    assert.equal(await page.locator('#feYedion a').getAttribute('target'), '_blank');
-    await page.locator('#feFile').setInputFiles({
+    await loadFileFlow(page, {
       name: 'schedule.xlsx',
       mimeType: XLSX,
       buffer: yedionXlsx({
@@ -212,9 +219,7 @@ for (const [name, size] of SIZES) {
 // A student who chose the wrong track sees their own courses "not found": the message says to check the track.
 test('phone 320: a course of another track in the Excel file is not found, and the message points at the chosen track', async (t) => {
   const page = await visit(t, SIZES[1][1], DONE);
-  await page.locator('[data-ed="loadFile"]').click();
-  await page.locator('#friendEd[open]').waitFor();
-  await page.locator('#feFile').setInputFiles({
+  await loadFileFlow(page, {
     name: 'schedule.xlsx',
     mimeType: XLSX,
     buffer: yedionXlsx({

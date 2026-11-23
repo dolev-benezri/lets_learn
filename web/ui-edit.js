@@ -719,11 +719,35 @@ function openLoader(file) {
   if (editorMod) return openEditor(editorMod, file, file);
   return import('./ui-friend-editor.js').then((m) => openEditor((editorMod = m), file, false)); // too late for a chooser: the file-first view only
 }
-function openEditor({ openFriendEditor }, file, pick) {
+// A (phase 2, Task C): the load button asks for the file chooser itself, from a field that lives outside the page the redraws replace, inside the tap; the
+// editor opens once a file is chosen, with the file handed over and read at once (a scanned PDF still asks which pages, an unreadable file says so at the
+// editor's file control). The track and year are checked first, as before; cancelling the chooser changes nothing.
+const FILE_TYPES = 'application/pdf,image/*,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+let filePick = null;
+function pickFileA() {
+  if (noIdentity('edWaysMsg')) return;
+  if (!filePick) {
+    filePick = Object.assign(document.createElement('input'), { type: 'file', accept: FILE_TYPES, id: 'edFilePick', className: 'sr', tabIndex: -1 });
+    filePick.setAttribute('aria-hidden', 'true');
+    filePick.addEventListener('change', () => {
+      const file = filePick.files[0];
+      filePick.value = ''; // the same file chosen again is a change again
+      if (!file) return;
+      const go = (m) => openEditor((editorMod = m), true, false, file);
+      if (editorMod) go(editorMod);
+      else import('./ui-friend-editor.js').then(go);
+    });
+    document.body.append(filePick);
+  }
+  filePick.value = '';
+  filePick.click();
+}
+function openEditor({ openFriendEditor }, file, pick, handed = null) {
   const d = edit().draft;
   openFriendEditor({
     // a semester whose data did not load this time (summer) is not offered back
-    mode: 'edit', groups: groupsOfDraft(d), rows: fixedRows(d), sem: dataOf(d?.sem) ? d.sem : null, returnFocusId: 'editTitle', focusFile: file, pickFile: pick,
+    mode: 'edit', groups: groupsOfDraft(d), rows: fixedRows(d), sem: dataOf(d?.sem) ? d.sem : null, returnFocusId: 'editTitle',
+    focusFile: file, pickFile: pick, file: handed,
     onSave({ rows, sem }) {
       // a choice made earlier stays with its row when the rows are read again
       const key = (r) => [r.code, r.type, r.text, JSON.stringify(r.meets)].join('|');
@@ -772,7 +796,7 @@ function showBoard() {
 export const goChanges = () => next();
 
 const STEP_ONE = {
-  loadFile: () => openLoader(true),
+  loadFile: () => (designOn() ? pickFileA() : openLoader(true)),
   loadHand: () => openLoader(false),
   next,
   restore() {
