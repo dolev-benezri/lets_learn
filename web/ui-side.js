@@ -4,6 +4,7 @@ import { englishOptions, specLists } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, isPair, resCourses, placedIn, semResult, summary, freeDaysText } from './ui-grid.js';
 import { notFitReason, courseCount, toolName, splitReason } from './ui-text.js';
+import { renderCourseFilter } from './ui-course-filter.js';
 import {
   CAND,
   SEM_PICK,
@@ -145,7 +146,7 @@ function cardA({ id, c, s, mode, where, inAlt, out, dropped, dropWhy, why, inSum
   const warnings = `${warn ? `<div class="tags">${warn}</div>` : ''}
     ${required && app.state.choices[id] === 'no' ? '<p class="reason warn-text">תצטרך/י ללמוד אותו בהמשך</p>' : ''}
     ${dropped ? `<p class="reason warn-text">לא נכנס למערכת${dropWhy ? ` כי ${esc(dropWhy)}` : ''}</p>` : ''}`;
-  return `<article class="course a-crs c${colors.get(id) ?? 7}">${courseRowA(
+  return `<article class="course a-crs c${colors.get(id) ?? 7}${ui.dashed.has(id) ? ' rep' : ''}${inAlt ? ' in' : ''}${out ? ' out' : ''}" data-course-id="${esc(id)}">${courseRowA(
     `course-more-${id}`, id, c,
     seg(`mode-${id}`, `מה לעשות עם ${c.name}`, [['must', 'חובה'], ['optional', 'אולי'], ['no', 'לא']], mode, `data-chg="mode" data-id="${esc(id)}"`),
     `${status ? `<div class="a-status">${status}</div>` : ''}${reasons}`, warnings
@@ -207,7 +208,7 @@ export function renderSide(res) {
   const locked = (s) => ids.filter((id) => st(id) === s);
   // a blocked course offers its outside-program alternatives (J3)
   const rows = (list, ask) => `<ul
-    class="locked">${list.map((id) => `<li>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${
+    class="locked">${list.map((id) => `<li${designOn() ? ` data-course-id="${esc(id)}"` : ''}>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${
       pc.statuses[id].reasons.map(esc).join('<br>')}</p>${ask ? outsideBoxes(id, `side-${id}`) : ''}</div></li>`).join('')}</ul>`;
   // the search finished without a plan: say so, step 4 says why
   const noPlan = ui.last && !ui.last.results.some((r) => resCourses(r).length);
@@ -248,4 +249,5 @@ export function renderSide(res) {
     ${details('notOffered', `לא נלמד בסמסטר (${locked('notOffered').length})`, rows(locked('notOffered')), locked('notOffered').length)}
     ${details('exempt', `פטור (ציון אנגלית) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}
     ${details('english', 'אנגלית: רמות ופטור', engBody, eng.length)}`;
+  if (designOn()) renderCourseFilter();
 }

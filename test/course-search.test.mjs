@@ -1,7 +1,7 @@
 // The improve page's course search (web/course-search.js): pure, on the frozen real data.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { searchCourses, stripTitle, optionLine, MAX_RESULTS } from '../web/course-search.js';
+import { searchCourses, stripTitle, optionLine, MAX_RESULTS, matches } from '../web/course-search.js';
 import { classify } from '../web/rules.js';
 import { real } from './fixtures/real.mjs';
 
@@ -284,4 +284,17 @@ test('companions: a retake needs its parallel course too, a chain X -> Y -> Z is
   assert.deepEqual(run(reqFull).withIds, ['77013'], 'a full group is fine before registering');
   assert.deepEqual(run(reqFull, { registered: true, owned: [] }).withIds, ['77014'], 'registered: a full group that is not theirs is skipped');
   assert.deepEqual(run(reqFull, { registered: true, owned: ['277701301'] }).withIds, ['77013'], 'unless it is theirs');
+});
+
+
+test('matches shares improve search code, name and lecturer matching, including normalization, without a result cap', () => {
+  const c = { ...course('30003'), code: '30003' };
+  for (const query of ['3000', c.groups[0].id, 'כימי', stripTitle(c.groups[0].lecturer).split(' ')[0], '  '])
+    assert.equal(matches(c, query), true, query);
+  assert.equal(matches(c, 'קורס שלא קיים'), false);
+  assert.equal(matches({ code: '8', name: 'MATLAB ושיטות', groups: [] }, 'matlab'), true);
+  assert.equal(matches({ code: '8', name: 'שיטות ד״ר', groups: [] }, 'שיטות ד"ר'), true);
+  const many = Array.from({ length: MAX_RESULTS + 15 }, (_, i) => ({ code: String(i), name: 'בדיקה', groups: [] }));
+  assert.equal(many.filter((x) => matches(x, 'בדיקה')).length, MAX_RESULTS + 15);
+  assert.equal(matches({ code: '123', name: 'בלי קבוצות', groups: [] }, '123'), true, 'also courses with no teaching groups');
 });

@@ -868,3 +868,12 @@
 /* ---- phase 4 rows (Task C) ---- */
 :root[data-design="a"] .a-crs > :is(.tags, .warn-text) { grid-column:1 / -1; }
 :root[data-design="a"] .a-course-body { padding-block:var(--sp-2); min-width:0; overflow-wrap:anywhere; }
+/* ---- phase 4 course search (Task F) ---- */
+:root[data-design="a"] .a-course-search { display:grid; gap:var(--sp-2); margin-bottom:var(--sp-4); }
+:root[data-design="a"] .a-course-search .field { margin:0; }
+:root[data-design="a"] .a-course-search input {
+  width:100%; min-height:44px; padding:var(--sp-2) var(--sp-3); border:1px solid var(--border-input); border-radius:10px;
+  background:var(--surface); color:var(--text); font:inherit;
+}
+:root[data-design="a"] .a-course-search .hint { margin:0; }
+:root[data-design="a"] #side [hidden] { display:none; }

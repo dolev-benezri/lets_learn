@@ -15,6 +15,7 @@ import { renderEdit, stopSearch, syncSavedHint } from './ui-edit.js';
 import { needsModeChoice, modeOpen, renderModeChoice, getMode, setMode } from './ui-mode.js';
 import { renderTop, renderReport, renderBanner, renderNotice, renderView, scrollToDay, go, showAlt, hasAlternatives, renderAltColumn } from './ui-view.js';
 import { renderMe } from './ui-me.js';
+import { onCourseQueryInput, onCourseQueryKey } from './ui-course-filter.js';
 import { renderFirstRun } from './ui-first-run.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
@@ -183,6 +184,7 @@ const askToursAgain = () => designOn() && (whatsNew() || (hasAlternatives() && !
 onTourEnd(askToursAgain);
 
 // ---------- wiring (static shell from index.html) ----------
+document.addEventListener('keydown', onCourseQueryKey, true);
 document.addEventListener('keydown', onHelpKey, true);
 document.addEventListener('keydown', onCourseFoldKey, true);
 watchOtherTabs();
@@ -221,6 +223,7 @@ document.addEventListener('change', async (e) => {
   }
 });
 document.addEventListener('input', (e) => {
+  if (designOn()) onCourseQueryInput(e);
   if (e.target.id === 'friendUrl' || e.target.id === 'frFriendUrl') ui.friendUrl = e.target.value;
 }); // a page redraw keeps the typed link
 document.addEventListener('submit', async (e) => {
@@ -250,6 +253,8 @@ document.addEventListener(
         if (twin.dataset.course === fold.dataset.course && twin.open !== fold.open) twin.open = fold.open;
     }
     const k = e.target.dataset?.key;
+    // Filtering opens matching groups temporarily. Keep the student's choices, including across redraws.
+    if (designOn() && k && e.target.closest?.('#side') && (!e.target.isConnected || ui.courseQuery?.trim())) return;
     if (k) e.target.open ? openDetails.add(k) : openDetails.delete(k);
   },
   true

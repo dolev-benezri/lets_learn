@@ -400,6 +400,8 @@ export const ui = {
   detailsOpen: false, // A: the board's "פרטים" disclosure, kept over the re-renders (ui-view.js factsHtml)
   tipOpen: false, // A: the courses tool's "מה ההבדל?" toggletip
   courseOpen: { courses: new Set(), me: new Set() }, // A: native row folds, by tool and course id
+  courseQuery: '', // A: the build-tool search field lives outside the part redrawn by solver results
+  courseGroups: null, // A: group choices before filtering, restored when the query is cleared
   helpOpen: new Set(), // A: section explanations, keyed by their controlled paragraph id
   whyOpen: new Set(), // A: the course cards' "למה?" that are open (ui-side.js), by course id and reason index
   titleId: null, // A: the id of the heading of what is shown (ui-shell.js applyShell)

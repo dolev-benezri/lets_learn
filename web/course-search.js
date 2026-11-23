@@ -57,6 +57,9 @@ function textHits(id, c, q) {
   return { any: byCode || byName || named.length > 0, groups: byCode || byName || !named.length ? null : new Set(named.map((g) => g.id)) };
 }
 
+// Build tool's uncapped text predicate. The dataset key is supplied as `code`; improve mode also narrows options via textHits.
+export const matches = (course, query) => textHits(String(course.code ?? course.id ?? ''), course, query).any;
+
 function reasonOf(status, data) {
   if (!status) return '';
   if (status.status === 'done') return 'עברת את הקורס';
