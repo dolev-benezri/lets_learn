@@ -170,7 +170,11 @@ for (const scheme of ['light', 'dark']) test(`A 375/${scheme}: opening centres t
     assert.ok(box.height >= 44 && box.width >= 44, 'the switch keeps a 44px tap target');
   };
   await check(false);
+  // reach it by keyboard: Firefox shows no :focus-visible ring after a script focus() that follows a mouse click
   await sw.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  assert.equal(await sw.evaluate((el) => el === document.activeElement), true, 'Tab returns to the switch');
   await page.keyboard.press('Space');
   await frame(page);
   await check(true);
