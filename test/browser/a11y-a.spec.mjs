@@ -26,6 +26,67 @@ const visit = (t, size, seed, hash, scheme) => visitIn(browser, t, size, seed, h
 const TOOLS = [['me', '#me', '#me', 'meTitle'], ['courses', '#courses', '#courses', 'coursesTitle'], ['wishes', '#prefs', '#prefs', 'prefsTitle'],
   ['friends', '#friends', '#friends', 'friendsPageTitle'], ['out', '#out', '#out', 'outTitle']];
 
+// Phase 4 A: help must consume Escape before the phone sheet's handler, even after focus moves into its section.
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: section help supports Enter, Space and Escape, returns focus and keeps the phone sheet open`, async (t) => {
+    const page = await visit(t, 'phone', DONE, '', scheme);
+    await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+    await page.locator('.dock [data-tool="me"]').click();
+    const button = page.getByRole('button', { name: 'הסבר: פרופיל', exact: true });
+    await button.waitFor();
+    assert.equal(await button.getAttribute('aria-controls'), 'meProfileHelp');
+    for (const key of ['Enter', 'Space']) {
+      await button.focus();
+      await page.keyboard.press(key);
+      assert.equal(await button.getAttribute('aria-expanded'), 'true');
+      assert.equal(await page.locator('#meProfileHelp').isVisible(), true);
+      await page.locator('#me [data-k="amirnet"]').focus();
+      await page.keyboard.press('Escape');
+      assert.equal(await button.getAttribute('aria-expanded'), 'false');
+      assert.equal(await page.locator('#meProfileHelp').isVisible(), false);
+      assert.equal(await button.evaluate((e) => e === document.activeElement), true);
+      assert.equal(await page.locator('#panel').isVisible(), true);
+      assert.equal(new URL(page.url()).hash, '#me');
+    }
+    await page.keyboard.press('Escape');
+    await page.locator('#panel').waitFor({ state: 'hidden' });
+    assert.equal(await page.locator('.dock [data-tool="me"]').evaluate((e) => e === document.activeElement), true);
+  });
+
+// Closed details are skipped by the older target scan: explicitly open every tool fold, then every help paragraph.
+for (const scheme of ['light', 'dark'])
+  test(`${scheme}: each tool at 320px, with help and folds open, also at 200% text: axe, reflow and 44px targets`, async (t) => {
+    const page = await visit(t, WIDTHS[320], DONE, '', scheme);
+    const { check, done, note } = checker(scheme);
+    for (const [tool, hash, id] of TOOLS) {
+      await page.evaluate((h) => (location.hash = h), hash);
+      await page.locator(`#panel ${id}`).waitFor({ state: 'visible' });
+      await frame(page);
+      await check(page, `${tool} closed help/folds`);
+      await page.locator(`${id} details`).evaluateAll((els) => els.forEach((e) => { e.open = true; }));
+      // Native click updates the same help state that a redraw will read.
+      for (const button of await page.locator(`${id} .a-help[aria-expanded="false"]`).all()) {
+        if (await button.isVisible()) await button.click();
+      }
+      await check(page, `${tool} open help/folds`);
+      await layoutOk(page, `${tool} open help/folds`, true, note);
+      await page.locator(id).evaluate((root) => {
+        const els = [root, ...root.querySelectorAll('*')];
+        const sizes = els.map((el) => getComputedStyle(el).fontSize);
+        els.forEach((el, i) => { el.dataset.a11ySize = el.style.fontSize; el.style.fontSize = `${parseFloat(sizes[i]) * 2}px`; });
+      });
+      await check(page, `${tool} 200% text`);
+      await layoutOk(page, `${tool} 200% text`, true, note);
+      await page.locator(id).evaluate((root) => {
+        for (const el of [root, ...root.querySelectorAll('*')]) {
+          el.style.fontSize = el.dataset.a11ySize ?? '';
+          delete el.dataset.a11ySize;
+        }
+      });
+    }
+    done();
+  });
+
 // One checker per test: check(page, 'screen') runs axe and remembers the violations; done() fails with the whole list.
 function checker(scheme) {
   const found = [];

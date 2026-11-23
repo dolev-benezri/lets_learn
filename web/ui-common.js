@@ -3,6 +3,10 @@ import { app, esc, candidateMode, summerOn, savedExists, isEditHash } from './ap
 import { icon, groupIndex, summary, isPair, semResult, nameHtml } from './ui-grid.js';
 import { showText } from './ui-dialog.js';
 import { specCodes, reqContext, reqMet } from './rules.js';
+import { helpHtml } from './ui-text.js';
+
+// Keep help open while a search or a field change redraws a tool. The renderer calls this only in design A.
+export const toolHelp = (id, topic, text) => helpHtml(id, topic, text, ui.helpOpen.has(id));
 
 export const $ = (id) => document.getElementById(id);
 export const CAND = ['retake', 'available', 'afterA', 'conditional'];
@@ -386,6 +390,7 @@ export const ui = {
   altsOver: false, // A, 1080-1439px: the alternatives column is open over the week (not remembered)
   detailsOpen: false, // A: the board's "פרטים" disclosure, kept over the re-renders (ui-view.js factsHtml)
   tipOpen: false, // A: the courses tool's "מה ההבדל?" toggletip
+  helpOpen: new Set(), // A: section explanations, keyed by their controlled paragraph id
   whyOpen: new Set(), // A: the course cards' "למה?" that are open (ui-side.js), by course id and reason index
   titleId: null, // A: the id of the heading of what is shown (ui-shell.js applyShell)
   toolOpener: null, // A: the dock button that opened the tool, where the focus returns when it closes

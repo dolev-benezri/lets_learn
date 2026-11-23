@@ -57,6 +57,7 @@ import {
   seg,
   $,
   ui,
+  toolHelp,
   designOn
 } from './ui-common.js';
 
@@ -76,34 +77,41 @@ const blockRow = (b, i) => {
 
 // The sections of the preferences page that design A's first-run step 4 shows again under "עוד הגדרות" (ui-pass-prefs.js). p prefixes the radio names and
 // the ids, so the card and the hidden page never share them; p = '' is the page itself.
-export const daysSec = (c, notes, p = '') => `<section class="dr-sec"><h3>ימים שאני רוצה פנויים</h3>
+export const daysSec = (c, notes, p = '') => `<section class="dr-sec">${designOn() && !p
+  ? `<div class="a-help-head"><h3>ימים שאני רוצה פנויים</h3>${toolHelp('daysHelp', 'ימים שאני רוצה פנויים', `${notes.days} ${strictnessHint(c.dayOffHard)}`)}</div>`
+  : '<h3>ימים שאני רוצה פנויים</h3>'}
       <div class="daypills" role="group" aria-label="ימים פנויים">${[1, 2, 3, 4, 5, 6]
         .map(
           (d) => `<button type="button" class="daypill" data-act="dayOff"
         data-day="${d}" data-k="doff-${d}" aria-pressed="${c.dayOff.includes(d)}">${DAYS[d]}׳<span class="sr"> ${DAY_FULL[d]}</span></button>`
         )
         .join('')}</div>
-      <p class="hint">${esc(notes.days)}</p>
+      ${designOn() && !p ? '' : `<p class="hint">${esc(notes.days)}</p>`}
       ${seg(`${p}dayHard`, 'עד כמה זה מחייב?', HARD, c.dayOffHard ? 'hard' : 'soft', 'data-chg="dayHard"', true)}
-      <p class="hint">${strictnessHint(c.dayOffHard)}</p></section>`;
-export const hoursSec = (c, notes, p = '') => `<section class="dr-sec"><h3>שעות</h3>
+      ${designOn() && !p ? '' : `<p class="hint">${strictnessHint(c.dayOffHard)}</p>`}</section>`;
+export const hoursSec = (c, notes, p = '') => `<section class="dr-sec">${designOn() && !p
+  ? `<div class="a-help-head"><h3>שעות</h3>${toolHelp('hoursHelp', 'שעות', `${notes.hours} ${strictnessHint(c.windowHard)}`)}</div>`
+  : '<h3>שעות</h3>'}
       <div class="times"><label class="field">לא לפני <input type="time" data-chg="notBefore" data-k="notBefore" value="${esc(c.notBefore)}"></label>
       <label class="field">לא אחרי <input type="time" data-chg="notAfter" data-k="notAfter" value="${esc(c.notAfter)}"></label></div>
-      <p class="hint">${esc(notes.hours)}</p>
+      ${designOn() && !p ? '' : `<p class="hint">${esc(notes.hours)}</p>`}
       ${seg(`${p}winHard`, 'עד כמה זה מחייב?', HARD, c.windowHard ? 'hard' : 'soft', 'data-chg="winHard"', true)}
-      <p class="hint">${strictnessHint(c.windowHard)}</p></section>`;
-export const busySec = (c, p = '') => `<section class="dr-sec"><h3 id="${p}busyH">זמן תפוס</h3>
-      <p class="hint">עבודה, אימון: החיפוש לא ישבץ שיעורים בזמנים האלה.</p>
+      ${designOn() && !p ? '' : `<p class="hint">${strictnessHint(c.windowHard)}</p>`}</section>`;
+export const busySec = (c, p = '') => `<section class="dr-sec">${designOn() && !p
+  ? `<div class="a-help-head"><h3 id="busyH">זמן תפוס</h3>${toolHelp('busyHelp', 'זמן תפוס', 'עבודה, אימון: החיפוש לא ישבץ שיעורים בזמנים האלה.')}</div>`
+  : `<h3 id="${p}busyH">זמן תפוס</h3><p class="hint">עבודה, אימון: החיפוש לא ישבץ שיעורים בזמנים האלה.</p>`}
       <div role="group" aria-labelledby="${p}busyH">${c.blocks.map(blockRow).join('')}</div>
       ${c.blocks.length < MAX_BLOCKS ? `<button type="button" class="btn" data-act="blkAdd" data-k="blkAdd">+ הוסף זמן תפוס</button>` : ''}</section>`;
-export const moreSec = (c) => `<section class="dr-sec"><h3>עוד אפשרויות</h3>
+export const moreSec = (c, p = '') => `<section class="dr-sec">${designOn() && !p
+  ? `<div class="a-help-head"><h3>עוד אפשרויות</h3>${toolHelp('morePrefsHelp', 'עוד אפשרויות', 'שתי בחינות באותו תאריך ובאותה שעה לא נכנסות בכל מקרה, כי אי אפשר לגשת לשתיהן.')}</div>`
+  : '<h3>עוד אפשרויות</h3>'}
       <label class="field">תקרת נ״ז לסמסטר <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="ללא"
         data-chg="maxCredits" data-k="maxCredits" value="${c.maxCredits ?? ''}"></label>
       <label class="field">לכל היותר ימים בקמפוס <select data-chg="maxDays" data-k="maxDays">${['', 1, 2, 3, 4, 5, 6]
         .map((n) => `<option value="${n}"${(c.maxDays ?? '') === n ? ' selected' : ''}>${n || 'ללא'}</option>`)
         .join('')}</select></label>
       <label class="check"><input type="checkbox" data-chg="examsForbid" data-k="examsForbid"${c.examsSameDay === 'forbid' ? ' checked' : ''}> לאסור 2 בחינות באותו יום</label>
-      <p class="hint">שתי בחינות באותו תאריך ובאותה שעה לא נכנסות בכל מקרה, כי אי אפשר לגשת לשתיהן.</p>
+      ${designOn() && !p ? '' : '<p class="hint">שתי בחינות באותו תאריך ובאותה שעה לא נכנסות בכל מקרה, כי אי אפשר לגשת לשתיהן.</p>'}
       <label class="check"><input type="checkbox" data-chg="includeFull" data-k="includeFull"${c.includeFull ? ' checked' : ''}> לכלול קבוצות מלאות</label>
       <label class="check"><input type="checkbox" data-chg="split" data-k="split"${c.split ? ' checked' : ''}> להציג גם הרצאה ותרגול מופרדים</label></section>`;
 
@@ -141,10 +149,13 @@ function prefsPanel() {
       <button type="button" class="btn" data-act="clearPins" data-k="clearPins">${icon('pin')} נקה נעיצות</button></section>`
         : ''
     }
-    <section class="dr-sec"><button type="button" class="btn" data-act="resetPrefs" data-k="resetPrefs">איפוס העדפות</button>
-      <p
+    <section class="dr-sec">${designOn() ? `<div class="a-help-head"><h3>איפוס העדפות</h3>${toolHelp('resetPrefsHelp', 'איפוס העדפות',
+      'מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות, תקרת הנ״ז, בחינות באותו יום, ' +
+      'קבוצות מלאות והפרדת הרצאה ותרגול לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.')}</div>` : ''}
+      <button type="button" class="btn" data-act="resetPrefs" data-k="resetPrefs">איפוס העדפות</button>
+      ${designOn() ? '' : `<p
         class="hint">מחזיר את התכנון לשנה והעמסה מאוזנת, את המשקלים, הימים והשעות,
-        תקרת הנ״ז, בחינות באותו יום, קבוצות מלאות והפרדת הרצאה ותרגול לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.</p></section>
+        תקרת הנ״ז, בחינות באותו יום, קבוצות מלאות והפרדת הרצאה ותרגול לברירת המחדל. המצב האישי, הקורסים, הנעיצות, הזמן התפוס והחברים לא משתנים.</p>`}</section>
     <footer class="dr-foot"><button type="button" class="btn ghost" data-act="backup" data-k="backup">${icon('copy')} העתק קישור גיבוי מלא</button>
       <p class="hint">פרטי: כולל את כל המצב שלך. לשימוש רק במכשירים שלך.</p></footer>`;
 }
@@ -167,19 +178,22 @@ function friendsPanel() {
       <label class="check"><input type="checkbox" data-chg="factive" data-i="${i}" data-k="fa-${i}"${f.active ? ' checked' : ''}> להציג במערכת</label></div></div>`;
   };
   return `
-    <section class="dr-sec fr-sec"><h3>הוספת חבר</h3>
-      <p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>
+    <section class="dr-sec fr-sec">${designOn()
+      ? `<div class="a-help-head"><h3>הוספת חבר</h3>${toolHelp('friendHow', 'הוספת חבר', 'בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.')}</div>`
+      : '<h3>הוספת חבר</h3><p class="hint" id="friendHow">בקשו מחבר ללחוץ על ״שתף״ ולשלוח לכם את הקישור, והדביקו אותו כאן.</p>'}
       <form id="addFriendForm" class="row"><label for="friendUrl" class="sr">קישור שחבר שלח</label>
         <input id="friendUrl" type="text" inputmode="url" autocomplete="off" dir="ltr" data-k="friendUrl" placeholder="הדביקו קישור" value="${esc(ui.friendUrl)}"
           aria-describedby="friendHow${ui.friendMsg ? ' friendErr' : ''}"${ui.friendMsg ? ' aria-invalid="true"' : ''}>
         <button type="submit" class="btn primary" data-k="addFriend">${icon('user-plus')} הוסף</button></form>
       ${ui.friendMsg ? `<p class="err-text" id="friendErr" role="alert">${icon('alert')} ${esc(ui.friendMsg)}</p>` : ''}
       <button type="button" class="btn fr-wide" id="openFriendEditor" data-act="openFriendEditor" data-k="openFriendEditor">הזנת מערכת של חבר</button></section>
-    <section class="dr-sec fr-sec"><h3>החברים שלי</h3>${
+    <section class="dr-sec fr-sec">${designOn()
+      ? `<div class="a-help-head"><h3>החברים שלי</h3>${toolHelp('friendsListHelp', 'החברים שלי', 'הדביקו למעלה קישור שחבר שלח, או הזינו את המערכת שלו ידנית.')}</div>`
+      : '<h3>החברים שלי</h3>'}${
       state.friends.map(row).join('') ||
       `<div
-      class="fr-empty">${icon('user-plus')}<p><b>עוד אין חברים</b></p><p
-      class="hint">הדביקו למעלה קישור שחבר שלח, או הזינו את המערכת שלו ידנית.</p></div>`
+      class="fr-empty">${icon('user-plus')}<p><b>עוד אין חברים</b></p>${designOn() ? '' : `<p
+      class="hint">הדביקו למעלה קישור שחבר שלח, או הזינו את המערכת שלו ידנית.</p>`}</div>`
     }</section>
     <section class="dr-sec fr-sec"><h3>הקישור שלי</h3>
       <label class="field col">השם שלי בקישור <input type="text" maxlength="60" data-chg="myName" data-k="myName" value="${esc(state.name)}"></label>
@@ -197,14 +211,16 @@ const regParts = (r) =>
 // Lecturers chosen from a lesson's popover: one row each, with a remove button. Shown only once there is one.
 const lecturerSec = (L) =>
   (Object.keys(L).length
-    ? `<section class="dr-sec"><h3>מרצים</h3><ul class="plain">${Object.entries(L)
+    ? `<section class="dr-sec">${designOn()
+      ? `<div class="a-help-head"><h3>מרצים</h3>${toolHelp('lecturersHelp', 'מרצים', 'בוחרים מתוך חלון השיעור בלוח.')}</div>`
+      : '<h3>מרצים</h3>'}<ul class="plain">${Object.entries(L)
         .map(
           ([name, mode]) => `<li>${
             mode === 'avoid' ? 'להימנע מקבוצות של ' : 'להעדיף את '
           }<b>${esc(lecturerText(name))}</b> <button type="button" class="btn sm" data-act="lecturerDrop" data-name="${esc(name)}"
   aria-label="${esc(`הסר את ${lecturerText(name)}`)}">הסר</button></li>`
         )
-        .join('')}</ul><p class="hint">בוחרים מתוך חלון השיעור בלוח.</p></section>`
+        .join('')}</ul>${designOn() ? '' : '<p class="hint">בוחרים מתוך חלון השיעור בלוח.</p>'}</section>`
     : '');
 
 export function registrationText(r) {
@@ -342,7 +358,7 @@ function advisorPanel() {
   ${printable ? `<button type="button" class="btn" data-act="advisor" data-k="advisor">${icon('file')} הדפסה</button>` : ''}
   <button type="button" class="btn" data-act="advisorCopy" data-k="advisorCopy">${icon('copy')} העתק טקסט</button>
   ${advisorPdfNote()}
-  ${printable ? '<p class="hint advisor-hint">לא נפתחת הדפסה? בדפדפן שבתוך אפליקציה היא לא תמיד עובדת. אפשר לשתף את ה-PDF.</p>' : ''}`
+  ${printable && !designOn() ? '<p class="hint advisor-hint">לא נפתחת הדפסה? בדפדפן שבתוך אפליקציה היא לא תמיד עובדת. אפשר לשתף את ה-PDF.</p>' : ''}`
   ];
 }
 // ---------- design A: the take-out tool (#out), and the information panel of the ☰ menu ----------
@@ -350,7 +366,9 @@ function advisorPanel() {
 // (to friends, a full backup). The panels above fill it, so the drawer and the tool cannot drift apart. The advisor PDF belongs to this tool: it is
 // built when the tool renders and dropped when the tool is left (ui-shell.js applyShell), never by ☰ opening or a drawer closing.
 const outCard = (id, title, body, actions = '') =>
-  `<section class="me-card dr-body out-sec" aria-labelledby="${id}"><h2 id="${id}">${title}</h2>${actions ? `<div class="out-actions">${actions}</div>` : ''}${body}</section>`;
+  `<section class="me-card dr-body out-sec" aria-labelledby="${id}">${id === 'outAdv' && !/\bGSA\//.test(navigator.userAgent)
+    ? `<div class="a-help-head"><h2 id="${id}">${title}</h2>${toolHelp('outAdvisorHelp', title, 'לא נפתחת הדפסה? בדפדפן שבתוך אפליקציה היא לא תמיד עובדת. אפשר לשתף את ה-PDF.')}</div>`
+    : `<h2 id="${id}">${title}</h2>`}${actions ? `<div class="out-actions">${actions}</div>` : ''}${body}</section>`;
 export function renderOut() {
   const box = $('out');
   if (!box || box.hidden || !app.data || !app.state || app.loadFailed) return;

@@ -44,6 +44,11 @@ export const SPLIT_NOTE = 'חלופה עם הפרדת הרצאה ותרגול (�
 export const splitLine = (names) => `מופרדים: ${names.join(', ')} · דורש אישור ההכוון`;
 export const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Section help: all three inputs are plain text, including the id (attribute context).
+export function helpHtml(id, topic, text, open = false) {
+  return `<button type="button" class="a-help" data-act="help" data-k="help-${esc(id)}" aria-expanded="${open}"
+    aria-controls="${esc(id)}" aria-label="הסבר: ${esc(topic)}"><span aria-hidden="true">ⓘ</span></button><p class="hint a-help-text" id="${esc(id)}"${open ? '' : ' hidden'}>${esc(text)}</p>`;
+}
 export const disclaimerHtml = (url) =>
   (url
     ? DISCLAIMER.replace('יועץ לימודים', () => `<a href="${esc(url)}" target="_blank" rel="noopener">יועץ לימודים</a>`)

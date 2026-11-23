@@ -30,6 +30,7 @@ import {
   outsideBox,
   $,
   ui,
+  toolHelp,
   designOn
 } from './ui-common.js';
 
@@ -136,7 +137,7 @@ const specForm = (saved) => {
       ${saved.length ? '' : `<p class="hint" role="status">בחרו ${esc(word)}</p>`}`
         : ''
     }
-    <p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>${rule.verified === false ? '<p class="hint">כלל הבחירה עוד לא נבדק מול תוכנית הלימודים הרשמית.</p>' : ''}`;
+    ${designOn() ? '' : '<p class="hint">בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.</p>'}${rule.verified === false ? '<p class="hint">כלל הבחירה עוד לא נבדק מול תוכנית הלימודים הרשמית.</p>' : ''}`;
 };
 
 // Degree checklist: what each requirement still needs, from the same numbers as the progress bar (progressInfo).
@@ -291,33 +292,36 @@ export function renderMe() {
   ) => `<button type="button" class="btn${cls}" data-act="gradeImport" data-k="gradeImport">${icon('file')} ייבוא מגליון ציונים (PDF)</button>
     <input type="file" id="gradeFile" hidden accept="application/pdf" data-chg="gradeFile">`;
   const gradeMsg = `<p class="hint" id="gradeMsg" role="status">${esc(ui.gradeMsg)}</p>`;
-  const profile = `<section class="me-card profile" aria-labelledby="meProfile"><h2 id="meProfile">פרופיל</h2>
+  const profile = `<section class="me-card profile" aria-labelledby="meProfile">${designOn()
+    ? `<div class="a-help-head"><h2 id="meProfile">פרופיל</h2>${toolHelp('meProfileHelp', 'פרופיל',
+      'יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב. הקיץ מתוכנן אחרי שנת הלימודים' +
+      (data.specializations?.length ? ' בוחרים התמחות בשנה ג׳. אפשר להשאיר ריק.' : ''))}</div>`
+    : '<h2 id="meProfile">פרופיל</h2>'}
           ${identityPick(state.profile.year, true)}${unverified}
           ${
             designOn()
-              ? // A: the short hint (and its "עוד" button) is outside the label, so the button is not part of the input's name; the input points at it
+              ? // A: input format beside the field, the longer advice in the profile's section help
                 `<label class="field">ציון אנגלית (אמירנט או פרק האנגלית בפסיכומטרי) <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}" aria-describedby="amirnetHint"></label>
-          <p class="hint" id="amirnetHint">50–150. ריק אם לא ידוע. <button type="button" class="a-which" data-act="why" data-why="amirnet" data-k="amirnetMore"
-            aria-expanded="${ui.whyOpen.has('amirnet')}" aria-controls="amirnetMore">עוד</button><span id="amirnetMore" class="a-cite"${
-              ui.whyOpen.has('amirnet') ? '' : ' hidden'
-            }> יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.</span></p>`
+          <p class="hint" id="amirnetHint">50–150. ריק אם לא ידוע.</p>`
               : `<label class="field">ציון אנגלית (אמירנט או פרק האנגלית בפסיכומטרי) <input type="number" inputmode="numeric" min="50" max="150" step="1" data-chg="amirnet" data-k="amirnet"
             value="${esc(state.profile.amirnet ?? '')}"><span class="hint">סולם 50–150. ריק אם לא ידוע. יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.</span></label>`
           }
           ${turnPick(state.profile.turn)}
           ${data.specializations?.length ? `<div class="spec-sec">${specForm(state.profile.specs)}</div>` : ''}
           <label class="check"><input type="checkbox" data-chg="summer" data-k="summer"${state.profile.summer ? ' checked' : ''}> אני מתכנן/ת סמסטר קיץ השנה</label>
-          <p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p>
+          ${designOn() ? '' : '<p class="hint">הקיץ מתוכנן אחרי שנת הלימודים</p>'}
           ${state.outsideDone.length
             ? `<p class="hint">סימנת שעשית מחוץ לתוכנית:</p>${state.outsideDone.map((n, i) => outsideBox(n, `me-${i}`)).join('')}`
             : ''}
           ${conflictsFor(app.settings, state.program, state.startYear)
             .map((t) => `<p class="hint warn-text">${esc(conflictLine(t))} בדקו מול המחלקה.</p>`)
             .join('')}</section>`;
-  const prog = `<section class="me-card" aria-labelledby="meProg"><h2 id="meProg">התקדמות</h2>
+  const prog = `<section class="me-card" aria-labelledby="meProg">${designOn() && pr.required
+    ? `<div class="a-help-head"><h2 id="meProg">התקדמות</h2>${toolHelp('meProgressHelp', 'התקדמות', 'יעד 70% (תקנון 11.4.4)')}</div>`
+    : '<h2 id="meProg">התקדמות</h2>'}
           <div class="progress"><div class="progress-top"><span><b>${esc(creditsGoal(pr.earned, pr.required, studyYear(data, state)))}</b>${
-            pr.required ? ` · ${pct}%` : ''}</span>${pr.required ? '<span class="hint">יעד 70% (תקנון 11.4.4)</span>' : ''}</div>
+            pr.required ? ` · ${pct}%` : ''}</span>${pr.required && !designOn() ? '<span class="hint">יעד 70% (תקנון 11.4.4)</span>' : ''}</div>
           ${pr.required // year א׳ has no target: no bar at a meaningless 100%
             ? `<div class="bar" role="progressbar" aria-label="התקדמות בתוכנית" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i
             style="width:${pct}%"></i><span class="target" aria-hidden="true"></span></div>`
@@ -340,7 +344,9 @@ export function renderMe() {
         ${gradeMsg}</section></div>`;
     return;
   }
-  el.innerHTML = `<div class="me-head"><h2 id="meTitle" tabindex="-1">המצב שלי</h2><p class="me-step">${step}</p></div>
+  el.innerHTML = `<div class="me-head${designOn() ? ' a-help-head' : ''}"><h2 id="meTitle" tabindex="-1">המצב שלי</h2>${designOn()
+    ? toolHelp('meHelp', 'המצב שלי', 'עדכנו מה עברתם או נכשלתם בו. מערכת השעות מתעדכנת לבד.')
+    : `<p class="me-step">${step}</p>`}</div>
     <div class="me-grid">
       <div class="me-side">
         ${profile}

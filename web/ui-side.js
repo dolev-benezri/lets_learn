@@ -20,6 +20,7 @@ import {
   outsideBoxes,
   $,
   ui,
+  toolHelp,
   designOn
 } from './ui-common.js';
 
@@ -180,7 +181,10 @@ export function renderSide(res) {
     rest = cand.filter((id) => !planned(id));
   const musts = plan.filter((id) => candidateMode(id) === 'must').map((id) => app.data.courses[id].name);
   const eng = englishOptions(app.data, app.state.profile.amirnet);
-  const engBody = `<p class="hint">אנגלית נלמדת לפי רמה. ציון אנגלית (אמירנט או פסיכומטרי) פוטר מהרמה ומהרמות שמתחתיה (פטור לא נותן נ״ז).</p>
+  const englishHint = 'אנגלית נלמדת לפי רמה. ציון אנגלית (אמירנט או פסיכומטרי) פוטר מהרמה ומהרמות שמתחתיה (פטור לא נותן נ״ז).';
+  const engBody = `${designOn()
+    ? `<div class="a-help-head"><h3>אנגלית: רמות ופטור</h3>${toolHelp('coursesEnglishHelp', 'אנגלית: רמות ופטור', englishHint)}</div>`
+    : `<p class="hint">${englishHint}</p>`}
     <ul class="plain">${eng.map((e) => `<li><b>${esc(heb(e.name))}</b> · פטור בציון ${e.min}+${e.exempt ? ' <span class="tag ok">פטור</span>' : ''}</li>`).join('')}</ul>
     ${app.state.profile.amirnet === null ? '<p class="hint">אם יש לך ציון אנגלית (אמירנט או פסיכומטרי), <a href="#me">הזינו אותו בפרופיל</a>.</p>' : ''}`;
   const taken = new Set(),
@@ -212,11 +216,16 @@ export function renderSide(res) {
     ? `${ui.last.partial ? 'החיפוש לא הספיק' : 'לא נמצאה מערכת'}. הפרטים <a href="#">ב${toolName('plan')}</a>.`
     : coursesSummary(res);
   const HOW = 'חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.';
-  // A: the explanation is behind a button above the list ("מה ההבדל?"); classic keeps the sentence on the page
+  // A: the section's common help control; classic keeps its sentence on the page.
   const how = designOn()
-    ? `<p class="a-tip"><button type="button" class="a-tip-btn" data-act="tip" data-k="aTip" aria-expanded="${ui.tipOpen}" aria-controls="aTipBody">${icon('info')} מה ההבדל?</button></p>
-      <p class="hint" id="aTipBody"${ui.tipOpen ? '' : ' hidden'}>${HOW}</p>`
+    ? ''
     : `<p class="hint">${HOW}</p>`;
+  if (designOn()) {
+    const head = $('coursesTitle').parentElement;
+    head.classList.add('a-help-head');
+    head.querySelectorAll('.a-help, .a-help-text').forEach((el) => el.remove());
+    head.insertAdjacentHTML('beforeend', toolHelp('coursesHelp', 'קורסים', HOW));
+  }
   $('side').innerHTML = `${how}
     ${details(
       'plan',

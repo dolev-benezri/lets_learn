@@ -132,7 +132,30 @@ const clearPrint = () => {
   $('print').hidden = true;
   document.documentElement.classList.remove('print-summary');
 };
+// Capture phase: consume Escape before the shell's bubble listener can close a phone sheet.
+export function onHelpKey(e) {
+  if (!designOn() || e.key !== 'Escape' || e.defaultPrevented) return;
+  const root = e.target.closest?.('#panel, #drawer, .a-fr-card');
+  if (!root || document.querySelector('dialog:modal:not(#drawer)')) return;
+  const section = e.target.closest('section, .a-help-head');
+  const buttons = (box) => [...(box?.querySelectorAll('.a-help[aria-expanded="true"]') ?? [])].filter((b) => b.checkVisibility());
+  const button = buttons(section).at(-1) ?? buttons(root).at(-1);
+  if (!button) return;
+  e.preventDefault();
+  e.stopPropagation();
+  ACT.help(button);
+  button.focus({ preventScroll: true });
+}
 export const ACT = {
+  help(el) {
+    if (!designOn()) return;
+    const id = el.getAttribute('aria-controls'), body = $(id);
+    if (!body) return;
+    const open = el.getAttribute('aria-expanded') !== 'true';
+    el.setAttribute('aria-expanded', String(open));
+    body.hidden = !open;
+    ui.helpOpen[open ? 'add' : 'delete'](id);
+  },
   shareOut,
   frNext,
   frBack,

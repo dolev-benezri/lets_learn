@@ -498,11 +498,11 @@ async function redraw(page) {
   await idle(page);
 }
 
-test('the courses tool: "מה ההבדל?" holds the sentence that explained must / maybe / no, and keeps it open over a redraw', async (t) => {
+test('the courses tool: section help explains must / maybe / no, and keeps it open over a redraw', async (t) => {
   const page = await visit(t, 'desktop', DONE, '#courses');
   await coursesReady(page);
-  const btn = page.locator('#side .a-tip-btn'),
-    body = page.locator('#aTipBody');
+  const btn = page.getByRole('button', { name: 'הסבר: קורסים', exact: true }),
+    body = page.locator('#coursesHelp');
   assert.equal(await btn.getAttribute('aria-expanded'), 'false');
   assert.equal(await body.isVisible(), false);
   await btn.focus();
@@ -510,11 +510,11 @@ test('the courses tool: "מה ההבדל?" holds the sentence that explained mus
   assert.equal(await btn.getAttribute('aria-expanded'), 'true');
   assert.equal(flat(await body.innerText()), 'חובה: בכל מערכת. אולי: רק אם משתלב טוב. לא: לא בתכנון.', 'the text, unchanged');
   await redraw(page);
-  assert.equal(await page.locator('#side .a-tip-btn').getAttribute('aria-expanded'), 'true', 'still open');
-  assert.equal(await page.locator('#aTipBody').isVisible(), true);
-  await page.locator('#side .a-tip-btn').focus();
+  assert.equal(await btn.getAttribute('aria-expanded'), 'true', 'still open');
+  assert.equal(await body.isVisible(), true);
+  await btn.focus();
   await page.keyboard.press('Space');
-  assert.equal(await page.locator('#aTipBody').isVisible(), false, 'and closed again by the keyboard');
+  assert.equal(await body.isVisible(), false, 'and closed again by the keyboard');
 });
 
 test('a course card: the importance row, one status line, the warning tag alone, a short reason with "למה?"', async (t) => {
@@ -667,28 +667,28 @@ test('"מה חשוב לי": one label "לתכנן" over the scope, no "העדפ�
   assert.deepEqual(old.slice(0, 4), ['מה חשוב לי', 'העדפות', 'תכנון', 'מה חשוב לך?'], `classic: ${old}`);
 });
 
-test('"המצב שלי": the grade scale is two short sentences with "עוד" for the rest, outside the input\'s label, and keeps its state and focus over a redraw', async (t) => {
+test('"המצב שלי": the grade scale stays beside the input, profile help keeps its state and focus over a redraw', async (t) => {
   const page = await visit(t, 'desktop', DONE, '#me');
   const hint = page.locator('#amirnetHint');
   await hint.waitFor({ timeout: 30000 });
-  assert.equal(flat(await hint.innerText()), '50–150. ריק אם לא ידוע. עוד');
+  assert.equal(flat(await hint.innerText()), '50–150. ריק אם לא ידוע.');
   const input = page.getByRole('spinbutton', { name: /ציון אנגלית/ });
   assert.ok(!/עוד/.test((await input.evaluate((e) => e.labels[0].textContent)) ?? ''), 'the button is not in the label');
   assert.equal(await input.getAttribute('aria-describedby'), 'amirnetHint');
-  const more = hint.locator('.a-which');
+  const more = page.getByRole('button', { name: 'הסבר: פרופיל', exact: true });
   assert.equal(await more.evaluate((b) => !!b.closest('label')), false, 'no control inside the label');
   assert.equal(await more.getAttribute('aria-expanded'), 'false');
   await more.focus();
   await page.keyboard.press('Enter');
   assert.equal(await more.getAttribute('aria-expanded'), 'true');
-  assert.equal(flat(await hint.innerText()), '50–150. ריק אם לא ידוע. עוד יש לכם כמה ציונים? בדקו מול המזכירות איזה מהם נחשב.');
+  assert.match(await page.locator('#meProfileHelp').innerText(), /יש לכם כמה ציונים\? בדקו מול המזכירות איזה מהם נחשב\./);
   await page.evaluate(async () => (await import('./app.js')).refresh()); // the record is drawn again through keepFocus
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'amirnetMore', 'the focus is on the new button');
-  assert.match(flat(await page.locator('#amirnetHint').innerText()), /בדקו מול המזכירות/, 'still open');
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'help-meProfileHelp', 'the focus is on the new button');
+  assert.equal(await page.locator('#meProfileHelp').isVisible(), true, 'still open');
   await page.keyboard.press('Space');
-  assert.equal(flat(await page.locator('#amirnetHint').innerText()), '50–150. ריק אם לא ידוע. עוד', 'closed by the keyboard');
+  assert.equal(await page.locator('#meProfileHelp').isVisible(), false, 'closed by the keyboard');
   await page.evaluate(async () => (await import('./app.js')).refresh());
-  assert.equal(flat(await page.locator('#amirnetHint').innerText()), '50–150. ריק אם לא ידוע. עוד', 'and a closed one stays closed');
+  assert.equal(await page.locator('#meProfileHelp').isVisible(), false, 'and a closed one stays closed');
   const classic = await visit(t, 'desktop', DONE, '#me', 'classic');
   const old = classic.locator('#me label.field', { hasText: 'ציון אנגלית' }).locator('.hint');
   await old.waitFor({ timeout: 30000 });

@@ -18,7 +18,7 @@ import { renderMe } from './ui-me.js';
 import { renderFirstRun } from './ui-first-run.js';
 import { renderPrefs } from './ui-drawer.js';
 import { dropAdvisorPdf } from './ui-advisor-pdf.js';
-import { addFriend, ACT, CHG } from './ui-actions.js';
+import { addFriend, ACT, CHG, onHelpKey } from './ui-actions.js';
 import { tourCheck, tourOnce, introPending, shellPending, onTourEnd } from './tour.js';
 import { shellInit, applyShell, openTool, closeTool, routeFocus, routeScroll, navReason, viewOf, boardClear, toggleEditSheet } from './ui-shell.js';
 
@@ -183,6 +183,7 @@ const askToursAgain = () => designOn() && (whatsNew() || (hasAlternatives() && !
 onTourEnd(askToursAgain);
 
 // ---------- wiring (static shell from index.html) ----------
+document.addEventListener('keydown', onHelpKey, true);
 watchOtherTabs();
 app.onSaveChange = () => {
   if (!app.data) return;

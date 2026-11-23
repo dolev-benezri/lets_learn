@@ -34,7 +34,7 @@ export function stepFourHtml() {
         : weight(k);
   const rest = WEIGHTS.map(([k]) => k).filter((k) => !shown.includes(k) && (k !== 'examSpread' || data.examsPublished));
   const notes = defaultNotes(DEFAULT.constraints);
-  const more = `${rest.map(weight).join('')}${daysSec(c, notes, P)}${hoursSec(c, notes, P)}${busySec(c, P)}${moreSec(c)}`;
+  const more = `${rest.map(weight).join('')}${daysSec(c, notes, P)}${hoursSec(c, notes, P)}${busySec(c, P)}${moreSec(c, P)}`;
   return `<p class="a-fr-line">אפשר להשאיר כמו שזה ולהמשיך.</p>
     <div class="a-fr-asks">${shown.map(ask).join('')}</div>${details('fr-more-prefs', 'עוד הגדרות', more, 1)}`;
 }

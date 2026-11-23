@@ -31,6 +31,7 @@ import {
   DISCLAIMER,
   disclaimerHtml,
   esc,
+  helpHtml,
   groupFresh,
   groupFreshParts,
   sharedFreshAt,
@@ -43,6 +44,28 @@ import {
 } from '../web/ui-text.js';
 import { askConfirm } from '../web/ui-dialog.js';
 import { DEFAULT } from '../web/app.js';
+
+test('helpHtml: labelled native button controls a hidden explanation; no keyboard shim is needed', () => {
+  const html = helpHtml('profileHelp', 'פרופיל', 'הקיץ מתוכנן אחרי שנת הלימודים');
+  assert.match(html, /<button type="button" class="a-help"/);
+  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, /aria-controls="profileHelp" aria-label="הסבר: פרופיל"/);
+  assert.match(html, /<span aria-hidden="true">ⓘ<\/span><\/button>/);
+  assert.match(html, /<p class="hint a-help-text" id="profileHelp" hidden>הקיץ מתוכנן אחרי שנת הלימודים<\/p>/);
+  assert.doesNotMatch(html, /role="button"|tabindex|\son\w+=/);
+  const open = helpHtml('profileHelp', 'פרופיל', 'טקסט', true);
+  assert.match(open, /aria-expanded="true"/);
+  assert.doesNotMatch(open, / hidden/);
+});
+
+test('helpHtml: escapes ids, topics and explanation text as text, never executable markup', () => {
+  const html = helpHtml('a"<&\'', '<שם> & "נושא"', '<script>"&\'</script>');
+  assert.match(html, /aria-controls="a&quot;&lt;&amp;&#39;"/);
+  assert.match(html, /id="a&quot;&lt;&amp;&#39;" hidden/);
+  assert.match(html, /aria-label="הסבר: &lt;שם&gt; &amp; &quot;נושא&quot;"/);
+  assert.match(html, /&lt;script&gt;&quot;&amp;&#39;&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>|<שם>/);
+});
 
 test('toolName: classic numbers its steps, design A names the tool and the board', async () => {
   const { toolName } = await import('../web/ui-text.js');
