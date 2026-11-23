@@ -649,6 +649,9 @@
    pixel, so two 50-minute lessons of one week differed; blocks sharing time are narrower on purpose and keep the start only */
 :root[data-design="a"] .blk-end { display:inline; }
 :root[data-design="a"] .blk.clash .blk-end { display:none; }
+/* a narrow lane keeps the course name: the room line goes, the name does not shrink */
+:root[data-design="a"] .blk.clash .blk-room { display:none; }
+:root[data-design="a"] .blk.clash .blk-name { flex-shrink:0; }
 /* phase 2 follow-up (the design lead's read-through): the loaded tool is one surface, the parts divided by a line (no cards inside the card); the search
    lists its courses as rows with dividers, the field apart from the chips, and "חזרה" at the start edge */
 :root[data-design="a"] .edit-tool .me-card, :root[data-design="a"] .edit-tool .edit-reg, :root[data-design="a"] .edit-tool .edit-ways {
