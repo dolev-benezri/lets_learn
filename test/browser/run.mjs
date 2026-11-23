@@ -19,7 +19,8 @@ const specs = (await readdir(HERE))
   .filter((f) => f.endsWith('.spec.mjs') && f.includes(process.argv[2] ?? ''))
   .sort()
   .map((f) => path.join(HERE, f));
-const child = spawn(process.execPath, ['--test', ...specs], {
+// A stuck browser fails the run after 30 minutes (per spec file, which its tests inherit) instead of hanging it for good.
+const child = spawn(process.execPath, ['--test', '--test-timeout=1800000', ...specs], {
   stdio: 'inherit',
   env: { ...process.env, SITE_URL: `http://127.0.0.1:${site.port}/` }
 });
