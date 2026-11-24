@@ -106,26 +106,39 @@ async function openSafari(phone, site, wdaPort) {
       try {
         await s('POST', '/orientation', { orientation });
       } catch (e) {
+        let why = 'the Simulator keys sent';
         try {
           const keys = `tell application "System Events" to key code ${wide ? 123 : 124} using command down`;
           execFileSync('osascript', ['-e', 'tell application "Simulator" to activate', '-e', keys], { timeout: 15000 }); // a permission prompt waits ~2 min
-        } catch {}
+        } catch (k) {
+          why = `the Simulator keys failed: ${String(k.stderr || k.message).trim().split('\n')[0]}`;
+        }
         await d.until((wide) => (innerWidth > innerHeight) === wide, wide ? 'the landscape layout' : 'the portrait layout', 10000, wide).catch(() => {
-          throw e;
+          throw new Error(`${e.message}; ${why}, and the page did not turn`);
         });
       }
     },
-    // Safari's first start shows a tip bubble over the bottom of the page, and the next tap anywhere only closes it: that tap goes to the status bar
-    // (a tap there only scrolls the page up). The native screen's tree is kept for a look at what Safari showed.
-    async dismissTip(file) {
+    // Safari's first start shows a tip bubble ("TipView") over the bottom of the page that takes the next tap; a tap on the status bar does not close it.
+    // Its own close button (xmark.circle.fill, "סגירה"), else the popover's dismiss region.
+    // The native screen's tree is kept for a look at what Safari showed.
+    // sheet: also a first-start sheet's buttons (only when stuck: the page's own "המשך" is a button of the same name in this tree)
+    async dismissTip(file, sheet = false) {
       await native(async () => {
         await s('GET', '/source')
           .then((x) => writeFile(file, x))
           .catch(() => {});
-        const tap = [{ type: 'pointerMove', duration: 0, x: 60, y: 20 }, { type: 'pointerDown', button: 0 }, { type: 'pause', duration: 80 }, { type: 'pointerUp', button: 0 }];
-        await s('POST', '/actions', { actions: [{ type: 'pointer', id: 'finger', parameters: { pointerType: 'touch' }, actions: tap }] });
+        const close = ['name == "xmark.circle.fill"', 'name == "PopoverDismissRegion"'];
+        if (sheet) close.push('type == "XCUIElementTypeButton" AND label IN {"המשך", "Continue", "לא עכשיו", "Not Now"}');
+        for (const value of close) {
+          const el = await s('POST', '/element', { using: '-ios predicate string', value }).catch(() => null);
+          if (el) await s('POST', `/element/${el[EL]}/click`, {}).catch(() => {});
+        }
       });
       await sleep(800);
+    },
+    async snapshot(name) {
+      await d.shot(`${name}.png`).catch(() => {});
+      await native(async () => writeFile(name + '.xml', await s('GET', '/source'))).catch(() => {});
     },
     async until(fn, what, ms = 15000, ...args) {
       for (const end = Date.now() + ms; ; await sleep(300)) {
@@ -413,7 +426,16 @@ for (const [i, phone] of iphones().entries()) {
   let d;
   try {
     d = await openSafari(phone, SITE, 8100 + i);
-    await walk(d, SITE, dir, rec.steps);
+    try {
+      await walk(d, SITE, dir, rec.steps);
+    } catch (e) {
+      if (rec.steps.length) throw e;
+      // stuck before the first step (run 3: Safari's page took no script for 120s on a fresh Pro Max): what the screen showed, then once more
+      console.log(`  stuck at the start (${e.message.slice(0, 120)}), once more`);
+      await d.snapshot(path.join(dir, 'stuck'));
+      await d.dismissTip(path.join(dir, 'stuck-after.xml'), true);
+      await walk(d, SITE, dir, rec.steps);
+    }
   } catch (e) {
     rec.error = e.message;
     console.log(`  FAIL ${e.message}`);
