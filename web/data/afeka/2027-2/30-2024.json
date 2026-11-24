@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-21T23:24:41.578Z",
+ "fetchedAt": "2026-11-24T23:19:34.401Z",
  "year": 2027,
  "startYear": 2024,
  "program": 30,
@@ -8473,7 +8473,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -9233,7 +9233,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090310/1",

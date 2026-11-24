@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-21T23:24:41.578Z",
+ "fetchedAt": "2026-11-24T23:19:34.401Z",
  "year": 2027,
  "startYear": 2025,
  "program": 20,
@@ -1401,7 +1401,7 @@
      "id": "272011906",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "מר סידורוב מיכאל",
+     "lecturer": "ד\"ר סידורוב מיכאל",
      "full": false,
      "semester": "ב",
      "linked": [
@@ -1488,7 +1488,7 @@
      "id": "272011906/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "מר סידורוב מיכאל",
+     "lecturer": "ד\"ר סידורוב מיכאל",
      "full": false,
      "semester": "ב",
      "linked": [],
@@ -3925,7 +3925,7 @@
      "id": "272021801",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "מר סידורוב מיכאל",
+     "lecturer": "ד\"ר סידורוב מיכאל",
      "full": false,
      "semester": "ב",
      "linked": [
@@ -3945,7 +3945,7 @@
      "id": "272021801/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "מר סידורוב מיכאל",
+     "lecturer": "ד\"ר סידורוב מיכאל",
      "full": false,
      "semester": "ב",
      "linked": [],
@@ -4363,7 +4363,7 @@
      "id": "272033702",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "מר סידורוב מיכאל",
+     "lecturer": "ד\"ר סידורוב מיכאל",
      "full": true,
      "semester": "ב",
      "linked": [
@@ -4383,7 +4383,7 @@
      "id": "272033702/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "מר סידורוב מיכאל",
+     "lecturer": "ד\"ר סידורוב מיכאל",
      "full": true,
      "semester": "ב",
      "linked": [],
@@ -7227,7 +7227,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
@@ -7987,7 +7987,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר שמעון מאיר",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279090310/1",

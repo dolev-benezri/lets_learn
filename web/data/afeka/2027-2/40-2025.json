@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-20T23:24:46.887Z",
+ "fetchedAt": "2026-11-24T23:19:34.401Z",
  "year": 2027,
  "startYear": 2025,
  "program": 40,
@@ -7726,7 +7726,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [
