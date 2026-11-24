@@ -166,7 +166,7 @@ for (const width of [320, 1280])
     await page.locator('.menu-btn').click();
     const rows = page.locator('#drawer .a-menu > li button');
     assert.deepEqual(await rows.allTextContents().then((xs) => xs.map((s) => s.trim())),
-      ['סיור באתר', 'מפת התקדמות', 'מידע ותנאים', 'מחק את כל הנתונים שלי']);
+      ['סיור באתר', 'שאלות נפוצות', 'מפת התקדמות', 'מידע ותנאים', 'מחק את כל הנתונים שלי']);
     for (const row of await rows.all()) {
       const r = await row.boundingBox();
       assert.ok(r && r.height >= 48 && r.width >= 44);
@@ -193,6 +193,31 @@ for (const width of [320, 1280])
     await back.focus();
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'menu-info');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.activeElement?.classList.contains('menu-btn'));
+  });
+
+// ☰ "שאלות נפוצות" (owner 11-24): a page of its own in the menu's sheet, ten closed questions, the support address in the last, back to its row
+for (const width of [320, 1280])
+  test(`${width}: the menu's questions page: ten closed questions, an answer opens, the address, back to its row, Escape to ☰`, async (t) => {
+    const page = await visit(t, { width, height: 900 }, DONE);
+    await weekReady(page);
+    await page.locator('.menu-btn').click();
+    await page.locator('#drawer [data-k="menu-faq"]').click();
+    assert.equal(await page.locator('#drawerTitle').textContent(), 'שאלות נפוצות');
+    const qs = page.locator('#drawer .faq details');
+    assert.equal(await qs.count(), 10);
+    assert.deepEqual(await qs.evaluateAll((ds) => ds.filter((d) => d.open).length), 0);
+    for (const sum of await page.locator('#drawer .faq summary').all()) assert.ok((await sum.boundingBox()).height >= 44);
+    await page.locator('#drawer .faq summary').first().click();
+    assert.ok((await qs.first().locator('p').innerText()).includes('אין חשבון'));
+    const mail = page.locator('#drawer .faq details').last().locator('a[href^="mailto:"]');
+    assert.equal(await mail.getAttribute('href'), `mailto:${await page.evaluate(async () => (await import('./app.js')).app.settings.supportEmail)}`);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no sideways scroll');
+    const back = page.locator('#drawer .dr-head').getByRole('button', { name: 'חזרה לתפריט' });
+    await back.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'menu-faq');
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => document.activeElement?.classList.contains('menu-btn'));
   });

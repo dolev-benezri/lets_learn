@@ -429,15 +429,40 @@ function infoPanel() {
   ];
 }
 
-const PANELS = { reg: regPanel, advisor: advisorPanel, menu: menuPanel, info: infoPanel };
-// the ☰ menu and its information panel are a modal side sheet; under A nothing else opens as a drawer
-const sideSheet = (name) => name === 'menu' || (designOn() && name === 'info');
+// Design A's ☰ "שאלות נפוצות" (owner 11-24): the README's questions in the site's words, and where the tools keep what students looked for.
+// Each answer is one closed <details>; the last one takes the support address from settings.json.
+const FAQ = [
+  ['צריך להירשם או להתחבר?', 'לא. אין חשבון. הכול נשמר בדפדפן שבו השתמשתם.'],
+  ['כבר יש לי מערכת. אפשר לשנות בה רק קורס אחד?',
+    'כן. בראש הדף עוברים ל"שיפור מערכת קיימת", טוענים את המערכת, מסמנים איזה קורס יכול לזוז ומבקשים הצעות. "העתק שינויים" נותן מה להוסיף ומה להסיר באפקה-נט.'],
+  ['איך מתכננים רק סמסטר אחד?', 'ב"מה חשוב לי", בשורה "לתכנן", בוחרים "רק א׳" או "רק ב׳". "שנה" בונה זוג מערכות, אחת לכל סמסטר.'],
+  ['למה קורס לא נכנס למערכת?', 'ב"פרטים" מעל המערכת כתוב מה לא נכנס לחלופה הזו. ב"קורסים" כל קורס שלא נלקח מופיע עם הסיבה, למשל דרישת קדם שחסרה.'],
+  ['איך נרשמים בפועל?', 'ב"להוציא", ב"רשימה להרשמה", לוחצים "העתק הכל" ומדביקים את מספרי הקבוצות באפקה-נט. ההרשמה עצמה נעשית רק באפקה-נט.'],
+  ['איך מוסיפים חבר?', 'ב"חברים" מדביקים קישור שחבר שלח, או בוחרים "הזנת מערכת של חבר". שיעור משותף מסומן בלוח.'],
+  ['איך מעבירים את המערכת לטלפון?', 'ב"להוציא" לוחצים "העתק קישור גיבוי מלא" ופותחים את הקישור בטלפון. הקישור כולל את הנתונים שלכם, אז שומרים אותו לעצמכם.'],
+  ['מאיפה תאריכי הבחינות?', 'מהידיעון של המכללה. המועדים המחייבים הם של המכללה.'],
+  ['מה ההבדל בין תוכנית, מסלול ומחזור?', 'תוכנית היא המחלקה (למשל הנדסה מכנית), מסלול הוא יום או ערב, ומחזור הוא השנה שבה התחלתם ללמוד.']
+];
+function faqPanel() {
+  const mail = app.settings.supportEmail,
+    last = mail
+      ? `<p>כותבים ל-<a href="mailto:${esc(mail)}" dir="ltr">${esc(mail)}</a>. בינתיים ההרשמה באפקה-נט היא הקובעת.</p>`
+      : '<p>ב"מידע ותנאים" יש "בקשת הסרה". בינתיים ההרשמה באפקה-נט היא הקובעת.</p>';
+  const rows = [...FAQ.map(([q, a]) => [q, `<p>${esc(a)}</p>`]), ['מצאתי טעות, או שאני רוצה שיוסר מידע. מה עושים?', last]];
+  return ['שאלות נפוצות', `<ul class="plain faq">${rows.map(([q, a], i) => `<li>${details(`faq-${i + 1}`, esc(q), a, 1)}</li>`).join('')}</ul>`];
+}
+
+const PANELS = { reg: regPanel, advisor: advisorPanel, menu: menuPanel, info: infoPanel, faq: faqPanel };
+// A: the ☰ rows that open a page of their own inside the menu's sheet, with "חזרה לתפריט" back to the row
+const MENU_PAGES = { info: 'menu-info', faq: 'menu-faq' };
+// the ☰ menu and its pages are a modal side sheet; under A nothing else opens as a drawer
+const sideSheet = (name) => name === 'menu' || (designOn() && name in MENU_PAGES);
 export function renderDrawer() {
   if (!ui.panel) return;
   const onTitle = designOn() && document.activeElement?.id === 'drawerTitle'; // the heading that took focus when the panel changed (A)
   // actions: a row that stays under the header while the body scrolls
   const [title, body, actions = ''] = PANELS[ui.panel]();
-  const back = designOn() && ui.panel === 'info'
+  const back = designOn() && ui.panel in MENU_PAGES
     ? '<button type="button" class="btn icon-btn ghost info-back" data-act="menu" data-k="infoBack" aria-label="חזרה לתפריט">→</button>'
     : '';
   $('drawer').innerHTML = `<div class="dr-top"><div class="dr-head">${back}<h2 id="drawerTitle">${title}</h2>
@@ -464,14 +489,14 @@ export function openPanel(name, from) {
     return;
   }
   const switching = d.open;
-  const infoBack = designOn() && switching && ui.panel === 'info' && name === 'menu';
+  const backTo = designOn() && switching && name === 'menu' ? MENU_PAGES[ui.panel] : null; // the row of the page being left
   ui.panel = name;
   if (!(switching && designOn())) ui.opener = from; // A: ☰ -> information -> back is one sheet; closing returns to the ☰ button, not to a gone one
   renderDrawer();
   if (switching && designOn()) {
-    // The pressed button is gone: info takes the heading; Back returns to its menu row (a fresh dialog keeps its first button).
-    const h = infoBack ? d.querySelector('[data-k="menu-info"]') : $('drawerTitle');
-    if (!infoBack) h.tabIndex = -1;
+    // The pressed button is gone: a menu page takes the heading; Back returns to its menu row (a fresh dialog keeps its first button).
+    const h = backTo ? d.querySelector(`[data-k="${backTo}"]`) : $('drawerTitle');
+    if (!backTo) h.tabIndex = -1;
     h.focus({ preventScroll: true });
   }
   if (!d.open) {

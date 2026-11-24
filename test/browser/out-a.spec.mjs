@@ -345,7 +345,7 @@ test('☰ has ordered tour, map, info and erase rows, no mode or theme row, and 
   assert.equal(await page.locator('#drawer .mode-link').count(), 0, 'the tabs are the mode switch');
   assert.equal(await page.locator('#drawer .theme-btn').count(), 0);
   assert.deepEqual(await page.locator('#drawer .a-menu > li button').allTextContents().then((xs) => xs.map((s) => s.trim())),
-    ['סיור באתר', 'מפת התקדמות', 'מידע ותנאים', 'מחק את כל הנתונים שלי']);
+    ['סיור באתר', 'שאלות נפוצות', 'מפת התקדמות', 'מידע ותנאים', 'מחק את כל הנתונים שלי']);
   for (const sel of ['[data-act="tour"]', '[data-act="openMap"]', '[data-act="panel"][data-panel="info"]', '[data-act="eraseAll"]'])
     assert.equal(await page.locator(`#drawer ${sel}`).count(), 1, sel);
   // erase asks first, and ביטול leaves everything

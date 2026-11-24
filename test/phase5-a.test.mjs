@@ -21,13 +21,13 @@ function withDesign(t, design) {
   return drawer;
 }
 
-test('A menu: a list of four ordered rows, three hidden chevrons, erase last and apart, no theme', (t) => {
+test('A menu: a list of five ordered rows, four hidden chevrons, erase last and apart, no theme', (t) => {
   withDesign(t, 'a');
   const [title, html] = menuPanel(), root = parse(html);
   assert.equal(title, 'תפריט');
   assert.deepEqual(root.querySelectorAll('ul.a-menu > li button').map((b) => b.text.trim()),
-    ['סיור באתר', 'מפת התקדמות', 'מידע ותנאים', 'מחק את כל הנתונים שלי']);
-  assert.equal(root.querySelectorAll('.a-menu-chevron[aria-hidden="true"]').length, 3);
+    ['סיור באתר', 'שאלות נפוצות', 'מפת התקדמות', 'מידע ותנאים', 'מחק את כל הנתונים שלי']);
+  assert.equal(root.querySelectorAll('.a-menu-chevron[aria-hidden="true"]').length, 4);
   assert.ok(root.querySelector('.a-menu-erase [data-act="eraseAll"].danger'));
   assert.equal(root.querySelector('.a-menu-erase .a-menu-chevron'), null);
   assert.equal(root.querySelector('.theme-btn'), null);

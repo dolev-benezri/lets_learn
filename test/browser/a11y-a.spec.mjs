@@ -411,6 +411,13 @@ for (const [w, size] of Object.entries(WIDTHS)) for (const scheme of ['light', '
     await page.locator('#drawer [data-k="infoBack"]').focus();
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'menu-info');
+    await page.locator('#drawer [data-k="menu-faq"]').click(); // the questions page, one answer open
+    await page.locator('#drawer .faq summary').first().click();
+    await check(page, 'faq');
+    if (w !== '1280') for (const b of await smallTargets(page)) note(`faq: ${b}`);
+    await page.locator('#drawer [data-k="infoBack"]').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.k), 'menu-faq');
     await page.keyboard.press('Escape');
     await openMap(page);
     await page.locator('#pmap .pm-svg.ready').waitFor({ timeout: 30000 });

@@ -312,6 +312,11 @@
   border-bottom:1px solid var(--border); text-decoration:none;
 }
 :root[data-design="a"] .info-links a .icon { flex:none; }
+/* ☰ "שאלות נפוצות": a question per row, its answer under it when opened (the chevron is style.css's) */
+:root[data-design="a"] .faq > li { border-bottom:1px solid var(--border); }
+:root[data-design="a"] .faq summary { display:flex; align-items:center; gap:8px; min-height:48px; padding:8px 0; font-weight:600; cursor:pointer; }
+:root[data-design="a"] .faq summary:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+:root[data-design="a"] .faq details > p { margin:0 0 var(--sp-3); color:var(--text-2); }
 :root[data-design="a"] #week {
   touch-action:pan-y pinch-zoom;
 } /* the page keeps the horizontal gesture: the swipe between alternatives (ui-shell.js) */

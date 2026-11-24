@@ -37,12 +37,14 @@ export const renderModeChoice = () => {
   </div></div>`;
 };
 
-// Design A: the tabs of the top bar are the mode switch, so the menu holds what has no place on the board: the tour, the map, the
-// information (terms, privacy, how fresh the data is) and erasing everything.
+// Design A: the tabs of the top bar are the mode switch, so the menu holds what has no place on the board: the tour, the questions people ask,
+// the map, the information (terms, privacy, how fresh the data is) and erasing everything.
 const menuA = () => [
   'תפריט',
   `<nav aria-label="תפריט"><ul class="a-menu">
     <li><button type="button" class="btn a-menu-item" data-act="tour" data-k="menu-tour">${icon('info')}<span>סיור באתר</span>
+      <span class="a-menu-chevron" aria-hidden="true">${icon('chevron-left')}</span></button></li>
+    <li><button type="button" class="btn a-menu-item" data-act="panel" data-panel="faq" data-k="menu-faq">${icon('help')}<span>שאלות נפוצות</span>
       <span class="a-menu-chevron" aria-hidden="true">${icon('chevron-left')}</span></button></li>
     <li><button type="button" class="btn a-menu-item" data-act="openMap" data-k="menu-map" aria-haspopup="dialog">${icon('map')}<span>מפת התקדמות</span>
       <span class="a-menu-chevron" aria-hidden="true">${icon('chevron-left')}</span></button></li>
