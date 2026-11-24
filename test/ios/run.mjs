@@ -99,7 +99,34 @@ async function openSafari(phone, site, wdaPort) {
     js: (fn, ...args) => s('POST', '/execute/sync', { script: `return (${fn})(...arguments)`, args }),
     mobile: (cmd, arg = {}) => s('POST', '/execute/sync', { script: `mobile: ${cmd}`, args: [arg] }),
     shot: async (file) => writeFile(file, Buffer.from(await s('GET', '/screenshot'), 'base64')),
-    rotate: (orientation) => s('POST', '/orientation', { orientation }),
+    // iOS 26's simulator answered LANDSCAPE with "Unable To Rotate Device" and stayed upright (PORTRAIT answered 200). Then the Simulator app's own
+    // rotate keys (⌘← and ⌘→, through System Events); the page's own width tells whether the phone turned, and the first error stands if it did not.
+    async rotate(orientation) {
+      const wide = orientation === 'LANDSCAPE';
+      try {
+        await s('POST', '/orientation', { orientation });
+      } catch (e) {
+        try {
+          const keys = `tell application "System Events" to key code ${wide ? 123 : 124} using command down`;
+          execFileSync('osascript', ['-e', 'tell application "Simulator" to activate', '-e', keys], { timeout: 15000 }); // a permission prompt waits ~2 min
+        } catch {}
+        await d.until((wide) => (innerWidth > innerHeight) === wide, wide ? 'the landscape layout' : 'the portrait layout', 10000, wide).catch(() => {
+          throw e;
+        });
+      }
+    },
+    // Safari's first start shows a tip bubble over the bottom of the page, and the next tap anywhere only closes it: that tap goes to the status bar
+    // (a tap there only scrolls the page up). The native screen's tree is kept for a look at what Safari showed.
+    async dismissTip(file) {
+      await native(async () => {
+        await s('GET', '/source')
+          .then((x) => writeFile(file, x))
+          .catch(() => {});
+        const tap = [{ type: 'pointerMove', duration: 0, x: 60, y: 20 }, { type: 'pointerDown', button: 0 }, { type: 'pause', duration: 80 }, { type: 'pointerUp', button: 0 }];
+        await s('POST', '/actions', { actions: [{ type: 'pointer', id: 'finger', parameters: { pointerType: 'touch' }, actions: tap }] });
+      });
+      await sleep(800);
+    },
     async until(fn, what, ms = 15000, ...args) {
       for (const end = Date.now() + ms; ; await sleep(300)) {
         const v = await d.js(fn, ...args).catch(() => null);
@@ -176,6 +203,14 @@ async function openSafari(phone, site, wdaPort) {
   return d;
 }
 
+// A schedule loaded in improve mode, as test/browser/edit-a.spec.mjs seeds it
+const L = (course, name, type, group, day, start, end) => ({ course, name, type, group, day, start, end });
+const BASE = [
+  L('30003', 'מבוא לכימיה', 'סופי-הרצאה+תרגול', '273000302', 4, '14:00', '15:50'), L('30003', 'מבוא לכימיה', 'תרגול', '273000302/1', 4, '16:00', '16:50'),
+  L('30112', 'תרמודינמיקה 1', 'סופי-הרצאה+תרגול', '273011204', 3, '15:00', '16:50'), L('30112', 'תרמודינמיקה 1', 'תרגול', '273011204/1', 3, '17:00', '17:50')
+];
+const EDIT = { v: 1, dataset: { year: 2027, sem: 'א', program: 30, startYear: 2026 }, registered: false, owned: [], original: BASE, baseline: BASE, movable: ['30003'], goal: { dayOff: 4 } };
+
 // What a step measures, in the page (CSS pixels; the visual viewport is what is left above the keyboard and between Safari's bars).
 const MEASURE = () => {
   const v = visualViewport,
@@ -238,6 +273,7 @@ async function walk(d, site, dir, report) {
   await fresh(student);
   await step('a1-board', async (r) => {
     await board();
+    await d.dismissTip(path.join(dir, 'safari-start.xml'));
     r.expect = dockOk(5);
   });
   let first;
@@ -318,7 +354,7 @@ async function walk(d, site, dir, report) {
     await d.tap('.menu-btn');
   });
   await step('a10-landscape', async (r) => {
-    await fresh(student);
+    await fresh({ ...student, 'afeka-sched-v1-edit': JSON.stringify(EDIT) }); // a schedule in improve mode, for its sheets below
     await board();
     await d.rotate('LANDSCAPE');
     await d.until(() => innerWidth > innerHeight, 'the landscape layout');
@@ -359,7 +395,8 @@ async function walk(d, site, dir, report) {
   const carding = () => d.js(() => document.getElementById('firstRun')?.hidden === false);
   for (let i = 0; i < 6 && (await carding()); i++) await step(`a13-next-${i + 1}`, async () => d.tap('[data-k="frNext"]'));
   await step('a13-board', async (r) => {
-    await board();
+    // the new student (year 2, nothing marked passed) may get "לא נמצאה מערכת": the week's grid, not its blocks
+    await d.until(() => document.getElementById('week')?.getClientRects().length, 'the week', 60000);
     r.expect = dockOk(5);
   });
 }

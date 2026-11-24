@@ -297,3 +297,20 @@ test('1280px improve mode, a fresh visitor: the terms are one card over the whol
   assert.ok(m.card.top >= 0 && m.card.bottom <= m.inner, `the card is inside the window (${m.card.top}..${m.card.bottom} of ${m.inner})`);
   assert.ok(m.doc <= m.inner + 1, `no growth: ${m.doc} in a ${m.inner}px window`);
 });
+
+// Below 1080px the header scrolls away: what sticks starts at the very top, the semester switcher (below 760px) at 0 and the day selector or the day headers
+// right under it, with no gap. style.css put them under the classic sticky bar (52px), and the iPhone check showed a strip of the page scrolling past.
+for (const [w, h, sel, what] of [[390, 699, '#daysel', 'the day selector'], [667, 375, '.wk-head > *', 'the day headers'], [844, 390, '.wk-head > *', 'the day headers']])
+  test(`${w}x${h}: scrolled down, the semester switcher and ${what} stick at the top with no gap`, async (t) => {
+    const page = await visit(t, { width: w, height: h }, DONE);
+    await settle(page);
+    await page.evaluate(() => scrollTo(0, 400));
+    await page.waitForTimeout(200);
+    const m = await page.evaluate((sel) => {
+      const box = (s) => [...document.querySelectorAll(s)].find((e) => e.checkVisibility())?.getBoundingClientRect(),
+        tabs = getComputedStyle(document.getElementById('semtabs')).position === 'sticky' ? box('#semtabs') : null;
+      return { tabsTop: tabs && Math.round(tabs.top), tabsBottom: tabs ? Math.round(tabs.bottom) : 0, top: Math.round(box(sel).top) };
+    }, sel);
+    if (w < 760) assert.equal(m.tabsTop, 0, 'the semester switcher at the top');
+    assert.ok(m.top >= (w < 760 ? 1 : 0) && m.top <= m.tabsBottom, `${what} at ${m.top}px, the switcher ends at ${m.tabsBottom}px`);
+  });

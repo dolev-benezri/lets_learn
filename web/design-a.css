@@ -460,6 +460,13 @@
 @media (min-width:600px) and (max-width:1079px) {
   :root[data-design="a"] .dock { inset-inline:max(0px, calc((100% - 560px) / 2)); }
 }
+/* below 1080px A's header scrolls away, so what sticks starts at the very top: the phone's semester switcher at 0, the day selector and the week's day headers
+   right under it (--nav-h: its height below 760px, else 0). style.css puts them under the classic sticky bar (--bar-h, 52px), and on an iPhone a strip of
+   the page scrolled past above them */
+@media (max-width:1079px) {
+  :root[data-design="a"] #semtabs:not(:empty) { top:0; }
+  :root[data-design="a"] #daysel, :root[data-design="a"] .wk-head > * { top:var(--nav-h); }
+}
 /* the frame (system design §1): from 1080px the content never gets wider than --frame (build) or --frame-edit (improve) and is centred; the header and
    the strip keep a full-width background and pad their content to the frame, the stage pads itself. Below the cap nothing moves. */
 @media (min-width:1080px) {
