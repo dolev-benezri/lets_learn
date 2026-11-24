@@ -9,9 +9,10 @@ export const SITE = process.env.SITE_URL;
 export const launch = () =>
   playwright[process.env.BROWSER || 'webkit'].launch(process.env.BROWSER === 'chromium' && process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : undefined);
 export const SIZES = { phone: { width: 375, height: 812 }, desktop: { width: 1280, height: 800 } };
-// The design under test: 'a' (the A frame) or 'classic'. visit() takes it as an explicit option; DESIGN in the environment is only the
-// default for a local rerun, so a spec that needs A passes { design: 'a' } and tests what it says even where CI sets only BROWSER.
-export const DESIGN = process.env.DESIGN || '';
+// The design under test: 'a' (the A frame, the site's default since the flip) or 'classic'. visit() takes it as an explicit option; DESIGN in
+// the environment is only the default for a local rerun (DESIGN=classic runs the old layout), so a spec that needs one design passes { design }
+// and tests what it says even where CI sets only BROWSER.
+export const DESIGN = process.env.DESIGN || 'a';
 export const DESIGN_KEY = 'afeka-sched-v1-design';
 // the hash that shows the friends: the preferences page holds them in classic, A has a tool of its own
 export const friendsHash = (design = DESIGN) => (design === 'a' ? '#friends' : '#prefs');

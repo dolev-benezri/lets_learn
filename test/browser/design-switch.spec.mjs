@@ -1,5 +1,5 @@
 // The design switch (web/design.js): ?design=a puts design A on the page and remembers it; ?design=classic remembers the old one; the choice is a
-// localStorage key, absence means the site's default (classic until the flip). Every visit here sets the design explicitly (`{ design: '' }` = none),
+// localStorage key, absence means the site's default (A since the flip, Task 11). Every visit here sets the design explicitly (`{ design: '' }` = none),
 // so CI tests what the spec says even where DESIGN is set. No top-level await in a spec: node:test then hangs after the run.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,15 +30,6 @@ test('?design=a sets the attribute, applies the A palette and stores a', async (
   assert.equal(await stored(page), 'a');
 });
 
-test('a later visit with no parameter keeps A', async (t) => {
-  const page = await visit(t, DONE, '?design=a');
-  await settled(page);
-  await page.goto(SITE);
-  await settled(page);
-  assert.equal(await attr(page), 'a');
-  assert.equal(await token(page, '--primary'), A_PRIMARY);
-});
-
 test('?design=classic stores classic and the attribute stays off', async (t) => {
   const page = await visit(t, DONE, '?design=a');
   await settled(page);
@@ -53,32 +44,32 @@ test('?design=classic stores classic and the attribute stays off', async (t) => 
 });
 
 test('?design=default clears the key', async (t) => {
-  const page = await visit(t, DONE, '?design=a');
+  const page = await visit(t, DONE, '?design=classic');
   await settled(page);
   await page.goto(SITE + '?design=default');
   await settled(page);
   assert.equal(await stored(page), null);
-  assert.equal(await attr(page), null, 'the default is classic until the flip');
+  assert.equal(await attr(page), 'a', 'the default is A since the flip');
 });
 
 test('an unknown value is ignored: it neither stores nor changes the choice', async (t) => {
   const page = await visit(t, DONE, '?design=zzz');
   await settled(page);
-  assert.equal(await attr(page), null);
+  assert.equal(await attr(page), 'a', 'the default');
   assert.equal(await stored(page), null);
-  await page.goto(SITE + '?design=a');
+  await page.goto(SITE + '?design=classic');
   await settled(page);
   await page.goto(SITE + '?design=zzz');
   await settled(page);
-  assert.equal(await attr(page), 'a', 'a stored A survives an unknown value');
-  assert.equal(await stored(page), 'a');
+  assert.equal(await attr(page), null, 'a stored classic survives an unknown value');
+  assert.equal(await stored(page), 'classic');
 });
 
-test('no key and no parameter leaves the attribute off and the classic palette', async (t) => {
+test('no key and no parameter is A, with the A palette', async (t) => {
   const page = await visit(t, DONE);
   await settled(page);
-  assert.equal(await attr(page), null);
-  assert.equal(await token(page, '--primary'), CLASSIC_PRIMARY);
+  assert.equal(await attr(page), 'a');
+  assert.equal(await token(page, '--primary'), A_PRIMARY);
   assert.equal(await stored(page), null);
 });
 
@@ -96,10 +87,11 @@ test('erase-all removes the key: the visit is back to the default', async (t) =>
   await dlg.getByRole('button', { name: 'מחק הכול' }).click();
   await page.locator('.gate').first().waitFor(); // the reloaded page is a first visit again and has loaded
   assert.equal(await stored(page), null);
-  assert.equal(await attr(page), null);
+  assert.equal(await attr(page), 'a', 'the default again');
 });
 
-// ---- storage blocked, and a link read at load: the query is all that remembers the choice ----
+// ---- storage blocked, and a link read at load: the query is all that remembers the choice. These use classic, the one choice that differs
+// from the default since the flip, so a lost query shows. ----
 const blockedPage = async (t, url) => {
   const context = await browser.newContext({ viewport: SIZES.phone, locale: 'he-IL' });
   const errors = [];
@@ -138,36 +130,44 @@ const link = async (t, kind) => {
   );
 };
 
-test('blocked storage: ?design=a works for the visit and nothing throws', async (t) => {
+test('blocked storage: ?design=a (also the default) gives A and nothing throws', async (t) => {
   const page = await blockedPage(t, SITE + '?design=a');
   assert.equal(await attr(page), 'a');
   assert.equal(await token(page, '--primary'), A_PRIMARY);
 });
 
-test('blocked storage: ?design=a#f=<friend link> stays A after the link is read and after a reload', async (t) => {
-  const friend = await link(t, 'friend');
-  const page = await blockedPage(t, SITE + '?design=a' + friend.slice(friend.indexOf('#')));
-  await page.waitForFunction(() => !location.hash.startsWith('#f='), null, { timeout: 30000 }); // read and stripped
-  assert.match(page.url(), /\?design=a/, 'the query is kept when the link is stripped');
+test('blocked storage: no parameter is the default A, and ?design=classic works for the visit', async (t) => {
+  const page = await blockedPage(t, SITE);
   assert.equal(await attr(page), 'a');
-  assert.equal(await page.evaluate(async () => (await import('./app.js')).app.friendLanding?.name), 'נועה', 'the link was read, not only stripped');
-  await page.reload();
-  assert.equal(await attr(page), 'a', 'still A after a reload');
+  const old = await blockedPage(t, SITE + '?design=classic');
+  assert.equal(await attr(old), null);
+  assert.equal(await token(old, '--primary'), CLASSIC_PRIMARY);
 });
 
-test('a cancelled backup restore keeps ?design=a', async (t) => {
+test('blocked storage: ?design=classic#f=<friend link> stays classic after the link is read and after a reload', async (t) => {
+  const friend = await link(t, 'friend');
+  const page = await blockedPage(t, SITE + '?design=classic' + friend.slice(friend.indexOf('#')));
+  await page.waitForFunction(() => !location.hash.startsWith('#f='), null, { timeout: 30000 }); // read and stripped
+  assert.match(page.url(), /\?design=classic/, 'the query is kept when the link is stripped');
+  assert.equal(await attr(page), null);
+  assert.equal(await page.evaluate(async () => (await import('./app.js')).app.friendLanding?.name), 'נועה', 'the link was read, not only stripped');
+  await page.reload();
+  assert.equal(await attr(page), null, 'still classic after a reload');
+});
+
+test('a cancelled backup restore keeps ?design=classic', async (t) => {
   const backup = await link(t, 'backup');
-  const page = await visit(t, DONE, '?design=a' + backup.slice(backup.indexOf('#')));
+  const page = await visit(t, DONE, '?design=classic' + backup.slice(backup.indexOf('#')));
   const dlg = page.locator('dialog[open]');
   await dlg.getByText('לשחזר גיבוי? המצב הנוכחי יוחלף.').waitFor();
   await dlg.getByRole('button', { name: 'השאר את המצב הנוכחי' }).click();
   await dlg.waitFor({ state: 'detached' });
-  assert.match(page.url(), /\?design=a/, 'the query is kept when the backup link is dropped');
-  assert.equal(await attr(page), 'a');
+  assert.match(page.url(), /\?design=classic/, 'the query is kept when the backup link is dropped');
+  assert.equal(await attr(page), null);
 });
 
 // the same path before the terms: the backup waits (app.pendingBackup), the terms are accepted, the saved state asks, the visitor declines
-test('a backup link that waited for the terms, then declined, keeps ?design=a', async (t) => {
+test('a backup link that waited for the terms, then declined, keeps ?design=a (A has the first-run card)', async (t) => {
   const backup = await link(t, 'backup');
   const page = await visit(t, { 'afeka-sched-v1': JSON.stringify(STUDENT) }, '?design=a' + backup.slice(backup.indexOf('#')));
   await page.locator('[data-k="frTerms"]').check(); // an old save asked again: the terms alone, on the first-run card
@@ -188,8 +188,16 @@ test('dark: the A dark palette applies, and light does not leak into it', async 
   assert.equal(await token(page, '--bg'), '#0b0f14');
 });
 
-test('legal.html follows the choice too: A and its palette, with no parameter after it is stored', async (t) => {
-  const page = await visit(t, DONE, '?design=a');
+test('legal.html follows the choice too: classic and its palette, with no parameter after it is stored', async (t) => {
+  const page = await visit(t, DONE, '?design=classic');
+  await settled(page);
+  await page.goto(SITE + 'legal.html');
+  assert.equal(await attr(page), null);
+  assert.equal(await token(page, '--primary'), CLASSIC_PRIMARY);
+});
+
+test('legal.html with no choice stored is the default A, with its palette', async (t) => {
+  const page = await visit(t, DONE);
   await settled(page);
   await page.goto(SITE + 'legal.html');
   assert.equal(await attr(page), 'a');

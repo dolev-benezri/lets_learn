@@ -519,12 +519,7 @@ for (const size of Object.keys(SIZES)) {
     assert.doesNotMatch(await page.locator('#me').innerText(), /בהנחה/);
   });
 
-  test(`${size}: the steps show where you are, with no tick for a step nobody finished`, async (t) => {
-    const page = await visit(t, size, FIRST);
-    await weekReady(page);
-    if (DESIGN !== 'a') assert.equal(await page.locator('.steps a.done').count(), 0); // classic only: the step bar goes in Task 12
-    if (DESIGN !== 'a') assert.equal(await page.locator('.steps a[data-view="plan"][aria-current="step"]').count(), 1);
-  });
+  // the classic step bar's state is in classic-smoke.spec.mjs since the flip
 }
 
 test('a question still open does not end the first-visit welcome', async (t) => {
