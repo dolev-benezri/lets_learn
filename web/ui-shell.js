@@ -130,10 +130,18 @@ export function shellInit() {
   watch.observe($('aStrip'));
   watch.observe(document.querySelector('.a-stage > .dock'));
   measureChrome();
+  // the expand button that lost the focus only because it was hidden: Chromium may send the focus from a button the CSS hides
+  // at 600px to <body> before this change event runs, so the active element alone does not say where it was. Leaving the
+  // button any other way (a tap elsewhere) forgets it, and a removed one never counts.
+  let expandFocus = null;
+  document.addEventListener('focusin', (e) => (expandFocus = e.target.matches?.('.a-sheet-expand') ? e.target : null));
+  document.addEventListener('focusout', (e) => {
+    if (e.target === expandFocus && !(e.target.isConnected && !e.target.checkVisibility())) expandFocus = null;
+  });
   matchMedia('(max-width: 599px)').addEventListener('change', () => {
-    const had = document.activeElement;
+    const had = document.activeElement, btn = had?.matches('.a-sheet-expand') ? had : had === document.body && expandFocus?.isConnected ? expandFocus : null;
     applyShell();
-    if (had?.matches('.a-sheet-expand') && !had.checkVisibility()) {
+    if (btn && !btn.checkVisibility()) {
       const h = $(ui.titleId);
       h?.focus({ preventScroll: true });
       h?.scrollIntoView({ block: 'nearest' }); // the panel may be scrolled past its heading
