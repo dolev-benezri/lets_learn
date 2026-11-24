@@ -18,7 +18,7 @@ concurrency:
 jobs:
   iphone:
     runs-on: macos-15
-    timeout-minutes: 75 # the first Appium session builds WebDriverAgent (about 15 minutes on the first run), then two iPhones
+    timeout-minutes: 120 # the first Appium session builds WebDriverAgent (about 15 minutes), then two iPhones of about 30 each (run 4 hit 75)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -27,7 +27,11 @@ jobs:
       - run: npm ci --ignore-scripts
       # pinned: a new Appium or driver release must not change the run by itself (driver 12.x is the line for Appium 3)
       - run: npm install --global appium@3.9.1 && appium driver install xcuitest@12.22.8
-      - run: xcodebuild -version && xcrun simctl list runtimes # the image's Xcode and iOS versions, for the log
+      # the newest Xcode 26 on the image, for the newest iOS 26 simulator: with the default Xcode 16.4 (iOS 18.4 SDK) the phone would not turn sideways
+      - run: |
+          x=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+          if [ -n "$x" ]; then sudo xcode-select -s "$x"; fi
+          ls -d /Applications/Xcode*.app && xcodebuild -version && xcrun simctl list runtimes
       - name: iPhone checks
         run: |
           # Appium cuts a connection after 600s by default; the first session (WebDriverAgent's build) took about 20 minutes
