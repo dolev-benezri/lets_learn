@@ -236,12 +236,14 @@ const EDIT = { v: 1, dataset: { year: 2027, sem: 'א', program: 30, startYear: 2
 // What a step measures, in the page (CSS pixels; the visual viewport is what is left above the keyboard and between Safari's bars).
 const MEASURE = () => {
   const v = visualViewport,
-    root = document.documentElement.getBoundingClientRect(),
-    // which frame the boxes come in: the page's own top sits at -scrollY in the layout viewport's frame, and also -offsetTop in the visual
-    // viewport's. With the keyboard up, iOS 26 gave the visual one (run 5: the English score showed above the keyboard while a layout test said
-    // under it; run 6: the sticky switcher, at the layout top, measured -vvTop), so the visible area is placed in whichever frame the page reports
-    shiftY = -(root.top + scrollY),
-    shiftX = -(root.left + scrollX),
+    // which frame the boxes come in: a fixed box at 0,0 sits at the layout viewport's corner, so it measures 0,0 in the layout frame and
+    // -offsetLeft,-offsetTop in the visual one. With the keyboard up, iOS 26 gave the visual one (run 5: the English score showed above the keyboard
+    // while a layout test said under it; run 6: the sticky switcher, at the layout top, measured -vvTop). Not the root's box: on iOS 26 scrollY
+    // moves with the visual viewport too, so root.top + scrollY stayed 0 in both frames (run 7: frameShift 0,0 while tabsTop was -vvTop)
+    probe = Object.assign(document.createElement('div'), { style: 'position:fixed;left:0;top:0;width:1px;height:1px;pointer-events:none' }),
+    corner = (document.body.append(probe), probe.getBoundingClientRect()),
+    shiftY = (probe.remove(), -corner.top),
+    shiftX = -corner.left,
     seen = (e) => e && e.getClientRects().length > 0,
     inside = (e) => {
       const r = e.getBoundingClientRect(), y = v.offsetTop - shiftY, x = v.offsetLeft - shiftX;
