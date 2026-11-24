@@ -738,3 +738,22 @@ test('improve mode: the reset of the proposals says "לבטל את כל השינ
   await old.waitFor({ timeout: 30000 });
   assert.equal(flat(await old.innerText()), 'חזרה למערכת המקורית');
 });
+
+// owner 11-24: a חברה ורוח course is taken in any year, so its list is open right after the studied years, not folded among the later lists
+test('"המצב שלי": the חברה ורוח list is open right after the studied years, outside the folded section', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#me');
+  await page.locator('#panel .me-main .year').first().waitFor({ timeout: 30000 });
+  const m = await page.evaluate(() => {
+    const kids = [...document.querySelector('#panel .me-main').children], head = (k) => k.querySelector('h3, summary')?.textContent.trim() ?? '';
+    return {
+      ruach: kids.findIndex((k) => k.matches('.year') && /חברה ורוח/.test(head(k))),
+      lastYear: kids.map((k) => k.matches('.year') && /^שנה \S׳/.test(head(k))).lastIndexOf(true),
+      folded: kids.findIndex((k) => k.matches('details') && /שנים מתקדמות וקורסים נוספים/.test(head(k))),
+      inside: [...document.querySelectorAll('#panel .me-main details .year h3')].some((h) => /חברה ורוח/.test(h.textContent))
+    };
+  });
+  assert.ok(m.lastYear >= 0, 'the studied years are listed');
+  assert.equal(m.ruach, m.lastYear + 1, `right after the last studied year: ${JSON.stringify(m)}`);
+  assert.ok(m.folded > m.ruach, 'the folded section comes after it');
+  assert.equal(m.inside, false, 'not inside a folded section');
+});

@@ -305,8 +305,9 @@ export function renderMe() {
         : ''
     }</div><div class="chips${designOn() ? ' a-crs-list' : ''}">${l.courses.map((id) => chip(id, l.i)).join('')}</div></div>`;
   const sp = specLists(data, state.profile.specs),
-    isSpec = (l) => sp.all.has(l.code);
-  const others = lists.filter((l) => !past(l) && !isSpec(l)),
+    isSpec = (l) => sp.all.has(l.code),
+    anyYear = (l) => !isSpec(l) && /חברה ורוח/.test(l.name); // taken in any year: open right after the studied years, not folded among the later lists
+  const others = lists.filter((l) => !past(l) && !isSpec(l) && !anyYear(l)),
     specOthers = lists.filter((l) => isSpec(l) && !sp.chosen.has(l.code));
   const premarked = (y) =>
     // ensurePassed (app.js)
@@ -386,6 +387,7 @@ export function renderMe() {
       <section class="me-main" aria-labelledby="meCourses"><h2 id="meCourses" tabindex="-1">קורסים לפי שנה</h2>
         <div id="recordRegWarnings">${regWarnHtml()}</div>
         ${lists.filter(past).map(group).join('')}
+        ${lists.filter(anyYear).map(group).join('')}
         ${lists
           .filter((l) => sp.chosen.has(l.code))
           .map(group)
