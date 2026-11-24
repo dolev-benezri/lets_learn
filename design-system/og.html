@@ -7,28 +7,29 @@
 @font-face { font-family:"Rubik"; font-weight:300 900; src:url(../web/fonts/rubik-hebrew-wght-normal.woff2) format("woff2"); unicode-range:U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
 @font-face { font-family:"Rubik"; font-weight:300 900; src:url(../web/fonts/rubik-latin-wght-normal.woff2) format("woff2"); }
 :root {
-  --bg:#F6F7FB; --surface:#fff; --border:#E3E7EF; --text:#101828; --text-2:#475467; --text-3:#667085;
-  --primary:#2563EB; --primary-hover:#1D4ED8; --primary-soft:#EAF1FE; --friend:#F79009;
-  --c0-bg:#EAF1FE; --c0-fg:#1D4ED8; --c1-bg:#E7F6EF; --c1-fg:#0B6E4F; --c2-bg:#F3EEFE; --c2-fg:#6D28D9;
-  --c3-bg:#FDEEF4; --c3-fg:#BE185D; --c4-bg:#FEF4E6; --c4-fg:#A15C07; --c5-bg:#E6F6F8; --c5-fg:#0E7490;
+  /* design A ("הלוח") light tokens, web/design-a.css; the course colours keep the old picture's slot order (c1 green, c2 purple, c3 pink, c4 amber) */
+  --bg:#E9EDF1; --surface:#fff; --border:#CFD7DF; --text:#121820; --text-2:#4D5A68; --text-3:#56616F;
+  --primary:#0A6B66; --primary-hover:#085A56; --primary-soft:#DCF1EF; --friend:#8E2A7E;
+  --c0-bg:#E6EEFB; --c0-fg:#2962C2; --c1-bg:#E2F1EC; --c1-fg:#0A734F; --c2-bg:#EFE9FA; --c2-fg:#7A45D6;
+  --c3-bg:#F9E6EF; --c3-fg:#B8286F; --c4-bg:#F9EFE1; --c4-fg:#945A06; --c5-bg:#E2F1F5; --c5-fg:#086D87;
 }
 * { box-sizing:border-box; margin:0; }
 html, body { width:1200px; height:630px; overflow:hidden; }
 body { font-family:"Rubik", system-ui, sans-serif; color:var(--text); position:relative;
   background:
-    radial-gradient(700px 420px at 100% 0%, #DCE7FD 0%, transparent 70%),
-    radial-gradient(520px 380px at 0% 100%, #EFE8FE 0%, transparent 70%),
+    radial-gradient(700px 420px at 100% 0%, #CDEBE7 0%, transparent 70%),
+    radial-gradient(520px 380px at 0% 100%, #DDE8F3 0%, transparent 70%),
     var(--bg); }
 body::before { content:""; position:absolute; inset:0;
-  background-image:radial-gradient(#C9D3E3 1.2px, transparent 1.2px); background-size:24px 24px; opacity:.45;
+  background-image:radial-gradient(#B9C4CF 1.2px, transparent 1.2px); background-size:24px 24px; opacity:.45;
   -webkit-mask-image:linear-gradient(90deg, #000 0%, transparent 55%); mask-image:linear-gradient(90deg, #000 0%, transparent 55%); }
-.top { position:absolute; inset:0 0 auto; height:8px; background:linear-gradient(90deg, #6D28D9, var(--primary) 60%, #0E7490); }
+.top { position:absolute; inset:0 0 auto; height:8px; background:linear-gradient(90deg, #086D87, var(--primary) 60%, #0A734F); }
 
 /* text column (right side in RTL) */
 .copy { position:absolute; top:78px; right:68px; width:520px; }
 .tag { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:999px; background:var(--surface);
   border:1px solid var(--border); font-size:17px; font-weight:500; color:var(--text-2); box-shadow:0 1px 2px rgba(16,24,40,.05); }
-.tag i { width:8px; height:8px; border-radius:50%; background:#12B76A; box-shadow:0 0 0 3px #D1FADF; }
+.tag i { width:8px; height:8px; border-radius:50%; background:#1D7A3E; box-shadow:0 0 0 3px #CDEBD6; }
 h1 { margin-top:24px; white-space:nowrap; font-size:88px; line-height:1; font-weight:800; letter-spacing:-1px; }
 h2 { margin-top:14px; font-size:40px; line-height:1.15; font-weight:600; color:var(--primary); }
 ul { list-style:none; padding:0; margin-top:34px; display:grid; gap:16px; }
@@ -56,7 +57,7 @@ li svg { width:24px; height:24px; fill:none; stroke-width:2; stroke-linecap:roun
 .grid { position:relative; margin-top:14px; display:grid; grid-template-columns:38px repeat(5, 1fr); grid-template-rows:26px repeat(8, 45px); }
 .d { font-size:14px; font-weight:600; color:var(--text-2); text-align:center; }
 .h { font-size:12px; color:var(--text-3); text-align:center; transform:translateY(-7px); }
-.cell { border-top:1px solid #EEF1F6; border-inline-start:1px solid #EEF1F6; }
+.cell { border-top:1px solid #E4E9EE; border-inline-start:1px solid #E4E9EE; }
 .blk { position:absolute; display:flex; flex-direction:column; gap:2px; padding:5px 7px; border-radius:8px; border-inline-start:3px solid var(--cfg);
   background:var(--cbg); font-size:13px; line-height:1.25; overflow:hidden; }
 .blk b { font-weight:600; }
@@ -71,8 +72,8 @@ li svg { width:24px; height:24px; fill:none; stroke-width:2; stroke-linecap:roun
 .map p { font-size:13px; font-weight:600; color:var(--text-2); display:flex; justify-content:space-between; }
 .map p em { font-style:normal; color:var(--primary); }
 .map svg { display:block; margin-top:6px; }
-.meter { margin-top:8px; height:6px; border-radius:999px; background:#EEF1F6; overflow:hidden; }
-.meter i { display:block; width:62%; height:100%; border-radius:999px; background:linear-gradient(90deg, var(--primary), #6D28D9); margin-inline-start:auto; }
+.meter { margin-top:8px; height:6px; border-radius:999px; background:#E4E9EE; overflow:hidden; }
+.meter i { display:block; width:62%; height:100%; border-radius:999px; background:linear-gradient(90deg, var(--primary), #086D87); margin-inline-start:auto; }
 </style>
 </head>
 <body>
@@ -83,9 +84,9 @@ li svg { width:24px; height:24px; fill:none; stroke-width:2; stroke-linecap:roun
   <h1>המערכת שלי</h1>
   <h2>מערכת שעות לאפקה, בדקה</h2>
   <ul>
-    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#2563EB"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg></span>חלופות בלי התנגשויות, לפי התקנון</li>
-    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#F79009"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.2A5.5 5.5 0 0 1 21.5 20"/></svg></span>לומדים יחד עם החברים</li>
-    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#6D28D9"><circle cx="5" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 6.5 16.6 11M7.5 17.5l9.1-4.5"/></svg></span>מפת התקדמות ודרישות קדם</li>
+    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#0A6B66"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M9 15l2 2 4-4"/></svg></span>חלופות בלי התנגשויות, לפי התקנון</li>
+    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#8E2A7E"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.2A5.5 5.5 0 0 1 21.5 20"/></svg></span>לומדים יחד עם החברים</li>
+    <li><span class="ic"><svg viewBox="0 0 24 24" stroke="#7A45D6"><circle cx="5" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 6.5 16.6 11M7.5 17.5l9.1-4.5"/></svg></span>מפת התקדמות ודרישות קדם</li>
   </ul>
 </div>
 <div class="url"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><b>dolev-benezri.github.io/lets_learn</b></div>
@@ -105,19 +106,19 @@ li svg { width:24px; height:24px; fill:none; stroke-width:2; stroke-linecap:roun
 <div class="map">
   <p>מפת התקדמות <em>62%</em></p>
   <svg width="222" height="64" viewBox="0 0 222 64">
-    <defs><marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="#2563EB"/></marker>
-      <marker id="b" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="#CBD2DE"/></marker></defs>
+    <defs><marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="#0A6B66"/></marker>
+      <marker id="b" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="#B4BFCA"/></marker></defs>
     <g fill="none" stroke-width="2">
-      <path d="M200 16 C170 16 160 32 132 32" stroke="#2563EB" marker-end="url(#a)"/>
-      <path d="M200 50 C170 50 160 34 132 32" stroke="#CBD2DE" marker-end="url(#b)"/>
-      <path d="M100 32 H62" stroke="#2563EB" marker-end="url(#a)"/>
-      <path d="M100 32 C80 32 70 54 44 54" stroke="#CBD2DE" marker-end="url(#b)"/>
+      <path d="M200 16 C170 16 160 32 132 32" stroke="#0A6B66" marker-end="url(#a)"/>
+      <path d="M200 50 C170 50 160 34 132 32" stroke="#B4BFCA" marker-end="url(#b)"/>
+      <path d="M100 32 H62" stroke="#0A6B66" marker-end="url(#a)"/>
+      <path d="M100 32 C80 32 70 54 44 54" stroke="#B4BFCA" marker-end="url(#b)"/>
     </g>
-    <circle cx="210" cy="16" r="9" fill="#E7F6EF" stroke="#0B6E4F" stroke-width="2"/>
-    <circle cx="210" cy="50" r="9" fill="#E7F6EF" stroke="#0B6E4F" stroke-width="2"/>
-    <circle cx="116" cy="32" r="11" fill="#EAF1FE" stroke="#2563EB" stroke-width="3"/>
-    <circle cx="46" cy="32" r="11" fill="#fff" stroke="#2563EB" stroke-width="3"/>
-    <circle cx="30" cy="54" r="8" fill="#fff" stroke="#CBD2DE" stroke-width="2"/>
+    <circle cx="210" cy="16" r="9" fill="#E2F1EC" stroke="#0A734F" stroke-width="2"/>
+    <circle cx="210" cy="50" r="9" fill="#E2F1EC" stroke="#0A734F" stroke-width="2"/>
+    <circle cx="116" cy="32" r="11" fill="#DCF1EF" stroke="#0A6B66" stroke-width="3"/>
+    <circle cx="46" cy="32" r="11" fill="#fff" stroke="#0A6B66" stroke-width="3"/>
+    <circle cx="30" cy="54" r="8" fill="#fff" stroke="#B4BFCA" stroke-width="2"/>
   </svg>
   <div class="meter"><i></i></div>
 </div>

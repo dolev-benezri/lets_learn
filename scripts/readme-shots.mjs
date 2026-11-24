@@ -163,9 +163,10 @@ const DONE = {
   'afeka-sched-v1-onboarded': '1', 'afeka-sched-v1-entry': '1', 'afeka-sched-v1-tour': TOURS, 'afeka-sched-v1-terms': TERMS_VERSION
 };
 
-// The first-visit shots: past the terms gate and the tours, but not yet onboarded. Design A has no build-or-edit question: the two tabs at the
-// top are the choice, so the identity questions come right after the terms.
-const FIRST_VISIT = { 'afeka-sched-v1-tour': TOURS, 'afeka-sched-v1-terms': TERMS_VERSION };
+// The first-visit shots: design A's first-run card (web/first-run.js), one card per step. A new visitor (no record, the tours seen) gets step 1:
+// the terms, the track and the year on one card. PASSED_STEP is a student past step 1 (terms accepted, the mark on step 2, "מה עברתי").
+const FIRST_VISIT = { 'afeka-sched-v1-tour': TOURS };
+const PASSED_STEP = { 'afeka-sched-v1-tour': TOURS, 'afeka-sched-v1-terms': TERMS_VERSION, 'afeka-sched-v1-firstrun': '2' };
 
 // The friends: alternatives 1 and 2 of the student without friends.
 await open({ state: student(), flags: DONE, size: DESK, ready: results });
@@ -244,26 +245,14 @@ for (const dark of process.argv[2] === 'extras' ? [] : [false, true]) {
   await open({ state: none, flags: DONE, size: PHONE, dark, ready: `!!document.querySelector('.a-first')?.offsetParent` });
   await shot(`00-start-tabs-phone${d}`);
   await editShot(dark);
-  await open({ flags: FIRST_VISIT, size: PHONE, dark, ready: `!!document.querySelector('[data-act="pickTrack"]')` });
-  await shot(`05-start-track-phone${d}`);
-  await open({
-    state: student({ passed: [], profile: { year: null, amirnet: null, specs: [], summer: false } }),
-    flags: FIRST_VISIT,
-    size: PHONE,
-    dark,
-    hash: '#me',
-    ready: `!!document.querySelector('[data-act="pickYear"]')`
-  });
-  await shot(`06-start-year-phone${d}`);
-  await open({
-    state: student({ passed: [] }),
-    flags: FIRST_VISIT,
-    size: DESK,
-    dark,
-    hash: '#me',
-    ready: `!!document.getElementById('meChoice')`
-  });
-  await shot(`07-start-entry-desktop${d}`);
+  // the first-run card: step 1 (terms, track, year), then step 2 for a second-year student
+  await open({ flags: FIRST_VISIT, size: PHONE, dark, ready: visible('[data-k="frTrack"]') });
+  await shot(`05-start-card-phone${d}`);
+  await open({ state: student({ passed: [] }), flags: PASSED_STEP, size: PHONE, dark, ready: visible('.a-fr-card[data-step="passed"]') });
+  await shot(`06-start-passed-phone${d}`);
+  // "המצב שלי" in the column beside the week
+  await open({ state: full, flags: DONE, size: DESK, dark, hash: '#me', ready: `${visible('#panel #me [data-k="amirnet"]')} && ${results}` });
+  await shot(`07-me-desktop${d}`);
   await open({
     state: full,
     flags: DONE,

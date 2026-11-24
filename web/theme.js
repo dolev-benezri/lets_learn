@@ -14,7 +14,7 @@
   const apply = () => {
     const dark = (choice ?? (mq.matches ? 'dark' : 'light')) === 'dark';
     root.dataset.theme = dark ? 'dark' : 'light';
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0F1627' : '#FFFFFF');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#10161C' : '#FFFFFF'); // design A's top bar (--chrome)
   };
   apply();
   mq.addEventListener('change', apply);
