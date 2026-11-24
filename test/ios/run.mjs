@@ -254,7 +254,12 @@ const MEASURE = () => {
     dockInside: dock.every(inside),
     sheetTop: sheet ? Math.round((sheet.getBoundingClientRect().top / innerHeight) * 100) : null, // % of the window's height
     focused: focus ? focus.dataset.k || focus.id || focus.tagName : null,
-    focusInside: focus ? inside(focus) : null,
+    // a field in a fixed sheet: with the keyboard up, iOS 26 gave its box against the visual viewport (run 5: the English score showed above the
+    // keyboard while the layout-viewport test said it was under it), so either frame counts; focusFrame says which one held (null: neither)
+    focusFrame: !focus ? null : inside(focus) ? 'layout' : (() => {
+      const r = focus.getBoundingClientRect();
+      return r.top >= -1 && r.bottom <= v.height + 1 && r.left >= -1 && r.right <= v.width + 1 ? 'visual' : null;
+    })(),
     alt: document.getElementById('altLabel')?.textContent.trim() ?? null,
     vvTop: Math.round(v.offsetTop), // with the semester switcher's top: run 4 once showed it under the clock right after the keyboard closed
     tabsTop: seen(document.getElementById('semtabs')) ? Math.round(document.getElementById('semtabs').getBoundingClientRect().top) : null,
@@ -278,7 +283,7 @@ async function walk(d, site, dir, report) {
     delete rec.expect;
     await d.shot(path.join(dir, `${String(++n).padStart(2, '0')}-${name}.png`)).catch((e) => rec.problems.push(`no screenshot: ${e.message}`));
     report.push(rec);
-    console.log(`  ${rec.error || rec.problems.length ? 'FAIL' : 'ok  '} ${name}${rec.error ? `: ${rec.error}` : ''}${rec.problems.map((p) => `\n       ${p}`).join('')}`);
+    console.log(`  ${rec.error || rec.problems.length ? 'FAIL' : rec.skipped ? 'skip' : 'ok  '} ${name}${rec.note ? ` (${rec.note})` : ''}${rec.error ? `: ${rec.error}` : ''}${rec.problems.map((p) => `\n       ${p}`).join('')}`);
   }
   const fresh = async (items, query = '?design=a') => {
     await d.go(`${site}legal.html`);
@@ -292,7 +297,7 @@ async function walk(d, site, dir, report) {
   const student = { ...TOUR_SEEN, ...MODE_BUILD, [DESIGN_KEY]: 'a', ...DONE };
   const board = () => d.until(() => document.querySelector('#week .blk')?.getClientRects().length, 'the week', 60000);
   const dockOk = (want) => (m) => [m.dock !== want && `${m.dock} dock buttons, not ${want}`, !m.dockInside && 'a dock button is outside the visible screen', m.wide && 'the page scrolls sideways'];
-  const fieldOk = (m) => [!m.keyboard && 'the keyboard did not open', m.focusInside === false && `the field ${m.focused} is under the keyboard or outside the screen`];
+  const fieldOk = (m) => [!m.keyboard && 'the keyboard did not open', m.focused && !m.focusFrame && `the field ${m.focused} is under the keyboard or outside the screen`];
 
   await fresh(student);
   await step('a1-board', async (r) => {
@@ -377,15 +382,29 @@ async function walk(d, site, dir, report) {
     await board();
     await d.tap('.menu-btn');
   });
+  let upright = false; // the phone did not turn: the "landscape" steps below run upright, and say so
   await step('a10-landscape', async (r) => {
     await fresh({ ...student, 'afeka-sched-v1-edit': JSON.stringify(EDIT) }); // a schedule in improve mode, for its sheets below
     await board();
-    await d.rotate('LANDSCAPE');
+    try {
+      await d.rotate('LANDSCAPE');
+    } catch (e) {
+      // runs 2-5: iOS 26's simulator never turned (WebDriverAgent, the Simulator's keys, Xcode 16.4 and 26.3); the landscape layout is in the WebKit
+      // specs (widths-a: 844x390, 667x375), so this row is told as not checkable here, not failed. The next steps run upright.
+      if (!/Unable To Rotate Device/.test(e.message)) throw e;
+      r.skipped = 'the iOS simulator does not turn sideways';
+      upright = true;
+      return;
+    }
     await d.until(() => innerWidth > innerHeight, 'the landscape layout');
     r.expect = dockOk(5);
   });
-  await step('a10-landscape-tool', async () => d.tap('.dock [data-tool="courses"]'));
+  await step('a10-landscape-tool', async (r) => {
+    if (upright) r.note = 'upright';
+    await d.tap('.dock [data-tool="courses"]');
+  });
   await step('a11e-landscape-improve', async (r) => {
+    if (upright) r.note = 'upright';
     // sideways the open tool and its scrim cover the header
     if (await d.js(() => !!document.querySelector('#panel [data-act="closeTool"]')?.getClientRects().length)) await d.tap('#panel [data-act="closeTool"]');
     await d.tap('.a-top .modes a[data-mode="edit"]');
@@ -462,4 +481,7 @@ await site.close();
 await writeFile(path.join(OUT, 'report.json'), JSON.stringify({ report, missing: [...site.missing] }, null, 2));
 const failed = report.some((r) => r.error || r.steps.some((s) => s.error || s.problems.length)) || site.missing.size > 0;
 if (site.missing.size) console.log(`not in the frozen copy: ${[...site.missing].join(', ')}`);
+const skipped = report.flatMap((r) => r.steps.filter((s) => s.skipped).map((s) => `${r.phone.name} ${s.name}: ${s.skipped}`));
+if (skipped.length) console.log(`not checked on the simulator (${skipped.length}):`, ...skipped.map((x) => `
+  ${x}`));
 process.exitCode = failed ? 1 : 0; // not process.exit: on macOS a piped stdout may still hold the last lines
