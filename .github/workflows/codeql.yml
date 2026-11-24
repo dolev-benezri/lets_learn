@@ -1,0 +1,42 @@
+# Code scanning (CodeQL): the JavaScript of the site and the scripts, and the workflows themselves, on a push that changes code and once a week.
+# Alerts show under Security > Code scanning; a finding never stops a deploy. web/vendor holds others' libraries as shipped (a finding there is
+# theirs to fix) and web/data is the nightly's data, so neither is scanned, and a data-only push does not start a scan.
+name: codeql
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['web/data/**', 'docs/**', '**/*.md']
+  schedule:
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          config: |
+            paths-ignore:
+              - web/vendor
+              - web/data
+              - node_modules
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          category: /language:${{ matrix.language }}
