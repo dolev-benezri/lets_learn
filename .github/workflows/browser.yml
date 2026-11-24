@@ -23,7 +23,7 @@ jobs:
       matrix:
         browser: [webkit, chromium, firefox]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35 # WebKit took 19-20 min with 696 tests (11-24), and the 20 cut it off
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
