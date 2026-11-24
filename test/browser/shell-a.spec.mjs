@@ -349,7 +349,11 @@ for (const width of [320, 375])
     assert.ok(Math.abs(collapsed / 812 - 0.6) < 0.02, `60% height: ${collapsed}`);
     assert.equal(await button.getAttribute('aria-label'), 'הגדלה');
     assert.equal(await button.getAttribute('aria-expanded'), 'false');
+    // reach it by keyboard: Firefox shows no :focus-visible ring after a script focus() that follows a mouse click (the dock)
     await button.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    assert.equal(await button.evaluate((e) => e === document.activeElement), true, 'Tab returns to the expand button');
     await page.keyboard.press('Enter');
     assert.equal(await button.getAttribute('aria-expanded'), 'true');
     assert.equal(await button.getAttribute('aria-label'), 'הקטנה');
