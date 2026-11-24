@@ -83,7 +83,8 @@ for (const scheme of ['light', 'dark'])
       await page.locator(id).evaluate((root) => {
         const els = [root, ...root.querySelectorAll('*')];
         const sizes = els.map((el) => getComputedStyle(el).fontSize);
-        els.forEach((el, i) => { el.dataset.a11ySize = el.style.fontSize; el.style.fontSize = `${parseFloat(sizes[i]) * 2}px`; });
+        // important: style.css's touch guard (16px, important) would otherwise keep the fields at 16
+        els.forEach((el, i) => { el.dataset.a11ySize = el.style.fontSize; el.style.setProperty('font-size', `${parseFloat(sizes[i]) * 2}px`, 'important'); });
       });
       await check(page, `${tool} 200% text`);
       await layoutOk(page, `${tool} 200% text`, true, note);

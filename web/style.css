@@ -1363,9 +1363,9 @@ button, summary, label, a { touch-action:manipulation; -webkit-tap-highlight-col
     overscroll-behavior:contain;
   }
 }
-@media (pointer:coarse) { :root :is(input, select) {
-  font-size:16px;
-} } /* iOS zooms into a focused field under 16px; :root lifts it over .dr-body select */
+@media (pointer:coarse) { :root :is(input:not([type=file]), select, textarea) {
+  font-size:16px !important;
+} } /* iOS zooms into a focused field under 16px and stays zoomed: important, so no `font:inherit` (design A's course search, its semester select) wins */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition:none !important; animation:none !important; }
   .busy::before { display:none; } /* a frozen ring reads as stuck; the word stays */

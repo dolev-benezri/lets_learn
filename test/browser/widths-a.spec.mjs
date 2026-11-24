@@ -314,3 +314,20 @@ for (const [w, h, sel, what] of [[390, 699, '#daysel', 'the day selector'], [667
     if (w < 760) assert.equal(m.tabsTop, 0, 'the semester switcher at the top');
     assert.ok(m.top >= (w < 760 ? 1 : 0) && m.top <= m.tabsBottom, `${what} at ${m.top}px, the switcher ends at ${m.tabsBottom}px`);
   });
+
+// A touch phone: every field is at least 16px, or iPhone Safari zooms into it on focus and stays zoomed. The virtual iPhone check (11-24) caught the
+// course search (15px) and the course rows' semester select (13px): design A's `font:inherit` beat style.css's coarse-pointer guard.
+test('390 touch: every field of every tool is at least 16px', async (t) => {
+  const page = await visit(t, { width: 390, height: 800 }, DONE);
+  await settle(page);
+  const small = [];
+  for (const tool of ['me', 'courses', 'wishes', 'friends', 'out']) {
+    await page.locator(`.dock [data-tool="${tool}"]`).click();
+    await page.waitForTimeout(800);
+    await page.evaluate(() => document.querySelectorAll('#panel details').forEach((d) => (d.open = true)));
+    small.push(...(await page.evaluate((tool) => [...document.querySelectorAll('#panel :is(input, select, textarea)')]
+      .filter((e) => e.checkVisibility() && !['checkbox', 'radio', 'file'].includes(e.type) && parseFloat(getComputedStyle(e).fontSize) < 16)
+      .map((e) => `${tool}: ${e.id || e.dataset.k || e.type} ${getComputedStyle(e).fontSize}`), tool)));
+  }
+  assert.deepEqual(small, []);
+});
