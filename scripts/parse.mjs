@@ -1,6 +1,6 @@
 import { parse } from 'node-html-parser';
 
-export const clean = (s) => s.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+export const clean = (s) => s.replace(/\s+/g, ' ').trim();
 
 // The site's WAF sometimes answers 200 with this page instead of the real one.
 export const isRejected = (html) => html.includes('<title>Request Rejected</title>');

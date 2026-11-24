@@ -34,7 +34,7 @@ export function notFoundHint(unknown, courses, edit) {
   const gone = unknown.filter((u) => /^\d{5}$/.test(u) && !courses[u]);
   if (!gone.length) return '';
   const one = gone.length === 1,
-    codes = gone.slice(0, 8).map((c) => `<bdi dir="ltr">${c}</bdi>`).join(', ') + (gone.length > 8 ? ` ועוד ${gone.length - 8}` : '');
+    codes = gone.slice(0, 8).map((c) => `<bdi dir="ltr">${esc(c)}</bdi>`).join(', ') + (gone.length > 8 ? ` ועוד ${gone.length - 8}` : '');
   return `${one ? 'הקורס' : 'הקורסים'} ${codes} לא ${one ? 'קיים' : 'קיימים'} בנתוני ${
     edit ? 'המסלול שבחרתם. בדקו שהמסלול ושנת הלימודים נכונים.' : `המסלול שלכם. ייתכן שהחבר לומד ${one ? 'אותו' : 'אותם'} במסלול אחר.`
   }`;
@@ -426,5 +426,5 @@ export function reportMailto(email, ctx) {
     .filter(([, v]) => v !== undefined && v !== '')
     .map(([k, v]) => `${k}: ${clip(v)}`);
   const body = `מה הטעות?\n\n\n${lines.join('\n')}`.replace(/\n/g, '\r\n'); // mail links use CRLF line breaks (%0D%0A)
-  return `mailto:${encodeURIComponent(email).replace('%40', '@')}?subject=${encodeURIComponent('דיווח על טעות במערכת השעות')}&body=${encodeURIComponent(body)}`;
+  return `mailto:${encodeURIComponent(email).replace(/%40/g, '@')}?subject=${encodeURIComponent('דיווח על טעות במערכת השעות')}&body=${encodeURIComponent(body)}`;
 }

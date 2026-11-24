@@ -1,6 +1,7 @@
 # Code scanning (CodeQL): the JavaScript of the site and the scripts, and the workflows themselves, on a push that changes code and once a week.
 # Alerts show under Security > Code scanning; a finding never stops a deploy. web/vendor holds others' libraries as shipped (a finding there is
 # theirs to fix) and web/data is the nightly's data, so neither is scanned, and a data-only push does not start a scan.
+# Tests and solver-audit are not shipped, and the XSS tests hold attack strings on purpose, so they are not scanned either.
 name: codeql
 
 on:
@@ -37,6 +38,8 @@ jobs:
               - web/vendor
               - web/data
               - node_modules
+              - test
+              - solver-audit
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: /language:${{ matrix.language }}
