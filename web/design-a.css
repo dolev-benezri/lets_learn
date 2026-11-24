@@ -584,8 +584,8 @@
   :root[data-design="a"] body[data-view="edit"] .wk-head > * { top:var(--a-head); } /* the tabs scroll away: the day headers stick right under the strip */
 }
 /* improve mode on a wide but very short window: the sticky column (the cap above) would have no height left under the bar,
-   so the focused switcher sat under the window's edge; the column flows with the page instead. Same selector, so it comes after */
-@media (min-width:1080px) and (max-height:420px) {
+   (under 120px below 320px tall), so the focused switcher sat under the window's edge; the column flows with the page instead. Same selector, so it comes after */
+@media (min-width:1080px) and (max-height:320px) {
   :root[data-design="a"] body[data-view="edit"] .edit-tool { position:static; max-height:none; overflow:visible; }
 }
 /* phase 2, Task B (improve mode, before a schedule is loaded): one centred card, max 640, the title the key size, "טוענים קובץ" the one primary button over the
