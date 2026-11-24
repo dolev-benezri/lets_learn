@@ -66,7 +66,9 @@ test('friends: a link inside the open fold still offers the text dialog when cop
   const page = await visit(t, 'phone', DONE, '#friends');
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   await page.locator('#friends details[data-key="friends-mine"] > summary').click();
-  await page.locator('#friends [data-k="copyMine"]').click();
+  // by keyboard: a mouse click does not focus a button in WebKit (Safari), and the dialog gives the focus back to its opener
+  await page.locator('#friends [data-k="copyMine"]').focus();
+  await page.keyboard.press('Enter');
   assert.match(await dialogText(page), /#f=/);
   await closeDialog(page);
   await page.waitForFunction(() => document.activeElement?.dataset?.k === 'copyMine', null, { timeout: 5000 }); // a closed dialog gives the focus back in its close event, a task later

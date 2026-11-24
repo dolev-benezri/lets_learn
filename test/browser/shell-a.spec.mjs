@@ -70,9 +70,12 @@ test('delete-all remains in the menu with its confirmation; cancelling preserves
   const page = await visit(t, 'phone', DONE);
   await weekReady(page);
   const before = await page.evaluate(() => localStorage.getItem('afeka-sched-v1'));
-  await page.locator('.menu-btn').click();
+  // by keyboard: a mouse click does not focus a button in WebKit (Safari), and the dialog gives the focus back to its opener
+  await page.locator('.menu-btn').focus();
+  await page.keyboard.press('Enter');
   const erase = page.locator('#drawer [data-act="eraseAll"]');
-  await erase.click();
+  await erase.focus();
+  await page.keyboard.press('Enter');
   const confirm = page.locator('dialog[open]').last();
   assert.equal(await confirm.getByRole('button', { name: 'מחק הכול' }).isVisible(), true);
   await confirm.getByRole('button', { name: 'ביטול' }).click();

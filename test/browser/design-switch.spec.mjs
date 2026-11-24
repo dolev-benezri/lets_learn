@@ -87,7 +87,7 @@ test('erase-all removes the key: the visit is back to the default', async (t) =>
   await page.locator('#me [data-k="amirnet"]').waitFor(); // data loaded before the menu and the eventual reload
   assert.equal(await page.locator('#me [data-act="eraseAll"]').count(), 0);
   // on a phone the open tool's scrim covers ☰: a tap on it closes the tool, as a person would
-  await page.locator('.a-scrim').click();
+  await page.locator('.a-scrim').click({ position: { x: 20, y: 20 } }); // its top corner: the sheet covers the middle
   await page.locator('#me').waitFor({ state: 'hidden' });
   await page.locator('.menu-btn').click();
   assert.equal(await stored(page), 'a', 'A is remembered before the erase');
