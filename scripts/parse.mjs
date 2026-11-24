@@ -43,10 +43,11 @@ export function parseDay(text) {
   return DAY_WORDS[t] ?? DAY_LETTERS[t] ?? null;
 }
 
-// Each group starts with <div class="TextAlignRight"> "קורס מסוג …" and is followed by its meetings table.
+// Each group starts with a <div> whose text opens with "קורס מסוג …" and is followed by its meetings table. The div's attributes are not relied on: it was
+// <div class="TextAlignRight"> until the 2026-11 template made it a bare <div>, and two nights then read 0 groups for every course.
 export function parseGroups(html) {
   return html
-    .split('<div class="TextAlignRight">')
+    .split(/<div[^>]*>\s*(?=קורס מסוג)/)
     .slice(1)
     .filter((chunk) => chunk.includes('קורס מסוג'))
     .map((chunk) => {

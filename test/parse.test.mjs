@@ -213,3 +213,15 @@ test('detailsSemester: the second argument of a details link', () => {
   assert.equal(detailsSemester('-N90903,-N3,-N1,-N279090301,-N'), 'קיץ');
   assert.equal(detailsSemester('-N90903,-N7'), undefined);
 });
+
+// 2026-11-22: the yedion's new page template opens each group with a bare <div> (it was <div class="TextAlignRight">), and two nights read 0 groups for every
+// course; groups-90903-2026-11.html is the live page of 2026-11-24
+test('parseGroups reads the 2026-11 template, whose groups start with a bare <div>', () => {
+  const html = fx('groups-90903-2026-11.html'),
+    gs = parseGroups(html);
+  assert.equal(gs.length, html.split('קורס מסוג').length - 1, 'every group on the page');
+  assert.equal(gs[0].id, '279090301');
+  assert.equal(gs[0].type, 'סופי-הרצאה+תרגול');
+  assert.ok(gs.every((g) => /^\d{9}(\/\d+)?$/.test(g.id) && g.type && g.meetings.length && g.detailsArgs), 'each with its id, type, meetings and details link');
+  assert.ok(gs.some((g) => g.linked.length), 'linked tutorials are read');
+});
