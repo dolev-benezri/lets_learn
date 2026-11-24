@@ -44,6 +44,37 @@ const search = async (page) => {
 };
 const dock = (page, tool) => page.locator(`.dock [data-tool="${tool}"]`);
 
+test('320x480: redrawing a loaded edit sheet (a refresh, or the improve page alone) keeps the collapsed sheet below the lesson preview', async (t) => {
+  const page = await visit(t, { width: 320, height: 480 }, seed(), '#edit');
+  await page.locator('#editWeek .blk').first().waitFor({ timeout: 30000 });
+  const previewVisible = () => page.waitForFunction(() => {
+    const sheet = document.querySelector('.edit-tool');
+    const rows = [...document.querySelectorAll('#editWeek .blk')].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+    const first = Math.min(...rows.map((r) => r.top));
+    // measured: the preview top is set (without it the clearance can hold by chance)
+    return document.documentElement.style.getPropertyValue('--a-preview-top') !== '' &&
+      sheet?.dataset.expanded === 'false' && first >= Math.max(0, document.querySelector('.a-top').getBoundingClientRect().bottom) &&
+      first + 44 <= sheet.getBoundingClientRect().top;
+  }, null, { timeout: 10000 });
+  await previewVisible();
+  const top = await page.locator('.edit-tool').evaluate((e) => e.getBoundingClientRect().top);
+  await page.evaluate(async () => {
+    window.__oldEditTool = document.querySelector('.edit-tool');
+    (await import('./app.js')).refresh();
+  });
+  await page.waitForFunction(() => !window.__oldEditTool.isConnected && !!document.querySelector('.edit-tool'), null, { timeout: 10000 });
+  await previewVisible();
+  assert.ok(Math.abs(await page.locator('.edit-tool').evaluate((e) => e.getBoundingClientRect().top) - top) <= 1, 'the collapsed sheet keeps its preview clearance');
+  // the improve page's own redraws (a search, "עוד", a proposal) replace .edit-tool without going through the shell
+  await page.evaluate(async () => {
+    window.__oldEditTool = document.querySelector('.edit-tool');
+    (await import('./ui-edit.js')).renderEdit();
+  });
+  await page.waitForFunction(() => !window.__oldEditTool.isConnected && !!document.querySelector('.edit-tool'), null, { timeout: 10000 });
+  await previewVisible();
+  assert.ok(Math.abs(await page.locator('.edit-tool').evaluate((e) => e.getBoundingClientRect().top) - top) <= 1, 'and after the improve page redraws alone');
+});
+
 for (const hash of ['#edit', '#edit/changes'])
   test(`phone ${hash}: 60% sheet leaves a lesson visible, expands and shrinks by keyboard, keeps focus after redraw`, async (t) => {
     const page = await visit(t, 'phone', seed(), hash);

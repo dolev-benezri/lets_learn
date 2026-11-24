@@ -157,7 +157,7 @@ for (const width of [320, 1920])
     const cap = fold.locator('[data-k="maxCredits"]');
     await cap.fill('20');
     await cap.dispatchEvent('change');
-    await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).constraints.maxCredits === 20);
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).constraints.maxCredits === 20, null, { timeout: 10000 });
     await page.evaluate(async () => {
       const { ui } = await import('./ui-common.js'), end = Date.now() + 60000;
       while (ui.last === window.__prefsRun) {

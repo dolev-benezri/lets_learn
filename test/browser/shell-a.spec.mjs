@@ -377,6 +377,26 @@ for (const width of [320, 375])
     assert.equal(await dock(page, 'courses').evaluate((e) => e === document.activeElement), true);
   });
 
+test('375 to 600: resizing from a scrolled preferences sheet brings the focused heading into view', async (t) => {
+  const page = await visit(t, 'phone', DONE, '#prefs');
+  await page.locator('#panel #prefs').waitFor({ state: 'visible', timeout: 10000 });
+  await weekReady(page);
+  await page.evaluate(() => { document.getElementById('aPb').scrollTop = 400; });
+  await page.waitForFunction(() => {
+    const heading = document.getElementById('prefsTitle').getBoundingClientRect();
+    return heading.bottom < document.getElementById('aPb').getBoundingClientRect().top;
+  }, null, { timeout: 10000 });
+  await page.locator('#panel .a-sheet-expand').focus();
+  await page.setViewportSize({ width: 600, height: 812 });
+  await page.waitForFunction(() => document.activeElement?.id === 'prefsTitle', null, { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const heading = document.getElementById('prefsTitle').getBoundingClientRect();
+    const panel = document.getElementById('aPb').getBoundingClientRect();
+    return heading.top >= Math.max(0, panel.top) && heading.bottom <= Math.min(innerHeight, panel.bottom);
+  }, null, { timeout: 10000 });
+  assert.equal(await activeId(page), 'prefsTitle');
+});
+
 test('a direct phone tool link reveals the first lesson when the first search finishes', async (t) => {
   const page = await visit(t, 'phone', DONE, '#prefs');
   await page.locator('#panel #prefsTitle').waitFor({ state: 'visible' });

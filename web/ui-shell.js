@@ -133,7 +133,11 @@ export function shellInit() {
   matchMedia('(max-width: 599px)').addEventListener('change', () => {
     const had = document.activeElement;
     applyShell();
-    if (had?.matches('.a-sheet-expand') && !had.checkVisibility()) $(ui.titleId)?.focus({ preventScroll: true });
+    if (had?.matches('.a-sheet-expand') && !had.checkVisibility()) {
+      const h = $(ui.titleId);
+      h?.focus({ preventScroll: true });
+      h?.scrollIntoView({ block: 'nearest' }); // the panel may be scrolled past its heading
+    }
   });
   matchMedia('(min-width: 1080px)').addEventListener('change', () => {
     // crossing 1080px shows or hides the panel: focus that was inside what is now hidden goes to the heading of what is shown
@@ -171,7 +175,8 @@ function queuePhoneScroll() {
       if (style.position === 'sticky' && el.getClientRects().length)
         chrome = Math.max(chrome, (parseFloat(style.top) || 0) + el.getBoundingClientRect().height);
     }
-    sheet.style.setProperty('--a-preview-top', `${chrome}px`);
+    // on the root, not on the sheet: the improve page redraws .edit-tool on every change, and the value must outlive it
+    document.documentElement.style.setProperty('--a-preview-top', `${chrome}px`);
     scrollTo({ top: sheetScrollY(scrollY, first, chrome, sheet.getBoundingClientRect().top), behavior: 'instant' });
     pendingPhoneScroll = false;
   });
