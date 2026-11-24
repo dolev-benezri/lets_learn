@@ -1,0 +1,48 @@
+# Lighthouse scores of the live site after each deploy, and by hand: performance, accessibility, best practices and SEO, on a phone and on a
+# computer. The scores are guidance, not a gate (owner 11-22: limits with judgment, never a hard test), so the run fails only when Lighthouse
+# itself cannot run. The table lands in the run's summary. A first visit sees the terms card, so that is the page scored. The nightly data
+# pushes ("data(afeka): ...") deploy an unchanged site, so they are not scored. The address comes from the repository, so it follows a move.
+name: lighthouse
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  score:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && !startsWith(github.event.workflow_run.head_commit.message, 'data('))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+      - name: Lighthouse, phone and computer
+        run: |
+          sleep 60 # the deploy is done when Pages takes the files; a minute for the new build to be served
+          for form in mobile desktop; do
+            preset=; [ "$form" = desktop ] && preset=--preset=desktop
+            npx -y lighthouse@13.6.0 "$URL" $preset --quiet --chrome-flags="--headless=new --no-sandbox" \
+              --only-categories=performance,accessibility,best-practices,seo --output=json --output-path="./lh-$form.json"
+          done
+        env:
+          URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      - name: Scores in the summary
+        run: |
+          node -e '
+            const fs = require("fs"), cats = ["performance", "accessibility", "best-practices", "seo"];
+            const names = { performance: "ביצועים", accessibility: "נגישות", "best-practices": "שיטות עבודה", seo: "SEO" };
+            let md = "| | " + cats.map((c) => names[c]).join(" | ") + " |\n|---|" + cats.map(() => "---").join("|") + "|\n";
+            for (const [form, label] of [["mobile", "טלפון"], ["desktop", "מחשב"]]) {
+              const r = JSON.parse(fs.readFileSync(`lh-${form}.json`, "utf8"));
+              md += `| ${label} | ` + cats.map((c) => (r.categories[c]?.score == null ? "—" : Math.round(r.categories[c].score * 100))).join(" | ") + " |\n";
+            }
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, "## Lighthouse\n\n" + md);
+            console.log(md);'
