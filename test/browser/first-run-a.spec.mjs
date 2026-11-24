@@ -181,13 +181,17 @@ test('the plans part waits behind an open tool and behind the ☰ menu, and star
   const menu = await visit(t, 'phone', { ...DONE, 'afeka-sched-v1-tour': 'intro,shell' }, '', true);
   await menu.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 }); // let the first load finish: a reload would abort its fetches
   await menu.evaluate(() => localStorage.setItem('afeka-sched-v1-tour', 'intro,shell')); // the first load already showed the plans part: ask again
+  // the semester files are held until the menu is open (a fixed delay raced a slow run: the tour started first and covered ☰)
+  let release;
+  const held = new Promise((ok) => (release = ok));
   await menu.route('**/data/afeka/2027-*/*.json', async (r) => {
-    await new Promise((ok) => setTimeout(ok, 2500));
+    await held;
     await r.continue();
   });
   await menu.reload();
   await menu.locator('.menu-btn').click();
   await menu.locator('#drawer[open]').waitFor();
+  release();
   await menu.locator('#week .blk').first().waitFor({ state: 'attached', timeout: 30000 });
   await menu.waitForTimeout(600);
   assert.equal(await popover(menu).count(), 0, 'nothing over the open menu');
