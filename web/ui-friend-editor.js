@@ -14,7 +14,7 @@ import { designOn } from './ui-common.js';
 const MAX = 40;
 const LIMIT = `אפשר עד ${MAX} קבוצות לחבר`;
 const NOTEXT = 'לא נמצא טקסט בקובץ, נסו להעתיק ולהדביק';
-const failText = (e) => (e?.user ? e.message : NOTEXT); // a limit that ran out has its own words; every other failure reads as "no text"
+const failText = (e) => (e?.user ? esc(e.message) : NOTEXT); // a limit that ran out has its own words; every other failure reads as "no text"
 const SEM_NAME = { 'א': 'א׳', 'ב': 'ב׳', 'קיץ': 'קיץ' };
 const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
