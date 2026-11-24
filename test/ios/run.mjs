@@ -111,7 +111,7 @@ async function openSafari(phone, site, wdaPort) {
           const keys = `tell application "System Events" to key code ${wide ? 123 : 124} using command down`;
           execFileSync('osascript', ['-e', 'tell application "Simulator" to activate', '-e', keys], { timeout: 15000 }); // a permission prompt waits ~2 min
         } catch (k) {
-          why = `the Simulator keys failed: ${String(k.stderr || k.message).trim().split('\n')[0]}`;
+          why = `the Simulator keys failed: ${(String(k.stderr ?? '').trim() || k.message).split('\n')[0]}`; // a timeout leaves stderr empty
         }
         await d.until((wide) => (innerWidth > innerHeight) === wide, wide ? 'the landscape layout' : 'the portrait layout', 10000, wide).catch(() => {
           throw new Error(`${e.message}; ${why}, and the page did not turn`);
@@ -167,13 +167,22 @@ async function openSafari(phone, site, wdaPort) {
       await s('POST', `/element/${id}/click`, {});
       await sleep(600);
     },
-    // keys of the on-screen keyboard into the field the last tap focused (XCTest's typeText on the native field; the page's own typing would skip the keyboard)
-    async type(text) {
-      await native(async () => {
-        const { [EL]: id } = await s('POST', '/element', { using: '-ios class chain', value: '**/*[`hasKeyboardFocus == 1`]' });
-        await s('POST', `/element/${id}/value`, { text });
+    // Typing into the field the last tap focused, found in the native tree by its label: XCTest's typeText, the on-screen keyboard (the page's own
+    // typing would skip it). Run 4 found no element by hasKeyboardFocus. If the label is not found either, hardware key events to the focused
+    // field ("mobile: keys"); the result says which one typed.
+    async type(text, label) {
+      const how = await native(async () => {
+        const field = await s('POST', '/element', {
+          using: '-ios predicate string',
+          value: `type IN {"XCUIElementTypeSearchField", "XCUIElementTypeTextField"} AND label BEGINSWITH "${label}"`
+        }).catch(() => null);
+        if (!field) return null;
+        await s('POST', `/element/${field[EL]}/value`, { text });
+        return 'on-screen keyboard';
       });
+      if (!how) await d.mobile('keys', { keys: [...text] });
       await sleep(600);
+      return how ?? 'key events';
     },
     async clearTyped() {
       const { [EL]: id } = await s('POST', '/element', { using: 'css selector', value: '[data-ios-tap]' });
@@ -247,6 +256,8 @@ const MEASURE = () => {
     focused: focus ? focus.dataset.k || focus.id || focus.tagName : null,
     focusInside: focus ? inside(focus) : null,
     alt: document.getElementById('altLabel')?.textContent.trim() ?? null,
+    vvTop: Math.round(v.offsetTop), // with the semester switcher's top: run 4 once showed it under the clock right after the keyboard closed
+    tabsTop: seen(document.getElementById('semtabs')) ? Math.round(document.getElementById('semtabs').getBoundingClientRect().top) : null,
     scrollY: Math.round(scrollY)
   };
 };
@@ -312,7 +323,7 @@ async function walk(d, site, dir, report) {
   await step('a20-search-typing', async (r) => {
     const all = await d.js(() => document.getElementById('courseQueryStatus')?.textContent.trim()); // the whole count, shown before any typing
     await d.tap('#courseQuery');
-    await d.type('מבוא');
+    r.typed = await d.type('30112', 'חיפוש קורס'); // a course code: digits are on every layout, also for key events (the simulator's is Hebrew)
     await d.until((all) => document.getElementById('courseQueryStatus')?.textContent.trim() !== all, 'the search count', 15000, all);
     r.expect = fieldOk;
   });
@@ -330,7 +341,7 @@ async function walk(d, site, dir, report) {
     // the student's 134 out first (no event), or the keys would add to it; typed back the same, so the later steps keep the seeded student
     await d.js(() => (document.querySelector('#panel [data-k="amirnet"]').value = ''));
     await d.tap('#panel [data-k="amirnet"]');
-    await d.type('134');
+    r.typed = await d.type('134', 'ציון אנגלית');
     r.expect = fieldOk;
   });
   await step('a21-wishes-more', async () => {
@@ -433,7 +444,8 @@ for (const [i, phone] of iphones().entries()) {
       // stuck before the first step (run 3: Safari's page took no script for 120s on a fresh Pro Max): what the screen showed, then once more
       console.log(`  stuck at the start (${e.message.slice(0, 120)}), once more`);
       await d.snapshot(path.join(dir, 'stuck'));
-      await d.dismissTip(path.join(dir, 'stuck-after.xml'), true);
+      await d.dismissTip(path.join(dir, 'stuck-tree.xml'), true);
+      await d.snapshot(path.join(dir, 'stuck-after')); // what the clicks left
       await walk(d, SITE, dir, rec.steps);
     }
   } catch (e) {
