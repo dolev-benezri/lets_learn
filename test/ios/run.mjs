@@ -236,10 +236,16 @@ const EDIT = { v: 1, dataset: { year: 2027, sem: 'א', program: 30, startYear: 2
 // What a step measures, in the page (CSS pixels; the visual viewport is what is left above the keyboard and between Safari's bars).
 const MEASURE = () => {
   const v = visualViewport,
+    root = document.documentElement.getBoundingClientRect(),
+    // which frame the boxes come in: the page's own top sits at -scrollY in the layout viewport's frame, and also -offsetTop in the visual
+    // viewport's. With the keyboard up, iOS 26 gave the visual one (run 5: the English score showed above the keyboard while a layout test said
+    // under it; run 6: the sticky switcher, at the layout top, measured -vvTop), so the visible area is placed in whichever frame the page reports
+    shiftY = -(root.top + scrollY),
+    shiftX = -(root.left + scrollX),
     seen = (e) => e && e.getClientRects().length > 0,
     inside = (e) => {
-      const r = e.getBoundingClientRect();
-      return r.top >= v.offsetTop - 1 && r.bottom <= v.offsetTop + v.height + 1 && r.left >= v.offsetLeft - 1 && r.right <= v.offsetLeft + v.width + 1;
+      const r = e.getBoundingClientRect(), y = v.offsetTop - shiftY, x = v.offsetLeft - shiftX;
+      return r.top >= y - 1 && r.bottom <= y + v.height + 1 && r.left >= x - 1 && r.right <= x + v.width + 1;
     };
   const dock = [...document.querySelectorAll('.dock [data-tool]')].filter(seen),
     panel = document.getElementById('panel'),
@@ -254,12 +260,9 @@ const MEASURE = () => {
     dockInside: dock.every(inside),
     sheetTop: sheet ? Math.round((sheet.getBoundingClientRect().top / innerHeight) * 100) : null, // % of the window's height
     focused: focus ? focus.dataset.k || focus.id || focus.tagName : null,
-    // a field in a fixed sheet: with the keyboard up, iOS 26 gave its box against the visual viewport (run 5: the English score showed above the
-    // keyboard while the layout-viewport test said it was under it), so either frame counts; focusFrame says which one held (null: neither)
-    focusFrame: !focus ? null : inside(focus) ? 'layout' : (() => {
-      const r = focus.getBoundingClientRect();
-      return r.top >= -1 && r.bottom <= v.height + 1 && r.left >= -1 && r.right <= v.width + 1 ? 'visual' : null;
-    })(),
+    // the focused field in the visible area: the frame its box came in, null when it is not (under the keyboard, above the top)
+    focusFrame: !focus || !inside(focus) ? null : Math.abs(shiftY) > 1 || Math.abs(shiftX) > 1 ? 'visual' : 'layout',
+    frameShift: `${Math.round(shiftX)},${Math.round(shiftY)}`,
     alt: document.getElementById('altLabel')?.textContent.trim() ?? null,
     vvTop: Math.round(v.offsetTop), // with the semester switcher's top: run 4 once showed it under the clock right after the keyboard closed
     tabsTop: seen(document.getElementById('semtabs')) ? Math.round(document.getElementById('semtabs').getBoundingClientRect().top) : null,
@@ -386,6 +389,7 @@ async function walk(d, site, dir, report) {
   await step('a10-landscape', async (r) => {
     await fresh({ ...student, 'afeka-sched-v1-edit': JSON.stringify(EDIT) }); // a schedule in improve mode, for its sheets below
     await board();
+    r.expect = dockOk(5); // turned or not, the board keeps its five tools
     try {
       await d.rotate('LANDSCAPE');
     } catch (e) {
@@ -397,7 +401,6 @@ async function walk(d, site, dir, report) {
       return;
     }
     await d.until(() => innerWidth > innerHeight, 'the landscape layout');
-    r.expect = dockOk(5);
   });
   await step('a10-landscape-tool', async (r) => {
     if (upright) r.note = 'upright';
