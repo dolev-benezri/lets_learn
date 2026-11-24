@@ -295,7 +295,7 @@ summary:active { background:var(--primary-soft); }
   font-weight:700;
   letter-spacing:-.01em;
 }
-/* the brand mark: favicon, og and header share it */
+/* the brand mark (icon.svg, design A's teal since the flip): the favicon, this classic header and A's .a-mark (design-a.css) share it */
 .top h1::before {
   content:"";
   display:inline-block;

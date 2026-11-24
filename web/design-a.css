@@ -141,9 +141,7 @@
   border-bottom:1px solid var(--border);
 }
 :root[data-design="a"] .a-brand { display:flex; align-items:center; gap:8px; margin-inline-end:auto; min-width:0; }
-:root[data-design="a"] .a-mark { width:30px; height:30px; flex:none; }
-:root[data-design="a"] .a-mark rect { fill:var(--primary); }
-:root[data-design="a"] .a-mark path { fill:var(--on-primary); }
+:root[data-design="a"] .a-mark { width:30px; height:30px; flex:none; background:url(icon.svg) center/contain no-repeat; } /* the brand mark, as the favicon */
 :root[data-design="a"] .a-brand h1 { margin:0; font-size:1.05rem; line-height:1.2; }
 :root[data-design="a"] .a-brand h1 small { display:block; color:var(--text-2); font-size:var(--fs-xs); font-weight:400; }
 :root[data-design="a"] .a-top-act { display:flex; align-items:center; gap:2px; }
