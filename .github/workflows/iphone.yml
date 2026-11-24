@@ -1,0 +1,43 @@
+# Design A in real iPhone Safari: Apple's iOS Simulator (it runs only on macOS) driven by Appium, test/ios/run.mjs. A screenshot per step of the design A rows
+# of docs/IPHONE-CHECKLIST.md, on the smallest and the largest iPhone, kept as the run's "iphone" artifact for 14 days. Free: the repository is public.
+# By hand (Actions > iphone > Run workflow), and on a push to a claude/ios-* branch while the check itself is being built.
+name: iphone
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/ios-*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iphone
+  cancel-in-progress: true
+
+jobs:
+  iphone:
+    runs-on: macos-15
+    timeout-minutes: 60 # the first Appium session builds WebDriverAgent (several minutes), then two iPhones
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      # pinned: a new Appium or driver release must not change the run by itself (driver 12.x is the line for Appium 3)
+      - run: npm install --global appium@3.9.1 && appium driver install xcuitest@12.22.8
+      - run: xcodebuild -version && xcrun simctl list runtimes # the image's Xcode and iOS versions, for the log
+      - name: iPhone checks
+        run: |
+          appium --address 127.0.0.1 --port 4723 --log "$RUNNER_TEMP/appium.log" --log-no-colors &
+          for i in $(seq 60); do curl -sf http://127.0.0.1:4723/status > /dev/null && break; sleep 1; done
+          node test/ios/run.mjs
+      - if: always()
+        run: mkdir -p test/ios/out && cp "$RUNNER_TEMP/appium.log" test/ios/out/ || true
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: iphone
+          path: test/ios/out
+          retention-days: 14
