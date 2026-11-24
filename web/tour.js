@@ -50,7 +50,7 @@ export const TOUR_INTRO_A = [
   { sel: '.dock [data-tool="courses"]', text: 'קורסים: מה ללמוד בסמסטר. מוצגים רק קורסים שפתוחים לך.' },
   { sel: '.dock [data-tool="wishes"]', text: 'מה חשוב לי: יום פנוי, בלי חלונות, עם חברים, שעות התחלה וסיום.' },
   { sel: '.dock [data-tool="out"]', text: 'להוציא: רשימה להרשמה, סיכום לפגישה עם היועץ, ושיתוף וגיבוי.' },
-  { sel: '.menu-btn', text: 'בתפריט: סיור, מפה, תנאי שימוש ומידע. זה כלי עזר לתכנון, ההרשמה עצמה באפקה-נט.' }
+  { sel: '.menu-btn', text: 'בתפריט: סיור, שאלות נפוצות, מפה, תנאי שימוש ומידע. זה כלי עזר לתכנון, ההרשמה עצמה באפקה-נט.' }
 ];
 // Design A, once, for a visitor who saw the old tour (or the new intro already): what changed, in three stops. Part `shell`.
 export const TOUR_NEW_A = [

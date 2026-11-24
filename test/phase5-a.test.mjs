@@ -33,6 +33,30 @@ test('A menu: a list of five ordered rows, four hidden chevrons, erase last and 
   assert.equal(root.querySelector('.theme-btn'), null);
 });
 
+test('A questions page: ten closed questions with a back button, the support address escaped in the last, the removal request without one', (t) => {
+  const drawer = withDesign(t, 'a'),
+    keep = app.settings,
+    panel = ui.panel;
+  t.after(() => {
+    app.settings = keep;
+    ui.panel = panel;
+  });
+  ui.panel = 'faq';
+  app.settings = { ...keep, supportEmail: 'a"b<c>@d.e' };
+  renderDrawer();
+  const root = parse(drawer.innerHTML),
+    qs = root.querySelectorAll('.faq details');
+  assert.equal(root.querySelector('#drawerTitle').text, 'שאלות נפוצות');
+  assert.ok(root.querySelector('.dr-head [data-act="menu"][aria-label="חזרה לתפריט"]'));
+  assert.equal(qs.length, 10);
+  assert.equal(qs.filter((d) => d.hasAttribute('open')).length, 0);
+  assert.ok(qs.at(-1).querySelector('a[href^="mailto:"]'));
+  assert.ok(!drawer.innerHTML.includes('a"b') && !drawer.innerHTML.includes('<c>'), 'the address is escaped');
+  app.settings = { ...keep, supportEmail: '' };
+  renderDrawer();
+  assert.ok(!drawer.innerHTML.includes('mailto:') && drawer.innerHTML.includes('בקשת הסרה'));
+});
+
 test('classic menu keeps its original markup', (t) => {
   withDesign(t, undefined);
   const old = globalThis.location;
