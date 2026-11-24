@@ -617,6 +617,7 @@ export function scrollToDay() {
   if (!ui.dayScroll || !current() || $('layout').hidden || !matchMedia(PHONE).matches) return;
   const choseDay = ui.dayScroll === 'day';
   ui.dayScroll = false;
+  if (choseDay) ui.sheetReveal = null; // a picked day's scroll is the person's: closing the sheet must not undo it
   const blocks = [...document.querySelectorAll('.day.on .blk')];
   if (!blocks.length) return;
   const b = blocks.reduce((a, c) =>

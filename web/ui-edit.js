@@ -1029,6 +1029,7 @@ const ACT_ED = {
     showBoard(); // A, a phone: the week is where focus goes next, so the sheet goes away
     renderEdit();
     $('editWeekTitle').focus({ preventScroll: true });
+    ui.sheetReveal = null; // a picked day's scroll is the person's: closing the sheet must not undo it
     $('editDays').scrollIntoView?.({ block: 'start' }); // on a phone the button sits under the week: bring the new day into view
   },
   saveProposal() {

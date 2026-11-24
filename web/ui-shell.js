@@ -156,6 +156,8 @@ export function shellInit() {
   });
 }
 
+// ui.sheetReveal: the scroll made only to show the week above an open sheet ({ from, to }), undone when that sheet goes;
+// a day picked meanwhile (build or improve) forgets it, since that scroll is the person's
 let phoneSheetKey = null, pendingPhoneScroll = false, phoneScrollFrame = null;
 function queuePhoneScroll() {
   if (phoneScrollFrame !== null) return;
@@ -177,17 +179,27 @@ function queuePhoneScroll() {
     }
     // on the root, not on the sheet: the improve page redraws .edit-tool on every change, and the value must outlive it
     document.documentElement.style.setProperty('--a-preview-top', `${chrome}px`);
-    scrollTo({ top: sheetScrollY(scrollY, first, chrome, sheet.getBoundingClientRect().top), behavior: 'instant' });
+    const y = scrollY, r = ui.sheetReveal;
+    scrollTo({ top: sheetScrollY(y, first, chrome, sheet.getBoundingClientRect().top), behavior: 'instant' });
+    // where the page really went (the end of the page may stop it short); a second reveal (another tool, a shrink) keeps the
+    // first one's start, unless the person scrolled in between
+    if (scrollY !== y) ui.sheetReveal = { from: r && Math.abs(y - r.to) < 2 ? r.from : y, to: scrollY };
     pendingPhoneScroll = false;
   });
 }
 
-function syncPhoneSheet(improve, panel, lock) {
+function syncPhoneSheet(improve, panel, lock, y) {
   const key = matchMedia('(max-width: 599px)').matches && !lock
     ? panel ? `panel:${improve}:${panel}` : improve && ui.editSheet !== false && document.querySelector('.edit-stage')
       ? `edit:${routeA(location.hash).tool}` : null
     : null;
   if (key !== phoneSheetKey) {
+    // the sheet is closed on a phone: give back the scroll that only made room above it (a landscape phone's day row would stay
+    // above the screen), unless the person scrolled since (y: read before the closed sheet's padding went); another tool's
+    // sheet keeps it, and a width past 599px is a new layout, not a closed sheet
+    const r = ui.sheetReveal;
+    if (!key && r && matchMedia('(max-width: 599px)').matches && Math.abs(y - r.to) < 2) scrollTo({ top: r.from, behavior: 'instant' });
+    if (!key) ui.sheetReveal = null;
     phoneSheetKey = key;
     ui.sheetExpanded.panel = ui.sheetExpanded.edit = false;
     pendingPhoneScroll = !!key;
@@ -226,6 +238,7 @@ export const locked = () => !!app.loadFailed || (!!app.state && gated());
 // Shows what the address says: the stage (the board or the edit page) and the one tool panel. Called by renderRoute under A, and on a resize across
 // 1080px. Returns the open tool or null.
 export function applyShell() {
+  const y = scrollY; // before a closing sheet's padding goes and the browser pulls the scroll up
   const route = routeA(location.hash);
   const w = wide();
   const improve = route.mode === 'improve';
@@ -281,7 +294,7 @@ export function applyShell() {
   // every exit from the take-out tool: another tool, Back, closing the sheet, the other mode; and a failed load, which replaces the tool's content
   if ((before === 'out' && panel !== 'out') || broken) dropAdvisorPdf();
   if (panel === 'out' && before !== 'out' && !app.loadFailed) renderOut(); // later changes reach it through renderView
-  syncPhoneSheet(improve, panel, lock);
+  syncPhoneSheet(improve, panel, lock, y);
   return panel;
 }
 
