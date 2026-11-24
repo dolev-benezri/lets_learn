@@ -57,7 +57,8 @@ function call(method, url, body) {
   });
 }
 
-async function openSafari(phone, site) {
+// wdaPort: each phone its own WebDriverAgent port, or the second would drive the first one's simulator (the driver reuses an agent that answers)
+async function openSafari(phone, site, wdaPort) {
   const { sessionId } = await call('POST', '/session', {
     capabilities: {
       alwaysMatch: {
@@ -74,8 +75,10 @@ async function openSafari(phone, site) {
         'appium:safariInitialUrl': `${site}legal.html`,
         'appium:newCommandTimeout': 600,
         'appium:simulatorStartupTimeout': 600000,
-        'appium:wdaLaunchTimeout': 900000, // the first session builds WebDriverAgent
-        'appium:wdaConnectionTimeout': 900000
+        'appium:wdaLaunchTimeout': 1800000, // the first session builds WebDriverAgent: 14 minutes on the first run
+        'appium:wdaConnectionTimeout': 1800000,
+        'appium:wdaLocalPort': wdaPort,
+        'appium:webviewConnectTimeout': 60000 // Safari's first start on a fresh simulator is slow to show its page
       }
     }
   });
@@ -364,7 +367,7 @@ async function walk(d, site, dir, report) {
 const site = await startSite({ web: path.join(HERE, '..', '..', 'web'), frozen: path.join(HERE, '..', 'fixtures', 'real') });
 const SITE = `http://127.0.0.1:${site.port}/`;
 const report = [];
-for (const phone of iphones()) {
+for (const [i, phone] of iphones().entries()) {
   const dir = path.join(OUT, phone.name.replace(/[^\w.-]+/g, '-'));
   await mkdir(dir, { recursive: true });
   console.log(`${phone.name} (iOS ${phone.version})`);
@@ -372,13 +375,16 @@ for (const phone of iphones()) {
   report.push(rec);
   let d;
   try {
-    d = await openSafari(phone, SITE);
+    d = await openSafari(phone, SITE, 8100 + i);
     await walk(d, SITE, dir, rec.steps);
   } catch (e) {
     rec.error = e.message;
     console.log(`  FAIL ${e.message}`);
   } finally {
     await d?.end().catch(() => {});
+    try {
+      execFileSync('xcrun', ['simctl', 'shutdown', phone.udid]); // its WebDriverAgent and its memory go before the next phone builds its own
+    } catch {}
   }
 }
 await site.close();

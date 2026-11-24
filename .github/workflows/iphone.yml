@@ -18,7 +18,7 @@ concurrency:
 jobs:
   iphone:
     runs-on: macos-15
-    timeout-minutes: 60 # the first Appium session builds WebDriverAgent (several minutes), then two iPhones
+    timeout-minutes: 75 # the first Appium session builds WebDriverAgent (about 15 minutes on the first run), then two iPhones
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -30,7 +30,8 @@ jobs:
       - run: xcodebuild -version && xcrun simctl list runtimes # the image's Xcode and iOS versions, for the log
       - name: iPhone checks
         run: |
-          appium --address 127.0.0.1 --port 4723 --log "$RUNNER_TEMP/appium.log" --log-no-colors &
+          # Appium cuts a connection after 600s by default; the first session (WebDriverAgent's build) took about 20 minutes
+          appium --address 127.0.0.1 --port 4723 --keep-alive-timeout 2400 --log "$RUNNER_TEMP/appium.log" --log-no-colors &
           for i in $(seq 60); do curl -sf http://127.0.0.1:4723/status > /dev/null && break; sleep 1; done
           node test/ios/run.mjs
       - if: always()
