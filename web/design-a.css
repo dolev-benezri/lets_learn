@@ -584,6 +584,9 @@
   :root[data-design="a"] body[data-view="edit"] .a-stage.record-open { display:grid; grid-template-columns:minmax(0, 1fr); align-items:start; }
   :root[data-design="a"] body[data-view="edit"] .a-stage.record-open > .dock { grid-row:1; }
   :root[data-design="a"] body[data-view="edit"] .a-stage.record-open > .a-board { grid-row:2; grid-column:1; }
+  /* nothing loaded yet: no tool column for the record to cover, so the centred load card moves into the room beside it, its top level with the record's */
+  :root[data-design="a"] body[data-view="edit"] .a-stage.record-open .edit-step:has(> .edit-card) { padding-inline-start:calc(440px + var(--sp-5)); }
+  :root[data-design="a"] body[data-view="edit"] .a-stage.record-open .edit-card { margin-top:0; }
   :root[data-design="a"] body[data-view="edit"] .a-panel:not([hidden]) {
     grid-row:2; grid-column:1; justify-self:start; position:sticky; top:calc(var(--a-head) + var(--sp-2)); inset-inline:auto; bottom:auto; z-index:8;
     width:440px; margin:20px 0 0; margin-inline-start:20px; height:calc(100dvh - var(--a-head) - var(--a-rec-off, 74px) - 20px);

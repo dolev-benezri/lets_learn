@@ -379,6 +379,23 @@ test('the changes button leaves the record open when the changes screen cannot o
   assert.equal(await page.evaluate(() => location.hash), '#edit', 'Escape does not navigate');
 });
 
+// owner 11-24: before a schedule is loaded there is no tool column for the record to cover, and it opened over the centred load card; the card now moves into
+// the room beside it, its top level with the record's
+for (const w of [1080, 1600])
+  test(`${w}px, nothing loaded: the record opens beside the load card, not over it`, async (t) => {
+    const page = await visit(t, { width: w, height: 900 }, { ...DONE }, '#edit');
+    await page.locator('#edit .edit-card').waitFor({ timeout: 30000 });
+    await dock(page, 'me').click();
+    await page.locator('#panel #me').waitFor({ state: 'visible' });
+    const m = await page.evaluate(() => {
+      const box = (s) => (({ left, right, top }) => ({ l: left, r: right, t: top }))(document.querySelector(s).getBoundingClientRect());
+      return { card: box('#edit .edit-card'), panel: box('#panel'), over: document.documentElement.scrollWidth - innerWidth };
+    });
+    assert.ok(m.card.r <= m.panel.l + 0.5 || m.card.l >= m.panel.r - 0.5, `the card is beside the record: ${JSON.stringify(m)}`);
+    assert.ok(Math.abs(m.card.t - m.panel.t) <= 1, `their tops are level: ${m.card.t} vs ${m.panel.t}`);
+    assert.ok(m.over <= 0, `no sideways scroll (${m.over})`);
+  });
+
 // phase 2, Task D: the record takes the tool column's slot (state, not DOM removal), with a back control; the week never moves; a redraw of the tool does not
 // bring the tool back over it; Escape and "חזרה" close it and focus returns to the dock's "המצב שלי"
 for (const w of [1920, 1280, 1100])
