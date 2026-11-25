@@ -1,6 +1,6 @@
 # Where and how to run the scheduled Afeka scraper (as of 1 Oct 2026)
 
-Research notes for: scripts/scrape.mjs (Node 22, about 175 requests at 2 s spacing, about 6 min) in public repo dolhack/lets_learn, refreshing web/data/afeka/... automatically.
+Research notes for: scripts/scrape.mjs (Node 22, about 175 requests at 2 s spacing, about 6 min) in public repo lets-learn-il/lets-learn-il.github.io, refreshing web/data/afeka/... automatically.
 
 Source access notes: docs.github.com, simonwillison.net and yahoo.com were blocked by this environment's proxy. GitHub docs were read from their source markdown in the `github/docs` repo on raw.githubusercontent.com (main branch, fetched 2026-10-01). Those files are the same text docs.github.com renders, but some of them contain `{% ifversion %}` conditionals. The four student repos were shallow-cloned and read directly. yedionpub.afeka.ac.il was not contacted.
 
@@ -168,7 +168,7 @@ Cloudflare Workers free does **not** fit: 50 external subrequests per invocation
   - Downsides: depends on the PC being on, and failures are invisible unless the script itself notifies, e.g. by opening a GitHub issue through the PAT or via a healthchecks.io-style ping.
 - **Self-hosted runner lockdown** if chosen:
   - Repo Settings → Actions → "Require approval for all external contributors".
-  - Never use `pull_request`/`pull_request_target` workflows that target the self-hosted label. Put the scrape job only in a workflow triggered by `schedule` + `workflow_dispatch`, with `if: github.repository == 'dolhack/lets_learn' && github.event_name != 'pull_request'`.
+  - Never use `pull_request`/`pull_request_target` workflows that target the self-hosted label. Put the scrape job only in a workflow triggered by `schedule` + `workflow_dispatch`, with `if: github.repository == 'lets-learn-il/lets-learn-il.github.io' && github.event_name != 'pull_request'`.
   - Run the runner service as a low-privilege local user, not the owner's account, with no SSH keys or browser profiles accessible.
   - Use a custom label (`runs-on: [self-hosted, afeka-home]`) so no other workflow lands there by accident.
   - Turn off the runner outside registration periods.

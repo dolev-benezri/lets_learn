@@ -8,7 +8,7 @@
 
 ```bash
 git clone https://github.com/lets-learn-il/lets-learn-il.github.io.git
-cd lets_learn
+cd lets-learn-il.github.io
 npm ci
 npx http-server web -p 8080 -c-1
 ```
