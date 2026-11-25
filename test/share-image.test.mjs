@@ -158,3 +158,21 @@ test('the group number never leaves "קב׳" on the line above it', () => {
   const m = shareModel(input({ lessons: [L({ type: 'תרגול', group: '273011221/2' })] }), (s) => s.length * 14);
   assert.ok(m.items[0].meta.some((l) => /קב׳\u00a021\/2/.test(l)), JSON.stringify(m.items[0].meta));
 });
+
+test('an old place at the very hours of a drawn lesson of the same course is not drawn (its lecture did not move)', () => {
+  const m = shareModel(input({
+    lessons: [L({ course: 'c1', type: 'הרצאה', group: '273011204', day: 2, start: '10:00', end: '11:30' })],
+    ghosts: [{ course: 'c1', name: 'מכניקת מוצקים', day: 2, start: '10:00', end: '11:30', color: 0 }]
+  }), measure);
+  assert.equal(m.items.length, 1);
+  assert.equal(m.items[0].w, m.cols.find((c) => c.day === 2).w, 'the lecture keeps the whole column');
+  assert.equal(m.legend, false, 'nothing moved');
+});
+
+test('two lessons at the same time keep the group number, without "קב׳" when that does not fit', () => {
+  const m = shareModel(input({ lessons: [L({ day: 2 }), L({ course: 'c2', day: 2 })] }), measure);
+  for (const it of m.items) {
+    assert.ok(it.meta.some((l) => l.includes('04/1')), JSON.stringify(it.meta));
+    for (const l of it.meta) assert.ok(measure(l) <= it.w - 18, l);
+  }
+});

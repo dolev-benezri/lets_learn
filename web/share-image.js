@@ -64,7 +64,8 @@ export function fitLines(text, maxWidth, maxLines, measure) {
 function lessonText(l, w, h, measure) {
   const inner = w - 2 * PAD - BAR, room = h - 2 * 8;
   const fit = (t, n, role) => fitLines(t, inner, n, (s) => measure(s, role));
-  const type = typeLabel(l.type), group = l.group ? `קב׳\u00a0${groupNumber(l.group)}` : null; // a no-break space: the number stays with קב׳
+  const type = typeLabel(l.type), label = l.group && `קב׳\u00a0${groupNumber(l.group)}`; // a no-break space: the number stays with קב׳
+  const group = l.group && (measure(label, 'meta') <= inner ? label : groupNumber(l.group)); // a narrow lane: the number alone
   const both = group && `${type} · ${group}`;
   let name = fit(l.name || l.course, 3, 'name');
   let meta = !group ? fit(type, 1, 'meta') : measure(both, 'meta') <= inner ? [both] : [...fit(type, 1, 'meta'), ...fit(group, 1, 'meta')];
@@ -88,7 +89,10 @@ function ghostText(g, w, h, measure) {
 // input: { name, semester, label, link, range: { from, to, days }, lessons: [{ course, name, type, group, day, start, end, color, changed }],
 // ghosts: [{ course, name, day, start, end, color }] };
 export function shareModel(input, measure) {
-  const { range, lessons, ghosts } = input;
+  const { range, lessons } = input, slot = (x) => `${x.course}|${x.day}|${x.start}|${x.end}`;
+  // a course moves as a whole on the board, its old places all ghosts; one at the very hours of a drawn lesson of the course did not move
+  // (the board hides it under the lesson): not drawn, or the lesson would share its column with itself
+  const drawn = new Set(lessons.map(slot)), ghosts = input.ghosts.filter((g) => !drawn.has(slot(g)));
   const legend = lessons.some((l) => l.changed) || ghosts.length > 0;
   const left = PAGE + CARD, right = W - PAGE - CARD;
   const pos = { left, right, title: PAGE + CARD, sub: PAGE + CARD + 66 };

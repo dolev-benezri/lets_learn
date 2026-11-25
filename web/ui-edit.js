@@ -1044,7 +1044,8 @@ function shareInput(st, data, parts, label, link) {
     if (!x) return [];
     const fixed = x.cid.startsWith(FIXED);
     return x.g.meetings.map((m) => ({
-      course: x.cid, name: heb(x.c.name), type: x.g.type, group: fixed ? null : gid, day: m.day, start: m.start, end: m.end,
+      course: fixed ? x.cid.slice(FIXED.length) : x.cid, // the course id its old places carry
+      name: heb(x.c.name), type: x.g.type, group: fixed ? null : gid, day: m.day, start: m.start, end: m.end,
       color: editColors.get(x.cid) ?? 7, changed: parts.changed.has(gid)
     }));
   });

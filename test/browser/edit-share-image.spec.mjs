@@ -32,6 +32,10 @@ const recordShares = (page, deny = null) =>
   page.evaluate((deny) => {
     window.__shares = [];
     let denied = false;
+    // still inside the tap: set by the click, cleared once its task is over. It catches a wait through a task (a fetch, a stream like the
+    // link's compression, a timer, toBlob), not an await of an already settled promise, which iPhone allows anyway
+    window.__inTap = false;
+    document.addEventListener('click', () => ((window.__inTap = true), setTimeout(() => (window.__inTap = false), 0)), true);
     navigator.canShare = (d) => !!d?.files?.length;
     navigator.share = async (d) => {
       if (deny && !denied) {
@@ -39,7 +43,7 @@ const recordShares = (page, deny = null) =>
         throw new DOMException('', deny);
       }
       const f = d.files?.[0];
-      window.__shares.push({ name: f?.name, type: f?.type, size: f?.size, text: d.text, url: d.url ?? null });
+      window.__shares.push({ name: f?.name, type: f?.type, size: f?.size, text: d.text, url: d.url ?? null, inTap: window.__inTap });
     };
   }, deny);
 const shares = (page) => page.evaluate(() => window.__shares);
@@ -58,9 +62,11 @@ test('phone: with a proposal, the button follows "שמור הצעה" and sends o
   assert.equal(order[order.indexOf('saveProposal') + 1], 'shareImage');
   assert.equal(await page.locator('[data-ed="shareImage"]').innerText(), 'שלח כתמונה');
   await recordShares(page);
+  await page.waitForTimeout(300); // the link is made while the page is drawn
   await page.locator('[data-ed="shareImage"]').click();
   await page.waitForFunction(() => window.__shares.length === 1);
   const [s] = await shares(page);
+  assert.equal(s.inTap, true, 'navigator.share is called inside the tap: nothing awaited on the way (an iPhone would refuse)');
   assert.equal(s.name, 'afeka-schedule.png');
   assert.equal(s.type, 'image/png');
   assert.ok(s.size > 20000, `size ${s.size}`);
@@ -195,3 +201,11 @@ test('phone: when the link cannot be made, the image still goes, with no link', 
   assert.equal(s.type, 'image/png');
   assert.ok(!s.text.includes('#f='), s.text);
 });
+
+for (const size of ['phone', 'desktop'])
+  test(`${size}: by the search, "שלח כתמונה" sits under "חפש הצעות" with a gap, not touching`, async (t) => {
+    const page = await visit(t, size, seed({ movable: [], goal: {} }));
+    await page.locator('.edit-search [data-ed="shareImage"]').waitFor();
+    const [a, b] = await page.locator('.edit-search button').evaluateAll((bs) => bs.map((x) => x.getBoundingClientRect().toJSON()));
+    assert.ok(b.top - a.bottom >= 8, `gap ${b.top - a.bottom}px`);
+  });
