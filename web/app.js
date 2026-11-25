@@ -808,6 +808,32 @@ export const savedExists = () => {
 }; // storage unavailable: nothing to replace
 // whether state was saved before this visit's own first save (refresh() saves before the terms are accepted)
 let pendingSaved = false;
+// A backup that waits for the terms is kept in storage too, as its link: the link leaves the address once read, so a reload, a closed tab
+// or a back before "המשך" would otherwise lose it. It is read back through readHash, as the link was. applyPendingBackup removes it.
+const WAITING = KEY + '-pending';
+const storedWaiting = () => {
+  try {
+    return JSON.parse(localStorage.getItem(WAITING));
+  } catch {
+    return null;
+  }
+};
+const asBackup = async (w) => {
+  const h = typeof w?.link === 'string' ? await readHash(w.link, app.state) : null;
+  return h?.type === 'backup' ? { payload: h.payload, saved: w.saved === true } : null;
+};
+const waiting = () => asBackup(storedWaiting());
+const setWaiting = (link, saved) => {
+  try {
+    if (link) localStorage.setItem(WAITING, JSON.stringify({ link, saved }));
+    else localStorage.removeItem(WAITING);
+  } catch {
+    // storage unavailable or full: it waits in memory only, as before, and an older link must not come back in its place
+    try {
+      localStorage.removeItem(WAITING);
+    } catch {}
+  }
+};
 let restoredOk = false; // the last backup run replaced the state (applyPendingBackup says so)
 async function runBackup(payload, hadSaved = savedExists()) {
   if (
@@ -823,18 +849,26 @@ async function runBackup(payload, hadSaved = savedExists()) {
 }
 // A backup link opened before the terms were accepted: run it now (called after "המשך"). Returns true when it restored the state.
 export async function applyPendingBackup() {
-  const p = app.pendingBackup;
+  // taken and cleared in one step, before any await, so a second tap finds nothing to restore
+  const mem = app.pendingBackup,
+    memSaved = pendingSaved,
+    raw = mem ? null : storedWaiting(); // a tab opened before another tab read the link
   app.pendingBackup = null;
+  setWaiting(null); // restored, declined or failed: it waits no more
+  const w = await asBackup(raw);
+  const p = mem ?? w?.payload,
+    saved = mem ? memSaved : Boolean(w?.saved);
   if (!p) return false;
   restoredOk = false;
-  const keep = await runBackup(p, pendingSaved);
+  const keep = await runBackup(p, saved);
   if (keep) history.replaceState(null, '', location.pathname + location.search + keep);
   ensurePassed();
   refresh();
   return restoredOk;
 }
 export async function applyHash() {
-  const h = await readHash(location.hash, app.state);
+  const link = location.hash;
+  const h = await readHash(link, app.state);
   let keep = '';
   if (h) {
     // a good link clears a bad link's error, not the load notice ("the saved program is gone")
@@ -844,9 +878,19 @@ export async function applyHash() {
   if (h?.type === 'backup') {
     if (app.termsOk()) keep = await runBackup(h.payload);
     else {
+      // a link that already waits knows better whether a state was saved: this visit's own first save came after it
+      const before = app.pendingBackup ? null : await waiting();
+      pendingSaved = before ? before.saved : app.pendingBackup ? pendingSaved : savedExists();
       app.pendingBackup = h.payload;
-      pendingSaved = savedExists();
+      setWaiting(link, pendingSaved); // a newer link replaces a waiting one
     } // the terms gate comes first (ACT.acceptTerms runs applyPendingBackup)
+  } else if (!app.pendingBackup && !app.termsOk()) {
+    // a reload or a new tab after the link was read: it still waits
+    const w = await waiting();
+    if (w) {
+      app.pendingBackup = w.payload;
+      pendingSaved = w.saved;
+    }
   }
   ensurePassed();
   if (h?.type === 'friend') app.friendLanding = h.payload;

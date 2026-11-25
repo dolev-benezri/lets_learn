@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { STUDENT, PASSED, DONE, passFirstRun, gradeSheetPdf, launch, visit as visitIn } from './helpers.mjs';
+import { STUDENT, PASSED, DONE, SITE, passFirstRun, gradeSheetPdf, launch, visit as visitIn } from './helpers.mjs';
 import { TOUR_INTRO_A, TOUR_PLANS_A, TOUR_NEW_A } from '../../web/tour.js';
 
 let browser;
@@ -87,6 +87,46 @@ test('a backup link runs after the terms and lands on the board', async (t) => {
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   assert.equal(await page.locator('#panel').isVisible(), false, 'no tool is open over the restored board');
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).programSet), true, 'the backup is the state now');
+});
+
+// A backup link strips itself from the address at once, so a reload, a closed tab or a back before "המשך" must not lose it
+// (a student whose record is handed over from an old address meets the terms card first). It waits in storage until the restore.
+// the card is up and the link has left the address: what is reloaded or opened next has no #b=
+const linkRead = async (page) => {
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible', timeout: 30000 });
+  assert.doesNotMatch(await page.evaluate(() => location.hash), /^#b=/, 'the link is not in the address any more');
+};
+const restoredFromWaiting = async (page) => {
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible', timeout: 30000 });
+  await passFirstRun(page, { stopAfterStart: true });
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  const asked = await page.locator('dialog[open]').waitFor({ timeout: 3000 }).then(() => true, () => false);
+  assert.equal(asked, false, 'the empty state of the first visit is not something to keep: no "replace" question');
+  const st = await page.evaluate(() => ({ name: JSON.parse(localStorage.getItem('afeka-sched-v1')).name, waiting: localStorage.getItem('afeka-sched-v1-pending') }));
+  assert.equal(st.name, 'נועה', 'the backup is the state now');
+  assert.equal(st.waiting, null, 'and no longer waits');
+};
+
+test('a backup link that waits for the terms survives a reload', async (t) => {
+  const hash = await makeLink(t, 'backup');
+  const page = await visit(t, 'phone', null, hash);
+  await linkRead(page);
+  await page.reload();
+  await restoredFromWaiting(page);
+});
+
+test('a backup link that waits for the terms survives a closed tab', async (t) => {
+  const hash = await makeLink(t, 'backup');
+  const page = await visit(t, 'phone', null, hash);
+  await linkRead(page);
+  const context = page.context();
+  await page.close();
+  const tab = await context.newPage(); // visit()'s seeding is on the closed page: the storage it seeded stays, nothing is seeded again
+  const errors = [];
+  tab.on('pageerror', (e) => errors.push(e.message));
+  await tab.goto(SITE);
+  await restoredFromWaiting(tab);
+  assert.deepEqual(errors, [], 'a script error');
 });
 
 test('an empty #f= and an empty #b= do nothing and break nothing', async (t) => {
