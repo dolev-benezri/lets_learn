@@ -503,7 +503,8 @@ test('pdf.js, panzoom and tesseract.js load from web/vendor with their licenses;
 test('the deploy waits for a green test job (P9)', () => {
   const y = readFileSync('.github/workflows/deploy.yml', 'utf8').replace(/\r\n/g, '\n'); // a Windows checkout has CRLF
   assert.match(y, /\n  test:\n[\s\S]*npm ci --ignore-scripts[\s\S]*\n      - run: npm test\n/, 'the suite alone: `npm test || true` would let anything through');
-  assert.match(y, /\n  deploy:\n    needs: test\n/);
+  assert.match(y, /\n  build:\n    needs: test\n/);
+  assert.match(y, /\n  deploy:\n    needs: build\n/, 'upload and deploy in separate jobs (actions/deploy-pages#451)');
 });
 
 test('normalize takes the academic year from the catalog (one place to roll over)', () => {
