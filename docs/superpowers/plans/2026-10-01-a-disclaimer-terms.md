@@ -11,7 +11,7 @@
 **Spec:** user bug map item 4 in `.superpowers/next-session.md` + research report `docs/archive/2026-10-01-refresh-deploy/report.md` (sections "הנימוס נקבע אצלנו" and "24 KB של נתונים").
 
 ## Global Constraints
-- No personal data in the repo: no name, no email. Contact means "פתחו issue ב-GitHub" plus the link `https://github.com/dolev-benezri/lets_learn/issues`.
+- No personal data in the repo: no name, no email. Contact means "פתחו issue ב-GitHub" plus the link `https://github.com/lets-learn-il/lets-learn-il.github.io/issues`.
 - Hebrew, RTL, contrast ≥ 4.5:1, links ≥ 44px tap height on phones.
 - On phones a fixed bottom bar exists (`--bar-h`). The footer must not hide behind it: `padding-bottom: calc(var(--bar-h) + 16px)` under `@media (max-width:599px)`.
 
@@ -46,7 +46,7 @@ test('the unofficial-tool line lives once, inside the page footer', () => {
 ```html
 <footer class="site-foot">
   <p>כלי עזר לא רשמי, שאינו קשור למכללת אפקה. הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים. ההרשמה באפקה-נט היא הקובעת.</p>
-  <p><a href="https://github.com/dolev-benezri/lets_learn/blob/main/TERMS.md" target="_blank" rel="noopener">תנאי שימוש ופרטיות</a> · <a href="https://github.com/dolev-benezri/lets_learn/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a></p>
+  <p><a href="https://github.com/lets-learn-il/lets-learn-il.github.io/blob/main/TERMS.md" target="_blank" rel="noopener">תנאי שימוש ופרטיות</a> · <a href="https://github.com/lets-learn-il/lets-learn-il.github.io/issues" target="_blank" rel="noopener">דיווח על טעות או בקשת הסרה</a></p>
 </footer>
 ```
 

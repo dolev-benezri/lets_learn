@@ -66,7 +66,7 @@ One new test: every frozen file passes the same per-file schema check the export
 2. `npm test` passes with `web/data/afeka` temporarily restored to 40d90aa, then restored back.
 3. `grep` finds no `web/data/afeka` path left in the tests listed under "Moves to the frozen copy" except the live cases named above.
 4. `npm run check:real` passes.
-5. Merge to `main` and push. The deploy only runs on pushes that touch `web/**`, and this change touches only `test/`, `scripts/` and `docs/`, so run it by hand: `gh workflow run deploy -R dolev-benezri/lets_learn`. The run is green and the site shows the 66f5eb7 data.
+5. Merge to `main` and push. The deploy only runs on pushes that touch `web/**`, and this change touches only `test/`, `scripts/` and `docs/`, so run it by hand: `gh workflow run deploy -R lets-learn-il/lets-learn-il.github.io`. The run is green and the site shows the 66f5eb7 data.
 
 ## Out of scope
 

@@ -10,7 +10,7 @@
 
 ## מה נשמר בדפדפן ואיך מוחקים
 
-הכול ב-`localStorage`, תחת מפתחות שמתחילים ב-`afeka-sched-v1`. `localStorage` משותף לכל האתרים שתחת `dolev-benezri.github.io`, ולכן אתר Pages נוסף בחשבון הזה היה יכול לקרוא אותו. נבדק ב-4.11.2026: זה האתר היחיד בחשבון, ולא מוסיפים שם אתר נוסף.
+הכול ב-`localStorage`, תחת מפתחות שמתחילים ב-`afeka-sched-v1`. `localStorage` משותף לכל האתרים שתחת `lets-learn-il.github.io`, ולכן אתר Pages נוסף בארגון `lets-learn-il` היה יכול לקרוא אותו. זה האתר היחיד בארגון, ולא מוסיפים בו אתר נוסף.
 
 | מפתח | מה בו |
 |---|---|
@@ -83,7 +83,7 @@ style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri '
 
 ## דיווח על פגיעות
 
-- ב-[issues של הריפו](https://github.com/dolev-benezri/lets_learn/issues/new/choose), אם אין בדיווח פרטים שמסכנים משתמשים.
+- ב-[issues של הריפו](https://github.com/lets-learn-il/lets-learn-il.github.io/issues/new/choose), אם אין בדיווח פרטים שמסכנים משתמשים.
 - דיווח רגיש: בלשונית Security של הריפו, "Report a vulnerability", **אם האפשרות מופעלת** (`private vulnerability reporting`; לא נבדק מתוך הקוד, אין לו קובץ ב-`.github/`).
 - אחרת: letslearn.schedule@gmail.com.
 

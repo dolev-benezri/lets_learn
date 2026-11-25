@@ -13,7 +13,7 @@ for (const part of text.split(/^=== ISSUE \d+\n/m).filter((p) => p.trim())) {
   const labels = meta.labels.split(',').map((s) => s.trim());
   if (dry) { console.log(`stage ${meta.stage} | ${meta.title} | ${labels.join(',')} | ${body.length} chars`); continue; }
   fs.writeFileSync(tmp, body);
-  const url = execFileSync('gh', ['issue', 'create', '--repo', 'dolev-benezri/lets_learn', '--title', meta.title, ...labels.flatMap((l) => ['--label', l]),
+  const url = execFileSync('gh', ['issue', 'create', '--repo', 'lets-learn-il/lets-learn-il.github.io', '--title', meta.title, ...labels.flatMap((l) => ['--label', l]),
     '--body-file', tmp.pathname.replace(/^\/(\w:)/, '$1')], { encoding: 'utf8' }).trim();
   console.log(`stage ${meta.stage} -> #${url.split('/').pop()} ${url}`);
 }

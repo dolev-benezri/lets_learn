@@ -2,7 +2,7 @@
 
 Reviewed 2026-10-08 at `af5a15a` (main). Read-only review: no project file except this one was changed.
 Method: read README.md (264 lines), web/og.png, LICENSE, TERMS.md, docs/ list, .github/, git log, web/index.html wording;
-fetched the live repo page HTML (`curl https://github.com/dolev-benezri/lets_learn`) and ran GitHub's own renderer
+fetched the live repo page HTML (`curl https://github.com/lets-learn-il/lets-learn-il.github.io`) and ran GitHub's own renderer
 (`gh api markdown -f mode=gfm`) on probe snippets to see what the sanitizer keeps. Repo state read with `gh repo view`.
 
 Facts verified empirically (they drive most findings below):
@@ -84,8 +84,8 @@ Fix: one "פרטיות ונתונים" block high on the page (6 bullets), fresh
 ### R-09 M, lines 9-12, S: badge row is English (2026-10-08: tried Hebrew labels; shields stretches each glyph with textLength and Hebrew comes out reversed, so the labels stay English), one badge is cryptic, and none tells a student what they care about
 `deploy` (9) is the Actions status of a workflow that also runs the whole test suite, so it is really "tests passing", but the label says deploy; `sign-up not needed` / `data stays in your
 browser` (11-12) are English inside a Hebrew page; the license badge is useful for developers only. No freshness badge.
-Fix (all shields.io, Hebrew labels need URL encoding): tests `https://img.shields.io/github/actions/workflow/status/dolev-benezri/lets_learn/deploy.yml?label=בדיקות`;
-freshness `https://img.shields.io/github/last-commit/dolev-benezri/lets_learn?path=web/data/afeka/status.json&label=נתונים%20עודכנו` (the nightly scrape rewrites
+Fix (all shields.io, Hebrew labels need URL encoding): tests `https://img.shields.io/github/actions/workflow/status/lets-learn-il/lets-learn-il.github.io/deploy.yml?label=בדיקות`;
+freshness `https://img.shields.io/github/last-commit/lets-learn-il/lets-learn-il.github.io?path=web/data/afeka/status.json&label=נתונים%20עודכנו` (the nightly scrape rewrites
 status.json every successful run, line 130); `https://img.shields.io/badge/פרטיות-הכול%20נשמר%20בדפדפן-success`; keep license in the developer footer. Max 3 badges above the fold.
 
 ### R-10 M, copy, S/M: jargon, mixed addressing, inconsistent terms
@@ -182,11 +182,11 @@ a single line under the hero ("יכולות · פרטיות · שאלות נפו
 
 **בונים מערכת שעות לאפקה: בוחרים קורסים, מקבלים עד 10 מערכות בלי התנגשויות.**
 
-**[לפתיחת האתר ←](https://dolev-benezri.github.io/lets_learn/)**
+**[לפתיחת האתר ←](https://lets-learn-il.github.io/)**
 
 
-[![בדיקות](https://img.shields.io/github/actions/workflow/status/dolev-benezri/lets_learn/deploy.yml?label=%D7%91%D7%93%D7%99%D7%A7%D7%95%D7%AA)](https://github.com/dolev-benezri/lets_learn/actions/workflows/deploy.yml)
-[![נתונים עודכנו](https://img.shields.io/github/last-commit/dolev-benezri/lets_learn?path=web%2Fdata%2Fafeka%2Fstatus.json&label=%D7%A0%D7%AA%D7%95%D7%A0%D7%99%D7%9D%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95)](https://dolev-benezri.github.io/lets_learn/)
+[![בדיקות](https://img.shields.io/github/actions/workflow/status/lets-learn-il/lets-learn-il.github.io/deploy.yml?label=%D7%91%D7%93%D7%99%D7%A7%D7%95%D7%AA)](https://github.com/lets-learn-il/lets-learn-il.github.io/actions/workflows/deploy.yml)
+[![נתונים עודכנו](https://img.shields.io/github/last-commit/lets-learn-il/lets-learn-il.github.io?path=web%2Fdata%2Fafeka%2Fstatus.json&label=%D7%A0%D7%AA%D7%95%D7%A0%D7%99%D7%9D%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95)](https://lets-learn-il.github.io/)
 ![פרטיות](https://img.shields.io/badge/%D7%A4%D7%A8%D7%98%D7%99%D7%95%D7%AA-%D7%94%D7%9B%D7%95%D7%9C%20%D7%91%D7%93%D7%A4%D7%93%D7%A4%D7%9F-success)
 
 <img src="docs/media/hero-desktop.png" alt="..." width="720">
@@ -244,7 +244,7 @@ Style rules for the rewrite: plural addressing ("אתם", the site already says 
 |---|---|---|
 | 5 | מערכת שעות לאפקה, בדקה | בונים מערכת שעות לאפקה: בוחרים קורסים ומקבלים עד 10 מערכות מוכנות |
 | 7 | חלופות בלי התנגשויות, לפי התקנון ולפי המצב האישי שלך, וקרוב לחברים. | בלי חפיפות, לפי התקנון והקורסים שעברתם או נכשלתם בהם, ועם כמה שיותר שיעורים משותפים עם חברים. |
-| 20 | **כלי עזר לא רשמי, שאינו קשור למכללת אפקה.** הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים, וההרשמה באפקה-נט היא הקובעת. הכלי ניתן כמות שהוא, בלי שום אחריות. | **כלי לא רשמי של סטודנטים, ללא קשר למכללת אפקה.** הנתונים מהידיעון הציבורי ויכולים להיות שגויים או לא מעודכנים, ולכן ההרשמה באפקה-נט היא הקובעת. [תנאי שימוש ופרטיות](https://dolev-benezri.github.io/lets_learn/legal.html) |
+| 20 | **כלי עזר לא רשמי, שאינו קשור למכללת אפקה.** הנתונים נלקחים מהידיעון הציבורי ועלולים להיות שגויים או ישנים, וההרשמה באפקה-נט היא הקובעת. הכלי ניתן כמות שהוא, בלי שום אחריות. | **כלי לא רשמי של סטודנטים, ללא קשר למכללת אפקה.** הנתונים מהידיעון הציבורי ויכולים להיות שגויים או לא מעודכנים, ולכן ההרשמה באפקה-נט היא הקובעת. [תנאי שימוש ופרטיות](https://lets-learn-il.github.io/legal.html) |
 | 24-26 | ## למה זה קיים / **כישלון בקורס משנה את כל המערכת.** מי שנכשל בקורס חייב לחזור עליו, וכל קורס שהוא דרישת קדם שלו נחסם. | ## למה זה שימושי / **נכשלתם בקורס? גם קורסי ההמשך שלו נחסמים.** הכלי מחשב את השרשרת ומראה מה עדיין אפשר לקחת בסמסטר הזה. |
 | 28 | **חיפוש לפי אילוצים והעדפות**, ולא רק הצגה של רשימת הקבוצות. במקום לשבץ ביד, מקבלים חלופות מוכנות ומדורגות. | **לא משבצים ביד.** אתם קובעים מה חשוב לכם (ימים פנויים, בלי חלונות, שעות נוחות) ומקבלים מערכות מדורגות, מהטובה לפחות טובה. |
 | 33 | **עד 10 חלופות מדורגות** על לוח שבועי. החיפוש רץ מחדש ברקע (Web Worker) בכל שינוי. | **עד 10 חלופות מדורגות** על לוח שבועי. החישוב מתעדכן אחרי כל שינוי, בלי לתקוע את המסך. (Web Worker: לעמוד המפתחים.) |
@@ -260,7 +260,7 @@ Style rules for the rewrite: plural addressing ("אתם", the site already says 
 | 69 | מדפדפים בין החלופות ב-‹ › או בחצי המקלדת. | מדפדפים בין החלופות עם החצים בראש הלוח או עם חצי המקלדת. |
 | 71 | רוצים לראות איך החלופה מתקדמת בתואר? פותחים את מפת ההתקדמות ומדפדפים בה בין החלופות. | רוצים לראות מה כל חלופה עושה לתואר? פותחים את מפת ההתקדמות ומחליפים בה בין החלופות. |
 | 88-90 | **המקור:** ... נבדק ב-3.10.2026 מול תוכניות הלימודים העדכניות של תשפ״ז, ולא מול "הסבר התמחויות"... | (הפסקה עוברת כמות שהיא ל-`docs/COVERAGE.md`, עם התאריך. ב-README נשארת שורה אחת: "הקורסים והקבוצות מהידיעון, והדרישות לתואר מתוכניות הלימודים של תשפ״ז. הפירוט ב-COVERAGE.") |
-| 241, 262 | באגים, בקשות והסרת מידע: issues. | מצאתם שיעור שגוי, שעה לא נכונה או רוצים שנסיר מידע? [פותחים פנייה](https://github.com/dolev-benezri/lets_learn/issues/new/choose) (צריך חשבון GitHub). בלי חשבון: (הבעלים יבחר ערוץ יצירת קשר) |
+| 241, 262 | באגים, בקשות והסרת מידע: issues. | מצאתם שיעור שגוי, שעה לא נכונה או רוצים שנסיר מידע? [פותחים פנייה](https://github.com/lets-learn-il/lets-learn-il.github.io/issues/new/choose) (צריך חשבון GitHub). בלי חשבון: (הבעלים יבחר ערוץ יצירת קשר) |
 
 Notes on specific choices:
 - Line 5/7: states the output (10 ready schedules) instead of a pun; "בדקה" is dropped from the README only, the og.png and meta can follow if the owner agrees.
@@ -284,7 +284,7 @@ Notes on specific choices:
 Only the owner can click these (repo Settings, or the gear next to About). None is a file in the repo.
 
 1. **About -> Description** (Hebrew, one line, used in search and link previews): `מערכת שעות לא רשמית לסטודנטים באפקה: חלופות בלי התנגשויות, לפי התקנון, עם חברים`
-2. **About -> Website:** `https://dolev-benezri.github.io/lets_learn/`
+2. **About -> Website:** `https://lets-learn-il.github.io/`
 3. **About -> Topics:** `afeka`, `timetable`, `scheduler`, `course-scheduling`, `hebrew`, `rtl`, `github-pages`, `vanilla-js`, `student-tools`, `israel` (topics are English slugs).
 4. **Settings -> General -> Social preview -> Edit -> Upload:** `web/og.png` (1200x630, 140 KB). GitHub's guidance: recommended 1280x640, minimum 640x320, under 1 MB, PNG/JPG/GIF, so the file is in range; the 2:1 repo card crops slightly, keep text inside the central area (it already is). Today `usesCustomOpenGraphImage:false`.
 5. **Settings -> General -> Features:** keep Issues on; turn Discussions on only if the owner wants a Q&A channel (otherwise the FAQ suffices); turn off Wikis and Projects if unused.
@@ -302,6 +302,6 @@ Only the owner can click these (repo Settings, or the gear next to About). None 
 - GitHub Docs, Configuring issue templates (`.github/ISSUE_TEMPLATE/`, `config.yml`, `blank_issues_enabled`, issue forms): https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
 - DEV, "Add right-to-left text to your GitHub profile README" (the `<div dir="rtl">` technique): https://dev.to/benhayehudi/add-right-to-left-text-to-your-github-profile-readme-5c89
 - CommonMark forum, "Explicit RTL indication in pure Markdown" (Markdown has no direction syntax; an HTML wrapper is the workaround): https://talk.commonmark.org/t/explicit-rtl-indication-in-pure-markdown/286/4
-- Empirical probes (primary evidence, 2026-10-08): `gh api markdown -f mode=gfm` on snippets (kept `dir`/`lang`/`align`/`details`/`picture`; stripped `style` and `video`; mermaid and alerts supported) and the rendered HTML of https://github.com/dolev-benezri/lets_learn (auto `dir="auto"` on p/ul/ol/h1-3; bare `blockquote`/`table`; Outline present; About empty).
-- Repo state via `gh repo view dolev-benezri/lets_learn --json ...`, `gh run list`, `gh issue list`.
+- Empirical probes (primary evidence, 2026-10-08): `gh api markdown -f mode=gfm` on snippets (kept `dir`/`lang`/`align`/`details`/`picture`; stripped `style` and `video`; mermaid and alerts supported) and the rendered HTML of https://github.com/lets-learn-il/lets-learn-il.github.io (auto `dir="auto"` on p/ul/ol/h1-3; bare `blockquote`/`table`; Outline present; About empty).
+- Repo state via `gh repo view lets-learn-il/lets-learn-il.github.io --json ...`, `gh run list`, `gh issue list`.
 - shields.io badge URL forms (`github/actions/workflow/status`, `github/last-commit?path=`, static `badge/`) are from prior knowledge and were not fetched in this review: test each badge URL once in a browser before committing.
