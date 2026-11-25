@@ -187,7 +187,17 @@ for (const size of Object.keys(SIZES)) {
     assert.ok((await page.locator(`${root} .advisor-sum`).innerText()).trim().length > 100, 'the summary shows on screen');
     assert.equal(await page.evaluate(() => window.__prints), 0, 'opening it prints nothing: a phone app may have no print at all');
     await page.locator('[data-act="advisor"]').click();
-    await page.waitForFunction(() => window.__prints === 1);
+    // failed twice on GitHub with no print and no reason (11-24): if it happens again, say what the page held
+    await page.waitForFunction(() => window.__prints === 1).catch(async (e) => {
+      const why = await page
+        .evaluate(async () => {
+          const { current, ui } = await import('./ui-common.js');
+          const buttons = document.querySelectorAll('[data-act="advisor"]').length;
+          return JSON.stringify({ prints: window.__prints, current: !!current(), running: ui.running, hash: location.hash, buttons });
+        })
+        .catch((x) => `the page could not say (${x.message})`); // the timeout below stays the error either way
+      throw new Error(`no print after the click: ${why}`, { cause: e });
+    });
     assert.equal(await page.locator('#print').getAttribute('hidden'), null); // style.css shows it only in print media
     assert.ok((await page.locator('#print').textContent()).trim().length > 100, 'the summary has text');
     if (!(await onA(page))) await page.locator('#drawer [data-act="closeDrawer"]').click(); // A: the list is in the same tool
@@ -886,6 +896,9 @@ for (const size of Object.keys(SIZES)) {
   ]) {
     test(`${size}: ${how} offers a retry only, and the retry loads with the record kept`, async (t) => {
       const page = await visit(t, size, DONE);
+      // every case: the first search has drawn the week, so its engine (solver-worker.js) is loaded and the reload below cannot cut that
+      // load short, which WebKit reports as a script error ("due to access control checks", seen with no network on GitHub 11-25)
+      await weekReady(page);
       await page.waitForLoadState('networkidle');
       await page.context().route('**/data/afeka/*-1/*.json', fail);
       await page.reload();

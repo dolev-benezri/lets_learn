@@ -408,3 +408,18 @@ test('shareButtonHtml: "שלח כתמונה", a plain button with data-ed="share
   assert.match(h, /^<button type="button" class="btn" data-ed="shareImage"/);
   assert.match(h, />שלח כתמונה<\/button>$/);
 });
+
+test('movedParts: a course whose tutorial changes and whose lecture stays: only the tutorial is new, only the old tutorial was there', async () => {
+  const { movedParts } = await import('../web/ui-edit.js');
+  const L = (group, day, start, end, course = 'c') => ({ course, name: 'x', type: 't', group, day, start, end });
+  const before = [L('L1', 1, '10:00', '11:50'), L('T1', 3, '12:00', '12:50'), L('K1', 5, '08:00', '09:50', 'k')];
+  const tutorialOnly = [L('L1', 1, '10:00', '11:50'), L('T2', 4, '12:00', '12:50'), L('K1', 5, '08:00', '09:50', 'k')];
+  let m = movedParts(before, tutorialOnly, ['c']);
+  assert.deepEqual([...m.groups], ['T2']);
+  assert.deepEqual(m.ghosts.map((l) => l.group), ['T1']);
+  m = movedParts(before, [L('L2', 2, '10:00', '11:50'), L('T2', 4, '12:00', '12:50'), L('K1', 5, '08:00', '09:50', 'k')], ['c']);
+  assert.deepEqual([...m.groups].sort(), ['L2', 'T2'], 'both changed: both new');
+  assert.deepEqual(m.ghosts.map((l) => l.group).sort(), ['L1', 'T1']);
+  m = movedParts(before, [...tutorialOnly, L('N1', 2, '14:00', '15:50', 'n')], ['n']);
+  assert.deepEqual([[...m.groups], m.ghosts], [['N1'], []], 'an added course: all new, nothing was there');
+});

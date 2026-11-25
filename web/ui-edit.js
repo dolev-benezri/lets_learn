@@ -537,20 +537,34 @@ function reconcileSplitSwaps() {
 // ---------- step 2 ----------
 // The week of the edit page: the lessons of a proposal (`pr`), of the baseline as it is (`zero`), or of the pending edits. Classic draws it inside the
 // step; design A draws it on the board beside the tool (and, read only, in step 1). Returns the week, the day buttons and the blocked-lines note.
+// What really moved in the courses touched: the groups that are new to them (outlined "מקום חדש"), and the lessons before whose group
+// (a fixed lesson: whose hours) is gone (drawn "היה כאן"). A course whose tutorial changed keeps its lecture unmarked. Pure.
+export function movedParts(baseline, lessons, courses) {
+  const of = new Set(courses), slot = (l) => `${l.course}|${l.day}|${l.start}|${l.end}`;
+  const was = new Set(baseline.filter((l) => of.has(l.course) && l.group).map((l) => l.group));
+  const now = lessons.filter((l) => of.has(l.course)), nowIds = new Set(now.map((l) => l.group).filter(Boolean)), nowSlots = new Set(now.map(slot));
+  return {
+    groups: new Set(now.filter((l) => l.group && !was.has(l.group)).map((l) => l.group)),
+    ghosts: baseline.filter((l) => of.has(l.course) && (l.group ? !nowIds.has(l.group) : !nowSlots.has(slot(l))))
+  };
+}
+
 // The week the board draws, as values (the share image is made from the same ones): the lessons, the old places ("היה כאן", with their
 // course), the new groups, the hour range; pending = no proposal and the board draws edits not saved yet.
 function weekParts(st, data, pr, zero) {
   const lessons = pr ? pr.lessons : zero ? st.baseline : effectiveLessons(st, data);
   const dd = displayData(lessons, data), swapped = Object.keys(st.swaps).filter((c) => st.swaps[c].length && !st.removed.includes(c));
-  const moved = pr ? pr.changed : zero ? [] : swapped; // courses whose old place is drawn as "היה כאן"
+  // the courses a proposal (or a pending hand change) touches; of them, only what really moved is marked
+  const touched = pr ? [...pr.changed, ...pr.added] : zero ? [] : swapped;
+  const moved = movedParts(st.baseline, lessons, touched);
   const at = ({ course, day, start, end }) => ({ course, day, start, end });
-  const ghosts = st.baseline.filter((l) => moved.includes(l.course)).map(at);
+  const ghosts = moved.ghosts.map(at); // drawn as "היה כאן"
   // a course the proposal (or a pending edit) takes out: its days are marked too, so they stay in the week's range
   const out = (pr ? pr.removed : zero ? [] : st.removed), gone = st.baseline.filter((l) => out.includes(l.course)).map(at);
   const byId = groupIndex(dd.data), meetings = [...dd.groups.flatMap((g) => byId.get(g)?.g.meetings ?? []), ...ghosts, ...gone];
   const range = hourRange(meetings);
   assignColors(editColors, [...new Set(dd.groups.map((g) => byId.get(g)?.cid))]);
-  const changed = pr ? newGroups(pr) : new Set(zero ? [] : swapped.flatMap((c) => st.swaps[c]));
+  const changed = moved.groups;
   const pending = !pr && !zero && (swapped.length > 0 || st.added.length > 0 || st.removed.length > 0);
   return { lessons, dd, byId, ghosts, gone, meetings, range, changed, pending };
 }
@@ -646,8 +660,6 @@ function boardOne(st) {
     <div id="editWeek" class="edit-week" inert>${week}</div>`;
 }
 
-// The groups a proposal puts in place of the old ones (highlighted in the week).
-const newGroups = (p) => new Set(p.lessons.filter((l) => [...p.changed, ...p.added].includes(l.course) && l.group).map((l) => l.group));
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 // "מקומות פנויים נבדקו לפני X": when the seat counts of the destination courses were read (the oldest of them).
