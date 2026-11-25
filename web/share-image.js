@@ -58,19 +58,22 @@ export function fitLines(text, maxWidth, maxLines, measure) {
   return lines;
 }
 
-// A lesson's lines in its block: the name (up to 3 lines), "{type} · קב׳ {number}", the hours. When the block is too short: the hours go,
-// then the name keeps 1 line, then the group line keeps 1, then it goes; the name always stays. Hours wider than the block go too.
+// A lesson's lines in its block: the name (up to 3 lines); "{type} · קב׳ {number}" on one line, or the type and "קב׳ {number}" on two;
+// the hours. When the block is too short: the hours go, then the name keeps 1 line, then only "קב׳ {number}" stays of the type and
+// group (the number is what a friend needs), then that goes; the name always stays. Hours wider than the block go too.
 function lessonText(l, w, h, measure) {
   const inner = w - 2 * PAD - BAR, room = h - 2 * 8;
-  const type = typeLabel(l.type), metaText = l.group ? `${type} · קב׳ ${groupNumber(l.group)}` : type; // a no-break space: the number stays with קב׳
-  const fit = (t, n, font) => fitLines(t, inner, n, (s) => measure(s, font));
-  let name = fit(l.name || l.course, 3, 'name'), meta = fit(metaText, 2, 'meta');
+  const fit = (t, n, role) => fitLines(t, inner, n, (s) => measure(s, role));
+  const type = typeLabel(l.type), group = l.group ? `קב׳\u00a0${groupNumber(l.group)}` : null; // a no-break space: the number stays with קב׳
+  const both = group && `${type} · ${group}`;
+  let name = fit(l.name || l.course, 3, 'name');
+  let meta = !group ? fit(type, 1, 'meta') : measure(both, 'meta') <= inner ? [both] : [...fit(type, 1, 'meta'), ...fit(group, 1, 'meta')];
   let time = `${l.start}–${l.end}`;
   if (measure(time, 'time') > inner) time = null;
   const need = () => name.length * LH.name + meta.length * LH.meta + (time ? LH.time : 0);
   if (need() > room) time = null;
   if (need() > room) name = fit(l.name || l.course, 1, 'name');
-  if (need() > room) meta = fit(metaText, 1, 'meta');
+  if (need() > room && meta.length > 1) meta = fit(group, 1, 'meta');
   if (need() > room) meta = [];
   return { name, meta, time };
 }

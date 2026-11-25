@@ -49,8 +49,10 @@ test('a lesson sits at its hours, with "{type} · קב׳ {number}" and its time'
   const [a, b, c] = m.items;
   assert.equal(a.y, m.grid.top + 2 * m.grid.hour);
   assert.ok(Math.abs(a.h - 1.5 * m.grid.hour) <= 8, 'an hour and a half, less the gap');
-  assert.equal(a.meta.join(' '), 'תרגול · קב׳ 04/1');
-  assert.equal(b.meta.join(' '), 'הרצאה+תרגול · קב׳ 04');
+  assert.deepEqual(a.meta, ['תרגול', 'קב׳\u00a004/1'], 'too wide for one line: the type, then the group');
+  assert.deepEqual(b.meta, ['הרצאה+תרגול', 'קב׳\u00a004']);
+  const wide = shareModel(input({ range: { from: 8, to: 19, days: 1 } }), measure).items[0];
+  assert.deepEqual(wide.meta, ['תרגול · קב׳\u00a004/1'], 'room for one line: both on it');
   assert.deepEqual(c.meta, ['הרצאה'], 'a fixed lesson: the type alone');
   assert.equal(m.items.find((i) => i.time === '12:00–13:30') !== undefined, true);
   assert.ok(m.items.every((i) => i.kind === 'lesson' && inCol(m, i)));
@@ -84,7 +86,7 @@ test('a long name in a 50-minute lesson: the hours go first, the name keeps a li
   assert.equal(a.time, null);
   assert.equal(a.name.length, 1);
   assert.ok(a.name[0].endsWith('…'));
-  assert.ok(a.meta.length >= 1, 'the group number is what a friend needs');
+  assert.deepEqual(a.meta, ['קב׳\u00a004/1'], 'one line left: the group number, what a friend needs, not the type');
   for (const line of [...a.name, ...a.meta]) assert.ok(measure(line) <= a.w, line);
   assert.ok((a.name.length * 28 + a.meta.length * 26) <= a.h - 16, 'fits the height');
 });
@@ -154,5 +156,5 @@ test('canvas fonts are all weight 400: WebKit draws a variable font at its defau
 
 test('the group number never leaves "קב׳" on the line above it', () => {
   const m = shareModel(input({ lessons: [L({ type: 'תרגול', group: '273011221/2' })] }), (s) => s.length * 14);
-  assert.ok(m.items[0].meta.some((l) => /קב׳ 21\/2/.test(l)), JSON.stringify(m.items[0].meta));
+  assert.ok(m.items[0].meta.some((l) => /קב׳\u00a021\/2/.test(l)), JSON.stringify(m.items[0].meta));
 });

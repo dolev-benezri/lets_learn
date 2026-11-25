@@ -401,3 +401,10 @@ test('goalText: the goals that are on, in the chips\' words', async () => {
   assert.equal(goalText({ fewerGaps: true }), 'פחות חלונות');
   assert.equal(goalText({ dayOff: 4, fewerGaps: true, notAfter: '15:00' }), 'לפנות יום ד׳, פחות חלונות, לסיים עד 15:00');
 });
+
+test('shareButtonHtml: "שלח כתמונה", a plain button with data-ed="shareImage"', async () => {
+  const { shareButtonHtml } = await import('../web/ui-edit.js');
+  const h = shareButtonHtml('prop');
+  assert.match(h, /^<button type="button" class="btn" data-ed="shareImage"/);
+  assert.match(h, />שלח כתמונה<\/button>$/);
+});
