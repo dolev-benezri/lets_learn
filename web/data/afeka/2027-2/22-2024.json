@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-24T23:19:34.401Z",
+ "fetchedAt": "2026-11-25T23:18:12.980Z",
  "year": 2027,
  "startYear": 2024,
  "program": 22,
@@ -1621,7 +1621,7 @@
      "id": "272012501",
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
-     "lecturer": "ד\"ר שפט גבי",
+     "lecturer": "ד\"ר בר-און לי",
      "full": false,
      "semester": "ב",
      "linked": [
@@ -1777,7 +1777,7 @@
      "id": "272012501/1",
      "type": "תרגול",
      "primary": false,
-     "lecturer": "ד\"ר שפט גבי",
+     "lecturer": "ד\"ר בר-און לי",
      "full": false,
      "semester": "ב",
      "linked": [],
@@ -4641,7 +4641,7 @@
      "id": "272036703",
      "type": "סופי-מעבדה",
      "primary": true,
-     "lecturer": "",
+     "lecturer": "מר לבנת מיקי",
      "full": false,
      "semester": "ב",
      "linked": [],
