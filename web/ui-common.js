@@ -234,6 +234,13 @@ app.firstLoad = () => {
   if (firstRun() === 'done') keepLanding(null); // none after the pass (another tab may have ended it)
   else app.friendLanding ??= keptLanding(); // a friend's link kept for step 5 (a reload finds it)
 };
+// a backup whose restore after "המשך" failed came back at a later load: like that restore, it ends the pass (step 1 would set over it)
+app.restoredRecord = () => {
+  if (designOn() && firstRun() !== 'done') {
+    setFirstRun('done');
+    clearFirstDraft();
+  }
+};
 
 // a first visit picks the track, none is assumed
 export const needsProgram = () => !!app.state && !app.state.programSet && app.catalog.programs.length > 1;

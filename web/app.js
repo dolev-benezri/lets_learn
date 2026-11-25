@@ -363,6 +363,7 @@ export const app = {
   // design A: year changes in flight that ask what was passed in the years they make earlier (ui-passed.js); nothing is filled in meanwhile
   holdFill: 0,
   firstLoad: () => {}, // a new visitor's first load, before anything is saved (ui-common.js writes the first-run mark)
+  restoredRecord: () => {}, // a waiting backup was restored at a load, not after "המשך" (ui-common.js ends design A's pass)
   pendingBackup: null
 }; // ui-common.js swaps in the real checks; a backup link waits in pendingBackup until the terms are accepted
 
@@ -757,7 +758,8 @@ async function init() {
   }
 }
 
-// Replace the state with a backup. Another program or cohort loads its data first; if that fails nothing changes and it returns false.
+// Replace the state with a backup. Another program or cohort loads its data first; if that fails nothing changes and it returns false,
+// or null when the failure can pass (the catalog or the data did not arrive), so a backup that waits is kept and tried again.
 // A program the catalog lacks is refused (normalize would quietly turn it into the default program); a dropped cohort
 // moves to the nearest one, like a saved state.
 export async function restoreBackup(payload) {
@@ -765,7 +767,7 @@ export async function restoreBackup(payload) {
   // Without the real catalog the saved state is protected (noSave): a restore would be saved over it, so none until the list loads
   if (app.catalog === FALLBACK_CATALOG) {
     app.hashError = 'רשימת התוכניות לא נטענה, הגיבוי לא שוחזר. נסו לרענן את הדף.';
-    return false;
+    return null;
   }
   if (p.program !== payload?.program) {
     app.hashError = 'התוכנית של הגיבוי לא קיימת באתר, הגיבוי לא שוחזר.';
@@ -775,9 +777,10 @@ export async function restoreBackup(payload) {
     let sem;
     try {
       sem = await fetchSemesters(p);
-    } catch {
+    } catch (e) {
       app.hashError = 'לא הצלחנו לטעון את נתוני התוכנית של הגיבוי';
-      return false;
+      // only a missing file (404, fetchSemesters) will not pass; no answer, an error page or a captive Wi-Fi's login page may
+      return e?.message === '404' ? false : null;
     }
     setSemesters(sem);
   }
@@ -808,6 +811,7 @@ export const savedExists = () => {
 }; // storage unavailable: nothing to replace
 // whether state was saved before this visit's own first save (refresh() saves before the terms are accepted)
 let pendingSaved = false;
+let pendingLink = null; // the link that goes with app.pendingBackup, kept again if its restore fails for a reason that can pass
 // A backup that waits for the terms is kept in storage too, as its link: the link leaves the address once read, so a reload, a closed tab
 // or a back before "המשך" would otherwise lose it. It is read back through readHash, as the link was. applyPendingBackup removes it.
 const WAITING = KEY + '-pending';
@@ -835,32 +839,44 @@ const setWaiting = (link, saved) => {
   }
 };
 let restoredOk = false; // the last backup run replaced the state (applyPendingBackup says so)
-async function runBackup(payload, hadSaved = savedExists()) {
-  if (
-    !hadSaved ||
-    await askConfirm('לשחזר גיבוי? המצב הנוכחי יוחלף.', { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' }))
-   {
-    // its own message, cleared by the next good link like a bad link's
-    if (await restoreBackup(payload)) restoredOk = true;
-    else linkError = app.hashError;
+let retryLater = false; // the last backup run failed for a reason that can pass
+const ASK = 'לשחזר גיבוי? המצב הנוכחי יוחלף.',
+  ASK_AGAIN = 'גיבוי שנפתח קודם עוד לא שוחזר. לשחזר אותו עכשיו? המצב הנוכחי יוחלף.';
+async function runBackup(payload, hadSaved = savedExists(), question = ASK) {
+  if (!hadSaved || await askConfirm(question, { ok: 'שחזר גיבוי', cancel: 'השאר את המצב הנוכחי' })) {
+    const r = await restoreBackup(payload);
+    if (r) restoredOk = true;
+    else {
+      linkError = app.hashError; // its own message, cleared by the next good link like a bad link's
+      retryLater = r === null;
+    }
     return '';
   }
   return hashOf(document.body.dataset.view);
 }
 // A backup link opened before the terms were accepted: run it now (called after "המשך"). Returns true when it restored the state.
-export async function applyPendingBackup() {
+// again: a load after a restore that failed for a reason that can pass (applyHash).
+export async function applyPendingBackup(again = false) {
   // taken and cleared in one step, before any await, so a second tap finds nothing to restore
   const mem = app.pendingBackup,
     memSaved = pendingSaved,
-    raw = mem ? null : storedWaiting(); // a tab opened before another tab read the link
+    raw = mem ? null : storedWaiting(), // a tab opened before another tab read the link has none in memory
+    link = mem ? pendingLink : raw?.link;
   app.pendingBackup = null;
-  setWaiting(null); // restored, declined or failed: it waits no more
+  pendingLink = null;
+  setWaiting(null);
   const w = await asBackup(raw);
   const p = mem ?? w?.payload,
-    saved = mem ? memSaved : Boolean(w?.saved);
+    first = mem ? memSaved : Boolean(w?.saved); // a record saved before the link arrived
   if (!p) return false;
+  // a load after the failure: a pass still open holds nothing of the student's yet; a finished one may, so it asks first
+  const ask = again && !app.passOpen() ? savedExists() : first;
   restoredOk = false;
-  const keep = await runBackup(p, saved);
+  retryLater = false;
+  const keep = await runBackup(p, ask, again ? ASK_AGAIN : ASK);
+  // restored, declined, or a program the site lacks: it waits no more. A failure that can pass keeps the only copy
+  // (an old address hands a record over once), and the next load runs it again.
+  if (retryLater && link) setWaiting(link, first);
   if (keep) history.replaceState(null, '', location.pathname + location.search + keep);
   ensurePassed();
   refresh();
@@ -882,15 +898,21 @@ export async function applyHash() {
       const before = app.pendingBackup ? null : await waiting();
       pendingSaved = before ? before.saved : app.pendingBackup ? pendingSaved : savedExists();
       app.pendingBackup = h.payload;
+      pendingLink = link;
       setWaiting(link, pendingSaved); // a newer link replaces a waiting one
     } // the terms gate comes first (ACT.acceptTerms runs applyPendingBackup)
   } else if (!app.pendingBackup && !app.termsOk()) {
     // a reload or a new tab after the link was read: it still waits
-    const w = await waiting();
+    const raw = storedWaiting(),
+      w = await asBackup(raw);
     if (w) {
       app.pendingBackup = w.payload;
       pendingSaved = w.saved;
+      pendingLink = raw.link;
     }
+  } else if (!app.pendingBackup && app.catalog !== FALLBACK_CATALOG && storedWaiting()) {
+    // the terms were accepted and the restore failed for a reason that can pass: again, once the catalog is there to restore with
+    if (await applyPendingBackup(true)) app.restoredRecord();
   }
   ensurePassed();
   if (h?.type === 'friend') app.friendLanding = h.payload;
