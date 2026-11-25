@@ -447,3 +447,29 @@ test('the header keeps an accessible 44px theme button at 320px and it flips the
   await theme.click();
   assert.notEqual(await page.evaluate(() => document.documentElement.dataset.theme), before);
 });
+
+// When the PDF is ready its button's label grows ("מכין PDF…" → "הורד PDF"). On a phone that used to wrap the row and stretch what was left, so
+// "הדפסה" jumped and a tap meant for it, landing just then, hit the PDF button (flows.spec's print test on GitHub's WebKit, 11-24 and 11-25).
+for (const size of ['phone', { width: 320, height: 640 }]) {
+  test(`${typeof size === 'string' ? size : `${size.width} px`}: the advisor buttons stay put when the PDF gets ready`, async (t) => {
+    const page = await visit(t, size, DONE, '');
+    await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+    const hold = holdFirstFont(page);
+    await page.evaluate(() => (location.hash = '#out'));
+    await hold.reached;
+    await outReady(page);
+    const boxes = () =>
+      page.evaluate(() =>
+        Object.fromEntries(
+          ['advisorPdf', 'advisor', 'advisorCopy'].map((act) => {
+            const r = document.querySelector(`#out [data-act="${act}"]`).getBoundingClientRect();
+            return [act, [r.x, r.y, r.width, r.height].map(Math.round)];
+          })
+        )
+      );
+    const waiting = await boxes();
+    hold.release();
+    await pdfReady(page);
+    assert.deepEqual(await boxes(), waiting, 'where each button was while the file was built');
+  });
+}

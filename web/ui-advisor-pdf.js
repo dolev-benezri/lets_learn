@@ -18,7 +18,15 @@ export const advisorPdfFile = () => file;
 // A system sheet only on a phone: on a desktop a download is what people expect, even where a sheet exists.
 const canShareFile = () => matchMedia('(pointer:coarse)').matches && Boolean(navigator.canShare?.({ files: [file] }));
 
-const buttonLabel = () => (!file ? 'מכין PDF…' : canShareFile() ? `${icon('share')} שתף PDF` : `${icon('file')} הורד PDF`);
+// Every label the button can show sits in one cell (style.css .pdf-labels), only the current one visible: the button is as wide as its widest
+// label from the start, so the file getting ready never moves the buttons beside it (on a phone a tap meant for "הדפסה" used to land here).
+const buttonLabel = () => {
+  const now = !file ? 'wait' : canShareFile() ? 'share' : 'file',
+    labels = { wait: 'מכין PDF…', file: `${icon('file')} הורד PDF`, share: `${icon('share')} שתף PDF` };
+  return `<span class="pdf-labels">${Object.entries(labels)
+    .map(([k, v]) => `<span${k === now ? '' : ' class="pdf-off"'}>${v}</span>`)
+    .join('')}</span>`;
+};
 const noteText = () =>
   failed
     ? 'לא הצלחנו להכין PDF. אפשר להעתיק את הסיכום או לנסות שוב כשהקליטה טובה.'
