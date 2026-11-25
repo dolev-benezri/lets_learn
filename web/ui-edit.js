@@ -7,7 +7,9 @@ import { askConfirm } from './ui-dialog.js';
 import { classify } from './rules.js';
 import { kinds, overlaps, displayData, summaryLine, changeText, splitOnlySwaps, PROPOSAL_ONLY, FIXED } from './edit-search.js';
 import { reqContext, reqMet } from './rules.js';
-import { groupNumber, lecturerText, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine, courseCount } from './ui-text.js';
+import { groupNumber, lecturerText, ago, YEDION_HINT, SPLIT_NOTE, SPLIT_TAG, splitLine, courseCount, shareText, heb } from './ui-text.js';
+import { shareImageFile, headerLabel, fontsReady, FONTS } from './share-image.js';
+import { friendLink, friendPayload } from './share.js';
 import { identityPick } from './ui-me.js';
 import { sheetExpandHtml } from './phone-sheet.js';
 import { searchCourses } from './course-search.js';
@@ -406,7 +408,8 @@ const SEARCH = {
   open: false, text: '', day: '', hour: '', sem: '', program: 'mine', foreign: null, loading: false, failedSems: new Set(), fetch: 0, cache: new Map()
 };
 const V = {
-  s: SEARCH, more: false, how: false, day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null
+  s: SEARCH, more: false, how: false, day: null, i: 0, fx: null, step: 1, running: false, result: null, stamp: null, seq: 0, edits: 0, worker: null,
+  link: null, linkWant: null, sharing: false // the share image: its friend link made ahead ({ key, url }), and a share under way
 };
 const editColors = new Map();
 const edit = getEdit; // the edit state, read once (edit-state.js)
@@ -534,19 +537,28 @@ function reconcileSplitSwaps() {
 // ---------- step 2 ----------
 // The week of the edit page: the lessons of a proposal (`pr`), of the baseline as it is (`zero`), or of the pending edits. Classic draws it inside the
 // step; design A draws it on the board beside the tool (and, read only, in step 1). Returns the week, the day buttons and the blocked-lines note.
-function weekOf(st, data, pr, zero, statuses) {
+// The week the board draws, as values (the share image is made from the same ones): the lessons, the old places ("היה כאן", with their
+// course), the new groups, the hour range; pending = no proposal and the board draws edits not saved yet.
+function weekParts(st, data, pr, zero) {
   const lessons = pr ? pr.lessons : zero ? st.baseline : effectiveLessons(st, data);
   const dd = displayData(lessons, data), swapped = Object.keys(st.swaps).filter((c) => st.swaps[c].length && !st.removed.includes(c));
   const moved = pr ? pr.changed : zero ? [] : swapped; // courses whose old place is drawn as "היה כאן"
-  const at = ({ day, start, end }) => ({ day, start, end });
+  const at = ({ course, day, start, end }) => ({ course, day, start, end });
   const ghosts = st.baseline.filter((l) => moved.includes(l.course)).map(at);
   // a course the proposal (or a pending edit) takes out: its days are marked too, so they stay in the week's range
   const out = (pr ? pr.removed : zero ? [] : st.removed), gone = st.baseline.filter((l) => out.includes(l.course)).map(at);
   const byId = groupIndex(dd.data), meetings = [...dd.groups.flatMap((g) => byId.get(g)?.g.meetings ?? []), ...ghosts, ...gone];
   const range = hourRange(meetings);
   assignColors(editColors, [...new Set(dd.groups.map((g) => byId.get(g)?.cid))]);
+  const changed = pr ? newGroups(pr) : new Set(zero ? [] : swapped.flatMap((c) => st.swaps[c]));
+  const pending = !pr && !zero && (swapped.length > 0 || st.added.length > 0 || st.removed.length > 0);
+  return { lessons, dd, byId, ghosts, gone, meetings, range, changed, pending };
+}
+
+function weekOf(st, data, pr, zero, statuses) {
+  const parts = weekParts(st, data, pr, zero), { dd, byId, ghosts, gone, meetings, range, changed } = parts;
   V.day = Math.min(V.day ?? Math.min(...meetings.map((m) => m.day).filter((d) => d >= 1), 6), range.days);
-  const changed = pr ? newGroups(pr) : new Set(zero ? [] : swapped.flatMap((c) => st.swaps[c])), marked = changedDays(byId, changed, [...ghosts, ...gone]);
+  const marked = changedDays(byId, changed, [...ghosts, ...gone]);
   const week = renderWeek({
     data: dd.data, res: { groups: dd.groups }, range, colors: editColors, dashed: new Set(), pins: [], friends: [], day: V.day, ghosts, changed,
     lanes: designOn(),
@@ -556,7 +568,7 @@ function weekOf(st, data, pr, zero, statuses) {
     .map((d) => `<button type="button" data-ed="day" data-day="${d}" aria-pressed="${d === V.day}">${DAYS[d]}׳${
       marked.has(d) ? '<span class="chg" aria-hidden="true"></span><span class="sr"> (יש שינוי)</span>' : ''}</button>`).join('');
   const warn = blockedLines(st, data, statuses).map((t) => `<p class="warn-text">${icon('alert')} <span>${esc(t)}</span></p>`).join('');
-  return { week, days, warn };
+  return { week, days, warn, parts };
 }
 
 // what step 2 and its week both need: the data, the proposals, the one shown, the record's statuses
@@ -588,14 +600,16 @@ function stepTwo(st) {
 // Design A, step 2: the controls and the answer are the tool, the week is the board. The proposals stay with the controls (no "week first" order).
 function stepTwoA(st) {
   const { data, props, pr, zero, statuses } = stepTwoBase(st);
-  const { week, days, warn } = weekOf(st, data, pr, zero, statuses);
+  const { week, days, warn, parts } = weekOf(st, data, pr, zero, statuses);
+  prepareShare(linkGroups(parts));
+  const share = !pr && parts.dd.groups.length ? shareButtonHtml('week') : '';
   const [top, panel] = resultsHtml(st, data, pr, props.length);
   const tool = V.s.open ? searchToolHtml(st) : `<div class="me-head"><h2 id="editTitle" tabindex="-1">שינויים</h2>
     <p class="me-step">לחצו על שיעור כדי לסמן שיכול לזוז.</p></div>
     ${goalsHtml(st, addableCourses(data, statuses, st), true)}${changesHtml(st, data)}${splitOptionHtml(!!app.state.constraints.split)}
     <div class="edit-search"><button type="button" class="btn${pr ? '' : ' primary'}" data-ed="search"${V.running ? ' aria-disabled="true"' : ''}>${
       V.running ? 'מחפש…' : V.result ? 'חפש שוב' : 'חפש הצעות'
-    }</button></div>
+    }</button>${share}</div>
     <div id="editResults">${top}${panel}</div>
     <p class="err-text" id="edMsg" role="alert"></p>`;
   const board = `<h3 id="editWeekTitle" class="sr" tabindex="-1">השבוע שלי</h3>
@@ -684,7 +698,7 @@ function resultsHtml(st, data, pr, n) {
     : '';
   const actions = pr
     ? A
-      ? `<div class="prop-actions"><button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
+      ? `<div class="prop-actions"><button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>${shareButtonHtml('prop')}
         <button type="button" class="btn" data-ed="copyChanges">העתק שינויים</button>${more}</div>${st.registered ? seatsNote(pr, data) : ''}`
       : `<div class="prop-actions">${newDayButton(st, pr)}<button type="button" class="btn primary" data-ed="saveProposal">שמור הצעה</button>
       <button type="button" class="btn" data-ed="copyChanges">העתק שינויים</button></div>${st.registered ? seatsNote(pr, data) : ''}`
@@ -999,6 +1013,101 @@ function step(by) {
   V.fx = 'prop';
   renderEdit();
 }
+// ---------- "שלח כתמונה" (design A): the week on the screen as a PNG, with the friend link of the groups it draws ----------
+export const shareButtonHtml = (where) =>
+  `<button type="button" class="btn" data-ed="shareImage" data-k="share-${where}"${V.sharing ? ' aria-disabled="true"' : ''}>שלח כתמונה</button>`;
+const linkGroups = (parts) => parts.dd.groups.filter((g) => !g.startsWith(FIXED)); // a fixed lesson has no group id to send
+const linkBase = () => location.origin + location.pathname;
+const linkKey = (groups) => JSON.stringify(friendPayload(app.state, groups)); // the name and the dataset are in it: a rename makes a new link
+const SAMPLE = 'אב 09:00';
+let fontsAsked = false;
+// While step 2 is drawn: the link and the fonts are made ready, so a tap reaches navigator.share with no wait (an iPhone allows the share
+// sheet only from the tap itself).
+function prepareShare(groups) {
+  if (!fontsAsked && globalThis.document?.fonts) {
+    fontsAsked = true;
+    for (const f of new Set(Object.values(FONTS))) document.fonts.load(f, SAMPLE).catch(() => {});
+  }
+  if (!groups.length) return;
+  const key = linkKey(groups);
+  if (V.link?.key === key || V.linkWant === key) return;
+  V.linkWant = key;
+  friendLink(linkBase(), app.state, groups).then(
+    (url) => V.linkWant === key && (V.link = { key, url }),
+    () => V.linkWant === key && (V.linkWant = null) // asked again at the tap
+  );
+}
+// The image's input from the board's own values: the same lessons, colours, hours, old and new places.
+function shareInput(st, data, parts, label, link) {
+  const lessons = parts.dd.groups.flatMap((gid) => {
+    const x = parts.byId.get(gid);
+    if (!x) return [];
+    const fixed = x.cid.startsWith(FIXED);
+    return x.g.meetings.map((m) => ({
+      course: fixed ? x.cid.slice(FIXED.length) : x.cid, // the course id its old places carry
+      name: heb(x.c.name), type: x.g.type, group: fixed ? null : gid, day: m.day, start: m.start, end: m.end,
+      color: editColors.get(x.cid) ?? 7, changed: parts.changed.has(gid)
+    }));
+  });
+  const ghosts = parts.ghosts.map((g) => ({
+    ...g, name: heb(data.courses[g.course]?.name ?? st.baseline.find((l) => l.course === g.course)?.name ?? g.course),
+    color: editColors.get(g.course) ?? editColors.get(FIXED + g.course) ?? 7
+  }));
+  return { name: app.state.name, semester: st.dataset.sem, label, link, range: parts.range, lessons, ghosts };
+}
+const shareBusy = (on) =>
+  document.querySelectorAll('[data-ed="shareImage"]').forEach((b) => (on ? b.setAttribute('aria-disabled', 'true') : b.removeAttribute('aria-disabled')));
+function download(file) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file);
+  a.download = file.name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+async function shareImage() {
+  if (V.sharing) return; // a double tap shares once
+  const st = edit(), { data, props, pr, zero } = stepTwoBase(st);
+  if (!data) return;
+  V.sharing = true;
+  shareBusy(true);
+  try {
+    const parts = weekParts(st, data, pr, zero), groups = linkGroups(parts), key = groups.length ? linkKey(groups) : null;
+    // made ahead by prepareShare; when not (yet), the wait may cost the iPhone's tap, and NotAllowedError below asks for another
+    // a link that cannot be made (no compression in this browser): the image still goes, without it
+    const url = !key ? null : V.link?.key === key ? V.link.url : await friendLink(linkBase(), app.state, groups).catch(() => null);
+    if (url) V.link = { key, url };
+    // a font that will not load: drawn in the fallback font rather than not at all
+    if (!fontsReady()) await Promise.all([...new Set(Object.values(FONTS))].map((f) => document.fonts.load(f, SAMPLE).catch(() => {})));
+    let file;
+    try {
+      file = shareImageFile(shareInput(st, data, parts, headerLabel({ index: pr ? V.i : 0, count: props.length, pending: parts.pending }), !!url));
+    } catch {
+      if (url) copy(url, 'לא הצלחנו ליצור תמונה. הקישור הועתק במקומה.');
+      else toast('לא הצלחנו ליצור תמונה.');
+      return;
+    }
+    const text = url ? `${shareText(app.state.name)} ${url}` : shareText(app.state.name); // the link in the text: some apps drop `url` next to a file
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text });
+        return;
+      } catch (e) {
+        if (e?.name === 'AbortError') return; // the sheet was closed
+        if (e?.name === 'NotAllowedError') return toast('לחצו שוב על "שלח כתמונה" כדי לשלוח.');
+      }
+    }
+    // no file sharing here (most desktops), or it failed: the image is made, so it is downloaded and the link copied
+    download(file);
+    if (url) copy(url, 'התמונה ירדה והקישור הועתק. אפשר לצרף אותם בוואטסאפ.');
+    else toast('התמונה ירדה. אפשר לצרף אותה בוואטסאפ.');
+  } finally {
+    V.sharing = false;
+    shareBusy(false);
+  }
+}
+
 const ACT_ED = {
   openSearch() {
     V.s.open = true;
@@ -1053,6 +1162,7 @@ const ACT_ED = {
     // never "saved" when nothing was written: the notice above says why, and the proposal stays in this page
     toast(ok ? 'ההצעה נשמרה כמערכת הנוכחית. ההרשמה נעשית במכללה.' : 'ההצעה נשמרה רק בדף הזה. היא לא נשמרה בדפדפן, ותאבד כשתסגרו את הדף.');
   },
+  shareImage,
   copyChanges() {
     const p = shownProposal(), st = edit();
     if (p) copy(changeText(st.registered ? st.original : st.baseline, p.lessons, dataOf(st.dataset.sem), p.split), 'השינויים הועתקו');

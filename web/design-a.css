@@ -632,6 +632,7 @@
 :root[data-design="a"] .edit-tool .chip select { min-height:44px; min-width:44px; margin-block:-1px; }
 /* the select is the target: it fills the chip, 44px (it was 40px) */
 :root[data-design="a"] .edit-search, :root[data-design="a"] .edit-next { margin-top:var(--sp-3); }
+:root[data-design="a"] .edit-search { display:grid; gap:var(--sp-2); } /* "חפש הצעות" and "שלח כתמונה", one under the other */
 :root[data-design="a"] .edit-search .btn, :root[data-design="a"] .edit-next .btn { width:100%; min-height:44px; }
 :root[data-design="a"] .edit-tool #editResults > p { margin:var(--sp-3) 0 0; } /* the stand-alone "cancel all changes" under the search button */
 :root[data-design="a"] .prop-actions { display:flex; flex-wrap:wrap; align-items:flex-start; gap:var(--sp-2); }
