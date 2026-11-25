@@ -22,8 +22,10 @@ jobs:
       fail-fast: false
       matrix:
         browser: [webkit, chromium, firefox]
+        # 4 jobs per engine, one spec file at a time in each (CI): one runner with three browsers at once failed tests at random
+        shard: [1, 2, 3, 4]
     runs-on: ubuntu-latest
-    timeout-minutes: 35 # WebKit took 19-20 min with 696 tests (11-24), and the 20 cut it off
+    timeout-minutes: 35 # a shard; the whole WebKit run took 19-20 min with 696 tests three files at a time (11-24), and the 20 cut it off
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -34,3 +36,4 @@ jobs:
       - run: npm run test:browser
         env:
           BROWSER: ${{ matrix.browser }}
+          SHARD: ${{ matrix.shard }}/4

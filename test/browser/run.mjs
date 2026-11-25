@@ -4,23 +4,25 @@
 // The student's files, the catalog and the status come only from the frozen copy: a file missing there is a 404 and fails the run.
 //   npm run test:browser              (all)
 //   npm run test:browser -- a11y      (only the specs whose name contains a11y)
+//   SHARD=2/4 npm run test:browser    (the second of four shares of the specs, as a GitHub job runs them)
 import { spawn } from 'node:child_process';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startSite, finalCode } from './site.mjs';
+import { pickShard, nodeTestArgs } from './shard.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url)),
   WEB = path.join(HERE, '..', '..', 'web'),
   FROZEN = path.join(HERE, '..', 'fixtures', 'real');
+const specs = pickShard(
+  (await readdir(HERE)).filter((f) => f.endsWith('.spec.mjs') && f.includes(process.argv[2] ?? '')).sort(),
+  process.env.SHARD // GitHub runs each engine in shards (browser.yml); see shard.mjs
+).map((f) => path.join(HERE, f));
+// A stuck browser fails the run after 30 minutes (per spec file, which its tests inherit) instead of hanging it for good (nodeTestArgs).
+const args = nodeTestArgs(process.env, specs); // before the site starts, so a run with no spec file stops here
 const site = await startSite({ web: WEB, frozen: FROZEN });
-
-const specs = (await readdir(HERE))
-  .filter((f) => f.endsWith('.spec.mjs') && f.includes(process.argv[2] ?? ''))
-  .sort()
-  .map((f) => path.join(HERE, f));
-// A stuck browser fails the run after 30 minutes (per spec file, which its tests inherit) instead of hanging it for good.
-const child = spawn(process.execPath, ['--test', '--test-timeout=1800000', ...specs], {
+const child = spawn(process.execPath, args, {
   stdio: 'inherit',
   env: { ...process.env, SITE_URL: `http://127.0.0.1:${site.port}/` }
 });

@@ -208,9 +208,12 @@ for (const scheme of ['light', 'dark']) for (const mode of ['build', 'improve'])
     assert.equal(await button.getAttribute('aria-expanded'), 'false');
     assert.equal(await button.evaluate((e) => e === document.activeElement), true);
     await page.setViewportSize({ width: 600, height: 900 });
-    await page.waitForFunction(() => !document.activeElement?.matches('.a-sheet-expand'), null, { timeout: 5000 });
+    // the focus leaves the hidden button for the screen's title: wait for the title, not only for the button to lose it (a loaded machine
+    // shows the moment between, with the focus on the body)
+    const title = mode === 'build' ? 'prefsTitle' : 'editTitle';
+    await page.waitForFunction((id) => document.activeElement?.id === id, title, { timeout: 5000 }).catch(() => {});
     assert.equal(await button.isVisible(), false);
-    assert.equal(await page.evaluate(() => document.activeElement?.id), mode === 'build' ? 'prefsTitle' : 'editTitle');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), title);
     done();
   });
 
