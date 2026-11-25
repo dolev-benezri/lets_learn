@@ -19,7 +19,7 @@ import {
 const YEAR = ' אבגדה'; // study year number -> letter
 const dateText = (now) =>
   now.toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: 'numeric' });
-const semName = (s) => (s === 'קיץ' ? 'סמסטר קיץ' : `סמסטר ${s}׳`);
+export const semName = (s) => (s === 'קיץ' ? 'סמסטר קיץ' : `סמסטר ${s}׳`);
 // data: the loaded program (lists, year); sem: { א, ב, קיץ } datasets when a year pair is shown; res: the shown alternative (one semester or a pair).
 // approved: the department's sign-off, null when there is none (settings.js approvedOn); conflicts: open conflicts between the official sources.
 // Blocks: { k: 'h2'|'h3'|'h4'|'p'|'li', t } and { k: 'course', name, credits, groups: string[] }.
