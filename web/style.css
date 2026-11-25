@@ -261,6 +261,10 @@ input[type="time"]:focus-within { outline:2px solid var(--primary); outline-offs
   white-space:nowrap;
   transition:background-color .15s ease, border-color .15s ease;
 }
+/* the advisor PDF button: its labels share one cell, so its width never changes with them (ui-advisor-pdf.js buttonLabel) */
+.pdf-labels { display:inline-grid; }
+.pdf-labels > span { grid-area:1 / 1; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.pdf-labels > .pdf-off { visibility:hidden; }
 .btn:hover { background:var(--surface-2); }
 .btn.primary { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
 .btn.primary:hover { background:var(--primary-hover); }
