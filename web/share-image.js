@@ -90,8 +90,8 @@ function ghostText(g, w, h, measure) {
 // ghosts: [{ course, name, day, start, end, color }] };
 export function shareModel(input, measure) {
   const { range, lessons } = input, slot = (x) => `${x.course}|${x.day}|${x.start}|${x.end}`;
-  // a course moves as a whole on the board, its old places all ghosts; one at the very hours of a drawn lesson of the course did not move
-  // (the board hides it under the lesson): not drawn, or the lesson would share its column with itself
+  // an old place at the very hours of a drawn lesson of the same course (a new group at the old hours): not drawn, or the lesson would
+  // share its column with its own old place
   const drawn = new Set(lessons.map(slot)), ghosts = input.ghosts.filter((g) => !drawn.has(slot(g)));
   const legend = lessons.some((l) => l.changed) || ghosts.length > 0;
   const left = PAGE + CARD, right = W - PAGE - CARD;
