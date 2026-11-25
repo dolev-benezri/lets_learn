@@ -49,8 +49,8 @@ test('a lesson sits at its hours, with "{type} · קב׳ {number}" and its time'
   const [a, b, c] = m.items;
   assert.equal(a.y, m.grid.top + 2 * m.grid.hour);
   assert.ok(Math.abs(a.h - 1.5 * m.grid.hour) <= 8, 'an hour and a half, less the gap');
-  assert.equal(a.meta.join(' '), 'תרגול · קב׳ 04/1');
-  assert.equal(b.meta.join(' '), 'הרצאה+תרגול · קב׳ 04');
+  assert.equal(a.meta.join(' '), 'תרגול · קב׳ 04/1');
+  assert.equal(b.meta.join(' '), 'הרצאה+תרגול · קב׳ 04');
   assert.deepEqual(c.meta, ['הרצאה'], 'a fixed lesson: the type alone');
   assert.equal(m.items.find((i) => i.time === '12:00–13:30') !== undefined, true);
   assert.ok(m.items.every((i) => i.kind === 'lesson' && inCol(m, i)));
@@ -139,4 +139,20 @@ test('a long student name is cut to the title width', () => {
   const m = shareModel(input({ name: 'א'.repeat(200) }), measure);
   assert.ok(measure(m.title) <= m.pos.right - m.pos.left);
   assert.ok(m.title.endsWith('…'));
+});
+
+test('fitLines: a word too wide for any line moves to the next line before it is cut', () => {
+  assert.deepEqual(fitLines('משוואות דיפרנציאליות', 120, 3, measure), ['משוואות', 'דיפרנציאל…']);
+});
+
+test('canvas fonts are all weight 400: WebKit draws a variable font at its default weight whatever the canvas asks, so bold is a stroke', async () => {
+  const { FONTS, BOLD } = await import('../web/share-image.js');
+  for (const [k, f] of Object.entries(FONTS)) assert.match(f, /^400 /, k);
+  assert.deepEqual(Object.keys(BOLD).sort(), ['day', 'name', 'title'], 'bold by role: the sub, legend and footer share a size with bold roles');
+  for (const r of Object.keys(BOLD)) assert.ok(r in FONTS && BOLD[r] > 0, r);
+});
+
+test('the group number never leaves "קב׳" on the line above it', () => {
+  const m = shareModel(input({ lessons: [L({ type: 'תרגול', group: '273011221/2' })] }), (s) => s.length * 14);
+  assert.ok(m.items[0].meta.some((l) => /קב׳ 21\/2/.test(l)), JSON.stringify(m.items[0].meta));
 });
