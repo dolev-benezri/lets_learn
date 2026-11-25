@@ -292,7 +292,7 @@ Stages 1 and 2 touch different files and can run in parallel. Stages 3-7 all edi
 
 ## Issues
 
-Published 2026-10-07 on `dolev-benezri/lets_learn` from `solver-audit/issues/drafts.md`. Each stage's commit ends with `Fixes #n`.
+Published 2026-10-07 on `lets-learn-il/lets-learn-il.github.io` from `solver-audit/issues/drafts.md`. Each stage's commit ends with `Fixes #n`.
 
 | Issue | Stage | Findings | Labels |
 |---|---|---|---|

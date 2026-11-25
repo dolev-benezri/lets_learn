@@ -4,7 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { STUDENT, PASSED, DONE, passFirstRun, gradeSheetPdf, launch, visit as visitIn } from './helpers.mjs';
+import { STUDENT, PASSED, DONE, SITE, passFirstRun, gradeSheetPdf, launch, visit as visitIn } from './helpers.mjs';
 import { TOUR_INTRO_A, TOUR_PLANS_A, TOUR_NEW_A } from '../../web/tour.js';
 
 let browser;
@@ -24,7 +24,7 @@ const twoGroups = async () =>
     .flatMap((c) => c.groups.map((g) => g.id))
     .slice(0, 2);
 // a link made in the page by the site's own share.js, as a friend's or the owner's browser would
-const makeLink = async (t, kind) => {
+const makeLink = async (t, kind, extra = {}) => {
   const page = await visit(t, 'phone', DONE);
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   const [G1] = await twoGroups();
@@ -34,7 +34,7 @@ const makeLink = async (t, kind) => {
       const base = location.origin + location.pathname;
       return k === 'friend' ? s.friendLink(base, st, g) : s.backupLink(base, st);
     },
-    [kind, { ...STUDENT, name: 'נועה' }, [G1]]
+    [kind, { ...STUDENT, name: 'נועה', ...extra }, [G1]]
   );
   return url.slice(url.indexOf('#'));
 };
@@ -87,6 +87,113 @@ test('a backup link runs after the terms and lands on the board', async (t) => {
   await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
   assert.equal(await page.locator('#panel').isVisible(), false, 'no tool is open over the restored board');
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).programSet), true, 'the backup is the state now');
+});
+
+// A backup link strips itself from the address at once, so a reload, a closed tab or a back before "המשך" must not lose it
+// (a student whose record is handed over from an old address meets the terms card first). It waits in storage until the restore.
+// the card is up and the link has left the address: what is reloaded or opened next has no #b=
+const linkRead = async (page) => {
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible', timeout: 30000 });
+  assert.doesNotMatch(await page.evaluate(() => location.hash), /^#b=/, 'the link is not in the address any more');
+};
+const restoredFromWaiting = async (page) => {
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible', timeout: 30000 });
+  await passFirstRun(page, { stopAfterStart: true });
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  const asked = await page.locator('dialog[open]').waitFor({ timeout: 3000 }).then(() => true, () => false);
+  assert.equal(asked, false, 'the empty state of the first visit is not something to keep: no "replace" question');
+  const st = await page.evaluate(() => ({ name: JSON.parse(localStorage.getItem('afeka-sched-v1')).name, waiting: localStorage.getItem('afeka-sched-v1-pending') }));
+  assert.equal(st.name, 'נועה', 'the backup is the state now');
+  assert.equal(st.waiting, null, 'and no longer waits');
+};
+
+test('a backup link that waits for the terms survives a reload', async (t) => {
+  const hash = await makeLink(t, 'backup');
+  const page = await visit(t, 'phone', null, hash);
+  await linkRead(page);
+  await page.reload();
+  await restoredFromWaiting(page);
+});
+
+test('a backup link that waits for the terms survives a closed tab', async (t) => {
+  const hash = await makeLink(t, 'backup');
+  const page = await visit(t, 'phone', null, hash);
+  await linkRead(page);
+  const context = page.context();
+  await page.close();
+  const tab = await context.newPage(); // visit()'s seeding is on the closed page: the storage it seeded stays, nothing is seeded again
+  const errors = [];
+  tab.on('pageerror', (e) => errors.push(e.message));
+  await tab.goto(SITE);
+  await restoredFromWaiting(tab);
+  assert.deepEqual(errors, [], 'a script error');
+});
+
+// A restore that fails for a reason that can pass (its program's data did not load) must not lose the only copy: the old address
+// hands a record over once. The next load runs it again; a program the site no longer has never comes back.
+const waitingNow = (page) => page.evaluate(() => localStorage.getItem('afeka-sched-v1-pending'));
+test('a waiting backup whose data did not load comes back on the next load', async (t) => {
+  const hash = await makeLink(t, 'backup', { startYear: 2025 }); // another cohort: the restore loads its data first
+  const page = await visit(t, 'phone', null, hash);
+  await linkRead(page);
+  assert.notEqual(await waitingNow(page), null, 'it waits for the terms');
+  await page.route('**/data/afeka/2027-*/30-2025.json', (r) => r.abort());
+  await passFirstRun(page); // not restored: the pass goes on with the track and year picked
+  assert.notEqual(await waitingNow(page), null, 'the backup still waits');
+  await page.unroute('**/data/afeka/2027-*/30-2025.json');
+  await page.reload();
+  // the pass saved the track and year picked, and more may have been entered since: the student is asked first
+  await page.locator('dialog[open]').getByRole('button', { name: 'שחזר גיבוי' }).click({ timeout: 30000 });
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1'))?.name === 'נועה', null, { timeout: 30000 });
+  assert.equal(await waitingNow(page), null, 'restored: it waits no more');
+});
+
+test('a waiting backup that came back while the first-run card was still open ends the pass, with no question', async (t) => {
+  const hash = await makeLink(t, 'backup', { startYear: 2025 });
+  const page = await visit(t, 'phone', null, hash);
+  await linkRead(page);
+  const DATA = '**/data/afeka/2027-*/30-{2025,2026}.json'; // the backup's cohort and the one picked on the card: neither loads
+  await page.route(DATA, (r) => r.abort());
+  await passFirstRun(page, { stopAfterStart: true });
+  // the terms are taken first, then the backup is tried: once it failed, it waits again
+  await page.waitForFunction(() => localStorage.getItem('afeka-sched-v1-terms') && localStorage.getItem('afeka-sched-v1-pending'), null, { timeout: 30000 });
+  assert.equal(await page.locator('#firstRun').isVisible(), true, 'the card is still up: the track picked did not load either');
+  await page.unroute(DATA);
+  await page.reload();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1'))?.name === 'נועה', null, { timeout: 30000 });
+  assert.equal(await page.locator('dialog[open]').count(), 0, 'nothing of the student\'s own to ask about');
+  await page.locator('#firstRun').waitFor({ state: 'hidden', timeout: 30000 });
+  const st = await page.evaluate(() => ({ y: JSON.parse(localStorage.getItem('afeka-sched-v1')).startYear, w: localStorage.getItem('afeka-sched-v1-pending') }));
+  assert.deepEqual(st, { y: 2025, w: null }, 'the record as it was handed over, and nothing waits');
+});
+
+test('a waiting backup whose data answered with an error page or a login page (a captive Wi-Fi) still waits', async (t) => {
+  for (const answer of [{ status: 503, body: '' }, { status: 200, contentType: 'text/html', body: '<p>Sign in to the Wi-Fi</p>' }]) {
+    const hash = await makeLink(t, 'backup', { startYear: 2025 });
+    const page = await visit(t, 'phone', null, hash);
+    await linkRead(page);
+    await page.route('**/data/afeka/2027-*/30-2025.json', (r) => r.fulfill(answer));
+    await passFirstRun(page);
+    assert.notEqual(await waitingNow(page), null, `${answer.status}: it waits for the next load`);
+  }
+});
+
+test('a waiting backup whose data file is missing is dropped: that will not pass', async (t) => {
+  const hash = await makeLink(t, 'backup', { startYear: 2025 });
+  const page = await visit(t, 'phone', null, hash);
+  await linkRead(page);
+  await page.route('**/data/afeka/2027-*/30-2025.json', (r) => r.fulfill({ status: 404, body: '' }));
+  await passFirstRun(page);
+  assert.equal(await waitingNow(page), null);
+});
+
+test('a waiting backup of a program the site lacks is dropped, not tried at every load', async (t) => {
+  const hash = await makeLink(t, 'backup', { program: 9999 });
+  const page = await visit(t, 'phone', null, hash);
+  await linkRead(page);
+  assert.notEqual(await waitingNow(page), null, 'it waited for the terms');
+  await passFirstRun(page);
+  assert.equal(await waitingNow(page), null);
 });
 
 test('an empty #f= and an empty #b= do nothing and break nothing', async (t) => {

@@ -233,4 +233,4 @@ test('scripts/exams-2027.json: every row is one the build and validate accept', 
 - [ ] **5.2: commit** `ci: remove the one-off cache seed step`
 - [ ] **5.3:** סבב תיקונים עם Codex על כל הענף, `npm test` ו-`npm run check:real`, ומיזוג ל-`main`.
 - [ ] **5.4: בלילה שאחרי:** קריאה אחת של הריצה ושל ה-deploy (ללא polling). בלוג: המטמון נטען (`Successfully extracted cache`, לא `Failed to extract cache`), והריצה הצליחה. `git show origin/main:web/data/afeka/2027-1/30-2026.json` מכיל `examsPublished: true`, והאתר החי מציג מועדים. עדכון הזיכרון ו-`NOTES.md`.
-- [ ] **5.5: מחיקה בלתי הפיכה, רק אחרי ש-5.4 עבר:** `gh release delete cache-seed --cleanup-tag --yes -R dolev-benezri/lets_learn`. נבדק מראש: release אחד בשם "cache-seed (one-off, delete after 1.11)", קובץ של 2 MB. שמירה עד אחרי 5.4 עולה כלום: אחרי 5.1 אף אחד לא מוריד אותו.
+- [ ] **5.5: מחיקה בלתי הפיכה, רק אחרי ש-5.4 עבר:** `gh release delete cache-seed --cleanup-tag --yes -R lets-learn-il/lets-learn-il.github.io`. נבדק מראש: release אחד בשם "cache-seed (one-off, delete after 1.11)", קובץ של 2 MB. שמירה עד אחרי 5.4 עולה כלום: אחרי 5.1 אף אחד לא מוריד אותו.

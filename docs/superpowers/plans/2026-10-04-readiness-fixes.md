@@ -57,7 +57,7 @@
 
 **Files:** Modify `web/index.html`, add `web/og.png` (1200×630). Test `test/app.test.mjs`.
 
-- [ ] Test `index.html has a description and og/twitter tags with an absolute og:image that exists`: `meta name="description"`, `og:title`, `og:description`, `og:type`, `og:url`, `og:image` = `https://dolev-benezri.github.io/lets_learn/og.png`, `twitter:card` = `summary_large_image`; `web/og.png` exists. Fail first.
+- [ ] Test `index.html has a description and og/twitter tags with an absolute og:image that exists`: `meta name="description"`, `og:title`, `og:description`, `og:type`, `og:url`, `og:image` = `https://lets-learn-il.github.io/og.png`, `twitter:card` = `summary_large_image`; `web/og.png` exists. Fail first.
 - [ ] Tags in `index.html`; description: `כלי עזר לא רשמי לבניית מערכת שעות באפקה: חלופות בלי התנגשויות, חברים, דרישות קדם וייצוא ליומן.`
 - [ ] `og.png`: drawn on a canvas in the browser (site colors, title, the description), saved from its data URL.
 - [ ] Commit `feat(M1): link preview tags and image`.

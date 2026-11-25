@@ -4,7 +4,7 @@
 //   node scripts/check-fresh.mjs [hours]   default 48; 0 fails on purpose, to test the mail
 import { pathToFileURL } from 'node:url';
 
-export const STATUS_URL = 'https://dolev-benezri.github.io/lets_learn/data/afeka/status.json';
+export const STATUS_URL = 'https://lets-learn-il.github.io/data/afeka/status.json';
 const HOUR = 36e5,
   CLOCK_SLACK = HOUR; // the runner's clock and the scraper's may differ a little
 

@@ -59,7 +59,7 @@ test('request: polite headers, timeout signal, jittered delay before each reques
   await request('a=2');
   assert.equal(
     calls[0].init.headers['User-Agent'],
-    'afeka-scheduler/1.1 (+https://github.com/dolev-benezri/lets_learn)'
+    'afeka-scheduler/1.1 (+https://github.com/lets-learn-il/lets-learn-il.github.io)'
   );
   assert.ok(calls[0].init.signal instanceof AbortSignal);
   assert.deepEqual(sleeps, [2500, 2500]);

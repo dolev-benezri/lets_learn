@@ -27,7 +27,7 @@ import {
 
 // scripts/programs.json: per program the list codes, department, specializations (hand-maintained, docs/research-degree-rules.md 5.2), degree credits and the anchor course validate() demands.
 const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
-const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/dolev-benezri/lets_learn)';
+const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/lets-learn-il/lets-learn-il.github.io)';
 const SEMESTER_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
 // Answers fetched in one nightly run: the site allows ~400 an hour, and the 2 session requests and a few retries fit in the rest, so a night never waits

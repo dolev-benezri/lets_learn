@@ -2,14 +2,14 @@
 
 מצאתם חולשת אבטחה באתר או בקוד? דווחו עליה בפרטיות, לא ב-Issue פומבי:
 בעמוד הפרויקט ב-GitHub, **Security ← Report a vulnerability**
-([קישור ישיר](https://github.com/dolev-benezri/lets_learn/security/advisories/new)).
+([קישור ישיר](https://github.com/lets-learn-il/lets-learn-il.github.io/security/advisories/new)).
 
 - הדיווח גלוי רק לכם ולמתחזק הפרויקט.
 - כדאי לצרף מה מצאתם, איך משחזרים ומה ההשפעה.
 
 ## מה בתחום
 
-- האתר: https://dolev-benezri.github.io/lets_learn/
+- האתר: https://lets-learn-il.github.io/
 - הקוד בריפו הזה והתהליכים האוטומטיים שלו.
 
 לא בתחום: האתרים של מכללת אפקה (הידיעון, אפקה-נט). על אלה מדווחים ישירות למכללה.

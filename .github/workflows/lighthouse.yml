@@ -33,7 +33,7 @@ jobs:
               --only-categories=performance,accessibility,best-practices,seo --output=json --output-path="./lh-$form.json"
           done
         env:
-          URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+          URL: https://${{ github.event.repository.name }}/ # an organization site: the repo is named after its host
       - name: Scores in the summary
         run: |
           node -e '

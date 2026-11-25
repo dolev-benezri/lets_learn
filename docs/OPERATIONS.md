@@ -15,7 +15,7 @@
 - **מדיניות האבטחה (CSP) כתובה בתוך ה-HTML** (תג `<meta http-equiv="Content-Security-Policy">` ב-`index.html` וב-`legal.html`), ולכן אין צורך להגדיר כותרות בשרת. פירוט ב-[SECURITY](SECURITY.md).
 - **מעבר לכתובת אחרת:**
   - מחליפים את הכתובת הקבועה ב-`web/index.html` (`og:url` ו-`og:image`, שורות 18 ו-21) ואת קישורי ה-issues ב-`web/index.html` וב-`web/legal.html`. בקבצי `web/*.js` הנתיבים יחסיים.
-  - הבדיקה [test/app.test.mjs:164](../test/app.test.mjs) מקודדת את `https://dolev-benezri.github.io/lets_learn/og.png`. מעדכנים גם אותה, אחרת `npm test` והפריסה נכשלים.
+  - הבדיקה [test/app.test.mjs:164](../test/app.test.mjs) מקודדת את `https://lets-learn-il.github.io/og.png`. מעדכנים גם אותה, אחרת `npm test` והפריסה נכשלים.
   - הכתובת הישנה מופיעה גם ב-`README.md`, ב-`TERMS.md` וב-[.github/ISSUE_TEMPLATE/config.yml:4](../.github/ISSUE_TEMPLATE/config.yml).
   - ב-[scripts/check-fresh.mjs:7](../scripts/check-fresh.mjs) הכתובת קבועה. בלי לעדכן אותה, בדיקת הדופק ממשיכה לבדוק את הכתובת הישנה.
   - העברת הריפו לחשבון אחר משנה גם את כתובת ה-clone של הריצה הלילית ([ci/gitlab-scrape.yml](../ci/gitlab-scrape.yml)) וגם את ה-`include` בפרויקט בגיטלאב, ודומיין לא פותר את זה.
@@ -152,13 +152,13 @@
 
 ## למי פונים
 
-תקלה באתר או בנתונים: [issues בריפו](https://github.com/dolev-benezri/lets_learn/issues/new/choose). אבטחה: [SECURITY](SECURITY.md). שאלות על התפעול, ההעברה והסמכויות: `<כתובת התמיכה>`.
+תקלה באתר או בנתונים: [issues בריפו](https://github.com/lets-learn-il/lets-learn-il.github.io/issues/new/choose). אבטחה: [SECURITY](SECURITY.md). שאלות על התפעול, ההעברה והסמכויות: `<כתובת התמיכה>`.
 
 ## הריצה הלילית
 
 **הריצה הלילית הראשונה:** המטמון של GitLab ריק בהתחלה, ומשיכה מלאה ארוכה מריצה אחת. `timeout 160m` עוצר את הסורק לפני ש-GitLab הורג את ה-job, המטמון נשמר (`when: always`), והריצה נחשבת חלקית: ירוקה, בלי commit. הריצה הבאה ממשיכה מהמטמון, ולכן משיכה ראשונה לוקחת 2-3 לילות. הריצה החלקית הרביעית ברצף נכשלת, כדי שסריקה תקועה תשלח מייל.
 
-**דקות CI:** בחשבון החינמי של GitLab יש לקבוצה 400 דקות CI בחודש, גם לפרויקט ציבורי (מקדם 1; רק תוכנית GitLab for Open Source מורידה ל-0.5). ההשהיה בין בקשות נספרת כזמן ריצה. משיכת כל הקבוצות בכל לילה לקחה כ-20 דקות, כלומר כ-600 בחודש, ולכן כל קורס נמשך פעם בשני לילות. ההערכה ללילה רגיל (מ-5.11.2026, לא מדידה) היא 270-314 בקשות, כ-13-15 דקות, כ-380-440 בחודש, סביב המכסה. לילות שמשלימים פיגור ארוכים יותר (כ-17-19 דקות), כי הם מושכים גם עד 160 דפים ישנים. ההחלטה על קניית דקות: [#46](https://github.com/dolev-benezri/lets_learn/issues/46). הקבוצות באתר בנות יום או יומיים לכל היותר. הפרויקט `lets_learn-group/lets_learn-scrape` ציבורי, ולכן לוגי הריצות גלויים: הטוקן לא מודפס בהם, ומשתני ה-CI נשארים סודיים.
+**דקות CI:** בחשבון החינמי של GitLab יש לקבוצה 400 דקות CI בחודש, גם לפרויקט ציבורי (מקדם 1; רק תוכנית GitLab for Open Source מורידה ל-0.5). ההשהיה בין בקשות נספרת כזמן ריצה. משיכת כל הקבוצות בכל לילה לקחה כ-20 דקות, כלומר כ-600 בחודש, ולכן כל קורס נמשך פעם בשני לילות. ההערכה ללילה רגיל (מ-5.11.2026, לא מדידה) היא 270-314 בקשות, כ-13-15 דקות, כ-380-440 בחודש, סביב המכסה. לילות שמשלימים פיגור ארוכים יותר (כ-17-19 דקות), כי הם מושכים גם עד 160 דפים ישנים. ההחלטה על קניית דקות: [#46](https://github.com/lets-learn-il/lets-learn-il.github.io/issues/46). הקבוצות באתר בנות יום או יומיים לכל היותר. הפרויקט `lets_learn-group/lets_learn-scrape` ציבורי, ולכן לוגי הריצות גלויים: הטוקן לא מודפס בהם, ומשתני ה-CI נשארים סודיים.
 
 **שמירה על הלילה:** `.github/workflows/freshness.yml` קורא כל בוקר ב-05:41 UTC את `status.json` מהאתר החי, ונכשל אם `checkedAt` ישן מ-48 שעות, חסר או לא קריא. כך מגלים לילה שלא נכתב, מכסה שנגמרה ופריסה שנכשלה, אחרי כיומיים. זו בדיקת דופק ולא הוכחה שכל הקבצים טריים: `checkedAt` הוא חותמת אחת, והקבוצות מתעדכנות בקצב משלהן. GitHub שולח מייל על כישלון למי שערך אחרון את שורת ה-cron, אם התראות Actions פעילות בחשבון שלו. כדי לבדוק שהמייל מגיע, מריצים את ה-workflow ידנית עם `hours=0`. המגבלות: GitHub יכול לעכב ריצה מתוזמנת או לדלג עליה, הוא מכבה לוח זמנים אחרי 60 יום בלי פעילות בריפו, ותקלה ב-GitHub עצמו לא תדווח.
 
@@ -169,7 +169,7 @@
 הסריקה דוחפת ל-GitHub עם טוקן fine-grained שיש לו תאריך תפוגה. ה-job `token-expiry` ב-[ci/gitlab-scrape.yml](../ci/gitlab-scrape.yml) נכשל, ושולח מייל, כשנשארים פחות מ-14 יום, וגם כש-GitHub דוחה את הטוקן (פג או בוטל). הסריקה עצמה ממשיכה לרוץ. כדי לחדש:
 
 1. ב-GitHub: Settings → Developer settings → Fine-grained tokens → Generate new token.
-2. Repository access: רק `dolev-benezri/lets_learn`. Permissions: Contents, Read and write. לבחור תאריך תפוגה.
+2. Resource owner: הארגון `lets-learn-il` (לא החשבון האישי). Repository access: רק `lets-learn-il/lets-learn-il.github.io`. Permissions: Contents, Read and write. לבחור תאריך תפוגה.
 3. ב-GitLab, בפרויקט `lets_learn-scrape`: Settings → CI/CD → Variables → `GH_PUSH_TOKEN` → להדביק את הטוקן החדש (Masked and hidden, Protected).
 4. Build → Pipeline schedules → ▶ כדי להריץ פעם אחת. ב-log של `token-expiry` מופיע התאריך החדש.
 5. למחוק ב-GitHub את הטוקן הישן.

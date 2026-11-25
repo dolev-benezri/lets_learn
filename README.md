@@ -8,10 +8,10 @@
 
 **בוחרים קורסים ומקבלים מערכות שעות מוכנות בלי חפיפות, לפי התקנון וההתקדמות האישית. מי שכבר יש לו מערכת יכול לבקש הצעות לשנות רק חלק ממנה.**
 
-**[לפתיחת האתר ←](https://dolev-benezri.github.io/lets_learn/)**
+**[לפתיחת האתר ←](https://lets-learn-il.github.io/)**
 
-[![tests](https://img.shields.io/github/actions/workflow/status/dolev-benezri/lets_learn/deploy.yml?label=tests)](https://github.com/dolev-benezri/lets_learn/actions/workflows/deploy.yml)
-[![data updated](https://img.shields.io/github/last-commit/dolev-benezri/lets_learn?path=web%2Fdata%2Fafeka%2Fstatus.json&label=data%20updated)](https://dolev-benezri.github.io/lets_learn/)
+[![tests](https://img.shields.io/github/actions/workflow/status/lets-learn-il/lets-learn-il.github.io/deploy.yml?label=tests)](https://github.com/lets-learn-il/lets-learn-il.github.io/actions/workflows/deploy.yml)
+[![data updated](https://img.shields.io/github/last-commit/lets-learn-il/lets-learn-il.github.io?path=web%2Fdata%2Fafeka%2Fstatus.json&label=data%20updated)](https://lets-learn-il.github.io/)
 
 <picture>
   <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: dark)" srcset="docs/media/02-week-phone-dark.webp?v=20261124">
@@ -22,7 +22,7 @@
 
 </div>
 
-> **כלי לא רשמי, ללא קשר למכללת אפקה.** הנתונים מהידיעון הציבורי ועלולים להיות שגויים או לא מעודכנים, וההרשמה באפקה-נט היא הקובעת. [תנאי שימוש ופרטיות](https://dolev-benezri.github.io/lets_learn/legal.html)
+> **כלי לא רשמי, ללא קשר למכללת אפקה.** הנתונים מהידיעון הציבורי ועלולים להיות שגויים או לא מעודכנים, וההרשמה באפקה-נט היא הקובעת. [תנאי שימוש ופרטיות](https://lets-learn-il.github.io/legal.html)
 
 ## מה הכלי עושה
 
@@ -58,7 +58,7 @@
 
 ## מצב הפרויקט
 
-האתר פעיל ופתוח לכולם. הוא נבנה ומתוחזק בידי סטודנט אחד, ואינו שירות של המכללה. עדיין לא נערך ניסוי מסודר עם סטודנטים, והכללים לא אושרו על ידי המחלקות. [הצהרת הנגישות](https://dolev-benezri.github.io/lets_learn/legal.html#accessibility) היא טיוטה שלא נבדקה בידי מורשה נגישות.
+האתר פעיל ופתוח לכולם. הוא נבנה ומתוחזק בידי סטודנט אחד, ואינו שירות של המכללה. עדיין לא נערך ניסוי מסודר עם סטודנטים, והכללים לא אושרו על ידי המחלקות. [הצהרת הנגישות](https://lets-learn-il.github.io/legal.html#accessibility) היא טיוטה שלא נבדקה בידי מורשה נגישות.
 
 מחלקה יכולה לבדוק מה הכלי קורא בכללים שלה: `npm run report:rules` מפיק דף להדפסה ולחתימה לכל תוכנית ומחזור, ו-`npm run report:conflicts` דף של הסתירות הפתוחות. [הסבר](docs/OPERATIONS.md#בדיקות-ודוחות)
 
@@ -78,7 +78,7 @@
 
 הפירוט והקישורים לתוכניות הלימודים: [COVERAGE](docs/COVERAGE.md). שיפור מערכת קיימת עובד על סמסטר אחד בכל פעם.
 
-**דפדפנים:** היעד הוא Chrome ו-Firefox עדכניים, ו-Safari ב-iOS 17.6.1 ומעלה. הבדיקה בטלפון אמיתי עוד פתוחה ([#48](https://github.com/dolev-benezri/lets_learn/issues/48)). אם ייבוא מ-PDF לא עובד, הזנה ידנית תמיד זמינה.
+**דפדפנים:** היעד הוא Chrome ו-Firefox עדכניים, ו-Safari ב-iOS 17.6.1 ומעלה. הבדיקה בטלפון אמיתי עוד פתוחה ([#48](https://github.com/lets-learn-il/lets-learn-il.github.io/issues/48)). אם ייבוא מ-PDF לא עובד, הזנה ידנית תמיד זמינה.
 
 ## נתונים, פרטיות ואבטחה
 
@@ -95,7 +95,7 @@
 - מה שהסטודנט מזין נשמר רק בדפדפן שלו. אלינו מגיע רק דיווח שהוא בוחר לשלוח במייל.
 - קבצים שמעלים (גיליון הציונים, קובץ האקסל מאפקה-נט, מערכת של חבר) נקראים בדפדפן בלבד ולא נשלחים לשום מקום. מספר תעודת הזהות ששמור במאפייני קובץ האקסל לא נקרא בכלל.
 - קישור גיבוי או קישור לחבר כולל את הנתונים בכתובת עצמה, ולכן שולחים אותו רק למי שרוצים.
-- הפירוט: [אבטחה ופרטיות](docs/SECURITY.md) · [תפעול](docs/OPERATIONS.md) · [תנאי שימוש ופרטיות](https://dolev-benezri.github.io/lets_learn/legal.html)
+- הפירוט: [אבטחה ופרטיות](docs/SECURITY.md) · [תפעול](docs/OPERATIONS.md) · [תנאי שימוש ופרטיות](https://lets-learn-il.github.io/legal.html)
 
 **בדיקות**
 
@@ -144,7 +144,7 @@
 <details>
 <summary>מצאתי טעות, או שאני רוצה שיוסר מידע. מה עושים?</summary>
 
-כותבים ל-letslearn.schedule@gmail.com, או [פותחים פנייה ב-GitHub](https://github.com/dolev-benezri/lets_learn/issues/new/choose) (צריך חשבון, והיא גלויה לכולם). בינתיים ההרשמה באפקה-נט היא הקובעת.
+כותבים ל-letslearn.schedule@gmail.com, או [פותחים פנייה ב-GitHub](https://github.com/lets-learn-il/lets-learn-il.github.io/issues/new/choose) (צריך חשבון, והיא גלויה לכולם). בינתיים ההרשמה באפקה-נט היא הקובעת.
 
 </details>
 

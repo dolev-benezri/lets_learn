@@ -7,8 +7,8 @@
 דרישות: Node.js 22 ומעלה (נבדק על 24) ו-Git. אין שלב build, האתר הוא קבצים סטטיים.
 
 ```bash
-git clone https://github.com/dolev-benezri/lets_learn.git
-cd lets_learn
+git clone https://github.com/lets-learn-il/lets-learn-il.github.io.git
+cd lets-learn-il.github.io
 npm ci
 npx http-server web -p 8080 -c-1
 ```
@@ -112,7 +112,7 @@ node scripts/pull-exams.mjs
 
 אין `--help`: דגל לא מוכר גורם לשגיאה.
 
-**נימוס כלפי האתר:** בקשה אחת בכל פעם, וההגבלה של האתר היא כ-400 בקשות בשעה. משיכה ראשונה של כל התוכניות היא כ-1,800 בקשות, ולכן היא נמשכת כמה שעות, וכל תשובה נשמרת במטמון. אחר כך הריצה הלילית היא כ-250 בקשות (חצי מהקבוצות, הבחינות וחלק מהשבועיות). ה-User-Agent הוא `afeka-scheduler/1.1 (+https://github.com/dolev-benezri/lets_learn)`. שלוש דחיות ברצף עוצרות את הריצה, `Retry-After` מכובד, ואז שום קובץ לא נכתב. פרטים ב-[התנאים](https://dolev-benezri.github.io/lets_learn/legal.html).
+**נימוס כלפי האתר:** בקשה אחת בכל פעם, וההגבלה של האתר היא כ-400 בקשות בשעה. משיכה ראשונה של כל התוכניות היא כ-1,800 בקשות, ולכן היא נמשכת כמה שעות, וכל תשובה נשמרת במטמון. אחר כך הריצה הלילית היא כ-250 בקשות (חצי מהקבוצות, הבחינות וחלק מהשבועיות). ה-User-Agent הוא `afeka-scheduler/1.1 (+https://github.com/lets-learn-il/lets-learn-il.github.io)`. שלוש דחיות ברצף עוצרות את הריצה, `Retry-After` מכובד, ואז שום קובץ לא נכתב. פרטים ב-[התנאים](https://lets-learn-il.github.io/legal.html).
 
 תפעול שוטף (ריצה לילית, טוקן, שנה חדשה, תוכנית חדשה): [OPERATIONS](OPERATIONS.md). מבנה הקוד: [ARCHITECTURE](ARCHITECTURE.md).
 

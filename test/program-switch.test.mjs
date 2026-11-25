@@ -626,7 +626,7 @@ test('load keeps a dropped cohort aside; a backup is refused while the catalog i
     { v: 1, program: 30, startYear: 2026, name: 'מגובה' }
   ]) {
     app.hashError = null;
-    assert.equal(await restoreBackup(b), false, `${b.program}: no restore while the catalog is missing`);
+    assert.equal(await restoreBackup(b), null, `${b.program}: no restore while the catalog is missing, a failure that can pass (null)`);
     assert.match(app.hashError, /רשימת התוכניות לא נטענה/, 'not "the program is not on the site"');
   }
   save();

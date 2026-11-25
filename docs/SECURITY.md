@@ -10,7 +10,7 @@
 
 ## מה נשמר בדפדפן ואיך מוחקים
 
-הכול ב-`localStorage`, תחת מפתחות שמתחילים ב-`afeka-sched-v1`. `localStorage` משותף לכל האתרים שתחת `dolev-benezri.github.io`, ולכן אתר Pages נוסף בחשבון הזה היה יכול לקרוא אותו. נבדק ב-4.11.2026: זה האתר היחיד בחשבון, ולא מוסיפים שם אתר נוסף.
+הכול ב-`localStorage`, תחת מפתחות שמתחילים ב-`afeka-sched-v1`. `localStorage` משותף לכל האתרים שתחת `lets-learn-il.github.io`, ולכן אתר Pages נוסף בארגון `lets-learn-il` היה יכול לקרוא אותו. זה האתר היחיד בארגון, ולא מוסיפים בו אתר נוסף.
 
 | מפתח | מה בו |
 |---|---|
@@ -21,6 +21,7 @@
 | `afeka-sched-v1-theme` | בחירת ערכת צבעים ([web/theme.js](../web/theme.js)) |
 | `afeka-sched-v1-tour`, `-onboarded`, `-entry` | אילו חלקים בסיור כבר הוצגו, והאם הסטודנט עבר את המסך הראשון ([web/tour.js](../web/tour.js), [web/ui-common.js](../web/ui-common.js)) |
 | `afeka-sched-v1-terms` | גרסת תנאי השימוש שהסטודנט אישר (`TERMS_VERSION`) |
+| `afeka-sched-v1-pending` | קישור גיבוי שנפתח לפני אישור התנאים: הקישור עצמו, והאם היה מצב שמור לפני הביקור. "המשך" מוחק אותו כשהגיבוי שוחזר או נדחה, או כשאי אפשר לשחזר אותו (התוכנית לא קיימת באתר, או שקובץ הנתונים שלה חסר). אם הנתונים לא הגיעו בגלל הרשת, הוא נשאר, וטעינה הבאה של הדף מנסה שוב ומוחקת אותו באותם תנאים (`WAITING` ב-[web/app.js](../web/app.js)) |
 
 **מחיקה:** הכפתור "מחק את כל הנתונים שלי" ב"המצב שלי" (`ACT.eraseAll` ב-[web/ui-actions.js](../web/ui-actions.js)) מוחק כל מפתח שמתחיל ב-`afeka-sched-v1` (`clearSaved` ב-[web/app.js](../web/app.js)). אפשר גם לנקות נתוני אתר בהגדרות הדפדפן. כשאין אחסון (גלישה פרטית, חסום) האתר עובד לביקור הנוכחי בלבד.
 
@@ -82,7 +83,7 @@ style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri '
 
 ## דיווח על פגיעות
 
-- ב-[issues של הריפו](https://github.com/dolev-benezri/lets_learn/issues/new/choose), אם אין בדיווח פרטים שמסכנים משתמשים.
+- ב-[issues של הריפו](https://github.com/lets-learn-il/lets-learn-il.github.io/issues/new/choose), אם אין בדיווח פרטים שמסכנים משתמשים.
 - דיווח רגיש: בלשונית Security של הריפו, "Report a vulnerability", **אם האפשרות מופעלת** (`private vulnerability reporting`; לא נבדק מתוך הקוד, אין לו קובץ ב-`.github/`).
 - אחרת: letslearn.schedule@gmail.com.
 
