@@ -285,7 +285,7 @@ function reviewRow(row, ranked, courses) {
   if (!top) confidence = 'none';
   else if (ranked[1]?.[1] === ranked[0][1]) confidence = 'tie';
   // a code read one digit off and corrected (codeOf) is a guess: only the code as printed counts as exact
-  else if (row.via === 'code' && digits(row.code ?? '') === row.cid && exact(top)) confidence = 'sure';
+  else if (row.via === 'code' && digits(row.code ?? '') === row.cid && row.meets.length === top.meetings.length && exact(top)) confidence = 'sure';
   // the yedion's file prints codes exactly, but hides a lesson that starts in the same hour as another: sure only with every meeting
   // seen, and not when the cell names another candidate's lecturer instead of this group's
   else if (row.via === 'xlsx' && row.meets.length === top.meetings.length && exact(top) &&

@@ -892,7 +892,11 @@ export async function applyHash() {
     linkError = h.error ?? null;
   }
   if (h?.type === 'backup') {
-    if (app.termsOk()) keep = await runBackup(h.payload);
+    if (app.termsOk()) {
+      restoredOk = false;
+      keep = await runBackup(h.payload);
+      if (restoredOk) app.restoredRecord();
+    }
     else {
       // a link that already waits knows better whether a state was saved: this visit's own first save came after it
       const before = app.pendingBackup ? null : await waiting();

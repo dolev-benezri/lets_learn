@@ -595,6 +595,77 @@ const EDIT_STATE = {
   ]
 };
 EDIT_STATE.baseline = EDIT_STATE.original;
+
+// The luminance/ratio calculation from design-contrast.test.mjs, applied to computed colours.
+const contrast = (a, b) => {
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.match(/[\d.]+/g).slice(0, 3).map(Number).map((c) => c / 255)
+      .map((c) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+
+test("the course search field's border meets 3:1 in both themes", async (t) => {
+  for (const scheme of ['light', 'dark']) await t.test(scheme, async (t) => {
+    const seed = { ...DONE, 'afeka-sched-v1-edit': JSON.stringify(EDIT_STATE) };
+    const page = await visit(t, 'desktop', seed, '#edit/changes', scheme);
+    await page.locator('[data-ed="openSearch"]').click({ timeout: 30000 });
+    const input = page.locator('.cs-field input');
+    await input.waitFor({ state: 'visible' });
+    // Move focus away so a focus ring cannot stand in for the resting border.
+    await page.locator('[data-ed="closeSearch"]').focus();
+    const colours = await input.evaluate((el) => {
+      const s = getComputedStyle(el);
+      let behind = el.parentElement;
+      while (behind && ['transparent', 'rgba(0, 0, 0, 0)'].includes(getComputedStyle(behind).backgroundColor)) behind = behind.parentElement;
+      return { border: s.borderTopColor, width: parseFloat(s.borderTopWidth), style: s.borderTopStyle,
+        inside: s.backgroundColor, outside: behind ? getComputedStyle(behind).backgroundColor : 'rgb(255, 255, 255)' };
+    });
+    assert.ok(colours.width > 0 && colours.style !== 'none', `${scheme}: a visible border`);
+    for (const [side, bg] of [['inside', colours.inside], ['outside', colours.outside]]) {
+      const ratio = contrast(colours.border, bg);
+      assert.ok(ratio >= 3, `${scheme}: border against ${side} is ${ratio.toFixed(2)}:1 (${colours.border} on ${bg}), needs 3:1`);
+    }
+  });
+});
+
+test('a focused clashing lesson shows the focus ring and keeps its clash mark', async (t) => {
+  for (const scheme of ['light', 'dark']) await t.test(scheme, async (t) => {
+    const lessons = [EDIT_STATE.original[0], { ...EDIT_STATE.original[1], group: '273011202', day: 4, start: '14:00', end: '15:50' }];
+    const seed = { ...DONE, 'afeka-sched-v1-edit': JSON.stringify({ ...EDIT_STATE, original: lessons, baseline: lessons, movable: [], goal: {} }) };
+    const page = await visit(t, 'desktop', seed, '#edit/changes', scheme);
+    const lesson = page.locator('#editWeek .blk.clash').first();
+    await lesson.waitFor({ timeout: 30000 });
+    assert.ok(await page.locator('#editWeek .blk.clash').count() >= 2, 'two lessons really overlap');
+    await lesson.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    const ring = await lesson.evaluate((el) => {
+      const colour = (token) => {
+        const probe = document.createElement('span');
+        probe.style.color = `var(${token})`;
+        el.append(probe);
+        const value = getComputedStyle(probe).color;
+        probe.remove();
+        return value;
+      };
+      const s = getComputedStyle(el);
+      return { focused: el === document.activeElement && el.matches(':focus-visible'), outline: s.outlineColor,
+        offset: s.outlineOffset, width: s.outlineWidth, style: s.outlineStyle, shadow: s.boxShadow,
+        primary: colour('--primary'), danger: colour('--danger'), clash: el.classList.contains('clash') };
+    });
+    assert.equal(ring.focused, true, `${scheme}: Tab reached the clashing lesson`);
+    assert.equal(ring.outline, ring.primary, `${scheme}: focus uses --primary`);
+    assert.equal(ring.offset, '2px', `${scheme}: the focus ring sits outside`);
+    assert.equal(ring.width, '2px');
+    assert.equal(ring.style, 'solid');
+    assert.ok(ring.shadow.includes(ring.danger) && ring.shadow.includes('inset'), `${scheme}: the inset clash mark keeps --danger (${ring.shadow})`);
+    assert.equal(ring.clash, true, 'focus keeps the clash class');
+  });
+});
+
 for (const scheme of ['light', 'dark'])
   test(`${scheme}: the edit page in the frame (both screens) at 320, 375 and 1280: axe, no sideways scroll, the tabs and the menu are targets`, async (t) => {
     const { check, done, note } = checker(scheme);

@@ -57,7 +57,9 @@ function draftOf(d) {
     if (v !== undefined && strOrNull(v, 40)) choices[rows.length] = v;
     rows.push(r);
   });
-  return { rows, choices, registered: d.registered === true, sem: SEMS.includes(d.sem) ? d.sem : null };
+  // Missing on older drafts: keep their saved-baseline-first preview behavior.
+  return { rows, choices, registered: d.registered === true, sem: SEMS.includes(d.sem) ? d.sem : null,
+    ...(typeof d.committed === 'boolean' ? { committed: d.committed } : {}) };
 }
 
 export function normalizeEdit(raw) {
