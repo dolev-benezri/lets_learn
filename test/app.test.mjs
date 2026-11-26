@@ -529,6 +529,14 @@ test('the nightly trial on GitHub only reads: the same scrape as GitLab, its cac
     'a re-run of a night saves under its own key: a key that exists already is not saved again'
   );
   assert.match(y, /'HTTP \[0-9\]\*, retrying'/, 'the report counts 429 and 5xx answers, the plainest sign of a block');
+  assert.match(y, /\} \| tee -a "\$GITHUB_STEP_SUMMARY"\n/, 'the report also lands in the job log: gh can read the job log but not the step summary');
+  assert.doesNotMatch(y, />> "\$GITHUB_STEP_SUMMARY"/);
+  assert.match(y, /\$\{s:-no summary: the scrape stopped before its end\}/, 'a cut night leaves summary.txt empty, not missing');
+  assert.match(
+    y,
+    /git diff --cached -- web\/data\/afeka ':\(exclude\)web\/data\/afeka\/status\.json' \| head -n 300 \|\| true\n/,
+    'what differs, capped, without status.json (it changes every night); never fails the job'
+  );
 });
 
 test('normalize takes the academic year from the catalog (one place to roll over)', () => {
