@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-24T23:19:34.401Z",
+ "fetchedAt": "2026-11-26T23:17:22.728Z",
  "year": 2027,
  "startYear": 2025,
  "program": 12,
@@ -1494,7 +1494,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271001618/1"
@@ -2808,7 +2808,7 @@
        "day": 5,
        "start": "20:00",
        "end": "22:50",
-       "room": "302 פיקוס"
+       "room": "207 פיקוס"
       }
      ],
      "exams": [
@@ -8965,7 +8965,7 @@
        "day": 4,
        "start": "16:00",
        "end": "17:50",
-       "room": "200 פיקוס"
+       "room": "055 פרונטלי בניין מעבדות"
       }
      ],
      "exams": []
@@ -9477,7 +9477,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9859,7 +9859,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אלקיים רמי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11944,7 +11944,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מיברג שרה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279092601/1"
@@ -11952,15 +11952,15 @@
      "meetings": [
       {
        "day": 1,
-       "start": "15:00",
+       "start": "14:00",
        "end": "16:50",
-       "room": "303 פיקוס"
+       "room": "קריה ז'4"
       },
       {
        "day": 5,
        "start": "08:00",
        "end": "09:50",
-       "room": "301 פיקוס"
+       "room": "303 פיקוס"
       }
      ],
      "exams": [

@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-24T23:19:34.401Z",
+ "fetchedAt": "2026-11-26T23:17:22.728Z",
  "year": 2027,
  "startYear": 2024,
  "program": 11,
@@ -1159,7 +1159,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "גב' מרינוב עדי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "271001615/1"
@@ -1261,7 +1261,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "גב' מרינוב עדי",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [],
      "meetings": [

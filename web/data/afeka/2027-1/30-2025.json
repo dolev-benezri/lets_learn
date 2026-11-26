@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-24T23:19:34.401Z",
+ "fetchedAt": "2026-11-26T23:17:22.728Z",
  "year": 2027,
  "startYear": 2025,
  "program": 30,
@@ -7994,7 +7994,7 @@
        "day": 4,
        "start": "16:00",
        "end": "17:50",
-       "room": "200 פיקוס"
+       "room": "055 פרונטלי בניין מעבדות"
       }
      ],
      "exams": []
@@ -8506,7 +8506,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -8888,7 +8888,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אלקיים רמי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -13199,7 +13199,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279092508/1"
