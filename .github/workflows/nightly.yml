@@ -1,0 +1,85 @@
+# The nightly yedion scrape on GitHub, phase 1: a trial. It runs the same scrape as GitLab (ci/gitlab-scrape.yml) and writes nothing; GitLab still
+# publishes the data. On 10-01 GitHub's runners could not reach the yedion, on 11-26 one did: a few nights in a row tell whether they always do
+# (docs/OPERATIONS.md, "הריצה הלילית"). It starts about two hours after GitLab's run ends, so the two never ask the site at the same time.
+# The cache (every answer of the site, kept from night to night, see ci/gitlab-scrape.yml) sits beside the checkout, as on GitLab.
+# A smoke run (by hand, input smoke) scrapes one program and one semester into its own cache, so it never warms the trial's first, full night.
+# A failed scheduled run mails whoever last edited the cron line, as freshness.yml says.
+name: nightly
+
+on:
+  schedule:
+    # UTC; minute 37: GitHub delays scheduled runs most at the top of the hour
+    - cron: '37 1 * * *'
+  workflow_dispatch:
+    inputs:
+      smoke:
+        description: A short run (one program, one semester) with its own cache, to test the workflow
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    # an empty cache means ~1800 requests at the site's ~400 an hour; a job may run 6 hours
+    timeout-minutes: 340
+    env:
+      PREFIX: ${{ inputs.smoke && 'yedion-smoke-' || 'yedion-night-' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: repo
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+      - run: npm ci --omit=dev --no-audit --no-fund --ignore-scripts # as on GitLab: no dependency needs an install script
+        working-directory: repo
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .yedion-cache
+          key: ${{ env.PREFIX }}${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ env.PREFIX }}
+      # The same command and the same partial-run counter as ci/gitlab-scrape.yml, with 320 minutes instead of 160 (GitHub's longer job limit).
+      # stdout is the summary line; the log is also kept for the report below.
+      - name: scrape
+        working-directory: repo
+        env:
+          SCOPE: ${{ !inputs.smoke && '--all-semesters --all-programs' || '' }}
+        run: |
+          mkdir -p ../.yedion-cache
+          timeout 320m node scripts/scrape.mjs $SCOPE --cache ../.yedion-cache --nightly --wait-throttle > ../summary.txt 2> >(tee ../scrape.log >&2) && rc=0 || rc=$?
+          if [ "$rc" = 124 ]; then
+            n=$(( $(cat ../.yedion-cache/partial-runs 2>/dev/null || echo 0) + 1 )); echo "$n" > ../.yedion-cache/partial-runs
+            echo "partial run $n in a row: the cache keeps what was fetched, the next run continues"
+            if [ "$n" -lt 4 ]; then exit 0; fi
+            echo "4 partial runs in a row: failing so the owner gets the mail"; exit 1
+          fi
+          [ "$rc" = 0 ] || exit "$rc"
+          rm -f ../.yedion-cache/partial-runs
+      # What the night would have published, read each morning of the trial: the summary, the files it changed, and how often the site pushed back.
+      - name: report
+        if: always()
+        working-directory: repo
+        run: |
+          {
+            echo "### $(cat ../summary.txt 2>/dev/null || echo 'no summary: the scrape stopped before its end')"
+            echo '```'
+            git add -A -- web/data/afeka && git diff --cached --stat -- web/data/afeka
+            echo '```'
+            for p in 'rejected, retrying' 'HTTP [0-9]*, retrying' 'per-minute limit' 'hourly limit: waiting' 'network error, retrying'; do
+              echo "- $p: $(grep -c "$p" ../scrape.log 2>/dev/null || true)"
+            done
+            if [ -f ../.yedion-cache/partial-runs ]; then echo "- partial runs in a row: $(cat ../.yedion-cache/partial-runs)"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always()
+        with:
+          path: .yedion-cache
+          key: ${{ env.PREFIX }}${{ github.run_id }}-${{ github.run_attempt }}

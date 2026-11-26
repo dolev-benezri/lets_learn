@@ -507,6 +507,30 @@ test('the deploy waits for a green test job (P9)', () => {
   assert.match(y, /\n  deploy:\n    needs: build\n/, 'upload and deploy in separate jobs (actions/deploy-pages#451)');
 });
 
+test('the nightly trial on GitHub only reads: the same scrape as GitLab, its cache kept, nothing pushed', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+  assert.match(y, /\n    - cron: '37 1 \* \* \*'\n/);
+  assert.match(y, /\n  workflow_dispatch:\n    inputs:\n      smoke:\n[\s\S]*?type: boolean/);
+  assert.match(y, /\npermissions:\n  contents: read\n/);
+  assert.doesNotMatch(y, /contents: write|git push|git commit|secrets\./, 'the trial writes nothing and holds no secret');
+  assert.match(y, /path: repo\n/, 'the checkout beside the cache, not under it');
+  assert.match(y, /timeout-minutes: 340\n/);
+  assert.match(y, /timeout 320m node scripts\/scrape\.mjs \$SCOPE --cache \.\.\/\.yedion-cache --nightly --wait-throttle/);
+  assert.match(y, /--all-semesters --all-programs/, 'the full run, as GitLab');
+  assert.match(y, /if \[ "\$n" -lt 4 \]; then exit 0; fi/);
+  assert.match(y, /\[ "\$rc" = 0 \] \|\| exit "\$rc"/, 'a blocked night fails the job');
+  assert.match(y, /'yedion-smoke-'/, 'a smoke run keeps its own cache');
+  assert.match(y, /'yedion-night-'/, "the nights' prefix is not a prefix of the smoke one, or night 1 could restore a smoke cache");
+  assert.doesNotMatch(y, /'yedion-'/);
+  assert.match(y, /actions\/cache\/save@[0-9a-f]{40} # v6\.1\.0\n\s+if: always\(\)/);
+  assert.equal(
+    y.match(/key: \$\{\{ env\.PREFIX \}\}\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}\n/g)?.length,
+    2,
+    'a re-run of a night saves under its own key: a key that exists already is not saved again'
+  );
+  assert.match(y, /'HTTP \[0-9\]\*, retrying'/, 'the report counts 429 and 5xx answers, the plainest sign of a block');
+});
+
 test('normalize takes the academic year from the catalog (one place to roll over)', () => {
   const cat = { year: 2028, programs: [{ id: 30, name: 'מכנית', startYears: [2026] }] };
   assert.equal(normalize({ v: 1 }, cat).year, 2028);
