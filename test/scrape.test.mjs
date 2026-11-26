@@ -613,6 +613,66 @@ import { utimesSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { nightlyTtl, nightlyPolicy, requesterOptions, patient, cacheBehind, markPublished } from '../scripts/scrape.mjs';
 
+test("nightlyTtl in all-groups mode asks every offered course's groups every run", () => {
+  const groups = fx('groups-90903.html');
+  for (let d = 0; d < 4; d++) {
+    const t = (20000 + d) * 86400e3;
+    for (const key of ['prgname=S_LOOK_FOR_NOSE&arguments=-N90903', 'prgname=S_LOOK_FOR_NOSE&arguments=-N30101'])
+      assert.equal(nightlyTtl(key, groups, t, { allGroups: true }), 0);
+    for (const key of ['PRGNAME=S_EXAMS&ARGUMENTS=R1C28', 'prgname=S_CourseDetails&arguments=x'])
+      assert.equal(nightlyTtl(key, OK, t, { allGroups: true }), nightlyTtl(key, OK, t));
+  }
+  assert.equal(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>', 0, { allGroups: true }), 0);
+});
+
+test('nightlyPolicy all-groups budget: groups and exams are never held back; lists and details keep their 160', () => {
+  const p = nightlyPolicy(Date.now, { allGroups: true });
+  const group = 'prgname=S_LOOK_FOR_NOSE&arguments=-N30101', exam = 'PRGNAME=S_EXAMS&ARGUMENTS=R1C28';
+  const list = 'prgname=S_SHOW_PROGS&arguments=-N2026,-N30001', detail = 'prgname=S_CourseDetails&arguments=x';
+  for (let i = 0; i < 1000; i++) p.paid(group);
+  for (const key of [group, exam, list, detail]) assert.equal(p.budget(key), Infinity, key);
+  for (let i = 0; i < 160; i++) p.paid(i % 2 ? list : detail);
+  for (const key of [list, detail]) assert.equal(p.budget(key), 0, key);
+  for (const key of [group, exam]) assert.equal(p.budget(key), Infinity, key);
+});
+
+test('cachedRequester all-groups slow keys are not starved', async () => {
+  const dir = join(dirs().status, '..', 'all-groups'), calls = [];
+  const group = (i) => `prgname=S_LOOK_FOR_NOSE&arguments=-N${i}`;
+  const detail = (i) => `prgname=S_CourseDetails&arguments=${i}`;
+  const keys = Array.from({ length: 161 }, (_, i) => [group(3 * i), group(3 * i + 1), group(3 * i + 2), detail(i)]).flat();
+  // Stale cached answers exercise the budget; missing answers deliberately bypass it.
+  mkdirSync(dir, { recursive: true });
+  for (const key of keys) {
+    const file = join(dir, `${createHash('sha1').update(key).digest('hex')}.html`);
+    writeFileSync(file, 'old');
+    utimesSync(file, new Date(0), new Date(0));
+  }
+  const p = nightlyPolicy(Date.now, { allGroups: true });
+  const request = cachedRequester(async (key) => (calls.push(key), OK), dir, { ...p, ttl: () => 0 });
+  for (const key of keys) await request(key);
+  assert.equal(calls.filter((key) => key.includes('S_CourseDetails')).length, 160);
+  assert.equal(calls.filter((key) => key.includes('S_LOOK_FOR_NOSE')).length, 483);
+  assert.deepEqual(request.deferred, [detail(160)]);
+});
+
+test('requesterOptions passes --all-groups to the nightly policy', () => {
+  const key = 'prgname=S_LOOK_FOR_NOSE&arguments=-N90903', groups = fx('groups-90903.html');
+  const options = requesterOptions({ nightly: true, 'all-groups': true });
+  // One of these two days is an off night in the fallback policy.
+  for (const t of [20000, 20001].map((d) => d * 86400e3)) {
+    const realNow = Date.now;
+    try {
+      Date.now = () => t;
+      assert.equal(requesterOptions({ nightly: true, 'all-groups': true }).ttl(key, groups), 0);
+    } finally {
+      Date.now = realNow;
+    }
+  }
+  assert.equal(typeof options.paid, 'function');
+  assert.deepEqual(requesterOptions({ 'all-groups': true }), { offline: undefined });
+});
+
 test('nightlyTtl: exams every other night until published then weekly; an offered course\'s groups every other night; details 14-16 days; the rest weekly', () => {
   const DAY = 86400e3,
     weekly = (ms) => [7, 8, 9].includes(ms / DAY),

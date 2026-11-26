@@ -220,7 +220,7 @@ test('askConfirm: without <dialog> and confirm() it proceeds, like the old guard
   assert.equal(await askConfirm('x'), true);
 });
 
-test('freshness: relative check time, last-change date, stale after 36h or a failed check', () => {
+test('freshness: relative check time, last-change date, stale after 18h or a failed check', () => {
   const now = new Date('2026-10-01T12:00:00Z');
   const ok = { checkedAt: '2026-10-01T09:00:00Z', ok: true };
   assert.deepEqual(freshness(ok, '2026-09-28T09:00:00Z', now), {
@@ -241,6 +241,23 @@ test('freshness: relative check time, last-change date, stale after 36h or a fai
     text: 'השתנה לאחרונה 28.9 · לא ידוע מתי נבדק',
     stale: true
   });
+});
+
+for (const [name, line] of [['freshness', freshness], ['freshnessA', freshnessA]]) {
+  test(`${name}: 17 hours is fresh and 19 hours is stale`, () => {
+    const now = new Date('2026-11-26T12:00:00Z');
+    for (const [hours, stale] of [[17, false], [19, true]]) {
+      const status = { checkedAt: new Date(now - hours * 36e5).toISOString(), ok: true };
+      assert.equal(line(status, '2026-11-01', now).stale, stale);
+    }
+  });
+}
+
+test('staleShortA: 17 hours is silent and 19 hours warns', () => {
+  const now = new Date('2026-11-26T12:00:00Z');
+  const status = (hours) => ({ checkedAt: new Date(now - hours * 36e5).toISOString(), ok: true });
+  assert.equal(staleShortA(status(17), '2026-11-01', now), '');
+  assert.notEqual(staleShortA(status(19), '2026-11-01', now), '');
 });
 
 test('stalePins: pins missing from every loaded semester, named by course when it still exists', () => {

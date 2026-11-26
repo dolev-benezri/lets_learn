@@ -221,6 +221,8 @@ export const popStale = (openTop, nowTop, vh) =>
 
 // Header freshness line. checkedAt = last scraper run (status.json); changedAt = the data file's fetchedAt (last real change).
 const REL = new Intl.RelativeTimeFormat('he', { numeric: 'always' });
+// Two runs a day, so 18 hours means a run was missed.
+const STALE_MS = 18 * 36e5;
 export const ago = (ms) => {
   const m = Math.round(ms / 6e4),
     h = Math.round(ms / 36e5),
@@ -235,7 +237,7 @@ export function freshness(status, changedAt, now = new Date()) {
   const changed = `השתנה לאחרונה ${dayMonth(changedAt)}`;
   if (!status?.checkedAt) return { text: `${changed} · לא ידוע מתי נבדק`, stale: true };
   const age = now - new Date(status.checkedAt);
-  return { text: `נבדק ${ago(age)} · ${changed}`, stale: !status.ok || age > 36 * 36e5 };
+  return { text: `נבדק ${ago(age)} · ${changed}`, stale: !status.ok || age > STALE_MS };
 }
 
 // Design A's freshness line: four states, each saying why the data may be stale (stale = a warning: icon + words + colour).
@@ -245,7 +247,7 @@ export function freshnessA(status, changedAt, now = new Date()) {
   if (!status?.checkedAt) return { text: `לא ידוע מתי הנתונים נבדקו. ${changed}`, stale: true };
   if (!status.ok) return { text: `הבדיקה האחרונה של הנתונים נכשלה. ${changed}`, stale: true };
   const age = now - new Date(status.checkedAt);
-  return age > 36 * 36e5 ? { text: `הנתונים נבדקו ${ago(age)}, ייתכן שהשתנו`, stale: true } : { text: `נבדק ${ago(age)}`, stale: false };
+  return age > STALE_MS ? { text: `הנתונים נבדקו ${ago(age)}, ייתכן שהשתנו`, stale: true } : { text: `נבדק ${ago(age)}`, stale: false };
 }
 // Design A's switcher label (docs/superpowers/plans/2026-11-22-design-a-system.md, Task 4): the alternative shown, or "computing" while the first search has no
 // alternative yet, or none. Classic keeps its own two-way label (ui-view.js).
@@ -257,7 +259,7 @@ export function altLabelText({ nAlt, cur, split, running }) {
 export const LEGAL_LINE = 'לא רשמי · אינו הרשמה ואינו המלצה (ההרשמה באפקה-נט)';
 export const LEGAL_SHORT = 'לא רשמי · אינו הרשמה ואינו המלצה';
 export const RULES_SHORT = 'הכללים לא אושרו במחלקה';
-// The strip's and the phone line's warning about old data: nothing when fresh (freshnessA's 36-hour rule), else the shortest true words.
+// The strip's and the phone line's warning about old data: nothing when fresh (freshnessA's 18-hour rule), else the shortest true words.
 export function staleShortA(status, changedAt, now = new Date()) {
   if (!freshnessA(status, changedAt, now).stale) return '';
   if (!status?.checkedAt) return 'לא ידוע מתי נבדק';

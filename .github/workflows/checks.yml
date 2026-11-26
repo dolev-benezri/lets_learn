@@ -3,6 +3,11 @@ name: checks
 
 on:
   workflow_dispatch:
+    inputs:
+      base:
+        description: Compare prerequisites with the main tip before the data commit
+        type: string
+        required: false
   push:
     branches: [main]
     paths: ['web/**', 'scripts/**', '.github/workflows/checks.yml']
@@ -19,14 +24,14 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts
-      # What the prerequisites changed from: the commit the push came from, not the one before, or a push of several commits hides a change. Empty on a run by hand.
-      - if: github.event_name == 'push'
+      # Use the push's old tip or the publisher's rebased parent, so a concurrent code push is included correctly. Empty on an ordinary run by hand.
+      - if: github.event.before || inputs.base
         run: git fetch -q --depth=1 origin "$BEFORE" || true # gone after a history rewrite: then there is nothing to compare
         env:
-          BEFORE: ${{ github.event.before }}
+          BEFORE: ${{ github.event.before || inputs.base }}
       - run: npm run check:real
         env:
-          CHECK_BASE: ${{ github.event.before }}
+          CHECK_BASE: ${{ github.event.before || inputs.base }}
       - run: npm run check:export -- web/data/afeka
 
   # Only names that do not exist. The other type errors in untyped web/*.js are noise (DOM narrowing, default parameters).

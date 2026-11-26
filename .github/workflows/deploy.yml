@@ -1,5 +1,5 @@
-# Deploy web/ to GitHub Pages. The data is refreshed nightly by ci/gitlab-scrape.yml on GitLab CI,
-# which pushes web/data/afeka to main (that push triggers this workflow). A change to the tests or scripts runs it too, so a break shows at once.
+# Deploy web/ to GitHub Pages. nightly.yml publishes twice a day with GITHUB_TOKEN, then dispatches this workflow.
+# GitLab is the standby; its token push also triggers a deploy. A change to the tests or scripts runs it too, so a break shows at once.
 name: deploy
 
 on:

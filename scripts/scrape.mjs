@@ -30,11 +30,11 @@ const BASE = 'https://yedionpub.afeka.ac.il/yedion/fireflyweb.aspx';
 const USER_AGENT = 'afeka-scheduler/1.1 (+https://github.com/lets-learn-il/lets-learn-il.github.io)';
 const SEMESTER_CODE = { 'א': 1, 'ב': 2, 'קיץ': 3 };
 const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
-// Answers fetched in one nightly run: the site allows ~400 an hour, and the 2 session requests and a few retries fit in the rest, so a night never waits
-// for the clock hour (research H4). What is left waits for the next night.
+// GitLab's fallback fits under ~400 answers an hour, leaving room for session requests and retries (research H4).
+// GitHub asks every offered course's groups and waits out the hourly limit instead.
 const NIGHT_BUDGET = 380;
-// Lists and course details may be 160 of them, counted on their own, so an offered course's groups (~210 a night, the data that changes most) are never the ones
-// left waiting, and the groups asked before a course's details do not use up its turn. On the first night after a long gap the lists alone would take 290.
+// Both modes count lists and course details on their own, up to 160 stale answers per run, so groups asked first do not use up their turns.
+// This also leaves room for groups in GitLab's 380. On the first night after a long gap the lists alone would take 290.
 const SLOW_BUDGET = 160;
 
 export class ThrottledError extends Error {
@@ -202,7 +202,7 @@ export function unitsOf(opt, programs) {
 // paid(key) hears each answer really fetched from the site.
 // An answer that is not cached at all is fetched even past the budget.
 // request.readAt = when each answer returned was really read: its file's time, or now if just fetched.
-export const requesterOptions = (opt) => ({ offline: opt.offline, ...(opt.nightly ? nightlyPolicy() : {}) });
+export const requesterOptions = (opt) => ({ offline: opt.offline, ...(opt.nightly ? nightlyPolicy(Date.now, { allGroups: opt['all-groups'] }) : {}) });
 
 export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = () => Infinity, paid = () => {} } = {}) {
   const session = [],
@@ -253,19 +253,20 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
 }
 
 const DAY = 86400e3;
-// The nightly policy: an offered course's groups every other night (below); a department's exam table every other night until it is published, then weekly;
+// GitLab's nightly policy asks an offered course's groups every other night (below); GitHub's all-groups mode asks them every run.
+// A department's exam table is checked every other night until it is published, then weekly;
 // course details every 14-16 days (research A3: 15 of 415 changed in two weeks); lists and track pages weekly. Only a course a list marks as taught is asked for its
-// groups, so an answer with none may be an error page that passed as 200: it is good for 1.5 days, or the course would be gone from the site for a week.
+// groups, so an answer with none may be an error page that passed as 200: GitLab keeps it for only 1.5 days; GitHub asks again every run.
 // "Weekly" is 7-9 days by key, so the answers cached by one full pull expire over three nights instead of all on the same one.
 const weekly = (key, base = 7) => (base + (createHash('sha1').update(key).digest()[0] % 3)) * DAY;
-// An offered course's groups: half the courses (by key) one night, the other half the next. A night of ~400 group requests at 2.5 s is ~20 CI minutes, and
+// GitLab's half split: half the courses (by key) one night, the other half the next. A night of ~400 group requests at 2.5 s is ~20 CI minutes, and
 // GitLab Free gives 400 a month (cost factor 1, public projects too). Off its night an answer is good for 1.5 days, so after a missed run it is fetched anyway.
 const otherNight = (key, now) => (Math.floor(now / DAY) + createHash('sha1').update(key).digest()[1]) % 2 === 1;
-export function nightlyTtl(key, html, now = Date.now()) {
+export function nightlyTtl(key, html, now = Date.now(), { allGroups = false } = {}) {
   if (key.includes('S_EXAMS')) return parseExams(html).length ? weekly(key) : 1.5 * DAY;
   if (key.includes('S_CourseDetails')) return weekly(key, 14);
   if (key.startsWith('prgname=S_LOOK_FOR_NOSE'))
-    return !parseGroups(html).length ? 1.5 * DAY : otherNight(key, now) ? 1.5 * DAY : 0;
+    return allGroups ? 0 : !parseGroups(html).length ? 1.5 * DAY : otherNight(key, now) ? 1.5 * DAY : 0;
   return weekly(key);
 }
 
@@ -273,7 +274,7 @@ export function nightlyTtl(key, html, now = Date.now()) {
 // an earlier cohort gave tonight is checked only every 28-30 days (in case the site changes one cohort alone; owner, 22.10), and one that equals the answer
 // an earlier cohort just replaced is fetched now. run() asks the cohorts in
 // a fixed order, so the first of each alike group (its representative) keeps the weekly clock. One policy per run: it remembers tonight's answers.
-export function nightlyPolicy(now = Date.now) {
+export function nightlyPolicy(now = Date.now, { allGroups = false } = {}) {
   const current = new Map(),
     replaced = new Map();
   const code = (key) => key.match(/^prgname=S_SHOW_PROGS&arguments=-N\d+,-N(\d+)$/)?.[1];
@@ -292,9 +293,10 @@ export function nightlyPolicy(now = Date.now) {
         if (current.get(c)?.has(s)) return weekly(key, 28);
         if (replaced.get(c)?.has(s)) return 0;
       }
-      return nightlyTtl(key, html, now());
+      return nightlyTtl(key, html, now(), { allGroups });
     },
-    budget: (key) => (slow(key) && slowPaid >= SLOW_BUDGET ? 0 : NIGHT_BUDGET),
+    // cachedRequester compares against all paid answers, so only the slow counter limits this mode.
+    budget: (key) => (slow(key) && slowPaid >= SLOW_BUDGET ? 0 : allGroups ? Infinity : NIGHT_BUDGET),
     paid(key) {
       if (slow(key)) slowPaid++;
     },
@@ -570,6 +572,7 @@ async function main() {
       cache: { type: 'string' },
       offline: { type: 'boolean', default: false },
       nightly: { type: 'boolean', default: false },
+      'all-groups': { type: 'boolean', default: false },
       'wait-throttle': { type: 'boolean', default: false },
     }
   });

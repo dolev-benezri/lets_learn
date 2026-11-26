@@ -1,28 +1,34 @@
-# The nightly yedion scrape on GitHub, phase 1: a trial. It runs the same scrape as GitLab (ci/gitlab-scrape.yml) and writes nothing; GitLab still
-# publishes the data. On 10-01 GitHub's runners could not reach the yedion, on 11-26 one did: a few nights in a row tell whether they always do
-# (docs/OPERATIONS.md, "הריצה הלילית"). It starts about two hours after GitLab's run ends, so the two never ask the site at the same time.
+# GitHub publishes the yedion data twice a day, asking every offered course's groups each run (docs/OPERATIONS.md, "הריצה הלילית").
+# GitLab is the standby: busy wins, then data under 12 hours old stands by; missing data means run (ci/gitlab-scrape.yml).
 # The cache (every answer of the site, kept from night to night, see ci/gitlab-scrape.yml) sits beside the checkout, as on GitLab.
-# A smoke run (by hand, input smoke) scrapes one program and one semester into its own cache, so it never warms the trial's first, full night.
+# A smoke run (by hand, input smoke) scrapes one program and one semester into its own cache, so it never seeds the publishing cache.
 # A failed scheduled run mails whoever last edited the cron line, as freshness.yml says.
 name: nightly
 
 on:
   schedule:
     # UTC; minute 37: GitHub delays scheduled runs most at the top of the hour
-    - cron: '37 1 * * *'
+    - cron: '37 23 * * *'
+    - cron: '37 12 * * *'
   workflow_dispatch:
     inputs:
       smoke:
         description: A short run (one program, one semester) with its own cache, to test the workflow
         type: boolean
         default: false
+      dry_run:
+        description: Scrape without publishing, then test deploy and checks dispatch on main
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
 
 concurrency:
   group: nightly
   cancel-in-progress: false
+  # A newer pending run may replace an older pending run (same job, newer data).
 
 jobs:
   scrape:
@@ -35,7 +41,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: repo
-          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
@@ -54,7 +59,7 @@ jobs:
           SCOPE: ${{ !inputs.smoke && '--all-semesters --all-programs' || '' }}
         run: |
           mkdir -p ../.yedion-cache
-          timeout 320m node scripts/scrape.mjs $SCOPE --cache ../.yedion-cache --nightly --wait-throttle > ../summary.txt 2> >(tee ../scrape.log >&2) && rc=0 || rc=$?
+          timeout 320m node scripts/scrape.mjs $SCOPE --cache ../.yedion-cache --nightly --all-groups --wait-throttle > ../summary.txt 2> >(tee ../scrape.log >&2) && rc=0 || rc=$?
           if [ "$rc" = 124 ]; then
             n=$(( $(cat ../.yedion-cache/partial-runs 2>/dev/null || echo 0) + 1 )); echo "$n" > ../.yedion-cache/partial-runs
             echo "partial run $n in a row: the cache keeps what was fetched, the next run continues"
@@ -63,7 +68,7 @@ jobs:
           fi
           [ "$rc" = 0 ] || exit "$rc"
           rm -f ../.yedion-cache/partial-runs
-      # What the night would have published, read each morning of the trial: the summary, the files it changed, and how often the site pushed back.
+      # Read each morning: the summary, the files it changed, and how often the site pushed back.
       # It goes to the step summary (shown only on the website, to signed-in viewers; it has no API) and to the job log (`gh run view --log`
       # reads it); the log also gets the start of what differs from the published data. A cut night leaves summary.txt empty, not missing.
       # Nothing here may fail the job.
@@ -84,6 +89,49 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
           echo '--- what differs from the published data (status.json left out: it changes every night), first 300 lines:'
           git diff --cached -- web/data/afeka ':(exclude)web/data/afeka/status.json' | head -n 300 || true
+      - name: commit
+        if: success() && !inputs.dry_run && !inputs.smoke
+        working-directory: repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add web/data/afeka
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git config user.name dolev-benezri
+          git config user.email 64908772+dolev-benezri@users.noreply.github.com
+          git commit -q -m "$(cat ../summary.txt)" -- web/data/afeka
+          pushed=false
+          for attempt in 1 2 3; do
+            if ! git pull --rebase -q; then
+              # Conflicts need a human decision; retry only failures that left no rebase in progress.
+              if [ -d "$(git rev-parse --git-path rebase-merge)" ] || [ -d "$(git rev-parse --git-path rebase-apply)" ]; then
+                git rebase --abort
+                exit 1
+              fi
+              continue
+            fi
+            BEFORE=$(git rev-parse HEAD~1)
+            if git push; then pushed=true; break; fi
+          done
+          [ "$pushed" = true ] || exit 1
+          # The seed is useful to standby, but a seed failure must not hide a successful publication.
+          if ! (
+            tar -czf cache.tgz -C .. .yedion-cache &&
+            (gh release view cache-seed >/dev/null 2>&1 || gh release create cache-seed --prerelease --title "Cache seed" --notes "Public yedion answers from the last published scrape.") &&
+            gh release upload cache-seed cache.tgz --clobber
+          ); then
+            echo "cache seed failed; keeping the previous seed and continuing to dispatch"
+          fi
+          gh workflow run deploy.yml --ref main
+          gh workflow run checks.yml --ref main -f base="$BEFORE"
+      - name: dry run
+        if: success() && inputs.dry_run && !inputs.smoke
+        working-directory: repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run deploy.yml --ref main
+          gh workflow run checks.yml --ref main
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:

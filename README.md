@@ -150,11 +150,11 @@
 
 ## למפתחים
 
-JavaScript נקי בלי build, אתר סטטי ב-GitHub Pages, וסריקה לילית של הידיעון ב-GitLab CI.
+JavaScript נקי בלי build, אתר סטטי ב-GitHub Pages, וסריקה של הידיעון פעמיים ביום ב-GitHub Actions, עם GitLab כגיבוי.
 
 ```mermaid
 flowchart RL
-  Y["ידיעון ציבורי"] --> S["scripts/scrape.mjs<br>כל לילה"] --> D["web/data/afeka/"] --> P["GitHub Pages"]
+  Y["ידיעון ציבורי"] --> S["scripts/scrape.mjs<br>פעמיים ביום"] --> D["web/data/afeka/"] --> P["GitHub Pages"]
 ```
 
 ```bash

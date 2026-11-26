@@ -507,15 +507,15 @@ test('the deploy waits for a green test job (P9)', () => {
   assert.match(y, /\n  deploy:\n    needs: build\n/, 'upload and deploy in separate jobs (actions/deploy-pages#451)');
 });
 
-test('the nightly trial on GitHub only reads: the same scrape as GitLab, its cache kept, nothing pushed', () => {
+test('the pull on GitHub publishes twice a day, with a dry run and a queued successor', () => {
   const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
-  assert.match(y, /\n    - cron: '37 1 \* \* \*'\n/);
+  for (const hour of [23, 12]) assert.ok(y.includes(`- cron: '37 ${hour} * * *'`));
   assert.match(y, /\n  workflow_dispatch:\n    inputs:\n      smoke:\n[\s\S]*?type: boolean/);
-  assert.match(y, /\npermissions:\n  contents: read\n/);
-  assert.doesNotMatch(y, /contents: write|git push|git commit|secrets\./, 'the trial writes nothing and holds no secret');
+  assert.match(y, /\npermissions:\n  contents: write\n  actions: write\n/);
+  assert.doesNotMatch(y, /--force|secrets\.|GH_PUSH_TOKEN|persist-credentials: false|\bqueue:/);
   assert.match(y, /path: repo\n/, 'the checkout beside the cache, not under it');
   assert.match(y, /timeout-minutes: 340\n/);
-  assert.match(y, /timeout 320m node scripts\/scrape\.mjs \$SCOPE --cache \.\.\/\.yedion-cache --nightly --wait-throttle/);
+  assert.match(y, /timeout 320m node scripts\/scrape\.mjs \$SCOPE --cache \.\.\/\.yedion-cache --nightly --all-groups --wait-throttle/);
   assert.match(y, /--all-semesters --all-programs/, 'the full run, as GitLab');
   assert.match(y, /if \[ "\$n" -lt 4 \]; then exit 0; fi/);
   assert.match(y, /\[ "\$rc" = 0 \] \|\| exit "\$rc"/, 'a blocked night fails the job');
@@ -537,6 +537,90 @@ test('the nightly trial on GitHub only reads: the same scrape as GitLab, its cac
     /git diff --cached -- web\/data\/afeka ':\(exclude\)web\/data\/afeka\/status\.json' \| head -n 300 \|\| true\n/,
     'what differs, capped, without status.json (it changes every night); never fails the job'
   );
+  assert.match(y, /group: nightly\n  cancel-in-progress: false/);
+  assert.match(y, /newer pending run may replace an older pending run/);
+  assert.match(y, /dry_run:[\s\S]*?type: boolean\n        default: false/);
+  const commit = y.match(/      - name: commit\n([\s\S]*?)(?=      - |$)/)?.[1];
+  assert.ok(commit, 'publishing has its own step');
+  assert.match(commit, /if: success\(\) && !inputs.dry_run/);
+  assert.match(commit, /working-directory: repo/);
+  assert.match(commit, /GH_TOKEN: \$\{\{ github.token \}\}/);
+  assert.match(commit, /git add web\/data\/afeka[\s\S]*git diff --cached --quiet[\s\S]*nothing to commit[\s\S]*exit 0; fi/);
+  assert.match(commit, /git config user.name dolev-benezri[\s\S]*git config user.email 64908772\+dolev-benezri@users.noreply.github.com[\s\S]*git commit -q -m "\$\(cat \.\.\/summary.txt\)" -- web\/data\/afeka/);
+  assert.match(commit, /for attempt in 1 2 3; do[\s\S]*git pull --rebase -q[\s\S]*git rebase --abort[\s\S]*exit 1[\s\S]*BEFORE=\$\(git rev-parse HEAD~1\)[\s\S]*git push[\s\S]*break/);
+  assert.match(commit, /\[ "\$pushed" = true \] \|\| exit 1[\s\S]*tar -czf cache.tgz -C \.\. \.yedion-cache/);
+  assert.match(commit, /gh release view cache-seed[\s\S]*gh release create cache-seed --prerelease --title "Cache seed" --notes "Public yedion answers from the last published scrape\."/);
+  assert.match(commit, /gh release upload cache-seed cache.tgz --clobber/);
+  assert.match(commit, /echo "cache seed failed[\s\S]*gh workflow run deploy.yml --ref main[\s\S]*gh workflow run checks.yml --ref main -f base="\$BEFORE"/);
+  const dry = y.match(/      - name: dry run\n([\s\S]*?)(?=      - |$)/)?.[1];
+  assert.ok(dry);
+  assert.match(dry, /if: success\(\) && inputs.dry_run/);
+  assert.match(dry, /working-directory: repo/);
+  assert.match(dry, /GH_TOKEN: \$\{\{ github.token \}\}/);
+  assert.match(dry, /gh workflow run deploy.yml --ref main\n/);
+  assert.match(dry, /gh workflow run checks.yml --ref main\n/);
+  assert.doesNotMatch(dry, /git push|git commit|tar |gh release|-f base/);
+  assert.equal(y.match(/-f base=/g)?.length, 1);
+  assert.equal(y.match(/tar -czf|gh release upload/g)?.length, 2);
+  // Every shell step runs in the checkout, beside the shared cache.
+  for (const step of y.split(/\n      - /).slice(1).filter((s) => /\brun:/.test(s)))
+    assert.match(step, /working-directory: repo/);
+});
+
+for (const [step, condition] of [
+  ['commit', 'success() && !inputs.dry_run && !inputs.smoke'],
+  ['dry run', 'success() && inputs.dry_run && !inputs.smoke'],
+]) {
+  test(`smoke never publishes: ${step} excludes smoke regardless of dry_run`, () => {
+    const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+    const block = y.split(`      - name: ${step}\n`)[1]?.split('\n      - ')[0];
+    assert.ok(block, `${step} exists`);
+    assert.equal(block.match(/^        if: (.+)$/m)?.[1], condition);
+    for (const dry_run of [false, true]) {
+      const expression = condition.replace('success()', 'true').replaceAll('inputs.dry_run', String(dry_run)).replaceAll('inputs.smoke', 'true');
+      assert.equal(Function(`return ${expression}`)(), false);
+    }
+  });
+}
+
+test('ci/gitlab-scrape.yml has no --all-groups (the fallback keeps half a night)', () => {
+  assert.doesNotMatch(readFileSync('ci/gitlab-scrape.yml', 'utf8'), /--all-groups/);
+});
+
+test('checks accepts a dispatched base and fetches it for CHECK_BASE', () => {
+  const y = readFileSync('.github/workflows/checks.yml', 'utf8').replace(/\r\n/g, '\n');
+  assert.match(y, /workflow_dispatch:\n    inputs:\n      base:[\s\S]*?type: string\n        required: false/);
+  assert.match(y, /if: github.event.before \|\| inputs.base/);
+  assert.match(y, /git fetch -q --depth=1 origin "\$BEFORE"/);
+  assert.match(y, /BEFORE: \$\{\{ github.event.before \|\| inputs.base \}\}/);
+  assert.match(y, /CHECK_BASE: \$\{\{ github.event.before \|\| inputs.base \}\}/);
+});
+
+test('freshness alarm checks twice a day after 30 hours', () => {
+  const y = readFileSync('.github/workflows/freshness.yml', 'utf8');
+  assert.match(y, /cron: '41 5,17 \* \* \*'/);
+  assert.match(y, /default: '30'/);
+  assert.match(y, /HOURS: \$\{\{ inputs.hours \|\| '30' \}\}/);
+});
+
+test('gitlab-scrape gates scheduled runs before restoring the seed and keeps the half split', () => {
+  const y = readFileSync('ci/gitlab-scrape.yml', 'utf8').replace(/\r\n/g, '\n');
+  assert.match(y, /STANDBY_HOURS: "12"/);
+  assert.match(y, /git clone[^\n]* repo\n    - cd repo\n/);
+  assert.match(y, /if \[ "\$CI_PIPELINE_SOURCE" = schedule \]; then[\s\S]*node scripts\/standby.mjs \|\| true[\s\S]*echo "\$decision"[\s\S]*standby:\*[\s\S]*exit 0/);
+  assert.match(y, /git clone[\s\S]*cd repo[\s\S]*node scripts\/standby.mjs[\s\S]*curl -fsSL[\s\S]*npm ci[\s\S]*timeout 160m node scripts\/scrape.mjs/);
+  assert.match(y, /-m "\$\(cat \.\.\/summary.txt\)" -m "GitLab standby run"/);
+  assert.doesNotMatch(y, /--all-groups/);
+});
+
+test('gitlab-scrape test-extracts and compares seed markers before replacing its cache', () => {
+  const y = readFileSync('ci/gitlab-scrape.yml', 'utf8').replace(/\r\n/g, '\n');
+  assert.match(y, /curl -fsSL --max-time 120 https:\/\/github.com\/lets-learn-il\/lets-learn-il.github.io\/releases\/download\/cache-seed\/cache.tgz -o "\$seed"/);
+  assert.match(y, /seed=\$\(mktemp\)[\s\S]*seed_dir=\$\(mktemp -d\)/);
+  assert.match(y, /if curl[^\n]* &&\n\s+tar -xzf "\$seed" -C "\$seed_dir" && \[ -d "\$seed_dir\/\.yedion-cache" \]; then\n\s+if node scripts\/standby.mjs --compare-seed "\$seed_dir\/\.yedion-cache" \.\.\/\.yedion-cache; then\n\s+rm -rf \.\.\/\.yedion-cache\n\s+mv "\$seed_dir\/\.yedion-cache" \.\.\/\.yedion-cache\n\s+echo "restored public cache seed"\n\s+fi/,
+    'the comparison is inside if, so keep/error exit codes preserve the cache even under errexit');
+  assert.match(y, /else\n\s+echo "cache seed restore failed; keeping GitLab cache and continuing"\n\s+fi/);
+  assert.match(y, /rm -f "\$seed"\n\s+rm -rf "\$seed_dir"/);
 });
 
 test('normalize takes the academic year from the catalog (one place to roll over)', () => {

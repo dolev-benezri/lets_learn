@@ -1,16 +1,16 @@
-# Fails, and so mails, when the published data stops moving (scripts/check-fresh.mjs). The nightly starts near 23:07 UTC and is cut at 160 minutes, so 05:41 is after any run.
+# Fails, and so mails, when the published data stops moving (scripts/check-fresh.mjs). Two runs a day, so 30 hours means two runs were missed or a deploy failed.
 # GitHub mails a failed scheduled run to whoever last edited the cron line, if Actions notifications are on in that account. It may delay or drop a scheduled run, and it
 # turns the schedule off after 60 days without activity in the repo.
 name: freshness
 
 on:
   schedule:
-    - cron: '41 5 * * *'
+    - cron: '41 5,17 * * *'
   workflow_dispatch:
     inputs:
       hours:
         description: Fail when the last check is older than this many hours (0 fails on purpose, to test the mail)
-        default: '48'
+        default: '30'
 
 permissions:
   contents: read
@@ -26,4 +26,4 @@ jobs:
           node-version: 24
       - run: node scripts/check-fresh.mjs "$HOURS"
         env:
-          HOURS: ${{ inputs.hours || '48' }}
+          HOURS: ${{ inputs.hours || '30' }}
