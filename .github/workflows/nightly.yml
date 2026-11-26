@@ -64,12 +64,16 @@ jobs:
           [ "$rc" = 0 ] || exit "$rc"
           rm -f ../.yedion-cache/partial-runs
       # What the night would have published, read each morning of the trial: the summary, the files it changed, and how often the site pushed back.
+      # It goes to the step summary (shown only on the website, to signed-in viewers; it has no API) and to the job log (`gh run view --log`
+      # reads it); the log also gets the start of what differs from the published data. A cut night leaves summary.txt empty, not missing.
+      # Nothing here may fail the job.
       - name: report
         if: always()
         working-directory: repo
         run: |
+          s=$(cat ../summary.txt 2>/dev/null || true)
           {
-            echo "### $(cat ../summary.txt 2>/dev/null || echo 'no summary: the scrape stopped before its end')"
+            echo "### ${s:-no summary: the scrape stopped before its end}"
             echo '```'
             git add -A -- web/data/afeka && git diff --cached --stat -- web/data/afeka
             echo '```'
@@ -77,7 +81,9 @@ jobs:
               echo "- $p: $(grep -c "$p" ../scrape.log 2>/dev/null || true)"
             done
             if [ -f ../.yedion-cache/partial-runs ]; then echo "- partial runs in a row: $(cat ../.yedion-cache/partial-runs)"; fi
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '--- what differs from the published data (status.json left out: it changes every night), first 300 lines:'
+          git diff --cached -- web/data/afeka ':(exclude)web/data/afeka/status.json' | head -n 300 || true
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:
