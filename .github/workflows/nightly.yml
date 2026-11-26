@@ -90,7 +90,7 @@ jobs:
           echo '--- what differs from the published data (status.json left out: it changes every night), first 300 lines:'
           git diff --cached -- web/data/afeka ':(exclude)web/data/afeka/status.json' | head -n 300 || true
       - name: commit
-        if: success() && !inputs.dry_run && !inputs.smoke
+        if: success() && !inputs.dry_run && !inputs.smoke && github.ref == 'refs/heads/main'
         working-directory: repo
         env:
           GH_TOKEN: ${{ github.token }}

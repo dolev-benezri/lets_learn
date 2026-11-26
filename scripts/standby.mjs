@@ -67,9 +67,9 @@ export async function checkStandby({ fetchFn = fetch, now = Date.now(), hours = 
   const read = async (url, headers = {}) => {
     try {
       const res = await fetchFn(url, { headers, signal: AbortSignal.timeout(20_000) });
-      return res.ok ? await res.json() : null;
+      return { body: res.ok ? await res.json() : null, status: res.status };
     } catch {
-      return null;
+      return { body: null, status: 'network' };
     }
   };
   const [status, runs] = await Promise.all([
@@ -77,12 +77,15 @@ export async function checkStandby({ fetchFn = fetch, now = Date.now(), hours = 
     read('https://api.github.com/repos/lets-learn-il/lets-learn-il.github.io/actions/workflows/nightly.yml/runs?per_page=20&branch=main',
       token ? { Authorization: `Bearer ${token}` } : {}),
   ]);
-  const githubBusy = Array.isArray(runs?.workflow_runs) && runs.workflow_runs.some((run) => {
+  const githubBusy = Array.isArray(runs.body?.workflow_runs) && runs.body.workflow_runs.some((run) => {
     const age = now - Date.parse(run?.created_at);
     return run?.head_branch === 'main' && ['schedule', 'workflow_dispatch'].includes(run.event) &&
       typeof run.status === 'string' && run.status !== '' && run.status !== 'completed' && age >= 0 && age <= 6 * HOUR;
   });
-  return standbyDecision({ checkedAt: status?.checkedAt, now, hours, githubBusy });
+  const decision = standbyDecision({ checkedAt: status.body?.checkedAt, now, hours, githubBusy });
+  if (runs.body === null)
+    decision.why += `; GitHub runs unreadable (${runs.status === 'network' ? 'network' : `HTTP ${runs.status}`})`;
+  return decision;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -568,7 +568,7 @@ test('the pull on GitHub publishes twice a day, with a dry run and a queued succ
 });
 
 for (const [step, condition] of [
-  ['commit', 'success() && !inputs.dry_run && !inputs.smoke'],
+  ['commit', 'success() && !inputs.dry_run && !inputs.smoke && github.ref == \'refs/heads/main\''],
   ['dry run', 'success() && inputs.dry_run && !inputs.smoke'],
 ]) {
   test(`smoke never publishes: ${step} excludes smoke regardless of dry_run`, () => {
@@ -577,11 +577,47 @@ for (const [step, condition] of [
     assert.ok(block, `${step} exists`);
     assert.equal(block.match(/^        if: (.+)$/m)?.[1], condition);
     for (const dry_run of [false, true]) {
-      const expression = condition.replace('success()', 'true').replaceAll('inputs.dry_run', String(dry_run)).replaceAll('inputs.smoke', 'true');
-      assert.equal(Function(`return ${expression}`)(), false);
+      const expression = block.match(/^        if: (.+)$/m)[1];
+      assert.equal(Function('inputs', 'github', 'success', `return (${expression});`)(
+        { dry_run, smoke: true }, { ref: 'refs/heads/main' }, () => true
+      ), false);
     }
   });
 }
+
+test('a branch dispatch never publishes: the commit step needs refs/heads/main', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+  const steps = y.split(/\n      - /).slice(1);
+  const commit = steps.find((step) => step.startsWith('name: commit\n'));
+  assert.ok(commit, 'publishing has its own step');
+  assert.match(commit.match(/^        if: (.+)$/m)?.[1] ?? '', /github\.ref == 'refs\/heads\/main'/);
+  for (const command of [/git push/, /gh release upload cache-seed/, /gh workflow run deploy\.yml/, /gh workflow run checks\.yml/])
+    assert.match(commit, command, 'the guarded step pushes, uploads the seed, and dispatches');
+  assert.deepEqual(steps.filter((step) => /git push|gh release upload/.test(step)), [commit],
+    'no other step can push or upload the cache seed');
+});
+
+test('nightly publishing condition: scheduled main and main dispatch publish, branches and test runs do not', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+  const block = y.split('      - name: commit\n')[1]?.split('\n      - ')[0];
+  const expression = block?.match(/^        if: (.+)$/m)?.[1];
+  assert.ok(expression, 'the publishing condition exists');
+  const evaluate = Function('inputs', 'github', 'success', `return (${expression});`);
+  const cases = [
+    ['schedule', 'main', {}, true],
+    ['workflow_dispatch', 'main', { dry_run: false, smoke: false }, true],
+    ['workflow_dispatch', 'claude/nightly-phase2', { dry_run: false, smoke: false }, false],
+  ];
+  for (const event of ['schedule', 'workflow_dispatch']) {
+    for (const branch of ['main', 'claude/nightly-phase2']) {
+      for (const inputs of [{ smoke: true }, { dry_run: true }, { smoke: true, dry_run: true }])
+        cases.push([event, branch, inputs, false]);
+    }
+  }
+  for (const [event_name, branch, inputs, publishes] of cases)
+    assert.equal(evaluate(inputs, { event_name, ref: `refs/heads/${branch}` }, () => true), publishes,
+      `${event_name} on ${branch}, inputs ${JSON.stringify(inputs)}`);
+});
 
 test('ci/gitlab-scrape.yml has no --all-groups (the fallback keeps half a night)', () => {
   assert.doesNotMatch(readFileSync('ci/gitlab-scrape.yml', 'utf8'), /--all-groups/);

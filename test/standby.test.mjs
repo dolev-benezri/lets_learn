@@ -149,6 +149,20 @@ test('standby fetch: busy overrides missing status, and fresh status survives a 
   assert.equal(fresh.run, false);
 });
 
+for (const [suffix, failure, reason] of [
+  ['', async () => ({ ok: false, status: 403 }), /GitHub runs unreadable \(HTTP 403\)/],
+  [' (network)', async () => { throw Error('unreachable'); }, /GitHub runs unreadable \(network\)/],
+]) {
+  test(`checkStandby: an unreadable runs page is said in why${suffix}`, async () => {
+    const { checkStandby } = await api();
+    const decision = await checkStandby({ now, fetchFn: async (url) => url.includes('status.json')
+      ? response({ checkedAt: ago(11) }) : failure() });
+    assert.equal(decision.run, false, 'fresh data still stands by when runs cannot be read');
+    assert.match(decision.why, /published data is under 12 h old; age 11\.0 h; /);
+    assert.match(decision.why, reason);
+  });
+}
+
 test('standby fetch: every unfinished status is busy only on main, with an allowed event in the last six hours', async () => {
   const { checkStandby } = await api();
   const cases = [
@@ -201,5 +215,5 @@ test('standby CLI: one age line, default 12 hours, custom threshold, and fetch f
   }
   const child = spawnSync(process.execPath, ['--import', 'data:text/javascript,globalThis.fetch=async()=>{throw Error("offline")}', 'scripts/standby.mjs'], { encoding: 'utf8' });
   assert.equal(child.status, 0, child.stderr);
-  assert.match(child.stdout, /^run:.*age unknown h\n$/);
+  assert.match(child.stdout, /^run:.*age unknown h; GitHub runs unreadable \(network\)\n$/);
 });
