@@ -236,7 +236,10 @@ test('yearView: offered in either semester, groups merged, semesters listed', ()
 });
 
 import { app, pickData, semOfGroup } from '../web/app.js';
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { real as frozen } from './fixtures/real.mjs';
 const real = (n) => frozen(`2027-${n}/30-2026.json`);
 test('pickData: year view, single-semester scopes, and fallback when ב is missing', () => {
@@ -534,6 +537,40 @@ test('nightly: run names keep smoke and dry runs out of the one-try rule', () =>
   assert.equal(evaluate({ smoke: false, dry_run: false }), 'nightly', 'plain dispatch');
   for (const inputs of [{ smoke: true }, { dry_run: true }, { smoke: true, dry_run: true }])
     assert.notEqual(evaluate(inputs), 'nightly');
+});
+
+test('nightly: refresh-pages requires locked full and no partial run, including smoke and dry runs', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+  const scrape = y.split('      - name: scrape\n')[1]?.split('\n      - ')[0];
+  assert.match(scrape, /^          FULL: \$\{\{ steps\.recheck\.outputs\.full \}\}$/m,
+    'scrape passes the locked full output to the shell');
+  assert.doesNotMatch(scrape, /needs\.decide|outputs\.cold|REFRESH_PAGES/);
+  const script = scrape.split('        run: |\n')[1]?.split(/^          timeout /m)[0]
+    .replace(/^          /gm, '');
+  assert.ok(script, 'the flag is selected before starting the scraper');
+  assert.match(script, /\[ "\$FULL" = true \] && \[ ! -f \.\.\/\.yedion-cache\/partial-runs \]/);
+  for (const full of ['true', 'false', '']) for (const partial of [false, true]) {
+    const dir = mkdtempSync(join(tmpdir(), 'nightly-kind-'));
+    try {
+      const repo = join(dir, 'repo');
+      mkdirSync(repo);
+      mkdirSync(join(dir, '.yedion-cache'));
+      if (partial) writeFileSync(join(dir, '.yedion-cache', 'partial-runs'), '1\n');
+      const result = spawnSync('bash', ['--noprofile', '--norc', '-c',
+        `${script}\nprintf 'FLAG=%s\\n' "$refresh"`], {
+        cwd: repo, env: { ...process.env, FULL: full }, encoding: 'utf8'
+      });
+      assert.equal(result.status, 0, result.error?.message ?? result.stderr);
+      const kind = partial ? 'light because the previous run was partial' : full === 'true' ? 'full' : 'light';
+      const flag = full === 'true' && !partial ? '--refresh-pages' : '';
+      assert.equal(result.stdout, `scrape kind: ${kind}\nFLAG=${flag}\n`, `full=${full}, partial=${partial}`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  const command = scrape.match(/^          timeout .+$/m)?.[0];
+  assert.match(command, /--all-groups --wait-throttle \$refresh/);
+  assert.equal((scrape.match(/--refresh-pages/g) ?? []).length, 1);
 });
 
 test('nightly: checkout and setup-node precede the locked recheck and all later steps are gated', () => {

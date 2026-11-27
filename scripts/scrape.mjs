@@ -43,7 +43,8 @@ export class ThrottledError extends Error {
   }
 }
 
-// A request function with run-level state: cookie jar, rejected streak, and a retry budget shared by every request (a full run is ~1800 requests).
+// A request function with run-level state: cookie jar, rejected streak, and a retry budget shared by every request.
+// A full GitHub run is ~1650 base requests (676 lists, ~396 groups, ~573 course pages, 7 exam tables, 2 session), plus throttle waits and retries.
 // One request gives up after MAX_TRIES retries (~5 min of backoff): a site that is down fails the run instead of waiting out the whole budget.
 const MAX_TRIES = 6;
 export function makeRequester({
@@ -201,7 +202,9 @@ export function unitsOf(opt, programs) {
 // paid(key) hears each answer really fetched from the site.
 // An answer that is not cached at all is fetched even past the budget.
 // request.readAt = when each answer returned was really read: its file's time, or now if just fetched.
-export const requesterOptions = (opt) => ({ offline: opt.offline, ...(opt.nightly ? nightlyPolicy(Date.now, { allGroups: opt['all-groups'] }) : {}) });
+export const requesterOptions = (opt) => ({ offline: opt.offline, ...(opt.nightly ? nightlyPolicy(Date.now, {
+  allGroups: opt['all-groups'], refreshPages: opt['refresh-pages'],
+}) : {}) });
 
 export function cachedRequester(inner, dir, { offline = false, ttl = () => Infinity, seen = () => {}, budget = () => Infinity, paid = () => {} } = {}) {
   const session = [],
@@ -252,22 +255,24 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
 }
 
 const DAY = 86400e3;
-// GitHub's all-groups mode reads groups and exam tables every run; course pages and lists every 2.5-3.5 days by key.
-// It has no budget cap or alike-cohort rule.
+// GitHub's all-groups mode reads groups and exam tables every run; --refresh-pages also re-reads course pages and lists.
+// Night, stale-data catch-up and manual runs are full (~4 h); a fresh afternoon is light (~405 base requests, ~1 h).
+// Restored partial runs continue light; the next full run after completion resumes the full page refresh.
+// Together they use ~2000-2100 base requests a day, plus throttle waits and retries, with no budget cap or alike-cohort rule.
 // GitLab reads groups every other night (half split), exam tables every other night until published, then weekly.
 // Course pages: 14-16 days (research A3: 15 of 415 changed in two weeks); lists: weekly, with the alike-cohort rule and its budgets.
 // An empty groups answer may be an error page that passed as 200, so GitLab keeps it for only 1.5 days.
 // "Weekly" is 7-9 days by key, so one full pull's answers expire over three nights.
 const weekly = (key, base = 7) => (base + (createHash('sha1').update(key).digest()[0] % 3)) * DAY;
-// GitHub caches course pages and lists for 2.5-3.5 days by key.
+// GitHub's light run keeps course pages and lists for 2.5-3.5 days by key as a safety net; full runs bypass this clock.
 const shortTtl = (key) => (2.5 + createHash('sha1').update(key).digest()[0] / 255) * DAY;
 // GitLab's half split: half the courses (by key) one night, the other half the next. A night of ~400 group requests at 2.5 s is ~20 CI minutes, and
 // GitLab Free gives 400 a month (cost factor 1, public projects too). Off its night an answer is good for 1.5 days, so after a missed run it is fetched anyway.
 const otherNight = (key, now) => (Math.floor(now / DAY) + createHash('sha1').update(key).digest()[1]) % 2 === 1;
-export function nightlyTtl(key, html, now = Date.now(), { allGroups = false } = {}) {
+export function nightlyTtl(key, html, now = Date.now(), { allGroups = false, refreshPages = false } = {}) {
   if (allGroups) {
     if (key.includes('S_EXAMS') || key.startsWith('prgname=S_LOOK_FOR_NOSE')) return 0;
-    if (key.includes('S_CourseDetails') || key.startsWith('prgname=S_SHOW_PROGS')) return shortTtl(key);
+    if (key.includes('S_CourseDetails') || key.startsWith('prgname=S_SHOW_PROGS')) return refreshPages ? 0 : shortTtl(key);
   }
   if (key.includes('S_EXAMS')) return parseExams(html).length ? weekly(key) : 1.5 * DAY;
   if (key.includes('S_CourseDetails')) return weekly(key, 14);
@@ -280,7 +285,7 @@ export function nightlyTtl(key, html, now = Date.now(), { allGroups = false } = 
 // an earlier cohort gave tonight is checked only every 28-30 days (in case the site changes one cohort alone; owner, 22.10), and one that equals the answer
 // an earlier cohort just replaced is fetched now. run() asks the cohorts in
 // a fixed order, so the first of each alike group (its representative) keeps the weekly clock. One policy per run: it remembers tonight's answers.
-export function nightlyPolicy(now = Date.now, { allGroups = false } = {}) {
+export function nightlyPolicy(now = Date.now, { allGroups = false, refreshPages = false } = {}) {
   const current = new Map(),
     replaced = new Map();
   const code = (key) => key.match(/^prgname=S_SHOW_PROGS&arguments=-N\d+,-N(\d+)$/)?.[1];
@@ -299,7 +304,7 @@ export function nightlyPolicy(now = Date.now, { allGroups = false } = {}) {
         if (current.get(c)?.has(s)) return weekly(key, 28);
         if (replaced.get(c)?.has(s)) return 0;
       }
-      return nightlyTtl(key, html, now(), { allGroups });
+      return nightlyTtl(key, html, now(), { allGroups, refreshPages });
     },
     budget: (key) => (allGroups ? Infinity : slow(key) && slowPaid >= SLOW_BUDGET ? 0 : NIGHT_BUDGET),
     paid(key) {
@@ -587,6 +592,7 @@ async function main() {
       offline: { type: 'boolean', default: false },
       nightly: { type: 'boolean', default: false },
       'all-groups': { type: 'boolean', default: false },
+      'refresh-pages': { type: 'boolean', default: false },
       'wait-throttle': { type: 'boolean', default: false },
     }
   });

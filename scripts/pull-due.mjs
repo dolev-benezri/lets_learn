@@ -23,12 +23,12 @@ function windowOpening(now, parts, minute) {
 }
 
 export function pullDue({ now, event, started, checkedAt }) {
-  if (event === 'workflow_dispatch') return { due: true, cold: false, reason: 'manual dispatch bypasses the checks' };
-  if (started === null) return { due: false, cold: false, reason: 'recent runs unreadable; waiting for another check' };
+  if (event === 'workflow_dispatch') return { due: true, cold: false, full: true, reason: 'manual dispatch bypasses the checks' };
+  if (started === null) return { due: false, cold: false, full: false, reason: 'recent runs unreadable; waiting for another check' };
   const time = now.getTime();
   const starts = started.map(Date.parse).filter((value) => Number.isFinite(value) && value <= time);
   if (starts.some((value) => time - value < 3 * HOUR))
-    return { due: false, cold: false, reason: 'a publishing pull started less than three hours ago' };
+    return { due: false, cold: false, full: false, reason: 'a publishing pull started less than three hours ago' };
   const parts = local(now);
   const minutes = +parts.hour * 60 + +parts.minute;
   const opening = minutes >= 90 && minutes < 270 ? 90 : minutes >= 870 && minutes < 1050 ? 870 : null;
@@ -37,7 +37,8 @@ export function pullDue({ now, event, started, checkedAt }) {
   const stale = !Number.isFinite(published) || time - published > 20 * HOUR;
   const due = unusedWindow || stale;
   return {
-    due, cold: due && opening === 870 && parts.weekday === 'Sat',
+    due, cold: due && opening === 90 && parts.weekday === 'Sat',
+    full: due && (opening !== 870 || stale),
     reason: unusedWindow ? 'no publishing pull since this Israel window opened'
       : stale ? 'published data is missing, invalid, or older than twenty hours'
         : 'published data is fresh; this window is used or no window is open',
@@ -92,9 +93,9 @@ async function main() {
     try { checkedAt = JSON.parse(await readFile('web/data/afeka/status.json', 'utf8')).checkedAt ?? null; }
     catch { /* Missing or unreadable published data needs catch-up, if runs can be read. */ }
   }
-  const { due, cold, reason } = pullDue({ now: new Date(), event, started, checkedAt });
+  const { due, cold, full, reason } = pullDue({ now: new Date(), event, started, checkedAt });
   if (process.env.GITHUB_OUTPUT)
-    await appendFile(process.env.GITHUB_OUTPUT, `${mode === 'recheck' ? 'go' : 'due'}=${due}\ncold=${cold}\n`);
+    await appendFile(process.env.GITHUB_OUTPUT, `${mode === 'recheck' ? 'go' : 'due'}=${due}\ncold=${cold}\nfull=${full}\n`);
   console.log(reason);
 }
 

@@ -643,7 +643,7 @@ test('all-groups: populated and empty exam tables refresh every run', () => {
   }
 });
 
-test('all-groups: slow TTLs are deterministic and bounded', () => {
+test('all-groups light: slow TTLs stay bounded; GitLab ignores refresh-pages', () => {
   for (const [prefix, base] of [['prgname=S_CourseDetails&arguments=', 14], ['prgname=S_SHOW_PROGS&arguments=-N2026,-N', 7]]) {
     const values = new Set();
     for (let i = 0; i < 300; i++) {
@@ -652,6 +652,7 @@ test('all-groups: slow TTLs are deterministic and bounded', () => {
       assert.equal(nightlyTtl(key, OK, 86400e3, { allGroups: true }), ttl);
       values.add(ttl);
       assert.equal(nightlyTtl(key, OK, 0), (base + createHash('sha1').update(key).digest()[0] % 3) * 86400e3);
+      assert.equal(nightlyTtl(key, OK, 0, { refreshPages: true }), nightlyTtl(key, OK, 0));
     }
     assert.ok(values.size >= 3, 'expiration is spread by key');
   }
@@ -661,11 +662,114 @@ test('all-groups: current and replaced cohort signatures do not alter TTL', () =
   const A = fx('prog-30001.html'), B = A.replace('>נלמד<', '>לא נלמד<');
   const key = (start) => `prgname=S_SHOW_PROGS&arguments=-N${start},-N30001`;
   for (const [branch, html, old] of [['current', A, A], ['replaced', B, A]]) {
-    const p = nightlyPolicy(() => 0, { allGroups: true });
-    p.seen(key(2024), html, old);
-    assert.equal(p.ttl(key(2025), A), nightlyTtl(key(2025), A, 0, { allGroups: true }), branch);
-    assert.ok(p.ttl(key(2025), A) >= 2.5 * 86400e3, branch);
+    for (const refreshPages of [false, true]) {
+      const p = nightlyPolicy(() => 0, { allGroups: true, refreshPages });
+      p.seen(key(2024), html, old);
+      const expected = refreshPages ? 0 : nightlyTtl(key(2025), A, 0, { allGroups: true });
+      assert.equal(p.ttl(key(2025), A), expected, `${branch}, refreshPages=${refreshPages}`);
+    }
   }
+});
+
+const refreshKeys = [
+  'prgname=S_SHOW_PROGS&arguments=-N2026,-N30001',
+  'prgname=S_CourseDetails&arguments=90903',
+  'prgname=S_LOOK_FOR_NOSE&arguments=-N90903',
+  'PRGNAME=S_EXAMS&ARGUMENTS=R1C28',
+];
+const cacheFile = (dir, key) => join(dir, `${createHash('sha1').update(key).digest('hex')}.html`);
+function seedAnswer(dir, key, time, html = OK) {
+  const file = cacheFile(dir, key);
+  writeFileSync(file, html);
+  utimesSync(file, new Date(time), new Date(time));
+}
+function cacheRun(dir, refreshPages, calls) {
+  return cachedRequester(async (key) => (calls.push(key), OK), dir,
+    requesterOptions({ nightly: true, 'all-groups': true, 'refresh-pages': refreshPages }));
+}
+
+test('all-groups cache: night refresh, afternoon light, next night refresh', async (t) => {
+  const dir = join(dirs().status, '..'), calls = [];
+  const night = Date.parse('2026-12-01T00:00:00Z');
+  let now = night;
+  t.mock.method(Date, 'now', () => now);
+  for (const key of refreshKeys) seedAnswer(dir, key, night - 36e5);
+  for (const [hour, refreshPages, expected] of [[0, true, refreshKeys], [12, false, refreshKeys.slice(2)], [24, true, refreshKeys]]) {
+    now = night + hour * 36e5;
+    calls.length = 0;
+    const request = cacheRun(dir, refreshPages, calls);
+    for (const key of refreshKeys) {
+      await request(key);
+      if (calls.includes(key)) seedAnswer(dir, key, now);
+    }
+    assert.deepEqual(calls, expected, `hour ${hour}: fetched keys`);
+    assert.deepEqual(request.deferred, []);
+  }
+});
+
+test('all-groups cache: missed-night afternoon full cannot shift the next night to light', async (t) => {
+  const dir = join(dirs().status, '..'), calls = [];
+  const afternoon = Date.parse('2026-12-01T13:00:00Z');
+  let now = afternoon;
+  t.mock.method(Date, 'now', () => now);
+  for (const key of refreshKeys) seedAnswer(dir, key, afternoon - 24 * 36e5);
+  for (const hour of [0, 11]) {
+    now = afternoon + hour * 36e5;
+    calls.length = 0;
+    const request = cacheRun(dir, true, calls);
+    for (const key of refreshKeys) {
+      await request(key);
+      seedAnswer(dir, key, now);
+    }
+    assert.deepEqual(calls, refreshKeys, `hour ${hour}: full refresh despite page age`);
+  }
+});
+
+test('all-groups cache light: keeps a three-day page, fetches missing and older-than-3.5-day pages', async (t) => {
+  const now = Date.parse('2026-12-01T13:00:00Z');
+  t.mock.method(Date, 'now', () => now);
+  for (const prefix of ['prgname=S_CourseDetails&arguments=', 'prgname=S_SHOW_PROGS&arguments=-N2026,-N']) {
+    const dir = join(dirs().status, '..'), calls = [];
+    // Choose a key whose unchanged safety clock exceeds three days.
+    const kept = Array.from({ length: 300 }, (_, i) => prefix + i)
+      .find((key) => createHash('sha1').update(key).digest()[0] > 128);
+    const missing = prefix + 'missing', expired = prefix + 'expired';
+    seedAnswer(dir, kept, now - 3 * 86400e3);
+    seedAnswer(dir, expired, now - 3.6 * 86400e3);
+    const request = cacheRun(dir, false, calls);
+    for (const key of [kept, missing, expired]) await request(key);
+    assert.deepEqual(calls, [missing, expired], prefix);
+  }
+});
+
+test('GitLab: refresh-pages leaves TTLs, alike cohorts and budgets unchanged', (t) => {
+  const html = fx('prog-30001.html'), changed = html.replace('>נלמד<', '>לא נלמד<');
+  const groups = fx('groups-90903.html');
+  const groupTtls = new Set();
+  const clock = t.mock.method(Date, 'now');
+  for (const now of [20000, 20001].map((day) => day * 86400e3)) {
+    clock.mock.mockImplementation(() => now);
+    const plain = requesterOptions({ nightly: true });
+    const flagged = requesterOptions({ nightly: true, 'refresh-pages': true });
+    for (const key of refreshKeys) {
+      const answer = key.startsWith('prgname=S_LOOK_FOR_NOSE') ? groups : OK;
+      assert.equal(nightlyTtl(key, answer, now, { refreshPages: true }), nightlyTtl(key, answer, now), key);
+      assert.equal(flagged.ttl(key, answer), plain.ttl(key, answer), key);
+      if (key.startsWith('prgname=S_LOOK_FOR_NOSE')) groupTtls.add(plain.ttl(key, answer));
+    }
+    for (const p of [plain, flagged]) {
+      p.seen('prgname=S_SHOW_PROGS&arguments=-N2024,-N30001', changed, html);
+      p.seen('prgname=S_SHOW_PROGS&arguments=-N2024,-N30002', html, html);
+      for (let i = 0; i < 160; i++) p.paid(refreshKeys[0]);
+    }
+    for (const key of [...refreshKeys, 'prgname=S_SHOW_PROGS&arguments=-N2025,-N30002']) {
+      const answer = key.startsWith('prgname=S_LOOK_FOR_NOSE') ? groups : html;
+      assert.equal(flagged.ttl(key, answer), plain.ttl(key, answer), key);
+      assert.equal(flagged.budget(key), plain.budget(key), key);
+    }
+  }
+  assert.deepEqual([...groupTtls].sort((a, b) => a - b), [0, 1.5 * 86400e3], 'both GitLab group half-split TTLs are exercised');
+  assert.deepEqual(requesterOptions({ 'all-groups': true, 'refresh-pages': true }), { offline: undefined });
 });
 
 test('all-groups: all overdue slow answers refresh without deferral', async () => {

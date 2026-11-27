@@ -5,7 +5,9 @@
 # Needs one masked GitLab CI variable, GH_PUSH_TOKEN: a GitHub fine-grained token whose resource owner is the lets-learn-il organization, this repo only, Contents read/write.
 # A push with that token triggers .github/workflows/deploy.yml. GitLab emails the owner when a run fails.
 # GH_PUSH_TOKEN stays for standby, so the token-expiry job below stays too.
-# The site allows about 400 requests per clock hour, a full run is ~1800 the first time: the scraper waits out the limit (--wait-throttle) and every answer is kept in
+# The site allows about 400 requests per clock hour; a cold full run is ~1650 base requests plus throttle waits and retries. GitHub reads all pages at night
+# (~4 h) and groups and exams on a fresh afternoon (~405 base requests, ~1 h), about 2000-2100 a day. A late night may still be busy at 07:07; standby then waits.
+# The scraper waits out the limit (--wait-throttle) and every answer is kept in
 # .yedion-cache (next to the clone), which the pipeline cache carries to the next night (also after a failed run), so a first run may need a few nights (a run stopped by the 160 minute `timeout` ends green and commits nothing; the 4th such run in a row fails, so a stuck scrape sends the failure mail). Later nights: exams, half the courses' groups (each course every other night) and the weekly pages that expired (an estimate of 270-314 requests, 13-15 CI minutes; stale answers refreshed stop at 380 a night, so a normal run does not wait for the hourly limit; GitLab Free gives 400 a month, public projects too).
 scrape:
   image: node:24
@@ -47,7 +49,7 @@ scrape:
       rm -rf "$seed_dir"
     - npm ci --omit=dev --no-audit --no-fund --ignore-scripts # dev packages (playwright, axe) are for the browser tests only; no dependency needs an install script, and GH_PUSH_TOKEN is in the environment
     # stdout is one summary line (the commit message); a failed scrape writes nothing and fails the job.
-    # The first runs are longer than the job (~1800 requests at 400 an hour): `timeout` stops the scraper before GitLab kills the job, the cache is saved, and the run counts as
+    # The first runs are longer than the job (~1650 base requests at ~400 an hour, plus throttle waits and retries): `timeout` stops the scraper before GitLab kills the job, the cache is saved, and the run counts as
     # partial (exit 0, nothing committed, no failure mail) up to 3 in a row; the counter lives in the cache. 160m leaves ~20 min of the 3h for clone, npm ci and the cache upload.
     # Any other failure still fails the job. SCRAPE_ARGS: empty at night; --force in a run by hand (docs/OPERATIONS.md, "ריצה שנעצרה בבדיקת נתונים").
     - |

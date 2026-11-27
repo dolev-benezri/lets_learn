@@ -56,12 +56,44 @@ test('pullDue: autumn DST first opening still governs after the three-hour gap',
 
 test('pullDue: a future start does not block an unused window', () =>
   decision({ started: [ago(night, -1)] }));
-test('pullDue: Saturday afternoon starts cold, other windows and catch-up stay warm', async () => {
-  await decision({ now: new Date('2026-12-05T13:00:00Z'), checkedAt: '2026-12-05T01:00:00Z' }, true, true);
-  await decision({ now: new Date('2026-12-05T00:00:00Z'), checkedAt: '2026-12-04T12:00:00Z' });
+test('pullDue: Saturday night starts cold, other windows and catch-up stay warm', async () => {
+  await decision({ now: new Date('2026-12-05T00:00:00Z'), checkedAt: '2026-12-04T12:00:00Z' }, true, true);
+  await decision({ now: new Date('2027-07-02T23:00:00Z'), checkedAt: '2027-07-02T12:00:00Z' }, true, true);
+  await decision({ now: new Date('2026-12-05T13:00:00Z'), checkedAt: '2026-12-05T01:00:00Z' });
+  await decision({ now: new Date('2026-12-04T00:00:00Z'), checkedAt: '2026-12-03T12:00:00Z' });
   await decision({ now: new Date('2026-12-04T13:00:00Z'), checkedAt: '2026-12-04T01:00:00Z' });
   await decision({ now: new Date('2026-12-05T08:00:00Z'), checkedAt: null });
   await decision({ now: new Date('2026-12-05T13:00:00Z'), started: ['2026-12-05T12:45:00Z'] }, false);
+});
+
+for (const [label, instant, age, full] of [
+  ['night with fresh data', night, 1, true],
+  ['afternoon with fresh data', '2026-12-01T13:00:00Z', 12, false],
+  ['afternoon at twenty hours', '2026-12-01T13:00:00Z', 20, false],
+  ['afternoon with future data', '2026-12-01T13:00:00Z', -1, false],
+  ['afternoon with stale data', '2026-12-01T13:00:00Z', 20 + 1 / 3600, true],
+  ['catch-up', '2026-12-01T08:00:00Z', 21, true],
+  ['missing data', '2026-12-01T13:00:00Z', null, true],
+  ['invalid data', '2026-12-01T13:00:00Z', 'invalid', true],
+]) {
+  test(`pullDue full: ${label}`, async () => {
+    const { pullDue } = await api();
+    const result = pullDue({ now: new Date(instant), event: 'schedule', started: [],
+      checkedAt: typeof age === 'number' ? ago(instant, age) : age });
+    assert.equal(result.due, true);
+    assert.equal(result.full, full, `${label}: full=${full}`);
+  });
+}
+
+test('pullDue full: blocked checks never request a full pull', async () => {
+  const { pullDue } = await api();
+  for (const started of [null, [ago(night, 1)]]) {
+    const result = pullDue({ now: new Date(night), event: 'schedule', started, checkedAt: null });
+    assert.equal(result.due, false);
+    assert.equal(result.full, false);
+  }
+  assert.equal(pullDue({ now: new Date('2026-12-01T08:00:00Z'), event: 'schedule', started: [],
+    checkedAt: '2026-12-01T07:00:00Z' }).full, false);
 });
 test('pullDue: future checkedAt is fresh', () =>
   decision({ now: new Date('2026-12-01T08:00:00Z'), checkedAt: '2026-12-01T09:00:00Z' }, false));
@@ -170,7 +202,7 @@ for (const event of ['schedule', 'workflow_dispatch']) {
         });
         assert.equal(child.status, 0, child.stderr);
         const due = event === 'workflow_dispatch' || attempt === '2';
-        assert.match(child.stdout, new RegExp(`OUTPUT:${mode === 'recheck' ? 'go' : 'due'}=${due},cold=false`));
+        assert.match(child.stdout, new RegExp(`OUTPUT:${mode === 'recheck' ? 'go' : 'due'}=${due},cold=false,full=${due}(?:\\n|$)`));
         if (due) assert.doesNotMatch(child.stdout, /API attempted|status read attempted/);
         else {
           assert.match(child.stdout, /API attempted/);
@@ -181,7 +213,7 @@ for (const event of ['schedule', 'workflow_dispatch']) {
   }
 }
 
-test('pull-due CLI: recheck appends go and cold lines to GITHUB_OUTPUT', () => {
+test('pull-due CLI: recheck appends go, cold and full lines to GITHUB_OUTPUT', () => {
   const dir = mkdtempSync(join(tmpdir(), 'pull-due-output-'));
   try {
     const output = join(dir, 'output');
@@ -190,7 +222,7 @@ test('pull-due CLI: recheck appends go and cold lines to GITHUB_OUTPUT', () => {
       env: { ...process.env, GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_OUTPUT: output },
     });
     assert.equal(child.status, 0, child.stderr);
-    assert.equal(readFileSync(output, 'utf8'), 'go=true\ncold=false\n');
+    assert.equal(readFileSync(output, 'utf8'), 'go=true\ncold=false\nfull=true\n');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

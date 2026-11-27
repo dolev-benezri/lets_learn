@@ -1,6 +1,8 @@
 # GitHub checks hourly for the two Israel publishing windows (docs/OPERATIONS.md, "הריצה הלילית").
 # Usually within about an hour of the window when GitHub delivers the hourly runs.
-# Each publishing pull asks every offered course's groups; a three-hour gap also applies to catch-up.
+# Night pulls re-read every page; fresh afternoons read groups and exam tables. Stale catch-up and hand starts are full.
+# A restored partial run continues light; full page refresh resumes on the next full run after completion.
+# A three-hour gap also applies to catch-up.
 # GitLab is the standby: busy wins, then data under 12 hours old stands by; missing data means run (ci/gitlab-scrape.yml).
 # The cache (every answer of the site, kept from night to night, see ci/gitlab-scrape.yml) sits beside the checkout, as on GitLab.
 # A smoke run (by hand, input smoke) scrapes one program and one semester into its own cache, so it never seeds the publishing cache.
@@ -36,6 +38,7 @@ jobs:
     outputs:
       due: ${{ steps.due.outputs.due }}
       cold: ${{ steps.due.outputs.cold }}
+      full: ${{ steps.due.outputs.full }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -55,7 +58,8 @@ jobs:
       group: nightly
       cancel-in-progress: false
       # A newer pending run may replace an older pending run (same job, newer data).
-    # an empty cache means ~1800 requests at the site's ~400 an hour; a job may run 6 hours
+    # A full night: ~1650 base requests, ~4 h plus throttle waits and retries; a light afternoon: ~405, ~1 h.
+    # About 2000-2100 base requests a day; a late night may still be busy at GitLab's 07:07 check, which then waits.
     timeout-minutes: 340
     env:
       PREFIX: ${{ inputs.smoke && 'yedion-smoke-' || 'yedion-night-v2-' }}
@@ -77,7 +81,7 @@ jobs:
         if: steps.recheck.outputs.go == 'true'
         working-directory: repo
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        # Only Saturday's afternoon publishing window starts empty; partial progress is still saved below.
+        # Only Saturday's night publishing window starts empty; partial progress is still saved below.
         if: ${{ steps.recheck.outputs.go == 'true' && !(github.event_name == 'schedule' && github.ref == 'refs/heads/main' && steps.recheck.outputs.cold == 'true' && !inputs.smoke && !inputs.dry_run) }}
         with:
           path: .yedion-cache
@@ -90,12 +94,22 @@ jobs:
         working-directory: repo
         env:
           SCOPE: ${{ !inputs.smoke && '--all-semesters --all-programs' || '' }}
+          FULL: ${{ steps.recheck.outputs.full }}
         run: |
           mkdir -p ../.yedion-cache
-          timeout 320m node scripts/scrape.mjs $SCOPE --cache ../.yedion-cache --nightly --all-groups --wait-throttle > ../summary.txt 2> >(tee ../scrape.log >&2) && rc=0 || rc=$?
+          refresh=
+          kind=light
+          if [ "$FULL" = true ] && [ ! -f ../.yedion-cache/partial-runs ]; then
+            refresh=--refresh-pages
+            kind=full
+          elif [ -f ../.yedion-cache/partial-runs ]; then
+            kind="light because the previous run was partial"
+          fi
+          echo "scrape kind: $kind"
+          timeout 320m node scripts/scrape.mjs $SCOPE --cache ../.yedion-cache --nightly --all-groups --wait-throttle $refresh > ../summary.txt 2> >(tee ../scrape.log >&2) && rc=0 || rc=$?
           if [ "$rc" = 124 ]; then
             n=$(( $(cat ../.yedion-cache/partial-runs 2>/dev/null || echo 0) + 1 )); echo "$n" > ../.yedion-cache/partial-runs
-            echo "partial run $n in a row: the cache keeps what was fetched, the next run continues"
+            echo "partial run $n in a row: the cache keeps what was fetched; a run restoring this cache continues light"
             if [ "$n" -lt 4 ]; then exit 0; fi
             echo "4 partial runs in a row: failing so the owner gets the mail"; exit 1
           fi
