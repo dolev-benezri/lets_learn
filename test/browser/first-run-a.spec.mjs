@@ -1264,6 +1264,22 @@ test('step 3: a row\'s "עוד" names its course for a screen reader, stays open
   assert.ok((await one.innerText()).length > (await sum.innerText()).length, 'the extras are inside it');
 });
 
+test('step 3: an "עוד" opened in the same task as a choice stays open: the redraw does not wait for the queued toggle event', async (t) => {
+  const page = await atStep(t, 'courses');
+  const r = await page.evaluate(async () => {
+    const rows = document.querySelectorAll('#firstRun .a-crs');
+    const id = rows[rows.length - 1].querySelector('input').dataset.id;
+    document.querySelector('#firstRun .a-crs details > summary').click();
+    document.querySelector(`#firstRun [data-k="fr-mode-${id}-must"]`).click(); // the same task: the toggle event of the click above is still queued
+    const now = document.querySelectorAll('#firstRun .a-crs details[open]').length;
+    await new Promise((res) => setTimeout(res, 100));
+    return { id, now, later: document.querySelectorAll('#firstRun .a-crs details[open]').length };
+  });
+  assert.equal((await rec(page)).choices[r.id], 'must', 'the choice redrew the card');
+  assert.equal(r.now, 1, 'open right after the redraw');
+  assert.equal(r.later, 1, 'and still open once the queued event has run');
+});
+
 test('1920: step 3 gives every name one line, the three-way choice one width, the foot stays in the window, and nothing scrolls sideways', async (t) => {
   const page = await atStep(t, 'courses', { size: WIDE });
   const m = await page.evaluate(() => {
