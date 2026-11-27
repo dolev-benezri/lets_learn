@@ -77,7 +77,7 @@ const confirmRows = async (page) => {
   for (const r of await page.locator('[data-ed-row]').all()) await r.locator('input').first().check();
   await page.locator('[data-ed="next"]').click();
   await page.waitForFunction(() => location.hash === '#edit/changes');
-  await page.locator('#editWeek .blk').first().waitFor();
+  await page.locator('#editWeek:not([inert]) .blk').first().waitFor(); // step 1 shows the week too, inert: only step 2's is not
 };
 // Tab through root, marking every element that takes focus inside root; stops once focus has left root again.
 const tabThrough = async (page, root) => {
