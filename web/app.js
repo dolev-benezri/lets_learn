@@ -375,12 +375,13 @@ export function yearView(dataA, dataB) {
     courses[id] = {
       ...a,
       offered: !!(a.offered || b?.offered),
+      noHours: !(a.offered || b?.offered) && !!(a.noHours || b?.noHours),
       groups: [...a.groups, ...(b?.groups ?? [])],
       semesters: [...(a.offered ? ['א'] : []), ...(b?.offered ? ['ב'] : [])]
     };
   }
   for (const [id, b] of Object.entries(dataB.courses))
-    if (!courses[id]) courses[id] = { ...b, semesters: b.offered ? ['ב'] : [] };
+    if (!courses[id]) courses[id] = { ...b, noHours: !b.offered && !!b.noHours, semesters: b.offered ? ['ב'] : [] };
   return { ...dataA, semester: 'שנה', courses };
 }
 let groupSem = null;

@@ -16,6 +16,7 @@ import {
 } from './ui-grid.js';
 import { courseCount } from './ui-text.js';
 import { YEAR_LETTERS, planPaths, G, truncate } from './map-layout.js';
+import { NO_HOURS_TEXT } from './rules.js';
 
 // ---------- text helpers ----------
 const LABEL = {
@@ -26,6 +27,7 @@ const LABEL = {
   conditional: 'זמין בתנאי',
   afterA: 'בב׳ אחרי…',
   blocked: 'חסום',
+  noHours: NO_HOURS_TEXT,
   notOffered: 'לא נלמד'
 };
 const uniq = (a) => [...new Set(a)];
@@ -85,6 +87,7 @@ const GLYPH = {
   blocked: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   afterA: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   conditional: '<path d="M12 7v6"/><path d="M12 17h.01"/>',
+  noHours: '<circle cx="12" cy="12" r="9"/><path d="M12 8v.01M12 11v5"/>',
 };
 const glyph = (s, x, y, r) => {
   const z = Math.min(18, r * 1.1);
@@ -101,6 +104,7 @@ export const LEGEND = [
   ['retake', 'חזרה (נכשלתי)'],
   ['afterA', 'בב׳ אחרי…'],
   ['blocked', 'חסום, חסר קדם'],
+  ['noHours', NO_HOURS_TEXT],
   ['notOffered', 'לא נלמד בסמסטר']
 ];
 const num = (n) => Math.round(n * 10) / 10;

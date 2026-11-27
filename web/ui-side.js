@@ -1,6 +1,6 @@
 // Step 2, the courses page ("הקורסים שלי"): the course list and a one-line summary of the shown alternative.
 import { app, esc, candidateMode, planningCls, summerPinned } from './app.js';
-import { englishOptions, specLists } from './rules.js';
+import { englishOptions, specLists, NO_HOURS_TEXT } from './rules.js';
 import { unlockCounts } from './solver-core.js';
 import { icon, isPair, resCourses, placedIn, semResult, summary, freeDaysText } from './ui-grid.js';
 import { notFitReason, courseCount, toolName, splitReason } from './ui-text.js';
@@ -208,7 +208,7 @@ export function renderSide(res) {
   const locked = (s) => ids.filter((id) => st(id) === s);
   // a blocked course offers its outside-program alternatives (J3)
   const rows = (list, ask) => `<ul
-    class="locked">${list.map((id) => `<li${designOn() ? ` data-course-id="${esc(id)}"` : ''}>${icon('lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${
+    class="locked">${list.map((id) => `<li${designOn() ? ` data-course-id="${esc(id)}"` : ''}>${icon(st(id) === 'noHours' ? 'info' : 'lock')}<div><b>${nameHtml(app.data.courses[id].name)}</b><p>${
       pc.statuses[id].reasons.map(esc).join('<br>')}</p>${ask ? outsideBoxes(id, `side-${id}`) : ''}</div></li>`).join('')}</ul>`;
   // the search finished without a plan: say so, step 4 says why
   const noPlan = ui.last && !ui.last.results.some((r) => resCourses(r).length);
@@ -246,6 +246,7 @@ export function renderSide(res) {
     ${listsHtml}
     ${details('specOthers', `התמחויות אחרות (${specN})`, spec.map(({ l, ids }) => `<h4>${esc(listTitle(l))} (${ids.length})</h4>${cards(ids)}`).join(''), specN)}
     ${details('blocked', `${icon('lock')} חסומים (${locked('blocked').length})`, rows(locked('blocked'), true), locked('blocked').length)}
+    ${details('noHours', `${NO_HOURS_TEXT} (${locked('noHours').length})`, rows(locked('noHours')), locked('noHours').length)}
     ${details('notOffered', `לא נלמד בסמסטר (${locked('notOffered').length})`, rows(locked('notOffered')), locked('notOffered').length)}
     ${details('exempt', `פטור (ציון אנגלית) (${locked('exempt').length})`, rows(locked('exempt')), locked('exempt').length)}
     ${details('english', 'אנגלית: רמות ופטור', engBody, eng.length)}`;

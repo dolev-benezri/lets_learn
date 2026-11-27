@@ -1,6 +1,7 @@
 // The improve page's course search view (phase 2, Task F): the HTML of the tool column while a search is open. Pure, no DOM; the state and the events are
 // ui-edit.js's. `s` = { text, day, hour, sem, program }, `programs` = [{ id, name }] (the catalog's, the student's own first), `r` = searchCourses()'s answer.
 import { esc } from './app.js';
+import { NO_HOURS_TEXT } from './rules.js';
 
 const DAY_NAMES = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳'];
 const HOURS = Array.from({ length: 13 }, (_, i) => `${String(i + 8).padStart(2, '0')}:00`);
@@ -37,9 +38,10 @@ function optionHtml(row, o) {
     <span class="tag ${tag[1]}">${esc(tag[0])}</span>${act}</li>`;
 }
 export function courseHtml(row) {
-  const why = row.readOnly ? row.readOnlyWhy : row.why;
+  const reason = row.readOnly ? row.readOnlyWhy : row.why;
+  const why = [reason, row.noHours && reason !== NO_HOURS_TEXT ? NO_HOURS_TEXT : ''].filter(Boolean).join(' · ');
   const body = !row.options.length
-    ? '<p class="hint">אין קבוצה פתוחה</p>'
+    ? row.noHours ? '' : '<p class="hint">אין קבוצה פתוחה</p>'
     : `<ul class="plain cs-opts">${row.options.map((o) => optionHtml(row, o)).join('')}</ul>`;
   return `<li class="cs-course"><h3>${esc(row.name)}</h3>
     <p class="hint cs-meta"><bdi dir="ltr">${esc(row.code)}</bdi> · ${esc(row.credits)} נ״ז${row.inSchedule ? ' · במערכת שלך' : ''}${why ? ` · ${esc(why)}` : ''}</p>

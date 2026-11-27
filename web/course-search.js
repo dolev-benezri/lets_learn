@@ -7,10 +7,11 @@
 //               sem: the record's semester, week: the shown week's lessons, inSchedule: Set of course ids in it, statuses: classify() of `data[sem]`,
 //               registered, owned: the groups of the registered schedule, split: the build page's option }
 //     query = { text, day, hour, sem, program }   program: 'mine' (default) or the foreign program's id
-//   list: [{ id, name, code, credits, open, why, needs, readOnly, readOnlyWhy, inSchedule, options: [{ ids, line, lecturer, fit, clash }] }]
+//   list: [{ id, name, code, credits, noHours, open, why, needs, readOnly, readOnlyWhy, inSchedule, options: [{ ids, line, lecturer, fit, clash }] }]
 //     fit: 'fits' (no part clashes with the week, the course itself left out) | 'clash' (names in `clash`) | 'full' (a part is full)
 //   empty: nothing was asked (no text, day or hour): no list, the caller says how to ask.
 import { buildOptions, meetingsMask, overlaps } from './solver-core.js';
+import { NO_HOURS_TEXT } from './rules.js';
 
 export const MAX_RESULTS = 30;
 const DAY = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
@@ -64,6 +65,7 @@ function reasonOf(status, data) {
   if (!status) return '';
   if (status.status === 'done') return 'עברת את הקורס';
   if (status.status === 'exempt') return status.reasons?.[0] ?? 'פטור';
+  if (status.status === 'noHours') return NO_HOURS_TEXT;
   if (status.status === 'notOffered') return status.reasons?.[0] ?? 'הקורס לא נלמד';
   if (status.status === 'blocked') {
     const names = (status.blockedBy ?? []).map((alts) => alts.map((a) => data.courses[a]?.name ?? a).join(' או '));
@@ -105,7 +107,7 @@ export function searchCourses(ctx, query) {
   const week = (ctx.week ?? []).filter((l) => l.day);
   const rows = [];
   for (const [id, c] of Object.entries(data.courses)) {
-    if (!c.groups.length) continue;
+    if (!c.groups.length && !c.noHours) continue;
     const hit = textHits(id, c, text);
     if (!hit.any) continue;
     // the groups that satisfy the group-level criteria (day, hour, a lecturer or group-id hit); none asked: every option stays
@@ -144,9 +146,9 @@ export function searchCourses(ctx, query) {
     const stuck = found ? [] : need.filter((alts) => !alts.some((x) => ctx.inSchedule?.has(x)));
     const parallelWhy = stuck.length ? `דורש במקביל קורס שאי אפשר להירשם אליו עכשיו: ${stuck.map((alts) => alts.map((x) => data.courses[x]?.name ?? x).join(' או ')).join(', ')}` : '';
     rows.push({
-      id, name: c.name, code: id, credits: c.credits, open: open && !stuck.length, inSchedule,
+      id, name: c.name, code: id, credits: c.credits, noHours: !!c.noHours, open: open && !stuck.length, inSchedule,
       // what is already in the schedule needs no "passed" or "blocked" label: it is there
-      why: mine && sameSem && !inSchedule ? (open ? parallelWhy : reasonOf(status, data)) : '',
+      why: mine && sameSem && !inSchedule ? (open ? parallelWhy : reasonOf(status, data)) : c.noHours ? NO_HOURS_TEXT : '',
       withIds, needs: withIds.length ? `דורש במקביל: ${withIds.map((x) => data.courses[x]?.name ?? x).join(', ')}` : '',
       readOnly: !(mine && sameSem),
       readOnlyWhy: !mine ? 'לא בתוכנית שלך' : !sameSem ? `בסמסטר ${sem}׳` : '',

@@ -1,3 +1,5 @@
+import { detailsSemester } from './parse.mjs';
+
 export const normName = (s) =>
   s
     .replace(/["'׳״]/g, '')
@@ -41,8 +43,10 @@ export function buildDataset({
       if (twoSemesters.length)
         warnings.push(`${c.id}: group(s) with meetings in two semesters dropped: ${twoSemesters.join(', ')}`);
       const kept = r.groups.filter((g) => g.meetings.length && g.meetings.every((m) => m.semester === semester));
+      const noHours = !kept.some((g) => g.primary) && r.groups.some((g) =>
+        g.primary && !g.meetings.length && g.detailsArgs && detailsSemester(g.detailsArgs) === semester);
       const ids = new Set(kept.map((g) => g.id));
-      const groups = kept.map(({ detailsArgs, meetings, linked, ...g }) => {
+      const groups = (noHours ? [] : kept).map(({ detailsArgs, meetings, linked, ...g }) => {
         let own = linked.filter((id) => ids.has(id));
         // The source can name no related group at all while the tutorial `<id>/n` sits on the same page (checked live 2026-11-20:
         // 90902 group 279090227, 40220 group 274022003, both on the groups page and the details page). Its own sub-groups are its parts.
@@ -66,6 +70,7 @@ export function buildDataset({
         name: c.name,
         credits: r.details?.credits ?? 0,
         offered: groups.some((g) => g.primary),
+        ...(noHours && { noHours: true }),
         prereqs: (r.details?.prereqs ?? [])
           .filter((p) => p.names.length > 0)
           .filter((p) => !p.population || p.population.includes(department))

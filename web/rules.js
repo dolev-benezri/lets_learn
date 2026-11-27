@@ -77,11 +77,18 @@ export function specLists(data, specs = []) {
   return out;
 }
 
+export const NO_HOURS_TEXT = 'נלמד, בלי שעות במערכת';
+
 // A course not taught in א/ב but taught in summer says so (in place), pointing at the summer tab or at the profile
 // switch that opens it.
 export function summerOnly(statuses, summer, on) {
   for (const [id, s] of Object.entries(statuses)) {
-    if (s.status !== 'notOffered' || !summer?.courses[id]?.offered) continue;
+    if (s.status !== 'notOffered') continue;
+    if (summer?.courses[id]?.noHours) {
+      s.reasons = [`${NO_HOURS_TEXT} (בקיץ)`];
+      continue;
+    }
+    if (!summer?.courses[id]?.offered) continue;
     s.reasons = [on
       ? 'נלמד רק בקיץ: תכננו אותו בלשונית "קיץ"'
       : 'נלמד רק בקיץ. כדי לתכנן אותו, סמנו "אני מתכנן/ת סמסטר קיץ השנה" ב"המצב שלי"'];
@@ -163,6 +170,10 @@ export function classify(data, state) {
     }
     if (exempt.has(id)) {
       statuses[id] = { status: 'exempt', reasons: ['פטור (ציון אנגלית)'] };
+      continue;
+    }
+    if (c.noHours) {
+      statuses[id] = { status: 'noHours', reasons: [NO_HOURS_TEXT] };
       continue;
     }
     if (!c.offered) {
