@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-24T23:19:34.401Z",
+ "fetchedAt": "2026-11-27T04:06:04.004Z",
  "year": 2027,
  "startYear": 2027,
  "program": 30,
@@ -771,7 +771,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' מרקס אן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -1046,7 +1046,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "מר שלומי פיני",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "271001618/1"
@@ -3285,7 +3285,7 @@
        "kind": "בוחן אמצע",
        "moed": 1,
        "date": "2026-11-29",
-       "time": "13:00"
+       "time": "10:00"
       },
       {
        "kind": "בחינה",
@@ -3324,7 +3324,7 @@
        "kind": "בוחן אמצע",
        "moed": 1,
        "date": "2026-11-29",
-       "time": "13:00"
+       "time": "10:00"
       },
       {
        "kind": "בחינה",
@@ -3363,7 +3363,7 @@
        "kind": "בוחן אמצע",
        "moed": 1,
        "date": "2026-11-29",
-       "time": "13:00"
+       "time": "10:00"
       },
       {
        "kind": "בחינה",
@@ -3402,7 +3402,7 @@
        "kind": "בוחן אמצע",
        "moed": 1,
        "date": "2026-11-29",
-       "time": "13:00"
+       "time": "10:00"
       },
       {
        "kind": "בחינה",
@@ -8505,7 +8505,7 @@
        "day": 4,
        "start": "16:00",
        "end": "17:50",
-       "room": "200 פיקוס"
+       "room": "055 פרונטלי בניין מעבדות"
       }
      ],
      "exams": []
@@ -9017,7 +9017,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר גלמן ולדימיר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -9399,7 +9399,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר אלקיים רמי",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -12012,7 +12012,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -13710,7 +13710,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר מוחוב אלונה",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [
       "279092508/1"

@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-24T23:19:34.401Z",
+ "fetchedAt": "2026-11-26T23:17:22.728Z",
  "year": 2027,
  "startYear": 2025,
  "program": 40,
@@ -10450,7 +10450,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר רויטברג ולדיסלב",
-     "full": true,
+     "full": false,
      "semester": "ב",
      "linked": [
       "279093703/1"

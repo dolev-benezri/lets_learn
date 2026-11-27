@@ -648,7 +648,7 @@
    and its button */
 :root[data-design="a"] .cs-head { display:grid; gap:var(--sp-1); }
 :root[data-design="a"] .cs-field input {
-  width:100%; min-height:44px; padding:0 var(--sp-3); border:1px solid var(--border-strong); border-radius:12px; background:var(--surface); color:var(--text);
+  width:100%; min-height:44px; padding:0 var(--sp-3); border:1px solid var(--border-input); border-radius:12px; background:var(--surface); color:var(--text);
   font:inherit;
 }
 :root[data-design="a"] .cs-count { margin:var(--sp-2) 0; }
@@ -664,6 +664,7 @@
   inset-inline-start:calc(3px + (100% - 6px) * var(--l) / var(--n)); inset-inline-end:auto; width:calc((100% - 6px) / var(--n) - 2px);
   outline:2px solid var(--danger); outline-offset:-2px;
 }
+:root[data-design="a"] .blk.clash:focus-visible { outline:2px solid var(--primary); outline-offset:2px; box-shadow:inset 0 0 0 2px var(--danger); }
 /* a lesson shows its whole range ("09:00–09:50"): the global rule hides the end hour of a block under 96px, which a column at some window widths is by one
    pixel, so two 50-minute lessons of one week differed; blocks sharing time are narrower on purpose and keep the start only */
 :root[data-design="a"] .blk-end { display:inline; }
@@ -724,7 +725,9 @@
    bottom when the card is taller than the window; --fr-foot-h (measured, ui-first-run.js) keeps a focused control from sitting under it. */
 :root[data-design="a"] .a-fr { display:none; }
 :root[data-design="a"] body.first-run .a-fr:not([hidden]) { display:block; padding:var(--sp-6) var(--sp-4) var(--sp-7); }
-:root[data-design="a"] body.first-run .a-strip { display:none; }
+:root[data-design="a"] body.first-run .a-strip:not(:has(.notice-top:not(:empty))) { display:none; }
+:root[data-design="a"] body.first-run .a-strip .a-unofficial { display:none; }
+:root[data-design="a"] body.first-run #notice .btn { min-height:44px; }
 /* the stage's own display rules (improve mode's record-open grid among them) are more specific than one class: the repeats outweigh them */
 :root[data-design="a"] body.first-run .a-stage.a-stage.a-stage { display:none; }
 :root[data-design="a"] body.first-run .a-top .modes, :root[data-design="a"] body.first-run .a-top .menu-btn { display:none; }

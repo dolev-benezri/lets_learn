@@ -39,6 +39,94 @@ const makeLink = async (t, kind, extra = {}) => {
   return url.slice(url.indexOf('#'));
 };
 
+test('a save that fails during the pass shows its warning above the card', async (t) => {
+  for (const [label, size, enlarged] of [['desktop', 'desktop', false], ['320px at 200% text', { width: 320, height: 640 }, true]]) {
+    await t.test(label, async (t) => {
+      const page = await visit(t, size, null);
+      await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('#aStrip').isVisible(), false, 'no warning: no strip during the pass');
+      await page.addInitScript(() => {
+        window.__workingSetItem = Storage.prototype.setItem;
+        Storage.prototype.setItem = function (key, value) {
+          if (key === 'afeka-sched-v1') throw new DOMException('test quota', 'QuotaExceededError');
+          return window.__workingSetItem.call(this, key, value);
+        };
+      });
+      await page.reload();
+      await passFirstRun(page, { stopAfterStart: true });
+      await page.locator('.a-fr-card[data-step="passed"]').waitFor({ timeout: 30000 });
+      await page.locator('#notice .banner.err').waitFor({ state: 'attached' });
+      if (enlarged) await page.evaluate(() => {
+        const els = [...document.querySelectorAll('#firstRun, #firstRun *, #aStrip, #aStrip *')];
+        const sizes = els.map((el) => parseFloat(getComputedStyle(el).fontSize));
+        els.forEach((el, i) => el.style.setProperty('font-size', `${sizes[i] * 2}px`, 'important'));
+      });
+      assert.equal(await page.locator('#notice .banner.err').isVisible(), true, 'the failed save is visible during the pass');
+      const warning = await page.evaluate(() => ({
+        bottom: document.querySelector('#notice .banner.err').getBoundingClientRect().bottom,
+        card: document.getElementById('firstRun').getBoundingClientRect().top,
+        button: document.querySelector('#notice [data-act="backup"]').getBoundingClientRect().height,
+        fits: document.documentElement.scrollWidth <= innerWidth
+      }));
+      assert.ok(warning.bottom <= warning.card, `the warning is above the card: ${JSON.stringify(warning)}`);
+      assert.ok(warning.button >= 44, `the backup button is at least 44px (${warning.button})`);
+      assert.equal(warning.fits, true, 'no sideways scroll with the warning and its button');
+      assert.equal(await page.locator('#aStrip .a-unofficial').isVisible(), false, 'only the notice is shown during the pass');
+
+      // Recover in this visit, keeping the pass open and making a real save.
+      await page.evaluate(async () => {
+        Storage.prototype.setItem = window.__workingSetItem;
+        (await import('./app.js')).save();
+      });
+      await page.locator('#notice .banner.err').waitFor({ state: 'detached' });
+      await page.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue('--a-strip-h').trim() === '0px');
+      assert.equal(await page.locator('#aStrip').isVisible(), false, 'recovery hides the strip again');
+      assert.equal(await page.locator('#firstRun').isVisible(), true, 'recovery does not end the pass');
+      const position = await page.evaluate(async () => {
+        document.querySelector('.a-fr-card').scrollIntoView({ block: 'start' });
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        return { top: document.querySelector('.a-fr-card').getBoundingClientRect().top,
+          chrome: Math.max(0, document.querySelector('.a-top').getBoundingClientRect().bottom) };
+      });
+      assert.ok(position.top >= position.chrome - 1, `the scrolled card clears sticky chrome: ${JSON.stringify(position)}`);
+    });
+  }
+});
+
+test('a backup link opened after the terms, mid-pass, restores and ends the pass', async (t) => {
+  const hash = await makeLink(t, 'backup');
+  const page = await visit(t, 'phone', null);
+  await passFirstRun(page, { stopAfterStart: true });
+  await page.locator('.a-fr-card[data-step="passed"]').waitFor({ timeout: 30000 });
+  assert.notEqual(await page.evaluate(() => localStorage.getItem('afeka-sched-v1')), null, 'accepting terms saved a record');
+  await page.evaluate((h) => { location.hash = h; }, hash);
+  await page.locator('dialog[open]').getByRole('button', { name: 'שחזר גיבוי', exact: true }).click();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('afeka-sched-v1'))?.name === 'נועה', null, { timeout: 30000 });
+  await page.waitForFunction(() => !location.hash.startsWith('#b='));
+  assert.equal(await page.locator('#firstRun').isVisible(), false, 'the restored record ends the pass');
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('#aBoard').isVisible(), true, 'the restored board is shown');
+  assert.equal(await page.evaluate(() => document.getElementById('aBoard').inert), false, 'the board is usable');
+  await page.reload();
+  await page.locator('#week .blk').first().waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('#firstRun').isVisible(), false, 'the pass stays finished after reload');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')).name), 'נועה');
+});
+
+test('a backup link declined after the terms, mid-pass, keeps the pass and the current record', async (t) => {
+  const hash = await makeLink(t, 'backup');
+  const page = await visit(t, 'phone', null);
+  await passFirstRun(page, { stopAfterStart: true });
+  const step = page.locator('.a-fr-card[data-step="passed"]');
+  await step.waitFor({ timeout: 30000 });
+  const record = await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1')));
+  await page.evaluate((h) => { location.hash = h; }, hash);
+  await page.locator('dialog[open]').getByRole('button', { name: 'השאר את המצב הנוכחי', exact: true }).click();
+  await page.waitForFunction(() => !location.hash.startsWith('#b='));
+  assert.equal(await step.isVisible(), true, 'the pass stays at step 2');
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1'))), record, 'nothing was restored');
+});
+
 test('first visit shows one card: the terms, the track and the year together, over an empty board, and "המשך" waits for all three', async (t) => {
   const page = await visit(t, 'phone', null);
   await page.locator('#firstRun .gate').waitFor({ state: 'visible' });

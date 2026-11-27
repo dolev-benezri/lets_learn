@@ -636,9 +636,9 @@ function stepTwoA(st) {
 // What is loaded now: the saved schedule (with its pending changes), or, before "לשינויים" saves it, the lessons the rows just read stand for.
 function loadedNow(st) {
   const data = dataOf(st.dataset?.sem);
-  if (data && st.baseline.length && sameNow(st)) return { data, st, zero: false, lessons: st.baseline };
   const d = st.draft, from = d?.rows?.length ? dataOf(d.sem) : null;
   const lessons = from ? lessonsFromRows(d.rows, d.choices, from) : [];
+  if (data && st.baseline.length && sameNow(st) && (st.draft?.committed !== false || !lessons.length)) return { data, st, zero: false, lessons: st.baseline };
   return lessons.length ? { data: from, st: { ...st, baseline: lessons, original: lessons, removed: [], added: [], swaps: {} }, zero: true, lessons } : null;
 }
 // A row's choice in the review list changes the lessons read: the week and the heading line follow at once (the rest of the page, and the focus on the
@@ -966,7 +966,7 @@ function openEditor({ openFriendEditor }, file, pick, handed = null) {
       rows.forEach((r, i) => key(r) && was.has(key(r)) && (choices[i] = was.get(key(r))));
       fresh = true;
       invalidate();
-      commit({ ...edit(), draft: { rows, choices, registered: d?.registered ?? edit().registered, sem } });
+      commit({ ...edit(), draft: { rows, choices, registered: d?.registered ?? edit().registered, sem, committed: false } });
       renderEdit();
       return null;
     }
@@ -991,7 +991,8 @@ function next() {
   if (!lessons.length || lostRow(d.rows, d.choices, data) >= 0) return say('לא נמצאו כל השיעורים במערכת. טענו אותה שוב.');
   // the same schedule as the one already loaded: keep the work done in step 2
   if (!(st.baseline.length && sameNow(st) && st.registered === d.registered && JSON.stringify(lessons) === JSON.stringify(st.original)))
-    (invalidate(), commit({ ...loadSchedule(st, lessons, datasetOf(data, app.state), d.registered), draft: d }));
+    (invalidate(), commit({ ...loadSchedule(st, lessons, datasetOf(data, app.state), d.registered), draft: { ...d, committed: true } }));
+  else if (d.committed === false) commit({ ...st, draft: { ...d, committed: true } });
   location.hash = '#edit/changes';
 }
 
