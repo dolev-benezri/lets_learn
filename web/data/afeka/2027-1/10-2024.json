@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-26T23:17:22.728Z",
+ "fetchedAt": "2026-11-27T04:06:04.004Z",
  "year": 2027,
  "startYear": 2024,
  "program": 10,
@@ -796,7 +796,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' מרקס אן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [

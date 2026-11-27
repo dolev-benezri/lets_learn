@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-26T23:17:22.728Z",
+ "fetchedAt": "2026-11-27T04:06:04.004Z",
  "year": 2027,
  "startYear": 2025,
  "program": 10,
@@ -44,7 +44,7 @@
   {
    "code": 10003,
    "name": "קורסי חובה שנה ג'",
-   "minCredits": 40,
+   "minCredits": 36,
    "courses": [
     "10120",
     "10121",

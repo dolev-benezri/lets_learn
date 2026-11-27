@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-26T23:17:22.728Z",
+ "fetchedAt": "2026-11-27T04:06:04.004Z",
  "year": 2027,
  "startYear": 2026,
  "program": 32,
@@ -675,7 +675,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' מרקס אן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -3136,7 +3136,7 @@
        "kind": "בוחן אמצע",
        "moed": 1,
        "date": "2026-11-29",
-       "time": "13:00"
+       "time": "10:00"
       },
       {
        "kind": "בחינה",
@@ -3175,7 +3175,7 @@
        "kind": "בוחן אמצע",
        "moed": 1,
        "date": "2026-11-29",
-       "time": "13:00"
+       "time": "10:00"
       },
       {
        "kind": "בחינה",
@@ -3214,7 +3214,7 @@
        "kind": "בוחן אמצע",
        "moed": 1,
        "date": "2026-11-29",
-       "time": "13:00"
+       "time": "10:00"
       },
       {
        "kind": "בחינה",
@@ -3253,7 +3253,7 @@
        "kind": "בוחן אמצע",
        "moed": 1,
        "date": "2026-11-29",
-       "time": "13:00"
+       "time": "10:00"
       },
       {
        "kind": "בחינה",
@@ -11259,7 +11259,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

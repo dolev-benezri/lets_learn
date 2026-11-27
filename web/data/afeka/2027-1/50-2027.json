@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-26T23:17:22.728Z",
+ "fetchedAt": "2026-11-27T04:06:04.004Z",
  "year": 2027,
  "startYear": 2027,
  "program": 50,
@@ -619,7 +619,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' מרקס אן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -2848,8 +2848,8 @@
       {
        "kind": "בחינה",
        "moed": 2,
-       "date": "2027-02-28",
-       "time": "09:00"
+       "date": "2027-03-07",
+       "time": "13:00"
       }
      ]
     },
@@ -9616,7 +9616,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-26T23:17:22.728Z",
+ "fetchedAt": "2026-11-27T04:06:04.004Z",
  "year": 2027,
  "startYear": 2027,
  "program": 20,
@@ -694,7 +694,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' מרקס אן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -4252,7 +4252,20 @@
        "room": "114-פיקוס סיסקו וגם פרונטלי"
       }
      ],
-     "exams": []
+     "exams": [
+      {
+       "kind": "בחינה",
+       "moed": 1,
+       "date": "2027-01-31",
+       "time": "17:00"
+      },
+      {
+       "kind": "בחינה",
+       "moed": 2,
+       "date": "2027-02-21",
+       "time": "17:00"
+      }
+     ]
     },
     {
      "id": "272022101/1",
@@ -5050,7 +5063,20 @@
        "room": "055 פרונטלי בניין מעבדות"
       }
      ],
-     "exams": []
+     "exams": [
+      {
+       "kind": "בחינה",
+       "moed": 1,
+       "date": "2027-02-04",
+       "time": "17:00"
+      },
+      {
+       "kind": "בחינה",
+       "moed": 2,
+       "date": "2027-02-28",
+       "time": "17:00"
+      }
+     ]
     },
     {
      "id": "272034801/1",
@@ -5405,7 +5431,20 @@
        "room": "203 פיקוס"
       }
      ],
-     "exams": []
+     "exams": [
+      {
+       "kind": "בחינה",
+       "moed": 1,
+       "date": "2027-02-11",
+       "time": "17:00"
+      },
+      {
+       "kind": "בחינה",
+       "moed": 2,
+       "date": "2027-03-08",
+       "time": "17:00"
+      }
+     ]
     },
     {
      "id": "272037002/1",
@@ -5623,7 +5662,7 @@
      "type": "סופי-הרצאה+תרגול",
      "primary": true,
      "lecturer": "ד\"ר עמר ניסים",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [
       "272038001/1"
@@ -5689,7 +5728,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר ארנפלד יוסף",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11095,7 +11134,7 @@
      "type": "תרגול",
      "primary": false,
      "lecturer": "מר מינקין אלכסנדר",
-     "full": true,
+     "full": false,
      "semester": "א",
      "linked": [],
      "meetings": [

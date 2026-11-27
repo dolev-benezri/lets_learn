@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-26T23:17:22.728Z",
+ "fetchedAt": "2026-11-27T04:06:04.004Z",
  "year": 2027,
  "startYear": 2027,
  "program": 12,
@@ -797,7 +797,7 @@
      "type": "סופי-הרצאה",
      "primary": true,
      "lecturer": "גב' מרקס אן",
-     "full": false,
+     "full": true,
      "semester": "א",
      "linked": [],
      "meetings": [
@@ -11632,15 +11632,15 @@
      "meetings": [
       {
        "day": 1,
-       "start": "14:00",
+       "start": "15:00",
        "end": "16:50",
-       "room": "קריה ז'4"
+       "room": "303 פיקוס"
       },
       {
        "day": 5,
        "start": "08:00",
        "end": "09:50",
-       "room": "303 פיקוס"
+       "room": "301 פיקוס"
       }
      ],
      "exams": [
