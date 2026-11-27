@@ -56,6 +56,7 @@ import {
   allGroupIds,
   seg,
   details,
+  keepFolds,
   $,
   ui,
   toolHelp,
@@ -336,6 +337,7 @@ export function renderPrefs() {
 // Design A: the wishes and the friends are two tools (#prefs and #friends), each with its own labelled heading the shell can focus. The wishes carry
 // a link to the friends: a bookmark to #prefs used to hold both.
 function renderWishesAndFriends() {
+  keepFolds($('prefs')); keepFolds($('friends'));
   $('prefs').innerHTML = `<div class="me-head"><h2 id="prefsTitle" tabindex="-1">מה חשוב לי</h2>
       <p class="a-friends-link"><a href="#friends">${icon('users')} חברים</a></p></div>
     <section class="me-card dr-body" aria-label="העדפות">${prefsPanel()}</section>`; // A: the tool's own heading is the one (no second "העדפות")
@@ -462,6 +464,7 @@ const MENU_PAGES = { info: 'menu-info', faq: 'menu-faq' };
 const sideSheet = (name) => name === 'menu' || (designOn() && name in MENU_PAGES);
 export function renderDrawer() {
   if (!ui.panel) return;
+  keepFolds($('drawer'));
   const onTitle = designOn() && document.activeElement?.id === 'drawerTitle'; // the heading that took focus when the panel changed (A)
   // actions: a row that stays under the header while the body scrolls
   const [title, body, actions = ''] = PANELS[ui.panel]();

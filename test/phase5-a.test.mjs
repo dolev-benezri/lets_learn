@@ -15,7 +15,7 @@ const { legendSw } = await import('../web/map-render.js');
 
 function withDesign(t, design) {
   const old = Object.getOwnPropertyDescriptor(globalThis, 'document');
-  const drawer = { innerHTML: '' };
+  const drawer = { innerHTML: '', querySelectorAll: () => [] }; // renderDrawer reads the folds first (keepFolds)
   globalThis.document = { documentElement: { dataset: { design } }, getElementById: () => drawer };
   t.after(() => old ? Object.defineProperty(globalThis, 'document', old) : delete globalThis.document);
   return drawer;

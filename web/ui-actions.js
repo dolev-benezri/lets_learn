@@ -157,7 +157,10 @@ export function onCourseFoldKey(e) {
   if (!fold) return;
   e.preventDefault();
   e.stopPropagation();
-  fold.open = false;
+  // Close twins before a redraw reads them while the toggle event is still queued.
+  const root = fold.closest('#me') ?? fold.closest('#courses');
+  for (const twin of root.querySelectorAll('.a-course-more'))
+    if (twin.dataset.course === fold.dataset.course) twin.open = false;
   ui.courseOpen[fold.closest('#me') ? 'me' : 'courses'].delete(fold.dataset.course);
   fold.querySelector('summary').focus({ preventScroll: true });
 }

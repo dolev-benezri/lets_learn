@@ -24,6 +24,7 @@ import {
   colors,
   courseRowA,
   details,
+  keepFolds,
   toast,
   heb,
   nameHtml,
@@ -256,6 +257,7 @@ export function enterList() {
 }
 
 export function renderMe() {
+  keepFolds($('me'), 'me');
   const el = $('me');
   if (el.hidden) {
     el.innerHTML = '';
@@ -307,6 +309,7 @@ export function renderMe() {
   const sp = specLists(data, state.profile.specs),
     isSpec = (l) => sp.all.has(l.code),
     anyYear = (l) => !isSpec(l) && /חברה ורוח/.test(l.name); // taken in any year: open right after the studied years, not folded among the later lists
+  // #side uses 'specOthers'; #me keeps its own fold key
   const others = lists.filter((l) => !past(l) && !isSpec(l) && !anyYear(l)),
     specOthers = lists.filter((l) => isSpec(l) && !sp.chosen.has(l.code));
   const premarked = (y) =>
@@ -393,7 +396,7 @@ export function renderMe() {
           .map(group)
           .join('')}
         ${details('others', 'שנים מתקדמות וקורסים נוספים', others.map(group).join(''), others.length)}
-        ${details('specOthers', 'התמחויות אחרות', specOthers.map(group).join(''), specOthers.length)}
+        ${details('meSpecOthers', 'התמחויות אחרות', specOthers.map(group).join(''), specOthers.length)}
       </section>
     </div>
     <div class="me-foot"><span class="hint">כל שינוי נשמר מיד.</span><a class="btn primary" href="#courses" data-act="statusDone" data-k="statusDone">הבא: קורסים</a></div>`;

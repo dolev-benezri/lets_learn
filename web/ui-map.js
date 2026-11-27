@@ -179,6 +179,8 @@ function select(key) {
 }
 
 function render(ctx = ctxOf(M.mode)) {
+  // only while shown: openMap resets miniOpen before its first draw
+  if (dlg.open && q('.pm-mini')) M.miniOpen = q('.pm-mini').open;
   if (designOn()) dlg.classList.toggle('focus', getMapFocus());
   const c = M.c = ctx,
     map = M.view === 'map',
@@ -399,7 +401,7 @@ function restyle(c) {
     data: app.data,
     colors,
     k: ui.cur,
-    open: M.miniOpen ?? mini.open,
+    open: mini.open,
     abbr: M.abbr
   });
   M.c = c;

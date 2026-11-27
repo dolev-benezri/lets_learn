@@ -280,6 +280,18 @@ export const details = (key, summaryHtml, body, n) =>
   data-k="sum-${key}">${summaryHtml}</summary>${body}</details>`
     : '';
 
+// A fold's toggle event is queued: a redraw that runs first would draw it from the old state, and the event then fires on the replaced node, which
+// never reaches document (ui-plan.js). Every redraw of a host with folds reads them first.
+export function keepFolds(host, tool, groups = true) {
+  if (!host) return;
+  if (groups) for (const d of host.querySelectorAll('details[data-key]')) openDetails[d.open ? 'add' : 'delete'](d.dataset.key);
+  const set = tool && ui.courseOpen[tool];
+  if (!set) return;
+  // a course listed twice has two folds: the one that differs from the stored state is the one just tapped
+  for (const d of [...host.querySelectorAll('.a-course-more')].filter((f) => f.open !== set.has(f.dataset.course)))
+    set[d.open ? 'add' : 'delete'](d.dataset.course);
+}
+
 // Shared first-run/tool row. The caller supplies the existing segmented control, extra controls and visible warnings.
 export function courseRowA(key, id, c, choice, body, warnings = '', tool = 'courses') {
   const fold = tool === 'firstRun'

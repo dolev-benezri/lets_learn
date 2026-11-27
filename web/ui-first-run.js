@@ -6,7 +6,7 @@ import { yearsOf } from './rules.js';
 import { icon } from './ui-grid.js';
 import {
   $, ui, seg, YEARS, designOn, firstRun, setFirstRun, firstRunOn, passOpen, termsOk, firstDraft, clearFirstDraft, keepLanding, markOnboarded, markEntered,
-  shownTitle, openDetails
+  shownTitle, keepFolds
 } from './ui-common.js';
 import { stepOf, markOf, nextStep, prevStep, stepLine, yearsFor, startReady } from './first-run.js';
 import { LEGAL_SHORT } from './ui-text.js';
@@ -109,8 +109,8 @@ export function renderFirstRun() {
     drawn = '';
     return;
   }
-  // the folds' state is read now: a toggle event may still be queued, and once its node is replaced it never reaches document (ui-plan.js)
-  for (const d of host.querySelectorAll('details[data-key]')) openDetails[d.open ? 'add' : 'delete'](d.dataset.key);
+  // read the folds before the card is rebuilt: their toggle event may still be queued
+  keepFolds(host);
   const html = cardHtml();
   if (html !== drawn) {
     host.innerHTML = html;

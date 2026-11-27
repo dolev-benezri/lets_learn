@@ -16,6 +16,7 @@ import {
   seg,
   courseRowA,
   details,
+  keepFolds,
   heb,
   nameHtml,
   listTitle,
@@ -171,6 +172,8 @@ export function coursesSummary(res) {
 }
 
 export function renderSide(res) {
+  // a query opens matching groups temporarily; keep only the rows while it is typed
+  keepFolds($('side'), 'courses', !ui.courseQuery?.trim());
   const ids = listIds(),
     pc = planningCls(),
     st = (id) => status(id, pc),
