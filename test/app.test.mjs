@@ -507,9 +507,82 @@ test('the deploy waits for a green test job (P9)', () => {
   assert.match(y, /\n  deploy:\n    needs: build\n/, 'upload and deploy in separate jobs (actions/deploy-pages#451)');
 });
 
-test('the pull on GitHub publishes twice a day, with a dry run and a queued successor', () => {
+test('nightly: one hourly cron, a decide job, and the pull only when due', () => {
   const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
-  for (const cron of ['37 23 * * *', '37 12 * * 0-5', '37 12 * * 6']) assert.ok(y.includes(`- cron: '${cron}'`));
+  assert.deepEqual([...y.matchAll(/- cron: '([^']+)'/g)].map((m) => m[1]), ['37 * * * *']);
+  assert.doesNotMatch(y.split('\njobs:')[0], /^concurrency:/m);
+  assert.doesNotMatch(y, /nightly-decide/);
+  const decide = y.split('\n  decide:\n')[1]?.split('\n  scrape:\n')[0];
+  assert.ok(decide, 'a decide job exists');
+  assert.match(decide, /permissions:\n      actions: read\n      contents: read/);
+  assert.match(decide, /node-version: 24/);
+  assert.match(decide, /node scripts\/pull-due.mjs/);
+  assert.match(decide, /GH_TOKEN: \$\{\{ github.token \}\}/);
+  for (const output of ['due', 'cold']) assert.match(decide, new RegExp(`${output}: \\$\\{\\{ steps\\.due\\.outputs\\.${output} \\}\\}`));
+  const scrape = y.split('\n  scrape:\n')[1];
+  assert.match(scrape, /needs: decide/);
+  assert.match(scrape, /if: needs.decide.outputs.due == 'true'/);
+  assert.match(scrape, /concurrency:\n      group: nightly\n      cancel-in-progress: false/);
+});
+
+test('nightly: run names keep smoke and dry runs out of the one-try rule', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8');
+  const expression = y.match(/^run-name: \$\{\{ (.+) \}\}$/m)?.[1];
+  assert.ok(expression, 'run-name distinguishes publishing and test runs');
+  const evaluate = Function('inputs', `return (${expression});`);
+  assert.equal(evaluate({}), 'nightly', 'schedule');
+  assert.equal(evaluate({ smoke: false, dry_run: false }), 'nightly', 'plain dispatch');
+  for (const inputs of [{ smoke: true }, { dry_run: true }, { smoke: true, dry_run: true }])
+    assert.notEqual(evaluate(inputs), 'nightly');
+});
+
+test('nightly: checkout and setup-node precede the locked recheck and all later steps are gated', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+  const steps = y.split('\n  scrape:\n')[1].split(/\n      - /).slice(1);
+  assert.match(steps[0], /^uses: actions\/checkout@/);
+  assert.match(steps[0], /path: repo/);
+  assert.match(steps[1], /^uses: actions\/setup-node@/);
+  assert.match(steps[1], /node-version: 24/);
+  for (const step of steps.slice(0, 3)) assert.doesNotMatch(step, /^        if:/m);
+  assert.match(steps[2], /id: recheck/);
+  assert.match(steps[2], /run: node scripts\/pull-due.mjs --recheck/);
+  assert.match(steps[2], /working-directory: repo/);
+  assert.match(steps[2], /GH_TOKEN: \$\{\{ github.token \}\}/);
+  for (const step of steps.slice(3)) {
+    const expression = step.match(/^        if: (.+)$/m)?.[1]?.replace(/^\$\{\{ | \}\}$/g, '');
+    assert.ok(expression, `guard required: ${step.split('\n')[0]}`);
+    assert.match(expression, /steps.recheck.outputs.go == 'true'/);
+    const evaluate = Function('steps', 'inputs', 'github', 'needs', 'always', 'success', `return (${expression});`);
+    for (const smoke of [false, true]) for (const dry_run of [false, true])
+      assert.equal(evaluate({ recheck: { outputs: { go: 'false' } } }, { smoke, dry_run },
+        { ref: 'refs/heads/main', event_name: 'schedule' }, { decide: { outputs: { cold: 'false' } } }, () => true, () => true), false);
+  }
+});
+
+test('nightly: uses the checkout CLI with no github-script or bootstrap', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+  assert.doesNotMatch(y, /github-script/);
+  assert.doesNotMatch(y, /bootstrap|readMain|core\.setOutput|github\.rest|script: \|/i);
+  assert.equal(y.match(/run: node scripts\/pull-due.mjs --recheck/g)?.length, 1);
+});
+
+for (const job of ['decide', 'scrape']) {
+  test(`nightly: ${job} checkout uses latest main for schedules and the event ref for dispatch`, () => {
+    const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+    const block = y.split(`\n  ${job}:\n`)[1].split(/\n  \w+:\n/)[0];
+    const checkout = block.split(/\n      - /).find((step) => step.startsWith('uses: actions/checkout@'));
+    const expression = checkout?.match(/^          ref: \$\{\{ (.+) \}\}$/m)?.[1];
+    assert.ok(expression, 'checkout has an event-dependent ref expression');
+    const evaluate = Function('github', `return (${expression});`);
+    for (const ref of ['refs/heads/main', 'refs/heads/claude/data-clocks']) {
+      assert.equal(evaluate({ event_name: 'schedule', ref }), 'main');
+      assert.equal(evaluate({ event_name: 'workflow_dispatch', ref }), '', 'empty ref lets checkout use the event ref');
+    }
+  });
+}
+
+test('the pull on GitHub keeps a dry run and a queued successor', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
   assert.match(y, /\n  workflow_dispatch:\n    inputs:\n      smoke:\n[\s\S]*?type: boolean/);
   assert.match(y, /\npermissions:\n  contents: write\n  actions: write\n/);
   assert.doesNotMatch(y, /--force|secrets\.|GH_PUSH_TOKEN|persist-credentials: false|\bqueue:/);
@@ -537,7 +610,7 @@ test('the pull on GitHub publishes twice a day, with a dry run and a queued succ
     /git diff --cached -- web\/data\/afeka ':\(exclude\)web\/data\/afeka\/status\.json' \| head -n 300 \|\| true\n/,
     'what differs, capped, without status.json (it changes every night); never fails the job'
   );
-  assert.match(y, /group: nightly\n  cancel-in-progress: false/);
+  assert.match(y, /    concurrency:\n      group: nightly\n      cancel-in-progress: false/);
   assert.match(y, /newer pending run may replace an older pending run/);
   assert.match(y, /dry_run:[\s\S]*?type: boolean\n        default: false/);
   const commit = y.match(/      - name: commit\n([\s\S]*?)(?=      - |$)/)?.[1];
@@ -563,27 +636,29 @@ test('the pull on GitHub publishes twice a day, with a dry run and a queued succ
   assert.equal(y.match(/-f base=/g)?.length, 1);
   assert.equal(y.match(/tar -czf|gh release upload/g)?.length, 2);
   // Every shell step runs in the checkout, beside the shared cache.
-  for (const step of y.split(/\n      - /).slice(1).filter((s) => /\brun:/.test(s)))
+  for (const step of y.split('\n  scrape:\n')[1].split(/\n      - /).slice(1).filter((s) => /\brun:/.test(s)))
     assert.match(step, /working-directory: repo/);
 });
 
-test('weekly cold run: only Saturday scheduled main skips restore', () => {
+test('weekly cold run: only the locked recheck cold output skips restore for scheduled publishing', () => {
   const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
-  const crons = [...y.matchAll(/- cron: '([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(crons, ['37 23 * * *', '37 12 * * 0-5', '37 12 * * 6']);
   const steps = y.split(/\n      - /).slice(1);
   const restore = steps.find((s) => s.startsWith('uses: actions/cache/restore@'));
   const save = steps.find((s) => s.startsWith('uses: actions/cache/save@'));
   const condition = restore?.match(/^        if: \$\{\{ (.+) \}\}$/m)?.[1];
   assert.ok(condition, 'restore has a weekly cold-run condition');
-  assert.equal((condition.match(/37 12 \* \* 6/g) ?? []).length, 1, 'one Saturday 12:37 condition');
-  const evaluate = Function('github', 'inputs', `return (${condition});`);
+  assert.match(condition, /steps.recheck.outputs.cold == 'true'/);
+  assert.doesNotMatch(condition, /needs\.decide\.outputs\.cold/);
+  const evaluate = Function('github', 'inputs', 'needs', 'steps', `return (${condition});`);
   for (const event_name of ['schedule', 'workflow_dispatch', 'push'])
     for (const ref of ['refs/heads/main', 'refs/heads/claude/data-clocks'])
-      for (const schedule of [...crons, undefined])
+      for (const cold of ['true', 'false'])
         for (const inputs of [{}, { smoke: true }, { dry_run: true }, { smoke: true, dry_run: true }]) {
-          const cold = event_name === 'schedule' && ref === 'refs/heads/main' && schedule === '37 12 * * 6' && !inputs.smoke && !inputs.dry_run;
-          assert.equal(evaluate({ event_name, ref, event: { schedule } }, inputs), !cold, JSON.stringify({ event_name, ref, schedule, inputs }));
+          const skip = event_name === 'schedule' && ref === 'refs/heads/main' && cold === 'true' && !inputs.smoke && !inputs.dry_run;
+          for (const earlierCold of ['true', 'false'])
+            assert.equal(evaluate({ event_name, ref }, inputs, { decide: { outputs: { cold: earlierCold } } },
+              { recheck: { outputs: { go: 'true', cold } } }), !skip,
+            JSON.stringify({ event_name, ref, cold, earlierCold, inputs }));
         }
   assert.match(y, /PREFIX: \$\{\{ inputs.smoke && 'yedion-smoke-' \|\| 'yedion-night-v2-' \}\}/);
   for (const step of [restore, save]) {
@@ -591,18 +666,18 @@ test('weekly cold run: only Saturday scheduled main skips restore', () => {
     assert.match(step, /key: \$\{\{ env.PREFIX \}\}\$\{\{ github.run_id \}\}-\$\{\{ github.run_attempt \}\}/);
   }
   assert.match(restore, /restore-keys: \$\{\{ env.PREFIX \}\}/);
-  assert.match(save, /if: always\(\)\n/, 'even a timed-out cold run saves progress');
+  assert.match(save, /if: always\(\) && steps.recheck.outputs.go == 'true'\n/, 'a timed-out cold run saves progress only after recheck');
   assert.match(y, /if \[ "\$rc" = 124 \]; then[\s\S]*partial-runs[\s\S]*if \[ "\$n" -lt 4 \]; then exit 0; fi/);
-  assert.match(y, /group: nightly\n  cancel-in-progress: false/);
+  assert.match(y, /    concurrency:\n      group: nightly\n      cancel-in-progress: false/);
   const commit = steps.find((s) => s.startsWith('name: commit\n'));
-  assert.match(commit, /if: success\(\) && !inputs.dry_run && !inputs.smoke && github.ref == 'refs\/heads\/main'\n/);
+  assert.match(commit, /if: success\(\) && !inputs.dry_run && !inputs.smoke && github.ref == 'refs\/heads\/main' && steps.recheck.outputs.go == 'true'\n/);
   assert.match(commit, /\[ "\$pushed" = true \] \|\| exit 1[\s\S]*gh release upload cache-seed/);
   assert.deepEqual(steps.filter((s) => /git push|gh release upload/.test(s)), [commit]);
 });
 
 for (const [step, condition] of [
-  ['commit', 'success() && !inputs.dry_run && !inputs.smoke && github.ref == \'refs/heads/main\''],
-  ['dry run', 'success() && inputs.dry_run && !inputs.smoke'],
+  ['commit', 'success() && !inputs.dry_run && !inputs.smoke && github.ref == \'refs/heads/main\' && steps.recheck.outputs.go == \'true\''],
+  ['dry run', 'success() && inputs.dry_run && !inputs.smoke && steps.recheck.outputs.go == \'true\''],
 ]) {
   test(`smoke never publishes: ${step} excludes smoke regardless of dry_run`, () => {
     const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
@@ -611,8 +686,8 @@ for (const [step, condition] of [
     assert.equal(block.match(/^        if: (.+)$/m)?.[1], condition);
     for (const dry_run of [false, true]) {
       const expression = block.match(/^        if: (.+)$/m)[1];
-      assert.equal(Function('inputs', 'github', 'success', `return (${expression});`)(
-        { dry_run, smoke: true }, { ref: 'refs/heads/main' }, () => true
+      assert.equal(Function('inputs', 'github', 'success', 'steps', `return (${expression});`)(
+        { dry_run, smoke: true }, { ref: 'refs/heads/main' }, () => true, { recheck: { outputs: { go: 'true' } } }
       ), false);
     }
   });
@@ -635,7 +710,7 @@ test('nightly publishing condition: scheduled main and main dispatch publish, br
   const block = y.split('      - name: commit\n')[1]?.split('\n      - ')[0];
   const expression = block?.match(/^        if: (.+)$/m)?.[1];
   assert.ok(expression, 'the publishing condition exists');
-  const evaluate = Function('inputs', 'github', 'success', `return (${expression});`);
+  const evaluate = Function('inputs', 'github', 'success', 'steps', `return (${expression});`);
   const cases = [
     ['schedule', 'main', {}, true],
     ['workflow_dispatch', 'main', { dry_run: false, smoke: false }, true],
@@ -648,7 +723,7 @@ test('nightly publishing condition: scheduled main and main dispatch publish, br
     }
   }
   for (const [event_name, branch, inputs, publishes] of cases)
-    assert.equal(evaluate(inputs, { event_name, ref: `refs/heads/${branch}` }, () => true), publishes,
+    assert.equal(evaluate(inputs, { event_name, ref: `refs/heads/${branch}` }, () => true, { recheck: { outputs: { go: 'true' } } }), publishes,
       `${event_name} on ${branch}, inputs ${JSON.stringify(inputs)}`);
 });
 

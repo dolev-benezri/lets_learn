@@ -74,7 +74,7 @@ export async function checkStandby({ fetchFn = fetch, now = Date.now(), hours = 
   };
   const [status, runs] = await Promise.all([
     read(`https://lets-learn-il.github.io/data/afeka/status.json?t=${now}`),
-    read('https://api.github.com/repos/lets-learn-il/lets-learn-il.github.io/actions/workflows/nightly.yml/runs?per_page=20&branch=main',
+    read('https://api.github.com/repos/lets-learn-il/lets-learn-il.github.io/actions/workflows/nightly.yml/runs?per_page=100&branch=main',
       token ? { Authorization: `Bearer ${token}` } : {}),
   ]);
   const githubBusy = Array.isArray(runs.body?.workflow_runs) && runs.body.workflow_runs.some((run) => {

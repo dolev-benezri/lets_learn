@@ -1,16 +1,17 @@
-# GitHub publishes the yedion data twice a day, asking every offered course's groups each run (docs/OPERATIONS.md, "הריצה הלילית").
+# GitHub checks hourly for the two Israel publishing windows (docs/OPERATIONS.md, "הריצה הלילית").
+# Usually within about an hour of the window when GitHub delivers the hourly runs.
+# Each publishing pull asks every offered course's groups; a three-hour gap also applies to catch-up.
 # GitLab is the standby: busy wins, then data under 12 hours old stands by; missing data means run (ci/gitlab-scrape.yml).
 # The cache (every answer of the site, kept from night to night, see ci/gitlab-scrape.yml) sits beside the checkout, as on GitLab.
 # A smoke run (by hand, input smoke) scrapes one program and one semester into its own cache, so it never seeds the publishing cache.
 # A failed scheduled run mails whoever last edited the cron line, as freshness.yml says.
 name: nightly
+run-name: ${{ inputs.smoke && 'nightly smoke' || inputs.dry_run && 'nightly dry run' || 'nightly' }}
 
 on:
   schedule:
     # UTC; minute 37: GitHub delays scheduled runs most at the top of the hour
-    - cron: '37 23 * * *'
-    - cron: '37 12 * * 0-5'
-    - cron: '37 12 * * 6'
+    - cron: '37 * * * *'
   workflow_dispatch:
     inputs:
       smoke:
@@ -26,14 +27,34 @@ permissions:
   contents: write
   actions: write
 
-concurrency:
-  group: nightly
-  cancel-in-progress: false
-  # A newer pending run may replace an older pending run (same job, newer data).
-
 jobs:
-  scrape:
+  decide:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      due: ${{ steps.due.outputs.due }}
+      cold: ${{ steps.due.outputs.cold }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'main' || '' }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+      - id: due
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/pull-due.mjs
+  scrape:
+    needs: decide
+    if: needs.decide.outputs.due == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: nightly
+      cancel-in-progress: false
+      # A newer pending run may replace an older pending run (same job, newer data).
     # an empty cache means ~1800 requests at the site's ~400 an hour; a job may run 6 hours
     timeout-minutes: 340
     env:
@@ -42,14 +63,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: repo
+          ref: ${{ github.event_name == 'schedule' && 'main' || '' }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
+      - name: recheck
+        id: recheck
+        working-directory: repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/pull-due.mjs --recheck
       - run: npm ci --omit=dev --no-audit --no-fund --ignore-scripts # as on GitLab: no dependency needs an install script
+        if: steps.recheck.outputs.go == 'true'
         working-directory: repo
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        # Only Saturday's scheduled publishing run starts empty; partial progress is still saved below.
-        if: ${{ !(github.event_name == 'schedule' && github.ref == 'refs/heads/main' && github.event.schedule == '37 12 * * 6' && !inputs.smoke && !inputs.dry_run) }}
+        # Only Saturday's afternoon publishing window starts empty; partial progress is still saved below.
+        if: ${{ steps.recheck.outputs.go == 'true' && !(github.event_name == 'schedule' && github.ref == 'refs/heads/main' && steps.recheck.outputs.cold == 'true' && !inputs.smoke && !inputs.dry_run) }}
         with:
           path: .yedion-cache
           key: ${{ env.PREFIX }}${{ github.run_id }}-${{ github.run_attempt }}
@@ -57,6 +86,7 @@ jobs:
       # The same command and the same partial-run counter as ci/gitlab-scrape.yml, with 320 minutes instead of 160 (GitHub's longer job limit).
       # stdout is the summary line; the log is also kept for the report below.
       - name: scrape
+        if: steps.recheck.outputs.go == 'true'
         working-directory: repo
         env:
           SCOPE: ${{ !inputs.smoke && '--all-semesters --all-programs' || '' }}
@@ -76,7 +106,7 @@ jobs:
       # reads it); the log also gets the start of what differs from the published data. A cut night leaves summary.txt empty, not missing.
       # Nothing here may fail the job.
       - name: report
-        if: always()
+        if: always() && steps.recheck.outputs.go == 'true'
         working-directory: repo
         run: |
           s=$(cat ../summary.txt 2>/dev/null || true)
@@ -93,7 +123,7 @@ jobs:
           echo '--- what differs from the published data (status.json left out: it changes every night), first 300 lines:'
           git diff --cached -- web/data/afeka ':(exclude)web/data/afeka/status.json' | head -n 300 || true
       - name: commit
-        if: success() && !inputs.dry_run && !inputs.smoke && github.ref == 'refs/heads/main'
+        if: success() && !inputs.dry_run && !inputs.smoke && github.ref == 'refs/heads/main' && steps.recheck.outputs.go == 'true'
         working-directory: repo
         env:
           GH_TOKEN: ${{ github.token }}
@@ -128,7 +158,7 @@ jobs:
           gh workflow run deploy.yml --ref main
           gh workflow run checks.yml --ref main -f base="$BEFORE"
       - name: dry run
-        if: success() && inputs.dry_run && !inputs.smoke
+        if: success() && inputs.dry_run && !inputs.smoke && steps.recheck.outputs.go == 'true'
         working-directory: repo
         env:
           GH_TOKEN: ${{ github.token }}
@@ -136,7 +166,7 @@ jobs:
           gh workflow run deploy.yml --ref main
           gh workflow run checks.yml --ref main
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always()
+        if: always() && steps.recheck.outputs.go == 'true'
         with:
           path: .yedion-cache
           key: ${{ env.PREFIX }}${{ github.run_id }}-${{ github.run_attempt }}

@@ -107,11 +107,21 @@ test('standby fetches status and one unfiltered main runs page with a 20 second 
   const runs = calls.filter(({ url }) => url.hostname === 'api.github.com');
   assert.equal(runs.length, 1);
   assert.equal(runs[0].url.pathname, '/repos/lets-learn-il/lets-learn-il.github.io/actions/workflows/nightly.yml/runs');
-  assert.equal(runs[0].url.searchParams.get('per_page'), '20');
+  assert.equal(runs[0].url.searchParams.get('per_page'), '100');
   assert.equal(runs[0].url.searchParams.get('branch'), 'main');
   assert.equal(runs[0].url.searchParams.has('status'), false);
   assert.equal(runs[0].options.headers.Authorization, 'Bearer test-token');
   assert.equal(status.options.headers?.Authorization, undefined, 'the API token is only sent to GitHub');
+});
+
+test('standby fetch: an hourly backlog cannot hide a busy pull behind twenty completed checks', async () => {
+  const { checkStandby } = await api();
+  const runs = [...Array.from({ length: 25 }, () => run({ status: 'completed' })), run()];
+  const result = await checkStandby({ now, fetchFn: async (url) => response(url.includes('status.json')
+    ? { checkedAt: ago(30) }
+    : { workflow_runs: runs.slice(0, Number(new URL(url).searchParams.get('per_page'))) }) });
+  assert.equal(result.run, false);
+  assert.match(result.why, /GitHub busy/);
 });
 
 for (const endpoint of ['status', 'runs']) {
