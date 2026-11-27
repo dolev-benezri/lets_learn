@@ -189,6 +189,19 @@ test('mergeScans: one group per course and type, a table first; beside a table a
 const coded = (cid, meets, extra = {}) => ({ cid, code: cid, kinds: [], meets, via: 'code', text: `row ${cid}`, ...extra });
 const oneRow = (row, cs = courses) => matchRows([row], cs).rows[0];
 
+test("a code row that read one of a group's two meetings is not sure", () => {
+  const row = coded('30127', [{ days: [1], start: '08:00', end: '09:50' }]);
+  const group = g('B1', 'סופי-הרצאה+תרגול', [1, '08:00', '09:50'], [4, '08:00', '08:50']);
+  const only = (candidate) => ({ 30127: { name: 'חוזק חומרים 1', groups: [candidate] } });
+  const control = oneRow(row, only({ ...group, meetings: group.meetings.slice(0, 1) }));
+  assert.equal(control.chosen, 'B1');
+  assert.equal(control.confidence, 'sure', 'one meeting read from a one-meeting group remains sure');
+  const partial = oneRow(row, only(group));
+  assert.equal(partial.chosen, 'B1', 'the only candidate still matches');
+  assert.deepEqual(partial.candidates, ['B1']);
+  assert.equal(partial.confidence, 'weak', 'a meeting nobody read requires review');
+});
+
 test('review rows: a coded row with the exact day and hours is sure', () => {
   const r = oneRow(coded('30112', [{ days: [2], start: '13:00', end: '14:50' }]));
   assert.equal(r.confidence, 'sure');

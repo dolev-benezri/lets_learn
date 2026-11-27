@@ -492,6 +492,129 @@ test('1280 x 420: with the page scrolled the record sticks under the strip with 
 // ---- phase 2, Task F: the course search ----
 const FIX = JSON.parse(readFileSync(new URL('../fixtures/real/2027-1/30-2026.json', import.meta.url), 'utf8'));
 const savedEdit = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('afeka-sched-v1-edit')));
+
+// Use the actual loader and its manual group controls; no imported personal timetable.
+const TIMETABLE_ONE = ['273000302', '273000302/1', '273011204', '273011204/1'];
+const TIMETABLE_TWO = ['273011201', '273011201/1'];
+const groupsLessons = (ids) => ids.flatMap((id) => {
+  const [course, c] = Object.entries(FIX.courses).find(([, c]) => c.groups.some((g) => g.id === id));
+  const g = c.groups.find((g) => g.id === id);
+  return g.meetings.map((m) => L(course, c.name, g.type, id, m.day, m.start, m.end));
+});
+const replaceInEditor = async (page, from, to) => {
+  const fold = page.locator('details.edit-ways');
+  if (await fold.count() && !await fold.evaluate((el) => el.open)) await fold.locator('summary').click();
+  await page.locator('[data-ed="loadHand"]').click();
+  await page.locator('#friendEd[open]').waitFor();
+  if (!await page.locator('#feMore').evaluate((el) => el.open)) await page.getByText('דרכים נוספות', { exact: true }).click();
+  for (const id of [...from.filter((id) => !to.includes(id)), ...to.filter((id) => !from.includes(id))]) {
+    const [course] = Object.entries(FIX.courses).find(([, c]) => c.groups.some((g) => g.id === id));
+    await page.locator('#feCourse').fill(course);
+    await page.locator('#feSearch button[type="submit"]').click();
+    await page.locator(`[data-fe="toggle"][data-gid="${id}"]`).click();
+  }
+};
+const saveEditorRows = async (page) => {
+  await page.locator('#friendEd [data-fe="save"]').first().click();
+  await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
+  await page.locator('[data-ed="next"]').waitFor();
+};
+const previewKeys = (page) => page.locator('#editWeek .blk').evaluateAll((els) => els.map((el) => el.dataset.k).sort());
+const assertPreview = async (page, lessons, message) => {
+  assert.deepEqual(await previewKeys(page), lessons.map((l) => `b-${l.group}-${l.day}-${l.start}`).sort(), message);
+  const count = new Set(lessons.map((l) => l.course)).size;
+  const heading = (await page.locator('#edit .me-step').innerText()).trim();
+  assert.equal(heading.split(' · ')[0], count === 1 ? 'קורס אחד' : `${count} קורסים`, 'the heading counts the previewed courses');
+  const days = [...new Set(lessons.map((l) => l.day))].sort().map((d) => `${['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו'][d]}׳`);
+  assert.equal(heading.split(' · ')[1], days.length === 1 ? `יום ${days[0]}` : `ימים ${days.slice(0, -1).join(', ')} ו-${days.at(-1)}`, 'the heading names the previewed days');
+};
+
+test('before saving, a second timetable for the same track is what the week previews', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#edit');
+  await page.locator('[data-ed="loadHand"]').waitFor({ timeout: 30000 });
+  await replaceInEditor(page, [], TIMETABLE_ONE);
+  await saveEditorRows(page);
+  await page.getByRole('button', { name: 'לשינויים', exact: true }).click();
+  await page.locator('[data-ed="search"]').waitFor();
+  await dock(page, 'mine').click();
+  await page.locator('[data-ed="next"]').waitFor();
+  const committed = await savedEdit(page);
+  await assertPreview(page, groupsLessons(TIMETABLE_ONE), 'the committed first timetable is shown');
+
+  // Exercise the editor's own cancel BEFORE onSave, while the first timetable is still committed.
+  await replaceInEditor(page, TIMETABLE_ONE, TIMETABLE_TWO);
+  await page.locator('#friendEd [data-fe="cancel"]').first().click();
+  await page.locator('dialog[open]').getByRole('button', { name: 'סגור', exact: true }).click();
+  await page.locator('#friendEd[open]').waitFor({ state: 'detached' });
+  assert.deepEqual(await savedEdit(page), committed, 'cancelling the editor saves nothing');
+  await assertPreview(page, groupsLessons(TIMETABLE_ONE), 'cancelling the editor brings timetable 1 back');
+
+  // "שמור" hands the replacement rows to review; "לשינויים" has not committed them yet.
+  await replaceInEditor(page, TIMETABLE_ONE, TIMETABLE_TWO);
+  await saveEditorRows(page);
+  const reviewing = await savedEdit(page);
+  assert.deepEqual(reviewing.baseline, committed.baseline, 'timetable 1 is still the saved baseline');
+  assert.deepEqual(reviewing.draft.rows.map((r) => r.chosen).sort(), [...TIMETABLE_TWO].sort(), 'the rows under review belong to timetable 2');
+  assert.equal(await page.locator('[data-ed-row]').count(), 0, 'manual choices require no uncertain-row confirmation');
+  await assertPreview(page, groupsLessons(TIMETABLE_TWO), 'before "לשינויים", the week previews the replacement rows');
+});
+
+test('an unconfirmed replacement keeps the saved week on step 1', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#edit');
+  await page.locator('[data-ed="loadHand"]').waitFor({ timeout: 30000 });
+  await replaceInEditor(page, [], TIMETABLE_ONE);
+  await saveEditorRows(page);
+  await page.getByRole('button', { name: 'לשינויים', exact: true }).click();
+  await page.locator('[data-ed="search"]').waitFor();
+  const committed = await savedEdit(page);
+  const rows = TIMETABLE_TWO.map((id) => {
+    const lessons = groupsLessons([id]), first = lessons[0];
+    return {
+      code: first.course, name: first.name, type: first.type, text: first.name,
+      via: 'code', confidence: 'weak', chosen: null, candidates: [id],
+      meets: lessons.map(({ day, start, end }) => ({ day, start, end }))
+    };
+  });
+  // Persist an entirely unconfirmed replacement, keeping the genuinely saved first timetable.
+  await page.evaluate((st) => {
+    localStorage.setItem('afeka-sched-v1-edit', JSON.stringify(st));
+    history.replaceState(null, '', '#edit');
+  }, { ...committed, draft: { rows, choices: {}, registered: false, sem: committed.dataset.sem, committed: false } });
+  await page.reload();
+  await dock(page, 'mine').click();
+  await page.locator('[data-ed-row="0"]').waitFor({ timeout: 30000 });
+  assert.equal(await page.locator('[data-ed-row]').count(), rows.length, 'normalization retains every replacement row for review');
+  assert.equal(await page.locator('[data-ed-pick]:checked').count(), 0, 'no replacement row is confirmed');
+  await assertPreview(page, groupsLessons(TIMETABLE_ONE), 'after reload, the saved week remains until a replacement row is confirmed');
+  assert.equal(await page.locator('#edit .edit-empty').filter({ hasText: 'המערכת שתטענו תופיע כאן' }).count(), 0, 'a saved week has no empty hint');
+
+  await page.locator(`[data-ed-pick="0"][value="${TIMETABLE_TWO[0]}"]`).check();
+  await assertPreview(page, groupsLessons([TIMETABLE_TWO[0]]), 'confirming one row previews only its replacement lessons');
+  assert.deepEqual((await savedEdit(page)).baseline, committed.baseline, 'reviewing the replacement does not commit it');
+});
+
+test('after saving a changed proposal, step 1 shows the saved schedule', async (t) => {
+  const page = await visit(t, 'desktop', DONE, '#edit');
+  await page.locator('[data-ed="loadHand"]').waitFor({ timeout: 30000 });
+  await replaceInEditor(page, [], TIMETABLE_ONE);
+  await saveEditorRows(page);
+  await page.getByRole('button', { name: 'לשינויים', exact: true }).click();
+  await page.locator('[data-ed="search"]').waitFor();
+  const before = await savedEdit(page);
+  assert.ok(before.draft.rows.length > 0, 'the committed loader draft was retained');
+  await page.locator('#editWeek .blk[data-gid="273000302"]').click();
+  await page.locator('[data-ed="toggleMove"]').click();
+  await page.locator('[data-ed-goal="dayOff"]').selectOption('4');
+  await search(page);
+  await page.locator('[data-ed="saveProposal"]').click();
+  const saved = await savedEdit(page);
+  assert.notDeepEqual(saved.baseline, before.baseline, 'the proposal actually changed the schedule');
+  assert.deepEqual(saved.draft, before.draft, 'the old committed draft is still present');
+  await dock(page, 'mine').click();
+  await page.locator('[data-ed="next"]').waitFor();
+  await assertPreview(page, saved.baseline, 'step 1 shows the saved proposal, not the old loader draft');
+});
+
 const openSearch = async (page) => {
   await page.locator('[data-ed="openSearch"]').click();
   await page.locator('#csText').waitFor({ state: 'visible' });
