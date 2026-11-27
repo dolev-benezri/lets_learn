@@ -619,41 +619,82 @@ test("nightlyTtl in all-groups mode asks every offered course's groups every run
     const t = (20000 + d) * 86400e3;
     for (const key of ['prgname=S_LOOK_FOR_NOSE&arguments=-N90903', 'prgname=S_LOOK_FOR_NOSE&arguments=-N30101'])
       assert.equal(nightlyTtl(key, groups, t, { allGroups: true }), 0);
-    for (const key of ['PRGNAME=S_EXAMS&ARGUMENTS=R1C28', 'prgname=S_CourseDetails&arguments=x'])
-      assert.equal(nightlyTtl(key, OK, t, { allGroups: true }), nightlyTtl(key, OK, t));
   }
   assert.equal(nightlyTtl('prgname=S_LOOK_FOR_NOSE&arguments=-N1', '<html></html>', 0, { allGroups: true }), 0);
 });
 
-test('nightlyPolicy all-groups budget: groups and exams are never held back; lists and details keep their 160', () => {
+test('nightlyPolicy all-groups budget: every key is unlimited', () => {
   const p = nightlyPolicy(Date.now, { allGroups: true });
   const group = 'prgname=S_LOOK_FOR_NOSE&arguments=-N30101', exam = 'PRGNAME=S_EXAMS&ARGUMENTS=R1C28';
   const list = 'prgname=S_SHOW_PROGS&arguments=-N2026,-N30001', detail = 'prgname=S_CourseDetails&arguments=x';
   for (let i = 0; i < 1000; i++) p.paid(group);
   for (const key of [group, exam, list, detail]) assert.equal(p.budget(key), Infinity, key);
   for (let i = 0; i < 160; i++) p.paid(i % 2 ? list : detail);
-  for (const key of [list, detail]) assert.equal(p.budget(key), 0, key);
-  for (const key of [group, exam]) assert.equal(p.budget(key), Infinity, key);
+  for (const key of [group, exam, list, detail]) assert.equal(p.budget(key), Infinity, key);
 });
 
-test('cachedRequester all-groups slow keys are not starved', async () => {
-  const dir = join(dirs().status, '..', 'all-groups'), calls = [];
-  const group = (i) => `prgname=S_LOOK_FOR_NOSE&arguments=-N${i}`;
-  const detail = (i) => `prgname=S_CourseDetails&arguments=${i}`;
-  const keys = Array.from({ length: 161 }, (_, i) => [group(3 * i), group(3 * i + 1), group(3 * i + 2), detail(i)]).flat();
-  // Stale cached answers exercise the budget; missing answers deliberately bypass it.
-  mkdirSync(dir, { recursive: true });
-  for (const key of keys) {
-    const file = join(dir, `${createHash('sha1').update(key).digest('hex')}.html`);
-    writeFileSync(file, 'old');
-    utimesSync(file, new Date(0), new Date(0));
+test('all-groups: populated and empty exam tables refresh every run', () => {
+  const key = 'PRGNAME=S_EXAMS&ARGUMENTS=R1C28';
+  for (const name of ['exams-2026.html', 'exams-nodata.html']) {
+    const html = fx(name);
+    assert.equal(nightlyTtl(key, html, 0, { allGroups: true }), 0, name);
+    const legacy = name === 'exams-nodata.html' ? 1.5 : 7 + createHash('sha1').update(key).digest()[0] % 3;
+    assert.equal(nightlyTtl(key, html, 0), legacy * 86400e3, 'GitLab unchanged');
   }
-  const p = nightlyPolicy(Date.now, { allGroups: true });
-  const request = cachedRequester(async (key) => (calls.push(key), OK), dir, { ...p, ttl: () => 0 });
-  for (const key of keys) await request(key);
-  assert.equal(calls.filter((key) => key.includes('S_CourseDetails')).length, 160);
-  assert.equal(calls.filter((key) => key.includes('S_LOOK_FOR_NOSE')).length, 483);
-  assert.deepEqual(request.deferred, [detail(160)]);
+});
+
+test('all-groups: slow TTLs are deterministic and bounded', () => {
+  for (const [prefix, base] of [['prgname=S_CourseDetails&arguments=', 14], ['prgname=S_SHOW_PROGS&arguments=-N2026,-N', 7]]) {
+    const values = new Set();
+    for (let i = 0; i < 300; i++) {
+      const key = prefix + i, ttl = nightlyTtl(key, OK, 0, { allGroups: true });
+      assert.ok(ttl >= 2.5 * 86400e3 && ttl <= 3.5 * 86400e3, `${key}: ${ttl / 86400e3} days`);
+      assert.equal(nightlyTtl(key, OK, 86400e3, { allGroups: true }), ttl);
+      values.add(ttl);
+      assert.equal(nightlyTtl(key, OK, 0), (base + createHash('sha1').update(key).digest()[0] % 3) * 86400e3);
+    }
+    assert.ok(values.size >= 3, 'expiration is spread by key');
+  }
+});
+
+test('all-groups: current and replaced cohort signatures do not alter TTL', () => {
+  const A = fx('prog-30001.html'), B = A.replace('>נלמד<', '>לא נלמד<');
+  const key = (start) => `prgname=S_SHOW_PROGS&arguments=-N${start},-N30001`;
+  for (const [branch, html, old] of [['current', A, A], ['replaced', B, A]]) {
+    const p = nightlyPolicy(() => 0, { allGroups: true });
+    p.seen(key(2024), html, old);
+    assert.equal(p.ttl(key(2025), A), nightlyTtl(key(2025), A, 0, { allGroups: true }), branch);
+    assert.ok(p.ttl(key(2025), A) >= 2.5 * 86400e3, branch);
+  }
+});
+
+test('all-groups: all overdue slow answers refresh without deferral', async () => {
+  const group = (i) => `prgname=S_LOOK_FOR_NOSE&arguments=-N${i}`;
+  const slow = (i) => i % 2 ? `prgname=S_CourseDetails&arguments=${i}` : `prgname=S_SHOW_PROGS&arguments=-N2026,-N${30000 + i}`;
+  const exam = (i) => `PRGNAME=S_EXAMS&ARGUMENTS=R1C28&R1C28=${i}`;
+  const keys = Array.from({ length: 1065 }, (_, i) => i % 10 ? [slow(i)] : [group(i), exam(i), slow(i)]).flat();
+  for (const allGroups of [true, false]) {
+    const dir = join(dirs().status, '..', 'budget'), calls = [];
+    // Stale cached answers exercise the budget; missing answers deliberately bypass it.
+    mkdirSync(dir, { recursive: true });
+    for (const key of keys) {
+      const file = join(dir, `${createHash('sha1').update(key).digest('hex')}.html`);
+      writeFileSync(file, 'old');
+      utimesSync(file, new Date(0), new Date(0));
+    }
+    const p = nightlyPolicy(Date.now, { allGroups });
+    const request = cachedRequester(async (key) => (calls.push(key), OK), dir, p);
+    for (const key of keys) await request(key);
+    const slowCalls = calls.filter((key) => key.includes('S_CourseDetails') || key.includes('S_SHOW_PROGS'));
+    assert.equal(slowCalls.length, allGroups ? 1065 : 160, `slow refreshes, allGroups=${allGroups}`);
+    if (allGroups) {
+      assert.equal(calls.length, keys.length);
+      assert.deepEqual(request.deferred, []);
+      for (const key of keys) assert.equal(p.budget(key), Infinity);
+    } else {
+      assert.ok(request.deferred.includes(slow(160)), 'GitLab still defers after its caps');
+    }
+  }
 });
 
 test('requesterOptions passes --all-groups to the nightly policy', () => {
@@ -1146,6 +1187,50 @@ async function examRun({ page = '', readAt, pulled = [], pulledAt = PULLED_AT, o
 const AFTER = '2026-11-20T00:00:00.000Z',
   BEFORE = '2026-11-01T00:00:00.000Z';
 
+test('run reads one course page per semester with a primary group', async () => {
+  const group = (id, semester, args, primary = true) => `<div>קורס מסוג ${primary ? 'סופי-הרצאה' : 'תרגול'} קבוצה: ${id}
+    ${args === null ? '' : `<button data-progname="S_CourseDetails" data-arguments="${args}">פרטים נוספים</button>`}
+    <div class="row">${[semester, 'ראשון', '10:00', '11:00', '', '1'].map((c) => `<div class="col">${c}</div>`).join('')}</div></div>`;
+  const argsA = '-N90903,-N1,-N1,-N1,-N', argsB = '-N90903,-N2,-N1,-N3,-N';
+  const firstPage = '<p>נקודות זכות: 4</p><div class="card"><h2>תנאי קדם לנושא</h2>' +
+    '<div class="row">' + ['תנאי קדם', '', 'מבוא', ''].map((c) => `<div class="col">${c}</div>`).join('') +
+    '</div></div>' + pageWith('2027-01-09');
+  const list = '<div class="row"><div class="col">90903</div><div class="col">קורס</div><div class="col">נלמד</div></div>';
+  for (const firstArgs of ['-N90903', '-N90903,-N']) for (const recognized of [true, false]) for (const allGroups of [false, true]) {
+    const groups = [
+      group(12, 'א', null),
+      group(10, 'א', firstArgs), // first details link has an unrecognized semester
+      group(11, 'א', '-N90903,-N99'), // no extra page for another unrecognized semester
+      ...(recognized ? [
+        group(1, 'א', argsA), group(2, 'א', '-N90903,-N1,-N1,-N2,-N'),
+        group(3, 'ב', argsB), group(4, 'ב', '-N90903,-N2,-N1,-N4,-N')
+      ] : []),
+      group(5, 'קיץ', '-N90903,-N3,-N22,-N5,-N', false)
+    ].join('');
+    const root = join(dirs().status, '..'), calls = [];
+    const request = async (query, form) => {
+      if (query?.startsWith('prgname=S_SHOW_PROGS')) return list;
+      if (query?.startsWith('prgname=S_LOOK_FOR_NOSE')) return groups;
+      if (query?.startsWith('prgname=S_CourseDetails')) {
+        calls.push(query);
+        if (query.endsWith(firstArgs)) return firstPage;
+        return query.endsWith(argsA) ? '<p>נקודות זכות: 3</p>' + pageWith('2027-02-09') : '<p>נקודות זכות: 9</p>' + pageWith('2027-07-09');
+      }
+      return form?.PRGNAME === 'S_EXAMS' ? fx('exams-nodata.html') : OK;
+    };
+    await run({ opt: { ...opt, nightly: true, 'all-groups': allGroups }, request, dataDir: root, programs: { 30: cfg() }, log: () => {}, check: noErrors });
+    assert.deepEqual(calls, [firstArgs, ...(recognized ? [argsA, argsB] : [])].map((args) => `prgname=S_CourseDetails&arguments=${args}`), 'first details page is requested even with an unrecognized semester, then one per recognized semester');
+    for (const [sem, date] of (recognized ? [[1, '2027-02-09'], [2, '2027-07-09']] : [[1, null]])) {
+      const course = json(join(root, `2027-${sem}`, '30-2026.json')).courses['90903'];
+      assert.equal(course.credits, 4, 'credits still come from the first page');
+      assert.deepEqual(course.prereqs, [{ kind: 'קדם', anyOf: [{ id: null, name: 'מבוא' }] }], 'prerequisites still come from the first page');
+      assert.ok(course.groups.some((g) => g.primary));
+      for (const g of course.groups.filter((g) => g.primary))
+        assert.deepEqual(g.exams.map((e) => e.date), date ? [date] : [], 'only the recognized semester page supplies exams');
+    }
+  }
+});
+
 test('exams: a date changed on the course page wins over the pull, and a moed removed from the page goes', async () => {
   const pulled = [pulledRow('א', '2027-02-01', '2027-03-01')];
   const { dates } = await examRun({ page: pageWith('2027-02-09'), readAt: AFTER, pulled });
@@ -1185,5 +1270,5 @@ test('exams: reading the dates costs no request', async () => {
   assert.deepEqual(withDates.calls, without.calls);
   const count = (start) => withDates.calls.filter((q) => q.startsWith(start)).length;
   assert.ok(count('prgname=S_LOOK_FOR_NOSE') > 0);
-  assert.equal(count('prgname=S_CourseDetails'), count('prgname=S_LOOK_FOR_NOSE'), 'one details page per course asked for its groups, as before');
+  assert.equal(count('prgname=S_CourseDetails'), 2 * count('prgname=S_LOOK_FOR_NOSE'), 'the fixture has primary groups in two semesters');
 });

@@ -9,7 +9,8 @@ on:
   schedule:
     # UTC; minute 37: GitHub delays scheduled runs most at the top of the hour
     - cron: '37 23 * * *'
-    - cron: '37 12 * * *'
+    - cron: '37 12 * * 0-5'
+    - cron: '37 12 * * 6'
   workflow_dispatch:
     inputs:
       smoke:
@@ -36,7 +37,7 @@ jobs:
     # an empty cache means ~1800 requests at the site's ~400 an hour; a job may run 6 hours
     timeout-minutes: 340
     env:
-      PREFIX: ${{ inputs.smoke && 'yedion-smoke-' || 'yedion-night-' }}
+      PREFIX: ${{ inputs.smoke && 'yedion-smoke-' || 'yedion-night-v2-' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -47,6 +48,8 @@ jobs:
       - run: npm ci --omit=dev --no-audit --no-fund --ignore-scripts # as on GitLab: no dependency needs an install script
         working-directory: repo
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # Only Saturday's scheduled publishing run starts empty; partial progress is still saved below.
+        if: ${{ !(github.event_name == 'schedule' && github.ref == 'refs/heads/main' && github.event.schedule == '37 12 * * 6' && !inputs.smoke && !inputs.dry_run) }}
         with:
           path: .yedion-cache
           key: ${{ env.PREFIX }}${{ github.run_id }}-${{ github.run_attempt }}

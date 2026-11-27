@@ -509,7 +509,7 @@ test('the deploy waits for a green test job (P9)', () => {
 
 test('the pull on GitHub publishes twice a day, with a dry run and a queued successor', () => {
   const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
-  for (const hour of [23, 12]) assert.ok(y.includes(`- cron: '37 ${hour} * * *'`));
+  for (const cron of ['37 23 * * *', '37 12 * * 0-5', '37 12 * * 6']) assert.ok(y.includes(`- cron: '${cron}'`));
   assert.match(y, /\n  workflow_dispatch:\n    inputs:\n      smoke:\n[\s\S]*?type: boolean/);
   assert.match(y, /\npermissions:\n  contents: write\n  actions: write\n/);
   assert.doesNotMatch(y, /--force|secrets\.|GH_PUSH_TOKEN|persist-credentials: false|\bqueue:/);
@@ -520,7 +520,7 @@ test('the pull on GitHub publishes twice a day, with a dry run and a queued succ
   assert.match(y, /if \[ "\$n" -lt 4 \]; then exit 0; fi/);
   assert.match(y, /\[ "\$rc" = 0 \] \|\| exit "\$rc"/, 'a blocked night fails the job');
   assert.match(y, /'yedion-smoke-'/, 'a smoke run keeps its own cache');
-  assert.match(y, /'yedion-night-'/, "the nights' prefix is not a prefix of the smoke one, or night 1 could restore a smoke cache");
+  assert.match(y, /'yedion-night-v2-'/, 'publishing starts with a new cache prefix, isolated from smoke');
   assert.doesNotMatch(y, /'yedion-'/);
   assert.match(y, /actions\/cache\/save@[0-9a-f]{40} # v6\.1\.0\n\s+if: always\(\)/);
   assert.equal(
@@ -565,6 +565,39 @@ test('the pull on GitHub publishes twice a day, with a dry run and a queued succ
   // Every shell step runs in the checkout, beside the shared cache.
   for (const step of y.split(/\n      - /).slice(1).filter((s) => /\brun:/.test(s)))
     assert.match(step, /working-directory: repo/);
+});
+
+test('weekly cold run: only Saturday scheduled main skips restore', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+  const crons = [...y.matchAll(/- cron: '([^']+)'/g)].map((m) => m[1]);
+  assert.deepEqual(crons, ['37 23 * * *', '37 12 * * 0-5', '37 12 * * 6']);
+  const steps = y.split(/\n      - /).slice(1);
+  const restore = steps.find((s) => s.startsWith('uses: actions/cache/restore@'));
+  const save = steps.find((s) => s.startsWith('uses: actions/cache/save@'));
+  const condition = restore?.match(/^        if: \$\{\{ (.+) \}\}$/m)?.[1];
+  assert.ok(condition, 'restore has a weekly cold-run condition');
+  assert.equal((condition.match(/37 12 \* \* 6/g) ?? []).length, 1, 'one Saturday 12:37 condition');
+  const evaluate = Function('github', 'inputs', `return (${condition});`);
+  for (const event_name of ['schedule', 'workflow_dispatch', 'push'])
+    for (const ref of ['refs/heads/main', 'refs/heads/claude/data-clocks'])
+      for (const schedule of [...crons, undefined])
+        for (const inputs of [{}, { smoke: true }, { dry_run: true }, { smoke: true, dry_run: true }]) {
+          const cold = event_name === 'schedule' && ref === 'refs/heads/main' && schedule === '37 12 * * 6' && !inputs.smoke && !inputs.dry_run;
+          assert.equal(evaluate({ event_name, ref, event: { schedule } }, inputs), !cold, JSON.stringify({ event_name, ref, schedule, inputs }));
+        }
+  assert.match(y, /PREFIX: \$\{\{ inputs.smoke && 'yedion-smoke-' \|\| 'yedion-night-v2-' \}\}/);
+  for (const step of [restore, save]) {
+    assert.match(step, /path: \.yedion-cache\n/);
+    assert.match(step, /key: \$\{\{ env.PREFIX \}\}\$\{\{ github.run_id \}\}-\$\{\{ github.run_attempt \}\}/);
+  }
+  assert.match(restore, /restore-keys: \$\{\{ env.PREFIX \}\}/);
+  assert.match(save, /if: always\(\)\n/, 'even a timed-out cold run saves progress');
+  assert.match(y, /if \[ "\$rc" = 124 \]; then[\s\S]*partial-runs[\s\S]*if \[ "\$n" -lt 4 \]; then exit 0; fi/);
+  assert.match(y, /group: nightly\n  cancel-in-progress: false/);
+  const commit = steps.find((s) => s.startsWith('name: commit\n'));
+  assert.match(commit, /if: success\(\) && !inputs.dry_run && !inputs.smoke && github.ref == 'refs\/heads\/main'\n/);
+  assert.match(commit, /\[ "\$pushed" = true \] \|\| exit 1[\s\S]*gh release upload cache-seed/);
+  assert.deepEqual(steps.filter((s) => /git push|gh release upload/.test(s)), [commit]);
 });
 
 for (const [step, condition] of [

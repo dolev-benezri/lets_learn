@@ -33,8 +33,7 @@ const MAX_RETRY_AFTER_MS = 5 * 60 * 1000;
 // GitLab's fallback fits under ~400 answers an hour, leaving room for session requests and retries (research H4).
 // GitHub asks every offered course's groups and waits out the hourly limit instead.
 const NIGHT_BUDGET = 380;
-// Both modes count lists and course details on their own, up to 160 stale answers per run, so groups asked first do not use up their turns.
-// This also leaves room for groups in GitLab's 380. On the first night after a long gap the lists alone would take 290.
+// GitLab reserves up to 160 stale lists and course details within its 380 answers; GitHub has no budget cap.
 const SLOW_BUDGET = 160;
 
 export class ThrottledError extends Error {
@@ -253,16 +252,23 @@ export function cachedRequester(inner, dir, { offline = false, ttl = () => Infin
 }
 
 const DAY = 86400e3;
-// GitLab's nightly policy asks an offered course's groups every other night (below); GitHub's all-groups mode asks them every run.
-// A department's exam table is checked every other night until it is published, then weekly;
-// course details every 14-16 days (research A3: 15 of 415 changed in two weeks); lists and track pages weekly. Only a course a list marks as taught is asked for its
-// groups, so an answer with none may be an error page that passed as 200: GitLab keeps it for only 1.5 days; GitHub asks again every run.
-// "Weekly" is 7-9 days by key, so the answers cached by one full pull expire over three nights instead of all on the same one.
+// GitHub's all-groups mode reads groups and exam tables every run; course pages and lists every 2.5-3.5 days by key.
+// It has no budget cap or alike-cohort rule.
+// GitLab reads groups every other night (half split), exam tables every other night until published, then weekly.
+// Course pages: 14-16 days (research A3: 15 of 415 changed in two weeks); lists: weekly, with the alike-cohort rule and its budgets.
+// An empty groups answer may be an error page that passed as 200, so GitLab keeps it for only 1.5 days.
+// "Weekly" is 7-9 days by key, so one full pull's answers expire over three nights.
 const weekly = (key, base = 7) => (base + (createHash('sha1').update(key).digest()[0] % 3)) * DAY;
+// GitHub caches course pages and lists for 2.5-3.5 days by key.
+const shortTtl = (key) => (2.5 + createHash('sha1').update(key).digest()[0] / 255) * DAY;
 // GitLab's half split: half the courses (by key) one night, the other half the next. A night of ~400 group requests at 2.5 s is ~20 CI minutes, and
 // GitLab Free gives 400 a month (cost factor 1, public projects too). Off its night an answer is good for 1.5 days, so after a missed run it is fetched anyway.
 const otherNight = (key, now) => (Math.floor(now / DAY) + createHash('sha1').update(key).digest()[1]) % 2 === 1;
 export function nightlyTtl(key, html, now = Date.now(), { allGroups = false } = {}) {
+  if (allGroups) {
+    if (key.includes('S_EXAMS') || key.startsWith('prgname=S_LOOK_FOR_NOSE')) return 0;
+    if (key.includes('S_CourseDetails') || key.startsWith('prgname=S_SHOW_PROGS')) return shortTtl(key);
+  }
   if (key.includes('S_EXAMS')) return parseExams(html).length ? weekly(key) : 1.5 * DAY;
   if (key.includes('S_CourseDetails')) return weekly(key, 14);
   if (key.startsWith('prgname=S_LOOK_FOR_NOSE'))
@@ -288,15 +294,14 @@ export function nightlyPolicy(now = Date.now, { allGroups = false } = {}) {
   return {
     ttl(key, html) {
       const c = code(key);
-      if (c) {
+      if (c && !allGroups) {
         const s = sig(html);
         if (current.get(c)?.has(s)) return weekly(key, 28);
         if (replaced.get(c)?.has(s)) return 0;
       }
       return nightlyTtl(key, html, now(), { allGroups });
     },
-    // cachedRequester compares against all paid answers, so only the slow counter limits this mode.
-    budget: (key) => (slow(key) && slowPaid >= SLOW_BUDGET ? 0 : allGroups ? Infinity : NIGHT_BUDGET),
+    budget: (key) => (allGroups ? Infinity : slow(key) && slowPaid >= SLOW_BUDGET ? 0 : NIGHT_BUDGET),
     paid(key) {
       if (slow(key)) slowPaid++;
     },
@@ -453,16 +458,25 @@ export async function run({
       continue;
     }
     const groups = parseGroups(await request(groupsKey(id)));
-    const args = groups.find((g) => g.primary && g.detailsArgs)?.detailsArgs;
-    const detailsKey = `prgname=S_CourseDetails&arguments=${args}`,
-      page = args ? await request(detailsKey) : null,
-      details = page ? parseDetails(page) : null;
+    let details = null;
+    let readDetails = false;
+    const readSemesters = new Set();
+    for (const g of groups) {
+      if (!g.primary || !g.detailsArgs) continue;
+      const semester = detailsSemester(g.detailsArgs);
+      if (readDetails && (semester == null || readSemesters.has(semester))) continue;
+      if (semester != null) readSemesters.add(semester);
+      const detailsKey = `prgname=S_CourseDetails&arguments=${g.detailsArgs}`,
+        page = await request(detailsKey);
+      if (!readDetails) details = page ? parseDetails(page) : null;
+      readDetails = true;
+      // Each semester's page supplies its own exams. An older page cannot override the by-hand pull; no dates leave the pull in place.
+      const readAt = request.readAt?.get(detailsKey);
+      if (semester != null && page && !(pulledAt && readAt && readAt < pulledAt))
+        for (const { kind, moeds } of parseCourseExams(page))
+          pageExams.push({ semester, courseId: id, lecturer: null, kind, moeds });
+    }
     raw[id] = { groups, details };
-    // The page holds the exam dates too, at no extra request. Read before the by-hand pull, it is the older of the two. No dates on it says nothing: the pull stays.
-    const readAt = request.readAt?.get(detailsKey);
-    if (page && !(pulledAt && readAt && readAt < pulledAt))
-      for (const { kind, moeds } of parseCourseExams(page))
-        pageExams.push({ semester: detailsSemester(args), courseId: id, lecturer: null, kind, moeds });
     log(
       `[${i + 1}/${ids.length}] ${id}: ${groups.length} groups, ${details ? `${details.credits} credits` : 'no details'}`
     );
