@@ -12,6 +12,7 @@ import { parseProgram, parseGroups, parseDetails, parseExams, parseCourseExams, 
 import { buildDataset, validate, compareToPrevious } from './build.mjs';
 import { officialDrift, OFFICIAL } from './audit.mjs';
 import { dataRules } from './check-real.mjs';
+import { listYears } from '../web/rules.js';
 import PROGRAMS from './programs.json' with { type: 'json' };
 import {
   pageKind,
@@ -363,12 +364,16 @@ export async function writeCatalog(file, units, programs, year) {
   const was = await readJson(file),
     old = (was?.year ?? year) === year ? was?.programs ?? [] : []; // another year's programs point at that year's files
   const mine = new Map();
-  for (const u of units)
+  for (const u of units) {
+    const previous = mine.get(u.program),
+      years = Math.max(previous?.years ?? 0, listYears(u.lists));
     mine.set(u.program, {
       id: u.program,
       name: programs[u.program].name,
-      startYears: [...(mine.get(u.program)?.startYears ?? []), u.start].sort()
+      startYears: [...(previous?.startYears ?? []), u.start].sort(),
+      ...(years >= 2 ? { years } : {})
     });
+  }
   const next = catalogOrder([...old.filter((p) => !mine.has(p.id) && programs[p.id]), ...mine.values()]);
   const out = { ...(Number.isInteger(year) ? { year } : {}), programs: next }; // the site takes the academic year from here
   if (JSON.stringify(was) !== JSON.stringify(out)) {

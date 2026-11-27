@@ -32,9 +32,12 @@ export function stepLine(step, year) {
 }
 
 // ---- step 1: the choices a first visit makes on one card (a draft until "המשך") ----
-// The years a track offers while its own data is not loaded: the loaded track knows (`loaded`, yearsOf), another one is told by its name: an evening
-// track runs five years, the others four. A year a loaded track turns out not to have is cut when it loads (app.js refresh).
-export const yearsFor = (programName, loaded = null) => loaded ?? (/\(ערב\)$/.test(programName ?? '') ? 5 : 4);
+// Loaded yearsOf wins, then valid catalog years, then the name guess until the catalog has year counts.
+export const yearsFor = (program, loaded = null) => loaded ?? (
+  Number.isInteger(program?.years) && program.years >= 2 && program.years <= 5
+    ? program.years
+    : (/\(ערב\)$/.test(program?.name ?? '') ? 5 : 4)
+);
 
 // What "המשך" needs: the terms read, and, in the pass, a track (when there is more than one) and a study year. The terms alone (improve's first visit, or the
 // terms asked again) need only the box.

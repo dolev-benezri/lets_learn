@@ -29,7 +29,7 @@ export function draftOf() {
     { programs } = app.catalog,
     loaded = app.state.programSet ? app.state.program : null;
   const p = d.p ?? (programs.length < 2 ? programs[0].id : loaded);
-  const n = yearsFor(programs.find((x) => x.id === p)?.name, p === app.state.program ? yearsOf(app.data) : null);
+  const n = yearsFor(programs.find((x) => x.id === p), p === app.state.program ? yearsOf(app.data) : null);
   const y = d.y ?? app.state.profile.year;
   return { t: !!d.t || termsOk(), p, y: y > n ? null : (y ?? null), n };
 }

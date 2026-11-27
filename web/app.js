@@ -708,12 +708,16 @@ export async function switchTo(program, startYear) {
   return true;
 }
 
-async function init() {
-  document.getElementById('week').innerHTML = SKELETON; // replaced by the first render, or by the failure message
+export async function loadCatalog() {
   const cat = await fetch('data/afeka/catalog.json', { cache: 'no-cache' })
     .then((r) => (r.ok ? r.json() : null))
     .catch(() => null);
-  app.catalog = goodCatalog(cat) ? cat : FALLBACK_CATALOG;
+  return goodCatalog(cat) ? cat : FALLBACK_CATALOG;
+}
+
+async function init() {
+  document.getElementById('week').innerHTML = SKELETON; // replaced by the first render, or by the failure message
+  app.catalog = await loadCatalog();
   app.state = load();
   app.firstLoad();
   const status = fetch('data/afeka/status.json', { cache: 'no-cache' })

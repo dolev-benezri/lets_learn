@@ -149,6 +149,28 @@ test('first visit shows one card: the terms, the track and the year together, ov
   assert.equal(await page.evaluate(() => localStorage.getItem('afeka-sched-v1-terms')), null, 'nothing is accepted before "המשך"');
 });
 
+test('step 1 uses catalog years before loading a track and clears a year outside the new track', async (t) => {
+  const page = await visit(t, 'phone', null);
+  await page.locator('#firstRun .gate').waitFor({ state: 'visible' });
+  const track = page.locator('[data-k="frTrack"]');
+  const years = page.locator('input[name="fr-year"]');
+  const go = page.locator('[data-k="frStart"]');
+  await track.selectOption('11');
+  assert.deepEqual(await years.evaluateAll((els) => els.map((el) => el.nextElementSibling.textContent.trim())), ['א׳', 'ב׳', 'ג׳']);
+  await track.selectOption('12');
+  assert.equal(await years.count(), 5);
+  await track.selectOption('10');
+  await page.locator('[data-k="frTerms"]').check();
+  await page.locator('[data-k="fr-year-4"]').check();
+  assert.equal(await go.isDisabled(), false);
+  await track.selectOption('11');
+  assert.equal(await years.count(), 3);
+  assert.equal(await page.locator('input[name="fr-year"]:checked').count(), 0);
+  assert.equal(await go.isDisabled(), true, 'a year must be chosen again');
+  await page.locator('[data-k="fr-year-3"]').check();
+  assert.equal(await go.isDisabled(), false);
+});
+
 test('a friend link on a first visit shows no mode question and, after the terms, the friend banner above the board', async (t) => {
   const hash = await makeLink(t, 'friend');
   const page = await visit(t, 'phone', null, hash);

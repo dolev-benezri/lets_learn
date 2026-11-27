@@ -81,6 +81,17 @@ test('a present seatsLeft must be a non-negative integer', () => {
   assert.match(errors.join(), /seatsLeft/);
 });
 
+test('catalog years are optional integers from 2 through 5; bad values name their field', () => {
+  for (const years of [undefined, 2, 3, 4, 5]) {
+    const { errors } = check({ 'catalog.json': (c) => ({ ...c, programs: c.programs.map((p) => ({ ...p, years })) }) });
+    assert.deepEqual(errors, [], `valid years: ${years}`);
+  }
+  for (const years of [1, 6, '3', 3.5, null]) {
+    const { errors } = check({ 'catalog.json': (c) => ({ ...c, programs: c.programs.map((p) => ({ ...p, years })) }) });
+    assert.match(errors.join(), /catalog\.json\.programs\[0\]\.years: should be/, `invalid years: ${JSON.stringify(years)}`);
+  }
+});
+
 test('a missing catalog.json is an error', () => {
   assert.match(check({ 'catalog.json': null }).errors.join(), /catalog\.json/);
 });

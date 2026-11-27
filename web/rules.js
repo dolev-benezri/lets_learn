@@ -92,9 +92,10 @@ export function summerOnly(statuses, summer, on) {
 // ponytail: profile.year only overrides the label; a real different cohort needs its own data file (data.startYear).
 // How many study years the program has: its last mandatory year list ("שנה ב'" in a two-year program). No program is
 // one year long, so fewer than two = partial data: four.
+export const listYears = (lists) => Math.max(0, ...(lists ?? [])
+  .map((l) => ' אבגדה'.indexOf(l.name.match(/שנה ([א-ה])'/)?.[1] ?? ' ')));
 export const yearsOf = (data) => {
-  const n = Math.max(0, ...(data.lists ?? [])
-    .map((l) => ' אבגדה'.indexOf(l.name.match(/שנה ([א-ה])'/)?.[1] ?? ' ')));
+  const n = listYears(data.lists);
   return n >= 2 ? n : 4;
 };
 export const studyYear = (data, state) => Math.min(

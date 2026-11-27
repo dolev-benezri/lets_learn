@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, readdirSync, mkdirSync, writeFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -572,6 +572,29 @@ test('writeCatalog: lists the cohorts of the run, keeps programs that were not i
     [20],
     'a program taken out of the config leaves the catalog (61, 65)'
   );
+});
+
+test('writeCatalog: takes the maximum list year across cohorts, omits partial years, keeps old years and skips unchanged writes', async () => {
+  const file = join(dirs().status, '..', 'catalog-years.json');
+  const programs = { 20: cfg({ name: 'חשמל' }), 30: cfg({ name: 'מכונות' }) };
+  const units = [
+    { program: 20, start: 2024, lists: [{ name: "חובה שנה ד'" }] },
+    { program: 20, start: 2025, lists: [{ name: "חובה שנה ה'" }] },
+    { program: 20, start: 2026, lists: [{ name: "חובה שנה ד'" }] }
+  ];
+  await writeCatalog(file, units, programs, 2027);
+  assert.equal(json(file).programs[0].years, 5, 'maximum across cohorts, not the last cohort');
+  await writeCatalog(file, [{ program: 30, start: 2026, lists: [{ name: 'בחירה' }] }], programs, 2027);
+  assert.equal(json(file).programs.find((p) => p.id === 20).years, 5, 'a program outside the run keeps its years');
+  assert.equal(Object.hasOwn(json(file).programs.find((p) => p.id === 30), 'years'), false, 'no year lists: no guess is published');
+  await writeCatalog(file, [{ program: 30, start: 2026, lists: [{ name: "חובה שנה א'" }] }], programs, 2027);
+  assert.equal(Object.hasOwn(json(file).programs.find((p) => p.id === 30), 'years'), false, 'one year is partial data');
+  const before = readFileSync(file, 'utf8');
+  utimesSync(file, new Date('2000-01-01'), new Date('2000-01-01'));
+  const mtime = statSync(file).mtimeMs;
+  await writeCatalog(file, units, programs, 2027);
+  assert.equal(readFileSync(file, 'utf8'), before);
+  assert.equal(statSync(file).mtimeMs, mtime, 'unchanged bytes must not be rewritten');
 });
 
 test('catalogOrder: a track and its evening twin are neighbours, day first, pairs by lowest program number', () => {

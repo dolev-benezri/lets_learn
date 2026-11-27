@@ -23,6 +23,7 @@ const TYPES = {
   date: (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}/.test(x) && !Number.isNaN(Date.parse(x)),
   day: (x) => Number.isInteger(x) && x >= 1 && x <= 6,
   seats: (x) => Number.isInteger(x) && x >= 0,
+  years: (x) => Number.isInteger(x) && x >= 2 && x <= 5,
 };
 // field: [type, required]. Unknown fields are never an error.
 const FIELDS = {
@@ -60,7 +61,7 @@ const FIELDS = {
   meeting: { day: ['day', 1], start: ['hhmm', 1], end: ['hhmm', 1], room: ['str'] },
   exam: { kind: ['str', 1], moed: ['int', 1], date: ['date', 1], time: ['hhmmOrNull', 1] },
   catalog: { year: ['int', 1], programs: ['arr', 1] },
-  program: { id: ['int', 1], name: ['str', 1], startYears: ['arr', 1] },
+  program: { id: ['int', 1], name: ['str', 1], startYears: ['arr', 1], years: ['years'] },
 };
 
 function shape(kind, x, at, errors) {

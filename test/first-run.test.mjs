@@ -137,13 +137,19 @@ test('a storage that throws: the mark lives in memory for the visit, and nothing
   });
 });
 
-test('yearsFor: the loaded track knows its years, another one is told by its name (an evening track runs five)', () => {
-  assert.equal(yearsFor('הנדסה מכנית', 4), 4);
-  assert.equal(yearsFor('מדעי המחשב', 3), 3, 'the loaded track wins over the guess');
-  assert.equal(yearsFor('הנדסה מכנית (ערב)'), 5);
-  assert.equal(yearsFor('הנדסה מכנית'), 4);
+test('yearsFor: loaded years win, then catalog years, then the name guess', () => {
+  assert.equal(yearsFor({ name: 'מדעי המחשב', years: 5 }, 3), 3, 'the loaded track wins');
+  assert.equal(yearsFor({ name: 'מדעי המחשב', years: 3 }), 3, 'catalog years before loading');
+  assert.equal(yearsFor({ name: 'מדעי המחשב (ערב)', years: 4 }), 4);
+  assert.equal(yearsFor({ name: 'הנדסה מכנית' }), 4);
   assert.equal(yearsFor(undefined), 4);
 });
+
+for (const years of [1, 6, '3', 3.5, undefined])
+  test(`yearsFor: ignores invalid catalog years ${JSON.stringify(years)} and keeps the evening guess`, () => {
+    assert.equal(yearsFor({ name: 'הנדסה מכנית (ערב)', years }), 5);
+    assert.equal(yearsFor({ name: 'הנדסה מכנית', years }), 4);
+  });
 
 test('startReady: the box, and in the pass the track (when asked) and the year', () => {
   const all = { t: true, p: 30, y: 2 };
