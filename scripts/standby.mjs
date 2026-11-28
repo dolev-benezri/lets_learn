@@ -79,7 +79,7 @@ export async function checkStandby({ fetchFn = fetch, now = Date.now(), hours = 
   ]);
   const githubBusy = Array.isArray(runs.body?.workflow_runs) && runs.body.workflow_runs.some((run) => {
     const age = now - Date.parse(run?.created_at);
-    return run?.head_branch === 'main' && ['schedule', 'workflow_dispatch'].includes(run.event) &&
+    return run?.head_branch === 'main' && ['schedule', 'repository_dispatch', 'workflow_dispatch'].includes(run.event) &&
       typeof run.status === 'string' && run.status !== '' && run.status !== 'completed' && age >= 0 && age <= 6 * HOUR;
   });
   const decision = standbyDecision({ checkedAt: status.body?.checkedAt, now, hours, githubBusy });

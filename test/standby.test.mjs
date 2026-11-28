@@ -124,6 +124,17 @@ test('standby fetch: an hourly backlog cannot hide a busy pull behind twenty com
   assert.match(result.why, /GitHub busy/);
 });
 
+test('checkStandby: an unfinished repository_dispatch on main within six hours is busy', async () => {
+  const { checkStandby } = await api();
+  for (const status of ['queued', 'in_progress']) {
+    const result = await checkStandby({ now, fetchFn: async (url) => response(url.includes('status.json')
+      ? { checkedAt: ago(30) }
+      : { workflow_runs: [run({ event: 'repository_dispatch', status, created_at: ago(6) })] }) });
+    assert.equal(result.run, false, `${status} repository_dispatch must keep standby idle`);
+    assert.match(result.why, /GitHub busy/);
+  }
+});
+
 for (const endpoint of ['status', 'runs']) {
   for (const failure of ['HTTP 500', 'timeout', 'bad JSON', 'missing field']) {
     test(`standby fetch: ${endpoint} ${failure} fails open`, async () => {

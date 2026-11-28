@@ -1,5 +1,5 @@
-# GitHub checks hourly for the two Israel publishing windows (docs/OPERATIONS.md, "הריצה הלילית").
-# Usually within about an hour of the window when GitHub delivers the hourly runs.
+# GitLab dispatches checks inside the two Israel publishing windows (docs/OPERATIONS.md).
+# GitHub's hourly cron stays as a backup; both automated events use the same gate and locked recheck.
 # Night pulls re-read every page; fresh afternoons read groups and exam tables. Stale catch-up and hand starts are full.
 # A restored partial run continues light; full page refresh resumes on the next full run after completion.
 # A three-hour gap also applies to catch-up.
@@ -11,6 +11,8 @@ name: nightly
 run-name: ${{ inputs.smoke && 'nightly smoke' || inputs.dry_run && 'nightly dry run' || 'nightly' }}
 
 on:
+  repository_dispatch:
+    types: [pull-check]
   schedule:
     # UTC; minute 37: GitHub delays scheduled runs most at the top of the hour
     - cron: '37 * * * *'
@@ -42,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event_name == 'schedule' && 'main' || '' }}
+          ref: ${{ (github.event_name == 'schedule' || github.event_name == 'repository_dispatch') && 'main' || '' }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
@@ -67,7 +69,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: repo
-          ref: ${{ github.event_name == 'schedule' && 'main' || '' }}
+          ref: ${{ (github.event_name == 'schedule' || github.event_name == 'repository_dispatch') && 'main' || '' }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
@@ -82,7 +84,7 @@ jobs:
         working-directory: repo
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only Saturday's night publishing window starts empty; partial progress is still saved below.
-        if: ${{ steps.recheck.outputs.go == 'true' && !(github.event_name == 'schedule' && github.ref == 'refs/heads/main' && steps.recheck.outputs.cold == 'true' && !inputs.smoke && !inputs.dry_run) }}
+        if: ${{ steps.recheck.outputs.go == 'true' && !((github.event_name == 'schedule' || github.event_name == 'repository_dispatch') && github.ref == 'refs/heads/main' && steps.recheck.outputs.cold == 'true' && !inputs.smoke && !inputs.dry_run) }}
         with:
           path: .yedion-cache
           key: ${{ env.PREFIX }}${{ github.run_id }}-${{ github.run_attempt }}

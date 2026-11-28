@@ -1,14 +1,42 @@
-# GitLab is the standby. One schedule checks at 07:07 and 13:07 Israel time: `7 7,13 * * *`, timezone `Asia/Jerusalem`.
+# GitLab starts GitHub's pull checks with ROLE=dispatch at 01:40, 02:40, 03:40, 14:40, 15:40 and 16:40 Israel time.
+# A separate standby schedule (no ROLE) checks at 07:07 and 13:07: `7 7,13 * * *`, timezone `Asia/Jerusalem`.
 # A standby check costs about half a minute. When GitHub is not busy and its data is 12 hours old (or missing), restore the public cache seed,
 # then publish the half split. A failed restore keeps GitLab's own cache, so a takeover may hold until its cache catches up.
 # The GitLab project holds no code: its .gitlab-ci.yml includes this file remotely, so this repo stays the single source.
 # Needs one masked GitLab CI variable, GH_PUSH_TOKEN: a GitHub fine-grained token whose resource owner is the lets-learn-il organization, this repo only, Contents read/write.
 # A push with that token triggers .github/workflows/deploy.yml. GitLab emails the owner when a run fails.
-# GH_PUSH_TOKEN stays for standby, so the token-expiry job below stays too.
+# GH_PUSH_TOKEN also authorizes repository_dispatch; dispatch checks its expiry in Israel hour 01, and standby keeps token-expiry.
 # The site allows about 400 requests per clock hour; a cold full run is ~1650 base requests plus throttle waits and retries. GitHub reads all pages at night
 # (~4 h) and groups and exams on a fresh afternoon (~405 base requests, ~1 h), about 2000-2100 a day. A late night may still be busy at 07:07; standby then waits.
 # The scraper waits out the limit (--wait-throttle) and every answer is kept in
 # .yedion-cache (next to the clone), which the pipeline cache carries to the next night (also after a failed run), so a first run may need a few nights (a run stopped by the 160 minute `timeout` ends green and commits nothing; the 4th such run in a row fails, so a stuck scrape sends the failure mail). Later nights: exams, half the courses' groups (each course every other night) and the weekly pages that expired (an estimate of 270-314 requests, 13-15 CI minutes; stale answers refreshed stop at 380 a night, so a normal run does not wait for the hourly limit; GitLab Free gives 400 a month, public projects too).
+dispatch:
+  image: node:24
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $ROLE == "dispatch"'
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - |
+      hdr=$(mktemp)
+      trap 'rm -f "$hdr"' EXIT
+      code=$(curl -sS --max-time 20 --connect-timeout 10 -D "$hdr" -o /dev/null -w '%{http_code}' \
+        -X POST -H "Authorization: Bearer ${GH_PUSH_TOKEN}" -H 'Accept: application/vnd.github+json' \
+        -H 'Content-Type: application/json' --data '{"event_type":"pull-check"}' \
+        https://api.github.com/repos/lets-learn-il/lets-learn-il.github.io/dispatches) && rc=0 || rc=$?
+      echo "GitHub pull-check dispatch: HTTP ${code:-none}"
+      if [ "$rc" != 0 ] || [ "$code" != 204 ]; then
+        echo "dispatch rejected or GitHub unreachable: docs/OPERATIONS.md (GH_PUSH_TOKEN)"
+        exit 1
+      fi
+      hour=$(node -p 'new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jerusalem", hour: "2-digit", hourCycle: "h23" }).format(new Date())')
+      if [ "$hour" != 01 ]; then exit 0; fi
+      exp=$(tr -d '\r' < "$hdr" | sed -n 's/^github-authentication-token-expiration: *//Ip')
+      if [ -z "$exp" ]; then echo "GH_PUSH_TOKEN: no expiry date in the response"; exit 0; fi
+      left=$(( ($(date -d "$exp" +%s) - $(date +%s)) / 86400 ))
+      echo "GH_PUSH_TOKEN expires $exp ($left days)"
+      if [ "$left" -lt 14 ]; then echo "renew GH_PUSH_TOKEN: docs/OPERATIONS.md (GH_PUSH_TOKEN)"; exit 1; fi
+
 scrape:
   image: node:24
   timeout: 3h
@@ -18,6 +46,8 @@ scrape:
       - .yedion-cache/ # next to the clone, not inside it: a restored cache would make `git clone ... repo` fail on a non-empty directory
     when: always
   rules:
+    - if: '$ROLE == "dispatch"'
+      when: never
     - if: $CI_PIPELINE_SOURCE =~ /^(schedule|web|api)$/ # api = run via the GitLab API or MCP
   variables:
     GIT_STRATEGY: none # nothing to check out on the GitLab side
@@ -73,6 +103,8 @@ token-expiry:
   image: node:24
   stage: deploy # after the scrape, whatever its result
   rules:
+    - if: '$ROLE == "dispatch"'
+      when: never
     - if: $CI_PIPELINE_SOURCE =~ /^(schedule|web|api)$/
       when: always
   variables:

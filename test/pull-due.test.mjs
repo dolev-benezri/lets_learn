@@ -19,6 +19,16 @@ async function decision(extra = {}, due = true, cold = false) {
 }
 
 test('pullDue: night window is due when no pull started since 01:30', () => decision());
+test('pullDue repository_dispatch: unused window is due', () => decision({ event: 'repository_dispatch' }));
+test('pullDue repository_dispatch: fresh data outside windows waits', () => decision({
+  event: 'repository_dispatch', now: new Date('2026-12-01T08:00:00Z'), checkedAt: '2026-12-01T02:00:00Z',
+}, false));
+test('pullDue repository_dispatch: a start under three hours ago blocks', () => decision({
+  event: 'repository_dispatch', started: [ago(night, 1)],
+}, false));
+test('pullDue repository_dispatch: Saturday night is cold', () => decision({
+  event: 'repository_dispatch', now: new Date('2026-12-05T00:00:00Z'), checkedAt: '2026-12-04T12:00:00Z',
+}, true, true));
 test('pullDue: one try per window', () => decision({ started: ['2026-11-30T23:45:00Z'] }, false));
 test('pullDue: a pull before the window and outside the three-hour gap does not count', () =>
   decision({ started: [ago(night, 4)] }));
@@ -182,7 +192,7 @@ test('collectStarted: any API error discards partial results', async () => {
   }
 });
 
-for (const event of ['schedule', 'workflow_dispatch']) {
+for (const event of ['schedule', 'repository_dispatch', 'workflow_dispatch']) {
   for (const attempt of [undefined, '1', '2']) {
     for (const mode of ['decide', 'recheck']) {
       test(`pull-due CLI: ${event} attempt ${attempt ?? 'unset'} in ${mode} mode`, () => {

@@ -528,6 +528,19 @@ test('nightly: one hourly cron, a decide job, and the pull only when due', () =>
   assert.match(scrape, /concurrency:\n      group: nightly\n      cancel-in-progress: false/);
 });
 
+test('nightly: repository_dispatch accepts pull-check', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
+  assert.match(y.split('\njobs:')[0], /\n  repository_dispatch:\n    types: \[pull-check\]\n/);
+});
+
+test('nightly: every schedule event condition also handles repository_dispatch', () => {
+  const y = readFileSync('.github/workflows/nightly.yml', 'utf8');
+  const conditions = y.split('\n').filter((line) => line.includes("github.event_name == 'schedule'"));
+  assert.equal(conditions.length, 3, 'two checkout refs and the cold-cache condition');
+  for (const condition of conditions)
+    assert.ok(condition.includes("github.event_name == 'repository_dispatch'"), condition.trim());
+});
+
 test('nightly: run names keep smoke and dry runs out of the one-try rule', () => {
   const y = readFileSync('.github/workflows/nightly.yml', 'utf8');
   const expression = y.match(/^run-name: \$\{\{ (.+) \}\}$/m)?.[1];
@@ -604,7 +617,7 @@ test('nightly: uses the checkout CLI with no github-script or bootstrap', () => 
 });
 
 for (const job of ['decide', 'scrape']) {
-  test(`nightly: ${job} checkout uses latest main for schedules and the event ref for dispatch`, () => {
+  test(`nightly: ${job} checkout uses latest main for automated checks and the event ref for manual dispatch`, () => {
     const y = readFileSync('.github/workflows/nightly.yml', 'utf8').replace(/\r\n/g, '\n');
     const block = y.split(`\n  ${job}:\n`)[1].split(/\n  \w+:\n/)[0];
     const checkout = block.split(/\n      - /).find((step) => step.startsWith('uses: actions/checkout@'));
@@ -613,6 +626,7 @@ for (const job of ['decide', 'scrape']) {
     const evaluate = Function('github', `return (${expression});`);
     for (const ref of ['refs/heads/main', 'refs/heads/claude/data-clocks']) {
       assert.equal(evaluate({ event_name: 'schedule', ref }), 'main');
+      assert.equal(evaluate({ event_name: 'repository_dispatch', ref }), 'main', 'repository_dispatch uses latest main');
       assert.equal(evaluate({ event_name: 'workflow_dispatch', ref }), '', 'empty ref lets checkout use the event ref');
     }
   });
@@ -687,11 +701,11 @@ test('weekly cold run: only the locked recheck cold output skips restore for sch
   assert.match(condition, /steps.recheck.outputs.cold == 'true'/);
   assert.doesNotMatch(condition, /needs\.decide\.outputs\.cold/);
   const evaluate = Function('github', 'inputs', 'needs', 'steps', `return (${condition});`);
-  for (const event_name of ['schedule', 'workflow_dispatch', 'push'])
+  for (const event_name of ['schedule', 'repository_dispatch', 'workflow_dispatch', 'push'])
     for (const ref of ['refs/heads/main', 'refs/heads/claude/data-clocks'])
       for (const cold of ['true', 'false'])
         for (const inputs of [{}, { smoke: true }, { dry_run: true }, { smoke: true, dry_run: true }]) {
-          const skip = event_name === 'schedule' && ref === 'refs/heads/main' && cold === 'true' && !inputs.smoke && !inputs.dry_run;
+          const skip = ['schedule', 'repository_dispatch'].includes(event_name) && ref === 'refs/heads/main' && cold === 'true' && !inputs.smoke && !inputs.dry_run;
           for (const earlierCold of ['true', 'false'])
             assert.equal(evaluate({ event_name, ref }, inputs, { decide: { outputs: { cold: earlierCold } } },
               { recheck: { outputs: { go: 'true', cold } } }), !skip,
@@ -750,10 +764,12 @@ test('nightly publishing condition: scheduled main and main dispatch publish, br
   const evaluate = Function('inputs', 'github', 'success', 'steps', `return (${expression});`);
   const cases = [
     ['schedule', 'main', {}, true],
+    ['repository_dispatch', 'main', {}, true],
+    ['repository_dispatch', 'claude/nightly-phase2', {}, false],
     ['workflow_dispatch', 'main', { dry_run: false, smoke: false }, true],
     ['workflow_dispatch', 'claude/nightly-phase2', { dry_run: false, smoke: false }, false],
   ];
-  for (const event of ['schedule', 'workflow_dispatch']) {
+  for (const event of ['schedule', 'repository_dispatch', 'workflow_dispatch']) {
     for (const branch of ['main', 'claude/nightly-phase2']) {
       for (const inputs of [{ smoke: true }, { dry_run: true }, { smoke: true, dry_run: true }])
         cases.push([event, branch, inputs, false]);
